@@ -18,7 +18,7 @@ class Fsm(object):
     E_ANNOUNCE = "announce"
     E_TEST     = "test"
 
-    RETRY_PERIOD = 5#30
+    RETRY_PERIOD = 30
 
     agent = None
     fsm = None

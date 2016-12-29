@@ -2,6 +2,7 @@ import threading as t
 import thread
 import instana.log as l
 import resource
+import os
 
 class Snapshot(object):
     name = None
@@ -49,7 +50,7 @@ class EntityData(object):
         self.__dict__.update(kwds)
 
 class Meter(object):
-    SNAPSHOT_PERIOD = 5#600
+    SNAPSHOT_PERIOD = 600
     snapshot_countdown = 1
     sensor = None
 
@@ -69,7 +70,7 @@ class Meter(object):
                 s = self.collect_snapshot()
 
             m = self.collect_metrics()
-            d = EntityData(pid=0, snapshot=s, metrics=m)
+            d = EntityData(pid=os.getpid(), snapshot=s, metrics=m)
 
             thread.start_new_thread(self.sensor.agent.request,
                                     (self.sensor.agent.make_url(self.sensor.agent.AGENT_DATA_URL), "POST", d))

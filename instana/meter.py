@@ -3,9 +3,12 @@ import thread
 import instana.log as l
 import resource
 import os
+import gc
+import sys
 
 class Snapshot(object):
     name = None
+    version = None
     rlimit_core=(0, 0)
     rlimit_cpu=(0, 0)
     rlimit_fsize=(0, 0)
@@ -16,6 +19,18 @@ class Snapshot(object):
     rlimit_nofile=(0, 0)
     rlimit_memlock=(0, 0)
     rlimit_as=(0, 0)
+    versions = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+class GC(object):
+    collect0 = 0
+    collect1 = 0
+    collect2 = 0
+    threshold0 = 0
+    threshold1 = 0
+    threshold2 = 0
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -37,6 +52,7 @@ class Metrics(object):
     ru_nsignals	= 0
     ru_nvcs = 0
     ru_nivcsw = 0
+    gc = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -54,6 +70,7 @@ class Meter(object):
     snapshot_countdown = 1
     sensor = None
     last_usage = None
+    last_collect = None
 
     def __init__(self, sensor):
         self.sensor = sensor
@@ -80,6 +97,7 @@ class Meter(object):
 
     def collect_snapshot(self):
         s = Snapshot(name=self.sensor.service_name,
+                     version=sys.version,
                      rlimit_core=resource.getrlimit(resource.RLIMIT_CORE),
                      rlimit_cpu=resource.getrlimit(resource.RLIMIT_CPU),
                      rlimit_fsize=resource.getrlimit(resource.RLIMIT_FSIZE),
@@ -89,12 +107,40 @@ class Meter(object):
                      rlimit_nproc=resource.getrlimit(resource.RLIMIT_NPROC),
                      rlimit_nofile=resource.getrlimit(resource.RLIMIT_NOFILE),
                      rlimit_memlock=resource.getrlimit(resource.RLIMIT_MEMLOCK),
-                     rlimit_as=resource.getrlimit(resource.RLIMIT_AS))
+                     rlimit_as=resource.getrlimit(resource.RLIMIT_AS),
+                     versions=self.collect_modules())
 
         return s
 
+    def collect_modules(self):
+        m = sys.modules
+        r = {}
+        for k in m:
+            if m[k]:
+                d = m[k].__dict__
+                if "version" in d and d["version"]:
+                    r[k] = d["version"]
+                elif "__version__" in d and d["__version__"]:
+                    r[k] = d["__version__"]
+                else:
+                    r[k] = "builtin"
+            else:
+                r[k] = "builtin"
+
+        return r
+
     def collect_metrics(self):
         u = resource.getrusage(resource.RUSAGE_SELF)
+        if gc.isenabled():
+            c = list(gc.get_count())
+            t = list(gc.get_threshold())
+            g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
+                   collect1=c[1] if not self.last_collect else c[1] - self.last_collect[1],
+                   collect2=c[2] if not self.last_collect else c[2] - self.last_collect[2],
+                   threshold0=t[0],
+                   threshold1=t[1],
+                   threshold2=t[2])
+
         m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
                     ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
                     ru_maxrss=u[2],
@@ -110,8 +156,11 @@ class Meter(object):
                     ru_msgrcv=u[12] if not self.last_usage else u[12] - self.last_usage[12],
                     ru_nsignals=u[13] if not self.last_usage else u[13] - self.last_usage[13],
                     ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
-                    ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15])
+                    ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
+                    gc=g)
 
         self.last_usage = u
+        if gc.isenabled():
+            self.last_collect = c
 
         return m

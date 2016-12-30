@@ -52,6 +52,9 @@ class Metrics(object):
     ru_nsignals	= 0
     ru_nvcs = 0
     ru_nivcsw = 0
+    dead_threads = 0
+    alive_threads = 0
+    daemon_threads = 0
     gc = None
 
     def __init__(self, **kwds):
@@ -124,8 +127,6 @@ class Meter(object):
                     r[k] = d["__version__"]
                 else:
                     r[k] = "builtin"
-            else:
-                r[k] = "builtin"
 
         return r
 
@@ -133,13 +134,18 @@ class Meter(object):
         u = resource.getrusage(resource.RUSAGE_SELF)
         if gc.isenabled():
             c = list(gc.get_count())
-            t = list(gc.get_threshold())
+            th = list(gc.get_threshold())
             g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
                    collect1=c[1] if not self.last_collect else c[1] - self.last_collect[1],
                    collect2=c[2] if not self.last_collect else c[2] - self.last_collect[2],
-                   threshold0=t[0],
-                   threshold1=t[1],
-                   threshold2=t[2])
+                   threshold0=th[0],
+                   threshold1=th[1],
+                   threshold2=th[2])
+
+        thr = t.enumerate()
+        daemon_threads = len(map(lambda tr: tr.daemon and tr.is_alive(), thr))
+        alive_threads = len(map(lambda tr: not tr.daemon and tr.is_alive(), thr))
+        dead_threads = len(map(lambda tr: not tr.is_alive(), thr))
 
         m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
                     ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
@@ -157,6 +163,9 @@ class Meter(object):
                     ru_nsignals=u[13] if not self.last_usage else u[13] - self.last_usage[13],
                     ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
                     ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
+                    alive_threads=alive_threads,
+                    dead_threads=dead_threads,
+                    daemon_threads=daemon_threads,
                     gc=g)
 
         self.last_usage = u

@@ -4,6 +4,7 @@ import sys
 import threading as t
 import fysom as f
 import instana.log as l
+import instana.agent_const as a
 
 class Discovery(object):
     pid = 0
@@ -46,15 +47,15 @@ class Fsm(object):
         if self.agent.sensor.options.agent_host != "":
             host = self.agent.sensor.options.agent_host
         else:
-            host = self.agent.AGENT_DEFAULT_HOST
+            host = a.AGENT_DEFAULT_HOST
 
         h = self.check_host(host)
-        if h == self.agent.AGENT_HEADER:
+        if h == a.AGENT_HEADER:
             self.agent.set_host(host)
             self.fsm.lookup()
         else:
             self.check_host(self.get_default_gateway())
-            if h == self.agent.AGENT_HEADER:
+            if h == a.AGENT_HEADER:
                 self.agent.set_host(host)
                 self.fsm.lookup()
 
@@ -78,7 +79,7 @@ class Fsm(object):
                       name=sys.executable,
                       args=sys.argv[0:])
 
-        (b, h) = self.agent.request_response(self.agent.make_url(self.agent.AGENT_DISCOVERY_URL), "PUT", d)
+        (b, h) = self.agent.request_response(self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
         if not b:
             l.error("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(self.announce_sensor, e)
@@ -92,7 +93,7 @@ class Fsm(object):
     def test_agent(self, e):
         l.debug("testing communication with the agent")
 
-        (b, h) = self.agent.head(self.agent.make_url(self.agent.AGENT_DATA_URL))
+        (b, h) = self.agent.head(self.agent.make_url(a.AGENT_DATA_URL))
 
         if not b:
             self.schedule_retry(self.test_agent, e)

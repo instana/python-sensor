@@ -11,5 +11,7 @@ setup(name='instana',
       long_description=open('README.md').read(),
       zip_safe=False,
       setup_requires=['nose>=1.0',
-                      'fysom>=2.1.2'],
+                      'fysom>=2.1.2',
+                      'opentracing>=1.2.1,<1.3',
+                      'basictracer>=2.2.0'],
       test_suite='nose.collector')

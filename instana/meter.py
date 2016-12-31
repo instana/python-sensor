@@ -5,6 +5,7 @@ import resource
 import os
 import gc
 import sys
+import instana.agent_const as a
 
 class Snapshot(object):
     name = None
@@ -94,7 +95,7 @@ class Meter(object):
             d = EntityData(pid=os.getpid(), snapshot=s, metrics=m)
 
             thread.start_new_thread(self.sensor.agent.request,
-                                    (self.sensor.agent.make_url(self.sensor.agent.AGENT_DATA_URL), "POST", d))
+                                    (self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d))
 
         self.tick()
 

@@ -3,6 +3,7 @@ import thread
 import urllib2
 import instana.log as l
 import instana.fsm as f
+import instana.agent_const as a
 
 class From(object):
     pid = ""
@@ -19,15 +20,8 @@ class Put(urllib2.Request):
         return "PUT"
 
 class Agent(object):
-    AGENT_DISCOVERY_URL = "/com.instana.plugin.python.discovery"
-    AGENT_TRACES_URL    = "/com.instana.plugin.python/traces."
-    AGENT_DATA_URL      = "/com.instana.plugin.python."
-    AGENT_DEFAULT_HOST  = "localhost"
-    AGENT_DEFAULT_PORT  = 42699
-    AGENT_HEADER        = "Instana Agent"
-
     sensor = None
-    host = AGENT_DEFAULT_HOST
+    host = a.AGENT_DEFAULT_HOST
     fsm = None
     from_ = None
 
@@ -100,7 +94,7 @@ class Agent(object):
     def make_host_url(self, host, prefix):
         port = self.sensor.options.agent_port
     	if port == 0:
-    		port = self.AGENT_DEFAULT_PORT
+    		port = a.AGENT_DEFAULT_PORT
 
     	return self.make_full_url(host, port, prefix)
 

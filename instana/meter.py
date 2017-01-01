@@ -100,36 +100,46 @@ class Meter(object):
         self.tick()
 
     def collect_snapshot(self):
-        s = Snapshot(name=self.sensor.service_name,
-                     version=sys.version,
-                     rlimit_core=resource.getrlimit(resource.RLIMIT_CORE),
-                     rlimit_cpu=resource.getrlimit(resource.RLIMIT_CPU),
-                     rlimit_fsize=resource.getrlimit(resource.RLIMIT_FSIZE),
-                     rlimit_data=resource.getrlimit(resource.RLIMIT_DATA),
-                     rlimit_stack=resource.getrlimit(resource.RLIMIT_STACK),
-                     rlimit_rss=resource.getrlimit(resource.RLIMIT_RSS),
-                     rlimit_nproc=resource.getrlimit(resource.RLIMIT_NPROC),
-                     rlimit_nofile=resource.getrlimit(resource.RLIMIT_NOFILE),
-                     rlimit_memlock=resource.getrlimit(resource.RLIMIT_MEMLOCK),
-                     rlimit_as=resource.getrlimit(resource.RLIMIT_AS),
-                     versions=self.collect_modules())
+        try:
+            s = Snapshot(name=self.sensor.service_name,
+                         version=sys.version,
+                         rlimit_core=resource.getrlimit(resource.RLIMIT_CORE),
+                         rlimit_cpu=resource.getrlimit(resource.RLIMIT_CPU),
+                         rlimit_fsize=resource.getrlimit(resource.RLIMIT_FSIZE),
+                         rlimit_data=resource.getrlimit(resource.RLIMIT_DATA),
+                         rlimit_stack=resource.getrlimit(resource.RLIMIT_STACK),
+                         rlimit_rss=resource.getrlimit(resource.RLIMIT_RSS),
+                         rlimit_nproc=resource.getrlimit(resource.RLIMIT_NPROC),
+                         rlimit_nofile=resource.getrlimit(resource.RLIMIT_NOFILE),
+                         rlimit_memlock=resource.getrlimit(resource.RLIMIT_MEMLOCK),
+                         rlimit_as=resource.getrlimit(resource.RLIMIT_AS),
+                         versions=self.collect_modules())
 
-        return s
+            return s
+        except Exception as e:
+            l.error(e)
+
+            return None
 
     def collect_modules(self):
-        m = sys.modules
-        r = {}
-        for k in m:
-            if m[k]:
-                d = m[k].__dict__
-                if "version" in d and d["version"]:
-                    r[k] = d["version"]
-                elif "__version__" in d and d["__version__"]:
-                    r[k] = d["__version__"]
-                else:
-                    r[k] = "builtin"
+        try:
+            m = sys.modules
+            r = {}
+            for k in m:
+                if m[k]:
+                    d = m[k].__dict__
+                    if "version" in d and d["version"]:
+                        r[k] = d["version"]
+                    elif "__version__" in d and d["__version__"]:
+                        r[k] = d["__version__"]
+                    else:
+                        r[k] = "builtin"
 
-        return r
+            return r
+        except Exception as e:
+            l.error(e)
+
+            return None
 
     def collect_metrics(self):
         u = resource.getrusage(resource.RUSAGE_SELF)

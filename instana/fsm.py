@@ -54,16 +54,27 @@ class Fsm(object):
             self.agent.set_host(host)
             self.fsm.lookup()
         else:
-            self.check_host(self.get_default_gateway())
-            if h == a.AGENT_HEADER:
-                self.agent.set_host(host)
-                self.fsm.lookup()
+            host = self.get_default_gateway()
+            if host:
+                self.check_host(host)
+                if h == a.AGENT_HEADER:
+                    self.agent.set_host(host)
+                    self.fsm.lookup()
+            else:
+                l.error("Cannot lookup agent host. Scheduling retry.")
+                self.schedule_retry(self.lookup_agent_host, e)
 
     def get_default_gateway(self):
         l.debug("checking default gateway")
-        proc = subprocess.Popen("/sbin/ip route | awk '/default/ { print $3 }'", stdout=subprocess.PIPE)
 
-        return proc.stdout.read()
+        try:
+            proc = subprocess.Popen("/sbin/ip route | awk '/default/ { print $3 }'", stdout=subprocess.PIPE)
+
+            return proc.stdout.read()
+        except Exception as e:
+            l.error(e)
+
+            return None
 
     def check_host(self, host):
         l.debug("checking host", host)

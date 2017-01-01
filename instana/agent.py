@@ -5,19 +5,26 @@ import instana.log as l
 import instana.fsm as f
 import instana.agent_const as a
 
+
 class From(object):
     pid = ""
     hostId = ""
+
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class Head(urllib2.Request):
+
     def get_method(self):
         return "HEAD"
 
+
 class Put(urllib2.Request):
+
     def get_method(self):
         return "PUT"
+
 
 class Agent(object):
     sensor = None
@@ -71,7 +78,8 @@ class Agent(object):
                 self.reset()
             else:
                 if response.getcode() < 200 or response.getcode() >= 300:
-                    l.error("Request returned erroneous code", response.getcode())
+                    l.error("Request returned erroneous code",
+                            response.getcode())
                     if self.can_send():
                         self.reset()
                 else:
@@ -93,10 +101,10 @@ class Agent(object):
 
     def make_host_url(self, host, prefix):
         port = self.sensor.options.agent_port
-    	if port == 0:
-    		port = a.AGENT_DEFAULT_PORT
+        if port == 0:
+            port = a.AGENT_DEFAULT_PORT
 
-    	return self.make_full_url(host, port, prefix)
+        return self.make_full_url(host, port, prefix)
 
     def make_full_url(self, host, port, prefix):
         s = "http://%s:%s%s" % (host, str(port), prefix)

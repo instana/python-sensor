@@ -1,6 +1,7 @@
 import instana.log as l
 import logging
 
+
 class Options(object):
     service = ''
     agent_host = ''

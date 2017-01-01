@@ -4,11 +4,13 @@ import instana.meter as m
 import instana.agent as a
 import os
 
+
 class Sensor(object):
     options = None
     meter = None
     service_name = None
     agent = None
+
     def __init__(self, options):
         self.set_options(options)
         l.init(options.log_level)

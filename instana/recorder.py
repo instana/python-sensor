@@ -4,6 +4,7 @@ import instana.agent_const as a
 import thread
 import time
 
+
 class InstanaSpan(object):
     t = 0
     p = None
@@ -17,6 +18,7 @@ class InstanaSpan(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class InstanaRecorder(SpanRecorder):
     sensor = None
 
@@ -29,17 +31,20 @@ class InstanaRecorder(SpanRecorder):
             data = self.get_span_log_field(span, "data")
             if not data.service:
                 data.service = self.sensor.service_name
-                
+
             thread.start_new_thread(self.sensor.agent.request,
                                     (self.sensor.agent.make_url(a.AGENT_TRACES_URL), "POST",
                                      [InstanaSpan(t=span.context.trace_id,
-                                                 p=span.parent_id,
-                                                 s=span.context.span_id,
-                                                 ts=int(round(span.start_time * 1000)),
-                                                 d=int(round(span.duration * 1000)),
-                                                 n=self.get_string_span_log_field(span, "type"),
-                                                 f=self.sensor.agent.from_,
-                                                 data=data)]))
+                                                  p=span.parent_id,
+                                                  s=span.context.span_id,
+                                                  ts=int(
+                                                      round(span.start_time * 1000)),
+                                                  d=int(
+                                                      round(span.duration * 1000)),
+                                                  n=self.get_string_span_log_field(
+                                                      span, "type"),
+                                                  f=self.sensor.agent.from_,
+                                                  data=data)]))
 
     def get_string_span_log_field(self, span, field):
         ret = self.get_span_log_field(span, field)
@@ -55,6 +60,8 @@ class InstanaRecorder(SpanRecorder):
 
         return None
 
+
 class InstanaSampler(Sampler):
+
     def sampled(self, trace_id):
         return False

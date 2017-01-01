@@ -6,18 +6,21 @@ import fysom as f
 import instana.log as l
 import instana.agent_const as a
 
+
 class Discovery(object):
     pid = 0
     name = None
     args = None
+
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class Fsm(object):
-    E_START     = "start"
-    E_LOOKUP   = "lookup"
+    E_START = "start"
+    E_LOOKUP = "lookup"
     E_ANNOUNCE = "announce"
-    E_TEST     = "test"
+    E_TEST = "test"
 
     RETRY_PERIOD = 30
 
@@ -29,16 +32,17 @@ class Fsm(object):
 
         self.agent = agent
         self.fsm = f.Fysom({
-    		"initial": "none",
-    		"events": [
-    			{"name": self.E_START, "src": ["none", "unannounced", "announced", "ready"], "dst": "init"},
-    			{"name": self.E_LOOKUP, "src": "init", "dst": "unannounced"},
-    			{"name": self.E_ANNOUNCE, "src": "unannounced", "dst": "announced"},
-    			{"name": self.E_TEST, "src": "announced", "dst": "ready"}],
-    		"callbacks": {
-    			"onstart": self.lookup_agent_host,
-    			"onenterunannounced": self.announce_sensor,
-    			"onenterannounced": self.test_agent}})
+            "initial": "none",
+            "events": [
+                {"name": self.E_START, "src": [
+                    "none", "unannounced", "announced", "ready"], "dst": "init"},
+                {"name": self.E_LOOKUP, "src": "init", "dst": "unannounced"},
+                {"name": self.E_ANNOUNCE, "src": "unannounced", "dst": "announced"},
+                {"name": self.E_TEST, "src": "announced", "dst": "ready"}],
+            "callbacks": {
+                "onstart": self.lookup_agent_host,
+                "onenterunannounced": self.announce_sensor,
+                "onenterannounced": self.test_agent}})
 
     def reset(self):
         self.fsm.start()
@@ -68,7 +72,8 @@ class Fsm(object):
         l.debug("checking default gateway")
 
         try:
-            proc = subprocess.Popen("/sbin/ip route | awk '/default/ { print $3 }'", stdout=subprocess.PIPE)
+            proc = subprocess.Popen(
+                "/sbin/ip route | awk '/default/ { print $3 }'", stdout=subprocess.PIPE)
 
             return proc.stdout.read()
         except Exception as e:
@@ -79,7 +84,8 @@ class Fsm(object):
     def check_host(self, host):
         l.debug("checking host", host)
 
-        (b, h) = self.agent.request_header(self.agent.make_host_url(host, "/"), "GET", "Server")
+        (b, h) = self.agent.request_header(
+            self.agent.make_host_url(host, "/"), "GET", "Server")
 
         return h
 
@@ -90,7 +96,8 @@ class Fsm(object):
                       name=sys.executable,
                       args=sys.argv[0:])
 
-        (b, h) = self.agent.request_response(self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
+        (b, h) = self.agent.request_response(
+            self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
         if not b:
             l.error("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(self.announce_sensor, e)

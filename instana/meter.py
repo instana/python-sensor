@@ -1,5 +1,4 @@
 import threading as t
-import thread
 import instana.log as l
 import resource
 import os
@@ -99,8 +98,7 @@ class Meter(object):
             m = self.collect_metrics()
             d = EntityData(pid=os.getpid(), snapshot=s, metrics=m)
 
-            thread.start_new_thread(self.sensor.agent.request,
-                                    (self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d))
+            t.Thread(self.sensor.agent.request, args=(self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)).start()
 
         self.tick()
 

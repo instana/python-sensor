@@ -98,7 +98,8 @@ class Meter(object):
             m = self.collect_metrics()
             d = EntityData(pid=os.getpid(), snapshot=s, metrics=m)
 
-            t.Thread(self.sensor.agent.request, args=(self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)).start()
+            t.Thread(target=self.sensor.agent.request,
+                     args=(self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)).start()
 
         self.tick()
 

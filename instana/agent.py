@@ -1,9 +1,12 @@
 import json
-import urllib2
 import instana.log as l
 import instana.fsm as f
 import instana.agent_const as a
 
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 
 class From(object):
     pid = ""
@@ -39,7 +42,7 @@ class Agent(object):
         self.reset()
 
     def to_json(self, o):
-        return json.dumps(o, default=lambda o: o.__dict__, sort_keys=False, indent=4)
+        return json.dumps(o, default=lambda o: o.__dict__, sort_keys=False, indent=4).encode()
 
     def can_send(self):
         return self.fsm.fsm.current == "ready"
@@ -86,7 +89,7 @@ class Agent(object):
                         b = response.read()
 
                     if header:
-                        h = response.info().getheader(header)
+                        h = response.info().get(header)
 
                     if method == "HEAD":
                         b = True

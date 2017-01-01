@@ -1,5 +1,4 @@
 import json
-import thread
 import urllib2
 import instana.log as l
 import instana.fsm as f

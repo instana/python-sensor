@@ -1,9 +1,6 @@
 from basictracer import Sampler, SpanRecorder
-import instana.log as l
 import instana.agent_const as a
 import thread
-import time
-
 
 class InstanaSpan(object):
     t = 0
@@ -63,5 +60,5 @@ class InstanaRecorder(SpanRecorder):
 
 class InstanaSampler(Sampler):
 
-    def sampled(self, trace_id):
+    def sampled(self, _):
         return False

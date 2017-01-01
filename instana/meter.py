@@ -3,7 +3,7 @@ import thread
 import instana.log as l
 import resource
 import os
-import gc
+import gc as gc_
 import sys
 import instana.agent_const as a
 
@@ -153,9 +153,9 @@ class Meter(object):
 
     def collect_metrics(self):
         u = resource.getrusage(resource.RUSAGE_SELF)
-        if gc.isenabled():
-            c = list(gc.get_count())
-            th = list(gc.get_threshold())
+        if gc_.isenabled():
+            c = list(gc_.get_count())
+            th = list(gc_.get_threshold())
             g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
                    collect1=c[1] if not self.last_collect else c[
                        1] - self.last_collect[1],
@@ -166,45 +166,33 @@ class Meter(object):
                    threshold2=th[2])
 
         thr = t.enumerate()
-        daemon_threads = len(map(lambda tr: tr.daemon and tr.is_alive(), thr))
-        alive_threads = len(
-            map(lambda tr: not tr.daemon and tr.is_alive(), thr))
-        dead_threads = len(map(lambda tr: not tr.is_alive(), thr))
+        daemon_threads = len([tr.daemon and tr.is_alive() for tr in thr])
+        alive_threads = len([not tr.daemon and tr.is_alive() for tr in thr])
+        dead_threads = len([not tr.is_alive() for tr in thr])
 
         m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
-                    ru_stime=u[1] if not self.last_usage else u[
-                        1] - self.last_usage[1],
+                    ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
                     ru_maxrss=u[2],
                     ru_ixrss=u[3],
                     ru_idrss=u[4],
                     ru_isrss=u[5],
-                    ru_minflt=u[6] if not self.last_usage else u[
-                        6] - self.last_usage[6],
-                    ru_majflt=u[7] if not self.last_usage else u[
-                        7] - self.last_usage[7],
-                    ru_nswap=u[8] if not self.last_usage else u[
-                        8] - self.last_usage[8],
-                    ru_inblock=u[9] if not self.last_usage else u[
-                        9] - self.last_usage[9],
-                    ru_oublock=u[10] if not self.last_usage else u[
-                        10] - self.last_usage[10],
-                    ru_msgsnd=u[11] if not self.last_usage else u[
-                        11] - self.last_usage[11],
-                    ru_msgrcv=u[12] if not self.last_usage else u[
-                        12] - self.last_usage[12],
-                    ru_nsignals=u[13] if not self.last_usage else u[
-                        13] - self.last_usage[13],
-                    ru_nvcs=u[14] if not self.last_usage else u[
-                        14] - self.last_usage[14],
-                    ru_nivcsw=u[15] if not self.last_usage else u[
-                        15] - self.last_usage[15],
+                    ru_minflt=u[6] if not self.last_usage else u[6] - self.last_usage[6],
+                    ru_majflt=u[7] if not self.last_usage else u[7] - self.last_usage[7],
+                    ru_nswap=u[8] if not self.last_usage else u[8] - self.last_usage[8],
+                    ru_inblock=u[9] if not self.last_usage else u[9] - self.last_usage[9],
+                    ru_oublock=u[10] if not self.last_usage else u[10] - self.last_usage[10],
+                    ru_msgsnd=u[11] if not self.last_usage else u[11] - self.last_usage[11],
+                    ru_msgrcv=u[12] if not self.last_usage else u[12] - self.last_usage[12],
+                    ru_nsignals=u[13] if not self.last_usage else u[13] - self.last_usage[13],
+                    ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
+                    ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
                     alive_threads=alive_threads,
                     dead_threads=dead_threads,
                     daemon_threads=daemon_threads,
                     gc=g)
 
         self.last_usage = u
-        if gc.isenabled():
+        if gc_.isenabled():
             self.last_collect = c
 
         return m

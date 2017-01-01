@@ -12,16 +12,16 @@ def init(level):
 
 
 def debug(s, *args):
-    logger.debug("%s %s" % (s, ' '.join(args)))
+    logger.debug("%s %s", s, ' '.join(args))
 
 
 def info(s, *args):
-    logger.info("%s %s" % (s, ' '.join(args)))
+    logger.info("%s %s", s, ' '.join(args))
 
 
 def warn(s, *args):
-    logger.warn("%s %s" % (s, ' '.join(args)))
+    logger.warn("%s %s", s, ' '.join(args))
 
 
 def error(s, *args):
-    logger.error("%s %s" % (s, ' '.join(args)))
+    logger.error("%s %s", s, ' '.join(args))

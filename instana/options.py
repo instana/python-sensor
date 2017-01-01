@@ -1,4 +1,3 @@
-import instana.log as l
 import logging
 
 

@@ -84,7 +84,7 @@ class Fsm(object):
     def check_host(self, host):
         l.debug("checking host", host)
 
-        (b, h) = self.agent.request_header(
+        (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")
 
         return h
@@ -96,7 +96,7 @@ class Fsm(object):
                       name=sys.executable,
                       args=sys.argv[0:])
 
-        (b, h) = self.agent.request_response(
+        (b, _) = self.agent.request_response(
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
         if not b:
             l.error("Cannot announce sensor. Scheduling retry.")
@@ -105,13 +105,13 @@ class Fsm(object):
             self.agent.set_from(b)
             self.fsm.announce()
 
-    def schedule_retry(self, f, e):
-        t.Timer(self.RETRY_PERIOD, f, [e]).start()
+    def schedule_retry(self, fun, e):
+        t.Timer(self.RETRY_PERIOD, fun, [e]).start()
 
     def test_agent(self, e):
         l.debug("testing communication with the agent")
 
-        (b, h) = self.agent.head(self.agent.make_url(a.AGENT_DATA_URL))
+        (b, _) = self.agent.head(self.agent.make_url(a.AGENT_DATA_URL))
 
         if not b:
             self.schedule_retry(self.test_agent, e)

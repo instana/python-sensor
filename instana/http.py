@@ -1,7 +1,6 @@
 HTTP_CLIENT = "g.hc"
 HTTP_SERVER = "g.http"
 
-
 class HttpData(object):
     host = None
     url = None

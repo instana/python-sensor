@@ -42,7 +42,7 @@ class Agent(object):
         self.reset()
 
     def to_json(self, o):
-        return json.dumps(o, default=lambda o: o.__dict__, sort_keys=False, indent=4).encode()
+        return json.dumps(o, default=lambda o: o.__dict__, sort_keys=False,separators=(',', ':')).encode()
 
     def can_send(self):
         return self.fsm.fsm.current == "ready"

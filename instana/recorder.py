@@ -34,6 +34,7 @@ class InstanaRecorder(SpanRecorder):
                                              url=self.get_string_tag(span, ext.HTTP_URL),
                                              method=self.get_string_tag(span, ext.HTTP_METHOD),
                                              status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
+                          baggage=span.context.baggage,
                           custom=c.CustomData(tags=span.tags,
                                               logs=self.collect_logs(span)))
 

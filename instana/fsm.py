@@ -1,6 +1,6 @@
 import subprocess
 import os
-import sys
+import psutil
 import threading as t
 import fysom as f
 import instana.log as l
@@ -91,10 +91,10 @@ class Fsm(object):
 
     def announce_sensor(self, e):
         l.debug("announcing sensor to the agent")
-
-        d = Discovery(pid=os.getpid(),
-                      name=sys.executable,
-                      args=sys.argv[0:])
+        p = psutil.Process(os.getpid())
+        d = Discovery(pid=p.pid,
+                      name=p.cmdline()[0],
+                      args=p.cmdline()[1:])
 
         (b, _) = self.agent.request_response(
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)

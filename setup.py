@@ -13,5 +13,6 @@ setup(name='instana',
       setup_requires=['nose>=1.0',
                       'fysom>=2.1.2',
                       'opentracing>=1.2.1,<1.3',
-                      'basictracer>=2.2.0'],
+                      'basictracer>=2.2.0',
+                      'psutil>=5.1.3'],
       test_suite='nose.collector')

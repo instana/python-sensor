@@ -26,6 +26,7 @@ class Fsm(object):
 
     agent = None
     fsm = None
+    timer = None
 
     def __init__(self, agent):
         l.debug("initializing fsm")
@@ -106,7 +107,9 @@ class Fsm(object):
             self.fsm.announce()
 
     def schedule_retry(self, fun, e):
-        t.Timer(self.RETRY_PERIOD, fun, [e]).start()
+        self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
+        self.timer.setDaemon(True)
+        self.timer.start()
 
     def test_agent(self, e):
         l.debug("testing communication with the agent")

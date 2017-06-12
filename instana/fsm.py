@@ -17,11 +17,6 @@ class Discovery(object):
 
 
 class Fsm(object):
-    E_START = "start"
-    E_LOOKUP = "lookup"
-    E_ANNOUNCE = "announce"
-    E_TEST = "test"
-
     RETRY_PERIOD = 30
 
     agent = None
@@ -33,20 +28,23 @@ class Fsm(object):
 
         self.agent = agent
         self.fsm = f.Fysom({
-            "initial": "none",
+            "initial": "lostandalone",
             "events": [
-                {"name": self.E_START, "src": [
-                    "none", "unannounced", "announced", "ready"], "dst": "init"},
-                {"name": self.E_LOOKUP, "src": "init", "dst": "unannounced"},
-                {"name": self.E_ANNOUNCE, "src": "unannounced", "dst": "announced"},
-                {"name": self.E_TEST, "src": "announced", "dst": "ready"}],
+                ("startup",  "*",            "lostandalone"),
+                ("lookup",   "lostandalone", "found"),
+                ("announce", "found",        "announced"),
+                ("ready",    "announced",    "good2go")],
             "callbacks": {
-                "onstart": self.lookup_agent_host,
-                "onenterunannounced": self.announce_sensor,
-                "onenterannounced": self.test_agent}})
+                "onlookup":       self.lookup_agent_host,
+                "onannounce":     self.announce_sensor,
+                "onchangestate":  self.printstatechange}})
+
+    def printstatechange(self, e):
+        l.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' % \
+            (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 
     def reset(self):
-        self.fsm.start()
+        self.fsm.lookup()
 
     def lookup_agent_host(self, e):
         if self.agent.sensor.options.agent_host != "":
@@ -57,17 +55,19 @@ class Fsm(object):
         h = self.check_host(host)
         if h == a.AGENT_HEADER:
             self.agent.set_host(host)
-            self.fsm.lookup()
+            self.fsm.announce()
         else:
             host = self.get_default_gateway()
             if host:
                 self.check_host(host)
                 if h == a.AGENT_HEADER:
                     self.agent.set_host(host)
-                    self.fsm.lookup()
+                    self.fsm.announce()
             else:
                 l.error("Cannot lookup agent host. Scheduling retry.")
-                self.schedule_retry(self.lookup_agent_host, e)
+                self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
+                return False
+        return True
 
     def get_default_gateway(self):
         l.debug("checking default gateway")
@@ -101,15 +101,20 @@ class Fsm(object):
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
         if not b:
             l.error("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e)
+            self.schedule_retry(self.announce_sensor, e, "announce")
+            return False
         else:
             self.agent.set_from(b)
-            self.fsm.announce()
+            self.fsm.ready()
+            return True
 
-    def schedule_retry(self, fun, e):
+    def schedule_retry(self, fun, e, name):
+        l.error("Scheduling: " + name)
         self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
-        self.timer.setDaemon(True)
+        self.timer.daemon = True
+        self.timer.name = name
         self.timer.start()
+        l.debug('Threadlist: %s', str(t.enumerate()))
 
     def test_agent(self, e):
         l.debug("testing communication with the agent")
@@ -117,6 +122,6 @@ class Fsm(object):
         (b, _) = self.agent.head(self.agent.make_url(a.AGENT_DATA_URL))
 
         if not b:
-            self.schedule_retry(self.test_agent, e)
+            self.schedule_retry(self.test_agent, e, "agent test")
         else:
             self.fsm.test()

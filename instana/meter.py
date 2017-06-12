@@ -79,13 +79,17 @@ class Meter(object):
     sensor = None
     last_usage = None
     last_collect = None
+    timer = None
 
     def __init__(self, sensor):
         self.sensor = sensor
         self.tick()
 
     def tick(self):
-        t.Timer(1, self.process).start()
+        timer = t.Timer(1, self.process)
+        timer.daemon = True
+        timer.name = "Instana Metric Collection"
+        timer.start()
 
     def process(self):
         if self.sensor.agent.can_send():
@@ -99,7 +103,9 @@ class Meter(object):
             d = EntityData(pid=os.getpid(), snapshot=s, metrics=m)
 
             t.Thread(target=self.sensor.agent.request,
-                     args=(self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)).start()
+                     args=(self.sensor.agent.make_url(a.AGENT_DATA_URL),
+                           "POST", d),
+                     name="Metrics POST").start()
 
         self.tick()
 

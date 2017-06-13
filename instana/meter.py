@@ -75,7 +75,7 @@ class EntityData(object):
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 1
+    snapshot_countdown = 30
     sensor = None
     last_usage = None
     last_collect = None

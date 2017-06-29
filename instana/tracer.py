@@ -40,14 +40,15 @@ class InstanaTracer(BasicTracer):
             parent_ctx = references[0].referenced_context
 
         # Assemble the child ctx
-        ctx = SpanContext(span_id=generate_id())
+        instana_id = generate_id()
+        ctx = SpanContext(span_id=instana_id)
         if parent_ctx is not None:
             if parent_ctx._baggage is not None:
                 ctx._baggage = parent_ctx._baggage.copy()
             ctx.trace_id = parent_ctx.trace_id
             ctx.sampled = parent_ctx.sampled
         else:
-            ctx.trace_id = generate_id()
+            ctx.trace_id = instana_id
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
         # Tie it all together

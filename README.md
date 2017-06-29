@@ -2,9 +2,9 @@
 <img src="https://disznc.s3.amazonaws.com/Python-1-2017-06-29-at-22.34.00.png"/>
 </div>
 
-# Instana
+# Stan
 
-The Instana package provides Python metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
+The stan package provides Python metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
 
 ## Note
 
@@ -14,11 +14,11 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
-    $ pip install instana
+    $ pip install stan
 
 ## Usage
 
-The instana package is a zero configuration tool that will automatically collect key metrics from your Python processes.  Just install and go.
+The stan package is a zero configuration tool that will automatically collect key metrics from your Python processes.  Just install and go.
 
 ## Tracing
 

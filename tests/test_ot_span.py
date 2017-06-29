@@ -2,6 +2,7 @@ import opentracing
 from nose.tools import assert_equals
 import time
 
+
 class OTSpanTest:
     def setUp():
         """ Clear all spans before a test run """
@@ -11,7 +12,6 @@ class OTSpanTest:
     def tearDown():
         """ Do nothing for now """
         return None
-
 
     def test_span_interface():
         span = opentracing.global_tracer.start_span("blah")
@@ -24,7 +24,6 @@ class OTSpanTest:
         assert hasattr(span, "context")
         assert hasattr(span, "log")
 
-
     def test_span_ids():
         count = 0
         while count <= 1000:
@@ -33,7 +32,6 @@ class OTSpanTest:
             context = span.context
             assert -9223372036854775808 <= context.span_id <= 9223372036854775807
             assert -9223372036854775808 <= context.trace_id <= 9223372036854775807
-
 
     def test_span_fields():
         span = opentracing.global_tracer.start_span("mycustom")
@@ -58,7 +56,6 @@ class OTSpanTest:
             span.finish()
 
         assert_equals(20, recorder.queue_size())
-
 
     def test_sdk_spans():
         recorder = opentracing.global_tracer.recorder

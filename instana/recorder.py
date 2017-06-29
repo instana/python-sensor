@@ -1,53 +1,120 @@
 from basictracer import Sampler, SpanRecorder
 import instana.agent_const as a
-import instana.http as http
-import instana.custom as c
 import threading as t
 import opentracing.ext.tags as ext
 import socket
-import instana.data as d
+import instana.span_data as sd
+import Queue
+import time
 
-class InstanaSpan(object):
-    t = 0
-    p = None
-    s = 0
-    ts = 0
-    d = 0
-    n = None
-    f = None
-    data = None
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
 class InstanaRecorder(SpanRecorder):
     sensor = None
+    registered_spans = ("memcache", "rpc-client", "rpc-server")
+    queue = Queue.Queue()
 
     def __init__(self, sensor):
         super(InstanaRecorder, self).__init__()
         self.sensor = sensor
+        self.run()
+
+    def run(self):
+        """ Span a background thread to periodically report queued spans """
+        self.timer = t.Thread(target=self.report_spans)
+        self.timer.daemon = True
+        self.timer.name = "Instana Span Reporting"
+        self.timer.start()
+
+    def report_spans(self):
+        """ Periodically report the queued spans """
+        while 1:
+            if self.sensor.agent.can_send() and self.queue.qsize:
+                url = self.sensor.agent.make_url(a.AGENT_TRACES_URL)
+                self.sensor.agent.request(url, "POST", self.queued_spans())
+            time.sleep(2)
+
+    def queue_size(self):
+        """ Return the size of the queue; how may spans are queued, """
+        return self.queue.qsize()
+
+    def queued_spans(self):
+        """ Get all of the spans in the queue """
+        spans = []
+        while True:
+            try:
+                s = self.queue.get(False)
+            except Queue.Empty:
+                break
+            else:
+                spans.append(s)
+        return spans
+
+    def clear_spans(self):
+        """ Clear the queue of spans """
+        self.queued_spans()
 
     def record_span(self, span):
+        """
+        Convert the passed BasicSpan into an InstanaSpan and
+        add it to the span queue
+        """
         if self.sensor.agent.can_send():
-            data = d.Data(service=self.get_service_name(span),
-                          http=http.HttpData(host=self.get_host_name(span),
-                                             url=self.get_string_tag(span, ext.HTTP_URL),
-                                             method=self.get_string_tag(span, ext.HTTP_METHOD),
-                                             status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
-                          baggage=span.context.baggage,
-                          custom=c.CustomData(tags=span.tags,
-                                              logs=self.collect_logs(span)))
+            instana_span = None
 
-            t.Thread(target=self.sensor.agent.request,
-                     args=(self.sensor.agent.make_url(a.AGENT_TRACES_URL), "POST",
-                           [InstanaSpan(t=span.context.trace_id,
-                                        p=span.parent_id,
-                                        s=span.context.span_id,
-                                        ts=int(round(span.start_time * 1000)),
-                                        d=int(round(span.duration * 1000)),
-                                        n=self.get_http_type(span),
-                                        f=self.sensor.agent.from_,
-                                        data=data)])).start()
+            if span.operation_name in self.registered_spans:
+                instana_span = self.build_registered_span(span)
+            else:
+                instana_span = self.build_sdk_span(span)
+
+            self.queue.put(instana_span)
+
+    def build_registered_span(self, span):
+        """ Takes a BasicSpan and converts it into a registered InstanaSpan """
+        data = sd.Data(service=self.get_service_name(span),
+                       http=sd.HttpData(host=self.get_host_name(span),
+                                        url=self.get_string_tag(span, ext.HTTP_URL),
+                                        method=self.get_string_tag(span, ext.HTTP_METHOD),
+                                        status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
+                       baggage=span.context.baggage,
+                       custom=sd.CustomData(tags=span.tags,
+                                            logs=self.collect_logs(span)))
+        return sd.InstanaSpan(
+                    t=span.context.trace_id,
+                    p=span.parent_id,
+                    s=span.context.span_id,
+                    ts=int(round(span.start_time * 1000)),
+                    d=int(round(span.duration * 1000)),
+                    n=self.get_http_type(span),
+                    f=self.sensor.agent.from_,
+                    data=data)
+
+    def build_sdk_span(self, span):
+        """ Takes a BasicSpan and converts into an SDK type InstanaSpan """
+
+        custom_data = sd.CustomData(
+                            tags=span.tags,
+                            logs=self.collect_logs(span))
+
+        sdk_data = sd.SDKData(
+                    Name=span.operation_name,
+                    Custom=custom_data
+        )
+
+        if "span.kind" in span.tags:
+            sdk_data.Type = span.tags["span.kind"]
+
+        data = sd.Data(service=self.get_service_name(span),
+                       sdk=sdk_data)
+
+        return sd.InstanaSpan(
+                    t=span.context.trace_id,
+                    p=span.parent_id,
+                    s=span.context.span_id,
+                    ts=int(round(span.start_time * 1000)),
+                    d=int(round(span.duration * 1000)),
+                    n="sdk",
+                    f=self.sensor.agent.from_,
+                    data=data)
 
     def get_tag(self, span, tag):
         if tag in span.tags:

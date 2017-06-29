@@ -1,6 +1,4 @@
 import opentracing
-import instana.tracer
-import string
 from nose.tools import assert_equals
 
 

@@ -85,3 +85,44 @@ class TestOTSpan:
         assert_equals('entry', sdk_span.data.sdk.Type)
         assert sdk_span.data.sdk.Custom
         assert sdk_span.data.sdk.Custom.tags
+
+    def test_span_kind(self):
+        recorder = opentracing.global_tracer.recorder
+
+        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span.set_tag('span.kind', "consumer")
+        span.finish()
+
+        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span.set_tag('span.kind', "server")
+        span.finish()
+
+        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span.set_tag('span.kind', "producer")
+        span.finish()
+
+        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span.set_tag('span.kind', "client")
+        span.finish()
+
+        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span.set_tag('span.kind', "blah")
+        span.finish()
+
+        spans = recorder.queued_spans()
+        assert 5, len(spans)
+
+        span = spans[0]
+        assert_equals('entry', span.data.sdk.Type)
+
+        span = spans[1]
+        assert_equals('entry', span.data.sdk.Type)
+
+        span = spans[2]
+        assert_equals('exit', span.data.sdk.Type)
+
+        span = spans[3]
+        assert_equals('exit', span.data.sdk.Type)
+
+        span = spans[4]
+        assert_equals('local', span.data.sdk.Type)

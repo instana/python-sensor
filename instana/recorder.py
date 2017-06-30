@@ -3,7 +3,7 @@ import instana.agent_const as a
 import threading as t
 import opentracing.ext.tags as ext
 import socket
-import instana.span_data as sd
+import instana.span as sd
 import Queue
 import time
 
@@ -11,6 +11,8 @@ import time
 class InstanaRecorder(SpanRecorder):
     sensor = None
     registered_spans = ("memcache", "rpc-client", "rpc-server")
+    entry_kind = ["entry", "server", "consumer"]
+    exit_kind = ["exit", "client", "producer"]
     queue = Queue.Queue()
 
     def __init__(self, sensor):
@@ -101,7 +103,13 @@ class InstanaRecorder(SpanRecorder):
         )
 
         if "span.kind" in span.tags:
-            sdk_data.Type = span.tags["span.kind"]
+            if span.tags["span.kind"] in self.entry_kind:
+                sdk_data.Type = "entry"
+            elif span.tags["span.kind"] in self.exit_kind:
+                sdk_data.Type = "exit"
+            else:
+                sdk_data.Type = "local"
+
 
         data = sd.Data(service=self.get_service_name(span),
                        sdk=sdk_data)

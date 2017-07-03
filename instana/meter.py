@@ -5,6 +5,8 @@ import os
 import gc as gc_
 import sys
 import instana.agent_const as a
+import copy
+import time
 
 
 class Snapshot(object):
@@ -63,6 +65,17 @@ class Metrics(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+    def delta_data(self, delta):
+        data = self.__dict__
+        if delta is None:
+            return data
+
+        unchanged_items = set(data.items()) & set(delta.items())
+        for x in unchanged_items:
+            data.pop(x[0])
+
+        return data
+
 
 class EntityData(object):
     pid = 0
@@ -75,33 +88,44 @@ class EntityData(object):
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 1
+    snapshot_countdown = 30
     sensor = None
     last_usage = None
     last_collect = None
+    timer = None
+    last_metrics = None
 
     def __init__(self, sensor):
         self.sensor = sensor
-        self.tick()
+        self.run()
 
-    def tick(self):
-        t.Timer(1, self.process).start()
+    def run(self):
+        self.timer = t.Thread(target=self.collect_and_report)
+        self.timer.daemon = True
+        self.timer.name = "Instana Metric Collection"
+        self.timer.start()
+
+    def collect_and_report(self):
+        while 1:
+            self.process()
+            time.sleep(1)
 
     def process(self):
         if self.sensor.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1
             s = None
+            cm = self.collect_metrics()
             if self.snapshot_countdown == 0:
                 self.snapshot_countdown = self.SNAPSHOT_PERIOD
                 s = self.collect_snapshot()
+                md = cm.delta_data(None)
+            else:
+                md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
-            m = self.collect_metrics()
-            d = EntityData(pid=os.getpid(), snapshot=s, metrics=m)
-
-            t.Thread(target=self.sensor.agent.request,
-                     args=(self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)).start()
-
-        self.tick()
+            d = EntityData(pid=os.getpid(), snapshot=s, metrics=md)
+            self.sensor.agent.request(
+                self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)
+            self.last_metrics = cm.__dict__
 
     def collect_snapshot(self):
         try:

@@ -8,6 +8,7 @@ try:
 except ImportError:
     import urllib2
 
+
 class From(object):
     pid = ""
     hostId = ""
@@ -42,10 +43,11 @@ class Agent(object):
         self.reset()
 
     def to_json(self, o):
-        return json.dumps(o, default=lambda o: o.__dict__, sort_keys=False,separators=(',', ':')).encode()
+        return json.dumps(o, default=lambda o: o.__dict__,
+                          sort_keys=False, separators=(',', ':')).encode()
 
     def can_send(self):
-        return self.fsm.fsm.current == "ready"
+        return self.fsm.fsm.current == "good2go"
 
     def head(self, url):
         return self.request(url, "HEAD", None)
@@ -94,7 +96,7 @@ class Agent(object):
                     if method == "HEAD":
                         b = True
         except Exception as e:
-            l.error(str(e))
+            l.error("full_request_response: " + str(e))
 
         return (b, h)
 

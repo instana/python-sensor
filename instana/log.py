@@ -1,6 +1,7 @@
 import logging as l
+import os
 
-logger = l.getLogger('instana')
+logger = l.getLogger('instana(' + str(os.getpid()) + ')')
 
 
 def init(level):

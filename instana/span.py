@@ -43,11 +43,11 @@ class CustomData(object):
         self.__dict__.update(kwds)
 
 class SDKData(object):
-    Name = None
+    name = None
     Type = None
-    Arguments = None
+    arguments = None
     Return = None
-    Custom = None
+    custom = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

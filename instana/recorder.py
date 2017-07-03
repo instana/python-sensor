@@ -98,8 +98,8 @@ class InstanaRecorder(SpanRecorder):
                             logs=self.collect_logs(span))
 
         sdk_data = sd.SDKData(
-                    Name=span.operation_name,
-                    Custom=custom_data
+                    name=span.operation_name,
+                    custom=custom_data
         )
 
         if "span.kind" in span.tags:
@@ -109,7 +109,6 @@ class InstanaRecorder(SpanRecorder):
                 sdk_data.Type = "exit"
             else:
                 sdk_data.Type = "local"
-
 
         data = sd.Data(service=self.get_service_name(span),
                        sdk=sdk_data)

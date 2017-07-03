@@ -83,8 +83,9 @@ class TestOTSpan:
         assert sdk_span.data
         assert sdk_span.data.sdk
         assert_equals('entry', sdk_span.data.sdk.Type)
-        assert sdk_span.data.sdk.Custom
-        assert sdk_span.data.sdk.Custom.tags
+        assert_equals('custom_sdk_span', sdk_span.data.sdk.name)
+        assert sdk_span.data.sdk.custom
+        assert sdk_span.data.sdk.custom.tags
 
     def test_span_kind(self):
         recorder = opentracing.global_tracer.recorder

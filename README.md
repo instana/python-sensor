@@ -14,6 +14,8 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
+The instana package is [hosted on pypi](https://pypi.python.org/pypi/instana) and can be installed with:
+
     $ pip install instana
 
 ## Usage

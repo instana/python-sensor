@@ -4,17 +4,28 @@ import instana.recorder as r
 import opentracing
 import instana.options as o
 import instana.sensor as s
+import instana.log as ilog
 
 from basictracer.context import SpanContext
 from basictracer.span import BasicSpan
 from instana.util import generate_id
+
+# In case a user or app creates multiple tracers, we limit to just
+# one sensor per process otherwise metrics collection is duplicated,
+# triplicated etc.
+gSensor = None
 
 
 class InstanaTracer(BasicTracer):
     sensor = None
 
     def __init__(self, options=o.Options()):
-        self.sensor = s.Sensor(options)
+        global gSensor
+        if gSensor is None:
+            self.sensor = s.Sensor(options)
+            gSensor = self.sensor
+        else:
+            self.sensor = gSensor
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 

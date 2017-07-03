@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='stan',
+setup(name='instana',
       version='0.0.1',
       url='https://github.com/instana/python-sensor',
       license='MIT',

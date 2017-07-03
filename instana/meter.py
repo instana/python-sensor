@@ -6,6 +6,7 @@ import gc as gc_
 import sys
 import instana.agent_const as a
 import copy
+import time
 
 
 class Snapshot(object):
@@ -96,13 +97,18 @@ class Meter(object):
 
     def __init__(self, sensor):
         self.sensor = sensor
-        self.tick()
+        self.run()
 
-    def tick(self):
-        timer = t.Timer(1, self.process)
-        timer.daemon = True
-        timer.name = "Instana Metric Collection"
-        timer.start()
+    def run(self):
+        self.timer = t.Thread(target=self.collect_and_report)
+        self.timer.daemon = True
+        self.timer.name = "Instana Metric Collection"
+        self.timer.start()
+
+    def collect_and_report(self):
+        while 1:
+            self.process()
+            time.sleep(1)
 
     def process(self):
         if self.sensor.agent.can_send():
@@ -120,8 +126,6 @@ class Meter(object):
             self.sensor.agent.request(
                 self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)
             self.last_metrics = cm.__dict__
-
-        self.tick()
 
     def collect_snapshot(self):
         try:

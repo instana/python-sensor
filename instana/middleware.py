@@ -1,12 +1,12 @@
 import opentracing as ot
-import instana.tracer
+from instana import tracer
 import opentracing.ext.tags as ext
 
 
 class InstanaMiddleware(object):
     def __init__(self, get_response):
         self.get_response = get_response
-        ot.global_tracer = instana.tracer.InstanaTracer()
+        ot.global_tracer = tracer.InstanaTracer()
         self
 
     def __call__(self, request):

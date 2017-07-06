@@ -2,6 +2,7 @@ import json
 import instana.log as l
 import instana.fsm as f
 import instana.agent_const as a
+import threading
 
 try:
     import urllib.request as urllib2
@@ -76,6 +77,7 @@ class Agent(object):
                 request = urllib2.Request(url, self.to_json(o))
                 request.add_header("Content-Type", "application/json")
 
+            # print self.to_json(o)
             response = urllib2.urlopen(request, timeout=2)
 
             if not response:
@@ -96,7 +98,7 @@ class Agent(object):
                     if method == "HEAD":
                         b = True
         except Exception as e:
-            l.error("full_request_response: " + str(e))
+            l.error("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
 
         return (b, h)
 

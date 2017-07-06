@@ -1,10 +1,10 @@
 import time
 from basictracer import BasicTracer
 import instana.recorder as r
-import opentracing
+import opentracing as ot
 import instana.options as o
 import instana.sensor as s
-import instana.log as ilog
+import instana.propagator as tp
 
 from basictracer.context import SpanContext
 from basictracer.span import BasicSpan
@@ -29,6 +29,8 @@ class InstanaTracer(BasicTracer):
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 
+        self._propagators[ot.Format.HTTP_HEADERS] = tp.HTTPPropagator()
+
     def start_span(
             self,
             operation_name=None,
@@ -44,7 +46,7 @@ class InstanaTracer(BasicTracer):
         parent_ctx = None
         if child_of is not None:
             parent_ctx = (
-                child_of if isinstance(child_of, opentracing.SpanContext)
+                child_of if isinstance(child_of, ot.SpanContext)
                 else child_of.context)
         elif references is not None and len(references) > 0:
             # TODO only the first reference is currently used
@@ -71,6 +73,18 @@ class InstanaTracer(BasicTracer):
             tags=tags,
             start_time=start_time)
 
+    def inject(self, span_context, format, carrier):
+        if format in self._propagators:
+            self._propagators[format].inject(span_context, carrier)
+        else:
+            raise ot.UnsupportedFormatException()
+
+    def extract(self, format, carrier):
+        if format in self._propagators:
+            return self._propagators[format].extract(carrier)
+        else:
+            raise ot.UnsupportedFormatException()
+
 
 def init(options):
-    opentracing.tracer = InstanaTracer(options)
+    ot.tracer = InstanaTracer(options)

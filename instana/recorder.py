@@ -33,7 +33,7 @@ class InstanaRecorder(SpanRecorder):
             if self.sensor.agent.can_send() and self.queue.qsize:
                 url = self.sensor.agent.make_url(a.AGENT_TRACES_URL)
                 self.sensor.agent.request(url, "POST", self.queued_spans())
-            time.sleep(2)
+            time.sleep(1)
 
     def queue_size(self):
         """ Return the size of the queue; how may spans are queued, """

@@ -6,6 +6,8 @@
 
 The instana package provides Python metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
 
+This package is currently in BETA (but maturing fast).
+
 ## Note
 
 This package supports Python 2.7 or greater.

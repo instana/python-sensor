@@ -98,7 +98,10 @@ class Agent(object):
                     if method == "HEAD":
                         b = True
         except Exception as e:
-            l.error("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
+            # No need to show the initial 404s or timeouts.  The agent
+            # should handle those correctly.
+            if type(e) is urllib2.HTTPError and e.code != 404:
+                l.error("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
 
         return (b, h)
 

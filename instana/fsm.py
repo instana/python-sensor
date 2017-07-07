@@ -111,7 +111,7 @@ class Fsm(object):
             return True
 
     def schedule_retry(self, fun, e, name):
-        l.error("Scheduling: " + name)
+        l.debug("Scheduling: " + name)
         self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
         self.timer.daemon = True
         self.timer.name = name

@@ -10,7 +10,7 @@ import time
 
 class InstanaRecorder(SpanRecorder):
     sensor = None
-    registered_spans = ("memcache", "rpc-client", "rpc-server")
+    registered_spans = ("django", "memcache", "rpc-client", "rpc-server")
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
     queue = Queue.Queue()
@@ -33,7 +33,7 @@ class InstanaRecorder(SpanRecorder):
             if self.sensor.agent.can_send() and self.queue.qsize:
                 url = self.sensor.agent.make_url(a.AGENT_TRACES_URL)
                 self.sensor.agent.request(url, "POST", self.queued_spans())
-            time.sleep(2)
+            time.sleep(1)
 
     def queue_size(self):
         """ Return the size of the queue; how may spans are queued, """
@@ -72,8 +72,7 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered InstanaSpan """
-        data = sd.Data(service=self.get_service_name(span),
-                       http=sd.HttpData(host=self.get_host_name(span),
+        data = sd.Data(http=sd.HttpData(host=self.get_host_name(span),
                                         url=self.get_string_tag(span, ext.HTTP_URL),
                                         method=self.get_string_tag(span, ext.HTTP_METHOD),
                                         status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
@@ -81,12 +80,12 @@ class InstanaRecorder(SpanRecorder):
                        custom=sd.CustomData(tags=span.tags,
                                             logs=self.collect_logs(span)))
         return sd.InstanaSpan(
+                    n=span.operation_name,
                     t=span.context.trace_id,
                     p=span.parent_id,
                     s=span.context.span_id,
                     ts=int(round(span.start_time * 1000)),
                     d=int(round(span.duration * 1000)),
-                    n=self.get_http_type(span),
                     f=self.sensor.agent.from_,
                     data=data)
 
@@ -102,13 +101,7 @@ class InstanaRecorder(SpanRecorder):
                     custom=custom_data
         )
 
-        if "span.kind" in span.tags:
-            if span.tags["span.kind"] in self.entry_kind:
-                sdk_data.Type = "entry"
-            elif span.tags["span.kind"] in self.exit_kind:
-                sdk_data.Type = "exit"
-            else:
-                sdk_data.Type = "local"
+        sdk_data.Type = self.get_span_kind(span)
 
         data = sd.Data(service=self.get_service_name(span),
                        sdk=sdk_data)
@@ -137,7 +130,7 @@ class InstanaRecorder(SpanRecorder):
         return ret
 
     def get_host_name(self, span):
-        h = self.get_string_tag(span, ext.PEER_HOSTNAME)
+        h = self.get_string_tag(span, "http.host")
         if len(h) > 0:
             return h
 
@@ -158,12 +151,16 @@ class InstanaRecorder(SpanRecorder):
 
         return self.sensor.service_name
 
-    def get_http_type(self, span):
-        k = self.get_string_tag(span, ext.SPAN_KIND)
-        if k == ext.SPAN_KIND_RPC_CLIENT:
-            return http.HTTP_CLIENT
-
-        return http.HTTP_SERVER
+    def get_span_kind(self, span):
+        kind = ""
+        if "span.kind" in span.tags:
+            if span.tags["span.kind"] in self.entry_kind:
+                kind = "entry"
+            elif span.tags["span.kind"] in self.exit_kind:
+                kind = "exit"
+            else:
+                kind = "local"
+        return kind
 
     def collect_logs(self, span):
         logs = {}

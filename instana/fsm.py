@@ -24,6 +24,7 @@ class Fsm(object):
     timer = None
 
     def __init__(self, agent):
+        l.info("Stan is on the scene.  Starting Instana instrumentation.")
         l.debug("initializing fsm")
 
         self.agent = agent
@@ -41,7 +42,7 @@ class Fsm(object):
 
     def printstatechange(self, e):
         l.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' % \
-            (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
+                (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 
     def reset(self):
         self.fsm.lookup()
@@ -106,6 +107,7 @@ class Fsm(object):
         else:
             self.agent.set_from(b)
             self.fsm.ready()
+            l.warn("Host agent available. We're in business. (Announced pid: %i)" % p.pid)
             return True
 
     def schedule_retry(self, fun, e, name):

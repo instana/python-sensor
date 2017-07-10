@@ -6,6 +6,7 @@ import socket
 import instana.span as sd
 import Queue
 import time
+import os
 
 
 class InstanaRecorder(SpanRecorder):
@@ -60,7 +61,7 @@ class InstanaRecorder(SpanRecorder):
         Convert the passed BasicSpan into an InstanaSpan and
         add it to the span queue
         """
-        if self.sensor.agent.can_send():
+        if self.sensor.agent.can_send() or os.environ["INSTANA_TEST"]:
             instana_span = None
 
             if span.operation_name in self.registered_spans:

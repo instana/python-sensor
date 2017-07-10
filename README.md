@@ -16,33 +16,16 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
-The instana package is [hosted on pypi](https://pypi.python.org/pypi/instana) and can be installed with:
+There are two steps required to install the the Instana package for your applications:
 
-    $ pip install instana
+1. `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
+
+2. Enable instrumentation for the frameworks in use by setting an environment variable:
+  `AUTOWRAPT_BOOTSTRAP=instana.django`
 
 ## Usage
 
 The instana package will automatically collect key metrics from your Python processes.  Just install and go.
-
-## Django Middleware
-
-For the initial BETA, Django instrumentation must be manually inserted into the Django middleware list.  This will be automated before post BETA release.
-
-in `myapp/settings.py`:
-```python
-import instana.middleware
-
-MIDDLEWARE = [
-    'instana.middleware.InstanaMiddleware',            # Add Instana at the start of the list
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-```
 
 ## Tracing
 

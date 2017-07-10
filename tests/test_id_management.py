@@ -1,6 +1,12 @@
 import instana.util
 import string
 from nose.tools import assert_equals
+import sys
+
+if sys.version_info.major is 2:
+    string_types = basestring
+else:
+    string_types = str
 
 
 def test_id_generation():
@@ -72,7 +78,7 @@ def test_id_to_header_conversion():
     converted_id = instana.util.id_to_header(original_id)
 
     # Assert that it is a string and there are no non-hex characters
-    assert isinstance(converted_id, basestring)
+    assert isinstance(converted_id, string_types)
     assert all(c in string.hexdigits for c in converted_id)
 
     # Test passing a standard Integer ID as a String
@@ -80,7 +86,7 @@ def test_id_to_header_conversion():
     converted_id = instana.util.id_to_header(original_id)
 
     # Assert that it is a string and there are no non-hex characters
-    assert isinstance(converted_id, basestring)
+    assert isinstance(converted_id, string_types)
     assert all(c in string.hexdigits for c in converted_id)
 
 
@@ -89,21 +95,21 @@ def test_id_to_header_conversion_with_bogus_id():
     converted_id = instana.util.id_to_header('')
 
     # Assert that it is a string and there are no non-hex characters
-    assert isinstance(converted_id, basestring)
+    assert isinstance(converted_id, string_types)
     assert converted_id == ''
 
     # Test passing a nil
     converted_id = instana.util.id_to_header(None)
 
     # Assert that it is a string and there are no non-hex characters
-    assert isinstance(converted_id, basestring)
+    assert isinstance(converted_id, string_types)
     assert converted_id == ''
 
     # Test passing an Array
     converted_id = instana.util.id_to_header([])
 
     # Assert that it is a string and there are no non-hex characters
-    assert isinstance(converted_id, basestring)
+    assert isinstance(converted_id, string_types)
     assert converted_id == ''
 
 

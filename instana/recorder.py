@@ -4,9 +4,14 @@ import threading as t
 import opentracing.ext.tags as ext
 import socket
 import instana.span as sd
-import Queue
 import time
 import os
+
+import sys
+if sys.version_info.major is 2:
+    import Queue as queue
+else:
+    import queue
 
 
 class InstanaRecorder(SpanRecorder):
@@ -14,7 +19,7 @@ class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "rpc-client", "rpc-server")
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
-    queue = Queue.Queue()
+    queue = queue.Queue()
 
     def __init__(self, sensor):
         super(InstanaRecorder, self).__init__()
@@ -46,7 +51,7 @@ class InstanaRecorder(SpanRecorder):
         while True:
             try:
                 s = self.queue.get(False)
-            except Queue.Empty:
+            except queue.Empty:
                 break
             else:
                 spans.append(s)

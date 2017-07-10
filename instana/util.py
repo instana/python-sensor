@@ -4,6 +4,12 @@ import time
 import struct
 import binascii
 
+import sys
+if sys.version_info.major is 2:
+    string_types = basestring
+else:
+    string_types = str
+
 _rnd = random.Random()
 _current_pid = 0
 
@@ -26,13 +32,13 @@ def id_to_header(id):
         return ""
 
     byteString = struct.pack('>q', id)
-    return binascii.hexlify(byteString).lstrip('0')
+    return binascii.hexlify(byteString).decode('UTF-8').lstrip('0')
 
 
 def header_to_id(header):
     """ Convert an unsigned base 16 hex string into a 64bit signed integer """
 
-    if not isinstance(header, basestring):
+    if not isinstance(header, string_types):
         return 0
 
     # Pad the header to 16 chars

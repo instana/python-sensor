@@ -7,6 +7,7 @@ DJ_INSTANA_MIDDLEWARE = 'instana.django.InstanaMiddleware'
 
 
 class InstanaMiddleware(object):
+    """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response):
         self.get_response = get_response
         ot.global_tracer = tracer.InstanaTracer()

@@ -22,7 +22,27 @@ The instana package is [hosted on pypi](https://pypi.python.org/pypi/instana) an
 
 ## Usage
 
-The instana package is a zero configuration tool that will automatically collect key metrics from your Python processes.  Just install and go.
+The instana package will automatically collect key metrics from your Python processes.  Just install and go.
+
+## Django Middleware
+
+For the initial BETA, Django instrumentation must be manually inserted into the Django middleware list.  This will be automated before post BETA release.
+
+in `myapp/settings.py`:
+```python
+import instana.middleware
+
+MIDDLEWARE = [
+    'instana.middleware.InstanaMiddleware',            # Add Instana at the start of the list
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
 
 ## Tracing
 

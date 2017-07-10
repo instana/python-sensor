@@ -1,6 +1,9 @@
+from __future__ import print_function
 import opentracing as ot
 from instana import tracer
 import opentracing.ext.tags as ext
+
+DJ_INSTANA_MIDDLEWARE = 'instana.django.InstanaMiddleware'
 
 
 class InstanaMiddleware(object):
@@ -28,3 +31,18 @@ class InstanaMiddleware(object):
         ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, response)
         span.finish()
         return response
+
+
+def hook(module):
+    """ Hook method to install the Instana middleware into Django """
+    if DJ_INSTANA_MIDDLEWARE in module.settings.MIDDLEWARE:
+        return
+
+    if type(module.settings.MIDDLEWARE) is tuple:
+        module.settings.MIDDLEWARE = (
+                DJ_INSTANA_MIDDLEWARE,) + module.settings.MIDDLEWARE
+    elif type(module.settings.MIDDLEWARE) is list:
+        module.settings.MIDDLEWARE = [
+                DJ_INSTANA_MIDDLEWARE] + module.settings.MIDDLEWARE
+    else:
+        print("Instana: Couldn't add InstanaMiddleware to Django")

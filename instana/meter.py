@@ -7,6 +7,8 @@ import sys
 import instana.agent_const as a
 import copy
 import time
+import json
+from types import ModuleType
 
 
 class Snapshot(object):
@@ -27,6 +29,13 @@ class Snapshot(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+    def to_dict(self):
+        kvs = dict()
+        kvs['name'] = self.name
+        kvs['version'] = self.version
+        kvs['versions'] = self.versions
+        return kvs
+
 
 class GC(object):
     collect0 = 0
@@ -38,6 +47,9 @@ class GC(object):
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
+
+    def to_dict(self):
+        return self.__dict__
 
 
 class Metrics(object):
@@ -76,6 +88,9 @@ class Metrics(object):
 
         return data
 
+    def to_dict(self):
+        return self.__dict__
+
 
 class EntityData(object):
     pid = 0
@@ -85,10 +100,13 @@ class EntityData(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+    def to_dict(self):
+        return self.__dict__
+
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 30
+    snapshot_countdown = 25
     sensor = None
     last_usage = None
     last_collect = None
@@ -113,18 +131,20 @@ class Meter(object):
     def process(self):
         if self.sensor.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1
-            s = None
+            ss = None
             cm = self.collect_metrics()
+
+            l.debug("snapshot_countdown is:", str(self.snapshot_countdown))
             if self.snapshot_countdown == 0:
                 self.snapshot_countdown = self.SNAPSHOT_PERIOD
-                s = self.collect_snapshot()
-                md = cm.delta_data(None)
+                ss = self.collect_snapshot()
+                md = copy.deepcopy(cm).delta_data(None)
             else:
                 md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
-            d = EntityData(pid=os.getpid(), snapshot=s, metrics=md)
-            self.sensor.agent.request(
-                self.sensor.agent.make_url(a.AGENT_DATA_URL), "POST", d)
+            ed = EntityData(pid=os.getpid(), snapshot=ss, metrics=md)
+            url = self.sensor.agent.make_url(a.AGENT_DATA_URL)
+            self.sensor.agent.request(url, "POST", ed)
             self.last_metrics = cm.__dict__
 
     def collect_snapshot(self):
@@ -150,9 +170,18 @@ class Meter(object):
 
             return s
         except Exception as e:
-            l.error(e)
+            l.error("collect_snapshot: ", str(e))
 
             return None
+
+    def jsonable(self, value):
+        if callable(value):
+            result = value()
+        elif type(value) is ModuleType:
+            result = str(value)
+        else:
+            result = value
+        return result
 
     def collect_modules(self):
         try:
@@ -162,15 +191,15 @@ class Meter(object):
                 if m[k]:
                     d = m[k].__dict__
                     if "version" in d and d["version"]:
-                        r[k] = d["version"]
+                        r[k] = self.jsonable(d["version"])
                     elif "__version__" in d and d["__version__"]:
-                        r[k] = d["__version__"]
+                        r[k] = self.jsonable(d["__version__"])
                     else:
                         r[k] = "builtin"
 
             return r
         except Exception as e:
-            l.error(e)
+            l.error("collect_modules: ", e)
 
             return None
 

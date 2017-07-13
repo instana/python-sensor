@@ -44,8 +44,11 @@ class Agent(object):
         self.reset()
 
     def to_json(self, o):
-        return json.dumps(o, default=lambda o: o.__dict__,
-                          sort_keys=False, separators=(',', ':')).encode()
+        try:
+            return json.dumps(o, default=lambda o: o.to_dict(),
+                              sort_keys=False, separators=(',', ':')).encode()
+        except Exception as e:
+            l.error("to_json: ", e, o)
 
     def can_send(self):
         return self.fsm.fsm.current == "good2go"
@@ -77,7 +80,7 @@ class Agent(object):
                 request = urllib2.Request(url, self.to_json(o))
                 request.add_header("Content-Type", "application/json")
 
-            # print self.to_json(o)
+            l.debug("request: ", method, self.to_json(o))
             response = urllib2.urlopen(request, timeout=2)
 
             if not response:

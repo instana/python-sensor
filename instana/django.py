@@ -1,7 +1,8 @@
 from __future__ import print_function
 import opentracing as ot
-from instana import tracer
+from instana import tracer, options
 import opentracing.ext.tags as ext
+
 
 DJ_INSTANA_MIDDLEWARE = 'instana.django.InstanaMiddleware'
 
@@ -10,7 +11,8 @@ class InstanaMiddleware(object):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response):
         self.get_response = get_response
-        ot.global_tracer = tracer.InstanaTracer()
+        opts = options.Options(service="Django")
+        ot.global_tracer = tracer.InstanaTracer(opts)
         self
 
     def __call__(self, request):

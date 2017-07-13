@@ -36,7 +36,7 @@ class InstanaRecorder(SpanRecorder):
     def report_spans(self):
         """ Periodically report the queued spans """
         while 1:
-            if self.sensor.agent.can_send() and self.queue.qsize:
+            if self.sensor.agent.can_send() and self.queue.qsize() > 0:
                 url = self.sensor.agent.make_url(a.AGENT_TRACES_URL)
                 self.sensor.agent.request(url, "POST", self.queued_spans())
             time.sleep(1)
@@ -66,7 +66,7 @@ class InstanaRecorder(SpanRecorder):
         Convert the passed BasicSpan into an InstanaSpan and
         add it to the span queue
         """
-        if self.sensor.agent.can_send() or os.environ["INSTANA_TEST"]:
+        if self.sensor.agent.can_send() or "INSTANA_TEST" in os.environ:
             instana_span = None
 
             if span.operation_name in self.registered_spans:

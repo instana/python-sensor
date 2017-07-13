@@ -15,6 +15,12 @@ class Discovery(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+    def to_dict(self):
+        kvs = dict()
+        kvs['pid'] = self.pid
+        kvs['name'] = self.name
+        kvs['args'] = self.args
+        return kvs
 
 class Fsm(object):
     RETRY_PERIOD = 30

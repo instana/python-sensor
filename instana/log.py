@@ -9,7 +9,10 @@ def init(level):
     f = l.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
     ch.setFormatter(f)
     logger.addHandler(ch)
-    logger.setLevel(level)
+    if "INSTANA_DEV" in os.environ:
+        logger.setLevel(l.DEBUG)
+    else:
+        logger.setLevel(level)
 
 
 def debug(s, *args):

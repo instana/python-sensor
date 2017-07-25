@@ -134,7 +134,6 @@ class Meter(object):
             ss = None
             cm = self.collect_metrics()
 
-            l.debug("snapshot_countdown is:", str(self.snapshot_countdown))
             if self.snapshot_countdown == 0:
                 self.snapshot_countdown = self.SNAPSHOT_PERIOD
                 ss = self.collect_snapshot()

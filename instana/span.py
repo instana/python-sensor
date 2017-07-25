@@ -16,6 +16,7 @@ class InstanaSpan(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class Data(object):
     service = None
     http = None
@@ -26,6 +27,7 @@ class Data(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class HttpData(object):
     host = None
     url = None
@@ -35,12 +37,14 @@ class HttpData(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class CustomData(object):
     tags = None
     logs = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
+
 
 class SDKData(object):
     name = None

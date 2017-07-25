@@ -45,7 +45,7 @@ class Agent(object):
 
     def to_json(self, o):
         try:
-            return json.dumps(o, default=lambda o: o.to_dict(),
+            return json.dumps(o, default=lambda o: o.__dict__,
                               sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
             l.error("to_json: ", e, o)
@@ -103,7 +103,7 @@ class Agent(object):
         except Exception as e:
             # No need to show the initial 404s or timeouts.  The agent
             # should handle those correctly.
-            if type(e) is urllib2.HTTPError and e.code != 404:
+            if not (type(e) is urllib2.HTTPError and e.code == 404):
                 l.error("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
 
         return (b, h)

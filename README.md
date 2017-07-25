@@ -18,12 +18,32 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
+For this BETA, we currently support tracing of Django and Flask applications.  For Django, the process requires no code modification although the Flask alternative temporarily does.  The post BETA objective is for full instrumentation without any code modifications required.  This will be happening soon.
+
+## Django Installation
+
 There are two steps required to install the the Instana package for your applications:
 
 1. `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
 
 2. Enable instrumentation for the frameworks in use by setting an environment variable:
   `AUTOWRAPT_BOOTSTRAP=instana.django`
+
+## Flask Installation
+
+  There are two steps required to install the the Instana package for your applications:
+
+  1. `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
+
+  2. Add the WSGI middleware to your Flask application:
+    ```python
+    from instana import wsgi
+    app = Flask('myapp')
+    app.config.from_object(__name__)
+    app.config.from_envvar('MYAPP_SETTINGS', silent=True)
+    # Wrap the Flask WSGI app with Instana Middleware
+    app.wsgi_app = wsgi.iWSGIMiddleware(app.wsgi_app)`
+    ```
 
 ## Usage
 

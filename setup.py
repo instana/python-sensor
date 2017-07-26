@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='instana',
-      version='0.4.1',
+      version='0.4.2',
       download_url='https://github.com/instana/python-sensor',
       url='https://www.instana.com/',
       license='MIT',

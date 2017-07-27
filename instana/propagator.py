@@ -52,4 +52,4 @@ class HTTPPropagator():
                 baggage={},
                 sampled=True)
         except Exception as e:
-            log.debug("inject error: ", str(e))
+            log.debug("extract error: ", str(e))

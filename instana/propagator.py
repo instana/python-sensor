@@ -13,8 +13,19 @@ class HTTPPropagator():
 
     def inject(self, span_context, carrier):
         try:
-            carrier[field_name_trace_id] = util.id_to_header(span_context.trace_id)
-            carrier[field_name_span_id] = util.id_to_header(span_context.span_id)
+            trace_id = util.id_to_header(span_context.trace_id)
+            span_id = util.id_to_header(span_context.span_id)
+            if type(carrier) is dict:
+                carrier[field_name_trace_id] = trace_id
+                carrier[field_name_span_id] = span_id
+            elif type(carrier) is list:
+                trace_header = (field_name_trace_id, trace_id)
+                carrier.append(trace_header)
+                span_header = (field_name_span_id, span_id)
+                carrier.append(span_header)
+            else:
+                raise Exception("Unsupported carrier type", type(carrier))
+
         except Exception as e:
             log.debug("inject error: ", str(e))
 

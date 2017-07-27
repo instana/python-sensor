@@ -16,7 +16,7 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     sensor = None
-    registered_spans = ("django", "memcache", "rpc-client", "rpc-server")
+    registered_spans = ("django", "memcache", "rpc-client", "rpc-server", "wsgi")
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
     queue = queue.Queue()

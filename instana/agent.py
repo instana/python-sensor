@@ -80,7 +80,6 @@ class Agent(object):
                 request = urllib2.Request(url, self.to_json(o))
                 request.add_header("Content-Type", "application/json")
 
-            l.debug("request: ", method, self.to_json(o))
             response = urllib2.urlopen(request, timeout=2)
 
             if not response:

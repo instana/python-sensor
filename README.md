@@ -36,14 +36,14 @@ There are two steps required to install the the Instana package for your applica
   1. `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
 
   2. Add the WSGI middleware to your Flask application:
-    ```python
-    from instana import wsgi
-    app = Flask('myapp')
-    app.config.from_object(__name__)
-    app.config.from_envvar('MYAPP_SETTINGS', silent=True)
-    # Wrap the Flask WSGI app with Instana Middleware
-    app.wsgi_app = wsgi.iWSGIMiddleware(app.wsgi_app)`
-    ```
+  
+```python
+from instana import wsgi
+app = Flask('myapp')
+...snip...
+# Wrap the Flask WSGI app with Instana Middleware
+app.wsgi_app = wsgi.iWSGIMiddleware(app.wsgi_app)`
+```
 
 ## Usage
 

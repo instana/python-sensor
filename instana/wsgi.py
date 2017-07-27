@@ -19,7 +19,7 @@ class iWSGIMiddleware(object):
 
         def new_start_response(status, headers, exc_info=None):
             """Modified start response with additional headers."""
-            # ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, headers)
+            ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, headers)
             res = start_response(status, headers, exc_info)
             span.set_tag(ext.HTTP_STATUS_CODE, status.split(' ')[0])
             span.finish()

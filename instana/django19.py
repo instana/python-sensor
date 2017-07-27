@@ -30,9 +30,11 @@ class InstanaMiddleware19(object):
         self.span = span
 
     def process_response(self, request, response):
-        self.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-        ot.global_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
-        self.span.finish()
+        if self.span:
+            self.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
+            ot.global_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
+            self.span.finish()
+            self.span = None
         return response
 
 

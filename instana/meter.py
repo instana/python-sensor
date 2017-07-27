@@ -148,7 +148,12 @@ class Meter(object):
 
     def collect_snapshot(self):
         try:
-            s = Snapshot(name=self.sensor.service_name,
+            if "FLASK_APP" in os.environ:
+                appname = os.environ["FLASK_APP"]
+            else:
+                appname = os.path.basename(sys.executable)
+
+            s = Snapshot(name=appname,
                          version=sys.version,
                          rlimit_core=resource.getrlimit(resource.RLIMIT_CORE),
                          rlimit_cpu=resource.getrlimit(resource.RLIMIT_CPU),

@@ -30,7 +30,7 @@ To enable the Django instrumentation, set the following environment variable in 
 
 ## Flask
 
-To enable the Django instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
+To enable the Flask instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
 
   `export AUTOWRAPT_BOOTSTRAP=flask`
 

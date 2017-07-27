@@ -11,5 +11,5 @@ def wrap_load_app(func):
 
 
 def hook(module):
-    """ Hook method to install the Instana middleware into Django """
+    """ Hook method to install the Instana middleware into Flask """
     ScriptInfo.load_app = wrap_load_app(ScriptInfo.load_app)

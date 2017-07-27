@@ -18,7 +18,7 @@ setup(name='instana',
                         'basictracer>=2.2.0',
                         'psutil>=5.1.3'],
       entry_points={'instana.django': ['django.core.handlers.base = instana.django:hook'],
-                    'instana.flask': ['flask.cli = instana.xflask:hook']},
+                    'instana.flask': ['flask.cli = instana.flaskana:hook']},
       test_suite='nose.collector',
       keywords=['performance', 'opentracing', 'metrics', 'monitoring'],
       classifiers=[

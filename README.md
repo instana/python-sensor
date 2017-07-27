@@ -18,32 +18,29 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
-For this BETA, we currently support tracing of Django and Flask applications.  For Django, the process requires no code modification although the Flask alternative temporarily does.  The post BETA objective is for full instrumentation without any code modifications required.  This will be happening soon.
+For this BETA, we currently support tracing of Django and Flask applications or optionally just runtime monitoring of your Python applications.
 
-## Django Installation
+`pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
 
-There are two steps required to install the the Instana package for your applications:
+## Django
 
-1. `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
+To enable the Django instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
 
-2. Enable instrumentation for the frameworks in use by setting an environment variable:
-  `AUTOWRAPT_BOOTSTRAP=instana.django`
+  `export AUTOWRAPT_BOOTSTRAP=django`
 
-## Flask Installation
+## Flask
 
-  There are two steps required to install the the Instana package for your applications:
+To enable the Django instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
 
-  1. `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
+  `export AUTOWRAPT_BOOTSTRAP=flask`
 
-  2. Add the WSGI middleware to your Flask application:
-  
-```python
-from instana import wsgi
-app = Flask('myapp')
-...snip...
-# Wrap the Flask WSGI app with Instana Middleware
-app.wsgi_app = wsgi.iWSGIMiddleware(app.wsgi_app)`
-```
+## Runtime Monitoring Only
+
+_Note: When the Django or Flask instrumentation is used, runtime monitoring is automatically included.  Use this section if you only want to see runtime metrics._
+
+To enable runtime monitoring (without request tracing), set the following environment variable in your _application boot environment_ and then restart your application:
+
+  `export AUTOWRAPT_BOOTSTRAP=runtime`
 
 ## Usage
 

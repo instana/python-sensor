@@ -150,6 +150,8 @@ class Meter(object):
         try:
             if "FLASK_APP" in os.environ:
                 appname = os.environ["FLASK_APP"]
+            elif "DJANGO_SETTINGS_MODULE" in os.environ:
+                appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
             else:
                 appname = os.path.basename(sys.executable)
 

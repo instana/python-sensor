@@ -24,9 +24,13 @@ For this BETA, we currently support tracing of Django and Flask applications or 
 
 ## Django
 
-To enable the Django instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
+For Django versions >= 1.10 set the following environment variable in your _application boot environment_ and then restart your application:
 
   `export AUTOWRAPT_BOOTSTRAP=django`
+
+For Django version 1.9.x, instead set:
+
+  `export AUTOWRAPT_BOOTSTRAP=django19`
 
 ## Flask
 

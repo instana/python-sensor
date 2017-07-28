@@ -16,7 +16,7 @@ class HTTPPropagator():
         try:
             trace_id = util.id_to_header(span_context.trace_id)
             span_id = util.id_to_header(span_context.span_id)
-            if type(carrier) is dict:
+            if type(carrier) is dict or hasattr(carrier, "__dict__"):
                 carrier[field_name_trace_id] = trace_id
                 carrier[field_name_span_id] = span_id
             elif type(carrier) is list:
@@ -32,7 +32,7 @@ class HTTPPropagator():
 
     def extract(self, carrier):  # noqa
         try:
-            if type(carrier) is dict:
+            if type(carrier) is dict or hasattr(carrier, "__dict__"):
                 dc = carrier
             elif type(carrier) is list:
                 dc = dict(carrier)

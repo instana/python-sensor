@@ -1,15 +1,19 @@
+from __future__ import print_function
 from instana import wsgi
-from flask.cli import ScriptInfo
+import wrapt
+import os
 
 
-def wrap_load_app(func):
-    def wrapper(self, *args):
-        app = func(self, *args)
-        app.wsgi_app = wsgi.iWSGIMiddleware(app.wsgi_app)
-        return app
-    return wrapper
+def wrapper(wrapped, instance, args, kwargs):
+    rv = wrapped(*args, **kwargs)
+    instance.wsgi_app = wsgi.iWSGIMiddleware(instance.wsgi_app)
+    return rv
 
 
 def hook(module):
     """ Hook method to install the Instana middleware into Flask """
-    ScriptInfo.load_app = wrap_load_app(ScriptInfo.load_app)
+    if "INSTANA_DEV" in os.environ:
+        print("==============================================================")
+        print("Running flask hook")
+        print("==============================================================")
+    wrapt.wrap_function_wrapper('flask', 'Flask.__init__', wrapper)

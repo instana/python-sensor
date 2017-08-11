@@ -31,6 +31,9 @@ class InstanaMiddleware(object):
 
         response = self.get_response(request)
 
+        if 500 <= response.status_code <= 511:
+            span.SetTag(ext.Error, True)
+
         span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
         ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, response)
         span.finish()

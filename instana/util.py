@@ -32,7 +32,7 @@ def id_to_header(id):
         return ""
 
     byteString = struct.pack('>q', id)
-    return binascii.hexlify(byteString).decode('UTF-8').lstrip('0')
+    return str(binascii.hexlify(byteString).decode('UTF-8').lstrip('0'))
 
 
 def header_to_id(header):

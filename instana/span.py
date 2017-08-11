@@ -1,6 +1,3 @@
-HTTP_CLIENT = "g.hc"
-HTTP_SERVER = "g.http"
-
 class InstanaSpan(object):
     t = 0
     p = None

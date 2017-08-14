@@ -8,6 +8,7 @@ class InstanaSpan(object):
     n = None
     f = None
     ec = 0
+    error = False
     data = None
 
     def __init__(self, **kwds):

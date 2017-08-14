@@ -45,6 +45,10 @@ _Note: When the Django or Flask instrumentation is used, runtime monitoring is a
 To enable runtime monitoring (without request tracing), set the following environment variable in your _application boot environment_ and then restart your application:
 
   `export AUTOWRAPT_BOOTSTRAP=runtime`
+  
+## UWSGI
+
+This Python instrumentation spawns a lightweight background thread to periodically collect and report process metrics.  By default, the GIL and threading is disabled under `uwsgi`.  If you wish to instrument your application running under UWSGI, make sure that you enable threads by passing `--enable-thread`  (or `enable-threads = true` in ini style).  More details in the [uwsgi documentation](https://uwsgi-docs.readthedocs.io/en/latest/WSGIquickstart.html#a-note-on-python-threads).
 
 ## Usage
 

@@ -93,6 +93,8 @@ class InstanaRecorder(SpanRecorder):
                     ts=int(round(span.start_time * 1000)),
                     d=int(round(span.duration * 1000)),
                     f=self.sensor.agent.from_,
+                    ec=self.get_tag(span, "ec"),
+                    error=self.get_tag(span, "error"),
                     data=data)
 
     def build_sdk_span(self, span):

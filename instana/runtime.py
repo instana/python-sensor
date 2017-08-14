@@ -11,9 +11,6 @@ def hook(module):
             print("==========================================================")
             print("Instana: Running runtime hook")
             print("==========================================================")
-            level = logging.DEBUG
-        else:
-            level = logging.WARN
 
-        opts = options.Options(log_level=level)
+        opts = options.Options()
         ot.global_tracer = tracer.InstanaTracer(opts)

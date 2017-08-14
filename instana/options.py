@@ -1,4 +1,5 @@
 import logging
+import os
 
 
 class Options(object):
@@ -8,4 +9,7 @@ class Options(object):
     log_level = logging.WARN
 
     def __init__(self, **kwds):
+        if "INSTANA_DEV" in os.environ:
+            self.log_level = logging.DEBUG
+
         self.__dict__.update(kwds)

@@ -2,6 +2,7 @@ from __future__ import print_function
 import opentracing as ot
 from instana import tracer, options
 import opentracing.ext.tags as ext
+import os
 
 
 DJ19_INSTANA_MIDDLEWARE = 'instana.django19.InstanaMiddleware19'
@@ -31,6 +32,11 @@ class InstanaMiddleware19(object):
 
     def process_response(self, request, response):
         if self.span:
+            if 500 <= response.status_code <= 511:
+                self.span.set_tag("error", True)
+                ec = self.span.tags.get('ec', 0)
+                self.span.set_tag("ec", ec+1)
+
             self.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
             ot.global_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
             self.span.finish()
@@ -41,6 +47,12 @@ class InstanaMiddleware19(object):
 
 def hook(module):
     """ Hook method to install the Instana middleware into Django """
+    if "INSTANA_DEV" in os.environ:
+        print("==============================================================")
+        print("Instana: Running django19 hook")
+        print("==============================================================")
+
+
     if DJ19_INSTANA_MIDDLEWARE in module.settings.MIDDLEWARE_CLASSES:
         return
 

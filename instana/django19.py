@@ -2,6 +2,7 @@ from __future__ import print_function
 import opentracing as ot
 from instana import tracer, options
 import opentracing.ext.tags as ext
+import os
 
 
 DJ19_INSTANA_MIDDLEWARE = 'instana.django19.InstanaMiddleware19'
@@ -46,6 +47,12 @@ class InstanaMiddleware19(object):
 
 def hook(module):
     """ Hook method to install the Instana middleware into Django """
+    if "INSTANA_DEV" in os.environ:
+        print("==============================================================")
+        print("Instana: Running django19 hook")
+        print("==============================================================")
+
+
     if DJ19_INSTANA_MIDDLEWARE in module.settings.MIDDLEWARE_CLASSES:
         return
 

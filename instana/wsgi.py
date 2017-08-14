@@ -9,7 +9,7 @@ class iWSGIMiddleware(object):
 
     def __init__(self, app):
         self.app = app
-        opts = options.Options(log_level=logging.DEBUG)
+        opts = options.Options()
         ot.global_tracer = tracer.InstanaTracer(opts)
         self
 

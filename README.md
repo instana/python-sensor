@@ -48,7 +48,13 @@ To enable runtime monitoring (without request tracing), set the following enviro
   
 ## uWSGI
 
+### Threads
+
 This Python instrumentation spawns a lightweight background thread to periodically collect and report process metrics.  By default, the GIL and threading is disabled under uWSGI.  If you wish to instrument your application running under uWSGI, make sure that you enable threads by passing `--enable-thread`  (or `enable-threads = true` in ini style).  More details in the [uWSGI documentation](https://uwsgi-docs.readthedocs.io/en/latest/WSGIquickstart.html#a-note-on-python-threads).
+
+### Forking off Workers
+
+If you use uWSGI in forking workers mode, you must specify `--lazy-apps` to load the application in the worker instead of the master process.
 
 ## Usage
 

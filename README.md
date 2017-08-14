@@ -54,7 +54,7 @@ This Python instrumentation spawns a lightweight background thread to periodical
 
 ### Forking off Workers
 
-If you use uWSGI in forking workers mode, you must specify `--lazy-apps` to load the application in the worker instead of the master process.
+If you use uWSGI in forking workers mode, you must specify `--lazy-apps` (or `lazy-apps = true` in ini style) to load the application in the worker instead of the master process.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 import opentracing as ot
 from instana import tracer, options
-import opentracing.ext.tags as ext
+import opentracing.ext.tags as tags
 import logging
 
 
@@ -23,9 +23,11 @@ class iWSGIMiddleware(object):
 
             sc = status.split(' ')[0]
             if 500 <= int(sc) <= 511:
-                span.SetTag(ext.Error, True)
+                span.set_tag("error", True)
+                ec = span.tags.get('ec', 0)
+                span.set_tag("ec", ec+1)
 
-            span.set_tag(ext.HTTP_STATUS_CODE, sc)
+            span.set_tag(tags.HTTP_STATUS_CODE, sc)
             span.finish()
             return res
 
@@ -35,9 +37,9 @@ class iWSGIMiddleware(object):
         else:
             span = ot.global_tracer.start_span("wsgi")
 
-        span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
+        span.set_tag(tags.HTTP_URL, env['PATH_INFO'])
         span.set_tag("http.params", env['QUERY_STRING'])
-        span.set_tag(ext.HTTP_METHOD, env['REQUEST_METHOD'])
+        span.set_tag(tags.HTTP_METHOD, env['REQUEST_METHOD'])
         span.set_tag("http.host", env['HTTP_HOST'])
 
         return self.app(environ, new_start_response)

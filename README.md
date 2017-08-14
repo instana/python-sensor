@@ -46,9 +46,9 @@ To enable runtime monitoring (without request tracing), set the following enviro
 
   `export AUTOWRAPT_BOOTSTRAP=runtime`
   
-## UWSGI
+## uWSGI
 
-This Python instrumentation spawns a lightweight background thread to periodically collect and report process metrics.  By default, the GIL and threading is disabled under `uwsgi`.  If you wish to instrument your application running under UWSGI, make sure that you enable threads by passing `--enable-thread`  (or `enable-threads = true` in ini style).  More details in the [uwsgi documentation](https://uwsgi-docs.readthedocs.io/en/latest/WSGIquickstart.html#a-note-on-python-threads).
+This Python instrumentation spawns a lightweight background thread to periodically collect and report process metrics.  By default, the GIL and threading is disabled under uWSGI.  If you wish to instrument your application running under uWSGI, make sure that you enable threads by passing `--enable-thread`  (or `enable-threads = true` in ini style).  More details in the [uWSGI documentation](https://uwsgi-docs.readthedocs.io/en/latest/WSGIquickstart.html#a-note-on-python-threads).
 
 ## Usage
 

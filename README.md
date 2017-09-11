@@ -6,8 +6,6 @@
 
 The instana package provides Python metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
 
-This package is currently in BETA (but maturing fast).
-
 [![Build Status](https://travis-ci.org/instana/python-sensor.svg?branch=master)](https://travis-ci.org/instana/python-sensor)
 
 ## Note

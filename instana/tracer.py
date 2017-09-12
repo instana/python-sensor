@@ -4,10 +4,12 @@ import instana.recorder as r
 import opentracing as ot
 import instana.options as o
 import instana.sensor as s
-import instana.propagator as tp
 
 from basictracer.context import SpanContext
 from basictracer.span import BasicSpan
+from basictracer.text_propagator import TextPropagator
+from basictracer.binary_propagator import BinaryPropagator
+from instana.propagator import HTTPPropagator
 from instana.util import generate_id
 
 # In case a user or app creates multiple tracers, we limit to just
@@ -29,7 +31,9 @@ class InstanaTracer(BasicTracer):
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 
-        self._propagators[ot.Format.HTTP_HEADERS] = tp.HTTPPropagator()
+        self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
+        self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
+        self._propagators[ot.Format.BINARY] = BinaryPropagator()
 
     def start_span(
             self,

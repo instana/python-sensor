@@ -90,7 +90,7 @@ class Fsm(object):
             return None
 
     def check_host(self, host):
-        l.debug("checking host", host)
+        l.debug("checking host", str(host))
 
         (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")

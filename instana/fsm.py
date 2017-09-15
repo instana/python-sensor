@@ -66,7 +66,7 @@ class Fsm(object):
         else:
             host = self.get_default_gateway()
             if host:
-                self.check_host(host)
+                h = self.check_host(host)
                 if h == a.AGENT_HEADER:
                     self.agent.set_host(host)
                     self.fsm.announce()
@@ -81,7 +81,7 @@ class Fsm(object):
 
         try:
             proc = subprocess.Popen(
-                "/sbin/ip route | awk '/default/ { print $3 }'", stdout=subprocess.PIPE)
+                "/sbin/ip route | awk '/default/' | cut -d ' ' -f 3 | tr -d '\n'", shell=True, stdout=subprocess.PIPE)
 
             return proc.stdout.read()
         except Exception as e:

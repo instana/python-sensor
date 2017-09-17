@@ -69,18 +69,19 @@ class Fsm(object):
         if h == a.AGENT_HEADER:
             self.agent.set_host(host)
             self.fsm.announce()
-        else:
+            return True
+        elif os.path.exists("/proc/"):
             host = self.get_default_gateway()
             if host:
                 h = self.check_host(host)
                 if h == a.AGENT_HEADER:
                     self.agent.set_host(host)
                     self.fsm.announce()
+                    return True
             else:
                 l.error("Cannot lookup agent host. Scheduling retry.")
                 self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
-                return False
-        return True
+        return False
 
     def get_default_gateway(self):
         l.debug("checking default gateway")
@@ -107,17 +108,19 @@ class Fsm(object):
     def announce_sensor(self, e):
         l.debug("announcing sensor to the agent")
         p = psutil.Process(os.getpid())
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((self.agent.host, 42699))
-
-        path = "/proc/%d/fd/%d" % (p.pid, s.fileno())
+        s = None
 
         d = Discovery(pid=p.pid,
                       name=p.cmdline()[0],
-                      args=p.cmdline()[1:],
-                      fd=s.fileno(),
-                      inode=os.readlink(path))
+                      args=p.cmdline()[1:])
+
+        # If we're on a system with a procfs
+        if os.path.exists("/proc/"):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.agent.host, 42699))
+            path = "/proc/%d/fd/%d" % (p.pid, s.fileno())
+            d.fd = s.fileno()
+            d.inode = os.readlink(path)
 
         (b, _) = self.agent.request_response(
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)

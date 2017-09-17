@@ -141,7 +141,7 @@ class Meter(object):
             else:
                 md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
-            ed = EntityData(pid=os.getpid(), snapshot=ss, metrics=md)
+            ed = EntityData(pid=self.sensor.agent.from_.pid, snapshot=ss, metrics=md)
             url = self.sensor.agent.make_url(a.AGENT_DATA_URL)
             self.sensor.agent.request(url, "POST", ed)
             self.last_metrics = cm.__dict__

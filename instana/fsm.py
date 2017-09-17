@@ -1,6 +1,7 @@
 import subprocess
 import os
 import psutil
+import socket
 import threading as t
 import fysom as f
 import instana.log as l
@@ -11,6 +12,8 @@ class Discovery(object):
     pid = 0
     name = None
     args = None
+    fd = -1
+    inode = ""
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -20,7 +23,10 @@ class Discovery(object):
         kvs['pid'] = self.pid
         kvs['name'] = self.name
         kvs['args'] = self.args
+        kvs['fd'] = self.fd
+        kvs['inode'] = self.inode
         return kvs
+
 
 class Fsm(object):
     RETRY_PERIOD = 30
@@ -83,14 +89,15 @@ class Fsm(object):
             proc = subprocess.Popen(
                 "/sbin/ip route | awk '/default/' | cut -d ' ' -f 3 | tr -d '\n'", shell=True, stdout=subprocess.PIPE)
 
-            return proc.stdout.read()
+            addr = proc.stdout.read()
+            return addr.decode("UTF-8")
         except Exception as e:
             l.error(e)
 
             return None
 
     def check_host(self, host):
-        l.debug("checking host", str(host))
+        l.debug("checking host", host)
 
         (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")
@@ -100,9 +107,17 @@ class Fsm(object):
     def announce_sensor(self, e):
         l.debug("announcing sensor to the agent")
         p = psutil.Process(os.getpid())
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.agent.host, 42699))
+
+        path = "/proc/%d/fd/%d" % (p.pid, s.fileno())
+
         d = Discovery(pid=p.pid,
                       name=p.cmdline()[0],
-                      args=p.cmdline()[1:])
+                      args=p.cmdline()[1:],
+                      fd=s.fileno(),
+                      inode=os.readlink(path))
 
         (b, _) = self.agent.request_response(
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)

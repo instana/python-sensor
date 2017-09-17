@@ -33,6 +33,7 @@ class Put(urllib2.Request):
 class Agent(object):
     sensor = None
     host = a.AGENT_DEFAULT_HOST
+    port = a.AGENT_DEFAULT_PORT
     fsm = None
     from_ = None
 
@@ -130,6 +131,9 @@ class Agent(object):
 
     def set_host(self, host):
         self.host = host
+
+    def set_port(self, port):
+        self.port = port
 
     def set_from(self, from_):
         self.from_ = From(**json.loads(from_))

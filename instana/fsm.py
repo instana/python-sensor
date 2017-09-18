@@ -124,15 +124,15 @@ class Fsm(object):
 
         (b, _) = self.agent.request_response(
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
-        if not b:
-            l.error("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e, "announce")
-            return False
-        else:
+        if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            l.warn("Host agent available. We're in business. (Announced pid: %i)" % p.pid)
+            l.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" % (p.pid, self.agent.from_.pid))
             return True
+        else:
+            l.error("Cannot announce sensor. Scheduling retry.")
+            self.schedule_retry(self.announce_sensor, e, "announce")
+        return False
 
     def schedule_retry(self, fun, e, name):
         l.debug("Scheduling: " + name)

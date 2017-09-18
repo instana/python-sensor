@@ -104,7 +104,7 @@ class Agent(object):
             # No need to show the initial 404s or timeouts.  The agent
             # should handle those correctly.
             if not (type(e) is urllib2.HTTPError and e.code == 404):
-                l.error("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
+                l.debug("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
 
         return (b, h)
 

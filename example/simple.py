@@ -13,6 +13,7 @@ def main(argv):
                                   log_level=logging.DEBUG))
 
     while (True):
+        time.sleep(2)
         simple()
 
 def simple():
@@ -33,10 +34,10 @@ def simple():
     child_span.set_tag(ext.HTTP_STATUS_CODE, 204)
     child_span.set_baggage_item("someBaggage", "someValue")
 
-    time.sleep(.45)
+    time.sleep(.1)
     child_span.finish()
 
-    time.sleep(.55)
+    time.sleep(.2)
     parent_span.finish()
 
 if __name__ == "__main__":

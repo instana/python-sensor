@@ -78,9 +78,9 @@ class Fsm(object):
                     self.agent.set_host(host)
                     self.fsm.announce()
                     return True
-            else:
-                l.error("Cannot lookup agent host. Scheduling retry.")
-                self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
+
+        l.warn("Instana Host Agent can't be found. Scheduling retry.")
+        self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
 
     def get_default_gateway(self):
@@ -130,7 +130,7 @@ class Fsm(object):
             l.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" % (p.pid, self.agent.from_.pid))
             return True
         else:
-            l.error("Cannot announce sensor. Scheduling retry.")
+            l.warn("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(self.announce_sensor, e, "announce")
         return False
 

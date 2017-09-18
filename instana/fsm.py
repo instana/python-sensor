@@ -1,6 +1,7 @@
 import subprocess
 import os
 import psutil
+import socket
 import threading as t
 import fysom as f
 import instana.log as l
@@ -11,6 +12,8 @@ class Discovery(object):
     pid = 0
     name = None
     args = None
+    fd = -1
+    inode = ""
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -20,7 +23,10 @@ class Discovery(object):
         kvs['pid'] = self.pid
         kvs['name'] = self.name
         kvs['args'] = self.args
+        kvs['fd'] = self.fd
+        kvs['inode'] = self.inode
         return kvs
+
 
 class Fsm(object):
     RETRY_PERIOD = 30
@@ -63,18 +69,19 @@ class Fsm(object):
         if h == a.AGENT_HEADER:
             self.agent.set_host(host)
             self.fsm.announce()
-        else:
+            return True
+        elif os.path.exists("/proc/"):
             host = self.get_default_gateway()
             if host:
                 h = self.check_host(host)
                 if h == a.AGENT_HEADER:
                     self.agent.set_host(host)
                     self.fsm.announce()
+                    return True
             else:
                 l.error("Cannot lookup agent host. Scheduling retry.")
                 self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
-                return False
-        return True
+        return False
 
     def get_default_gateway(self):
         l.debug("checking default gateway")
@@ -83,14 +90,15 @@ class Fsm(object):
             proc = subprocess.Popen(
                 "/sbin/ip route | awk '/default/' | cut -d ' ' -f 3 | tr -d '\n'", shell=True, stdout=subprocess.PIPE)
 
-            return proc.stdout.read()
+            addr = proc.stdout.read()
+            return addr.decode("UTF-8")
         except Exception as e:
             l.error(e)
 
             return None
 
     def check_host(self, host):
-        l.debug("checking host", str(host))
+        l.debug("checking host", host)
 
         (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")
@@ -100,21 +108,31 @@ class Fsm(object):
     def announce_sensor(self, e):
         l.debug("announcing sensor to the agent")
         p = psutil.Process(os.getpid())
+        s = None
+
         d = Discovery(pid=p.pid,
                       name=p.cmdline()[0],
                       args=p.cmdline()[1:])
 
+        # If we're on a system with a procfs
+        if os.path.exists("/proc/"):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.agent.host, 42699))
+            path = "/proc/%d/fd/%d" % (p.pid, s.fileno())
+            d.fd = s.fileno()
+            d.inode = os.readlink(path)
+
         (b, _) = self.agent.request_response(
             self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
-        if not b:
-            l.error("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e, "announce")
-            return False
-        else:
+        if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            l.warn("Host agent available. We're in business. (Announced pid: %i)" % p.pid)
+            l.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" % (p.pid, self.agent.from_.pid))
             return True
+        else:
+            l.error("Cannot announce sensor. Scheduling retry.")
+            self.schedule_retry(self.announce_sensor, e, "announce")
+        return False
 
     def schedule_retry(self, fun, e, name):
         l.debug("Scheduling: " + name)
@@ -122,7 +140,7 @@ class Fsm(object):
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
-        l.debug('Threadlist: %s', str(t.enumerate()))
+        l.debug('Threadlist: ', str(t.enumerate()))
 
     def test_agent(self, e):
         l.debug("testing communication with the agent")

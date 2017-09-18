@@ -33,6 +33,7 @@ class Put(urllib2.Request):
 class Agent(object):
     sensor = None
     host = a.AGENT_DEFAULT_HOST
+    port = a.AGENT_DEFAULT_PORT
     fsm = None
     from_ = None
 
@@ -103,7 +104,7 @@ class Agent(object):
             # No need to show the initial 404s or timeouts.  The agent
             # should handle those correctly.
             if not (type(e) is urllib2.HTTPError and e.code == 404):
-                l.error("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
+                l.debug("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
 
         return (b, h)
 
@@ -130,6 +131,9 @@ class Agent(object):
 
     def set_host(self, host):
         self.host = host
+
+    def set_port(self, port):
+        self.port = port
 
     def set_from(self, from_):
         self.from_ = From(**json.loads(from_))

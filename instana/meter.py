@@ -134,7 +134,7 @@ class Meter(object):
             ss = None
             cm = self.collect_metrics()
 
-            if self.snapshot_countdown == 0:
+            if self.snapshot_countdown < 1:
                 self.snapshot_countdown = self.SNAPSHOT_PERIOD
                 ss = self.collect_snapshot()
                 md = copy.deepcopy(cm).delta_data(None)

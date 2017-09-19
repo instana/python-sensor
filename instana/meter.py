@@ -204,6 +204,7 @@ class Meter(object):
                         else:
                             r[k] = "builtin"
                     except Exception as e:
+                        r[k] = "unknown"
                         l.error("collect_modules: could not process module ", k, str(e))
 
             return r

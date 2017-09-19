@@ -195,13 +195,16 @@ class Meter(object):
             r = {}
             for k in m:
                 if m[k]:
-                    d = m[k].__dict__
-                    if "version" in d and d["version"]:
-                        r[k] = self.jsonable(d["version"])
-                    elif "__version__" in d and d["__version__"]:
-                        r[k] = self.jsonable(d["__version__"])
-                    else:
-                        r[k] = "builtin"
+                    try:
+                        d = m[k].__dict__
+                        if "version" in d and d["version"]:
+                            r[k] = self.jsonable(d["version"])
+                        elif "__version__" in d and d["__version__"]:
+                            r[k] = self.jsonable(d["__version__"])
+                        else:
+                            r[k] = "builtin"
+                    except Exception as e:
+                        l.error("collect_modules: could not process module ", k, str(e))
 
             return r
         except Exception as e:

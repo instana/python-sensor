@@ -66,7 +66,7 @@ This Python package supports [OpenTracing](http://opentracing.io/).
 
 ## Documentation
 
-You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://docs.instana.io/).
+You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://docs.instana.io/ecosystem/python/).
 
 ## Contributing
 

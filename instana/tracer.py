@@ -85,6 +85,10 @@ class InstanaTracer(BasicTracer):
         else:
             raise ot.UnsupportedFormatException()
 
+    def handle_fork(self):
+        self.sensor.handle_fork()
+        self.recorder = r.InstanaRecorder(self.sensor)
+
 
 def init(options):
     ot.tracer = InstanaTracer(options)

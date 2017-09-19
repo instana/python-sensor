@@ -205,7 +205,7 @@ class Meter(object):
 
             return r
         except Exception as e:
-            l.error("collect_modules: ", e)
+            l.error("collect_modules: ", str(e))
 
             return None
 

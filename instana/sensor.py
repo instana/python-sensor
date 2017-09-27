@@ -29,9 +29,6 @@ class Sensor(object):
         if self.options:
             self.service_name = self.options.service
 
-        if len(self.service_name) == 0:
-            self.service_name = os.path.basename(__file__)
-
     def handle_fork(self):
         self.agent = a.Agent(self)
         self.meter = m.Meter(self)

@@ -152,14 +152,6 @@ class InstanaRecorder(SpanRecorder):
         return "localhost"
 
     def get_service_name(self, span):
-        s = self.get_string_tag(span, ext.COMPONENT)
-        if len(s) > 0:
-            return s
-
-        s = self.get_string_tag(span, ext.PEER_SERVICE)
-        if len(s) > 0:
-            return s
-
         return self.sensor.service_name
 
     def get_span_kind(self, span):

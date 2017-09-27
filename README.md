@@ -16,8 +16,6 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
-For this BETA, we currently support tracing of Django and Flask applications or optionally just runtime monitoring of your Python applications.
-
 `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
 
 ## Django

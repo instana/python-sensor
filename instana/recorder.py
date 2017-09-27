@@ -85,6 +85,9 @@ class InstanaRecorder(SpanRecorder):
                        baggage=span.context.baggage,
                        custom=sd.CustomData(tags=span.tags,
                                             logs=self.collect_logs(span)))
+        entityFrom = { 'e': self.sensor.agent.from_.pid,
+                       'h': self.sensor.agent.from_.agentUuid }
+
         return sd.InstanaSpan(
                     n=span.operation_name,
                     t=span.context.trace_id,
@@ -92,7 +95,7 @@ class InstanaRecorder(SpanRecorder):
                     s=span.context.span_id,
                     ts=int(round(span.start_time * 1000)),
                     d=int(round(span.duration * 1000)),
-                    f=self.sensor.agent.from_,
+                    f=entityFrom,
                     ec=self.get_tag(span, "ec"),
                     error=self.get_tag(span, "error"),
                     data=data)
@@ -110,9 +113,9 @@ class InstanaRecorder(SpanRecorder):
         )
 
         sdk_data.Type = self.get_span_kind(span)
-
-        data = sd.Data(service=self.get_service_name(span),
-                       sdk=sdk_data)
+        data = sd.Data(service=self.get_service_name(span), sdk=sdk_data)
+        entityFrom = { 'e': self.sensor.agent.from_.pid,
+                       'h': self.sensor.agent.from_.agentUuid }
 
         return sd.InstanaSpan(
                     t=span.context.trace_id,
@@ -121,7 +124,7 @@ class InstanaRecorder(SpanRecorder):
                     ts=int(round(span.start_time * 1000)),
                     d=int(round(span.duration * 1000)),
                     n="sdk",
-                    f=self.sensor.agent.from_,
+                    f=entityFrom,
                     data=data)
 
     def get_tag(self, span, tag):

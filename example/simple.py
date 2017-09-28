@@ -6,7 +6,7 @@ import instana.tracer
 import time
 import opentracing.ext.tags as ext
 
-SERVICE = "python-simple"
+SERVICE = "python-overlord"
 
 def main(argv):
     instana.tracer.init(o.Options(service=SERVICE,
@@ -17,8 +17,8 @@ def main(argv):
         simple()
 
 def simple():
-    parent_span = ot.tracer.start_span(operation_name="parent")
-    parent_span.set_tag(ext.COMPONENT, SERVICE)
+    parent_span = ot.tracer.start_span(operation_name="asteroid")
+    parent_span.set_tag(ext.COMPONENT, "Python simple example app")
     parent_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
     parent_span.set_tag(ext.PEER_HOSTNAME, "localhost")
     parent_span.set_tag(ext.HTTP_URL, "/python/simple/one")
@@ -26,7 +26,7 @@ def simple():
     parent_span.set_tag(ext.HTTP_STATUS_CODE, 200)
     parent_span.log_kv({"foo": "bar"})
 
-    child_span = ot.tracer.start_span(operation_name="child", child_of=parent_span)
+    child_span = ot.tracer.start_span(operation_name="spacedust", child_of=parent_span)
     child_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
     child_span.set_tag(ext.PEER_HOSTNAME, "localhost")
     child_span.set_tag(ext.HTTP_URL, "/python/simple/two")

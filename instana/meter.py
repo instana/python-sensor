@@ -148,12 +148,14 @@ class Meter(object):
 
     def collect_snapshot(self):
         try:
-            if "FLASK_APP" in os.environ:
+            if self.sensor.service_name:
+                appname = self.sensor.service_name
+            elif "FLASK_APP" in os.environ:
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:
                 appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
             else:
-                appname = os.path.basename(sys.executable)
+                appname = os.path.basename(sys.argv[0])
 
             s = Snapshot(name=appname,
                          version=sys.version,

@@ -3,7 +3,7 @@ import opentracing as ot
 from basictracer.context import SpanContext
 from instana import util, log
 
-prefix_tracer_state = 'X-INSTANA-'
+prefix_tracer_state = 'X-Instana-'
 field_name_trace_id = prefix_tracer_state + 'T'
 field_name_span_id = prefix_tracer_state + 'S'
 field_count = 2

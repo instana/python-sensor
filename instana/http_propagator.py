@@ -22,8 +22,10 @@ class HTTPPropagator():
 
     HEADER_KEY_T = 'X-Instana-T'
     HEADER_KEY_S = 'X-Instana-S'
+    HEADER_KEY_L = 'X-Instana-L'
     ALT_HEADER_KEY_T = 'HTTP_X_INSTANA_T'
     ALT_HEADER_KEY_S = 'HTTP_X_INSTANA_S'
+    ALT_HEADER_KEY_L = 'HTTP_X_INSTANA_L'
 
     def inject(self, span_context, carrier):
         try:
@@ -33,9 +35,11 @@ class HTTPPropagator():
             if type(carrier) is dict or hasattr(carrier, "__dict__"):
                 carrier[self.HEADER_KEY_T] = trace_id
                 carrier[self.HEADER_KEY_S] = span_id
+                carrier[self.HEADER_KEY_L] = "1"
             elif type(carrier) is list:
                 carrier.append((self.HEADER_KEY_T, trace_id))
                 carrier.append((self.HEADER_KEY_S, span_id))
+                carrier.append((self.HEADER_KEY_L, "1"))
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 
@@ -54,9 +58,9 @@ class HTTPPropagator():
             # Look for standard X-Instana-T/S format
             if self.HEADER_KEY_T in dc and self.header_key_s in dc:
                 trace_id = util.header_to_id(dc[self.HEADER_KEY_T])
-                span_id = util.header_to_id(dc[self.header_key_s])
+                span_id = util.header_to_id(dc[self.HEADER_KEY_S])
 
-            # Alternatively check for HTTP_X_INSTANA_T/S style
+            # Alternatively check for alternate HTTP_X_INSTANA_T/S style
             elif self.ALT_HEADER_KEY_T in dc and self.ALT_HEADER_KEY_S in dc:
                 trace_id = util.header_to_id(dc[self.ALT_HEADER_KEY_T])
                 span_id = util.header_to_id(dc[self.ALT_HEADER_KEY_S])

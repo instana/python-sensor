@@ -10,11 +10,11 @@ def test_basics():
 
     inject_func = getattr(ihp.HTTPPropagator, "inject", None)
     assert inject_func
-    assert inspect.ismethod(inject_func)
+    assert callable(inject_func)
 
     extract_func = getattr(ihp.HTTPPropagator, "extract", None)
     assert extract_func
-    assert inspect.ismethod(extract_func)
+    assert callable(extract_func)
 
 
 def test_inject():

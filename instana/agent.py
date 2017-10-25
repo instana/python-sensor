@@ -135,5 +135,10 @@ class Agent(object):
     def set_port(self, port):
         self.port = port
 
-    def set_from(self, from_):
-        self.from_ = From(**json.loads(from_))
+    def set_from(self, json_string):
+        if type(json_string) is bytes:
+            raw_json = json_string.decode("UTF-8")
+        else:
+            raw_json = json_string
+
+        self.from_ = From(**json.loads(raw_json))

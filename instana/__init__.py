@@ -6,11 +6,11 @@ Instana sensor and tracer. It consists of two modules that can be used as entry 
 """
 
 __author__ = 'Instana Inc.'
-__copyright__ = 'Copyright 2016 Instana Inc.'
-__credits__ = ['Pavlo Baron']
+__copyright__ = 'Copyright 2017 Instana Inc.'
+__credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo']
 __license__ = 'MIT'
-__version__ = '0.0.1'
-__maintainer__ = 'Pavlo Baron'
-__email__ = 'pavlo.baron@instana.com'
+__version__ = '0.6.6'
+__maintainer__ = 'Peter Giacomo Lombardo'
+__email__ = 'peter.lombardo@instana.com'
 
 __all__ = ['sensor', 'tracer']

@@ -178,7 +178,7 @@ class Meter(object):
 
             return s
         except Exception as e:
-            l.error("collect_snapshot: ", str(e))
+            l.debug("collect_snapshot: ", str(e))
 
             return None
 
@@ -207,11 +207,11 @@ class Meter(object):
                             r[k] = "builtin"
                     except Exception as e:
                         r[k] = "unknown"
-                        l.error("collect_modules: could not process module ", k, str(e))
+                        l.debug("collect_modules: could not process module ", k, str(e))
 
             return r
         except Exception as e:
-            l.error("collect_modules: ", str(e))
+            l.debug("collect_modules: ", str(e))
 
             return None
 

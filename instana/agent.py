@@ -49,7 +49,7 @@ class Agent(object):
             return json.dumps(o, default=lambda o: o.__dict__,
                               sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
-            l.error("to_json: ", e, o)
+            l.info("to_json: ", e, o)
 
     def can_send(self):
         return self.fsm.fsm.current == "good2go"

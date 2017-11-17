@@ -196,6 +196,9 @@ class Meter(object):
             m = sys.modules
             r = {}
             for k in m:
+                # Don't report submodules (e.g. django.x, django.y, django.z)
+                if ('.' in k):
+                    continue
                 if m[k]:
                     try:
                         d = m[k].__dict__

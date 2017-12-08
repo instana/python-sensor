@@ -1,7 +1,6 @@
 import opentracing as ot
 from instana import tracer, options
 import opentracing.ext.tags as tags
-import logging
 
 
 class iWSGIMiddleware(object):

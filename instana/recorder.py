@@ -85,8 +85,8 @@ class InstanaRecorder(SpanRecorder):
                        baggage=span.context.baggage,
                        custom=sd.CustomData(tags=span.tags,
                                             logs=self.collect_logs(span)))
-        entityFrom = { 'e': self.sensor.agent.from_.pid,
-                       'h': self.sensor.agent.from_.agentUuid }
+        entityFrom = {'e': self.sensor.agent.from_.pid,
+                      'h': self.sensor.agent.from_.agentUuid}
 
         return sd.InstanaSpan(
                     n=span.operation_name,
@@ -114,8 +114,8 @@ class InstanaRecorder(SpanRecorder):
 
         sdk_data.Type = self.get_span_kind(span)
         data = sd.Data(service=self.get_service_name(span), sdk=sdk_data)
-        entityFrom = { 'e': self.sensor.agent.from_.pid,
-                       'h': self.sensor.agent.from_.agentUuid }
+        entityFrom = {'e': self.sensor.agent.from_.pid,
+                      'h': self.sensor.agent.from_.agentUuid}
 
         return sd.InstanaSpan(
                     t=span.context.trace_id,
@@ -169,13 +169,14 @@ class InstanaRecorder(SpanRecorder):
         logs = {}
         for l in span.logs:
             ts = int(round(l.timestamp * 1000))
-            if not ts in logs:
+            if ts not in logs:
                 logs[ts] = {}
 
             for f in l.key_values:
                 logs[ts][f] = l.key_values[f]
 
         return logs
+
 
 class InstanaSampler(Sampler):
 

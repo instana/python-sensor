@@ -1,8 +1,7 @@
 import instana.options as o
-import instana.log as l
 import instana.meter as m
 import instana.agent as a
-import os
+from instana import log
 
 
 class Sensor(object):
@@ -13,12 +12,12 @@ class Sensor(object):
 
     def __init__(self, options):
         self.set_options(options)
-        l.init(options.log_level)
+        log.init(options.log_level)
         self.configure_service_name()
         self.agent = a.Agent(self)
         self.meter = m.Meter(self)
 
-        l.debug("initialized sensor")
+        log.debug("initialized sensor")
 
     def set_options(self, options):
         self.options = options

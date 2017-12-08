@@ -1,6 +1,6 @@
 import subprocess
 import os
-import psutil
+import sys
 import socket
 import threading as t
 import fysom as f
@@ -107,18 +107,26 @@ class Fsm(object):
 
     def announce_sensor(self, e):
         l.debug("announcing sensor to the agent")
-        p = psutil.Process(os.getpid())
         s = None
+        pid = os.getpid()
 
-        d = Discovery(pid=p.pid,
-                      name=p.cmdline()[0],
-                      args=p.cmdline()[1:])
+        if os.path.isfile("/proc/self/cmdline"):
+            with open("/proc/self/cmdline") as cmd:
+                cmdinfo = cmd.read()
+            cmdline = cmdinfo.split('\x00')
+        else:
+            cmdline = [os.path.basename(sys.executable)]
+            cmdline += sys.argv
+
+        d = Discovery(pid=pid,
+                      name=cmdline[0],
+                      args=cmdline[1:])
 
         # If we're on a system with a procfs
         if os.path.exists("/proc/"):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.agent.host, 42699))
-            path = "/proc/%d/fd/%d" % (p.pid, s.fileno())
+            path = "/proc/%d/fd/%d" % (pid, s.fileno())
             d.fd = s.fileno()
             d.inode = os.readlink(path)
 
@@ -127,7 +135,7 @@ class Fsm(object):
         if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            l.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" % (p.pid, self.agent.from_.pid))
+            l.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" % (pid, self.agent.from_.pid))
             return True
         else:
             l.warn("Cannot announce sensor. Scheduling retry.")

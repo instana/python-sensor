@@ -4,7 +4,7 @@ import sys
 import socket
 import threading as t
 import fysom as f
-import instana.log as l
+from instana import log
 import instana.agent_const as a
 
 
@@ -36,8 +36,8 @@ class Fsm(object):
     timer = None
 
     def __init__(self, agent):
-        l.info("Stan is on the scene.  Starting Instana instrumentation.")
-        l.debug("initializing fsm")
+        log.info("Stan is on the scene.  Starting Instana instrumentation.")
+        log.debug("initializing fsm")
 
         self.agent = agent
         self.fsm = f.Fysom({
@@ -53,8 +53,8 @@ class Fsm(object):
                 "onchangestate":  self.printstatechange}})
 
     def printstatechange(self, e):
-        l.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' % \
-                (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
+        log.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
+                  (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 
     def reset(self):
         self.fsm.lookup()
@@ -79,26 +79,27 @@ class Fsm(object):
                     self.fsm.announce()
                     return True
 
-        l.warn("Instana Host Agent can't be found. Scheduling retry.")
+        log.warn("Instana Host Agent can't be found. Scheduling retry.")
         self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
 
     def get_default_gateway(self):
-        l.debug("checking default gateway")
+        log.debug("checking default gateway")
 
         try:
             proc = subprocess.Popen(
-                "/sbin/ip route | awk '/default/' | cut -d ' ' -f 3 | tr -d '\n'", shell=True, stdout=subprocess.PIPE)
+                "/sbin/ip route | awk '/default/' | cut -d ' ' -f 3 | tr -d '\n'",
+                shell=True, stdout=subprocess.PIPE)
 
             addr = proc.stdout.read()
             return addr.decode("UTF-8")
         except Exception as e:
-            l.error(e)
+            log.error(e)
 
             return None
 
     def check_host(self, host):
-        l.debug("checking host", host)
+        log.debug("checking host", host)
 
         (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")
@@ -106,7 +107,7 @@ class Fsm(object):
         return h
 
     def announce_sensor(self, e):
-        l.debug("announcing sensor to the agent")
+        log.debug("announcing sensor to the agent")
         s = None
         pid = os.getpid()
 
@@ -135,23 +136,24 @@ class Fsm(object):
         if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            l.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" % (pid, self.agent.from_.pid))
+            log.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" %
+                     (pid, self.agent.from_.pid))
             return True
         else:
-            l.warn("Cannot announce sensor. Scheduling retry.")
+            log.warn("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(self.announce_sensor, e, "announce")
         return False
 
     def schedule_retry(self, fun, e, name):
-        l.debug("Scheduling: " + name)
+        log.debug("Scheduling: " + name)
         self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
-        l.debug('Threadlist: ', str(t.enumerate()))
+        log.debug('Threadlist: ', str(t.enumerate()))
 
     def test_agent(self, e):
-        l.debug("testing communication with the agent")
+        log.debug("testing communication with the agent")
 
         (b, _) = self.agent.head(self.agent.make_url(a.AGENT_DATA_URL))
 

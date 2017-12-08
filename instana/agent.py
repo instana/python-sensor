@@ -1,5 +1,5 @@
 import json
-import instana.log as l
+from instana import log
 import instana.fsm as f
 import instana.agent_const as a
 import threading
@@ -38,7 +38,7 @@ class Agent(object):
     from_ = None
 
     def __init__(self, sensor):
-        l.debug("initializing agent")
+        log.debug("initializing agent")
 
         self.sensor = sensor
         self.fsm = f.Fsm(self)
@@ -49,7 +49,7 @@ class Agent(object):
             return json.dumps(o, default=lambda o: o.__dict__,
                               sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
-            l.info("to_json: ", e, o)
+            log.info("to_json: ", e, o)
 
     def can_send(self):
         return self.fsm.fsm.current == "good2go"
@@ -87,8 +87,7 @@ class Agent(object):
                 self.reset()
             else:
                 if response.getcode() < 200 or response.getcode() >= 300:
-                    l.error("Request returned erroneous code",
-                            response.getcode())
+                    log.error("Request returned erroneous code", response.getcode())
                     if self.can_send():
                         self.reset()
                 else:
@@ -104,7 +103,8 @@ class Agent(object):
             # No need to show the initial 404s or timeouts.  The agent
             # should handle those correctly.
             if not (type(e) is urllib2.HTTPError and e.code == 404):
-                l.debug("%s: full_request_response: %s" % (threading.current_thread().name, str(e)))
+                log.debug("%s: full_request_response: %s" %
+                          (threading.current_thread().name, str(e)))
 
         return (b, h)
 

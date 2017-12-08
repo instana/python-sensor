@@ -1,6 +1,5 @@
 import opentracing as ot
 from instana import tracer, options
-import logging
 import os
 
 

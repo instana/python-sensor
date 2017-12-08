@@ -44,14 +44,12 @@ class InstanaMiddleware19(object):
         return response
 
 
-
 def hook(module):
     """ Hook method to install the Instana middleware into Django """
     if "INSTANA_DEV" in os.environ:
         print("==============================================================")
         print("Instana: Running django19 hook")
         print("==============================================================")
-
 
     if DJ19_INSTANA_MIDDLEWARE in module.settings.MIDDLEWARE_CLASSES:
         return

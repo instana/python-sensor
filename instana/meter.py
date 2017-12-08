@@ -1,5 +1,5 @@
 import threading as t
-import instana.log as l
+from instana import log
 import resource
 import os
 import gc as gc_
@@ -7,7 +7,6 @@ import sys
 import instana.agent_const as a
 import copy
 import time
-import json
 from types import ModuleType
 
 
@@ -178,7 +177,7 @@ class Meter(object):
 
             return s
         except Exception as e:
-            l.debug("collect_snapshot: ", str(e))
+            log.debug("collect_snapshot: ", str(e))
 
             return None
 
@@ -210,11 +209,11 @@ class Meter(object):
                             r[k] = "builtin"
                     except Exception as e:
                         r[k] = "unknown"
-                        l.debug("collect_modules: could not process module ", k, str(e))
+                        log.debug("collect_modules: could not process module ", k, str(e))
 
             return r
         except Exception as e:
-            l.debug("collect_modules: ", str(e))
+            log.debug("collect_modules: ", str(e))
 
             return None
 

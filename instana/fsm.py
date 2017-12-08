@@ -113,7 +113,7 @@ class Fsm(object):
         if os.path.isfile("/proc/self/cmdline"):
             with open("/proc/self/cmdline") as cmd:
                 cmdinfo = cmd.read()
-            cmdline = cmdinfo.split("\0")
+            cmdline = cmdinfo.split('\x00')
         else:
             cmdline = [os.path.basename(sys.executable)]
             cmdline += sys.argv

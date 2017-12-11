@@ -35,14 +35,13 @@ class Agent(object):
     host = a.AGENT_DEFAULT_HOST
     port = a.AGENT_DEFAULT_PORT
     fsm = None
-    from_ = None
+    from_ = From()
 
     def __init__(self, sensor):
         log.debug("initializing agent")
 
         self.sensor = sensor
         self.fsm = f.Fsm(self)
-        self.reset()
 
     def to_json(self, o):
         try:

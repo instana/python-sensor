@@ -1,7 +1,7 @@
-import subprocess
-import os
 import sys
+import os
 import socket
+import subprocess
 import threading as t
 import fysom as f
 from instana import log
@@ -41,7 +41,7 @@ class Fsm(object):
 
         self.agent = agent
         self.fsm = f.Fysom({
-            "initial": "lostandalone",
+            "initial": {'state': "lostandalone", 'event': 'init', 'defer': True},
             "events": [
                 ("startup",  "*",            "lostandalone"),
                 ("lookup",   "lostandalone", "found"),
@@ -52,9 +52,18 @@ class Fsm(object):
                 "onannounce":     self.announce_sensor,
                 "onchangestate":  self.printstatechange}})
 
+        timer = t.Timer(2, self.boot)
+        timer.daemon = True
+        timer.name = "Startup"
+        timer.start()
+
     def printstatechange(self, e):
         log.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
                   (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
+
+    def boot(self):
+        self.fsm.init()
+        self.fsm.lookup()
 
     def reset(self):
         self.fsm.lookup()
@@ -110,6 +119,7 @@ class Fsm(object):
         log.debug("announcing sensor to the agent")
         s = None
         pid = os.getpid()
+        cmdline = []
 
         if os.path.isfile("/proc/self/cmdline"):
             with open("/proc/self/cmdline") as cmd:

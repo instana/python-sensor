@@ -41,18 +41,17 @@ class Fsm(object):
 
         self.agent = agent
         self.fsm = f.Fysom({
-            "initial": {'state': "lostandalone", 'event': 'init', 'defer': True},
             "events": [
-                ("startup",  "*",            "lostandalone"),
-                ("lookup",   "lostandalone", "found"),
+                ("lookup",   "*",            "found"),
                 ("announce", "found",        "announced"),
                 ("ready",    "announced",    "good2go")],
             "callbacks": {
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
+                "onready":        self.start_metric_reporting,
                 "onchangestate":  self.printstatechange}})
 
-        timer = t.Timer(2, self.boot)
+        timer = t.Timer(2, self.fsm.lookup)
         timer.daemon = True
         timer.name = "Startup"
         timer.start()
@@ -61,12 +60,11 @@ class Fsm(object):
         log.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
                   (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 
-    def boot(self):
-        self.fsm.init()
-        self.fsm.lookup()
-
     def reset(self):
         self.fsm.lookup()
+
+    def start_metric_reporting(self, e):
+        self.agent.sensor.meter.run()
 
     def lookup_agent_host(self, e):
         if self.agent.sensor.options.agent_host != "":

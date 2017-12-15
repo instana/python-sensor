@@ -114,7 +114,6 @@ class Meter(object):
 
     def __init__(self, sensor):
         self.sensor = sensor
-        self.run()
 
     def run(self):
         self.timer = t.Thread(target=self.collect_and_report)
@@ -125,6 +124,10 @@ class Meter(object):
     def collect_and_report(self):
         while 1:
             self.process()
+            if (self.sensor.agent.is_timed_out()):
+                log.warn("Host agent offline for >1 min.  Going to sit in a corner...")
+                self.sensor.agent.reset()
+                break
             time.sleep(1)
 
     def process(self):

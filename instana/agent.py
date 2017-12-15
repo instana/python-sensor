@@ -3,6 +3,7 @@ from instana import log
 import instana.fsm as f
 import instana.agent_const as a
 import threading
+from datetime import datetime
 
 try:
     import urllib.request as urllib2
@@ -35,14 +36,14 @@ class Agent(object):
     host = a.AGENT_DEFAULT_HOST
     port = a.AGENT_DEFAULT_PORT
     fsm = None
-    from_ = None
+    from_ = From()
+    last_seen = None
 
     def __init__(self, sensor):
         log.debug("initializing agent")
 
         self.sensor = sensor
         self.fsm = f.Fsm(self)
-        self.reset()
 
     def to_json(self, o):
         try:
@@ -50,6 +51,13 @@ class Agent(object):
                               sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
             log.info("to_json: ", e, o)
+
+    def is_timed_out(self):
+        if self.last_seen and self.can_send:
+            diff = datetime.now() - self.last_seen
+            if diff.seconds > 60:
+                return True
+        return False
 
     def can_send(self):
         return self.fsm.fsm.current == "good2go"
@@ -91,6 +99,7 @@ class Agent(object):
                     if self.can_send():
                         self.reset()
                 else:
+                    self.last_seen = datetime.now()
                     if body:
                         b = response.read()
 
@@ -126,6 +135,7 @@ class Agent(object):
         return s
 
     def reset(self):
+        self.last_seen = None
         self.from_ = From()
         self.fsm.reset()
 

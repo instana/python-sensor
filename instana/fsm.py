@@ -1,7 +1,7 @@
-import subprocess
-import os
 import sys
+import os
 import socket
+import subprocess
 import threading as t
 import fysom as f
 from instana import log
@@ -41,16 +41,20 @@ class Fsm(object):
 
         self.agent = agent
         self.fsm = f.Fysom({
-            "initial": "lostandalone",
             "events": [
-                ("startup",  "*",            "lostandalone"),
-                ("lookup",   "lostandalone", "found"),
+                ("lookup",   "*",            "found"),
                 ("announce", "found",        "announced"),
                 ("ready",    "announced",    "good2go")],
             "callbacks": {
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
+                "onready":        self.start_metric_reporting,
                 "onchangestate":  self.printstatechange}})
+
+        timer = t.Timer(2, self.fsm.lookup)
+        timer.daemon = True
+        timer.name = "Startup"
+        timer.start()
 
     def printstatechange(self, e):
         log.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
@@ -58,6 +62,9 @@ class Fsm(object):
 
     def reset(self):
         self.fsm.lookup()
+
+    def start_metric_reporting(self, e):
+        self.agent.sensor.meter.run()
 
     def lookup_agent_host(self, e):
         if self.agent.sensor.options.agent_host != "":
@@ -110,6 +117,7 @@ class Fsm(object):
         log.debug("announcing sensor to the agent")
         s = None
         pid = os.getpid()
+        cmdline = []
 
         if os.path.isfile("/proc/self/cmdline"):
             with open("/proc/self/cmdline") as cmd:

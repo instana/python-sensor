@@ -86,7 +86,7 @@ class Fsm(object):
                     self.fsm.announce()
                     return True
 
-        log.warn("Instana Host Agent can't be found. Scheduling retry.")
+        log.info("Instana Host Agent couldn't be found. Scheduling retry.")
         self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
 
@@ -144,11 +144,11 @@ class Fsm(object):
         if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            log.warn("Host agent available. We're in business. Announced pid: %i (true pid: %i)" %
+            log.info("Host agent available. We're in business. Announced pid: %i (true pid: %i)" %
                      (pid, self.agent.from_.pid))
             return True
         else:
-            log.warn("Cannot announce sensor. Scheduling retry.")
+            log.debug("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(self.announce_sensor, e, "announce")
         return False
 

@@ -9,7 +9,7 @@ __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2017 Instana Inc.'
 __credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo']
 __license__ = 'MIT'
-__version__ = '0.6.11'
+__version__ = '0.6.12'
 __maintainer__ = 'Peter Giacomo Lombardo'
 __email__ = 'peter.lombardo@instana.com'
 

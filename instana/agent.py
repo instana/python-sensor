@@ -47,7 +47,7 @@ class Agent(object):
 
     def to_json(self, o):
         try:
-            return json.dumps(o, default=lambda o: o.__dict__,
+            return json.dumps(o, default=lambda o: {k.lower(): v for k, v in o.__dict__.items()},
                               sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
             log.info("to_json: ", e, o)

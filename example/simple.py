@@ -1,20 +1,24 @@
+# encoding=utf-8
 import sys
-import instana.options as o
+from instana import options as o
 import logging
 import opentracing as ot
-import instana.tracer
+from instana import tracer
 import time
 import opentracing.ext.tags as ext
 
-SERVICE = "python-overlord"
+SERVICE = "🦄 Stan ❤️s Python 🦄"
+
 
 def main(argv):
-    instana.tracer.init(o.Options(service=SERVICE,
-                                  log_level=logging.DEBUG))
+    tracer.init(o.Options(service=SERVICE,
+                          log_level=logging.DEBUG))
 
     while (True):
         time.sleep(2)
         simple()
+    time.sleep(200)
+
 
 def simple():
     parent_span = ot.tracer.start_span(operation_name="asteroid")
@@ -39,6 +43,7 @@ def simple():
 
     time.sleep(.2)
     parent_span.finish()
+
 
 if __name__ == "__main__":
     main(sys.argv)

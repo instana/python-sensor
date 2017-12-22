@@ -2,12 +2,8 @@ from __future__ import absolute_import
 import os
 import time
 import threading
-import opentracing
-import instana.tracer
 from .apps.flaskalino import app as flaskalino
 os.environ["INSTANA_TEST"] = "true"
-
-opentracing.global_tracer = instana.tracer.InstanaTracer()
 
 # Spawn our background Flask app that the tests will throw
 # requests at.  Don't continue until the test app is fully

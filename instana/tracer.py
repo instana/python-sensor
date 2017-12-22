@@ -2,8 +2,8 @@ import time
 from basictracer import BasicTracer
 import instana.recorder as r
 import opentracing as ot
+import instana
 import instana.options as o
-import instana.sensor as s
 
 from basictracer.context import SpanContext
 from basictracer.span import BasicSpan
@@ -11,22 +11,12 @@ from instana.http_propagator import HTTPPropagator
 from instana.text_propagator import TextPropagator
 from instana.util import generate_id
 
-# In case a user or app creates multiple tracers, we limit to just
-# one sensor per process otherwise metrics collection is duplicated,
-# triplicated etc.
-gSensor = None
-
 
 class InstanaTracer(BasicTracer):
     sensor = None
 
     def __init__(self, options=o.Options()):
-        global gSensor
-        if gSensor is None:
-            self.sensor = s.Sensor(options)
-            gSensor = self.sensor
-        else:
-            self.sensor = gSensor
+        self.sensor = instana.global_sensor
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 

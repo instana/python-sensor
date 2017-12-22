@@ -4,6 +4,9 @@ from .sensor import Sensor
 from .tracer import InstanaTracer
 from .options import Options
 
+# Import & initialize instrumentation
+from .instrumentation import urllib3
+
 """
 The Instana package has two core components: the sensor and the tracer.
 
@@ -44,8 +47,3 @@ internal_tracer = InstanaTracer()
 
 # Set ourselves as the tracer.
 opentracing.tracer = internal_tracer
-
-
-def load_instrumentation():
-    # Import & initialize instrumentation
-    from .instrumentation import urllib3

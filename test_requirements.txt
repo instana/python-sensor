@@ -1,4 +1,7 @@
+nose>=1.0
 fysom>=2.1.2
 opentracing>=1.2.1
 basictracer>=2.2.0
 autowrapt>=1.0
+flask>=0.12.2
+urllib3>=1.9

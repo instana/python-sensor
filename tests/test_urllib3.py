@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from nose.tools import assert_equals
-import opentracing
-import instana.instrumentation.urllib3
+from instana import internal_tracer as tracer
 import urllib3
 
 
@@ -9,7 +8,7 @@ class TestUrllib3:
     def setUp(self):
         """ Clear all spans before a test run """
         self.http = urllib3.PoolManager()
-        self.recorder = opentracing.global_tracer.recorder
+        self.recorder = tracer.recorder
         self.recorder.clear_spans()
 
     def tearDown(self):
@@ -21,7 +20,7 @@ class TestUrllib3:
         assert_equals(r.status, 200)
 
     def test_get_request(self):
-        span = opentracing.global_tracer.start_span("test")
+        span = tracer.start_span("test")
         r = self.http.request('GET', 'http://127.0.0.1:5000/')
         span.finish()
 
@@ -42,7 +41,7 @@ class TestUrllib3:
         assert_equals(None, second_span.ec)
 
     def test_put_request(self):
-        span = opentracing.global_tracer.start_span("test")
+        span = tracer.start_span("test")
         r = self.http.request('PUT', 'http://127.0.0.1:5000/notfound')
         span.finish()
 

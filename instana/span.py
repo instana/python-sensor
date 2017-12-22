@@ -8,11 +8,12 @@ class InstanaSpan(object):
     n = None
     f = None
     ec = 0
-    error = False
+    error = None
     data = None
 
     def __init__(self, **kwds):
-        self.__dict__.update(kwds)
+        for key in kwds:
+            self.__dict__[key] = kwds[key]
 
 
 class Data(object):

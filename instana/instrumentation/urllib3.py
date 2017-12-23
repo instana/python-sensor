@@ -26,6 +26,7 @@ def urlopen_with_instana(wrapped, instance, args, kwargs):
         span.set_tag("error", True)
         ec = span.tags.get('ec', 0)
         span.set_tag("ec", ec+1)
+        span.finish()
         raise
     else:
         span.finish()

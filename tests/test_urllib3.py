@@ -59,3 +59,47 @@ class TestUrllib3:
         assert_equals("PUT", second_span.data.http.method)
         assert_equals(None, second_span.error)
         assert_equals(None, second_span.ec)
+
+    def test_5xx_request(self):
+        span = tracer.start_span("test")
+        r = self.http.request('GET', 'http://127.0.0.1:5000/504')
+        span.finish()
+
+        spans = self.recorder.queued_spans()
+        first_span = spans[1]
+        second_span = spans[0]
+
+        assert(r)
+        assert_equals(504, r.status)
+        assert_equals(2, len(spans))
+        assert_equals("test", first_span.data.sdk.name)
+        assert_equals("urllib3", second_span.n)
+        assert_equals(504, second_span.data.http.status)
+        assert_equals("http://127.0.0.1:5000/504", second_span.data.http.url)
+        assert_equals("GET", second_span.data.http.method)
+        assert_equals(True, second_span.error)
+        assert_equals(1, second_span.ec)
+
+    def test_exception_logging(self):
+        span = tracer.start_span("test")
+        try:
+            r = self.http.request('GET', 'http://127.0.0.1:5000/exception')
+        except Exception:
+            pass
+
+        span.finish()
+
+        spans = self.recorder.queued_spans()
+        first_span = spans[1]
+        second_span = spans[0]
+
+        assert(r)
+        assert_equals(500, r.status)
+        assert_equals(2, len(spans))
+        assert_equals("test", first_span.data.sdk.name)
+        assert_equals("urllib3", second_span.n)
+        assert_equals(500, second_span.data.http.status)
+        assert_equals("http://127.0.0.1:5000/exception", second_span.data.http.url)
+        assert_equals("GET", second_span.data.http.method)
+        assert_equals(True, second_span.error)
+        assert_equals(1, second_span.ec)

@@ -12,4 +12,4 @@ def hook(module):
             print("==========================================================")
 
         opts = options.Options()
-        ot.global_tracer = tracer.InstanaTracer(opts)
+        ot.tracer = tracer.InstanaTracer(opts)

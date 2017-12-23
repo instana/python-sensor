@@ -6,7 +6,7 @@ import time
 class TestOTSpan:
     def setUp(self):
         """ Clear all spans before a test run """
-        recorder = opentracing.global_tracer.recorder
+        recorder = opentracing.tracer.recorder
         recorder.clear_spans()
 
     def tearDown(self):
@@ -14,7 +14,7 @@ class TestOTSpan:
         return None
 
     def test_span_interface(self):
-        span = opentracing.global_tracer.start_span("blah")
+        span = opentracing.tracer.start_span("blah")
         assert hasattr(span, "finish")
         assert hasattr(span, "set_tag")
         assert hasattr(span, "tags")
@@ -28,13 +28,13 @@ class TestOTSpan:
         count = 0
         while count <= 1000:
             count += 1
-            span = opentracing.global_tracer.start_span("test_span_ids")
+            span = opentracing.tracer.start_span("test_span_ids")
             context = span.context
             assert -9223372036854775808 <= context.span_id <= 9223372036854775807
             assert -9223372036854775808 <= context.trace_id <= 9223372036854775807
 
     def test_span_fields(self):
-        span = opentracing.global_tracer.start_span("mycustom")
+        span = opentracing.tracer.start_span("mycustom")
         assert_equals("mycustom", span.operation_name)
         assert span.context
 
@@ -45,12 +45,12 @@ class TestOTSpan:
         assert_equals(150, span.tags['tagtwo'])
 
     def test_span_queueing(self):
-        recorder = opentracing.global_tracer.recorder
+        recorder = opentracing.tracer.recorder
 
         count = 1
         while count <= 20:
             count += 1
-            span = opentracing.global_tracer.start_span("queuethisplz")
+            span = opentracing.tracer.start_span("queuethisplz")
             span.set_tag("tagone", "string")
             span.set_tag("tagtwo", 150)
             span.finish()
@@ -58,9 +58,9 @@ class TestOTSpan:
         assert_equals(20, recorder.queue_size())
 
     def test_sdk_spans(self):
-        recorder = opentracing.global_tracer.recorder
+        recorder = opentracing.tracer.recorder
 
-        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span = opentracing.tracer.start_span("custom_sdk_span")
         span.set_tag("tagone", "string")
         span.set_tag("tagtwo", 150)
         span.set_tag('span.kind', "entry")
@@ -88,25 +88,25 @@ class TestOTSpan:
         assert sdk_span.data.sdk.custom.tags
 
     def test_span_kind(self):
-        recorder = opentracing.global_tracer.recorder
+        recorder = opentracing.tracer.recorder
 
-        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span = opentracing.tracer.start_span("custom_sdk_span")
         span.set_tag('span.kind', "consumer")
         span.finish()
 
-        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span = opentracing.tracer.start_span("custom_sdk_span")
         span.set_tag('span.kind', "server")
         span.finish()
 
-        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span = opentracing.tracer.start_span("custom_sdk_span")
         span.set_tag('span.kind', "producer")
         span.finish()
 
-        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span = opentracing.tracer.start_span("custom_sdk_span")
         span.set_tag('span.kind', "client")
         span.finish()
 
-        span = opentracing.global_tracer.start_span("custom_sdk_span")
+        span = opentracing.tracer.start_span("custom_sdk_span")
         span.set_tag('span.kind', "blah")
         span.finish()
 

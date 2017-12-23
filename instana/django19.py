@@ -12,17 +12,17 @@ class InstanaMiddleware19(object):
     """ Django 1.9 Middleware to provide request tracing for Instana """
     def __init__(self):
         opts = options.Options(service="Django")
-        ot.global_tracer = tracer.InstanaTracer(opts)
+        ot.tracer = tracer.InstanaTracer(opts)
         self.span = None
         self
 
     def process_request(self, request):
         env = request.environ
         if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-            ctx = ot.global_tracer.extract(ot.Format.HTTP_HEADERS, env)
-            span = ot.global_tracer.start_span("django", child_of=ctx)
+            ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, env)
+            span = ot.tracer.start_span("django", child_of=ctx)
         else:
-            span = ot.global_tracer.start_span("django")
+            span = ot.tracer.start_span("django")
 
         span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
         span.set_tag("http.params", env['QUERY_STRING'])
@@ -38,7 +38,7 @@ class InstanaMiddleware19(object):
                 self.span.set_tag("ec", ec+1)
 
             self.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-            ot.global_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
+            ot.tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
             self.span.finish()
             self.span = None
         return response

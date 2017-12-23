@@ -19,11 +19,11 @@ def test_basics():
 
 def test_inject():
     opts = options.Options()
-    ot.global_tracer = tracer.InstanaTracer(opts)
+    ot.tracer = tracer.InstanaTracer(opts)
 
     carrier = {}
-    span = ot.global_tracer.start_span("nosetests")
-    ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
+    span = ot.tracer.start_span("nosetests")
+    ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
 
     assert 'X-Instana-T' in carrier
     assert_equals(carrier['X-Instana-T'], util.id_to_header(span.context.trace_id))

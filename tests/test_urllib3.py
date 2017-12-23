@@ -25,12 +25,12 @@ class TestUrllib3:
         span.finish()
 
         spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
         first_span = spans[1]
         second_span = spans[0]
 
         assert(r)
         assert_equals(200, r.status)
-        assert_equals(2, len(spans))
         assert_equals("test", first_span.data.sdk.name)
         assert_equals("urllib3", second_span.n)
         assert_equals(200, second_span.data.http.status)
@@ -46,12 +46,12 @@ class TestUrllib3:
         span.finish()
 
         spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
         first_span = spans[1]
         second_span = spans[0]
 
         assert(r)
         assert_equals(404, r.status)
-        assert_equals(2, len(spans))
         assert_equals("test", first_span.data.sdk.name)
         assert_equals("urllib3", second_span.n)
         assert_equals(404, second_span.data.http.status)
@@ -66,12 +66,12 @@ class TestUrllib3:
         span.finish()
 
         spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
         first_span = spans[1]
         second_span = spans[0]
 
         assert(r)
         assert_equals(504, r.status)
-        assert_equals(2, len(spans))
         assert_equals("test", first_span.data.sdk.name)
         assert_equals("urllib3", second_span.n)
         assert_equals(504, second_span.data.http.status)
@@ -90,16 +90,43 @@ class TestUrllib3:
         span.finish()
 
         spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
         first_span = spans[1]
         second_span = spans[0]
 
         assert(r)
         assert_equals(500, r.status)
-        assert_equals(2, len(spans))
         assert_equals("test", first_span.data.sdk.name)
         assert_equals("urllib3", second_span.n)
         assert_equals(500, second_span.data.http.status)
         assert_equals("http://127.0.0.1:5000/exception", second_span.data.http.url)
+        assert_equals("GET", second_span.data.http.method)
+        assert_equals(True, second_span.error)
+        assert_equals(1, second_span.ec)
+
+    def test_client_error(self):
+        span = tracer.start_span("test")
+
+        r = None
+        try:
+            r = self.http.request('GET', 'http://doesnotexist.asdf:5000/504',
+                                  retries=False,
+                                  timeout=urllib3.Timeout(connect=0.5, read=0.5))
+        except Exception:
+            pass
+
+        span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+        first_span = spans[1]
+        second_span = spans[0]
+
+        assert_equals(None, r)
+        assert_equals("test", first_span.data.sdk.name)
+        assert_equals("urllib3", second_span.n)
+        assert_equals(None, second_span.data.http.status)
+        assert_equals("http://doesnotexist.asdf:5000/504", second_span.data.http.url)
         assert_equals("GET", second_span.data.http.method)
         assert_equals(True, second_span.error)
         assert_equals(1, second_span.ec)

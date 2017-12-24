@@ -14,6 +14,7 @@ from instana.util import generate_id
 
 class InstanaTracer(BasicTracer):
     sensor = None
+    current_span = None
 
     def __init__(self, options=o.Options()):
         self.sensor = instana.global_sensor
@@ -57,13 +58,18 @@ class InstanaTracer(BasicTracer):
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
         # Tie it all together
-        return BasicSpan(
+        self.current_span = BasicSpan(
             self,
             operation_name=operation_name,
             context=ctx,
             parent_id=(None if parent_ctx is None else parent_ctx.span_id),
             tags=tags,
             start_time=start_time)
+
+        return self.current_span
+
+    def current_context(self):
+        return self.current_span.context
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:

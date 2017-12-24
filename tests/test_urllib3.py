@@ -40,6 +40,9 @@ class TestUrllib3:
         assert_equals(None, second_span.error)
         assert_equals(None, second_span.ec)
 
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)
+
     def test_put_request(self):
         span = tracer.start_span("test")
         r = self.http.request('PUT', 'http://127.0.0.1:5000/notfound')
@@ -60,6 +63,9 @@ class TestUrllib3:
         assert_equals(None, second_span.error)
         assert_equals(None, second_span.ec)
 
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)
+
     def test_5xx_request(self):
         span = tracer.start_span("test")
         r = self.http.request('GET', 'http://127.0.0.1:5000/504')
@@ -79,6 +85,9 @@ class TestUrllib3:
         assert_equals("GET", second_span.data.http.method)
         assert_equals(True, second_span.error)
         assert_equals(1, second_span.ec)
+
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)
 
     def test_exception_logging(self):
         span = tracer.start_span("test")
@@ -103,6 +112,9 @@ class TestUrllib3:
         assert_equals("GET", second_span.data.http.method)
         assert_equals(True, second_span.error)
         assert_equals(1, second_span.ec)
+
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)
 
     def test_client_error(self):
         span = tracer.start_span("test")
@@ -130,3 +142,6 @@ class TestUrllib3:
         assert_equals("GET", second_span.data.http.method)
         assert_equals(True, second_span.error)
         assert_equals(1, second_span.ec)
+
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)

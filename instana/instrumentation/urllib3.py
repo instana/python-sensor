@@ -8,7 +8,8 @@ import wrapt
 @wrapt.patch_function_wrapper('urllib3', 'PoolManager.urlopen')
 def urlopen_with_instana(wrapped, instance, args, kwargs):
     try:
-        span = instana.internal_tracer.start_span("urllib3")
+        context = instana.internal_tracer.current_context()
+        span = instana.internal_tracer.start_span("urllib3", child_of=context)
         span.set_tag(ext.HTTP_URL, args[1])
         span.set_tag(ext.HTTP_METHOD, args[0])
 
@@ -31,3 +32,6 @@ def urlopen_with_instana(wrapped, instance, args, kwargs):
     else:
         span.finish()
         return rv
+
+
+instana.log.debug("Instrumenting urllib3")

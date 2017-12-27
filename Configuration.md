@@ -13,7 +13,7 @@ export INSTANA_AGENT_PORT = '42699'
 
 ## Debugging & More Verbosity
 
-Setting `INSTANA_GEM_DEV` to a non nil value will enable extra logging output generally useful
+Setting `INSTANA_DEV` to a non nil value will enable extra logging output generally useful
 for development.
 
 ```Python

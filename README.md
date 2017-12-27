@@ -58,7 +58,7 @@ import opentracing
 
 parent_span = opentracing.tracer.start_span(operation_name="asteroid")
 # ... work
-child_span = ot.tracer.start_span(operation_name="spacedust", child_of=parent_span)
+child_span = opentracing.tracer.start_span(operation_name="spacedust", child_of=parent_span)
 child_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
 # ... work
 child_span.finish()

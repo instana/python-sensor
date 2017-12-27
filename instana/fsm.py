@@ -124,7 +124,7 @@ class Fsm(object):
                 cmdinfo = cmd.read()
             cmdline = cmdinfo.split('\x00')
         else:
-            cmdline = [os.path.basename(sys.executable)]
+            cmdline = [sys.executable]
             cmdline += sys.argv
 
         d = Discovery(pid=pid,

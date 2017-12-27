@@ -35,14 +35,6 @@ To enable the Flask instrumentation, set the following environment variable in y
 
   `export AUTOWRAPT_BOOTSTRAP=flask`
 
-## Runtime Monitoring Only
-
-_Note: When the Django or Flask instrumentation is used, runtime monitoring is automatically included.  Use this section if you only want to see runtime metrics._
-
-To enable runtime monitoring (without request tracing), set the following environment variable in your _application boot environment_ and then restart your application:
-
-  `export AUTOWRAPT_BOOTSTRAP=runtime`
-
 ## uWSGI
 
 ### Threads

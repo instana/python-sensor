@@ -10,4 +10,4 @@ from instana import tracer, options
 #    c. Detect and instrument any libraries
 
 opts = options.Options()
-ot.global_tracer = tracer.InstanaTracer(opts)
+ot.tracer = tracer.InstanaTracer(opts)

@@ -1,5 +1,5 @@
 import opentracing as ot
-from instana import tracer, options
+from instana import internal_tracer
 import opentracing.ext.tags as tags
 
 
@@ -8,8 +8,6 @@ class iWSGIMiddleware(object):
 
     def __init__(self, app):
         self.app = app
-        opts = options.Options()
-        ot.global_tracer = tracer.InstanaTracer(opts)
         self
 
     def __call__(self, environ, start_response):
@@ -17,7 +15,7 @@ class iWSGIMiddleware(object):
 
         def new_start_response(status, headers, exc_info=None):
             """Modified start response with additional headers."""
-            ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, headers)
+            internal_tracer.inject(span.context, ot.Format.HTTP_HEADERS, headers)
             res = start_response(status, headers, exc_info)
 
             sc = status.split(' ')[0]
@@ -31,10 +29,10 @@ class iWSGIMiddleware(object):
             return res
 
         if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-            ctx = ot.global_tracer.extract(ot.Format.HTTP_HEADERS, env)
-            span = ot.global_tracer.start_span("wsgi", child_of=ctx)
+            ctx = internal_tracer.extract(ot.Format.HTTP_HEADERS, env)
+            span = internal_tracer.start_span("wsgi", child_of=ctx)
         else:
-            span = ot.global_tracer.start_span("wsgi")
+            span = internal_tracer.start_span("wsgi")
 
         span.set_tag(tags.HTTP_URL, env['PATH_INFO'])
         span.set_tag("http.params", env['QUERY_STRING'])

@@ -1,6 +1,6 @@
 from __future__ import print_function
 import opentracing as ot
-from instana import tracer, options
+from instana import internal_tracer
 import opentracing.ext.tags as ext
 import os
 
@@ -12,17 +12,15 @@ class InstanaMiddleware(object):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response):
         self.get_response = get_response
-        opts = options.Options(service="Django")
-        ot.global_tracer = tracer.InstanaTracer(opts)
         self
 
     def __call__(self, request):
         env = request.environ
         if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-            ctx = ot.global_tracer.extract(ot.Format.HTTP_HEADERS, env)
-            span = ot.global_tracer.start_span("django", child_of=ctx)
+            ctx = internal_tracer.extract(ot.Format.HTTP_HEADERS, env)
+            span = internal_tracer.start_span("django", child_of=ctx)
         else:
-            span = ot.global_tracer.start_span("django")
+            span = internal_tracer.start_span("django")
 
         span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
         span.set_tag("http.params", env['QUERY_STRING'])
@@ -37,7 +35,7 @@ class InstanaMiddleware(object):
             span.set_tag("ec", ec+1)
 
         span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-        ot.global_tracer.inject(span.context, ot.Format.HTTP_HEADERS, response)
+        internal_tracer.inject(span.context, ot.Format.HTTP_HEADERS, response)
         span.finish()
         return response
 

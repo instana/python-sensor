@@ -35,14 +35,6 @@ To enable the Flask instrumentation, set the following environment variable in y
 
   `export AUTOWRAPT_BOOTSTRAP=flask`
 
-## Runtime Monitoring Only
-
-_Note: When the Django or Flask instrumentation is used, runtime monitoring is automatically included.  Use this section if you only want to see runtime metrics._
-
-To enable runtime monitoring (without request tracing), set the following environment variable in your _application boot environment_ and then restart your application:
-
-  `export AUTOWRAPT_BOOTSTRAP=runtime`
-  
 ## uWSGI
 
 ### Threads
@@ -57,9 +49,27 @@ If you use uWSGI in forking workers mode, you must specify `--lazy-apps` (or `la
 
 The instana package will automatically collect key metrics from your Python processes.  Just install and go.
 
-## Tracing
+## OpenTracing
 
-This Python package supports [OpenTracing](http://opentracing.io/).
+This Python package supports [OpenTracing](http://opentracing.io/).  When using this package, the OpenTracing tracer (`opentracing.tracer`) is automatically set to the `InstanaTracer`.
+
+```Python
+import opentracing
+
+parent_span = opentracing.tracer.start_span(operation_name="asteroid")
+# ... work
+child_span = opentracing.tracer.start_span(operation_name="spacedust", child_of=parent_span)
+child_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
+# ... work
+child_span.finish()
+# ... work
+parent_span.finish()
+```
+
+## Configuration
+
+See [Configuration.md](https://github.com/instana/python-sensor/blob/master/Configuration.md)
+
 
 ## Documentation
 

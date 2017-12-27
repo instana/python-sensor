@@ -2,8 +2,8 @@ import time
 from basictracer import BasicTracer
 import instana.recorder as r
 import opentracing as ot
+import instana
 import instana.options as o
-import instana.sensor as s
 
 from basictracer.context import SpanContext
 from basictracer.span import BasicSpan
@@ -11,22 +11,13 @@ from instana.http_propagator import HTTPPropagator
 from instana.text_propagator import TextPropagator
 from instana.util import generate_id
 
-# In case a user or app creates multiple tracers, we limit to just
-# one sensor per process otherwise metrics collection is duplicated,
-# triplicated etc.
-gSensor = None
-
 
 class InstanaTracer(BasicTracer):
     sensor = None
+    current_span = None
 
     def __init__(self, options=o.Options()):
-        global gSensor
-        if gSensor is None:
-            self.sensor = s.Sensor(options)
-            gSensor = self.sensor
-        else:
-            self.sensor = gSensor
+        self.sensor = instana.global_sensor
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 
@@ -67,13 +58,18 @@ class InstanaTracer(BasicTracer):
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
         # Tie it all together
-        return BasicSpan(
+        self.current_span = BasicSpan(
             self,
             operation_name=operation_name,
             context=ctx,
             parent_id=(None if parent_ctx is None else parent_ctx.span_id),
             tags=tags,
             start_time=start_time)
+
+        return self.current_span
+
+    def current_context(self):
+        return self.current_span.context
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:

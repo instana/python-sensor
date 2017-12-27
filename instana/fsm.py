@@ -67,22 +67,32 @@ class Fsm(object):
         self.agent.sensor.meter.run()
 
     def lookup_agent_host(self, e):
-        if self.agent.sensor.options.agent_host != "":
-            host = self.agent.sensor.options.agent_host
-        else:
-            host = a.AGENT_DEFAULT_HOST
+        host = a.AGENT_DEFAULT_HOST
+        port = a.AGENT_DEFAULT_PORT
 
-        h = self.check_host(host)
+        if "INSTANA_AGENT_IP" in os.environ:
+            host = os.environ["INSTANA_AGENT_IP"]
+            if "INSTANA_AGENT_PORT" in os.environ:
+                port = int(os.environ["INSTANA_AGENT_PORT"])
+
+        elif self.agent.sensor.options.agent_host != "":
+            host = self.agent.sensor.options.agent_host
+            if self.agent.sensor.options.agent_port != 0:
+                port = self.agent.sensor.options.agent_port
+
+        h = self.check_host(host, port)
         if h == a.AGENT_HEADER:
             self.agent.set_host(host)
+            self.agent.set_port(port)
             self.fsm.announce()
             return True
         elif os.path.exists("/proc/"):
             host = self.get_default_gateway()
             if host:
-                h = self.check_host(host)
+                h = self.check_host(host, port)
                 if h == a.AGENT_HEADER:
                     self.agent.set_host(host)
+                    self.agent.set_port(port)
                     self.fsm.announce()
                     return True
 
@@ -105,8 +115,8 @@ class Fsm(object):
 
             return None
 
-    def check_host(self, host):
-        log.debug("checking host", host)
+    def check_host(self, host, port):
+        log.debug("checking %s:%d" % (host, port))
 
         (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")

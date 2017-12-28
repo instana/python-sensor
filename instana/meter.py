@@ -235,9 +235,9 @@ class Meter(object):
                    threshold2=th[2])
 
         thr = t.enumerate()
-        daemon_threads = len([tr.daemon and tr.is_alive() for tr in thr])
-        alive_threads = len([not tr.daemon and tr.is_alive() for tr in thr])
-        dead_threads = len([not tr.is_alive() for tr in thr])
+        daemon_threads = [tr.daemon and tr.is_alive() for tr in thr].count(True)
+        alive_threads = [not tr.daemon and tr.is_alive() for tr in thr].count(True)
+        dead_threads = [not tr.is_alive() for tr in thr].count(True)
 
         m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
                     ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],

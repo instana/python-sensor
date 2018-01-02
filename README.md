@@ -66,6 +66,12 @@ child_span.finish()
 parent_span.finish()
 ```
 
+Note: The Instana sensor has automatic instrumentation that activates at runtime.  If you need to get the current tracing context from existing instrumentation, you can use `opentracing.tracer.current_context()` and pass that return value as `childof`:
+
+        context = opentracing.tracer.current_context()
+        span = opentracing.tracer.start_span("my_span", child_of=context)
+
+
 ## Configuration
 
 See [Configuration.md](https://github.com/instana/python-sensor/blob/master/Configuration.md)

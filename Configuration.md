@@ -19,3 +19,7 @@ for development.
 ```Python
 export INSTANA_DEV="true"
 ```
+
+## Disabling Automatic instrumentation
+
+You can disable automatic instrumentation (tracing) by setting the environment variable `INSTANA_DISABLE_AUTO_INSTR`.  This will suppress the loading of instrumentation built-into the sensor.

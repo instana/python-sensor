@@ -1,11 +1,13 @@
 from __future__ import absolute_import
+import os
 import opentracing
 from .sensor import Sensor
 from .tracer import InstanaTracer
 from .options import Options
 
-# Import & initialize instrumentation
-from .instrumentation import urllib3
+if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
+    # Import & initialize instrumentation
+    from .instrumentation import urllib3
 
 """
 The Instana package has two core components: the sensor and the tracer.

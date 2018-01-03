@@ -69,7 +69,10 @@ class InstanaTracer(BasicTracer):
         return self.current_span
 
     def current_context(self):
-        return self.current_span.context
+        context = None
+        if self.current_span:
+            context = self.current_span.context
+        return context
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:

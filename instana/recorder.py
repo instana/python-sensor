@@ -1,11 +1,13 @@
-from basictracer import Sampler, SpanRecorder
-import instana.agent_const as a
 import threading as t
-import opentracing.ext.tags as ext
 import socket
-import instana.span as sd
 import time
 import os
+import instana
+
+import opentracing.ext.tags as ext
+from basictracer import Sampler, SpanRecorder
+from .span import CustomData, Data, HttpData, InstanaSpan, SDKData
+from .agent_const import AGENT_TRACES_URL
 
 import sys
 if sys.version_info.major is 2:
@@ -37,7 +39,7 @@ class InstanaRecorder(SpanRecorder):
         """ Periodically report the queued spans """
         while 1:
             if self.sensor.agent.can_send() and self.queue.qsize() > 0:
-                url = self.sensor.agent.make_url(a.AGENT_TRACES_URL)
+                url = self.sensor.agent.make_url(AGENT_TRACES_URL)
                 self.sensor.agent.request(url, "POST", self.queued_spans())
             time.sleep(1)
 
@@ -78,17 +80,17 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered InstanaSpan """
-        data = sd.Data(http=sd.HttpData(host=self.get_host_name(span),
-                                        url=self.get_string_tag(span, ext.HTTP_URL),
-                                        method=self.get_string_tag(span, ext.HTTP_METHOD),
-                                        status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
-                       baggage=span.context.baggage,
-                       custom=sd.CustomData(tags=span.tags,
-                                            logs=self.collect_logs(span)))
+        data = Data(http=HttpData(host=self.get_host_name(span),
+                                  url=self.get_string_tag(span, ext.HTTP_URL),
+                                  method=self.get_string_tag(span, ext.HTTP_METHOD),
+                                  status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
+                    baggage=span.context.baggage,
+                    custom=CustomData(tags=span.tags,
+                    logs=self.collect_logs(span)))
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
-        return sd.InstanaSpan(
+        return InstanaSpan(
                     n=span.operation_name,
                     t=span.context.trace_id,
                     p=span.parent_id,
@@ -103,21 +105,18 @@ class InstanaRecorder(SpanRecorder):
     def build_sdk_span(self, span):
         """ Takes a BasicSpan and converts into an SDK type InstanaSpan """
 
-        custom_data = sd.CustomData(
-                            tags=span.tags,
-                            logs=self.collect_logs(span))
+        custom_data = CustomData(tags=span.tags,
+                                 logs=self.collect_logs(span))
 
-        sdk_data = sd.SDKData(
-                    name=span.operation_name,
-                    custom=custom_data
-        )
+        sdk_data = SDKData(name=span.operation_name,
+                           custom=custom_data)
 
         sdk_data.Type = self.get_span_kind(span)
-        data = sd.Data(service=self.get_service_name(span), sdk=sdk_data)
+        data = Data(service=self.get_service_name(span), sdk=sdk_data)
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
-        return sd.InstanaSpan(
+        return InstanaSpan(
                     t=span.context.trace_id,
                     p=span.parent_id,
                     s=span.context.span_id,
@@ -152,7 +151,7 @@ class InstanaRecorder(SpanRecorder):
         return "localhost"
 
     def get_service_name(self, span):
-        return self.sensor.service_name
+        return instana.service_name
 
     def get_span_kind(self, span):
         kind = ""

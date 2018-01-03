@@ -10,6 +10,7 @@ class TestUrllib3:
         self.http = urllib3.PoolManager()
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
+        tracer.current_span = None
 
     def tearDown(self):
         """ Do nothing for now """
@@ -18,6 +19,9 @@ class TestUrllib3:
     def test_vanilla_requests(self):
         r = self.http.request('GET', 'http://127.0.0.1:5000/')
         assert_equals(r.status, 200)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(0, len(spans))
 
     def test_get_request(self):
         span = tracer.start_span("test")

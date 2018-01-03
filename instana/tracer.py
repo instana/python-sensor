@@ -92,4 +92,9 @@ class InstanaTracer(BasicTracer):
 
 
 def init(options):
-    ot.tracer = InstanaTracer(options)
+    """
+    Deprecated.
+        No longer in use.
+        To be removed in next major release.
+    """
+    return instana.internal_tracer

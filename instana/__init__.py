@@ -49,3 +49,14 @@ internal_tracer = InstanaTracer()
 
 # Set ourselves as the tracer.
 opentracing.tracer = internal_tracer
+
+# Optional application wide service name.
+# Can be configured via environment variable or via code:
+#
+# export INSTANA_SERVICE_NAME=myservice
+#   or
+# instana.service_name = "myservice"
+service_name = None
+
+if "INSTANA_SERVICE_NAME" in os.environ:
+    service_name = os.environ["INSTANA_SERVICE_NAME"]

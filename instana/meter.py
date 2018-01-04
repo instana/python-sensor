@@ -1,13 +1,14 @@
 import threading as t
-from instana import log
 import resource
 import os
 import gc as gc_
 import sys
-import instana.agent_const as a
 import copy
 import time
 from types import ModuleType
+import instana
+from .log import logger as log
+from .agent_const import AGENT_DATA_URL
 
 
 class Snapshot(object):
@@ -144,14 +145,14 @@ class Meter(object):
                 md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
             ed = EntityData(pid=self.sensor.agent.from_.pid, snapshot=ss, metrics=md)
-            url = self.sensor.agent.make_url(a.AGENT_DATA_URL)
+            url = self.sensor.agent.make_url(AGENT_DATA_URL)
             self.sensor.agent.request(url, "POST", ed)
             self.last_metrics = cm.__dict__
 
     def collect_snapshot(self):
         try:
-            if self.sensor.service_name:
-                appname = self.sensor.service_name
+            if instana.service_name:
+                appname = instana.service_name
             elif "FLASK_APP" in os.environ:
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:

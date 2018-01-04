@@ -11,6 +11,20 @@ export INSTANA_AGENT_IP = '127.0.0.1'
 export INSTANA_AGENT_PORT = '42699'
 ```
 
+## Setting the Service Name
+
+If you'd like to assign a single service name for the entire application you can do so by setting an environment variable or via code:
+
+```
+export INSTANA_SERVICE_NAME=myservice
+```
+
+or
+
+```Python
+instana.service_name = "myservice"
+```
+
 ## Debugging & More Verbosity
 
 Setting `INSTANA_DEV` to a non nil value will enable extra logging output generally useful

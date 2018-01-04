@@ -1,5 +1,3 @@
-import opentracing as ot
-from instana import tracer, options
 import os
 
 
@@ -10,6 +8,3 @@ def hook(module):
             print("==========================================================")
             print("Instana: Running runtime hook")
             print("==========================================================")
-
-        opts = options.Options()
-        ot.tracer = tracer.InstanaTracer(opts)

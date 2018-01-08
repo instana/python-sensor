@@ -12,8 +12,10 @@ The API currently uses the requests package to make the REST calls to the API.
 As such, requests response objects are returned from API calls.
 """
 import os
+import json
 import time
-import requests
+import urllib3
+from urllib.parse import urlencode
 
 # For use with the Token related API calls
 token_config = {
@@ -119,21 +121,39 @@ class APIClient(object):
 
         self.api_key = "apiToken %s" % self.api_token
         self.headers = {'Authorization': self.api_key}
+        self.http = urllib3.PoolManager(d)
 
     def ts_now(self):
         return int(round(time.time() * 1000))
 
-    def get(self, path):
-        return requests.get(self.base_url + path, headers=self.headers)
+    def build_url(self, path, query_args):
+        url = self.base_url + path
+        if query_args:
+            encoded_args = urlencode(query_args)
+            url = '?' + encoded_args
+        return url
 
-    def put(self, path, payload=''):
-        return requests.put(self.base_url + path, data=payload, headers=self.headers)
+    def get(self, path, query_args=None):
+        url = self.build_url(path, query_args)
+        return self.http.request('GET', url, headers=self.headers)
 
-    def post(self, path, payload=''):
-        return requests.post(self.base_url + path, data=payload, headers=self.headers)
+    def put(self, path, query_args=None, payload=''):
+        url = self.build_url(path, query_args)
+        encoded_data = json.dumps(payload).encode('utf-8')
+        post_headers = self.headers
+        post_headers['Content-Type'] = 'application/json'
+        return self.http.request('PUT', url, body=encoded_data, headers=post_headers)
 
-    def delete(self, path):
-        return requests.delete(self.base_url + path, headers=self.headers)
+    def post(self, path, query_args=None, payload=''):
+        url = self.build_url(path, query_args)
+        encoded_data = json.dumps(payload).encode('utf-8')
+        post_headers = self.headers
+        post_headers['Content-Type'] = 'application/json'
+        return self.http.request('POST', url, body=encoded_data, headers=post_headers)
+
+    def delete(self, path, query_args):
+        url = self.build_url(path, query_args)
+        return self.http.request('DELETE', url, headers=self.headers)
 
     def tokens(self):
         return self.get('/api/apiTokens')
@@ -145,7 +165,7 @@ class APIClient(object):
         return self.delete('/api/apiTokens/%s' % token)
 
     def upsert_token(self, token_config):
-        return self.put('/api/apiTokens/%s' % token_config["id"], token_config)
+        return self.put('/api/apiTokens/%s' % token_config["id"], payload=token_config)
 
     def audit_log(self):
         return self.get('/api/auditlog')
@@ -154,10 +174,10 @@ class APIClient(object):
         return self.get('/api/eumApps')
 
     def create_eum_app(self, name):
-        return self.post('/api/eumApps?name=%s' % name)
+        return self.post('/api/eumApps', payload={'name': name})
 
     def rename_eum_app(self, eum_app_id, new_name):
-        return self.put('/api/eumApps/%s?name=%s' % (eum_app_id, new_name))
+        return self.put('/api/eumApps/%s' % (eum_app_id), payload={'name': new_name})
 
     def delete_eum_app(self, eum_app_id):
         return self.delete('/api/eumApps/%s' % eum_app_id)
@@ -165,21 +185,27 @@ class APIClient(object):
     def events(self, window_size=300000, to=None):
         if to is None:
             to = self.ts_now()
-
-        return self.get('/api/events/?windowsize=%d&to=%d' % (window_size, to))
+        return self.get('/api/events/', query_args={'windowsize': window_size, 'to': to})
 
     def event(self, event_id):
         return self.get('/api/events/%s' % event_id)
 
     def metrics(self, metric_name, ts_from, ts_to, aggregation, snapshot_id, rollup):
-        params = ('metric=%s&from=%d&to=%d&aggregation=%s&snapshotId=%s&rollup=%s' %
-                  (metric_name, ts_from, ts_to, aggregation, snapshot_id, rollup))
-        return self.get('/api/metrics?' + params)
+        params = {'metric': metric_name,
+                  'from': ts_from,
+                  'to': ts_to,
+                  'aggregation': aggregation,
+                  'snapshotId': snapshot_id,
+                  'rollup': rollup}
+        return self.get('/api/metrics', query_args=params)
 
     def metric(self, metric_name, timestamp, aggregation, snapshot_id, rollup):
-        params = ('metric=%s&time=%d&aggregation=%s&snapshotId=%s&rollup=%s' %
-                  (metric_name, timestamp, aggregation, snapshot_id, rollup))
-        return self.get('/api/metric?' + params)
+        params = {'metric': metric_name,
+                  'time': timestamp,
+                  'aggregation': aggregation,
+                  'snapshotId': snapshot_id,
+                  'rollup': rollup}
+        return self.get('/api/metric', query_args=params)
 
     def rule_bindings(self):
         return self.get('/api/ruleBindings')
@@ -221,23 +247,28 @@ class APIClient(object):
         if timestamp is None:
             timestamp = self.ts_now()
 
-        path = "/api/snapshots/%s?time=%d" % (id, timestamp)
-        return self.get(path)
+        params = {'time': timestamp}
+        path = "/api/snapshots/%s" % id
+        return self.get(path, query_args=params)
 
     def snapshots(self, query, timestamp=None, size=5):
         if timestamp is None:
             timestamp = self.ts_now()
 
-        path = "/api/snapshots?time=%d&q=%s&size=%d" % (timestamp, query, size)
-        return self.get(path)
+        params = {'time': timestamp, 'q': query, 'size': size}
+        path = "/api/snapshots"
+        return self.get(path, query_args=params)
 
     def trace(self, trace_id):
         return self.get('/api/traces/%d' % trace_id)
 
     def traces_by_timeframe(self, query, window_size, ts_to, sort_by='ts', sort_mode='asc'):
-        path = ('/api/traces?windowsize=%d&to=%d&sortBy=%s&sortMode=%s&query=%s' %
-                (window_size, ts_to, sort_by, sort_mode, query))
-        return self.get(path)
+        params = {'windowsize': window_size,
+                  'to': ts_to,
+                  'sortBy': sort_by,
+                  'sortMode': sort_mode,
+                  'query': query}
+        return self.get('/api/traces', query_args=params)
 
     def roles(self):
         return self.get('/api/roles')
@@ -247,7 +278,7 @@ class APIClient(object):
 
     def upsert_role(self, role_config):
         path = '/api/roles/%s' % role_config["id"]
-        return self.put(path, role_config)
+        return self.put(path, payload=role_config)
 
     def delete_role(self, role_id):
         return self.delete('/api/roles/%s' % role_id)
@@ -256,17 +287,19 @@ class APIClient(object):
         return self.get('/api/tenant/users/overview')
 
     def set_user_role(self, user_id, role_id):
-        return self.put('/api/tenant/users/%s/role?roleId=%s', user_id, role_id)
+        return self.put('/api/tenant/users/%s/role' % user_id,
+                        query_args={'roleId': role_id})
 
     def remove_user_from_tenant(self, user_id):
         return self.delete('/api/tenant/users/%s' % user_id)
 
     def invite_user(self, email, role_id):
-        return self.post('/api/tenant/users/invitations?email=%s&roleId=%s' %
-                         (email, role_id))
+        return self.post('/api/tenant/users/invitations',
+                         query_args={'email', email, 'roleId', role_id})
 
     def revoke_pending_invitation(self, email):
-        return self.delete('/api/tenant/users/invitations?email=%s' % email)
+        return self.delete('/api/tenant/users/invitations',
+                           query_args={'email': email})
 
     def application_view(self):
         return self.get('/api/graph/views/application')

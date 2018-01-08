@@ -11,9 +11,6 @@ SERVICE = "🦄 Stan ❤️s Python 🦄"
 
 
 def main(argv):
-    tracer.init(o.Options(service=SERVICE,
-                          log_level=logging.DEBUG))
-
     while (True):
         time.sleep(2)
         simple()

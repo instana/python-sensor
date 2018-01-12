@@ -79,6 +79,7 @@ Note: The Instana sensor has automatic instrumentation that activates at runtime
         context = opentracing.tracer.current_context()
         span = opentracing.tracer.start_span("my_span", child_of=context)
 
+Also note that under evented systems such as gevent, concurrence and/or greenlets (which aren't supportet yet), the value `opentracing.tracer.current_context()` is likely to be inconsistent.
 
 ## Configuration
 

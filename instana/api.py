@@ -15,15 +15,20 @@ import os
 import sys
 import json
 import time
+import certifi
 import urllib3
+
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
 if PY2:
-    from urllib.parse import urlencode
-else:
     from urllib import urlencode
+    import urllib3.contrib.pyopenssl
+    urllib3.contrib.pyopenssl.inject_into_urllib3()
+else:
+    import urllib3
+    from urllib.parse import urlencode
 
 
 # For use with the Token related API calls
@@ -130,7 +135,8 @@ class APIClient(object):
 
         self.api_key = "apiToken %s" % self.api_token
         self.headers = {'Authorization': self.api_key}
-        self.http = urllib3.PoolManager()
+        self.http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
+                                        ca_certs=certifi.where())
 
     def ts_now(self):
         return int(round(time.time() * 1000))
@@ -139,7 +145,7 @@ class APIClient(object):
         url = self.base_url + path
         if query_args:
             encoded_args = urlencode(query_args)
-            url = '?' + encoded_args
+            url = url + '?' + encoded_args
         return url
 
     def get(self, path, query_args=None):

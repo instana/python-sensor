@@ -12,10 +12,19 @@ The API currently uses the requests package to make the REST calls to the API.
 As such, requests response objects are returned from API calls.
 """
 import os
+import sys
 import json
 import time
 import urllib3
-from urllib.parse import urlencode
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
+if PY2:
+    from urllib.parse import urlencode
+else:
+    from urllib import urlencode
+
 
 # For use with the Token related API calls
 token_config = {
@@ -121,7 +130,7 @@ class APIClient(object):
 
         self.api_key = "apiToken %s" % self.api_token
         self.headers = {'Authorization': self.api_key}
-        self.http = urllib3.PoolManager(d)
+        self.http = urllib3.PoolManager()
 
     def ts_now(self):
         return int(round(time.time() * 1000))

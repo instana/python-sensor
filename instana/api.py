@@ -17,6 +17,7 @@ import json
 import time
 import certifi
 import urllib3
+from .log import logger as log
 
 
 PY2 = sys.version_info[0] == 2
@@ -133,42 +134,53 @@ class APIClient(object):
         if "INSTANA_BASE_URL" in os.environ:
             self.base_url = os.environ["INSTANA_BASE_URL"]
 
-        self.api_key = "apiToken %s" % self.api_token
-        self.headers = {'Authorization': self.api_key}
-        self.http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                        ca_certs=certifi.where())
+        if self.base_url is None or self.api_token is None:
+            log.warn("APIClient: API token or Base URL not set.  No-op mode")
+        else:
+            self.api_key = "apiToken %s" % self.api_token
+            self.headers = {'Authorization': self.api_key}
+            self.http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
+                                            ca_certs=certifi.where())
 
     def ts_now(self):
         return int(round(time.time() * 1000))
 
     def build_url(self, path, query_args):
-        url = self.base_url + path
+        if self.base_url and self.api_token:
+            url = self.base_url + path
+        else:
+            url = ""
+
         if query_args:
             encoded_args = urlencode(query_args)
             url = url + '?' + encoded_args
         return url
 
     def get(self, path, query_args=None):
-        url = self.build_url(path, query_args)
-        return self.http.request('GET', url, headers=self.headers)
+        if self.base_url and self.api_token:
+            url = self.build_url(path, query_args)
+            return self.http.request('GET', url, headers=self.headers)
 
     def put(self, path, query_args=None, payload=''):
-        url = self.build_url(path, query_args)
-        encoded_data = json.dumps(payload).encode('utf-8')
-        post_headers = self.headers
-        post_headers['Content-Type'] = 'application/json'
-        return self.http.request('PUT', url, body=encoded_data, headers=post_headers)
+        if self.base_url and self.api_token:
+            url = self.build_url(path, query_args)
+            encoded_data = json.dumps(payload).encode('utf-8')
+            post_headers = self.headers
+            post_headers['Content-Type'] = 'application/json'
+            return self.http.request('PUT', url, body=encoded_data, headers=post_headers)
 
     def post(self, path, query_args=None, payload=''):
-        url = self.build_url(path, query_args)
-        encoded_data = json.dumps(payload).encode('utf-8')
-        post_headers = self.headers
-        post_headers['Content-Type'] = 'application/json'
-        return self.http.request('POST', url, body=encoded_data, headers=post_headers)
+        if self.base_url and self.api_token:
+            url = self.build_url(path, query_args)
+            encoded_data = json.dumps(payload).encode('utf-8')
+            post_headers = self.headers
+            post_headers['Content-Type'] = 'application/json'
+            return self.http.request('POST', url, body=encoded_data, headers=post_headers)
 
     def delete(self, path, query_args):
-        url = self.build_url(path, query_args)
-        return self.http.request('DELETE', url, headers=self.headers)
+        if self.base_url and self.api_token:
+            url = self.build_url(path, query_args)
+            return self.http.request('DELETE', url, headers=self.headers)
 
     def tokens(self):
         return self.get('/api/apiTokens')

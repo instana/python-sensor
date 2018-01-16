@@ -58,5 +58,8 @@ opentracing.tracer = internal_tracer
 # instana.service_name = "myservice"
 service_name = None
 
+# User configurable EUM API key for instana.helpers.eum_snippet()
+eum_api_key = ''
+
 if "INSTANA_SERVICE_NAME" in os.environ:
     service_name = os.environ["INSTANA_SERVICE_NAME"]

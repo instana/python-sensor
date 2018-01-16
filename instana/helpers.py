@@ -1,6 +1,6 @@
 import os
 from string import Template
-from instana import internal_tracer, config as instana_config
+from instana import internal_tracer, eum_api_key as global_eum_api_key
 from instana.log import logger
 
 # Usage:
@@ -43,7 +43,7 @@ def eum_snippet(trace_id=None, eum_api_key=None, meta={}):
         if eum_api_key:
             ids['eum_api_key'] = eum_api_key
         else:
-            ids['eum_api_key'] = instana_config['eum_api_key']
+            ids['eum_api_key'] = global_eum_api_key
 
         # Process passed in EUM 'meta' key/values
         for key, value in meta.items():
@@ -88,7 +88,7 @@ def eum_test_snippet(trace_id=None, eum_api_key=None, meta={}):
         if eum_api_key:
             ids['eum_api_key'] = eum_api_key
         else:
-            ids['eum_api_key'] = instana_config['eum_api_key']
+            ids['eum_api_key'] = global_eum_api_key
 
         # Process passed in EUM 'meta' key/values
         for key, value in meta.items():

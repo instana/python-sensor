@@ -57,6 +57,31 @@ If you use uWSGI in forking workers mode, you must specify `--lazy-apps` (or `la
 
 The instana package will automatically collect key metrics from your Python processes.  Just install and go.
 
+## Want End User Monitoring?
+
+Instana provides deep end user monitoring that links server side traces with browser events to give you a complete view from server to browser.
+
+For Python templates and views, get your EUM API key from your Instana dashboard and you can call `instana.helpers.eum_snippet(api_key='abc')` from within your layout file.  This will output
+a small javascript snippet of code to instrument browser events.  It's based on [Weasel](https://github.com/instana/weasel).  Check it out.
+
+As an example, you could do the following:
+
+```python
+from instana.helpers import eum_snippet
+
+instana.api_key = 'abc'
+meta_kvs = { 'username': user.name }
+
+# This will return a string containing the EUM javascript for the layout or view.
+eum_snippet(meta=meta_kvs)
+```
+
+The optional second argument to `eum_snippet()` is a hash of metadata key/values that will be reported along with the browser instrumentation.
+
+![Instana EUM example with metadata](https://s3.amazonaws.com/instana/Instana+Gameface+EUM+with+metadata+2016-12-22+at+15.32.01.png)
+
+See also the [End User Monitoring](https://docs.instana.io/products/website_monitoring/#configuration) in the Instana documentation portal.
+
 ## OpenTracing
 
 This Python package supports [OpenTracing](http://opentracing.io/).  When using this package, the OpenTracing tracer (`opentracing.tracer`) is automatically set to the `InstanaTracer`.

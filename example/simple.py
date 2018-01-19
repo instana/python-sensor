@@ -1,9 +1,6 @@
 # encoding=utf-8
 import sys
-from instana import options as o
-import logging
 import opentracing as ot
-from instana import tracer
 import time
 import opentracing.ext.tags as ext
 

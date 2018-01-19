@@ -160,24 +160,19 @@ class Meter(object):
             else:
                 appname = os.path.basename(sys.argv[0])
 
-            s = Snapshot(name=appname,
-                         version=sys.version,
-                         rlimit_core=resource.getrlimit(resource.RLIMIT_CORE),
-                         rlimit_cpu=resource.getrlimit(resource.RLIMIT_CPU),
-                         rlimit_fsize=resource.getrlimit(
-                             resource.RLIMIT_FSIZE),
-                         rlimit_data=resource.getrlimit(resource.RLIMIT_DATA),
-                         rlimit_stack=resource.getrlimit(
-                             resource.RLIMIT_STACK),
-                         rlimit_rss=resource.getrlimit(resource.RLIMIT_RSS),
-                         rlimit_nproc=resource.getrlimit(
-                             resource.RLIMIT_NPROC),
-                         rlimit_nofile=resource.getrlimit(
-                             resource.RLIMIT_NOFILE),
-                         rlimit_memlock=resource.getrlimit(
-                             resource.RLIMIT_MEMLOCK),
-                         rlimit_as=resource.getrlimit(resource.RLIMIT_AS),
-                         versions=self.collect_modules())
+            s = Snapshot(name=appname, version=sys.version)
+            s.version = sys.version
+            s.rlimit_core = resource.getrlimit(resource.RLIMIT_CORE)
+            s.rlimit_cpu = resource.getrlimit(resource.RLIMIT_CPU)
+            s.rlimit_fsize = resource.getrlimit(resource.RLIMIT_FSIZE)
+            s.rlimit_data = resource.getrlimit(resource.RLIMIT_DATA)
+            s.rlimit_stack = resource.getrlimit(resource.RLIMIT_STACK)
+            s.rlimit_rss = resource.getrlimit(resource.RLIMIT_RSS)
+            s.rlimit_nproc = resource.getrlimit(resource.RLIMIT_NPROC)
+            s.rlimit_nofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+            s.rlimit_memlock = resource.getrlimit(resource.RLIMIT_MEMLOCK)
+            s.rlimit_as = resource.getrlimit(resource.RLIMIT_AS)
+            s.versions = self.collect_modules()
 
             return s
         except Exception as e:
@@ -186,13 +181,16 @@ class Meter(object):
             return None
 
     def jsonable(self, value):
-        if callable(value):
-            result = value()
-        elif type(value) is ModuleType:
-            result = str(value)
-        else:
-            result = value
-        return result
+        try:
+            if callable(value):
+                result = value()
+            elif type(value) is ModuleType:
+                result = value
+            else:
+                result = value
+            return str(result)
+        except Exception as e:
+            log.debug(e)
 
     def collect_modules(self):
         try:

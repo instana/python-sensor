@@ -133,7 +133,7 @@ class Fsm(object):
                 cmdinfo = cmd.read()
             cmdline = cmdinfo.split('\x00')
         else:
-            # OSX doesn't provide a reliable method to determine what
+            # Python doesn't provide a reliable method to determine what
             # the OS process command line may be.  Here we are forced to
             # rely on ps rather than adding a dependency on something like
             # psutil which requires dev packages, gcc etc...

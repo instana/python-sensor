@@ -1,4 +1,5 @@
 import os
+import sys
 import socket
 import subprocess
 import threading as t
@@ -128,20 +129,24 @@ class Fsm(object):
         pid = os.getpid()
         cmdline = []
 
-        if os.path.isfile("/proc/self/cmdline"):
-            with open("/proc/self/cmdline") as cmd:
-                cmdinfo = cmd.read()
-            cmdline = cmdinfo.split('\x00')
-        else:
-            # Python doesn't provide a reliable method to determine what
-            # the OS process command line may be.  Here we are forced to
-            # rely on ps rather than adding a dependency on something like
-            # psutil which requires dev packages, gcc etc...
-            proc = subprocess.Popen(["ps", "-p", str(pid), "-o", "command"],
-                                    stdout=subprocess.PIPE)
-            (out, err) = proc.communicate()
-            parts = out.split(b'\n')
-            cmdline = [parts[1].decode("utf-8")]
+        try:
+            if os.path.isfile("/proc/self/cmdline"):
+                with open("/proc/self/cmdline") as cmd:
+                    cmdinfo = cmd.read()
+                cmdline = cmdinfo.split('\x00')
+            else:
+                # Python doesn't provide a reliable method to determine what
+                # the OS process command line may be.  Here we are forced to
+                # rely on ps rather than adding a dependency on something like
+                # psutil which requires dev packages, gcc etc...
+                proc = subprocess.Popen(["ps", "-p", str(pid), "-o", "command"],
+                                        stdout=subprocess.PIPE)
+                (out, err) = proc.communicate()
+                parts = out.split(b'\n')
+                cmdline = [parts[1].decode("utf-8")]
+        except Exception as err:
+            cmdline = sys.argv
+            log.debug(err)
 
         d = Discovery(pid=pid,
                       name=cmdline[0],

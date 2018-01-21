@@ -8,6 +8,9 @@ from .options import Options
 if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
     # Import & initialize instrumentation
     from .instrumentation import urllib3
+    from .instrumentation import instrument_aiohttp
+    from .instrumentation import instrument_aiomysql
+    from .instrumentation import instrument_tornado
 
 """
 The Instana package has two core components: the sensor and the tracer.

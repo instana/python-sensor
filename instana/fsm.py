@@ -1,4 +1,3 @@
-import sys
 import os
 import socket
 import subprocess
@@ -134,8 +133,15 @@ class Fsm(object):
                 cmdinfo = cmd.read()
             cmdline = cmdinfo.split('\x00')
         else:
-            cmdline = [sys.executable]
-            cmdline += sys.argv
+            # OSX doesn't provide a reliable method to determine what
+            # the OS process command line may be.  Here we are forced to
+            # rely on ps rather than adding a dependency on something like
+            # psutil which requires dev packages, gcc etc...
+            proc = subprocess.Popen(["ps", "-p", str(pid), "-o", "command"],
+                                    stdout=subprocess.PIPE)
+            (out, err) = proc.communicate()
+            parts = out.split(b'\n')
+            cmdline = [parts[1].decode("utf-8")]
 
         d = Discovery(pid=pid,
                       name=cmdline[0],

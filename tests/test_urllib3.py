@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from nose.tools import assert_equals
 from instana import internal_tracer as tracer
+import requests
 import urllib3
 
 
@@ -146,6 +147,52 @@ class TestUrllib3:
         assert_equals("GET", second_span.data.http.method)
         assert_equals(True, second_span.error)
         assert_equals(1, second_span.ec)
+
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)
+
+    def test_requestspkg_get(self):
+        span = tracer.start_span("test")
+        r = requests.get('http://127.0.0.1:5000/', timeout=2)
+        span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+        first_span = spans[1]
+        second_span = spans[0]
+
+        assert(r)
+        assert_equals(200, r.status_code)
+        assert_equals("test", first_span.data.sdk.name)
+        assert_equals("urllib3", second_span.n)
+        assert_equals(200, second_span.data.http.status)
+        assert_equals("http://127.0.0.1:5000/", second_span.data.http.url)
+        assert_equals("GET", second_span.data.http.method)
+
+        assert_equals(None, second_span.error)
+        assert_equals(None, second_span.ec)
+
+        assert_equals(second_span.t, first_span.t)
+        assert_equals(second_span.p, first_span.s)
+
+    def test_requestspkg_put(self):
+        span = tracer.start_span("test")
+        r = requests.put('http://127.0.0.1:5000/notfound')
+        span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+        first_span = spans[1]
+        second_span = spans[0]
+
+        assert_equals(404, r.status_code)
+        assert_equals("test", first_span.data.sdk.name)
+        assert_equals("urllib3", second_span.n)
+        assert_equals(404, second_span.data.http.status)
+        assert_equals("http://127.0.0.1:5000/notfound", second_span.data.http.url)
+        assert_equals("PUT", second_span.data.http.method)
+        assert_equals(None, second_span.error)
+        assert_equals(None, second_span.ec)
 
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)

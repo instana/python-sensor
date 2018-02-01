@@ -1,4 +1,4 @@
-class InstanaSpan(object):
+class JsonSpan(object):
     t = 0
     p = None
     s = 0

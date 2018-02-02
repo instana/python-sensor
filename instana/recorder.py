@@ -6,7 +6,7 @@ import instana
 
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
-from .span import CustomData, Data, HttpData, JsonSpan, SDKData
+from .json_span import CustomData, Data, HttpData, JsonSpan, SDKData
 from .agent_const import AGENT_TRACES_URL
 
 import sys

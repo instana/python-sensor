@@ -5,16 +5,16 @@ import opentracing as ot
 import instana
 import instana.options as o
 
+from instana.util import generate_id
+from instana.span import InstanaSpan
 from basictracer.context import SpanContext
-from basictracer.span import BasicSpan
 from instana.http_propagator import HTTPPropagator
 from instana.text_propagator import TextPropagator
-from instana.util import generate_id
 
 
 class InstanaTracer(BasicTracer):
     sensor = None
-    current_span = None
+    current_context = None
 
     def __init__(self, options=o.Options()):
         self.sensor = instana.global_sensor
@@ -58,7 +58,7 @@ class InstanaTracer(BasicTracer):
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
         # Tie it all together
-        self.current_span = BasicSpan(
+        span = InstanaSpan(
             self,
             operation_name=operation_name,
             context=ctx,
@@ -66,12 +66,13 @@ class InstanaTracer(BasicTracer):
             tags=tags,
             start_time=start_time)
 
-        return self.current_span
+        self.current_context = span.context
+        return span
 
     def current_context(self):
         context = None
-        if self.current_span:
-            context = self.current_span.context
+        if self.current_context:
+            context = self.current_context
         return context
 
     def inject(self, span_context, format, carrier):

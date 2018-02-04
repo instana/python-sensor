@@ -14,7 +14,7 @@ from instana.text_propagator import TextPropagator
 
 class InstanaTracer(BasicTracer):
     sensor = None
-    current_context = None
+    cur_ctx = None
 
     def __init__(self, options=o.Options()):
         self.sensor = instana.global_sensor
@@ -66,13 +66,13 @@ class InstanaTracer(BasicTracer):
             tags=tags,
             start_time=start_time)
 
-        self.current_context = span.context
+        self.cur_ctx = span.context
         return span
 
     def current_context(self):
         context = None
-        if self.current_context:
-            context = self.current_context
+        if self.cur_ctx is not None:
+            context = self.cur_ctx
         return context
 
     def inject(self, span_context, format, carrier):

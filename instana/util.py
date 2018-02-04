@@ -1,5 +1,6 @@
 import random
 import os
+import json
 import time
 import struct
 import binascii
@@ -14,8 +15,9 @@ else:
 _rnd = random.Random()
 _current_pid = 0
 
-BAD_ID_LONG = 3135097598   # Bad Cafe in base 10
-BAD_ID_HEADER = "BADDCAFE" # Bad Cafe
+BAD_ID_LONG = 3135097598  # Bad Cafe in base 10
+BAD_ID_HEADER = "BADDCAFE"  # Bad Cafe
+
 
 def generate_id():
     """ Generate a 64bit signed integer for use as a Span or Trace ID """
@@ -58,3 +60,11 @@ def header_to_id(header):
         return struct.unpack('>q', r)[0]
     except ValueError:
         return BAD_ID_LONG
+
+
+def to_json(obj):
+    try:
+        return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
+                          sort_keys=False, separators=(',', ':')).encode()
+    except Exception as e:
+        log.info("to_json: ", e, obj)

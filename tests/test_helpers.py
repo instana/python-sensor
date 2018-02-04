@@ -19,6 +19,7 @@ def test_vanilla_eum_snippet():
     assert eum_string.find(trace_id) != -1
     assert eum_string.find(eum_api_key) != -1
 
+
 def test_eum_snippet_with_meta():
     meta_kvs = {}
     meta_kvs['meta1'] = meta1
@@ -34,6 +35,7 @@ def test_eum_snippet_with_meta():
     assert eum_string.find(meta2) != -1
     assert eum_string.find(meta3) != -1
 
+
 def test_eum_snippet_error():
     meta_kvs = {}
     meta_kvs['meta1'] = meta1
@@ -44,6 +46,7 @@ def test_eum_snippet_error():
     eum_string = eum_snippet(eum_api_key=eum_api_key, meta=meta_kvs)
     assert_equals('', eum_string)
 
+
 def test_vanilla_eum_test_snippet():
     eum_string = eum_test_snippet(trace_id=trace_id, eum_api_key=eum_api_key)
     assert type(eum_string) is str
@@ -52,6 +55,7 @@ def test_vanilla_eum_test_snippet():
     assert eum_string.find(eum_api_key) != -1
     assert eum_string.find('reportingUrl') != -1
     assert eum_string.find('//eum-test-fullstack-0-us-west-2.instana.io') != -1
+
 
 def test_eum_test_snippet_with_meta():
     meta_kvs = {}
@@ -69,6 +73,7 @@ def test_eum_test_snippet_with_meta():
     assert eum_string.find(meta1) != -1
     assert eum_string.find(meta2) != -1
     assert eum_string.find(meta3) != -1
+
 
 def test_eum_test_snippet_error():
     meta_kvs = {}

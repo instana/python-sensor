@@ -34,6 +34,10 @@ For Django version 1.9.x, instead set:
 To enable the Flask instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
 
   `export AUTOWRAPT_BOOTSTRAP=flask`
+  
+## WSGI Compliant Stacks
+
+The Instana sensor bundles with it WSGI middleware.  The usage of this middleware is automated for various frameworks but for those that arent' supported yet, see the [WSGI documentation](WSGI.md) for details on how to manually add it to your stack.
 
 ## Runtime Monitoring Only
 

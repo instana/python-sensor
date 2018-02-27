@@ -10,13 +10,14 @@ try:
     import urllib3 # noqa
 
     def collect(instance, args, kwargs):
+        """ Build and return a fully qualified URL for this request """
         try:
             kvs = {}
 
             kvs['host'] = instance.host
             kvs['port'] = instance.port
 
-            if len(args) is 2:
+            if args is not None and len(args) is 2:
                 kvs['method'] = args[0]
                 kvs['path'] = args[1]
             else:
@@ -45,8 +46,10 @@ try:
             span = instana.internal_tracer.start_span("urllib3", child_of=context)
 
             kvs = collect(instance, args, kwargs)
-            span.set_tag(ext.HTTP_URL, kvs['url'])
-            span.set_tag(ext.HTTP_METHOD, kvs['method'])
+            if 'url' in kvs:
+                span.set_tag(ext.HTTP_URL, kvs['url'])
+            if 'method' in kvs:
+                span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
             instana.internal_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
             rv = wrapped(*args, **kwargs)

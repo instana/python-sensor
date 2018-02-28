@@ -11,6 +11,7 @@ class TestAiomysql:
         self.connection = aiomysql.connect(host='localhost', port=3306,  user='root', password='', db='mysql', loop=None)
 
 
+
     def tearDown(self):
         """ Do nothing for now """
         return None

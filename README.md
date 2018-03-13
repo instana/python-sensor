@@ -57,6 +57,26 @@ This Python instrumentation spawns a lightweight background thread to periodical
 
 If you use uWSGI in forking workers mode, you must specify `--lazy-apps` (or `lazy-apps = true` in ini style) to load the application in the worker instead of the master process.
 
+### uWSGI Example: Command-line
+
+```sh
+uwsgi --socket 0.0.0.0:5000 --protocol=http -w wsgi -p 4 --enable-threads --lazy-apps
+```
+
+### uWSGI Example: ini file
+
+```ini
+[uwsgi]
+http = :5000
+master = true
+processes = 4
+enable-threads = true # required
+lazy-apps = true # if using "processes", set lazy-apps to true
+
+# Set the Instana sensor environment variable here
+env = AUTOWRAPT_BOOTSTRAP=flask
+```
+
 ## Usage
 
 The instana package will automatically collect key metrics from your Python processes.  Just install and go.

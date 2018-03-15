@@ -16,7 +16,12 @@ class Options(object):
             self.log_level = logging.DEBUG
 
         if "INSTANA_AGENT_IP" in os.environ:
+            # Deprecated: INSTANA_AGENT_IP environment variable
+            # To be removed in a future version
             self.agent_host = os.environ["INSTANA_AGENT_IP"]
+
+        if "INSTANA_AGENT_HOST" in os.environ:
+            self.agent_host = os.environ["INSTANA_AGENT_HOST"]
 
         if "INSTANA_AGENT_PORT" in os.environ:
             self.agent_port = os.environ["INSTANA_AGENT_PORT"]

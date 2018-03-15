@@ -12,16 +12,18 @@ field_name_span_id = prefix_tracer_state + 'S'
 
 class TextPropagator():
     """
-    A Propagator for Format.TEXT_MAP.
-    Does not support Baggage and Sampling
+    A Propagator for TEXT_MAP.
     """
 
     def inject(self, span_context, carrier):
-        carrier[field_name_trace_id] = '{0:x}'.format(span_context.trace_id)
-        carrier[field_name_span_id] = '{0:x}'.format(span_context.span_id)
-        if span_context.baggage is not None:
-            for k in span_context.baggage:
-                carrier[prefix_baggage+k] = span_context.baggage[k]
+        try:
+            carrier[field_name_trace_id] = '{0:x}'.format(span_context.trace_id)
+            carrier[field_name_span_id] = '{0:x}'.format(span_context.span_id)
+            if span_context.baggage is not None:
+                for k in span_context.baggage:
+                    carrier[prefix_baggage+k] = span_context.baggage[k]
+        except Exception as e:
+            log.debug("inject error: ", str(e))
 
     def extract(self, carrier):  # noqa
         try:
@@ -43,3 +45,4 @@ class TextPropagator():
 
         except Exception as e:
             log.debug("extract error: ", str(e))
+            return SpanContext()

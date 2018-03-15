@@ -6,7 +6,7 @@ import instana
 
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
-from .span import CustomData, Data, HttpData, InstanaSpan, SDKData
+from .json_span import CustomData, Data, HttpData, JsonSpan, SDKData
 from .agent_const import AGENT_TRACES_URL
 
 import sys
@@ -65,21 +65,21 @@ class InstanaRecorder(SpanRecorder):
 
     def record_span(self, span):
         """
-        Convert the passed BasicSpan into an InstanaSpan and
+        Convert the passed BasicSpan into an JsonSpan and
         add it to the span queue
         """
         if self.sensor.agent.can_send() or "INSTANA_TEST" in os.environ:
-            instana_span = None
+            json_span = None
 
             if span.operation_name in self.registered_spans:
-                instana_span = self.build_registered_span(span)
+                json_span = self.build_registered_span(span)
             else:
-                instana_span = self.build_sdk_span(span)
+                json_span = self.build_sdk_span(span)
 
-            self.queue.put(instana_span)
+            self.queue.put(json_span)
 
     def build_registered_span(self, span):
-        """ Takes a BasicSpan and converts it into a registered InstanaSpan """
+        """ Takes a BasicSpan and converts it into a registered JsonSpan """
         data = Data(http=HttpData(host=self.get_host_name(span),
                                   url=self.get_string_tag(span, ext.HTTP_URL),
                                   method=self.get_string_tag(span, ext.HTTP_METHOD),
@@ -90,7 +90,7 @@ class InstanaRecorder(SpanRecorder):
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
-        return InstanaSpan(
+        return JsonSpan(
                     n=span.operation_name,
                     t=span.context.trace_id,
                     p=span.parent_id,
@@ -103,7 +103,7 @@ class InstanaRecorder(SpanRecorder):
                     data=data)
 
     def build_sdk_span(self, span):
-        """ Takes a BasicSpan and converts into an SDK type InstanaSpan """
+        """ Takes a BasicSpan and converts into an SDK type JsonSpan """
 
         custom_data = CustomData(tags=span.tags,
                                  logs=self.collect_logs(span))
@@ -116,7 +116,7 @@ class InstanaRecorder(SpanRecorder):
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
-        return InstanaSpan(
+        return JsonSpan(
                     t=span.context.trace_id,
                     p=span.parent_id,
                     s=span.context.span_id,

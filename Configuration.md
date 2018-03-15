@@ -7,7 +7,7 @@ The sensor tries to communicate with the Instana agent via IP 127.0.0.1 and as a
 To use these, these environment variables should be set in the environment of the running Python process.
 
 ```shell
-export INSTANA_AGENT_IP = '127.0.0.1'
+export INSTANA_AGENT_HOST = '127.0.0.1'
 export INSTANA_AGENT_PORT = '42699'
 ```
 

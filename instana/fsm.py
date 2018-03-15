@@ -70,7 +70,14 @@ class Fsm(object):
         host = a.AGENT_DEFAULT_HOST
         port = a.AGENT_DEFAULT_PORT
 
-        if "INSTANA_AGENT_IP" in os.environ:
+        if "INSTANA_AGENT_HOST" in os.environ:
+            host = os.environ["INSTANA_AGENT_HOST"]
+            if "INSTANA_AGENT_PORT" in os.environ:
+                port = int(os.environ["INSTANA_AGENT_PORT"])
+
+        elif "INSTANA_AGENT_IP" in os.environ:
+            # Deprecated: INSTANA_AGENT_IP environment variable
+            # To be removed in a future version
             host = os.environ["INSTANA_AGENT_IP"]
             if "INSTANA_AGENT_PORT" in os.environ:
                 port = int(os.environ["INSTANA_AGENT_PORT"])

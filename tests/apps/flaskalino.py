@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from flask import Flask
+from flask import Flask, redirect
 app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
@@ -11,24 +11,34 @@ def hello():
     return "<center><h1>🐍 Hello Stan! 🦄</h1></center>"
 
 
+@app.route("/301")
+def threehundredone():
+    return redirect('/', code=301)
+
+
+@app.route("/302")
+def threehundredtwo():
+    return redirect('/', code=302)
+
+
 @app.route("/400")
 def fourhundred():
-    return "Bad Request", 400
+    return "Simulated Bad Request", 400
 
 
 @app.route("/405")
 def fourhundredfive():
-    return "Method not allowed", 405
+    return "Simulated Method not allowed", 405
 
 
 @app.route("/500")
 def fivehundred():
-    return "Internal Server Error", 500
+    return "Simulated Internal Server Error", 500
 
 
 @app.route("/504")
 def fivehundredfour():
-    return "Gateway Timeout", 504
+    return "Simulated Gateway Timeout", 504
 
 
 @app.route("/exception")

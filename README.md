@@ -34,6 +34,10 @@ For Django version 1.9.x, instead set:
 To enable the Flask instrumentation, set the following environment variable in your _application boot environment_ and then restart your application:
 
   `export AUTOWRAPT_BOOTSTRAP=flask`
+  
+## WSGI Compliant Stacks
+
+The Instana sensor bundles with it WSGI middleware.  The usage of this middleware is automated for various frameworks but for those that arent' supported yet, see the [WSGI documentation](WSGI.md) for details on how to manually add it to your stack.
 
 ## Runtime Monitoring Only
 
@@ -52,6 +56,26 @@ This Python instrumentation spawns a lightweight background thread to periodical
 ### Forking off Workers
 
 If you use uWSGI in forking workers mode, you must specify `--lazy-apps` (or `lazy-apps = true` in ini style) to load the application in the worker instead of the master process.
+
+### uWSGI Example: Command-line
+
+```sh
+uwsgi --socket 0.0.0.0:5000 --protocol=http -w wsgi -p 4 --enable-threads --lazy-apps
+```
+
+### uWSGI Example: ini file
+
+```ini
+[uwsgi]
+http = :5000
+master = true
+processes = 4
+enable-threads = true # required
+lazy-apps = true # if using "processes", set lazy-apps to true
+
+# Set the Instana sensor environment variable here
+env = AUTOWRAPT_BOOTSTRAP=flask
+```
 
 ## Usage
 

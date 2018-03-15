@@ -96,21 +96,21 @@ def test_id_to_header_conversion_with_bogus_id():
 
     # Assert that it is a string and there are no non-hex characters
     assert isinstance(converted_id, string_types)
-    assert converted_id == ''
+    assert converted_id == instana.util.BAD_ID_HEADER
 
     # Test passing a nil
     converted_id = instana.util.id_to_header(None)
 
     # Assert that it is a string and there are no non-hex characters
     assert isinstance(converted_id, string_types)
-    assert converted_id == ''
+    assert converted_id == instana.util.BAD_ID_HEADER
 
     # Test passing an Array
     converted_id = instana.util.id_to_header([])
 
     # Assert that it is a string and there are no non-hex characters
     assert isinstance(converted_id, string_types)
-    assert converted_id == ''
+    assert converted_id == instana.util.BAD_ID_HEADER
 
 
 def test_header_to_id_conversion():
@@ -125,12 +125,12 @@ def test_header_to_id_conversion():
 def test_header_to_id_conversion_with_bogus_header():
     # Bogus nil arg
     bogus_result = instana.util.header_to_id(None)
-    assert_equals(0, bogus_result)
+    assert_equals(instana.util.BAD_ID_LONG, bogus_result)
 
     # Bogus Integer arg
     bogus_result = instana.util.header_to_id(1234)
-    assert_equals(0, bogus_result)
+    assert_equals(instana.util.BAD_ID_LONG, bogus_result)
 
     # Bogus Array arg
     bogus_result = instana.util.header_to_id([1234])
-    assert_equals(0, bogus_result)
+    assert_equals(instana.util.BAD_ID_LONG, bogus_result)

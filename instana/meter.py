@@ -1,4 +1,4 @@
-import threading as t
+import threading
 import resource
 import os
 import gc as gc_
@@ -69,7 +69,7 @@ class Metrics(object):
     ru_nsignals = 0
     ru_nvcs = 0
     ru_nivcsw = 0
-    dead_threads = 0
+    dummy_threads = 0
     alive_threads = 0
     daemon_threads = 0
     gc = None
@@ -117,7 +117,7 @@ class Meter(object):
         self.sensor = sensor
 
     def run(self):
-        self.timer = t.Thread(target=self.collect_and_report)
+        self.timer = threading.Thread(target=self.collect_and_report)
         self.timer.daemon = True
         self.timer.name = "Instana Metric Collection"
         self.timer.start()
@@ -233,10 +233,10 @@ class Meter(object):
                    threshold1=th[1],
                    threshold2=th[2])
 
-        thr = t.enumerate()
-        daemon_threads = [tr.daemon and tr.is_alive() for tr in thr].count(True)
-        alive_threads = [not tr.daemon and tr.is_alive() for tr in thr].count(True)
-        dead_threads = [not tr.is_alive() for tr in thr].count(True)
+        thr = threading.enumerate()
+        daemon_threads = [tr.daemon is True for tr in thr].count(True)
+        alive_threads = [tr.daemon is False for tr in thr].count(True)
+        dummy_threads = [type(tr) is threading._DummyThread for tr in thr].count(True)
 
         m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
                     ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
@@ -255,7 +255,7 @@ class Meter(object):
                     ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
                     ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
                     alive_threads=alive_threads,
-                    dead_threads=dead_threads,
+                    dummy_threads=dummy_threads,
                     daemon_threads=daemon_threads,
                     gc=g)
 

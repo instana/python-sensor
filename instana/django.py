@@ -60,18 +60,32 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
     try:
         from django.conf import settings
 
-        if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE:
-            return
+        # Django >=1.10 to <2.0 support old-style MIDDLEWARE_CLASSES so we
+        # do as well here
+        if hasattr(settings, 'MIDDLEWARE_CLASSES'):
+            if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
+                return wrapped(*args, **kwargs)
 
-        if type(settings.MIDDLEWARE) is tuple:
-            settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
-        elif type(settings.MIDDLEWARE) is list:
-            settings.MIDDLEWARE = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE
+            if type(settings.MIDDLEWARE_CLASSES) is tuple:
+                settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES
+            elif type(settings.MIDDLEWARE_CLASSES) is list:
+                settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE_CLASSES
+            else:
+                logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
+        elif hasattr(settings, 'MIDDLEWARE'):
+            if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE:
+                return wrapped(*args, **kwargs)
+
+            if type(settings.MIDDLEWARE) is tuple:
+                settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
+            elif type(settings.MIDDLEWARE) is list:
+                settings.MIDDLEWARE = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE
+            else:
+                logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
         else:
-            logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
+            logger.warn("Instana: Couldn't find middleware settings")
 
         return wrapped(*args, **kwargs)
-
     except Exception as e:
             logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", e)
 

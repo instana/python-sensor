@@ -82,9 +82,9 @@ class TestPostgres:
 
 		# Update connection string information obtained from the portal
 		self.host = "localhost"
-		self.user = "hughbrien"
+		self.user = "admin"
 		self.dbname = "testdata"
-		self.password = "mon*AA1010"
+		self.password = "##########"
 		sslmode = "require"
 		# Construct connection string
 		self.conn_string = "host={0} user={1} dbname={2} password={3}".format(self.host, self.user, self.dbname, self.password)

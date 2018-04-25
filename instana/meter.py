@@ -14,16 +14,6 @@ from .agent_const import AGENT_DATA_URL
 class Snapshot(object):
     name = None
     version = None
-    rlimit_core = (0, 0)
-    rlimit_cpu = (0, 0)
-    rlimit_fsize = (0, 0)
-    rlimit_data = (0, 0)
-    rlimit_stack = (0, 0)
-    rlimit_rss = (0, 0)
-    rlimit_nproc = (0, 0)
-    rlimit_nofile = (0, 0)
-    rlimit_memlock = (0, 0)
-    rlimit_as = (0, 0)
     versions = None
 
     def __init__(self, **kwds):
@@ -162,16 +152,6 @@ class Meter(object):
 
             s = Snapshot(name=appname, version=sys.version)
             s.version = sys.version
-            s.rlimit_core = resource.getrlimit(resource.RLIMIT_CORE)
-            s.rlimit_cpu = resource.getrlimit(resource.RLIMIT_CPU)
-            s.rlimit_fsize = resource.getrlimit(resource.RLIMIT_FSIZE)
-            s.rlimit_data = resource.getrlimit(resource.RLIMIT_DATA)
-            s.rlimit_stack = resource.getrlimit(resource.RLIMIT_STACK)
-            s.rlimit_rss = resource.getrlimit(resource.RLIMIT_RSS)
-            s.rlimit_nproc = resource.getrlimit(resource.RLIMIT_NPROC)
-            s.rlimit_nofile = resource.getrlimit(resource.RLIMIT_NOFILE)
-            s.rlimit_memlock = resource.getrlimit(resource.RLIMIT_MEMLOCK)
-            s.rlimit_as = resource.getrlimit(resource.RLIMIT_AS)
             s.versions = self.collect_modules()
 
             return s

@@ -22,32 +22,39 @@ class InstanaMiddleware(MiddlewareMixin):
         self
 
     def process_request(self, request):
-        env = request.environ
-        if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-            ctx = internal_tracer.extract(ot.Format.HTTP_HEADERS, env)
-            span = internal_tracer.start_span("django", child_of=ctx)
-        else:
-            span = internal_tracer.start_span("django")
+        try:
+            env = request.environ
+            if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
+                ctx = internal_tracer.extract(ot.Format.HTTP_HEADERS, env)
+                span = internal_tracer.start_span("django", child_of=ctx)
+            else:
+                span = internal_tracer.start_span("django")
 
-        span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
-        span.set_tag("http.params", env['QUERY_STRING'])
-        span.set_tag(ext.HTTP_METHOD, request.method)
-        span.set_tag("http.host", env['HTTP_HOST'])
-        self.span = span
+            span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
+            span.set_tag("http.params", env['QUERY_STRING'])
+            span.set_tag(ext.HTTP_METHOD, request.method)
+            span.set_tag("http.host", env['HTTP_HOST'])
+            self.span = span
+        except as e:
+            logger.debug("Instana middleware @ process_response: ", e)
 
     def process_response(self, request, response):
-        if self.span:
-            if 500 <= response.status_code <= 511:
-                self.span.set_tag("error", True)
-                ec = self.span.tags.get('ec', 0)
-                if ec is 0:
-                    self.span.set_tag("ec", ec+1)
+        try:
+            if self.span:
+                if 500 <= response.status_code <= 511:
+                    self.span.set_tag("error", True)
+                    ec = self.span.tags.get('ec', 0)
+                    if ec is 0:
+                        self.span.set_tag("ec", ec+1)
 
-            self.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-            internal_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
-            self.span.finish()
-            self.span = None
-        return response
+                self.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
+                internal_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
+                self.span.finish()
+                self.span = None
+        except as e:
+            logger.debug("Instana middleware @ process_response: ", e)
+        finally:
+            return response
 
     def process_exception(self, request, exception):
         if self.span:

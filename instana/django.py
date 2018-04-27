@@ -35,7 +35,7 @@ class InstanaMiddleware(MiddlewareMixin):
             span.set_tag(ext.HTTP_METHOD, request.method)
             span.set_tag("http.host", env['HTTP_HOST'])
             self.span = span
-        except as e:
+        except Exception as e:
             logger.debug("Instana middleware @ process_response: ", e)
 
     def process_response(self, request, response):
@@ -51,7 +51,7 @@ class InstanaMiddleware(MiddlewareMixin):
                 internal_tracer.inject(self.span.context, ot.Format.HTTP_HEADERS, response)
                 self.span.finish()
                 self.span = None
-        except as e:
+        except Exception as e:
             logger.debug("Instana middleware @ process_response: ", e)
         finally:
             return response

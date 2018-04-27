@@ -4,6 +4,7 @@ import socket
 import subprocess
 import threading as t
 import fysom as f
+import instana
 from instana import log
 import instana.agent_const as a
 
@@ -36,7 +37,7 @@ class Fsm(object):
     timer = None
 
     def __init__(self, agent):
-        log.info("Stan is on the scene.  Starting Instana instrumentation.")
+        log.info("Stan is on the scene.  Starting Instana instrumentation version", instana.__version__)
         log.debug("initializing fsm")
 
         self.agent = agent

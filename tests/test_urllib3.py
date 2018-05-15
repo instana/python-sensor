@@ -175,7 +175,6 @@ class TestUrllib3:
                 pass
 
         spans = self.recorder.queued_spans()
-        import pdb; pdb.Pdb(skip=['django.*']).set_trace()
         assert_equals(2, len(spans))
         first_span = spans[1]
         second_span = spans[0]

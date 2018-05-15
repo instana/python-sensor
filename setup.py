@@ -17,7 +17,7 @@ setup(name='instana',
                     'opentracing>=2.0.0rc2',
                     'basictracer>=3.0.0rc2'],
     extras_require={
-        'testing': [
+        'test': [
             'nose>=1.0'
         ],
     },

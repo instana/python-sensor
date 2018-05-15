@@ -18,7 +18,11 @@ setup(name='instana',
                     'basictracer>=3.0.0rc2'],
     extras_require={
         'test': [
-            'nose>=1.0'
+            'nose>=1.0',
+            'Flask>=0.12',
+            'requests>=2.17.3',
+            'mock>=2.0',
+            'pytest>=3.0.7'
         ],
     },
     entry_points={'django': ['django.core.handlers.base = instana.django:hook'],

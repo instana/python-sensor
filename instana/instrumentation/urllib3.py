@@ -66,7 +66,6 @@ try:
                 scope.span.set_tag("error", True)
                 ec = scope.span.tags.get('ec', 0)
                 scope.span.set_tag("ec", ec+1)
-                scope.span.finish()
                 raise
 
     instana.log.debug("Instrumenting urllib3")

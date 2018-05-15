@@ -166,6 +166,7 @@ class TestUrllib3:
         assert_equals(second_span.p, first_span.s)
 
     def test_client_error(self):
+        r = None
         with tracer.start_active_span('test'):
             try:
                 r = self.http.request('GET', 'http://doesnotexist.asdf:5000/504',

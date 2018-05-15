@@ -31,10 +31,10 @@ def eum_snippet(trace_id=None, eum_api_key=None, meta={}):
         ids = {}
         ids['meta_kvs'] = ''
 
-        current_ctx = internal_tracer.current_context()
+        parent_span = internal_tracer.active_span
 
-        if trace_id or current_ctx:
-            ids['trace_id'] = trace_id or current_ctx.trace_id
+        if trace_id or parent_span:
+            ids['trace_id'] = trace_id or parent_span.trace_id
         else:
             # No trace_id passed in and tracer doesn't show an active span so
             # return nothing, nada & zip.
@@ -76,10 +76,9 @@ def eum_test_snippet(trace_id=None, eum_api_key=None, meta={}):
         ids = {}
         ids['meta_kvs'] = ''
 
-        current_ctx = internal_tracer.current_context()
-
-        if trace_id or current_ctx:
-            ids['trace_id'] = trace_id or current_ctx.trace_id
+        parent_span = internal_tracer.active_span
+        if trace_id or parent_span:
+            ids['trace_id'] = trace_id or parent_span.trace_id
         else:
             # No trace_id passed in and tracer doesn't show an active span so
             # return nothing, nada & zip.

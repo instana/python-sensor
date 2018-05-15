@@ -36,40 +36,38 @@ try:
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        context = instana.internal_tracer.current_context()
+        parent_span = instana.internal_tracer.active_span
 
         # If we're not tracing, just return
-        if context is None:
+        if parent_span is None:
             return wrapped(*args, **kwargs)
 
-        try:
-            span = instana.internal_tracer.start_span("urllib3", child_of=context)
+        with instana.internal_tracer.start_active_span("urllib3", child_of=parent_span) as scope:
+            try:
 
-            kvs = collect(instance, args, kwargs)
-            if 'url' in kvs:
-                span.set_tag(ext.HTTP_URL, kvs['url'])
-            if 'method' in kvs:
-                span.set_tag(ext.HTTP_METHOD, kvs['method'])
+                kvs = collect(instance, args, kwargs)
+                if 'url' in kvs:
+                    scope.span.set_tag(ext.HTTP_URL, kvs['url'])
+                if 'method' in kvs:
+                    scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
-            instana.internal_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
-            rv = wrapped(*args, **kwargs)
+                instana.internal_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
+                rv = wrapped(*args, **kwargs)
 
-            span.set_tag(ext.HTTP_STATUS_CODE, rv.status)
-            if 500 <= rv.status <= 599:
-                span.set_tag("error", True)
-                ec = span.tags.get('ec', 0)
-                span.set_tag("ec", ec+1)
+                scope.span.set_tag(ext.HTTP_STATUS_CODE, rv.status)
+                if 500 <= rv.status <= 599:
+                    scope.span.set_tag("error", True)
+                    ec = scope.span.tags.get('ec', 0)
+                    scope.span.set_tag("ec", ec+1)
 
-        except Exception as e:
-            span.log_kv({'message': e})
-            span.set_tag("error", True)
-            ec = span.tags.get('ec', 0)
-            span.set_tag("ec", ec+1)
-            span.finish()
-            raise
-        else:
-            span.finish()
-            return rv
+                return rv
+            except Exception as e:
+                scope.span.log_kv({'message': e})
+                scope.span.set_tag("error", True)
+                ec = scope.span.tags.get('ec', 0)
+                scope.span.set_tag("ec", ec+1)
+                scope.span.finish()
+                raise
 
     instana.log.debug("Instrumenting urllib3")
 except ImportError:

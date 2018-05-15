@@ -14,7 +14,6 @@ from instana.text_propagator import TextPropagator
 
 class InstanaTracer(BasicTracer):
     sensor = None
-    cur_ctx = None
 
     def __init__(self, options=o.Options()):
         self.sensor = instana.global_sensor
@@ -24,13 +23,36 @@ class InstanaTracer(BasicTracer):
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
 
-    def start_span(
-            self,
-            operation_name=None,
-            child_of=None,
-            references=None,
-            tags=None,
-            start_time=None):
+
+    def start_active_span(self,
+                            operation_name,
+                            child_of=None,
+                            references=None,
+                            tags=None,
+                            start_time=None,
+                            ignore_active_span=False,
+                            finish_on_close=True):
+
+        # create a new Span
+        span = self.start_span(
+            operation_name=operation_name,
+            child_of=child_of,
+            references=references,
+            tags=tags,
+            start_time=start_time,
+            ignore_active_span=ignore_active_span,
+        )
+
+        return self.scope_manager.activate(span, finish_on_close)
+
+
+    def start_span(self,
+                   operation_name=None,
+                   child_of=None,
+                   references=None,
+                   tags=None,
+                   start_time=None,
+                   ignore_active_span=False):
         "Taken from BasicTracer so we can override generate_id calls to ours"
 
         start_time = time.time() if start_time is None else start_time
@@ -45,35 +67,32 @@ class InstanaTracer(BasicTracer):
             # TODO only the first reference is currently used
             parent_ctx = references[0].referenced_context
 
+        # retrieve the active SpanContext
+        if not ignore_active_span and parent_ctx is None:
+            scope = self.scope_manager.active
+            if scope is not None:
+                parent_ctx = scope.span.context
+
         # Assemble the child ctx
-        instana_id = generate_id()
-        ctx = SpanContext(span_id=instana_id)
+        gid = generate_id()
+        ctx = SpanContext(span_id=gid)
         if parent_ctx is not None:
             if parent_ctx._baggage is not None:
                 ctx._baggage = parent_ctx._baggage.copy()
             ctx.trace_id = parent_ctx.trace_id
             ctx.sampled = parent_ctx.sampled
         else:
-            ctx.trace_id = instana_id
+            ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
         # Tie it all together
-        span = InstanaSpan(
+        return InstanaSpan(
             self,
             operation_name=operation_name,
             context=ctx,
             parent_id=(None if parent_ctx is None else parent_ctx.span_id),
             tags=tags,
             start_time=start_time)
-
-        self.cur_ctx = span.context
-        return span
-
-    def current_context(self):
-        context = None
-        if self.cur_ctx is not None:
-            context = self.cur_ctx
-        return context
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:

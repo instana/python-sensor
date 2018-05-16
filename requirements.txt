@@ -4,3 +4,4 @@ basictracer>=2.2.0
 autowrapt>=1.0
 urllib3[secure]>=1.9
 certifi>=2017.11.5
+requests>=2.11.1

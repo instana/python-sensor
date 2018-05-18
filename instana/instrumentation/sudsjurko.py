@@ -9,8 +9,15 @@ import wrapt
 try:
     import suds # noqa
 
+    # import pdb; pdb.Pdb(skip=['django.*']).set_trace()
+
+    if (suds.version.__version__ <= '0.6'):
+        class_method = 'SoapClient.send'
+    else:
+        class_method = '_SoapClient.send'
+
     # previously named SoapClient
-    @wrapt.patch_function_wrapper('suds.client', '_SoapClient.send')
+    @wrapt.patch_function_wrapper('suds.client', class_method)
     def send_with_instana(wrapped, instance, args, kwargs):
         context = instana.internal_tracer.current_context()
 

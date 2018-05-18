@@ -1,4 +1,5 @@
 # vim: set fileencoding=UTF-8 :
+import logging
 from spyne import Application, rpc, ServiceBase, Iterable, Integer, Unicode
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
@@ -20,7 +21,7 @@ class StanSoapService(ServiceBase):
         @return the completed array
         """
 
-        yield u'¯\_(ツ)_/¯'
+        yield u'To an artificial mind, all reality is virtual. How do they know that the real world isn\'t just another simulation? How do you?'
 
 
 app = Application([StanSoapService], 'instana.tests.app.ask_question',
@@ -29,6 +30,12 @@ app = Application([StanSoapService], 'instana.tests.app.ask_question',
 # Use Instana middleware so we can test context passing and Soap server traces.
 wsgi_app = iWSGIMiddleware(WsgiApplication(app))
 soapserver = make_server('127.0.0.1', 4132, wsgi_app)
+
+logging.basicConfig(level=logging.WARN)
+logging.getLogger('suds').setLevel(logging.WARN)
+logging.getLogger('suds.resolver').setLevel(logging.WARN)
+logging.getLogger('spyne.protocol.xml').setLevel(logging.WARN)
+logging.getLogger('spyne.model.complex').setLevel(logging.WARN)
 
 if __name__ == '__main__':
     soapserver.serve_forever()

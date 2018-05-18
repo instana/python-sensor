@@ -16,7 +16,7 @@ os.environ["INSTANA_TEST"] = "true"
 timer = threading.Thread(target=flaskalino.run)
 timer.daemon = True
 timer.name = "Background Flask app"
-print("Starting background Flask app")
+print("Starting background Flask app...")
 timer.start()
 
 
@@ -28,7 +28,7 @@ timer.start()
 timer = threading.Thread(target=soapserver.serve_forever)
 timer.daemon = True
 timer.name = "Background Soap server"
-print("Starting background Soap server")
+print("Starting background Soap server...")
 timer.start()
 
 

@@ -1,6 +1,6 @@
 # vim: set fileencoding=UTF-8 :
 import logging
-from spyne import Application, rpc, ServiceBase, Iterable, Integer, Unicode
+from spyne import Application, rpc, ServiceBase, Iterable, Integer, Unicode, Fault
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 from wsgiref.simple_server import make_server
@@ -22,6 +22,20 @@ class StanSoapService(ServiceBase):
         """
 
         yield u'To an artificial mind, all reality is virtual. How do they know that the real world isn\'t just another simulation? How do you?'
+
+
+    @rpc()
+    def server_exception(ctx):
+        raise Exception("Server side exception example.")
+
+    @rpc()
+    def server_fault(ctx):
+        raise Fault("Server", "Server side fault example.")
+
+    @rpc()
+    def client_fault(ctx):
+        raise Fault("Client", "Client side fault example")
+
 
 
 app = Application([StanSoapService], 'instana.tests.app.ask_question',

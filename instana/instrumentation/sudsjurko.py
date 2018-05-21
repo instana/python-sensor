@@ -36,7 +36,7 @@ try:
             rv = wrapped(*args, **kwargs)
 
         except Exception as e:
-            span.log_kv({'message': e})
+            span.log_kv({'message': e.message})
             span.set_tag("error", True)
             ec = span.tags.get('ec', 0)
             span.set_tag("ec", ec+1)

@@ -86,7 +86,7 @@ class TestSudsJurko:
         assert('logs' in soap_span.data.custom.__dict__)
         assert_equals(1, len(soap_span.data.custom.logs.keys()))
 
-        tskey = soap_span.data.custom.logs.keys()[0]
+        tskey = list(soap_span.data.custom.logs.keys())[0]
         assert('message' in soap_span.data.custom.logs[tskey])
         assert_equals(u"Server raised fault: 'Internal Error'",
                       soap_span.data.custom.logs[tskey]['message'])
@@ -124,7 +124,7 @@ class TestSudsJurko:
         assert('logs' in soap_span.data.custom.__dict__)
         assert_equals(1, len(soap_span.data.custom.logs.keys()))
 
-        tskey = soap_span.data.custom.logs.keys()[0]
+        tskey = list(soap_span.data.custom.logs.keys())[0]
         assert('message' in soap_span.data.custom.logs[tskey])
         assert_equals(u"Server raised fault: 'Server side fault example.'",
                       soap_span.data.custom.logs[tskey]['message'])
@@ -162,7 +162,7 @@ class TestSudsJurko:
         assert('logs' in soap_span.data.custom.__dict__)
         assert_equals(1, len(soap_span.data.custom.logs.keys()))
 
-        tskey = soap_span.data.custom.logs.keys()[0]
+        tskey = list(soap_span.data.custom.logs.keys())[0]
         assert('message' in soap_span.data.custom.logs[tskey])
         assert_equals(u"Server raised fault: 'Server side fault example.'",
                       soap_span.data.custom.logs[tskey]['message'])
@@ -201,7 +201,7 @@ class TestSudsJurko:
         assert('logs' in soap_span.data.custom.__dict__)
         assert_equals(1, len(soap_span.data.custom.logs.keys()))
 
-        tskey = soap_span.data.custom.logs.keys()[0]
+        tskey = list(soap_span.data.custom.logs.keys())[0]
         assert('message' in soap_span.data.custom.logs[tskey])
         assert_equals(u"Server raised fault: 'Client side fault example'",
                       soap_span.data.custom.logs[tskey]['message'])

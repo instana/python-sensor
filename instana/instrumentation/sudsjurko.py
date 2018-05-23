@@ -16,7 +16,6 @@ try:
     else:
         class_method = '_SoapClient.send'
 
-    # previously named SoapClient
     @wrapt.patch_function_wrapper('suds.client', class_method)
     def send_with_instana(wrapped, instance, args, kwargs):
         context = instana.internal_tracer.current_context()
@@ -29,6 +28,7 @@ try:
             span = instana.internal_tracer.start_span("soap", child_of=context)
             span.set_tag('soap.action', instance.method.name)
             span.set_tag(ext.HTTP_URL, instance.method.location)
+            span.set_tag(ext.HTTP_METHOD, 'POST')
 
             instana.internal_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS,
                                            instance.options.headers)
@@ -37,8 +37,10 @@ try:
 
         except Exception as e:
             span.log_exception(e)
+            span.set_tag(ext.HTTP_STATUS_CODE, 500)
             raise
         else:
+            span.set_tag(ext.HTTP_STATUS_CODE, 200)
             return rv
         finally:
             span.finish()

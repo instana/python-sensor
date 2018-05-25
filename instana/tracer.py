@@ -21,7 +21,7 @@ class InstanaTracer(BasicTracer):
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 
-        self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
+        self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator(options.use_grpc_safe_http_headers)
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
 
     def start_span(

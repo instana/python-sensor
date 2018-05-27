@@ -1,2 +1,2 @@
 # See setup.py for dependencies
--e .
+-e .[test]

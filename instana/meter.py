@@ -153,12 +153,10 @@ class Meter(object):
             s = Snapshot(name=appname, version=sys.version)
             s.version = sys.version
             s.versions = self.collect_modules()
-
-            return s
         except Exception as e:
-            log.debug("collect_snapshot: ", str(e))
-
-            return None
+            log.debug(e.message)
+        else:
+            return s
 
     def jsonable(self, value):
         try:
@@ -174,8 +172,8 @@ class Meter(object):
 
     def collect_modules(self):
         try:
-            m = sys.modules
             r = {}
+            m = sys.modules
             for k in m:
                 # Don't report submodules (e.g. django.x, django.y, django.z)
                 if ('.' in k):
@@ -193,11 +191,10 @@ class Meter(object):
                         r[k] = "unknown"
                         log.debug("collect_modules: could not process module ", k, str(e))
 
-            return r
         except Exception as e:
-            log.debug("collect_modules: ", str(e))
-
-            return None
+            log.debug(e.message)
+        else:
+            return r
 
     def collect_metrics(self):
         u = resource.getrusage(resource.RUSAGE_SELF)

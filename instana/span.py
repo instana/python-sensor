@@ -14,3 +14,15 @@ class InstanaSpan(BasicSpan):
                                sampled=True)
             self.tracer.cur_ctx = pctx
         super(InstanaSpan, self).finish(finish_time)
+
+    def log_exception(self, e):
+        if hasattr(e, 'message'):
+            self.log_kv({'message': e.message})
+        elif hasattr(e, '__str__'):
+            self.log_kv({'message': e.__str__()})
+        else:
+            self.log_kv({'message': str(e)})
+
+        self.set_tag("error", True)
+        ec = self.tags.get('ec', 0)
+        self.set_tag("ec", ec+1)

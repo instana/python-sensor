@@ -9,6 +9,7 @@ if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
     # Import & initialize instrumentation
     # noqa: ignore=W0611
     from .instrumentation import urllib3  # noqa
+    from .instrumentation import sudsjurko  # noqa
 
 """
 The Instana package has two core components: the sensor and the tracer.

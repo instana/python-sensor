@@ -22,6 +22,7 @@ class Data(object):
     baggage = None
     custom = None
     sdk = None
+    soap = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -32,6 +33,12 @@ class HttpData(object):
     url = None
     status = 0
     method = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+class SoapData(object):
+    action = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

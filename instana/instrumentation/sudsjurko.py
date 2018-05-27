@@ -9,8 +9,6 @@ import wrapt
 try:
     import suds # noqa
 
-    # import pdb; pdb.Pdb(skip=['django.*']).set_trace()
-
     if (suds.version.__version__ <= '0.6'):
         class_method = 'SoapClient.send'
     else:
@@ -45,6 +43,6 @@ try:
         finally:
             span.finish()
 
-    instana.log.debug("Instrumenting suds-jurko")
+    logger.debug("Instrumenting suds-jurko")
 except ImportError:
     pass

@@ -1,10 +1,9 @@
-from __future__ import print_function
 import opentracing as ot
 from instana import internal_tracer
 from instana.log import logger
 import opentracing.ext.tags as ext
 import wrapt
-import os
+import sys
 
 
 DJ_INSTANA_MIDDLEWARE = 'instana.django.InstanaMiddleware'
@@ -63,6 +62,7 @@ class InstanaMiddleware(MiddlewareMixin):
             ec = self.span.tags.get('ec', 0)
             self.span.set_tag("ec", ec+1)
 
+
 def load_middleware_wrapper(wrapped, instance, args, kwargs):
     try:
         from django.conf import settings
@@ -96,32 +96,8 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
     except Exception as e:
             logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", e)
 
-def hook(module):
-    """ Hook method to install the Instana middleware into Django >= 1.10 """
-    if "INSTANA_DEV" in os.environ:
-        print("==============================================================")
-        print("Instana: Running django hook")
-        print("==============================================================")
-    wrapt.wrap_function_wrapper(module, 'BaseHandler.load_middleware', load_middleware_wrapper)
-
-
-def hook19(module):
-    try:
-        """ Hook method to install the Instana middleware into Django <= 1.9 """
-        if "INSTANA_DEV" in os.environ:
-            print("==============================================================")
-            print("Instana: Running django19 hook")
-            print("==============================================================")
-
-        if DJ_INSTANA_MIDDLEWARE in module.settings.MIDDLEWARE_CLASSES:
-            return
-
-        if type(module.settings.MIDDLEWARE_CLASSES) is tuple:
-            module.settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + module.settings.MIDDLEWARE_CLASSES
-        elif type(module.settings.MIDDLEWARE_CLASSES) is list:
-            module.settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + module.settings.MIDDLEWARE_CLASSES
-        else:
-            logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
-
-    except Exception as e:
-            logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", e)
+try:
+    if 'django' in sys.modules:
+        wrapt.wrap_function_wrapper('django.core.handlers.base', 'BaseHandler.load_middleware', load_middleware_wrapper)
+except:
+    pass

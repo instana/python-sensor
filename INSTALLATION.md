@@ -1,3 +1,15 @@
+# Overview
+
+Once the Instana python package is installed and available to the Python application, it can be actived via environment variable (without any code changes) or done manually.  See below for details.
+
+To install the Python sensor:
+
+    pip install instana
+
+or to alternatively update an existing installation:
+
+    pip install -U instana
+
 # Automated
 
 The Instana package sensor can be enabled without any code modifications.  To do this, set the following environment variable for your Python application:

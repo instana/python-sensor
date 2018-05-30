@@ -6,7 +6,7 @@ import wrapt
 import sys
 
 
-DJ_INSTANA_MIDDLEWARE = 'instana.django.InstanaMiddleware'
+DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 
 try:
     from django.utils.deprecation import MiddlewareMixin
@@ -69,19 +69,12 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
 
         # Django >=1.10 to <2.0 support old-style MIDDLEWARE_CLASSES so we
         # do as well here
-        if hasattr(settings, 'MIDDLEWARE_CLASSES'):
-            if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
-                return wrapped(*args, **kwargs)
-
-            if type(settings.MIDDLEWARE_CLASSES) is tuple:
-                settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES
-            elif type(settings.MIDDLEWARE_CLASSES) is list:
-                settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE_CLASSES
-            else:
-                logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
-        elif hasattr(settings, 'MIDDLEWARE'):
+        if hasattr(settings, 'MIDDLEWARE'):
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE:
                 return wrapped(*args, **kwargs)
+
+            # Save the list of middleware for Snapshot reporting
+            internal_tracer.sensor.meter.djmw = settings.MIDDLEWARE
 
             if type(settings.MIDDLEWARE) is tuple:
                 settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
@@ -89,6 +82,21 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
                 settings.MIDDLEWARE = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE
             else:
                 logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
+
+        elif hasattr(settings, 'MIDDLEWARE_CLASSES'):
+            if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
+                return wrapped(*args, **kwargs)
+
+            # Save the list of middleware for Snapshot reporting
+            internal_tracer.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
+
+            if type(settings.MIDDLEWARE_CLASSES) is tuple:
+                settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES
+            elif type(settings.MIDDLEWARE_CLASSES) is list:
+                settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE_CLASSES
+            else:
+                logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
+
         else:
             logger.warn("Instana: Couldn't find middleware settings")
 

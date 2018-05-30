@@ -15,6 +15,7 @@ class Snapshot(object):
     name = None
     version = None
     versions = None
+    djmw = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -24,6 +25,7 @@ class Snapshot(object):
         kvs['name'] = self.name
         kvs['version'] = self.version
         kvs['versions'] = self.versions
+        kvs['djmw'] = list(self.djmw)
         return kvs
 
 
@@ -102,6 +104,7 @@ class Meter(object):
     last_collect = None
     timer = None
     last_metrics = None
+    djmw = None
 
     def __init__(self, sensor):
         self.sensor = sensor
@@ -147,10 +150,12 @@ class Meter(object):
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:
                 appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
+            elif hasattr(sys, '__interactivehook__') or hasattr(sys, 'ps1'):
+                appname = "Interactive Console"
             else:
                 appname = os.path.basename(sys.argv[0])
 
-            s = Snapshot(name=appname, version=sys.version)
+            s = Snapshot(name=appname, version=sys.version, djmw=self.djmw)
             s.version = sys.version
             s.versions = self.collect_modules()
         except Exception as e:

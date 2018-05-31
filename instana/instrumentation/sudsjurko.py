@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from distutils.version import LooseVersion
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
@@ -9,8 +10,7 @@ from .. import internal_tracer
 try:
     import suds # noqa
 
-    # FIXME
-    if (suds.version.__version__ <= '0.6'):
+    if (LooseVersion(suds.version.__version__) <= LooseVersion('0.6')):
         class_method = 'SoapClient.send'
     else:
         class_method = '_SoapClient.send'

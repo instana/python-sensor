@@ -15,10 +15,13 @@ setup(name='instana',
                         'fysom>=2.1.2',
                         'opentracing>=1.2.1,<1.3',
                         'basictracer>=2.2.0'],
-      entry_points={'django': ['string = instana.runtime:hook'], # deprecated: use same as 'runtime'
-                    'django19': ['string = instana.runtime:hook'], # deprecated: use same as 'runtime'
-                    'flask': ['flask = instana.flaskana:hook'],
-                    'runtime': ['string = instana.runtime:hook']},
+      entry_points={
+                    'instana':  ['string = instana:load'],
+                    'flask':    ['flask = instana.flaskana:hook'],
+                    'runtime':  ['string = instana:load'], # deprecated: use same as 'instana'
+                    'django':   ['string = instana:load'], # deprecated: use same as 'instana'
+                    'django19': ['string = instana:load'], # deprecated: use same as 'instana'
+                    },
       extras_require={
         'test': [
             'nose>=1.0',

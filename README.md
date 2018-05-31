@@ -15,7 +15,7 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 ## Usage & Installation
 
-The instana package will automatically collect key metrics from your Python processes.  Just install and go.
+The instana package will automatically collect metrics and distributed traces from your Python processes.  Just install and go.
 
 `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
 

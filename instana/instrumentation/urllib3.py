@@ -1,9 +1,9 @@
 from __future__ import absolute_import
-import instana
-from instana.log import logger
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
+from ..log import logger
+from .. import internal_tracer
 
 
 try:
@@ -36,14 +36,14 @@ try:
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        context = instana.internal_tracer.current_context()
+        context = internal_tracer.current_context()
 
         # If we're not tracing, just return
         if context is None:
             return wrapped(*args, **kwargs)
 
         try:
-            span = instana.internal_tracer.start_span("urllib3", child_of=context)
+            span = internal_tracer.start_span("urllib3", child_of=context)
 
             kvs = collect(instance, args, kwargs)
             if 'url' in kvs:
@@ -51,7 +51,7 @@ try:
             if 'method' in kvs:
                 span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
-            instana.internal_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
+            internal_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
             rv = wrapped(*args, **kwargs)
 
             span.set_tag(ext.HTTP_STATUS_CODE, rv.status)
@@ -71,6 +71,6 @@ try:
             span.finish()
             return rv
 
-    instana.log.debug("Instrumenting urllib3")
+    logger.debug("Instrumenting urllib3")
 except ImportError:
     pass

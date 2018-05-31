@@ -18,7 +18,7 @@ class Snapshot(object):
     f = None # flavor: CPython, Jython, IronPython, PyPy
     a = None # architecture: i386, x86, x86_64, AMD64
     versions = None
-    djmw = None
+    djmw = []
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

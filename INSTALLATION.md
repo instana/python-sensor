@@ -12,38 +12,17 @@ or to alternatively update an existing installation:
 
 # Automated
 
-The Instana package sensor can be enabled without any code modifications.  To do this, set the following environment variable for your Python application:
+The Instana package sensor can be enabled without any code modifications required.  To do this, install the package and set the following environment variable for your Python application:
 
-    AUTOWRAPT_BOOTSTRAP=runtime
+    AUTOWRAPT_BOOTSTRAP=instana
 
-This will cause the Instana Python package to automatically instrument your Python application.  Once it finds the host agent, it will begin to report Python metrics.
+This will cause the Instana Python package to automatically instrument your Python application.  Once it finds the Instana host agent, it will begin to report Python metrics.
 
 # Manual
 
-In any Python 2.7 or great application, to manually enable the Instana sensor, simply import the package:
+In any Python 2.7 or greater application, to manually enable the Instana sensor, simply import the package:
 
     import instana
-
-This will initialize the package and it will begin to report key Python metrics.
-
-# Django (Automated)
-
-The Instana package offers a method to automatically instrument your Django application without any code changes required.  To enable the Django instrumetation, set the environment variable `AUTOWRAPT_BOOTSTRAP=django` (use `django19` for Django version 1.9.x) for your Python application.
-
-# Django (Manual Installation)
-
-To instead manually install the Instana Django middleware into your Django application, import the package and add `instana.django.InstanaMiddleware` to the top of your `MIDDLEWARE` (or `MIDDLEWARE_CLASSES` for earlier versions) in your `settings.py`:
-
-```Python
-import instana
-
-MIDDLEWARE = [
-    'instana.django.InstanaMiddleware',
-    # ...
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-```
 
 # Flask
 
@@ -53,9 +32,50 @@ To enable the Flask instrumentation, set the following environment variable in y
 
 # WSGI Stacks
 
-The Instana sensor bundles with it WSGI middleware.  The usage of this middleware is automated for various frameworks but for those that arent' supported yet, see the [WSGI documentation](WSGI.md) for details on how to manually add it to your stack.
+The Instana sensor includes WSGI middleware that can be added to any WSGI compliant stack.  This is automated for various stacks but can also be done manually for those we haven't added support for yet.
 
-# uWSGI
+The general usage is:
+
+```python
+import instana
+from instana.wsgi import iWSGIMiddleware
+
+# Wrap the wsgi app in Instana middleware (iWSGIMiddleware)
+wsgiapp = iWSGIMiddleware(MyWSGIApplication())
+```
+
+We are working to automate this for all major frameworks but in the meantime, here are some specific quick starts for those we don't have automatic support for yet.
+
+## CherryPy WSGI
+
+```python
+import cherrypy
+import instana
+from instana.wsgi import iWSGIMiddleware
+
+# My CherryPy application
+class Root(object):
+    @cherrypy.expose
+    def index(self):
+        return "hello world"
+
+cherrypy.config.update({'engine.autoreload.on': False})
+cherrypy.server.unsubscribe()
+cherrypy.engine.start()
+
+# Wrap the wsgi app in Instana middleware (iWSGIMiddleware)
+wsgiapp = iWSGIMiddleware(cherrypy.tree.mount(Root()))
+```
+
+In this example, we use uwsgi as the webserver and booted with:
+
+    uwsgi --socket 127.0.0.1:8080 --protocol=http --wsgi-file mycherry.py --callable wsgiapp -H ~/.local/share/virtualenvs/cherrypyapp-C1BUba0z
+
+Where `~/.local/share/virtualenvs/cherrypyapp-C1BUba0z` is the path to my local virtualenv from pipenv
+
+# uWSGI Webserver
+
+tldr; Make sure `enable-threads` and `lazy-apps` is enabled for uwsgi.
 
 ## Threads
 

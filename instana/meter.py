@@ -1,10 +1,11 @@
-import threading
-import resource
-import os
-import gc as gc_
-import sys
 import copy
+import gc as gc_
+import os
+import platform
+import resource
+import sys
 import time
+import threading
 from types import ModuleType
 import instana
 from .log import logger as log
@@ -14,7 +15,10 @@ from .agent_const import AGENT_DATA_URL
 class Snapshot(object):
     name = None
     version = None
+    f = None # flavor: CPython, Jython, IronPython, PyPy
+    a = None # architecture: i386, x86, x86_64, AMD64
     versions = None
+    djmw = []
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -23,7 +27,10 @@ class Snapshot(object):
         kvs = dict()
         kvs['name'] = self.name
         kvs['version'] = self.version
+        kvs['f'] = self.f # flavor
+        kvs['a'] = self.a # architecture
         kvs['versions'] = self.versions
+        kvs['djmw'] = list(self.djmw)
         return kvs
 
 
@@ -102,6 +109,7 @@ class Meter(object):
     last_collect = None
     timer = None
     last_metrics = None
+    djmw = None
 
     def __init__(self, sensor):
         self.sensor = sensor
@@ -147,10 +155,15 @@ class Meter(object):
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:
                 appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
+            elif hasattr(sys, '__interactivehook__') or hasattr(sys, 'ps1'):
+                appname = "Interactive Console"
             else:
                 appname = os.path.basename(sys.argv[0])
 
-            s = Snapshot(name=appname, version=sys.version)
+            s = Snapshot(name=appname, version=platform.version(),
+                         f=platform.python_implementation(),
+                         a=platform.architecture()[0],
+                         djmw=self.djmw)
             s.version = sys.version
             s.versions = self.collect_modules()
         except Exception as e:

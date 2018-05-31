@@ -7,7 +7,7 @@ setup(name='instana',
       license='MIT',
       author='Instana Inc.',
       author_email='peter.lombardo@instana.com',
-      description='Metrics sensor and trace collector for Instana',
+      description='Metrics sensor and distributed trace collector for Instana',
       packages=find_packages(exclude=['tests', 'examples']),
       long_description="The instana package provides Python metrics and traces for Instana.",
       zip_safe=False,
@@ -15,10 +15,13 @@ setup(name='instana',
                         'fysom>=2.1.2',
                         'opentracing>=1.2.1,<1.3',
                         'basictracer>=2.2.0'],
-      entry_points={'django': ['django.core.handlers.base = instana.django:hook'],
-                    'django19': ['django.core.handlers.base = instana.django:hook19'],
-                    'flask': ['flask = instana.flaskana:hook'],
-                    'runtime': ['string = instana.runtime:hook']},
+      entry_points={
+                    'instana':  ['string = instana:load'],
+                    'flask':    ['flask = instana.flaskana:hook'],
+                    'runtime':  ['string = instana:load'], # deprecated: use same as 'instana'
+                    'django':   ['string = instana:load'], # deprecated: use same as 'instana'
+                    'django19': ['string = instana:load'], # deprecated: use same as 'instana'
+                    },
       extras_require={
         'test': [
             'nose>=1.0',

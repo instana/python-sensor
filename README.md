@@ -19,7 +19,15 @@ The instana package will automatically collect key metrics from your Python proc
 
 `pip install instana` into the virtual-env or container ([hosted on pypi](https://pypi.python.org/pypi/instana))
 
-See our detailed [Installation document](INSTALLATION.md) for environment specific information covering Django, Flask, End-user Monitoring (EUM) and more.
+The Instana package can then be activated _without any code changes required_ by setting the following environment variable for your Python application:
+
+    export AUTOWRAPT_BOOTSTRAP=instana
+
+alternatively, if you prefer the manual method, simply import the `instana` package inside of your Python application:
+
+    import instana
+
+See our detailed [Installation document](INSTALLATION.md) for additional information covering Django, Flask, End-user Monitoring (EUM) and more.
 
 ## OpenTracing
 
@@ -47,8 +55,7 @@ Also note that under evented systems such as gevent, concurrence and/or greenlet
 
 ## Configuration
 
-See [Configuration.md](https://github.com/instana/python-sensor/blob/master/Configuration.md)
-
+For details on how to configure the Instana Python package, see [Configuration.md](https://github.com/instana/python-sensor/blob/master/Configuration.md)
 
 ## Documentation
 

@@ -37,3 +37,17 @@ export INSTANA_DEV="true"
 ## Disabling Automatic instrumentation
 
 You can disable automatic instrumentation (tracing) by setting the environment variable `INSTANA_DISABLE_AUTO_INSTR`.  This will suppress the loading of instrumentation built-into the sensor.
+
+## OpenShift
+
+In certain scenarios, the Python sensor can't automatically locate the Instana host agent.  To resolve this, add the following to your Python app deployment descriptor:
+
+```
+- name: INSTANA_AGENT_HOST
+valueFrom:
+  fieldRef:
+    fieldPath: status.hostIP
+```
+
+This will set the environment variable INSTANA_AGENT_HOST with the IP of the host so the Python sensor can properly locate the Host agent.
+

@@ -1,0 +1,212 @@
+from __future__ import absolute_import
+from nose.tools import assert_equals
+from instana import internal_tracer as tracer
+from instana.util import to_json
+from suds.client import Client
+
+
+class TestSudsJurko:
+    def setUp(self):
+        """ Clear all spans before a test run """
+        self.client = Client('http://localhost:4132/?wsdl', cache=None)
+        self.recorder = tracer.recorder
+        self.recorder.clear_spans()
+        tracer.cur_ctx = None
+
+    def tearDown(self):
+        """ Do nothing for now """
+        # after each test, tracer context should be None (not tracing)
+        # assert_equals(None, tracer.current_context())
+        return None
+
+    def test_vanilla_request(self):
+        response = self.client.service.ask_question(u'Why u like dat?', 5)
+
+        assert_equals(1, len(response))
+        assert_equals(1, len(response[0]))
+        assert(type(response[0]) is list)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(1, len(spans))
+
+    def test_basic_request(self):
+        span = tracer.start_span("test")
+        response = self.client.service.ask_question(u'Why u like dat?', 5)
+        span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(3, len(spans))
+        wsgi_span = spans[0]
+        soap_span = spans[1]
+        test_span = spans[2]
+
+        assert_equals(1, len(response))
+        assert_equals(1, len(response[0]))
+        assert(type(response[0]) is list)
+
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, soap_span.t)
+        assert_equals(soap_span.p, test_span.s)
+        assert_equals(wsgi_span.t, soap_span.t)
+        assert_equals(wsgi_span.p, soap_span.s)
+
+        assert_equals(None, soap_span.error)
+        assert_equals(None, soap_span.ec)
+
+        assert_equals('ask_question', soap_span.data.soap.action)
+        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+
+        assert_equals(None, tracer.current_context())
+
+    def test_server_exception(self):
+        response = None
+        try:
+            span = tracer.start_span("test")
+            response = self.client.service.server_exception()
+        except:
+            pass
+        finally:
+            span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(3, len(spans))
+        wsgi_span = spans[0]
+        soap_span = spans[1]
+        test_span = spans[2]
+
+        assert_equals(None, response)
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, soap_span.t)
+        assert_equals(soap_span.p, test_span.s)
+        assert_equals(wsgi_span.t, soap_span.t)
+        assert_equals(wsgi_span.p, soap_span.s)
+
+        assert_equals(True, soap_span.error)
+        assert_equals(1, soap_span.ec)
+        assert('logs' in soap_span.data.custom.__dict__)
+        assert_equals(1, len(soap_span.data.custom.logs.keys()))
+
+        tskey = list(soap_span.data.custom.logs.keys())[0]
+        assert('message' in soap_span.data.custom.logs[tskey])
+        assert_equals(u"Server raised fault: 'Internal Error'",
+                      soap_span.data.custom.logs[tskey]['message'])
+
+        assert_equals('server_exception', soap_span.data.soap.action)
+        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+
+        assert_equals(None, tracer.current_context())
+
+    def test_server_fault(self):
+        response = None
+        try:
+            span = tracer.start_span("test")
+            response = self.client.service.server_fault()
+        except:
+            pass
+        finally:
+            span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(3, len(spans))
+        wsgi_span = spans[0]
+        soap_span = spans[1]
+        test_span = spans[2]
+
+        assert_equals(None, response)
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, soap_span.t)
+        assert_equals(soap_span.p, test_span.s)
+        assert_equals(wsgi_span.t, soap_span.t)
+        assert_equals(wsgi_span.p, soap_span.s)
+
+        assert_equals(True, soap_span.error)
+        assert_equals(1, soap_span.ec)
+        assert('logs' in soap_span.data.custom.__dict__)
+        assert_equals(1, len(soap_span.data.custom.logs.keys()))
+
+        tskey = list(soap_span.data.custom.logs.keys())[0]
+        assert('message' in soap_span.data.custom.logs[tskey])
+        assert_equals(u"Server raised fault: 'Server side fault example.'",
+                      soap_span.data.custom.logs[tskey]['message'])
+
+        assert_equals('server_fault', soap_span.data.soap.action)
+        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+
+        assert_equals(None, tracer.current_context())
+
+    def test_server_fault(self):
+        response = None
+        try:
+            span = tracer.start_span("test")
+            response = self.client.service.server_fault()
+        except:
+            pass
+        finally:
+            span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(3, len(spans))
+        wsgi_span = spans[0]
+        soap_span = spans[1]
+        test_span = spans[2]
+
+        assert_equals(None, response)
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, soap_span.t)
+        assert_equals(soap_span.p, test_span.s)
+        assert_equals(wsgi_span.t, soap_span.t)
+        assert_equals(wsgi_span.p, soap_span.s)
+
+        assert_equals(True, soap_span.error)
+        assert_equals(1, soap_span.ec)
+        assert('logs' in soap_span.data.custom.__dict__)
+        assert_equals(1, len(soap_span.data.custom.logs.keys()))
+
+        tskey = list(soap_span.data.custom.logs.keys())[0]
+        assert('message' in soap_span.data.custom.logs[tskey])
+        assert_equals(u"Server raised fault: 'Server side fault example.'",
+                      soap_span.data.custom.logs[tskey]['message'])
+
+        assert_equals('server_fault', soap_span.data.soap.action)
+        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+
+        assert_equals(None, tracer.current_context())
+
+
+    def test_client_fault(self):
+        response = None
+        try:
+            span = tracer.start_span("test")
+            response = self.client.service.client_fault()
+        except:
+            pass
+        finally:
+            span.finish()
+
+        spans = self.recorder.queued_spans()
+        assert_equals(3, len(spans))
+        wsgi_span = spans[0]
+        soap_span = spans[1]
+        test_span = spans[2]
+
+        assert_equals(None, response)
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, soap_span.t)
+        assert_equals(soap_span.p, test_span.s)
+        assert_equals(wsgi_span.t, soap_span.t)
+        assert_equals(wsgi_span.p, soap_span.s)
+
+        assert_equals(True, soap_span.error)
+        assert_equals(1, soap_span.ec)
+        assert('logs' in soap_span.data.custom.__dict__)
+        assert_equals(1, len(soap_span.data.custom.logs.keys()))
+
+        tskey = list(soap_span.data.custom.logs.keys())[0]
+        assert('message' in soap_span.data.custom.logs[tskey])
+        assert_equals(u"Server raised fault: 'Client side fault example'",
+                      soap_span.data.custom.logs[tskey]['message'])
+
+        assert_equals('client_fault', soap_span.data.soap.action)
+        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+
+        assert_equals(None, tracer.current_context())

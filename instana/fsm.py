@@ -187,7 +187,6 @@ class Fsm(object):
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
-        log.debug('Threadlist: ', str(t.enumerate()))
 
     def test_agent(self, e):
         log.debug("testing communication with the agent")

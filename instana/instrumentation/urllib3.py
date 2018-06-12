@@ -1,9 +1,9 @@
 from __future__ import absolute_import
-import instana
-from instana.log import logger
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
+from ..log import logger
+from .. import internal_tracer
 
 
 try:
@@ -44,7 +44,6 @@ try:
 
         with instana.internal_tracer.start_active_span("urllib3", child_of=parent_span) as scope:
             try:
-
                 kvs = collect(instance, args, kwargs)
                 if 'url' in kvs:
                     scope.span.set_tag(ext.HTTP_URL, kvs['url'])
@@ -68,6 +67,6 @@ try:
                 scope.span.set_tag("ec", ec+1)
                 raise
 
-    instana.log.debug("Instrumenting urllib3")
+    logger.debug("Instrumenting urllib3")
 except ImportError:
     pass

@@ -15,8 +15,6 @@ class TestSudsJurko:
 
     def tearDown(self):
         """ Do nothing for now """
-        # after each test, tracer context should be None (not tracing)
-        # assert_equals(None, tracer.current_context())
         return None
 
     def test_vanilla_request(self):
@@ -30,11 +28,11 @@ class TestSudsJurko:
         assert_equals(1, len(spans))
 
     def test_basic_request(self):
-        span = tracer.start_span("test")
-        response = self.client.service.ask_question(u'Why u like dat?', 5)
-        span.finish()
+        with tracer.start_active_span('test'):
+            response = self.client.service.ask_question(u'Why u like dat?', 5)
 
         spans = self.recorder.queued_spans()
+        # import ipdb; ipdb.set_trace()
         assert_equals(3, len(spans))
         wsgi_span = spans[0]
         soap_span = spans[1]
@@ -56,17 +54,13 @@ class TestSudsJurko:
         assert_equals('ask_question', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
 
-        assert_equals(None, tracer.current_context())
-
     def test_server_exception(self):
         response = None
-        try:
-            span = tracer.start_span("test")
-            response = self.client.service.server_exception()
-        except:
-            pass
-        finally:
-            span.finish()
+        with tracer.start_active_span('test'):
+            try:
+                response = self.client.service.server_exception()
+            except:
+                pass
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -94,17 +88,13 @@ class TestSudsJurko:
         assert_equals('server_exception', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
 
-        assert_equals(None, tracer.current_context())
-
     def test_server_fault(self):
         response = None
-        try:
-            span = tracer.start_span("test")
-            response = self.client.service.server_fault()
-        except:
-            pass
-        finally:
-            span.finish()
+        with tracer.start_active_span('test'):
+            try:
+                response = self.client.service.server_fault()
+            except:
+                pass
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -132,17 +122,13 @@ class TestSudsJurko:
         assert_equals('server_fault', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
 
-        assert_equals(None, tracer.current_context())
-
     def test_server_fault(self):
         response = None
-        try:
-            span = tracer.start_span("test")
-            response = self.client.service.server_fault()
-        except:
-            pass
-        finally:
-            span.finish()
+        with tracer.start_active_span('test'):
+            try:
+                response = self.client.service.server_fault()
+            except:
+                pass
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -169,19 +155,14 @@ class TestSudsJurko:
 
         assert_equals('server_fault', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
-
-        assert_equals(None, tracer.current_context())
-
 
     def test_client_fault(self):
         response = None
-        try:
-            span = tracer.start_span("test")
-            response = self.client.service.client_fault()
-        except:
-            pass
-        finally:
-            span.finish()
+        with tracer.start_active_span('test'):
+            try:
+                response = self.client.service.client_fault()
+            except:
+                pass
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -208,5 +189,3 @@ class TestSudsJurko:
 
         assert_equals('client_fault', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
-
-        assert_equals(None, tracer.current_context())

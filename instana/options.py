@@ -7,6 +7,7 @@ class Options(object):
     agent_host = ''
     agent_port = 0
     log_level = logging.WARN
+    use_grpc_safe_http_headers = False
 
     def __init__(self, **kwds):
         """ Initialize Options
@@ -25,5 +26,8 @@ class Options(object):
 
         if "INSTANA_AGENT_PORT" in os.environ:
             self.agent_port = os.environ["INSTANA_AGENT_PORT"]
+
+        if "USE_GRPC_SAFE_HTTP_HEADERS" in os.environ:
+            self.use_grpc_safe_http_headers = os.environ["USE_GRPC_SAFE_HTTP_HEADERS"] == "true"
 
         self.__dict__.update(kwds)

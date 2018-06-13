@@ -19,7 +19,7 @@ class TestAPIClient(object):
         assert_equals(200, r.status)
 
     def test_token(self):
-        r = self.client.token(client.api_token)
+        r = self.client.token(self.client.api_token)
         assert_equals(200, r.status)
 
     @unittest.skip("")

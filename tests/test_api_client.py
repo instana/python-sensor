@@ -2,17 +2,24 @@ from nose.tools import assert_equals
 from instana.api import APIClient
 import unittest
 
-client = APIClient()
-
-
 @unittest.skip("Manual tests due to API key requirement")
 class TestAPIClient(object):
+    def setUp(self):
+        """ Clear all spans before a test run """
+        self.client = APIClient()
+
+    def tearDown(self):
+        """ Do nothing for now """
+        # after each test, tracer context should be None (not tracing)
+        # assert_equals(None, tracer.current_context())
+        return None
+
     def test_tokens(self):
-        r = client.tokens()
+        r = self.client.tokens()
         assert_equals(200, r.status)
 
     def test_token(self):
-        r = client.token(client.api_token)
+        r = self.client.token(client.api_token)
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -24,11 +31,11 @@ class TestAPIClient(object):
         None
 
     def test_audit_log(self):
-        r = client.audit_log()
+        r = self.client.audit_log()
         assert_equals(200, r.status)
 
     def test_eum_apps(self):
-        r = client.eum_apps()
+        r = self.client.eum_apps()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -44,7 +51,7 @@ class TestAPIClient(object):
         None
 
     def test_events(self):
-        r = client.events()
+        r = self.client.events()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -60,7 +67,7 @@ class TestAPIClient(object):
         None
 
     def test_rule_bindings(self):
-        r = client.rule_bindings()
+        r = self.client.rule_bindings()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -68,7 +75,7 @@ class TestAPIClient(object):
         None
 
     def test_rules(self):
-        r = client.rules()
+        r = self.client.rules()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -84,11 +91,11 @@ class TestAPIClient(object):
         None
 
     def test_search_fields(self):
-        r = client.search_fields()
+        r = self.client.search_fields()
         assert_equals(200, r.status)
 
     def test_service_extraction_configs(self):
-        r = client.rules()
+        r = self.client.rules()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -112,7 +119,7 @@ class TestAPIClient(object):
         None
 
     def test_roles(self):
-        r = client.roles()
+        r = self.client.roles()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -128,7 +135,7 @@ class TestAPIClient(object):
         None
 
     def test_users(self):
-        r = client.users()
+        r = self.client.users()
         assert_equals(200, r.status)
 
     @unittest.skip("")
@@ -148,15 +155,15 @@ class TestAPIClient(object):
         None
 
     def test_application_view(self):
-        r = client.application_view()
+        r = self.client.application_view()
         assert_equals(200, r.status)
 
     def test_infrastructure_view(self):
-        r = client.infrastructure_view()
+        r = self.client.infrastructure_view()
         assert_equals(200, r.status)
 
     def test_usage(self):
-        r = client.usage()
+        r = self.client.usage()
         assert_equals(200, r.status)
 
     @unittest.skip("")

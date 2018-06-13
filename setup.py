@@ -27,6 +27,7 @@ setup(name='instana',
             'nose>=1.0',
             'flask>=0.12.2',
             'requests>=2.17.1',
+            'urllib3[secure]>=1.15',
             'spyne>=2.9',
             'lxml>=3.4',
             'suds-jurko>=0.6'

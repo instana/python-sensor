@@ -6,7 +6,7 @@ import instana
 
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
-from .json_span import CustomData, Data, HttpData, JsonSpan, SDKData
+from .json_span import CustomData, Data, HttpData, SoapData, JsonSpan, SDKData
 from .agent_const import AGENT_TRACES_URL
 
 import sys
@@ -18,9 +18,10 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     sensor = None
-    registered_spans = ("django", "memcache", "rpc-client", "rpc-server", "urllib3", "wsgi")
+    registered_spans = ("django", "memcache", "rpc-client", "rpc-server",
+                        "soap", "urllib3", "wsgi")
     entry_kind = ["entry", "server", "consumer"]
-    exit_kind = ["exit", "client", "producer"]
+    exit_kind = ["exit", "client", "producer", "soap"]
     queue = queue.Queue()
 
     def __init__(self, sensor):
@@ -84,9 +85,11 @@ class InstanaRecorder(SpanRecorder):
                                   url=self.get_string_tag(span, ext.HTTP_URL),
                                   method=self.get_string_tag(span, ext.HTTP_METHOD),
                                   status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
+                    soap=SoapData(action=self.get_tag(span, 'soap.action')),
                     baggage=span.context.baggage,
                     custom=CustomData(tags=span.tags,
                     logs=self.collect_logs(span)))
+
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
@@ -124,6 +127,8 @@ class InstanaRecorder(SpanRecorder):
                     d=int(round(span.duration * 1000)),
                     n="sdk",
                     f=entityFrom,
+                    # ec=self.get_tag(span, "ec"),
+                    # error=self.get_tag(span, "error"),
                     data=data)
 
     def get_tag(self, span, tag):

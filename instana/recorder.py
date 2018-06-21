@@ -156,7 +156,7 @@ class InstanaRecorder(SpanRecorder):
         return "localhost"
 
     def get_service_name(self, span):
-        return instana.service_name
+        return self.sensor.options.service_name
 
     def get_span_kind(self, span):
         kind = ""

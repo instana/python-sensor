@@ -55,9 +55,6 @@ global_sensor = Sensor(Options())
 #
 internal_tracer = InstanaTracer()
 
-# Set ourselves as the tracer.
-opentracing.tracer = internal_tracer
-
 # Optional application wide service name.
 # Can be configured via environment variable or via code:
 #

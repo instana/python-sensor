@@ -149,18 +149,7 @@ class Meter(object):
 
     def collect_snapshot(self):
         try:
-            if instana.service_name:
-                appname = instana.service_name
-            elif "FLASK_APP" in os.environ:
-                appname = os.environ["FLASK_APP"]
-            elif "DJANGO_SETTINGS_MODULE" in os.environ:
-                appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-            elif hasattr(sys, '__interactivehook__') or hasattr(sys, 'ps1'):
-                appname = "Interactive Console"
-            else:
-                appname = os.path.basename(sys.argv[0])
-
-            s = Snapshot(name=appname, version=platform.version(),
+            s = Snapshot(name=self.sensor.options.service_name, version=platform.version(),
                          f=platform.python_implementation(),
                          a=platform.architecture()[0],
                          djmw=self.djmw)

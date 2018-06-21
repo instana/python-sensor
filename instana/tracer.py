@@ -16,8 +16,10 @@ class InstanaTracer(BasicTracer):
     sensor = None
     cur_ctx = None
 
-    def __init__(self, options=o.Options()):
-        self.sensor = instana.global_sensor
+    def __init__(self, sensor=None):
+        self.sensor = sensor
+        if not self.sensor:
+            self.sensor = instana.global_sensor
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 

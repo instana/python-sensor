@@ -36,6 +36,8 @@ class Fsm(object):
     fsm = None
     timer = None
 
+    warnedPeriodic = False
+
     def __init__(self, agent):
         log.info("Stan is on the scene.  Starting Instana instrumentation version", instana.__version__)
         log.debug("initializing fsm")
@@ -104,7 +106,10 @@ class Fsm(object):
                     self.fsm.announce()
                     return True
 
-        log.info("Instana Host Agent couldn't be found. Scheduling retry.")
+        if (self.warnedPeriodic is False):
+            log.warn("Instana Host Agent couldn't be found. Will retry periodically...")
+            self.warnedPeriodic = True
+
         self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
 

@@ -1,12 +1,11 @@
 import logging as log
 import os
 
-logger = log.getLogger('instana(' + str(os.getpid()) + ')')
-
+logger = log.getLogger('instana')
 
 def init(level):
     ch = log.StreamHandler()
-    f = log.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
+    f = log.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')
     ch.setFormatter(f)
     logger.addHandler(ch)
     if "INSTANA_DEV" in os.environ:

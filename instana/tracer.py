@@ -4,9 +4,9 @@ import opentracing as ot
 from basictracer import BasicTracer
 from basictracer.context import SpanContext
 
-import instana
 import instana.options as o
 import instana.recorder as r
+from instana import global_sensor, internal_tracer
 from instana.http_propagator import HTTPPropagator
 from instana.span import InstanaSpan
 from instana.text_propagator import TextPropagator
@@ -18,7 +18,7 @@ class InstanaTracer(BasicTracer):
     cur_ctx = None
 
     def __init__(self, options=o.Options()):
-        self.sensor = instana.global_sensor
+        self.sensor = global_sensor
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 
@@ -99,4 +99,4 @@ def init(options):
         No longer in use.
         To be removed in next major release.
     """
-    return instana.internal_tracer
+    return internal_tracer

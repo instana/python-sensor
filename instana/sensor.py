@@ -1,8 +1,9 @@
 from __future__ import absolute_import
-from .options import Options
-from .meter import Meter
+
+from . import log
 from .agent import Agent
-import instana.log as log
+from .meter import Meter
+from .options import Options
 
 
 class Sensor(object):
@@ -26,3 +27,16 @@ class Sensor(object):
     def handle_fork(self):
         self.agent = Agent(self)
         self.meter = Meter(self)
+
+def get_sensor():
+    return global_sensor
+
+# For any given Python process, we only want one sensor as multiple would
+# collect/report metrics in duplicate, triplicate etc..
+#
+# Usage example:
+#
+# import instana
+# instana.global_sensor
+#
+global_sensor = Sensor(Options())

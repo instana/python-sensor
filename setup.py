@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='instana',
-      version='0.9.0',
+      version='0.10.1',
       download_url='https://github.com/instana/python-sensor',
       url='https://www.instana.com/',
       license='MIT',
@@ -29,6 +29,7 @@ setup(name='instana',
             'lxml>=3.4',
             'MySQL-python>=1.2.5;python_version<="2.7"',
             'requests>=2.17.1',
+            'urllib3[secure]>=1.15',
             'spyne>=2.9',
             'suds-jurko>=0.6'
         ],

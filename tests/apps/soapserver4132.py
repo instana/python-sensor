@@ -1,9 +1,12 @@
 # vim: set fileencoding=UTF-8 :
 import logging
-from spyne import Application, rpc, ServiceBase, Iterable, Integer, Unicode, Fault
+from wsgiref.simple_server import make_server
+
+from spyne import (Application, Fault, Integer, Iterable, ServiceBase, Unicode,
+                   rpc)
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
-from wsgiref.simple_server import make_server
+
 from instana.wsgi import iWSGIMiddleware
 
 # Simple in test suite SOAP server to test suds client instrumentation against.

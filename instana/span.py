@@ -1,5 +1,5 @@
-from basictracer.span import BasicSpan
 from basictracer.context import SpanContext
+from basictracer.span import BasicSpan
 
 
 class InstanaSpan(BasicSpan):

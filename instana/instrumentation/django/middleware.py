@@ -1,12 +1,13 @@
 from __future__ import absolute_import
+
+import sys
+
 import opentracing as ot
 import opentracing.ext.tags as ext
 import wrapt
-import sys
+
 from ...log import logger
-from ... import internal_tracer
-
-
+from ...tracer import internal_tracer
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 

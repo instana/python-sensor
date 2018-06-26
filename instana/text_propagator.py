@@ -2,7 +2,8 @@ from __future__ import absolute_import
 
 import opentracing as ot
 from basictracer.context import SpanContext
-from instana import util, log
+
+from instana import log, util
 
 prefix_tracer_state = 'X-INSTANA-'
 prefix_baggage = 'X-INSTANA-BAGGAGE-'

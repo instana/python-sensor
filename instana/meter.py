@@ -4,12 +4,14 @@ import os
 import platform
 import resource
 import sys
-import time
 import threading
+import time
 from types import ModuleType
+
 import instana
-from .log import logger as log
+
 from .agent_const import AGENT_DATA_URL
+from .log import logger as log
 
 
 class Snapshot(object):

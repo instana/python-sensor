@@ -1,12 +1,16 @@
+from __future__ import absolute_import
+
 import os
-import sys
 import socket
 import subprocess
+import sys
 import threading as t
+
 import fysom as f
-import instana
-from instana import log
-import instana.agent_const as a
+from pkg_resources import get_distribution
+
+from . import agent_const as a
+from . import log
 
 
 class Discovery(object):
@@ -36,8 +40,10 @@ class Fsm(object):
     fsm = None
     timer = None
 
+    warnedPeriodic = False
+
     def __init__(self, agent):
-        log.info("Stan is on the scene.  Starting Instana instrumentation version", instana.__version__)
+        log.info("Stan is on the scene.  Starting Instana instrumentation version", get_distribution('instana').version)
         log.debug("initializing fsm")
 
         self.agent = agent
@@ -104,7 +110,10 @@ class Fsm(object):
                     self.fsm.announce()
                     return True
 
-        log.info("Instana Host Agent couldn't be found. Scheduling retry.")
+        if (self.warnedPeriodic is False):
+            log.warn("Instana Host Agent couldn't be found. Will retry periodically...")
+            self.warnedPeriodic = True
+
         self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
 
@@ -187,7 +196,6 @@ class Fsm(object):
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
-        log.debug('Threadlist: ', str(t.enumerate()))
 
     def test_agent(self, e):
         log.debug("testing communication with the agent")

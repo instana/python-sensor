@@ -1,5 +1,6 @@
 import opentracing as ot
-from instana import tracer, options
+
+from instana import options, tracer
 
 # This file is the hook for autoinstrumenation.
 # Here, we should:

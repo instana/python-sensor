@@ -1,15 +1,17 @@
-import threading as t
-import socket
-import time
 import os
-import instana
+import socket
+import sys
+import threading as t
+import time
 
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
-from .json_span import CustomData, Data, HttpData, SoapData, JsonSpan, SDKData
-from .agent_const import AGENT_TRACES_URL
 
-import sys
+import instana
+
+from .agent_const import AGENT_TRACES_URL
+from .json_span import CustomData, Data, HttpData, JsonSpan, SDKData, SoapData
+
 if sys.version_info.major is 2:
     import Queue as queue
 else:
@@ -18,10 +20,10 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     sensor = None
-    registered_spans = ("django", "memcache", "rpc-client", "rpc-server",
-                        "soap", "urllib3", "wsgi")
+    registered_spans = ("django", "memcache", "rpc-client",
+                        "rpc-server", "soap", "urllib3", "wsgi")
     entry_kind = ["entry", "server", "consumer"]
-    exit_kind = ["exit", "client", "producer", "soap"]
+    exit_kind = ["exit", "client", "producer"]
     queue = queue.Queue()
 
     def __init__(self, sensor):

@@ -1,8 +1,10 @@
-import instana.http_propagator as ihp
-import opentracing as ot
-from instana import tracer, options, util
-from nose.tools import assert_equals
 import inspect
+
+import opentracing as ot
+from nose.tools import assert_equals
+
+import instana.http_propagator as ihp
+from instana import options, tracer, util
 
 
 def test_basics():

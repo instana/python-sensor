@@ -1,8 +1,11 @@
-from nose.tools import assert_equals
-from instana.api import APIClient
 import unittest
 
-@unittest.skip("Manual tests due to API key requirement")
+from nose.tools import assert_equals
+
+from instana.api import APIClient
+
+raise unittest.SkipTest("Manual tests due to API key requirement")
+
 class TestAPIClient(object):
     def setUp(self):
         """ Clear all spans before a test run """

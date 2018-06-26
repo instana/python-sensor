@@ -1,8 +1,9 @@
 from __future__ import absolute_import
+
 import opentracing as ot
 from basictracer.context import SpanContext
-from instana import util, log
 
+from instana import log, util
 
 # The carrier can be a dict or a list.
 # Using the trace header as an example, it can be in the following forms

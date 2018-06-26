@@ -1,15 +1,18 @@
-import time
-from basictracer import BasicTracer
-import instana.recorder as r
-import opentracing as ot
-import instana
-import instana.options as o
+from __future__ import absolute_import
 
-from instana.util import generate_id
-from instana.span import InstanaSpan
+import time
+
+import opentracing as ot
+from basictracer import BasicTracer
 from basictracer.context import SpanContext
-from instana.http_propagator import HTTPPropagator
-from instana.text_propagator import TextPropagator
+
+from . import sensor
+from . import options as o
+from . import recorder as r
+from .http_propagator import HTTPPropagator
+from .span import InstanaSpan
+from .text_propagator import TextPropagator
+from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
@@ -17,7 +20,7 @@ class InstanaTracer(BasicTracer):
     cur_ctx = None
 
     def __init__(self, options=o.Options()):
-        self.sensor = instana.global_sensor
+        self.sensor = sensor.get_sensor()
         super(InstanaTracer, self).__init__(
             r.InstanaRecorder(self.sensor), r.InstanaSampler())
 
@@ -98,4 +101,21 @@ def init(options):
         No longer in use.
         To be removed in next major release.
     """
-    return instana.internal_tracer
+    return internal_tracer
+
+def get_tracer():
+    return internal_tracer
+
+
+# The global OpenTracing compatible tracer used internally by
+# this package.
+#
+# Usage example:
+#
+# import instana
+# instana.internal_tracer.start_span(...)
+#
+internal_tracer = InstanaTracer()
+
+# Set ourselves as the tracer.
+ot.tracer = internal_tracer

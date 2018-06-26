@@ -1,12 +1,16 @@
+from __future__ import absolute_import
+
 import os
-import sys
 import socket
 import subprocess
+import sys
 import threading as t
+
 import fysom as f
-import instana
-from instana import log
-import instana.agent_const as a
+from pkg_resources import get_distribution
+
+from . import agent_const as a
+from . import log
 
 
 class Discovery(object):
@@ -39,7 +43,7 @@ class Fsm(object):
     warnedPeriodic = False
 
     def __init__(self, agent):
-        log.info("Stan is on the scene.  Starting Instana instrumentation version", instana.__version__)
+        log.info("Stan is on the scene.  Starting Instana instrumentation version", get_distribution('instana').version)
         log.debug("initializing fsm")
 
         self.agent = agent

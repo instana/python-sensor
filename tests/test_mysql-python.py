@@ -2,12 +2,19 @@ from __future__ import absolute_import
 
 import logging
 import os
+import sys
+from unittest import SkipTest
 
-import MySQLdb
 from nose.tools import assert_equals
 
 from instana import internal_tracer as tracer
 from instana.util import to_json
+
+if sys.version_info > (2, 7):
+    raise SkipTest("MySQL-python supported on Python 2.7 only")
+else:
+    import MySQLdb
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +78,7 @@ class TestMySQLPython:
     def test_vanilla_query(self):
         self.cursor.execute("""SELECT 1""")
         result = self.cursor.fetchone()
-        assert_equals((1L,), result)
+        assert_equals((1,), result)
 
     def test_basic_query(self):
         span = tracer.start_span('test')
@@ -112,7 +119,7 @@ class TestMySQLPython:
 
         span.finish()
 
-        assert_equals(1L, result)
+        assert_equals(1, result)
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))

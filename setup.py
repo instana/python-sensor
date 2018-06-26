@@ -26,9 +26,10 @@ setup(name='instana',
         'test': [
             'nose>=1.0',
             'flask>=0.12.2',
+            'lxml>=3.4',
+            'MySQL-python>=1.2.5;python_version<="2.7"',
             'requests>=2.17.1',
             'spyne>=2.9',
-            'lxml>=3.4',
             'suds-jurko>=0.6'
         ],
       },

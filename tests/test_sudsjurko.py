@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from nose.tools import assert_equals
 from suds.client import Client
 
-from instana import internal_tracer as tracer
+from instana.tracer import internal_tracer as tracer
 from instana.util import to_json
 
 

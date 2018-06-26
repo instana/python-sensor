@@ -1,9 +1,12 @@
 from __future__ import absolute_import
+
 import os
 import opentracing
-from .sensor import Sensor
-from .tracer import InstanaTracer
-from .options import Options
+from pkg_resources import get_distribution
+
+from . import sensor
+from . import tracer
+
 
 """
 The Instana package has two core components: the sensor and the tracer.
@@ -19,7 +22,7 @@ __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2017 Instana Inc.'
 __credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo']
 __license__ = 'MIT'
-__version__ = '0.10.1'
+__version__ = get_distribution('instana').version
 __maintainer__ = 'Peter Giacomo Lombardo'
 __email__ = 'peter.lombardo@instana.com'
 
@@ -33,30 +36,6 @@ def load(module):
         print("==========================================================")
         print("Instana: Loading...")
         print("==========================================================")
-
-
-# For any given Python process, we only want one sensor as multiple would
-# collect/report metrics in duplicate, triplicate etc..
-#
-# Usage example:
-#
-# import instana
-# instana.global_sensor
-#
-global_sensor = Sensor(Options())
-
-# The global OpenTracing compatible tracer used internally by
-# this package.
-#
-# Usage example:
-#
-# import instana
-# instana.internal_tracer.start_span(...)
-#
-internal_tracer = InstanaTracer()
-
-# Set ourselves as the tracer.
-opentracing.tracer = internal_tracer
 
 # Optional application wide service name.
 # Can be configured via environment variable or via code:

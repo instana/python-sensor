@@ -6,7 +6,7 @@ import opentracing
 import opentracing.ext.tags as ext
 import wrapt
 
-from .. import internal_tracer
+from ..tracer import internal_tracer
 from ..log import logger
 
 try:

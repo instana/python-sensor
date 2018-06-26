@@ -10,10 +10,10 @@ from nose.tools import assert_equals
 from instana import internal_tracer as tracer
 from instana.util import to_json
 
-if sys.version_info > (2, 7):
-    raise SkipTest("MySQL-python supported on Python 2.7 only")
-else:
+if sys.version_info < (3, 0):
     import MySQLdb
+else:
+    raise SkipTest("MySQL-python supported on Python 2.7 only")
 
 
 logger = logging.getLogger(__name__)

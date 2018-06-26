@@ -1,6 +1,9 @@
-from nose.tools import assert_equals
-from instana.api import APIClient
 import unittest
+
+from nose.tools import assert_equals
+
+from instana.api import APIClient
+
 
 @unittest.skip("Manual tests due to API key requirement")
 class TestAPIClient(object):

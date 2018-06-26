@@ -1,8 +1,10 @@
 from __future__ import absolute_import
-from .options import Options
-from .meter import Meter
-from .agent import Agent
+
 import instana.log as log
+
+from .agent import Agent
+from .meter import Meter
+from .options import Options
 
 
 class Sensor(object):

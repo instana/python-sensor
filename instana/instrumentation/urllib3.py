@@ -1,10 +1,11 @@
 from __future__ import absolute_import
+
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
-from ..log import logger
-from .. import internal_tracer
 
+from .. import internal_tracer
+from ..log import logger
 
 try:
     import urllib3 # noqa

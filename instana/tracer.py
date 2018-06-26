@@ -1,15 +1,16 @@
 import time
-from basictracer import BasicTracer
-import instana.recorder as r
+
 import opentracing as ot
+from basictracer import BasicTracer
+from basictracer.context import SpanContext
+
 import instana
 import instana.options as o
-
-from instana.util import generate_id
-from instana.span import InstanaSpan
-from basictracer.context import SpanContext
+import instana.recorder as r
 from instana.http_propagator import HTTPPropagator
+from instana.span import InstanaSpan
 from instana.text_propagator import TextPropagator
+from instana.util import generate_id
 
 
 class InstanaTracer(BasicTracer):

@@ -1,9 +1,11 @@
 from __future__ import absolute_import
-from nose.tools import assert_equals
-from instana import internal_tracer as tracer
-from instana.util import to_json
+
 import requests
 import urllib3
+from nose.tools import assert_equals
+
+from instana import internal_tracer as tracer
+from instana.util import to_json
 
 
 class TestUrllib3:

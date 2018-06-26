@@ -1,7 +1,9 @@
-import instana.util
 import string
-from nose.tools import assert_equals
 import sys
+
+from nose.tools import assert_equals
+
+import instana.util
 
 if sys.version_info.major is 2:
     string_types = basestring

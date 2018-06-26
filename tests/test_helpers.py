@@ -1,4 +1,5 @@
 from nose.tools import assert_equals
+
 from instana.helpers import eum_snippet, eum_test_snippet
 
 # fake trace_id to test against

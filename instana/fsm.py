@@ -1,12 +1,14 @@
 import os
-import sys
 import socket
 import subprocess
+import sys
 import threading as t
+
 import fysom as f
+
 import instana
-from instana import log
 import instana.agent_const as a
+from instana import log
 
 
 class Discovery(object):

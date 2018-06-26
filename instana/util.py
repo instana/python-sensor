@@ -1,12 +1,13 @@
-import random
-import os
-import json
-import time
-import struct
 import binascii
+import json
+import os
+import random
+import struct
+import sys
+import time
+
 from instana import log
 
-import sys
 if sys.version_info.major is 2:
     string_types = basestring
 else:

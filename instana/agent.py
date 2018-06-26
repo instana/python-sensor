@@ -1,9 +1,10 @@
 import json
-from instana import log
-import instana.fsm as f
-import instana.agent_const as a
 import threading
 from datetime import datetime
+
+import instana.agent_const as a
+import instana.fsm as f
+from instana import log
 
 try:
     import urllib.request as urllib2

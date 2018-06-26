@@ -7,7 +7,7 @@ from unittest import SkipTest
 
 from nose.tools import assert_equals
 
-from instana import internal_tracer as tracer
+from instana.tracer import internal_tracer as tracer
 from instana.util import to_json
 
 if sys.version_info < (3, 0):

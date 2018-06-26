@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from .. import internal_tracer
 from ..log import logger
 from .pep0249 import ConnectionFactory
 

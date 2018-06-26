@@ -2,7 +2,7 @@
 import opentracing.ext.tags as ext
 import wrapt
 
-from .. import internal_tracer
+from ..tracer import internal_tracer
 
 
 class CursorWrapper(wrapt.ObjectProxy):

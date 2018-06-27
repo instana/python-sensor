@@ -3,6 +3,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..tracer import internal_tracer
+from ..log import logger
 
 
 class CursorWrapper(wrapt.ObjectProxy):
@@ -15,6 +16,22 @@ class CursorWrapper(wrapt.ObjectProxy):
         self._connect_params = connect_params
         self._cursor_params = cursor_params
 
+    def _collect_kvs(self, span, sql):
+        try:
+            span.set_tag(ext.SPAN_KIND, 'exit')
+            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+            span.set_tag(ext.DATABASE_STATEMENT, sql)
+            span.set_tag(ext.DATABASE_TYPE, 'mysql')
+            span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
+            span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
+                                            (self._connect_params[1]['host'],
+                                             self._connect_params[1]['port']))
+        except Exception as e:
+            logger.debug(e)
+        finally:
+            return span
+
+
     def execute(self, sql, params=None):
         try:
             span = None
@@ -25,18 +42,13 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return self.__wrapped__.execute(sql, params)
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
-            span.set_tag(ext.SPAN_KIND, 'exit')
-            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
-            span.set_tag(ext.DATABASE_STATEMENT, sql)
-            span.set_tag(ext.DATABASE_TYPE, 'mysql')
-            span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
-            span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
-                                            (self._connect_params[1]['host'],
-                                             self._connect_params[1]['port']))
+            span = self._collect_kvs(span, sql)
             span.set_tag('op', 'execute')
+
             result = self.__wrapped__.execute(sql, params)
         except Exception as e:
-            span.log_exception(e)
+            if span:
+                span.log_exception(e)
             raise
         else:
             return result
@@ -54,19 +66,14 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return self.__wrapped__.execute(sql, params)
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
-            span.set_tag(ext.SPAN_KIND, 'exit')
-            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
-            span.set_tag(ext.DATABASE_STATEMENT, sql)
-            span.set_tag(ext.DATABASE_TYPE, 'mysql')
-            span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
-            span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
-                                            (self._connect_params[1]['host'],
-                                             self._connect_params[1]['port']))
+            span = self._collect_kvs(span, sql)
             span.set_tag('op', 'executemany')
             span.set_tag('count', len(seq_of_parameters))
+
             result = self.__wrapped__.executemany(sql, seq_of_parameters)
         except Exception as e:
-            span.log_exception(e)
+            if span:
+                span.log_exception(e)
             raise
         else:
             return result
@@ -76,7 +83,28 @@ class CursorWrapper(wrapt.ObjectProxy):
 
 
     def callproc(self, proc_name, params):
-        return self.__wrapped__.callproc(proc_name, params)
+        try:
+            span = None
+            context = internal_tracer.current_context()
+
+            # If we're not tracing, just return
+            if context is None:
+                return self.__wrapped__.execute(sql, params)
+
+            span = internal_tracer.start_span(self._module_name, child_of=context)
+            span = self._collect_kvs(span, proc_name)
+            span.set_tag('op', 'callproc')
+
+            result = self.__wrapped__.callproc(proc_name, params)
+        except Exception as e:
+            if span:
+                span.log_exception(e)
+            raise
+        else:
+            return result
+        finally:
+            if span:
+                span.finish()
 
 
 class ConnectionWrapper(wrapt.ObjectProxy):

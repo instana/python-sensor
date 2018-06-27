@@ -51,10 +51,20 @@ else:
 create_table_query = 'CREATE TABLE IF NOT EXISTS users(id serial primary key, \
                       name varchar(40) NOT NULL, email varchar(40) NOT NULL)'
 
+create_proc_query = """
+DROP PROCEDURE IF EXISTS test_proc;
+CREATE PROCEDURE test_proc(IN t VARCHAR(255))
+BEGIN
+    SELECT name FROM users WHERE name = t;
+END
+"""
+
 db = MySQLdb.connect(host=mysql_host, port=mysql_port,
                      user=mysql_user, passwd=mysql_pw,
                      db=mysql_db)
 db.cursor().execute(create_table_query)
+db.cursor().execute(create_proc_query)
+db.commit()
 db.close()
 
 
@@ -174,3 +184,32 @@ class TestMySQLPython:
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
         assert_equals(db_span.data.sdk.custom.tags['op'], 'executemany')
         assert_equals(db_span.data.sdk.custom.tags['count'], 2)
+
+    def test_call_proc(self):
+        span = tracer.start_span('test')
+        result = self.cursor.callproc('test_proc', ('beaker',))
+        span.finish()
+
+        assert(result)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, db_span.t)
+        assert_equals(db_span.p, test_span.s)
+
+        assert_equals(None, db_span.error)
+        assert_equals(0, db_span.ec)
+
+        assert_equals(db_span.data.sdk.name, "MySQLdb")
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
+        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'test_proc')
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
+        assert_equals(db_span.data.sdk.custom.tags['op'], 'callproc')

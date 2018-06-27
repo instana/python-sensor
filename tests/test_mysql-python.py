@@ -213,3 +213,44 @@ class TestMySQLPython:
         assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
         assert_equals(db_span.data.sdk.custom.tags['op'], 'callproc')
+
+    def test_error_capture(self):
+        result = None
+        span = None
+        try:
+            span = tracer.start_span('test')
+            result = self.cursor.execute("""SELECT * from blah""")
+            rows = self.cursor.fetchone()
+        except Exception:
+            pass
+        finally:
+            if span:
+                span.finish()
+
+        assert(result is None)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, db_span.t)
+        assert_equals(db_span.p, test_span.s)
+
+        assert_equals(True, db_span.data.sdk.custom.tags['error'])
+        assert_equals(1, db_span.data.sdk.custom.tags['ec'])
+
+        assert_equals(1, len(db_span.data.sdk.custom.logs.keys()))
+        key = db_span.data.sdk.custom.logs.keys()[0]
+        log = db_span.data.sdk.custom.logs[key]['message']
+        assert_equals('(1146, "Table \'nodedb.blah\' doesn\'t exist")', log)
+
+        assert_equals(db_span.data.sdk.name, "MySQLdb")
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
+        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'SELECT * from blah')
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')

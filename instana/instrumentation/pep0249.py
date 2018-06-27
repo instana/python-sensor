@@ -16,28 +16,64 @@ class CursorWrapper(wrapt.ObjectProxy):
         self._cursor_params = cursor_params
 
     def execute(self, sql, params=None):
-        context = internal_tracer.current_context()
+        try:
+            span = None
+            context = internal_tracer.current_context()
 
-        # If we're not tracing, just return
-        if context is None:
-            return self.__wrapped__.execute(sql, params)
+            # If we're not tracing, just return
+            if context is None:
+                return self.__wrapped__.execute(sql, params)
 
-        # import ipdb; ipdb.set_trace()
-        span = internal_tracer.start_span(self._module_name, child_of=context)
-        span.set_tag(ext.SPAN_KIND, 'exit')
-        span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
-        span.set_tag(ext.DATABASE_STATEMENT, sql)
-        span.set_tag(ext.DATABASE_TYPE, 'mysql')
-        span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
-        span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
-                                        (self._connect_params[1]['host'],
-                                         self._connect_params[1]['port']))
-        result = self.__wrapped__.execute(sql, params)
-        span.finish()
-        return result
+            span = internal_tracer.start_span(self._module_name, child_of=context)
+            span.set_tag(ext.SPAN_KIND, 'exit')
+            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+            span.set_tag(ext.DATABASE_STATEMENT, sql)
+            span.set_tag(ext.DATABASE_TYPE, 'mysql')
+            span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
+            span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
+                                            (self._connect_params[1]['host'],
+                                             self._connect_params[1]['port']))
+            span.set_tag('op', 'execute')
+            result = self.__wrapped__.execute(sql, params)
+        except Exception as e:
+            span.log_exception(e)
+            raise
+        else:
+            return result
+        finally:
+            if span:
+                span.finish()
 
     def executemany(self, sql, seq_of_parameters):
-        return self.__wrapped__.executemany(sql, seq_of_parameters)
+        try:
+            span = None
+            context = internal_tracer.current_context()
+
+            # If we're not tracing, just return
+            if context is None:
+                return self.__wrapped__.execute(sql, params)
+
+            span = internal_tracer.start_span(self._module_name, child_of=context)
+            span.set_tag(ext.SPAN_KIND, 'exit')
+            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+            span.set_tag(ext.DATABASE_STATEMENT, sql)
+            span.set_tag(ext.DATABASE_TYPE, 'mysql')
+            span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
+            span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
+                                            (self._connect_params[1]['host'],
+                                             self._connect_params[1]['port']))
+            span.set_tag('op', 'executemany')
+            span.set_tag('count', len(seq_of_parameters))
+            result = self.__wrapped__.executemany(sql, seq_of_parameters)
+        except Exception as e:
+            span.log_exception(e)
+            raise
+        else:
+            return result
+        finally:
+            if span:
+                span.finish()
+
 
     def callproc(self, proc_name, params):
         return self.__wrapped__.callproc(proc_name, params)

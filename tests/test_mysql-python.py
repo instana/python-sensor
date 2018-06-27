@@ -46,7 +46,7 @@ if 'MYSQL_PW' in os.environ:
 elif 'TRAVIS_MYSQL_PASS' in os.environ:
     mysql_pw = os.environ['TRAVIS_MYSQL_PASS']
 else:
-    mysql_pw = None
+    mysql_pw = ''
 
 create_table_query = 'CREATE TABLE IF NOT EXISTS users(id serial primary key, \
                       name varchar(40) NOT NULL, email varchar(40) NOT NULL)'

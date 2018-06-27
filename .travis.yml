@@ -9,6 +9,7 @@ python:
 before_install:
   - "pip install --upgrade pip"
   - "pip install --upgrade setuptools"
+  - 'mysql -e 'CREATE DATABASE travis_ci_test;'
   
 install: "pip install -r requirements-test.txt"
 script: nosetests -v

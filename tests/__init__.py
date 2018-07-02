@@ -13,11 +13,11 @@ os.environ["INSTANA_TEST"] = "true"
 # Spawn our background Flask app that the tests will throw
 # requests at.  Don't continue until the test app is fully
 # up and running.
-flask = threading.Thread(target=flaskalino.run)
-flask.daemon = True
-flask.name = "Background Flask app"
+timer = threading.Thread(target=flaskalino.run)
+timer.daemon = True
+timer.name = "Background Flask app"
 print("Starting background Flask app...")
-flask.start()
+timer.start()
 
 
 # Background Soap Server
@@ -25,11 +25,11 @@ flask.start()
 # Spawn our background Flask app that the tests will throw
 # requests at.  Don't continue until the test app is fully
 # up and running.
-soap = threading.Thread(target=soapserver.serve_forever)
-soap.daemon = True
-soap.name = "Background Soap server"
+timer = threading.Thread(target=soapserver.serve_forever)
+timer.daemon = True
+timer.name = "Background Soap server"
 print("Starting background Soap server...")
-soap.start()
+timer.start()
 
 
 time.sleep(1)

@@ -8,7 +8,6 @@ from unittest import SkipTest
 from nose.tools import assert_equals
 
 from instana.tracer import internal_tracer as tracer
-from instana.util import to_json
 
 if sys.version_info < (3, 0):
     import MySQLdb
@@ -64,7 +63,6 @@ db = MySQLdb.connect(host=mysql_host, port=mysql_port,
                      db=mysql_db)
 db.cursor().execute(create_table_query)
 db.cursor().execute(create_proc_query)
-db.commit()
 db.close()
 
 
@@ -81,22 +79,21 @@ class TestMySQLPython:
 
     def tearDown(self):
         """ Do nothing for now """
-        # after each test, tracer context should be None (not tracing)
-        # assert_equals(None, tracer.current_context())
         return None
 
     def test_vanilla_query(self):
-        self.cursor.execute("""SELECT 1""")
+        self.cursor.execute("""SELECT * from users""")
         result = self.cursor.fetchone()
-        assert_equals((1,), result)
+        assert_equals(3, len(result))
+
+        spans = self.recorder.queued_spans()
+        assert_equals(0, len(spans))
 
     def test_basic_query(self):
         span = tracer.start_span('test')
         result = self.cursor.execute("""SELECT * from users""")
-        rows = self.cursor.fetchone()
+        self.cursor.fetchone()
         span.finish()
-
-        # import ipdb; ipdb.set_trace()
 
         assert(result >= 0)
 
@@ -156,7 +153,7 @@ class TestMySQLPython:
     def test_executemany(self):
         span = tracer.start_span('test')
         result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
-                                        [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
+                                         [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
         self.db.commit()
         span.finish()
 
@@ -220,7 +217,7 @@ class TestMySQLPython:
         try:
             span = tracer.start_span('test')
             result = self.cursor.execute("""SELECT * from blah""")
-            rows = self.cursor.fetchone()
+            self.cursor.fetchone()
         except Exception:
             pass
         finally:

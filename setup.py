@@ -18,9 +18,9 @@ setup(name='instana',
       entry_points={
                     'instana':  ['string = instana:load'],
                     'flask':    ['flask = instana.flaskana:hook'],
-                    'runtime':  ['string = instana:load'], # deprecated: use same as 'instana'
-                    'django':   ['string = instana:load'], # deprecated: use same as 'instana'
-                    'django19': ['string = instana:load'], # deprecated: use same as 'instana'
+                    'runtime':  ['string = instana:load'],  # deprecated: use same as 'instana'
+                    'django':   ['string = instana:load'],  # deprecated: use same as 'instana'
+                    'django19': ['string = instana:load'],  # deprecated: use same as 'instana'
                     },
       extras_require={
         'test': [

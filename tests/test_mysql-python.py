@@ -62,6 +62,10 @@ db = MySQLdb.connect(host=mysql_host, port=mysql_port,
                      user=mysql_user, passwd=mysql_pw,
                      db=mysql_db)
 db.cursor().execute(create_table_query)
+
+# Work-around for "command out of sync on Travis" (but not locally)
+db.cursor().close()
+
 db.cursor().execute(create_proc_query)
 db.close()
 

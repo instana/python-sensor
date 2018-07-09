@@ -61,11 +61,14 @@ END
 db = MySQLdb.connect(host=mysql_host, port=mysql_port,
                      user=mysql_user, passwd=mysql_pw,
                      db=mysql_db)
-
 cursor = db.cursor()
 cursor.execute(create_table_query)
 cursor.close()
+db.close()
 
+db = MySQLdb.connect(host=mysql_host, port=mysql_port,
+                     user=mysql_user, passwd=mysql_pw,
+                     db=mysql_db)
 cursor = db.cursor()
 cursor.execute(create_proc_query)
 cursor.close()

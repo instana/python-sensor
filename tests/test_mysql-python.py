@@ -64,11 +64,9 @@ db = MySQLdb.connect(host=mysql_host, port=mysql_port,
 
 cursor = db.cursor()
 cursor.execute(create_table_query)
+cursor.close()
 
-# Work-around for "command out of sync on Travis" (but not locally)
-while cursor.nextset() is not None:
-    pass
-
+cursor = db.cursor()
 cursor.execute(create_proc_query)
 cursor.close()
 db.close()

@@ -32,7 +32,7 @@ To enable the Flask instrumentation, set the following environment variable in y
 
 # Django (Manual)
 
-When you set the the `AUTOWRAPT_BOOTSTRAP` environment, the Django framework should be automatically detected and instrumented.  If for some reason, you prefer or need to manually instrument Django instead you can add add `instana.instrumentation.django.middleware.InstanaMiddleware` to you MIDDLEWARE list `settings.py`:
+When the `AUTOWRAPT_BOOTSTRAP=instana` environment variable is set, the Django framework should be automatically detected and instrumented.  If for some reason, you prefer to or need to manually instrument Django, you can instead add `instana.instrumentation.django.middleware.InstanaMiddleware` to your MIDDLEWARE list in `settings.py`:
 
 ```Python
 import os

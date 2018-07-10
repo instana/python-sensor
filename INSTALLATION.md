@@ -30,6 +30,28 @@ To enable the Flask instrumentation, set the following environment variable in y
 
   `export AUTOWRAPT_BOOTSTRAP=flask`
 
+# Django (Manual)
+
+When you set the the `AUTOWRAPT_BOOTSTRAP` environment, the Django framework should be automatically detected and instrumented.  If for some reason, you prefer or need to manually instrument Django instead you can add add `instana.instrumentation.django.middleware.InstanaMiddleware` to you MIDDLEWARE list `settings.py`:
+
+```Python
+import os
+import instana
+
+# ... <snip> ...
+
+MIDDLEWARE = [
+    'instana.instrumentation.django.middleware.InstanaMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
 # WSGI Stacks
 
 The Instana sensor includes WSGI middleware that can be added to any WSGI compliant stack.  This is automated for various stacks but can also be done manually for those we haven't added support for yet.

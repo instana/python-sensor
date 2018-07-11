@@ -51,7 +51,6 @@ create_table_query = 'CREATE TABLE IF NOT EXISTS users(id serial primary key, \
                       name varchar(40) NOT NULL, email varchar(40) NOT NULL)'
 
 create_proc_query = """
-DROP PROCEDURE IF EXISTS test_proc;
 CREATE PROCEDURE test_proc(IN t VARCHAR(255))
 BEGIN
     SELECT name FROM users WHERE name = t;
@@ -61,16 +60,23 @@ END
 db = MySQLdb.connect(host=mysql_host, port=mysql_port,
                      user=mysql_user, passwd=mysql_pw,
                      db=mysql_db)
+
 cursor = db.cursor()
 cursor.execute(create_table_query)
-cursor.close()
-db.close()
 
-db = MySQLdb.connect(host=mysql_host, port=mysql_port,
-                     user=mysql_user, passwd=mysql_pw,
-                     db=mysql_db)
-cursor = db.cursor()
+while cursor.nextset() is not None:
+    pass
+
+cursor.execute('DROP PROCEDURE IF EXISTS test_proc')
+
+while cursor.nextset() is not None:
+    pass
+
 cursor.execute(create_proc_query)
+
+while cursor.nextset() is not None:
+    pass
+
 cursor.close()
 db.close()
 

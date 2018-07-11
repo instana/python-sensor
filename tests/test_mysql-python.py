@@ -126,12 +126,13 @@ class TestMySQLPython:
         assert_equals(0, db_span.ec)
 
         assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
         assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
         assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'SELECT * from users')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
+        assert_equals(db_span.data.sdk.custom.tags['op'], 'execute')
 
     def test_basic_insert(self):
         span = tracer.start_span('test')
@@ -157,12 +158,12 @@ class TestMySQLPython:
         assert_equals(0, db_span.ec)
 
         assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
         assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
-        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
+        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'INSERT INTO users(name, email) VALUES(%s, %s)')
         assert_equals(db_span.data.sdk.custom.tags['op'], 'execute')
 
     def test_executemany(self):
@@ -188,11 +189,11 @@ class TestMySQLPython:
         assert_equals(0, db_span.ec)
 
         assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
         assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
         assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
         assert_equals(db_span.data.sdk.custom.tags['op'], 'executemany')
         assert_equals(db_span.data.sdk.custom.tags['count'], 2)
@@ -218,11 +219,11 @@ class TestMySQLPython:
         assert_equals(0, db_span.ec)
 
         assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
         assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
         assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'test_proc')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
         assert_equals(db_span.data.sdk.custom.tags['op'], 'callproc')
 
@@ -260,9 +261,9 @@ class TestMySQLPython:
         assert_equals('(1146, "Table \'nodedb.blah\' doesn\'t exist")', log)
 
         assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], 'nodedb')
+        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
         assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], 'root')
+        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
         assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'SELECT * from blah')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://mazzo:3306')
+        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
         assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')

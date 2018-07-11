@@ -258,7 +258,7 @@ class TestMySQLPython:
         assert_equals(1, len(db_span.data.sdk.custom.logs.keys()))
         key = db_span.data.sdk.custom.logs.keys()[0]
         log = db_span.data.sdk.custom.logs[key]['message']
-        assert_equals('(1146, "Table \'nodedb.blah\' doesn\'t exist")', log)
+        assert_equals('(1146, "Table \'%s.blah\' doesn\'t exist")' % mysql_db, log)
 
         assert_equals(db_span.data.sdk.name, "MySQLdb")
         assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)

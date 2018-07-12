@@ -24,13 +24,12 @@ class CursorWrapper(wrapt.ObjectProxy):
             span.set_tag(ext.DATABASE_TYPE, 'mysql')
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
             span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
-                                            (self._connect_params[1]['host'],
-                                             self._connect_params[1]['port']))
+                         (self._connect_params[1]['host'],
+                          self._connect_params[1]['port']))
         except Exception as e:
             logger.debug(e)
         finally:
             return span
-
 
     def execute(self, sql, params=None):
         try:
@@ -63,7 +62,7 @@ class CursorWrapper(wrapt.ObjectProxy):
 
             # If we're not tracing, just return
             if context is None:
-                return self.__wrapped__.execute(sql, params)
+                return self.__wrapped__.executemany(sql, seq_of_parameters)
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
             span = self._collect_kvs(span, sql)
@@ -81,7 +80,6 @@ class CursorWrapper(wrapt.ObjectProxy):
             if span:
                 span.finish()
 
-
     def callproc(self, proc_name, params):
         try:
             span = None
@@ -89,7 +87,7 @@ class CursorWrapper(wrapt.ObjectProxy):
 
             # If we're not tracing, just return
             if context is None:
-                return self.__wrapped__.execute(sql, params)
+                return self.__wrapped__.execute(proc_name, params)
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
             span = self._collect_kvs(span, proc_name)

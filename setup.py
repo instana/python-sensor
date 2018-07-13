@@ -1,3 +1,4 @@
+# coding: utf-8
 from setuptools import setup, find_packages
 
 setup(name='instana',
@@ -9,10 +10,8 @@ setup(name='instana',
       author_email='peter.lombardo@instana.com',
       description='🐍 Python Distributed Tracing & Metrics Sensor for Instana',
       packages=find_packages(exclude=['tests', 'examples']),
-      long_description="""
-      The instana package collects and reports Python metrics and distibuted
-      traces to your Instana dashboard.
-      """",
+      long_description="The instana package collects and reports Python metrics and distibuted \
+traces to your Instana dashboard.",
       zip_safe=False,
       install_requires=['autowrapt>=1.0',
                         'fysom>=2.1.2',

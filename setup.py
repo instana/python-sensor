@@ -1,15 +1,18 @@
 from setuptools import setup, find_packages
 
 setup(name='instana',
-      version='0.10.1',
+      version='0.11.0',
       download_url='https://github.com/instana/python-sensor',
       url='https://www.instana.com/',
       license='MIT',
       author='Instana Inc.',
       author_email='peter.lombardo@instana.com',
-      description='Metrics sensor and distributed trace collector for Instana',
+      description='🐍 Python Distributed Tracing & Metrics Sensor for Instana',
       packages=find_packages(exclude=['tests', 'examples']),
-      long_description="The instana package provides Python metrics and traces for Instana.",
+      long_description="""
+      The instana package collects and reports Python metrics and distibuted
+      traces to your Instana dashboard.
+      """",
       zip_safe=False,
       install_requires=['autowrapt>=1.0',
                         'fysom>=2.1.2',
@@ -35,7 +38,7 @@ setup(name='instana',
         ],
       },
       test_suite='nose.collector',
-      keywords=['performance', 'opentracing', 'metrics', 'monitoring'],
+      keywords=['performance', 'opentracing', 'metrics', 'monitoring', 'tracing', 'distributed-tracing'],
       classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django',

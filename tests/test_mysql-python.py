@@ -125,14 +125,11 @@ class TestMySQLPython:
         assert_equals(None, db_span.error)
         assert_equals(0, db_span.ec)
 
-        assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
-        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
-        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'SELECT * from users')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
-        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
-        assert_equals(db_span.data.sdk.custom.tags['op'], 'execute')
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, mysql_db)
+        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.stmt, 'SELECT * from users')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_basic_insert(self):
         span = tracer.start_span('test')
@@ -157,14 +154,11 @@ class TestMySQLPython:
         assert_equals(None, db_span.error)
         assert_equals(0, db_span.ec)
 
-        assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
-        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
-        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
-        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.sdk.custom.tags['op'], 'execute')
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, mysql_db)
+        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_executemany(self):
         span = tracer.start_span('test')
@@ -188,15 +182,11 @@ class TestMySQLPython:
         assert_equals(None, db_span.error)
         assert_equals(0, db_span.ec)
 
-        assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
-        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
-        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
-        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
-        assert_equals(db_span.data.sdk.custom.tags['op'], 'executemany')
-        assert_equals(db_span.data.sdk.custom.tags['count'], 2)
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, mysql_db)
+        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_call_proc(self):
         span = tracer.start_span('test')
@@ -218,14 +208,11 @@ class TestMySQLPython:
         assert_equals(None, db_span.error)
         assert_equals(0, db_span.ec)
 
-        assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
-        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
-        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'test_proc')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
-        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
-        assert_equals(db_span.data.sdk.custom.tags['op'], 'callproc')
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, mysql_db)
+        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.stmt, 'test_proc')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_error_capture(self):
         result = None
@@ -252,18 +239,12 @@ class TestMySQLPython:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(True, db_span.data.sdk.custom.tags['error'])
-        assert_equals(1, db_span.data.sdk.custom.tags['ec'])
+        assert_equals(True, db_span.error)
+        assert_equals(1, db_span.ec)
+        assert_equals(db_span.data.mysql.error, '(1146, "Table \'%s.blah\' doesn\'t exist")' % mysql_db)
 
-        assert_equals(1, len(db_span.data.sdk.custom.logs.keys()))
-        key = db_span.data.sdk.custom.logs.keys()[0]
-        log = db_span.data.sdk.custom.logs[key]['message']
-        assert_equals('(1146, "Table \'%s.blah\' doesn\'t exist")' % mysql_db, log)
-
-        assert_equals(db_span.data.sdk.name, "MySQLdb")
-        assert_equals(db_span.data.sdk.custom.tags['db.instance'], mysql_db)
-        assert_equals(db_span.data.sdk.custom.tags['db.type'], 'mysql')
-        assert_equals(db_span.data.sdk.custom.tags['db.user'], mysql_user)
-        assert_equals(db_span.data.sdk.custom.tags['db.statement'], 'SELECT * from blah')
-        assert_equals(db_span.data.sdk.custom.tags['peer.address'], 'mysql://%s:3306' % mysql_host)
-        assert_equals(db_span.data.sdk.custom.tags['span.kind'], 'exit')
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, mysql_db)
+        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.stmt, 'SELECT * from blah')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)

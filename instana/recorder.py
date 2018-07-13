@@ -10,7 +10,7 @@ from basictracer import Sampler, SpanRecorder
 import instana
 
 from .agent_const import AGENT_TRACES_URL
-from .json_span import CustomData, Data, HttpData, JsonSpan, SDKData, SoapData
+from .json_span import CustomData, Data, HttpData, JsonSpan, MySQLData, SDKData, SoapData
 
 if sys.version_info.major is 2:
     import Queue as queue
@@ -20,8 +20,9 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     sensor = None
-    registered_spans = ("django", "memcache", "rpc-client",
+    registered_spans = ("django", "memcache", "mysql", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
+    http_spans = ("django", "wsgi", "urllib3", "soap")
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
     queue = queue.Queue()
@@ -83,14 +84,27 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
-        data = Data(http=HttpData(host=self.get_host_name(span),
-                                  url=self.get_string_tag(span, ext.HTTP_URL),
-                                  method=self.get_string_tag(span, ext.HTTP_METHOD),
-                                  status=self.get_tag(span, ext.HTTP_STATUS_CODE)),
-                    soap=SoapData(action=self.get_tag(span, 'soap.action')),
-                    baggage=span.context.baggage,
+        data = Data(baggage=span.context.baggage,
                     custom=CustomData(tags=span.tags,
-                    logs=self.collect_logs(span)))
+                                      logs=self.collect_logs(span)))
+
+        if span.operation_name in self.http_spans:
+            data.http = HttpData(host=self.get_host_name(span),
+                                 url=self.get_string_tag(span, ext.HTTP_URL),
+                                 method=self.get_string_tag(span, ext.HTTP_METHOD),
+                                 status=self.get_tag(span, ext.HTTP_STATUS_CODE))
+
+        if span.operation_name == "soap":
+            data.soap = SoapData(action=self.get_tag(span, 'soap.action'))
+
+        if span.operation_name == "mysql":
+            data.mysql = MySQLData(host=self.get_tag(span, 'host'),
+                                   db=self.get_tag(span, ext.DATABASE_INSTANCE),
+                                   user=self.get_tag(span, ext.DATABASE_USER),
+                                   stmt=self.get_tag(span, ext.DATABASE_STATEMENT))
+            if len(data.custom.logs.keys()):
+                tskey = list(data.custom.logs.keys())[0]
+                data.mysql.error = data.custom.logs[tskey]['message']
 
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
@@ -103,7 +117,7 @@ class InstanaRecorder(SpanRecorder):
                     ts=int(round(span.start_time * 1000)),
                     d=int(round(span.duration * 1000)),
                     f=entityFrom,
-                    ec=self.get_tag(span, "ec"),
+                    ec=self.get_tag(span, "ec", 0),
                     error=self.get_tag(span, "error"),
                     data=data)
 
@@ -129,15 +143,15 @@ class InstanaRecorder(SpanRecorder):
                     d=int(round(span.duration * 1000)),
                     n="sdk",
                     f=entityFrom,
-                    # ec=self.get_tag(span, "ec"),
-                    # error=self.get_tag(span, "error"),
+                    ec=self.get_tag(span, "ec"),
+                    error=self.get_tag(span, "error"),
                     data=data)
 
-    def get_tag(self, span, tag):
+    def get_tag(self, span, tag, default=None):
         if tag in span.tags:
             return span.tags[tag]
 
-        return None
+        return default
 
     def get_string_tag(self, span, tag):
         ret = self.get_tag(span, tag)

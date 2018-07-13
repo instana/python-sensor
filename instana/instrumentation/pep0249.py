@@ -23,7 +23,7 @@ class CursorWrapper(wrapt.ObjectProxy):
             span.set_tag(ext.DATABASE_STATEMENT, sql)
             span.set_tag(ext.DATABASE_TYPE, 'mysql')
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
-            span.set_tag(ext.PEER_ADDRESS, "mysql://%s:%s" %
+            span.set_tag('host', "%s:%s" %
                          (self._connect_params[1]['host'],
                           self._connect_params[1]['port']))
         except Exception as e:
@@ -42,7 +42,6 @@ class CursorWrapper(wrapt.ObjectProxy):
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
             span = self._collect_kvs(span, sql)
-            span.set_tag('op', 'execute')
 
             result = self.__wrapped__.execute(sql, params)
         except Exception as e:
@@ -66,8 +65,6 @@ class CursorWrapper(wrapt.ObjectProxy):
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
             span = self._collect_kvs(span, sql)
-            span.set_tag('op', 'executemany')
-            span.set_tag('count', len(seq_of_parameters))
 
             result = self.__wrapped__.executemany(sql, seq_of_parameters)
         except Exception as e:
@@ -91,7 +88,6 @@ class CursorWrapper(wrapt.ObjectProxy):
 
             span = internal_tracer.start_span(self._module_name, child_of=context)
             span = self._collect_kvs(span, proc_name)
-            span.set_tag('op', 'callproc')
 
             result = self.__wrapped__.callproc(proc_name, params)
         except Exception as e:

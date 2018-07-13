@@ -56,4 +56,5 @@ if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
     # noqa: ignore=W0611
     from .instrumentation import urllib3  # noqa
     from .instrumentation import sudsjurko  # noqa
+    from .instrumentation import mysqlpython  # noqa
     from .instrumentation.django import middleware  # noqa

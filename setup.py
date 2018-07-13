@@ -18,18 +18,19 @@ setup(name='instana',
       entry_points={
                     'instana':  ['string = instana:load'],
                     'flask':    ['flask = instana.flaskana:hook'],
-                    'runtime':  ['string = instana:load'], # deprecated: use same as 'instana'
-                    'django':   ['string = instana:load'], # deprecated: use same as 'instana'
-                    'django19': ['string = instana:load'], # deprecated: use same as 'instana'
+                    'runtime':  ['string = instana:load'],  # deprecated: use same as 'instana'
+                    'django':   ['string = instana:load'],  # deprecated: use same as 'instana'
+                    'django19': ['string = instana:load'],  # deprecated: use same as 'instana'
                     },
       extras_require={
         'test': [
             'nose>=1.0',
             'flask>=0.12.2',
+            'lxml>=3.4',
+            'MySQL-python>=1.2.5;python_version<="2.7"',
             'requests>=2.17.1',
             'urllib3[secure]>=1.15',
             'spyne>=2.9',
-            'lxml>=3.4',
             'suds-jurko>=0.6'
         ],
       },

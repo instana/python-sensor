@@ -6,6 +6,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
+from ..tracer import internal_tracer
 
 try:
     import urllib3 # noqa
@@ -37,13 +38,13 @@ try:
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        parent_span = instana.internal_tracer.active_span
+        parent_span = internal_tracer.active_span
 
         # If we're not tracing, just return
         if parent_span is None:
             return wrapped(*args, **kwargs)
 
-        with instana.internal_tracer.start_active_span("urllib3", child_of=parent_span) as scope:
+        with internal_tracer.start_active_span("urllib3", child_of=parent_span) as scope:
             try:
                 kvs = collect(instance, args, kwargs)
                 if 'url' in kvs:
@@ -51,7 +52,7 @@ try:
                 if 'method' in kvs:
                     scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
-                instana.internal_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
+                internal_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
                 rv = wrapped(*args, **kwargs)
 
                 scope.span.set_tag(ext.HTTP_STATUS_CODE, rv.status)

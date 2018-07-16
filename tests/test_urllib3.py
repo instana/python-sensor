@@ -5,7 +5,6 @@ import urllib3
 from nose.tools import assert_equals
 
 from instana.tracer import internal_tracer as tracer
-from instana.util import to_json
 
 
 class TestUrllib3:

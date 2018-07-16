@@ -105,10 +105,10 @@ class TestMySQLPython:
         assert_equals(0, len(spans))
 
     def test_basic_query(self):
-        span = tracer.start_span('test')
-        result = self.cursor.execute("""SELECT * from users""")
-        self.cursor.fetchone()
-        span.finish()
+        result = None
+        with tracer.start_active_span('test'):
+            result = self.cursor.execute("""SELECT * from users""")
+            self.cursor.fetchone()
 
         assert(result >= 0)
 
@@ -132,12 +132,11 @@ class TestMySQLPython:
         assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_basic_insert(self):
-        span = tracer.start_span('test')
-        result = self.cursor.execute(
-                    """INSERT INTO users(name, email) VALUES(%s, %s)""",
-                    ('beaker', 'beaker@muppets.com'))
-
-        span.finish()
+        result = None
+        with tracer.start_active_span('test'):
+            result = self.cursor.execute(
+                        """INSERT INTO users(name, email) VALUES(%s, %s)""",
+                        ('beaker', 'beaker@muppets.com'))
 
         assert_equals(1, result)
 
@@ -161,11 +160,11 @@ class TestMySQLPython:
         assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_executemany(self):
-        span = tracer.start_span('test')
-        result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
-                                         [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
-        self.db.commit()
-        span.finish()
+        result = None
+        with tracer.start_active_span('test'):
+            result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
+                                             [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
+            self.db.commit()
 
         assert_equals(2, result)
 
@@ -189,9 +188,9 @@ class TestMySQLPython:
         assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
 
     def test_call_proc(self):
-        span = tracer.start_span('test')
-        result = self.cursor.callproc('test_proc', ('beaker',))
-        span.finish()
+        result = None
+        with tracer.start_active_span('test'):
+            result = self.cursor.callproc('test_proc', ('beaker',))
 
         assert(result)
 
@@ -218,9 +217,9 @@ class TestMySQLPython:
         result = None
         span = None
         try:
-            span = tracer.start_span('test')
-            result = self.cursor.execute("""SELECT * from blah""")
-            self.cursor.fetchone()
+            with tracer.start_active_span('test'):
+                result = self.cursor.execute("""SELECT * from blah""")
+                self.cursor.fetchone()
         except Exception:
             pass
         finally:

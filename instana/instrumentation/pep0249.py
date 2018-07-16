@@ -32,73 +32,61 @@ class CursorWrapper(wrapt.ObjectProxy):
             return span
 
     def execute(self, sql, params=None):
-        try:
-            span = None
-            context = internal_tracer.current_context()
+        parent_span = internal_tracer.active_span
 
-            # If we're not tracing, just return
-            if context is None:
-                return self.__wrapped__.execute(sql, params)
+        # If we're not tracing, just return
+        if parent_span is None:
+            return self.__wrapped__.execute(sql, params)
 
-            span = internal_tracer.start_span(self._module_name, child_of=context)
-            span = self._collect_kvs(span, sql)
+        with internal_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+            try:
+                self._collect_kvs(scope.span, sql)
 
-            result = self.__wrapped__.execute(sql, params)
-        except Exception as e:
-            if span:
-                span.log_exception(e)
-            raise
-        else:
-            return result
-        finally:
-            if span:
-                span.finish()
+                result = self.__wrapped__.execute(sql, params)
+            except Exception as e:
+                if scope.span:
+                    scope.span.log_exception(e)
+                raise
+            else:
+                return result
 
     def executemany(self, sql, seq_of_parameters):
-        try:
-            span = None
-            context = internal_tracer.current_context()
+        parent_span = internal_tracer.active_span
 
-            # If we're not tracing, just return
-            if context is None:
-                return self.__wrapped__.executemany(sql, seq_of_parameters)
+        # If we're not tracing, just return
+        if parent_span is None:
+            return self.__wrapped__.executemany(sql, seq_of_parameters)
 
-            span = internal_tracer.start_span(self._module_name, child_of=context)
-            span = self._collect_kvs(span, sql)
+        with internal_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+            try:
+                self._collect_kvs(scope.span, sql)
 
-            result = self.__wrapped__.executemany(sql, seq_of_parameters)
-        except Exception as e:
-            if span:
-                span.log_exception(e)
-            raise
-        else:
-            return result
-        finally:
-            if span:
-                span.finish()
+                result = self.__wrapped__.executemany(sql, seq_of_parameters)
+            except Exception as e:
+                if scope.span:
+                    scope.span.log_exception(e)
+                raise
+            else:
+                return result
 
     def callproc(self, proc_name, params):
-        try:
-            span = None
-            context = internal_tracer.current_context()
+        parent_span = internal_tracer.active_span
 
-            # If we're not tracing, just return
-            if context is None:
-                return self.__wrapped__.execute(proc_name, params)
+        # If we're not tracing, just return
+        if parent_span is None:
+            return self.__wrapped__.execute(proc_name, params)
 
-            span = internal_tracer.start_span(self._module_name, child_of=context)
-            span = self._collect_kvs(span, proc_name)
+        with internal_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+            try:
+                self._collect_kvs(scope.span, proc_name)
 
-            result = self.__wrapped__.callproc(proc_name, params)
-        except Exception as e:
-            if span:
-                span.log_exception(e)
-            raise
-        else:
-            return result
-        finally:
-            if span:
-                span.finish()
+                result = self.__wrapped__.callproc(proc_name, params)
+            except Exception as e:
+                if scope.span:
+                    scope.span.log_exception(e)
+                raise
+            else:
+                return result
 
 
 class ConnectionWrapper(wrapt.ObjectProxy):

@@ -16,28 +16,24 @@ def main(argv):
 
 
 def simple():
-    parent_span = ot.tracer.start_span(operation_name="asteroid")
-    parent_span.set_tag(ext.COMPONENT, "Python simple example app")
-    parent_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
-    parent_span.set_tag(ext.PEER_HOSTNAME, "localhost")
-    parent_span.set_tag(ext.HTTP_URL, "/python/simple/one")
-    parent_span.set_tag(ext.HTTP_METHOD, "GET")
-    parent_span.set_tag(ext.HTTP_STATUS_CODE, 200)
-    parent_span.log_kv({"foo": "bar"})
+    with ot.tracer.start_active_span('asteroid') as pscope:
+        pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
+        pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
+        pscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
+        pscope.span.set_tag(ext.HTTP_URL, "/python/simple/one")
+        pscope.span.set_tag(ext.HTTP_METHOD, "GET")
+        pscope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
+        pscope.span.log_kv({"foo": "bar"})
+        time.sleep(.2)
 
-    child_span = ot.tracer.start_span(operation_name="spacedust", child_of=parent_span)
-    child_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
-    child_span.set_tag(ext.PEER_HOSTNAME, "localhost")
-    child_span.set_tag(ext.HTTP_URL, "/python/simple/two")
-    child_span.set_tag(ext.HTTP_METHOD, "POST")
-    child_span.set_tag(ext.HTTP_STATUS_CODE, 204)
-    child_span.set_baggage_item("someBaggage", "someValue")
-
-    time.sleep(.1)
-    child_span.finish()
-
-    time.sleep(.2)
-    parent_span.finish()
+        with ot.tracer.start_active_span('spacedust', child_of=pscope.span) as cscope:
+            cscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
+            cscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
+            cscope.span.set_tag(ext.HTTP_URL, "/python/simple/two")
+            cscope.span.set_tag(ext.HTTP_METHOD, "POST")
+            cscope.span.set_tag(ext.HTTP_STATUS_CODE, 204)
+            cscope.span.set_baggage_item("someBaggage", "someValue")
+            time.sleep(.1)
 
 
 if __name__ == "__main__":

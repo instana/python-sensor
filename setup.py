@@ -1,5 +1,23 @@
 # coding: utf-8
-from setuptools import setup, find_packages
+from distutils.version import LooseVersion
+
+from setuptools import find_packages, setup
+
+
+def check_setuptools():
+    import pkg_resources
+    st_version = pkg_resources.get_distribution('setuptools').version
+    if LooseVersion(st_version) < LooseVersion('20.2.2'):
+        exit('The Instana sensor requires a newer verion of `setuptools` (>=20.2.2).\n'
+             'Please run `pip install --upgrade setuptools` to upgrade. \n'
+             '  and then try the install again.\n'
+             'Also:\n'
+             '  `pip show setuptools` - shows the current version\n'
+             '  To see the setuptool releases: \n'
+             '    https://setuptools.readthedocs.io/en/latest/history.html')
+
+
+check_setuptools()
 
 setup(name='instana',
       version='0.11.0',

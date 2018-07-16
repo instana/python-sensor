@@ -1,6 +1,8 @@
 import os
 from string import Template
-from instana import internal_tracer, eum_api_key as global_eum_api_key
+
+from instana import eum_api_key as global_eum_api_key
+from instana.tracer import internal_tracer
 from instana.log import logger
 
 # Usage:

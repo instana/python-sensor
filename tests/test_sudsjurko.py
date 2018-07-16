@@ -1,8 +1,9 @@
 from __future__ import absolute_import
+
 from nose.tools import assert_equals
-from instana import internal_tracer as tracer
-from instana.util import to_json
 from suds.client import Client
+
+from instana.tracer import internal_tracer as tracer
 
 
 class TestSudsJurko:
@@ -49,7 +50,7 @@ class TestSudsJurko:
         assert_equals(wsgi_span.p, soap_span.s)
 
         assert_equals(None, soap_span.error)
-        assert_equals(None, soap_span.ec)
+        assert_equals(0, soap_span.ec)
 
         assert_equals('ask_question', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
@@ -59,7 +60,7 @@ class TestSudsJurko:
         with tracer.start_active_span('test'):
             try:
                 response = self.client.service.server_exception()
-            except:
+            except Exception:
                 pass
 
         spans = self.recorder.queued_spans()
@@ -93,7 +94,7 @@ class TestSudsJurko:
         with tracer.start_active_span('test'):
             try:
                 response = self.client.service.server_fault()
-            except:
+            except Exception:
                 pass
 
         spans = self.recorder.queued_spans()
@@ -127,7 +128,7 @@ class TestSudsJurko:
         with tracer.start_active_span('test'):
             try:
                 response = self.client.service.server_fault()
-            except:
+            except Exception:
                 pass
 
         spans = self.recorder.queued_spans()
@@ -161,7 +162,7 @@ class TestSudsJurko:
         with tracer.start_active_span('test'):
             try:
                 response = self.client.service.client_fault()
-            except:
+            except Exception:
                 pass
 
         spans = self.recorder.queued_spans()

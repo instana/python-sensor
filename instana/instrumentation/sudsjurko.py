@@ -1,12 +1,14 @@
 from __future__ import absolute_import
+
 from distutils.version import LooseVersion
+
+import instana
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
-import instana
-from ..log import logger
-from .. import internal_tracer
 
+from ..log import logger
+from ..tracer import internal_tracer
 
 try:
     import suds # noqa
@@ -20,7 +22,6 @@ try:
     def send_with_instana(wrapped, instance, args, kwargs):
         parent_span = instana.internal_tracer.active_span
 
-
         # If we're not tracing, just return
         if parent_span is None:
             return wrapped(*args, **kwargs)
@@ -32,7 +33,7 @@ try:
                 scope.span.set_tag(ext.HTTP_METHOD, 'POST')
 
                 internal_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS,
-                                               instance.options.headers)
+                                       instance.options.headers)
 
                 rv = wrapped(*args, **kwargs)
 

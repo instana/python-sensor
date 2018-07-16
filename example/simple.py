@@ -1,7 +1,8 @@
 # encoding=utf-8
 import sys
-import opentracing as ot
 import time
+
+import opentracing as ot
 import opentracing.ext.tags as ext
 
 SERVICE = "🦄 Stan ❤️s Python 🦄"

@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+
 import opentracing as ot
-from instana import internal_tracer
 import opentracing.ext.tags as tags
+
+from .tracer import internal_tracer
 
 
 class iWSGIMiddleware(object):

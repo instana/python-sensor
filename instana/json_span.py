@@ -28,6 +28,17 @@ class Data(object):
         self.__dict__.update(kwds)
 
 
+class MySQLData(object):
+    db = None
+    host = None
+    user = None
+    stmt = None
+    error = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+
 class HttpData(object):
     host = None
     url = None
@@ -36,6 +47,7 @@ class HttpData(object):
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
+
 
 class SoapData(object):
     action = None

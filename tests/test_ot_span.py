@@ -1,6 +1,7 @@
+import time
+
 import opentracing
 from nose.tools import assert_equals
-import time
 
 
 class TestOTSpan:

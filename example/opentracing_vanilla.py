@@ -1,7 +1,9 @@
 # encoding=utf-8
-import opentracing
-import instana
 import time
+
+import opentracing
+
+import instana
 
 # Loop continuously with a 2 second sleep to generate traces
 while True:

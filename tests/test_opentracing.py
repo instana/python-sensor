@@ -1,6 +1,7 @@
-from opentracing.harness.api_check import APICompatibilityCheckMixin
-from instana.tracer import InstanaTracer
 from nose.plugins.skip import SkipTest
+from opentracing.harness.api_check import APICompatibilityCheckMixin
+
+from instana.tracer import InstanaTracer
 
 
 class TestInstanaTracer(InstanaTracer, APICompatibilityCheckMixin):

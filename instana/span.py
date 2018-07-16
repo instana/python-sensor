@@ -1,5 +1,5 @@
-from basictracer.span import BasicSpan
 from basictracer.context import SpanContext
+from basictracer.span import BasicSpan
 
 
 class InstanaSpan(BasicSpan):
@@ -7,7 +7,7 @@ class InstanaSpan(BasicSpan):
         super(InstanaSpan, self).finish(finish_time)
 
     def log_exception(self, e):
-        if hasattr(e, 'message'):
+        if hasattr(e, 'message') and len(e.message):
             self.log_kv({'message': e.message})
         elif hasattr(e, '__str__'):
             self.log_kv({'message': e.__str__()})

@@ -1,7 +1,10 @@
 from __future__ import print_function
-from instana import wsgi
-import wrapt
+
 import os
+
+import wrapt
+
+from instana import wsgi
 
 
 def wrapper(wrapped, instance, args, kwargs):

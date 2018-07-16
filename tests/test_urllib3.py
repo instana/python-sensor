@@ -1,9 +1,11 @@
 from __future__ import absolute_import
-from nose.tools import assert_equals
-from instana import internal_tracer as tracer
-from instana.util import to_json
+
 import requests
 import urllib3
+from nose.tools import assert_equals
+
+from instana.tracer import internal_tracer as tracer
+from instana.util import to_json
 
 
 class TestUrllib3:
@@ -42,7 +44,7 @@ class TestUrllib3:
         assert_equals("GET", second_span.data.http.method)
 
         assert_equals(None, second_span.error)
-        assert_equals(None, second_span.ec)
+        assert_equals(0, second_span.ec)
 
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)
@@ -66,7 +68,7 @@ class TestUrllib3:
         assert_equals("http://127.0.0.1:5000/notfound", second_span.data.http.url)
         assert_equals("PUT", second_span.data.http.method)
         assert_equals(None, second_span.error)
-        assert_equals(None, second_span.ec)
+        assert_equals(0, second_span.ec)
 
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)
@@ -210,7 +212,7 @@ class TestUrllib3:
         assert_equals("GET", second_span.data.http.method)
 
         assert_equals(None, second_span.error)
-        assert_equals(None, second_span.ec)
+        assert_equals(0, second_span.ec)
 
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)
@@ -231,7 +233,7 @@ class TestUrllib3:
         assert_equals("http://127.0.0.1:5000/notfound", second_span.data.http.url)
         assert_equals("PUT", second_span.data.http.method)
         assert_equals(None, second_span.error)
-        assert_equals(None, second_span.ec)
+        assert_equals(0, second_span.ec)
 
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)

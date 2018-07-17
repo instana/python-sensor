@@ -5,7 +5,6 @@ import urllib3
 from nose.tools import assert_equals
 
 from instana.tracer import internal_tracer as tracer
-from instana.util import to_json
 
 
 class TestUrllib3:
@@ -14,12 +13,9 @@ class TestUrllib3:
         self.http = urllib3.PoolManager()
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        tracer.cur_ctx = None
 
     def tearDown(self):
         """ Do nothing for now """
-        # after each test, tracer context should be None (not tracing)
-        assert_equals(None, tracer.current_context())
         return None
 
     def test_vanilla_requests(self):
@@ -30,9 +26,8 @@ class TestUrllib3:
         assert_equals(0, len(spans))
 
     def test_get_request(self):
-        span = tracer.start_span("test")
-        r = self.http.request('GET', 'http://127.0.0.1:5000/')
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = self.http.request('GET', 'http://127.0.0.1:5000/')
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -53,12 +48,11 @@ class TestUrllib3:
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)
 
-        assert_equals(None, tracer.current_context())
+        assert_equals(None, tracer.active_span)
 
     def test_put_request(self):
-        span = tracer.start_span("test")
-        r = self.http.request('PUT', 'http://127.0.0.1:5000/notfound')
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = self.http.request('PUT', 'http://127.0.0.1:5000/notfound')
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -78,12 +72,11 @@ class TestUrllib3:
         assert_equals(second_span.t, first_span.t)
         assert_equals(second_span.p, first_span.s)
 
-        assert_equals(None, tracer.current_context())
+        assert_equals(None, tracer.active_span)
 
     def test_301_redirect(self):
-        span = tracer.start_span("test")
-        r = self.http.request('GET', 'http://127.0.0.1:5000/301')
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = self.http.request('GET', 'http://127.0.0.1:5000/301')
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -104,9 +97,8 @@ class TestUrllib3:
         assert(third_span.d)
 
     def test_302_redirect(self):
-        span = tracer.start_span("test")
-        r = self.http.request('GET', 'http://127.0.0.1:5000/302')
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = self.http.request('GET', 'http://127.0.0.1:5000/302')
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -127,9 +119,8 @@ class TestUrllib3:
         assert(third_span.d)
 
     def test_5xx_request(self):
-        span = tracer.start_span("test")
-        r = self.http.request('GET', 'http://127.0.0.1:5000/504')
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = self.http.request('GET', 'http://127.0.0.1:5000/504')
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -151,13 +142,11 @@ class TestUrllib3:
         assert_equals(second_span.p, first_span.s)
 
     def test_exception_logging(self):
-        span = tracer.start_span("test")
-        try:
-            r = self.http.request('GET', 'http://127.0.0.1:5000/exception')
-        except Exception:
-            pass
-
-        span.finish()
+        with tracer.start_active_span('test'):
+            try:
+                r = self.http.request('GET', 'http://127.0.0.1:5000/exception')
+            except Exception:
+                pass
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -178,17 +167,14 @@ class TestUrllib3:
         assert_equals(second_span.p, first_span.s)
 
     def test_client_error(self):
-        span = tracer.start_span("test")
-
         r = None
-        try:
-            r = self.http.request('GET', 'http://doesnotexist.asdf:5000/504',
-                                  retries=False,
-                                  timeout=urllib3.Timeout(connect=0.5, read=0.5))
-        except Exception:
-            pass
-
-        span.finish()
+        with tracer.start_active_span('test'):
+            try:
+                r = self.http.request('GET', 'http://doesnotexist.asdf:5000/504',
+                                      retries=False,
+                                      timeout=urllib3.Timeout(connect=0.5, read=0.5))
+            except Exception:
+                pass
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -208,9 +194,8 @@ class TestUrllib3:
         assert_equals(second_span.p, first_span.s)
 
     def test_requestspkg_get(self):
-        span = tracer.start_span("test")
-        r = requests.get('http://127.0.0.1:5000/', timeout=2)
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = requests.get('http://127.0.0.1:5000/', timeout=2)
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -232,9 +217,8 @@ class TestUrllib3:
         assert_equals(second_span.p, first_span.s)
 
     def test_requestspkg_put(self):
-        span = tracer.start_span("test")
-        r = requests.put('http://127.0.0.1:5000/notfound')
-        span.finish()
+        with tracer.start_active_span('test'):
+            r = requests.put('http://127.0.0.1:5000/notfound')
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))

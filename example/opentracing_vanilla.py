@@ -3,31 +3,23 @@ import time
 
 import opentracing
 
-import instana
-
 # Loop continuously with a 2 second sleep to generate traces
 while True:
-    entry_span = opentracing.tracer.start_span('universe')
+    with opentracing.tracer.start_active_span('universe') as escope:
+        escope.span.set_tag('http.method', 'GET')
+        escope.span.set_tag('http.url', '/users')
+        escope.span.set_tag('span.kind', 'entry')
 
-    entry_span.set_tag('http.method', 'GET')
-    entry_span.set_tag('http.url', '/users')
-    entry_span.set_tag('span.kind', 'entry')
+        with opentracing.tracer.start_active_span('black-hole', child_of=escope.span) as dbscope:
+            dbscope.span.set_tag('db.instance', 'users')
+            dbscope.span.set_tag('db.statement', 'SELECT * FROM user_table')
+            time.sleep(.1)
+            dbscope.span.set_tag('db.type', 'mysql')
+            dbscope.span.set_tag('db.user', 'mysql_login')
+            dbscope.span.set_tag('span.kind', 'exit')
 
-    intermediate_span = opentracing.tracer.start_span('nebula', child_of=entry_span)
-    intermediate_span.finish()
+        with opentracing.tracer.start_active_span('space-dust', child_of=escope.span) as iscope:
+            iscope.span.log_kv({'message': 'All seems ok'})
 
-    db_span = opentracing.tracer.start_span('black-hole', child_of=entry_span)
-    db_span.set_tag('db.instance', 'users')
-    db_span.set_tag('db.statement', 'SELECT * FROM user_table')
-    db_span.set_tag('db.type', 'mysql')
-    db_span.set_tag('db.user', 'mysql_login')
-    db_span.set_tag('span.kind', 'exit')
-    db_span.finish()
-
-    intermediate_span = opentracing.tracer.start_span('space-dust', child_of=entry_span)
-    intermediate_span.log_kv({'message': 'All seems ok'})
-    intermediate_span.finish()
-
-    entry_span.set_tag('http.status_code', 200)
-    entry_span.finish()
-    time.sleep(2)
+        escope.span.set_tag('http.status_code', 200)
+        time.sleep(.2)

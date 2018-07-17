@@ -1,11 +1,12 @@
 from __future__ import absolute_import
 
+import instana
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
 
-from ..tracer import internal_tracer
 from ..log import logger
+from ..tracer import internal_tracer
 
 try:
     import urllib3 # noqa
@@ -37,40 +38,36 @@ try:
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        context = internal_tracer.current_context()
+        parent_span = internal_tracer.active_span
 
         # If we're not tracing, just return
-        if context is None:
+        if parent_span is None:
             return wrapped(*args, **kwargs)
 
-        try:
-            span = internal_tracer.start_span("urllib3", child_of=context)
+        with internal_tracer.start_active_span("urllib3", child_of=parent_span) as scope:
+            try:
+                kvs = collect(instance, args, kwargs)
+                if 'url' in kvs:
+                    scope.span.set_tag(ext.HTTP_URL, kvs['url'])
+                if 'method' in kvs:
+                    scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
-            kvs = collect(instance, args, kwargs)
-            if 'url' in kvs:
-                span.set_tag(ext.HTTP_URL, kvs['url'])
-            if 'method' in kvs:
-                span.set_tag(ext.HTTP_METHOD, kvs['method'])
+                internal_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
+                rv = wrapped(*args, **kwargs)
 
-            internal_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
-            rv = wrapped(*args, **kwargs)
+                scope.span.set_tag(ext.HTTP_STATUS_CODE, rv.status)
+                if 500 <= rv.status <= 599:
+                    scope.span.set_tag("error", True)
+                    ec = scope.span.tags.get('ec', 0)
+                    scope.span.set_tag("ec", ec+1)
 
-            span.set_tag(ext.HTTP_STATUS_CODE, rv.status)
-            if 500 <= rv.status <= 599:
-                span.set_tag("error", True)
-                ec = span.tags.get('ec', 0)
-                span.set_tag("ec", ec+1)
-
-        except Exception as e:
-            span.log_kv({'message': e})
-            span.set_tag("error", True)
-            ec = span.tags.get('ec', 0)
-            span.set_tag("ec", ec+1)
-            span.finish()
-            raise
-        else:
-            span.finish()
-            return rv
+                return rv
+            except Exception as e:
+                scope.span.log_kv({'message': e})
+                scope.span.set_tag("error", True)
+                ec = scope.span.tags.get('ec', 0)
+                scope.span.set_tag("ec", ec+1)
+                raise
 
     logger.debug("Instrumenting urllib3")
 except ImportError:

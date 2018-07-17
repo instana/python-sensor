@@ -36,22 +36,25 @@ This Python package supports [OpenTracing](http://opentracing.io/).  When using 
 ```Python
 import opentracing
 
-parent_span = opentracing.tracer.start_span(operation_name="asteroid")
-# ... work
-child_span = opentracing.tracer.start_span(operation_name="spacedust", child_of=parent_span)
-child_span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
-# ... work
-child_span.finish()
-# ... work
-parent_span.finish()
+with ot.tracer.start_active_span('asteroid 💫') as pscope:
+    pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
+    pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
+    pscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
+    pscope.span.set_tag(ext.HTTP_URL, "/python/simple/one")
+    pscope.span.set_tag(ext.HTTP_METHOD, "GET")
+    pscope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
+    pscope.span.log_kv({"foo": "bar"})
+    # ... work ...
+
+    with ot.tracer.start_active_span('spacedust 🌚', child_of=pscope.span) as cscope:
+        cscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
+        cscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
+        cscope.span.set_tag(ext.HTTP_URL, "/python/simple/two")
+        cscope.span.set_tag(ext.HTTP_METHOD, "POST")
+        cscope.span.set_tag(ext.HTTP_STATUS_CODE, 204)
+        cscope.span.set_baggage_item("someBaggage", "someValue")
+        # ... work ...
 ```
-
-Note: The Instana sensor has automatic instrumentation that activates at runtime.  If you need to get the current tracing context from existing instrumentation, you can use `opentracing.tracer.current_context()` and pass that return value as `childof`:
-
-        context = opentracing.tracer.current_context()
-        span = opentracing.tracer.start_span("my_span", child_of=context)
-
-Also note that under evented systems such as gevent, concurrence and/or greenlets (which aren't supportet yet), the value `opentracing.tracer.current_context()` is likely to be inconsistent.
 
 ## Configuration
 

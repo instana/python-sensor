@@ -36,7 +36,7 @@ This Python package supports [OpenTracing](http://opentracing.io/).  When using 
 ```Python
 import opentracing
 
-with ot.tracer.start_active_span('asteroid 💫') as pscope:
+with opentracing.tracer.start_active_span('asteroid 💫') as pscope:
     pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
     pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
     pscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
@@ -46,7 +46,7 @@ with ot.tracer.start_active_span('asteroid 💫') as pscope:
     pscope.span.log_kv({"foo": "bar"})
     # ... work ...
 
-    with ot.tracer.start_active_span('spacedust 🌚', child_of=pscope.span) as cscope:
+    with opentracing.tracer.start_active_span('spacedust 🌚', child_of=pscope.span) as cscope:
         cscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
         cscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
         cscope.span.set_tag(ext.HTTP_URL, "/python/simple/two")

@@ -1,26 +1,17 @@
 from __future__ import absolute_import
 
 import urllib3
+from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from .apps.app_django import *
 from instana.tracer import internal_tracer as tracer
 from nose.tools import assert_equals
-from django.apps import apps
-# from django.test.utils import override_settings
+
+from .apps.app_django import INSTALLED_APPS
 
 apps.populate(INSTALLED_APPS)
 
 
-# @override_settings(ROOT_URLCONF='app_django')
 class TestDjango(StaticLiveServerTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-
     def setUp(self):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder

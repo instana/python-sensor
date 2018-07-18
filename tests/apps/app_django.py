@@ -112,7 +112,6 @@ def complex(request):
     return HttpResponse('Stan wuz here!')
 
 
-
 urlpatterns = [
     url(r'^$', index, name='index'),
     url(r'^cause_error$', cause_error, name='cause_error'),

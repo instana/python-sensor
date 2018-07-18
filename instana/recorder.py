@@ -92,7 +92,8 @@ class InstanaRecorder(SpanRecorder):
             data.http = HttpData(host=self.get_host_name(span),
                                  url=self.get_string_tag(span, ext.HTTP_URL),
                                  method=self.get_string_tag(span, ext.HTTP_METHOD),
-                                 status=self.get_tag(span, ext.HTTP_STATUS_CODE))
+                                 status=self.get_tag(span, ext.HTTP_STATUS_CODE),
+                                 error=self.get_tag(span, 'http.error'))
 
         if span.operation_name == "soap":
             data.soap = SoapData(action=self.get_tag(span, 'soap.action'))

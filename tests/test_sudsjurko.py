@@ -33,7 +33,7 @@ class TestSudsJurko:
             response = self.client.service.ask_question(u'Why u like dat?', 5)
 
         spans = self.recorder.queued_spans()
-        # import ipdb; ipdb.set_trace()
+
         assert_equals(3, len(spans))
         wsgi_span = spans[0]
         soap_span = spans[1]

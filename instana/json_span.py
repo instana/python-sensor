@@ -44,6 +44,7 @@ class HttpData(object):
     url = None
     status = 0
     method = None
+    error = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

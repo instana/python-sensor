@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import time
 import requests
 import urllib3
 import unittest
@@ -14,7 +13,6 @@ class TestUrllib3(unittest.TestCase):
         self.http = urllib3.PoolManager()
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        time.sleep(5)
 
     def tearDown(self):
         """ Do nothing for now """

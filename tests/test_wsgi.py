@@ -20,15 +20,15 @@ class TestWSGI(unittest.TestCase):
         return None
 
     def test_vanilla_requests(self):
-        r = self.http.request('GET', 'http://127.0.0.1:5000/')
-        self.assertEqual(r.status, 200)
+        response = self.http.request('GET', 'http://127.0.0.1:5000/')
+        self.assertEqual(response.status, 200)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
 
     def test_get_request(self):
         with tracer.start_active_span('test'):
-            r = self.http.request('GET', 'http://127.0.0.1:5000/')
+            response = self.http.request('GET', 'http://127.0.0.1:5000/')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -37,8 +37,8 @@ class TestWSGI(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert(r)
-        self.assertEqual(200, r.status)
+        assert(response)
+        self.assertEqual(200, response.status)
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -66,7 +66,7 @@ class TestWSGI(unittest.TestCase):
 
     def test_complex_request(self):
         with tracer.start_active_span('test'):
-            r = self.http.request('GET', 'http://127.0.0.1:5000/complex')
+            response = self.http.request('GET', 'http://127.0.0.1:5000/complex')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(5, len(spans))
@@ -77,8 +77,8 @@ class TestWSGI(unittest.TestCase):
         urllib3_span = spans[3]
         test_span = spans[4]
 
-        assert(r)
-        self.assertEqual(200, r.status)
+        assert(response)
+        self.assertEqual(200, response.status)
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)

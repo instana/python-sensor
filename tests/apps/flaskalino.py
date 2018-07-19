@@ -3,13 +3,16 @@
 import opentracing
 import opentracing.ext.tags as ext
 from flask import Flask, redirect
-from instana import wsgi
+from instana.wsgi import iWSGIMiddleware
+from wsgiref.simple_server import make_server
 
-from gevent.pywsgi import WSGIServer
 
 app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
+
+wsgi_app = iWSGIMiddleware(app.wsgi_app)
+flask_server = make_server('127.0.0.1', 5000, wsgi_app)
 
 
 @app.route("/")
@@ -19,6 +22,7 @@ def hello():
 
 @app.route("/complex")
 def gen_opentracing():
+    # opentracing.tracer.active_span
     with opentracing.tracer.start_active_span('asteroid') as pscope:
         pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
         pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
@@ -75,9 +79,4 @@ def exception():
 
 
 if __name__ == '__main__':
-    app.wsgi_app = wsgi.iWSGIMiddleware(app.wsgi_app)
-    # werkzeug_opts = {"threaded": True}
-    # # app.run(debug=False, options=werkzeug_opts)
-    # app.run(debug=False, threaded=True)
-    http_server = WSGIServer(('', 5000), app)
-    http_server.serve_forever()
+    flask_server.serve_forever()

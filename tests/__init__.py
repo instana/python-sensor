@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import os
 import time
 import threading
-from .apps.flaskalino import app as flaskalino
+from .apps.flaskalino import flask_server
 from .apps.soapserver4132 import soapserver
 
 os.environ["INSTANA_TEST"] = "true"
@@ -12,7 +12,7 @@ os.environ["INSTANA_TEST"] = "true"
 #
 # Spawn our background Flask app that the tests will throw
 # requests at.
-flask = threading.Thread(target=flaskalino.run)
+flask = threading.Thread(target=flask_server.serve_forever)
 flask.daemon = True
 flask.name = "Background Flask app"
 print("Starting background Flask app...")

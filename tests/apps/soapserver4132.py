@@ -13,6 +13,7 @@ from instana.wsgi import iWSGIMiddleware
 # Configured to listen on localhost port 4132
 # WSDL: http://localhost:4232/?wsdl
 
+
 class StanSoapService(ServiceBase):
     @rpc(Unicode, Integer, _returns=Iterable(Unicode))
     def ask_question(ctx, question, answer):
@@ -26,7 +27,6 @@ class StanSoapService(ServiceBase):
 
         yield u'To an artificial mind, all reality is virtual. How do they know that the real world isn\'t just another simulation? How do you?'
 
-
     @rpc()
     def server_exception(ctx):
         raise Exception("Server side exception example.")
@@ -38,7 +38,6 @@ class StanSoapService(ServiceBase):
     @rpc()
     def client_fault(ctx):
         raise Fault("Client", "Client side fault example")
-
 
 
 # logging.basicConfig(level=logging.WARN)

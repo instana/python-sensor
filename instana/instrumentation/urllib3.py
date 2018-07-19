@@ -1,12 +1,11 @@
 from __future__ import absolute_import
 
-import instana
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
-from ..tracer import internal_tracer
+from ..tracer import internal_tracer as tracer
 
 try:
     import urllib3 # noqa
@@ -23,28 +22,30 @@ try:
                 kvs['method'] = args[0]
                 kvs['path'] = args[1]
             else:
-                kvs['method'] = kwargs['method']
-                kvs['path'] = kwargs['url']
+                kvs['method'] = kwargs.get('method')
+                kvs['path'] = kwargs.get('path')
+                if kvs['path'] is None:
+                    kvs['path'] = kwargs.get('url')
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
                 kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
             else:
                 kvs['url'] = 'http://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
-        except Exception as e:
-            logger.debug(e)
+        except Exception:
+            logger.debug("urllib3 collect error", exc_info=True)
             return kvs
         else:
             return kvs
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        parent_span = internal_tracer.active_span
+        parent_span = tracer.active_span
 
         # If we're not tracing, just return
         if parent_span is None:
             return wrapped(*args, **kwargs)
 
-        with internal_tracer.start_active_span("urllib3", child_of=parent_span) as scope:
+        with tracer.start_active_span("urllib3", child_of=parent_span) as scope:
             try:
                 kvs = collect(instance, args, kwargs)
                 if 'url' in kvs:
@@ -52,7 +53,9 @@ try:
                 if 'method' in kvs:
                     scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
-                internal_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs["headers"])
+                if 'headers' in kwargs:
+                    tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
+
                 rv = wrapped(*args, **kwargs)
 
                 scope.span.set_tag(ext.HTTP_STATUS_CODE, rv.status)

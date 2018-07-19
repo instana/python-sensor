@@ -157,7 +157,7 @@ class Meter(object):
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:
                 appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-            elif hasattr(sys, '__interactivehook__') or (hasattr(sys, 'ps1') and hasattr(sys, 'ps2')):
+            elif sys.stdout.isatty():
                 appname = "Interactive Console"
             else:
                 appname = os.path.basename(sys.argv[0])

@@ -21,17 +21,20 @@ class TestWSGI(unittest.TestCase):
 
     def test_vanilla_requests(self):
         response = self.http.request('GET', 'http://127.0.0.1:5000/')
-        self.assertEqual(response.status, 200)
-
         spans = self.recorder.queued_spans()
+
         self.assertEqual(1, len(spans))
+        self.assertIsNone(tracer.active_span)
+        self.assertEqual(response.status, 200)
 
     def test_get_request(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', 'http://127.0.0.1:5000/')
 
         spans = self.recorder.queued_spans()
+
         self.assertEqual(3, len(spans))
+        self.assertIsNone(tracer.active_span)
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
@@ -70,6 +73,7 @@ class TestWSGI(unittest.TestCase):
 
         spans = self.recorder.queued_spans()
         self.assertEqual(5, len(spans))
+        self.assertIsNone(tracer.active_span)
 
         spacedust_span = spans[0]
         asteroid_span = spans[1]
@@ -81,10 +85,11 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(200, response.status)
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
-        self.assertEqual(wsgi_span.t, asteroid_span.t)
-        self.assertEqual(asteroid_span.t, spacedust_span.t)
+        trace_id = test_span.t
+        self.assertEqual(trace_id, urllib3_span.t)
+        self.assertEqual(trace_id, wsgi_span.t)
+        self.assertEqual(trace_id, asteroid_span.t)
+        self.assertEqual(trace_id, spacedust_span.t)
 
         # Parent relationships
         self.assertEqual(urllib3_span.p, test_span.s)

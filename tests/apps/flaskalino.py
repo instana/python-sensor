@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import opentracing
 import opentracing.ext.tags as ext
 from flask import Flask, redirect
 from instana.wsgi import iWSGIMiddleware
 from wsgiref.simple_server import make_server
+from instana.tracer import internal_tracer as tracer
 
 
 app = Flask(__name__)
@@ -22,8 +22,7 @@ def hello():
 
 @app.route("/complex")
 def gen_opentracing():
-    # opentracing.tracer.active_span
-    with opentracing.tracer.start_active_span('asteroid') as pscope:
+    with tracer.start_active_span('asteroid') as pscope:
         pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
         pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
         pscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
@@ -32,7 +31,7 @@ def gen_opentracing():
         pscope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
         pscope.span.log_kv({"foo": "bar"})
 
-        with opentracing.tracer.start_active_span('spacedust', child_of=pscope.span) as cscope:
+        with tracer.start_active_span('spacedust', child_of=pscope.span) as cscope:
             cscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
             cscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
             cscope.span.set_tag(ext.HTTP_URL, "/python/simple/two")

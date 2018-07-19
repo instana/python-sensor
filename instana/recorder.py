@@ -110,17 +110,23 @@ class InstanaRecorder(SpanRecorder):
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
-        return JsonSpan(
-                    n=span.operation_name,
-                    t=span.context.trace_id,
-                    p=span.parent_id,
-                    s=span.context.span_id,
-                    ts=int(round(span.start_time * 1000)),
-                    d=int(round(span.duration * 1000)),
-                    f=entityFrom,
-                    ec=self.get_tag(span, "ec", 0),
-                    error=self.get_tag(span, "error"),
-                    data=data)
+        json_span = JsonSpan(n=span.operation_name,
+                             t=span.context.trace_id,
+                             p=span.parent_id,
+                             s=span.context.span_id,
+                             ts=int(round(span.start_time * 1000)),
+                             d=int(round(span.duration * 1000)),
+                             f=entityFrom,
+                             data=data)
+
+        error = self.get_tag(span, "error", False)
+        ec = self.get_tag(span, "ec", None)
+
+        if error and ec:
+            json_span.error = error
+            json_span.ec = ec
+
+        return json_span
 
     def build_sdk_span(self, span):
         """ Takes a BasicSpan and converts into an SDK type JsonSpan """
@@ -136,17 +142,24 @@ class InstanaRecorder(SpanRecorder):
         entityFrom = {'e': self.sensor.agent.from_.pid,
                       'h': self.sensor.agent.from_.agentUuid}
 
-        return JsonSpan(
-                    t=span.context.trace_id,
-                    p=span.parent_id,
-                    s=span.context.span_id,
-                    ts=int(round(span.start_time * 1000)),
-                    d=int(round(span.duration * 1000)),
-                    n="sdk",
-                    f=entityFrom,
-                    ec=self.get_tag(span, "ec"),
-                    error=self.get_tag(span, "error"),
-                    data=data)
+        json_span = JsonSpan(
+                             t=span.context.trace_id,
+                             p=span.parent_id,
+                             s=span.context.span_id,
+                             ts=int(round(span.start_time * 1000)),
+                             d=int(round(span.duration * 1000)),
+                             n="sdk",
+                             f=entityFrom,
+                             data=data)
+
+        error = self.get_tag(span, "error", False)
+        ec = self.get_tag(span, "ec", None)
+
+        if error and ec:
+            json_span.error = error
+            json_span.ec = ec
+
+        return json_span
 
     def get_tag(self, span, tag, default=None):
         if tag in span.tags:

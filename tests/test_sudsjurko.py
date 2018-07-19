@@ -50,7 +50,7 @@ class TestSudsJurko:
         assert_equals(wsgi_span.p, soap_span.s)
 
         assert_equals(None, soap_span.error)
-        assert_equals(0, soap_span.ec)
+        assert_equals(None, soap_span.ec)
 
         assert_equals('ask_question', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)

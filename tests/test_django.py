@@ -47,7 +47,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(django_span.p, urllib3_span.s)
 
         assert_equals(None, django_span.error)
-        assert_equals(0, django_span.ec)
+        assert_equals(None, django_span.ec)
 
         assert_equals('/', django_span.data.http.url)
         assert_equals('GET', django_span.data.http.method)
@@ -117,7 +117,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(ot_span2.p, ot_span1.s)
 
         assert_equals(None, django_span.error)
-        assert_equals(0, django_span.ec)
+        assert_equals(None, django_span.ec)
 
         assert_equals('/complex', django_span.data.http.url)
         assert_equals('GET', django_span.data.http.method)

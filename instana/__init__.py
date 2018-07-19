@@ -1,12 +1,7 @@
 from __future__ import absolute_import
 
 import os
-import opentracing
 from pkg_resources import get_distribution
-
-from . import sensor
-from . import tracer
-
 
 """
 The Instana package has two core components: the sensor and the tracer.
@@ -36,6 +31,7 @@ def load(module):
         print("==========================================================")
         print("Instana: Loading...")
         print("==========================================================")
+
 
 # Optional application wide service name.
 # Can be configured via environment variable or via code:

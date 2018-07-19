@@ -7,7 +7,7 @@ class JsonSpan(object):
     d = 0
     n = None
     f = None
-    ec = 0
+    ec = None
     error = None
     data = None
 

@@ -123,7 +123,7 @@ class TestMySQLPython:
         assert_equals(db_span.p, test_span.s)
 
         assert_equals(None, db_span.error)
-        assert_equals(0, db_span.ec)
+        assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
         assert_equals(db_span.data.mysql.db, mysql_db)
@@ -151,7 +151,7 @@ class TestMySQLPython:
         assert_equals(db_span.p, test_span.s)
 
         assert_equals(None, db_span.error)
-        assert_equals(0, db_span.ec)
+        assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
         assert_equals(db_span.data.mysql.db, mysql_db)
@@ -179,7 +179,7 @@ class TestMySQLPython:
         assert_equals(db_span.p, test_span.s)
 
         assert_equals(None, db_span.error)
-        assert_equals(0, db_span.ec)
+        assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
         assert_equals(db_span.data.mysql.db, mysql_db)
@@ -205,7 +205,7 @@ class TestMySQLPython:
         assert_equals(db_span.p, test_span.s)
 
         assert_equals(None, db_span.error)
-        assert_equals(0, db_span.ec)
+        assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
         assert_equals(db_span.data.mysql.db, mysql_db)

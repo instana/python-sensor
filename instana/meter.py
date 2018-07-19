@@ -17,8 +17,8 @@ from .log import logger as log
 class Snapshot(object):
     name = None
     version = None
-    f = None # flavor: CPython, Jython, IronPython, PyPy
-    a = None # architecture: i386, x86, x86_64, AMD64
+    f = None  # flavor: CPython, Jython, IronPython, PyPy
+    a = None  # architecture: i386, x86, x86_64, AMD64
     versions = None
     djmw = []
 
@@ -29,8 +29,8 @@ class Snapshot(object):
         kvs = dict()
         kvs['name'] = self.name
         kvs['version'] = self.version
-        kvs['f'] = self.f # flavor
-        kvs['a'] = self.a # architecture
+        kvs['f'] = self.f  # flavor
+        kvs['a'] = self.a  # architecture
         kvs['versions'] = self.versions
         kvs['djmw'] = list(self.djmw)
         return kvs
@@ -157,7 +157,7 @@ class Meter(object):
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:
                 appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-            elif hasattr(sys, '__interactivehook__') or hasattr(sys, 'ps1'):
+            elif hasattr(sys, '__interactivehook__') or (hasattr(sys, 'ps1') and hasattr(sys, 'ps2')):
                 appname = "Interactive Console"
             else:
                 appname = os.path.basename(sys.argv[0])

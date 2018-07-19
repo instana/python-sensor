@@ -44,6 +44,7 @@ traces to your Instana dashboard.",
                     },
       extras_require={
         'test': [
+            'django>=1.11',
             'nose>=1.0',
             'flask>=0.12.2',
             'lxml>=3.4',

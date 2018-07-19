@@ -7,7 +7,7 @@ class JsonSpan(object):
     d = 0
     n = None
     f = None
-    ec = 0
+    ec = None
     error = None
     data = None
 
@@ -44,6 +44,7 @@ class HttpData(object):
     url = None
     status = 0
     method = None
+    error = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

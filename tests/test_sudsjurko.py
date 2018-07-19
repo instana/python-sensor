@@ -33,7 +33,7 @@ class TestSudsJurko:
             response = self.client.service.ask_question(u'Why u like dat?', 5)
 
         spans = self.recorder.queued_spans()
-        # import ipdb; ipdb.set_trace()
+
         assert_equals(3, len(spans))
         wsgi_span = spans[0]
         soap_span = spans[1]
@@ -50,7 +50,7 @@ class TestSudsJurko:
         assert_equals(wsgi_span.p, soap_span.s)
 
         assert_equals(None, soap_span.error)
-        assert_equals(0, soap_span.ec)
+        assert_equals(None, soap_span.ec)
 
         assert_equals('ask_question', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
@@ -87,40 +87,6 @@ class TestSudsJurko:
                       soap_span.data.custom.logs[tskey]['message'])
 
         assert_equals('server_exception', soap_span.data.soap.action)
-        assert_equals('http://localhost:4132/', soap_span.data.http.url)
-
-    def test_server_fault(self):
-        response = None
-        with tracer.start_active_span('test'):
-            try:
-                response = self.client.service.server_fault()
-            except Exception:
-                pass
-
-        spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
-        wsgi_span = spans[0]
-        soap_span = spans[1]
-        test_span = spans[2]
-
-        assert_equals(None, response)
-        assert_equals("test", test_span.data.sdk.name)
-        assert_equals(test_span.t, soap_span.t)
-        assert_equals(soap_span.p, test_span.s)
-        assert_equals(wsgi_span.t, soap_span.t)
-        assert_equals(wsgi_span.p, soap_span.s)
-
-        assert_equals(True, soap_span.error)
-        assert_equals(1, soap_span.ec)
-        assert('logs' in soap_span.data.custom.__dict__)
-        assert_equals(1, len(soap_span.data.custom.logs.keys()))
-
-        tskey = list(soap_span.data.custom.logs.keys())[0]
-        assert('message' in soap_span.data.custom.logs[tskey])
-        assert_equals(u"Server raised fault: 'Server side fault example.'",
-                      soap_span.data.custom.logs[tskey]['message'])
-
-        assert_equals('server_fault', soap_span.data.soap.action)
         assert_equals('http://localhost:4132/', soap_span.data.http.url)
 
     def test_server_fault(self):

@@ -201,10 +201,16 @@ class Fsm(object):
         if os.path.exists("/proc/"):
             sched_file = "/proc/%d/sched" % os.getpid()
 
-            if os.isfile(sched_file):
-                file = open(sched_file)
-                line = file.readline()
-                pid = int(re.search(r'\d+', line))
+            if os.path.isfile(sched_file):
+                try:
+                    file = open(sched_file)
+                    line = file.readline()
+                    g = re.search(r'\((\d+)', line)
+                    if len(g.groups()) == 1:
+                        pid = int(g.groups()[0])
+                except Exception:
+                    log.debug("parsing sched file failed", exc_info=True)
+                    pass
 
         if pid is None:
             pid = os.getpid()

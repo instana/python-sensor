@@ -205,7 +205,7 @@ class Fsm(object):
                 try:
                     file = open(sched_file)
                     line = file.readline()
-                    g = re.search(r'\((\d+)', line)
+                    g = re.search(r'\((\d+),', line)
                     if len(g.groups()) == 1:
                         pid = int(g.groups()[0])
                 except Exception:

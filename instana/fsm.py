@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -74,25 +75,7 @@ class Fsm(object):
         self.agent.sensor.meter.run()
 
     def lookup_agent_host(self, e):
-        host = a.AGENT_DEFAULT_HOST
-        port = a.AGENT_DEFAULT_PORT
-
-        if "INSTANA_AGENT_HOST" in os.environ:
-            host = os.environ["INSTANA_AGENT_HOST"]
-            if "INSTANA_AGENT_PORT" in os.environ:
-                port = int(os.environ["INSTANA_AGENT_PORT"])
-
-        elif "INSTANA_AGENT_IP" in os.environ:
-            # Deprecated: INSTANA_AGENT_IP environment variable
-            # To be removed in a future version
-            host = os.environ["INSTANA_AGENT_IP"]
-            if "INSTANA_AGENT_PORT" in os.environ:
-                port = int(os.environ["INSTANA_AGENT_PORT"])
-
-        elif self.agent.sensor.options.agent_host != "":
-            host = self.agent.sensor.options.agent_host
-            if self.agent.sensor.options.agent_port != 0:
-                port = self.agent.sensor.options.agent_port
+        host, port = self.__get_agent_host_port()
 
         h = self.check_host(host, port)
         if h == a.AGENT_HEADER:
@@ -165,7 +148,7 @@ class Fsm(object):
             cmdline = sys.argv
             log.debug(err)
 
-        d = Discovery(pid=pid,
+        d = Discovery(pid=self.__get_real_pid(),
                       name=cmdline[0],
                       args=cmdline[1:])
 
@@ -206,3 +189,57 @@ class Fsm(object):
             self.schedule_retry(self.test_agent, e, "agent test")
         else:
             self.fsm.test()
+
+    def __get_real_pid(self):
+        """
+        Attempts to determine the true process ID by querying the
+        /proc/<pid>/sched file.  This works on systems with a proc filesystem.
+        Otherwise default to os default.
+        """
+        pid = None
+
+        if os.path.exists("/proc/"):
+            sched_file = "/proc/%d/sched" % os.getpid()
+
+            if os.path.isfile(sched_file):
+                try:
+                    file = open(sched_file)
+                    line = file.readline()
+                    g = re.search(r'\((\d+),', line)
+                    if len(g.groups()) == 1:
+                        pid = int(g.groups()[0])
+                except Exception:
+                    log.debug("parsing sched file failed", exc_info=True)
+                    pass
+
+        if pid is None:
+            pid = os.getpid()
+
+        return pid
+
+    def __get_agent_host_port(self):
+        """
+        Iterates the the various ways the host and port of the Instana host
+        agent may be configured: default, env vars, sensor options...
+        """
+        host = a.AGENT_DEFAULT_HOST
+        port = a.AGENT_DEFAULT_PORT
+
+        if "INSTANA_AGENT_HOST" in os.environ:
+            host = os.environ["INSTANA_AGENT_HOST"]
+            if "INSTANA_AGENT_PORT" in os.environ:
+                port = int(os.environ["INSTANA_AGENT_PORT"])
+
+        elif "INSTANA_AGENT_IP" in os.environ:
+            # Deprecated: INSTANA_AGENT_IP environment variable
+            # To be removed in a future version
+            host = os.environ["INSTANA_AGENT_IP"]
+            if "INSTANA_AGENT_PORT" in os.environ:
+                port = int(os.environ["INSTANA_AGENT_PORT"])
+
+        elif self.agent.sensor.options.agent_host != "":
+            host = self.agent.sensor.options.agent_host
+            if self.agent.sensor.options.agent_port != 0:
+                port = self.agent.sensor.options.agent_port
+
+        return host, port

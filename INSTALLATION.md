@@ -95,6 +95,24 @@ In this example, we use uwsgi as the webserver and booted with:
 
 Where `~/.local/share/virtualenvs/cherrypyapp-C1BUba0z` is the path to my local virtualenv from pipenv
 
+## Falcon WSGI
+
+The Falcon framework can also be instrumented via the WSGI wrapper as such:
+
+```python
+import falcon
+import instana
+from instana.wsgi import iWSGIMiddleware
+
+app = falcon.API()
+
+# ...
+
+app = iWSGIMiddleware(app)
+```
+
+Then booting your stack with `gunicorn myfalcon:app` as an example
+
 # uWSGI Webserver
 
 tldr; Make sure `enable-threads` and `lazy-apps` is enabled for uwsgi.

@@ -8,7 +8,7 @@ import threading
 import time
 from types import ModuleType
 
-import instana
+from pkg_resources import get_distribution, DistributionNotFound
 
 from .agent_const import AGENT_DATA_URL
 from .log import logger as log
@@ -188,29 +188,31 @@ class Meter(object):
 
     def collect_modules(self):
         try:
-            r = {}
+            res = {}
             m = sys.modules
             for k in m:
                 # Don't report submodules (e.g. django.x, django.y, django.z)
-                if ('.' in k):
+                # Skip modules that begin with underscore
+                if ('.' in k) or k[0] == '_':
                     continue
                 if m[k]:
                     try:
                         d = m[k].__dict__
                         if "version" in d and d["version"]:
-                            r[k] = self.jsonable(d["version"])
+                            res[k] = self.jsonable(d["version"])
                         elif "__version__" in d and d["__version__"]:
-                            r[k] = self.jsonable(d["__version__"])
+                            res[k] = self.jsonable(d["__version__"])
                         else:
-                            r[k] = "builtin"
-                    except Exception as e:
-                        r[k] = "unknown"
-                        log.debug("collect_modules: could not process module ", k, str(e))
+                            res[k] = get_distribution(k).version
+                    except DistributionNotFound:
+                        pass
+                    except Exception:
+                        log.debug("collect_modules: could not process module: %s" % k)
 
-        except Exception as e:
-            log.debug(e.message)
+        except Exception:
+            log.debug("collect_modules", exc_info=True)
         else:
-            return r
+            return res
 
     def collect_metrics(self):
         u = resource.getrusage(resource.RUSAGE_SELF)

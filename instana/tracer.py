@@ -26,15 +26,14 @@ class InstanaTracer(BasicTracer):
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
 
-
     def start_active_span(self,
-                            operation_name,
-                            child_of=None,
-                            references=None,
-                            tags=None,
-                            start_time=None,
-                            ignore_active_span=False,
-                            finish_on_close=True):
+                          operation_name,
+                          child_of=None,
+                          references=None,
+                          tags=None,
+                          start_time=None,
+                          ignore_active_span=False,
+                          finish_on_close=True):
 
         # create a new Span
         span = self.start_span(
@@ -47,7 +46,6 @@ class InstanaTracer(BasicTracer):
         )
 
         return self.scope_manager.activate(span, finish_on_close)
-
 
     def start_span(self,
                    operation_name=None,
@@ -121,6 +119,7 @@ def init(options):
         To be removed in next major release.
     """
     return internal_tracer
+
 
 def get_tracer():
     return internal_tracer

@@ -27,47 +27,49 @@ class InstanaMiddleware(MiddlewareMixin):
         try:
             env = request.environ
             ctx = None
+
             if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
                 ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
 
-            self.scope = tracer.start_active_span('django', child_of=ctx)
+            request.iscope = tracer.start_active_span('django', child_of=ctx)
 
-            self.scope.span.set_tag(ext.HTTP_METHOD, request.method)
+            request.iscope.span.set_tag(ext.HTTP_METHOD, request.method)
             if 'PATH_INFO' in env:
-                self.scope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
+                request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
             if 'QUERY_STRING' in env:
-                self.scope.span.set_tag("http.params", env['QUERY_STRING'])
+                request.iscope.span.set_tag("http.params", env['QUERY_STRING'])
             if 'HTTP_HOST' in env:
-                self.scope.span.set_tag("http.host", env['HTTP_HOST'])
+                request.iscope.span.set_tag("http.host", env['HTTP_HOST'])
         except Exception:
             logger.debug("Django middleware @ process_response", exc_info=True)
 
     def process_response(self, request, response):
         try:
-            if self.scope is not None:
+            if request.iscope is not None:
                 if 500 <= response.status_code <= 511:
-                    self.scope.span.set_tag("error", True)
-                    ec = self.scope.span.tags.get('ec', 0)
+                    request.iscope.span.set_tag("error", True)
+                    ec = request.iscope.span.tags.get('ec', 0)
                     if ec is 0:
-                        self.scope.span.set_tag("ec", ec+1)
+                        request.iscope.span.set_tag("ec", ec+1)
 
-                self.scope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-                tracer.inject(self.scope.span.context, ot.Format.HTTP_HEADERS, response)
+                request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
+                tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
         except Exception as e:
             logger.debug("Instana middleware @ process_response: ", e)
         finally:
-            self.scope.close()
-            self.scope = None
+            request.iscope.close()
+            request.iscope = None
             return response
 
     def process_exception(self, request, exception):
-        if self.scope is not None:
-            self.scope.span.set_tag(ext.HTTP_STATUS_CODE, 500)
-            self.scope.span.set_tag('http.error', str(exception))
-            self.scope.span.set_tag("error", True)
-            ec = self.scope.span.tags.get('ec', 0)
-            self.scope.span.set_tag("ec", ec+1)
-            self.scope.close()
+        if request.iscope is not None:
+            request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, 500)
+            request.iscope.span.set_tag('http.error', str(exception))
+            request.iscope.span.set_tag("error", True)
+            ec = request.iscope.span.tags.get('ec', 0)
+            request.iscope.span.set_tag("ec", ec+1)
+            request.iscope.close()
+            request.iscope = None
 
 
 def load_middleware_wrapper(wrapped, instance, args, kwargs):
@@ -114,6 +116,7 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
 
 try:
     if 'django' in sys.modules:
+        logger.debug("Instrumenting django")
         wrapt.wrap_function_wrapper('django.core.handlers.base', 'BaseHandler.load_middleware', load_middleware_wrapper)
 except Exception:
     pass

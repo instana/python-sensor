@@ -165,8 +165,8 @@ class Fsm(object):
         if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            log.info("Host agent available. We're in business. Announced pid: %i (true pid: %i)" %
-                     (pid, self.agent.from_.pid))
+            log.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
+                     (str(pid), str(self.agent.from_.pid)))
             return True
         else:
             log.debug("Cannot announce sensor. Scheduling retry.")

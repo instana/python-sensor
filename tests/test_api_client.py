@@ -6,6 +6,7 @@ from instana.api import APIClient
 
 raise unittest.SkipTest("Manual tests due to API key requirement")
 
+
 class TestAPIClient(object):
     def setUp(self):
         """ Clear all spans before a test run """
@@ -13,8 +14,6 @@ class TestAPIClient(object):
 
     def tearDown(self):
         """ Do nothing for now """
-        # after each test, tracer context should be None (not tracing)
-        # assert_equals(None, tracer.current_context())
         return None
 
     def test_tokens(self):

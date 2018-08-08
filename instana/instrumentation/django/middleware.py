@@ -39,8 +39,8 @@ class InstanaMiddleware(MiddlewareMixin):
                 self.scope.span.set_tag("http.params", env['QUERY_STRING'])
             if 'HTTP_HOST' in env:
                 self.scope.span.set_tag("http.host", env['HTTP_HOST'])
-        except Exception as e:
-            logger.debug("Instana middleware @ process_response: ", e)
+        except Exception:
+            logger.debug("Django middleware @ process_response", exc_info=True)
 
     def process_response(self, request, response):
         try:

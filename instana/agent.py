@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 from datetime import datetime
 
@@ -39,6 +40,7 @@ class Agent(object):
     fsm = None
     from_ = From()
     last_seen = None
+    _boot_pid = os.getpid()
 
     def __init__(self, sensor):
         log.debug("initializing agent")
@@ -61,7 +63,16 @@ class Agent(object):
         return False
 
     def can_send(self):
-        return self.fsm.fsm.current == "good2go"
+        # Watch for pid change in the case of fork; if so, re-announce
+        if self._boot_pid != os.getpid():
+            self.reset()
+            self._boot_pid = os.getpid()
+            return False
+
+        if (self.fsm.fsm.current == "good2go"):
+            return True
+
+        return False
 
     def head(self, url):
         return self.request(url, "HEAD", None)

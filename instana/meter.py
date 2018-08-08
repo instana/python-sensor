@@ -125,7 +125,7 @@ class Meter(object):
     def collect_and_report(self):
         while 1:
             self.process()
-            if (self.sensor.agent.is_timed_out()):
+            if self.sensor.agent.is_timed_out():
                 log.warn("Host agent offline for >1 min.  Going to sit in a corner...")
                 self.sensor.agent.reset()
                 break

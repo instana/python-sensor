@@ -9,7 +9,6 @@ from .log import logger
 from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
 from .fsm import Fsm
 from .sensor import Sensor
-from .tracer import internal_tracer
 
 try:
     import urllib.request as urllib2

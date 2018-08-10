@@ -44,8 +44,8 @@ class Fsm(object):
     warnedPeriodic = False
 
     def __init__(self, agent):
-        # logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s" %
-        #             get_distribution('instana').version)
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s" %
+                    get_distribution('instana').version)
         logger.debug("initializing fsm")
 
         self.agent = agent

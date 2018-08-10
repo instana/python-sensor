@@ -1,11 +1,15 @@
+from __future__ import absolute_import
+
 import json
 import os
 import threading
 from datetime import datetime
 
-import instana.agent_const as a
-import instana.fsm as f
-from instana import log
+from .log import logger
+from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
+from .fsm import Fsm
+from .sensor import Sensor
+from .tracer import internal_tracer
 
 try:
     import urllib.request as urllib2
@@ -35,25 +39,27 @@ class Put(urllib2.Request):
 
 class Agent(object):
     sensor = None
-    host = a.AGENT_DEFAULT_HOST
-    port = a.AGENT_DEFAULT_PORT
+    host = AGENT_DEFAULT_HOST
+    port = AGENT_DEFAULT_PORT
     fsm = None
     from_ = From()
     last_seen = None
+    last_fork_check = None
     _boot_pid = os.getpid()
 
-    def __init__(self, sensor):
-        log.debug("initializing agent")
+    def __init__(self):
+        logger.debug("initializing agent")
 
-        self.sensor = sensor
-        self.fsm = f.Fsm(self)
+    def start(self):
+        self.sensor = Sensor(self)
+        self.fsm = Fsm(self)
 
     def to_json(self, o):
         try:
             return json.dumps(o, default=lambda o: {k.lower(): v for k, v in o.__dict__.items()},
                               sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
-            log.info("to_json: ", e, o)
+            logger.info("to_json: ", e, o)
 
     def is_timed_out(self):
         if self.last_seen and self.can_send:
@@ -63,10 +69,11 @@ class Agent(object):
         return False
 
     def can_send(self):
-        # Watch for pid change in the case of fork; if so, re-announce
-        if self._boot_pid != os.getpid():
-            self.reset()
-            self._boot_pid = os.getpid()
+        # Watch for pid change in the case of ; if so, re-announce
+        current_pid = os.getpid()
+        if self._boot_pid != current_pid:
+            self._boot_pid = current_pid
+            self.handle_fork()
             return False
 
         if (self.fsm.fsm.current == "good2go"):
@@ -107,7 +114,7 @@ class Agent(object):
                 self.reset()
             else:
                 if response.getcode() < 200 or response.getcode() >= 300:
-                    log.error("Request returned erroneous code", response.getcode())
+                    logger.error("Request returned erroneous code", response.getcode())
                     if self.can_send():
                         self.reset()
                 else:
@@ -124,8 +131,8 @@ class Agent(object):
             # No need to show the initial 404s or timeouts.  The agent
             # should handle those correctly.
             if not (type(e) is urllib2.HTTPError and e.code == 404):
-                log.debug("%s: full_request_response: %s" %
-                          (threading.current_thread().name, str(e)))
+                logger.debug("%s: full_request_response: %s" %
+                             (threading.current_thread().name, str(e)))
 
         return (b, h)
 
@@ -135,7 +142,7 @@ class Agent(object):
     def make_host_url(self, host, prefix):
         port = self.sensor.options.agent_port
         if port == 0:
-            port = a.AGENT_DEFAULT_PORT
+            port = AGENT_DEFAULT_PORT
 
         return self.make_full_url(host, port, prefix)
 
@@ -146,17 +153,6 @@ class Agent(object):
 
         return s
 
-    def reset(self):
-        self.last_seen = None
-        self.from_ = From()
-        self.fsm.reset()
-
-    def set_host(self, host):
-        self.host = host
-
-    def set_port(self, port):
-        self.port = port
-
     def set_from(self, json_string):
         if type(json_string) is bytes:
             raw_json = json_string.decode("UTF-8")
@@ -164,3 +160,16 @@ class Agent(object):
             raw_json = json_string
 
         self.from_ = From(**json.loads(raw_json))
+
+    def reset(self):
+        self.last_seen = None
+        self.from_ = From()
+        self.fsm.reset()
+
+    def handle_fork(self):
+        self.reset()
+        self.sensor.handle_fork()
+
+
+global_agent = Agent()
+global_agent.start()

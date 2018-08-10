@@ -4,6 +4,7 @@ import os
 
 class Options(object):
     service = ''
+    service_name = None
     agent_host = ''
     agent_port = 0
     log_level = logging.WARN
@@ -14,6 +15,9 @@ class Options(object):
         """
         if "INSTANA_DEV" in os.environ:
             self.log_level = logging.DEBUG
+
+        if "INSTANA_SERVICE_NAME" in os.environ:
+            self.service_name = os.environ["INSTANA_SERVICE_NAME"]
 
         if "INSTANA_AGENT_IP" in os.environ:
             # Deprecated: INSTANA_AGENT_IP environment variable

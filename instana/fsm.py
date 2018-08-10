@@ -10,8 +10,8 @@ import threading as t
 import fysom as f
 from pkg_resources import get_distribution
 
-from . import agent_const as a
-from . import log
+from .agent_const import AGENT_HEADER, AGENT_DISCOVERY_URL, AGENT_DATA_URL, AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
+from .log import logger
 
 
 class Discovery(object):
@@ -44,8 +44,9 @@ class Fsm(object):
     warnedPeriodic = False
 
     def __init__(self, agent):
-        log.info("Stan is on the scene.  Starting Instana instrumentation version", get_distribution('instana').version)
-        log.debug("initializing fsm")
+        # logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s" %
+        #             get_distribution('instana').version)
+        logger.debug("initializing fsm")
 
         self.agent = agent
         self.fsm = f.Fysom({
@@ -65,8 +66,8 @@ class Fsm(object):
         timer.start()
 
     def printstatechange(self, e):
-        log.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
-                  (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
+        logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
+                     (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 
     def reset(self):
         self.fsm.lookup()
@@ -78,30 +79,30 @@ class Fsm(object):
         host, port = self.__get_agent_host_port()
 
         h = self.check_host(host, port)
-        if h == a.AGENT_HEADER:
-            self.agent.set_host(host)
-            self.agent.set_port(port)
+        if h == AGENT_HEADER:
+            self.agent.host = host
+            self.agent.port = port
             self.fsm.announce()
             return True
         elif os.path.exists("/proc/"):
             host = self.get_default_gateway()
             if host:
                 h = self.check_host(host, port)
-                if h == a.AGENT_HEADER:
-                    self.agent.set_host(host)
-                    self.agent.set_port(port)
+                if h == AGENT_HEADER:
+                    self.agent.host = host
+                    self.agent.port = port
                     self.fsm.announce()
                     return True
 
         if (self.warnedPeriodic is False):
-            log.warn("Instana Host Agent couldn't be found. Will retry periodically...")
+            logger.warn("Instana Host Agent couldn't be found. Will retry periodically...")
             self.warnedPeriodic = True
 
         self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
 
     def get_default_gateway(self):
-        log.debug("checking default gateway")
+        logger.debug("checking default gateway")
 
         try:
             proc = subprocess.Popen(
@@ -111,12 +112,12 @@ class Fsm(object):
             addr = proc.stdout.read()
             return addr.decode("UTF-8")
         except Exception as e:
-            log.error(e)
+            logger.error(e)
 
             return None
 
     def check_host(self, host, port):
-        log.debug("checking %s:%d" % (host, port))
+        logger.debug("checking %s:%d" % (host, port))
 
         (_, h) = self.agent.request_header(
             self.agent.make_host_url(host, "/"), "GET", "Server")
@@ -124,7 +125,7 @@ class Fsm(object):
         return h
 
     def announce_sensor(self, e):
-        log.debug("announcing sensor to the agent")
+        logger.debug("announcing sensor to the agent")
         s = None
         pid = os.getpid()
         cmdline = []
@@ -144,9 +145,9 @@ class Fsm(object):
                 (out, err) = proc.communicate()
                 parts = out.split(b'\n')
                 cmdline = [parts[1].decode("utf-8")]
-        except Exception as err:
+        except Exception:
             cmdline = sys.argv
-            log.debug(err)
+            logger.debug("announce_sensor", exc_info=True)
 
         d = Discovery(pid=self.__get_real_pid(),
                       name=cmdline[0],
@@ -161,29 +162,29 @@ class Fsm(object):
             d.inode = os.readlink(path)
 
         (b, _) = self.agent.request_response(
-            self.agent.make_url(a.AGENT_DISCOVERY_URL), "PUT", d)
+            self.agent.make_url(AGENT_DISCOVERY_URL), "PUT", d)
         if b:
             self.agent.set_from(b)
             self.fsm.ready()
-            log.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
-                     (str(pid), str(self.agent.from_.pid)))
+            logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
+                        (str(pid), str(self.agent.from_.pid)))
             return True
         else:
-            log.debug("Cannot announce sensor. Scheduling retry.")
+            logger.debug("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(self.announce_sensor, e, "announce")
         return False
 
     def schedule_retry(self, fun, e, name):
-        log.debug("Scheduling: " + name)
+        logger.debug("Scheduling: " + name)
         self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
 
     def test_agent(self, e):
-        log.debug("testing communication with the agent")
+        logger.debug("testing communication with the agent")
 
-        (b, _) = self.agent.head(self.agent.make_url(a.AGENT_DATA_URL))
+        (b, _) = self.agent.head(self.agent.make_url(AGENT_DATA_URL))
 
         if not b:
             self.schedule_retry(self.test_agent, e, "agent test")
@@ -209,7 +210,7 @@ class Fsm(object):
                     if len(g.groups()) == 1:
                         pid = int(g.groups()[0])
                 except Exception:
-                    log.debug("parsing sched file failed", exc_info=True)
+                    logger.debug("parsing sched file failed", exc_info=True)
                     pass
 
         if pid is None:
@@ -222,8 +223,8 @@ class Fsm(object):
         Iterates the the various ways the host and port of the Instana host
         agent may be configured: default, env vars, sensor options...
         """
-        host = a.AGENT_DEFAULT_HOST
-        port = a.AGENT_DEFAULT_PORT
+        host = AGENT_DEFAULT_HOST
+        port = AGENT_DEFAULT_PORT
 
         if "INSTANA_AGENT_HOST" in os.environ:
             host = os.environ["INSTANA_AGENT_HOST"]

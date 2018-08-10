@@ -6,6 +6,7 @@ import opentracing as ot
 import opentracing.ext.tags as ext
 import wrapt
 
+from ...agent import global_agent
 from ...log import logger
 from ...tracer import internal_tracer as tracer
 
@@ -83,7 +84,7 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
                 return wrapped(*args, **kwargs)
 
             # Save the list of middleware for Snapshot reporting
-            tracer.sensor.meter.djmw = settings.MIDDLEWARE
+            global_agent.sensor.meter.djmw = settings.MIDDLEWARE
 
             if type(settings.MIDDLEWARE) is tuple:
                 settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
@@ -97,7 +98,7 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
                 return wrapped(*args, **kwargs)
 
             # Save the list of middleware for Snapshot reporting
-            tracer.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
+            global_agent.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
 
             if type(settings.MIDDLEWARE_CLASSES) is tuple:
                 settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES

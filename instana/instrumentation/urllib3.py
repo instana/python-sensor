@@ -5,7 +5,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
-from ..tracer import internal_tracer as tracer
+from ..singletons import tracer
 
 try:
     import urllib3 # noqa

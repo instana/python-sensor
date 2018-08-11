@@ -9,6 +9,7 @@ from .log import logger
 from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
 from .fsm import Fsm
 from .sensor import Sensor
+import instana.singletons
 
 try:
     import urllib.request as urllib2
@@ -48,8 +49,6 @@ class Agent(object):
 
     def __init__(self):
         logger.debug("initializing agent")
-
-    def start(self):
         self.sensor = Sensor(self)
         self.fsm = Fsm(self)
 
@@ -168,7 +167,4 @@ class Agent(object):
     def handle_fork(self):
         self.reset()
         self.sensor.handle_fork()
-
-
-global_agent = Agent()
-global_agent.start()
+        instana.singletons.tracer.handle_fork()

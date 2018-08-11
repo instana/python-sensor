@@ -8,7 +8,7 @@ import threading
 import time
 from types import ModuleType
 
-from pkg_resources import get_distribution, DistributionNotFound
+from pkg_resources import DistributionNotFound, get_distribution
 
 from .agent_const import AGENT_DATA_URL
 from .log import logger as log
@@ -132,7 +132,7 @@ class Meter(object):
         self.last_usage = None
         self.last_collect = None
         self.last_metrics = None
-        self.djmw = None
+        self.run()
 
     def collect_and_report(self):
         log.debug("starting metric reporting thread")

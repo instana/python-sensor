@@ -3,9 +3,6 @@ from __future__ import absolute_import
 import os
 from pkg_resources import get_distribution
 
-from . import agent  # noqa
-from . import tracer  # noqa
-
 """
 The Instana package has two core components: the agent and the tracer.
 
@@ -47,6 +44,8 @@ def load(module):
 
 # User configurable EUM API key for instana.helpers.eum_snippet()
 eum_api_key = ''
+
+import instana.singletons #noqa
 
 if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
     # Import & initialize instrumentation

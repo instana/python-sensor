@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 
-import requests
-import urllib3
 import unittest
 
-from instana.tracer import internal_tracer as tracer
+import requests
+import urllib3
+
+from instana.singletons import tracer
 
 
 class TestUrllib3(unittest.TestCase):

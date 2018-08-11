@@ -2,7 +2,7 @@ import os
 from string import Template
 
 from instana import eum_api_key as global_eum_api_key
-from instana.tracer import internal_tracer
+from .singletons import tracer
 from instana.log import logger
 
 # Usage:
@@ -33,7 +33,7 @@ def eum_snippet(trace_id=None, eum_api_key=None, meta={}):
         ids = {}
         ids['meta_kvs'] = ''
 
-        parent_span = internal_tracer.active_span
+        parent_span = tracer.active_span
 
         if trace_id or parent_span:
             ids['trace_id'] = trace_id or parent_span.trace_id
@@ -78,7 +78,7 @@ def eum_test_snippet(trace_id=None, eum_api_key=None, meta={}):
         ids = {}
         ids['meta_kvs'] = ''
 
-        parent_span = internal_tracer.active_span
+        parent_span = tracer.active_span
         if trace_id or parent_span:
             ids['trace_id'] = trace_id or parent_span.trace_id
         else:

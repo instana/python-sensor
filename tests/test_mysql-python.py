@@ -7,7 +7,7 @@ from unittest import SkipTest
 
 from nose.tools import assert_equals
 
-from instana.tracer import internal_tracer as tracer
+from instana.singletons import tracer
 
 if sys.version_info < (3, 0):
     import MySQLdb

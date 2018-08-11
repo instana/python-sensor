@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
-from .log import logger, init as init_logger
+from .log import init as init_logger
+from .log import logger
 from .meter import Meter
 from .options import Options
 
@@ -25,3 +26,6 @@ class Sensor(object):
 
     def handle_fork(self):
         self.meter.reset()
+
+
+global_sensor = None

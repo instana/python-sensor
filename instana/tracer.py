@@ -104,31 +104,4 @@ class InstanaTracer(BasicTracer):
             raise ot.UnsupportedFormatException()
 
     def handle_fork(self):
-        self.recorder = r.InstanaRecorder(self.sensor)
-
-
-def init(options):
-    """
-    Deprecated.
-        No longer in use.
-        To be removed in next major release.
-    """
-    return internal_tracer
-
-
-def get_tracer():
-    return internal_tracer
-
-
-# The global OpenTracing compatible tracer used internally by
-# this package.
-#
-# Usage example:
-#
-# import instana
-# instana.internal_tracer.start_span(...)
-#
-internal_tracer = InstanaTracer()
-
-# Set ourselves as the tracer.
-ot.tracer = internal_tracer
+        self.recorder = r.InstanaRecorder()

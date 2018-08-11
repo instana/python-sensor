@@ -44,7 +44,6 @@ class InstanaRecorder(SpanRecorder):
     def report_spans(self):
         """ Periodically report the queued spans """
         while 1:
-            logger.debug("%d report_spans queue size: %d" % (os.getpid(), self.queue.qsize()))
             if self.queue.qsize() > 0 and instana.singletons.agent.can_send():
                 url = instana.singletons.agent.make_url(AGENT_TRACES_URL)
                 instana.singletons.agent.request(url, "POST", self.queued_spans())
@@ -75,7 +74,6 @@ class InstanaRecorder(SpanRecorder):
         Convert the passed BasicSpan into an JsonSpan and
         add it to the span queue
         """
-        logger.debug("%d record_span; thread: %s" % (os.getpid(), str(self.timer)))
         if instana.singletons.agent.can_send() or "INSTANA_TEST" in os.environ:
             json_span = None
 

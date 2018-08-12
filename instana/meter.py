@@ -8,7 +8,7 @@ import threading
 import time
 from types import ModuleType
 
-from pkg_resources import get_distribution, DistributionNotFound
+from pkg_resources import DistributionNotFound, get_distribution
 
 from .agent_const import AGENT_DATA_URL
 from .log import logger as log
@@ -106,33 +106,46 @@ class EntityData(object):
 class Meter(object):
     SNAPSHOT_PERIOD = 600
     snapshot_countdown = 35
-    sensor = None
+
+    # The agent that this instance belongs to
+    agent = None
+
     last_usage = None
     last_collect = None
-    timer = None
     last_metrics = None
     djmw = None
 
-    def __init__(self, sensor):
-        self.sensor = sensor
+    # A True value signals the metric reporting thread to shutdown
+    _shutdown = False
+
+    def __init__(self, agent):
+        self.agent = agent
+        pass
 
     def run(self):
-        self.timer = threading.Thread(target=self.collect_and_report)
-        self.timer.daemon = True
-        self.timer.name = "Instana Metric Collection"
-        self.timer.start()
+        self.thr = threading.Thread(target=self.collect_and_report)
+        self.thr.daemon = True
+        self.thr.name = "Instana Metric Collection"
+        self.thr.start()
+
+    def reset(self):
+        self.last_usage = None
+        self.last_collect = None
+        self.last_metrics = None
+        self.run()
 
     def collect_and_report(self):
+        log.debug("starting metric reporting thread")
         while 1:
             self.process()
-            if (self.sensor.agent.is_timed_out()):
+            if self.agent.is_timed_out():
                 log.warn("Host agent offline for >1 min.  Going to sit in a corner...")
-                self.sensor.agent.reset()
+                self.agent.reset()
                 break
             time.sleep(1)
 
     def process(self):
-        if self.sensor.agent.can_send():
+        if self.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1
             ss = None
             cm = self.collect_metrics()
@@ -144,9 +157,9 @@ class Meter(object):
             else:
                 md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
-            ed = EntityData(pid=self.sensor.agent.from_.pid, snapshot=ss, metrics=md)
-            url = self.sensor.agent.make_url(AGENT_DATA_URL)
-            self.sensor.agent.request(url, "POST", ed)
+            ed = EntityData(pid=self.agent.from_.pid, snapshot=ss, metrics=md)
+            url = self.agent.make_url(AGENT_DATA_URL)
+            self.agent.request(url, "POST", ed)
             self.last_metrics = cm.__dict__
 
     def collect_snapshot(self):

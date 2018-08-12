@@ -4,7 +4,8 @@ import opentracing as ot
 from nose.tools import assert_equals
 
 import instana.http_propagator as ihp
-from instana import options, tracer, util
+from instana import options, util
+from instana.tracer import InstanaTracer
 
 
 def test_basics():
@@ -21,7 +22,7 @@ def test_basics():
 
 def test_inject():
     opts = options.Options()
-    ot.tracer = tracer.InstanaTracer(opts)
+    ot.tracer = InstanaTracer(opts)
 
     carrier = {}
     span = ot.tracer.start_span("nosetests")

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import os
 import socket
 import sys
@@ -7,10 +9,11 @@ import time
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
 
-import instana
+import instana.singletons
 
 from .agent_const import AGENT_TRACES_URL
-from .json_span import CustomData, Data, HttpData, JsonSpan, MySQLData, SDKData, SoapData
+from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
+                        SDKData, SoapData)
 
 if sys.version_info.major is 2:
     import Queue as queue
@@ -19,7 +22,6 @@ else:
 
 
 class InstanaRecorder(SpanRecorder):
-    sensor = None
     registered_spans = ("django", "memcache", "mysql", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
@@ -27,9 +29,8 @@ class InstanaRecorder(SpanRecorder):
     exit_kind = ["exit", "client", "producer"]
     queue = queue.Queue()
 
-    def __init__(self, sensor):
+    def __init__(self):
         super(InstanaRecorder, self).__init__()
-        self.sensor = sensor
         self.run()
 
     def run(self):
@@ -42,9 +43,9 @@ class InstanaRecorder(SpanRecorder):
     def report_spans(self):
         """ Periodically report the queued spans """
         while 1:
-            if self.sensor.agent.can_send() and self.queue.qsize() > 0:
-                url = self.sensor.agent.make_url(AGENT_TRACES_URL)
-                self.sensor.agent.request(url, "POST", self.queued_spans())
+            if self.queue.qsize() > 0 and instana.singletons.agent.can_send():
+                url = instana.singletons.agent.make_url(AGENT_TRACES_URL)
+                instana.singletons.agent.request(url, "POST", self.queued_spans())
             time.sleep(1)
 
     def queue_size(self):
@@ -72,7 +73,7 @@ class InstanaRecorder(SpanRecorder):
         Convert the passed BasicSpan into an JsonSpan and
         add it to the span queue
         """
-        if self.sensor.agent.can_send() or "INSTANA_TEST" in os.environ:
+        if instana.singletons.agent.can_send() or "INSTANA_TEST" in os.environ:
             json_span = None
 
             if span.operation_name in self.registered_spans:
@@ -107,8 +108,8 @@ class InstanaRecorder(SpanRecorder):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
 
-        entityFrom = {'e': self.sensor.agent.from_.pid,
-                      'h': self.sensor.agent.from_.agentUuid}
+        entityFrom = {'e': instana.singletons.agent.from_.pid,
+                      'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(n=span.operation_name,
                              t=span.context.trace_id,
@@ -139,8 +140,8 @@ class InstanaRecorder(SpanRecorder):
 
         sdk_data.Type = self.get_span_kind(span)
         data = Data(service=self.get_service_name(span), sdk=sdk_data)
-        entityFrom = {'e': self.sensor.agent.from_.pid,
-                      'h': self.sensor.agent.from_.agentUuid}
+        entityFrom = {'e': instana.singletons.agent.from_.pid,
+                      'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(
                              t=span.context.trace_id,
@@ -186,7 +187,7 @@ class InstanaRecorder(SpanRecorder):
         return "localhost"
 
     def get_service_name(self, span):
-        return instana.service_name
+        return instana.singletons.agent.sensor.options.service_name
 
     def get_span_kind(self, span):
         kind = ""

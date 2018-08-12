@@ -6,7 +6,6 @@ import opentracing as ot
 from basictracer import BasicTracer
 from basictracer.context import SpanContext
 
-from . import sensor
 from . import options as o
 from . import recorder as r
 from .http_propagator import HTTPPropagator
@@ -16,12 +15,9 @@ from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
-    sensor = None
-
     def __init__(self, options=o.Options()):
-        self.sensor = sensor.get_sensor()
         super(InstanaTracer, self).__init__(
-            r.InstanaRecorder(self.sensor), r.InstanaSampler())
+            r.InstanaRecorder(), r.InstanaSampler())
 
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
@@ -108,32 +104,4 @@ class InstanaTracer(BasicTracer):
             raise ot.UnsupportedFormatException()
 
     def handle_fork(self):
-        self.sensor.handle_fork()
-        self.recorder = r.InstanaRecorder(self.sensor)
-
-
-def init(options):
-    """
-    Deprecated.
-        No longer in use.
-        To be removed in next major release.
-    """
-    return internal_tracer
-
-
-def get_tracer():
-    return internal_tracer
-
-
-# The global OpenTracing compatible tracer used internally by
-# this package.
-#
-# Usage example:
-#
-# import instana
-# instana.internal_tracer.start_span(...)
-#
-internal_tracer = InstanaTracer()
-
-# Set ourselves as the tracer.
-ot.tracer = internal_tracer
+        self.recorder = r.InstanaRecorder()

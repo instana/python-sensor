@@ -2,8 +2,8 @@
 import opentracing.ext.tags as ext
 import wrapt
 
-from ..tracer import internal_tracer
 from ..log import logger
+from ..singletons import tracer
 
 
 class CursorWrapper(wrapt.ObjectProxy):
@@ -32,13 +32,13 @@ class CursorWrapper(wrapt.ObjectProxy):
             return span
 
     def execute(self, sql, params=None):
-        parent_span = internal_tracer.active_span
+        parent_span = tracer.active_span
 
         # If we're not tracing, just return
         if parent_span is None:
             return self.__wrapped__.execute(sql, params)
 
-        with internal_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+        with tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
             try:
                 self._collect_kvs(scope.span, sql)
 
@@ -51,13 +51,13 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return result
 
     def executemany(self, sql, seq_of_parameters):
-        parent_span = internal_tracer.active_span
+        parent_span = tracer.active_span
 
         # If we're not tracing, just return
         if parent_span is None:
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
-        with internal_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+        with tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
             try:
                 self._collect_kvs(scope.span, sql)
 
@@ -70,13 +70,13 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return result
 
     def callproc(self, proc_name, params):
-        parent_span = internal_tracer.active_span
+        parent_span = tracer.active_span
 
         # If we're not tracing, just return
         if parent_span is None:
             return self.__wrapped__.execute(proc_name, params)
 
-        with internal_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+        with tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
             try:
                 self._collect_kvs(scope.span, proc_name)
 

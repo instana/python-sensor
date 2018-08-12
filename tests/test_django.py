@@ -3,8 +3,9 @@ from __future__ import absolute_import
 import urllib3
 from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from instana.tracer import internal_tracer as tracer
 from nose.tools import assert_equals
+
+from instana.singletons import tracer
 
 from .apps.app_django import INSTALLED_APPS
 

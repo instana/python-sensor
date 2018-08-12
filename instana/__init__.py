@@ -4,13 +4,22 @@ import os
 from pkg_resources import get_distribution
 
 """
-The Instana package has two core components: the sensor and the tracer.
+The Instana package has two core components: the agent and the tracer.
 
-The sensor is individual to each python process and handles process metric
+The agent is individual to each python process and handles process metric
 collection and reporting.
 
 The tracer upholds the OpenTracing API and is responsible for reporting
 span data to Instana.
+
+The following outlines the hierarchy of classes for these two components.
+
+Agent
+  Sensor
+    Meter
+
+Tracer
+  Recorder
 """
 
 __author__ = 'Instana Inc.'
@@ -33,23 +42,13 @@ def load(module):
         print("==========================================================")
 
 
-# Optional application wide service name.
-# Can be configured via environment variable or via code:
-#
-# export INSTANA_SERVICE_NAME=myservice
-#   or
-# instana.service_name = "myservice"
-service_name = None
-
 # User configurable EUM API key for instana.helpers.eum_snippet()
 eum_api_key = ''
 
-if "INSTANA_SERVICE_NAME" in os.environ:
-    service_name = os.environ["INSTANA_SERVICE_NAME"]
+import instana.singletons #noqa
 
 if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
     # Import & initialize instrumentation
-    # noqa: ignore=W0611
     from .instrumentation import urllib3  # noqa
     from .instrumentation import sudsjurko  # noqa
     from .instrumentation import mysqlpython  # noqa

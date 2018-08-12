@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import opentracing as ot
 import opentracing.ext.tags as tags
 
-from .tracer import internal_tracer as tracer
+from .singletons import tracer
 
 
 class iWSGIMiddleware(object):

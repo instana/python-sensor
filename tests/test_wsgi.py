@@ -4,7 +4,7 @@ import time
 import unittest
 
 import urllib3
-from instana.tracer import internal_tracer as tracer
+from instana.singletons import tracer
 
 
 class TestWSGI(unittest.TestCase):

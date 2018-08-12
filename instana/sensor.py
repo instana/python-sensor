@@ -1,23 +1,23 @@
 from __future__ import absolute_import
 
-from . import log
-from .agent import Agent
+from .log import init as init_logger
+from .log import logger
 from .meter import Meter
 from .options import Options
 
 
 class Sensor(object):
     options = None
-    meter = None
     agent = None
+    meter = None
 
-    def __init__(self, options):
+    def __init__(self, agent, options=None):
         self.set_options(options)
-        log.init(options.log_level)
-        self.agent = Agent(self)
-        self.meter = Meter(self)
+        init_logger(self.options.log_level)
 
-        log.debug("initialized sensor")
+        self.agent = agent
+        self.meter = Meter(agent)
+        logger.debug("initialized sensor")
 
     def set_options(self, options):
         self.options = options
@@ -25,18 +25,7 @@ class Sensor(object):
             self.options = Options()
 
     def handle_fork(self):
-        self.agent = Agent(self)
-        self.meter = Meter(self)
+        self.meter.reset()
 
-def get_sensor():
-    return global_sensor
 
-# For any given Python process, we only want one sensor as multiple would
-# collect/report metrics in duplicate, triplicate etc..
-#
-# Usage example:
-#
-# import instana
-# instana.global_sensor
-#
-global_sensor = Sensor(Options())
+global_sensor = None

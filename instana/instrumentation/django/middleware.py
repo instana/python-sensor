@@ -7,7 +7,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ...log import logger
-from ...tracer import internal_tracer as tracer
+from ...singletons import agent, tracer
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 
@@ -41,7 +41,7 @@ class InstanaMiddleware(MiddlewareMixin):
             if 'HTTP_HOST' in env:
                 request.iscope.span.set_tag("http.host", env['HTTP_HOST'])
         except Exception:
-            logger.debug("Django middleware @ process_response", exc_info=True)
+            logger.debug("Django middleware @ process_request", exc_info=True)
 
     def process_response(self, request, response):
         try:
@@ -54,11 +54,12 @@ class InstanaMiddleware(MiddlewareMixin):
 
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
                 tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
-        except Exception as e:
-            logger.debug("Instana middleware @ process_response: ", e)
+        except Exception:
+            logger.debug("Instana middleware @ process_response", exc_info=True)
         finally:
-            request.iscope.close()
-            request.iscope = None
+            if request.iscope is not None:
+                request.iscope.close()
+                request.iscope = None
             return response
 
     def process_exception(self, request, exception):
@@ -78,12 +79,12 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
 
         # Django >=1.10 to <2.0 support old-style MIDDLEWARE_CLASSES so we
         # do as well here
-        if hasattr(settings, 'MIDDLEWARE'):
+        if hasattr(settings, 'MIDDLEWARE') and settings.MIDDLEWARE is not None:
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE:
                 return wrapped(*args, **kwargs)
 
             # Save the list of middleware for Snapshot reporting
-            tracer.sensor.meter.djmw = settings.MIDDLEWARE
+            agent.sensor.meter.djmw = settings.MIDDLEWARE
 
             if type(settings.MIDDLEWARE) is tuple:
                 settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
@@ -92,12 +93,12 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             else:
                 logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
 
-        elif hasattr(settings, 'MIDDLEWARE_CLASSES'):
+        elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
                 return wrapped(*args, **kwargs)
 
             # Save the list of middleware for Snapshot reporting
-            tracer.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
+            agent.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
 
             if type(settings.MIDDLEWARE_CLASSES) is tuple:
                 settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES
@@ -110,8 +111,8 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             logger.warn("Instana: Couldn't find middleware settings")
 
         return wrapped(*args, **kwargs)
-    except Exception as e:
-            logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", e)
+    except Exception:
+            logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", exc_info=True)
 
 
 try:

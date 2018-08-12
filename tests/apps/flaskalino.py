@@ -4,7 +4,7 @@ import opentracing.ext.tags as ext
 from flask import Flask, redirect
 from instana.wsgi import iWSGIMiddleware
 from wsgiref.simple_server import make_server
-from instana.tracer import internal_tracer as tracer
+from instana.singletons import tracer
 
 
 app = Flask(__name__)

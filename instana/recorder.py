@@ -14,7 +14,6 @@ import instana.singletons
 from .agent_const import AGENT_TRACES_URL
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
                         SDKData, SoapData)
-from .log import logger
 
 if sys.version_info.major is 2:
     import Queue as queue

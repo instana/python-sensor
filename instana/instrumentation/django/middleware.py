@@ -41,7 +41,7 @@ class InstanaMiddleware(MiddlewareMixin):
             if 'HTTP_HOST' in env:
                 request.iscope.span.set_tag("http.host", env['HTTP_HOST'])
         except Exception:
-            logger.debug("Django middleware @ process_response", exc_info=True)
+            logger.debug("Django middleware @ process_request", exc_info=True)
 
     def process_response(self, request, response):
         try:
@@ -54,11 +54,12 @@ class InstanaMiddleware(MiddlewareMixin):
 
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
                 tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
-        except Exception as e:
-            logger.debug("Instana middleware @ process_response: ", e)
+        except Exception:
+            logger.debug("Instana middleware @ process_response", exc_info=True)
         finally:
-            request.iscope.close()
-            request.iscope = None
+            if request.iscope is not None:
+                request.iscope.close()
+                request.iscope = None
             return response
 
     def process_exception(self, request, exception):

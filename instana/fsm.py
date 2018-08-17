@@ -8,9 +8,11 @@ import sys
 import threading as t
 
 import fysom as f
-from pkg_resources import get_distribution
+import pkg_resources
 
-from .agent_const import AGENT_HEADER, AGENT_DISCOVERY_URL, AGENT_DATA_URL, AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
+from .agent_const import (AGENT_DATA_URL, AGENT_DEFAULT_HOST,
+                          AGENT_DEFAULT_PORT, AGENT_DISCOVERY_URL,
+                          AGENT_HEADER)
 from .log import logger
 
 
@@ -44,8 +46,13 @@ class Fsm(object):
     warnedPeriodic = False
 
     def __init__(self, agent):
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s" %
-                    get_distribution('instana').version)
+        package_version = 'unknown'
+        try:
+            package_version = pkg_resources.get_distribution('instana').version
+        except pkg_resources.DistributionNotFound:
+            pass
+
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s" % package_version)
         logger.debug("initializing fsm")
 
         self.agent = agent

@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
 import os
-from pkg_resources import get_distribution
+import pkg_resources
+
 
 """
 The Instana package has two core components: the agent and the tracer.
@@ -22,13 +23,19 @@ Tracer
   Recorder
 """
 
+pkg_resources.working_set.add_entry("/tmp/instana/python")
+
 __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2017 Instana Inc.'
 __credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo']
 __license__ = 'MIT'
-__version__ = get_distribution('instana').version
 __maintainer__ = 'Peter Giacomo Lombardo'
 __email__ = 'peter.lombardo@instana.com'
+
+try:
+    __version__ = pkg_resources.get_distribution('instana').version
+except pkg_resources.DistributionNotFound:
+    __version__ = 'unknown'
 
 
 def load(module):

@@ -123,19 +123,22 @@ class Meter(object):
         pass
 
     def run(self):
+        """ Spawns the metric reporting thread """
         self.thr = threading.Thread(target=self.collect_and_report)
         self.thr.daemon = True
         self.thr.name = "Instana Metric Collection"
         self.thr.start()
 
     def reset(self):
+        """" Reset the state as new """
         self.last_usage = None
         self.last_collect = None
         self.last_metrics = None
         self.run()
 
     def collect_and_report(self):
-        log.debug("starting metric reporting thread")
+        """ Target function for the metric reporting thread """
+        log.debug("Metric reporting thread is now alive")
         while 1:
             self.process()
             if self.agent.is_timed_out():
@@ -145,6 +148,7 @@ class Meter(object):
             time.sleep(1)
 
     def process(self):
+        """ Collects, processes & reports metrics """
         if self.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1
             ss = None
@@ -163,6 +167,7 @@ class Meter(object):
             self.last_metrics = cm.__dict__
 
     def collect_snapshot(self):
+        """  Collects snapshot related information to this process and environment """
         try:
             if "FLASK_APP" in os.environ:
                 appname = os.environ["FLASK_APP"]
@@ -200,6 +205,7 @@ class Meter(object):
             log.debug(e)
 
     def collect_modules(self):
+        """ Collect up the list of modules in use """
         try:
             res = {}
             m = sys.modules
@@ -228,6 +234,7 @@ class Meter(object):
             return res
 
     def collect_metrics(self):
+        """ Collect up and return various metrics """
         u = resource.getrusage(resource.RUSAGE_SELF)
         if gc_.isenabled():
             c = list(gc_.get_count())

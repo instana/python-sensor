@@ -14,6 +14,7 @@ import instana.singletons
 from .agent_const import AGENT_TRACES_URL
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
                         SDKData, SoapData)
+from .log import logger
 
 if sys.version_info.major is 2:
     import Queue as queue
@@ -31,7 +32,6 @@ class InstanaRecorder(SpanRecorder):
 
     def __init__(self):
         super(InstanaRecorder, self).__init__()
-        self.run()
 
     def run(self):
         """ Span a background thread to periodically report queued spans """
@@ -42,6 +42,7 @@ class InstanaRecorder(SpanRecorder):
 
     def report_spans(self):
         """ Periodically report the queued spans """
+        logger.debug("Span reporting thread is now alive")
         while 1:
             if self.queue.qsize() > 0 and instana.singletons.agent.can_send():
                 url = instana.singletons.agent.make_url(AGENT_TRACES_URL)

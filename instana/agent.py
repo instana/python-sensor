@@ -5,11 +5,12 @@ import os
 import threading
 from datetime import datetime
 
-from .log import logger
+import instana.singletons
+
 from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
 from .fsm import Fsm
+from .log import logger
 from .sensor import Sensor
-import instana.singletons
 
 try:
     import urllib.request as urllib2
@@ -51,6 +52,12 @@ class Agent(object):
         logger.debug("initializing agent")
         self.sensor = Sensor(self)
         self.fsm = Fsm(self)
+
+    def start(self, e):
+        """ Starts the agent and required threads """
+        logger.debug("Spawning metric & trace reporting threads")
+        self.sensor.meter.run()
+        instana.singletons.tracer.recorder.run()
 
     def to_json(self, o):
         try:
@@ -125,6 +132,7 @@ class Agent(object):
 
                     if method == "HEAD":
                         b = True
+                    # logger.warn("%s %s --> response: %s" % (method, url, b))
         except Exception as e:
             # No need to show the initial 404s or timeouts.  The agent
             # should handle those correctly.

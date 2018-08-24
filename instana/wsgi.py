@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import opentracing as ot
 import opentracing.ext.tags as tags
 
-from .singletons import tracer
+from .singletons import agent, tracer
 
 
 class iWSGIMiddleware(object):
@@ -36,6 +36,14 @@ class iWSGIMiddleware(object):
             ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
 
         self.scope = tracer.start_active_span("wsgi", child_of=ctx)
+
+        if agent.extra_headers is not None:
+            for custom_header in agent.extra_headers:
+                # Headers are available in this format: HTTP_X_CAPTURE_THIS
+                wsgi_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
+                if wsgi_header in env:
+                    self.scope.span.set_tag("http.%s" % custom_header, env[wsgi_header])
+
 
         if 'PATH_INFO' in env:
             self.scope.span.set_tag(tags.HTTP_URL, env['PATH_INFO'])

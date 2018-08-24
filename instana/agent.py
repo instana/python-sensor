@@ -47,6 +47,7 @@ class Agent(object):
     last_seen = None
     last_fork_check = None
     _boot_pid = os.getpid()
+    extra_headers = None
 
     def __init__(self):
         logger.debug("initializing agent")
@@ -165,7 +166,13 @@ class Agent(object):
         else:
             raw_json = json_string
 
-        self.from_ = From(**json.loads(raw_json))
+        res_data = json.loads(raw_json)
+
+        if "extraHeaders" in res_data:
+            self.extra_headers = res_data['extraHeaders']
+            logger.debug("Will also capture these custom headers: %s", self.extra_headers)
+
+        self.from_ = From(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
     def reset(self):
         self.last_seen = None

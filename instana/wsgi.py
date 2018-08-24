@@ -47,7 +47,7 @@ class iWSGIMiddleware(object):
 
         if 'PATH_INFO' in env:
             self.scope.span.set_tag(tags.HTTP_URL, env['PATH_INFO'])
-        if 'QUERY_STRING' in env:
+        if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
             self.scope.span.set_tag("http.params", env['QUERY_STRING'])
         if 'REQUEST_METHOD' in env:
             self.scope.span.set_tag(tags.HTTP_METHOD, env['REQUEST_METHOD'])

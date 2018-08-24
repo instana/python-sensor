@@ -43,7 +43,7 @@ class InstanaMiddleware(MiddlewareMixin):
             request.iscope.span.set_tag(ext.HTTP_METHOD, request.method)
             if 'PATH_INFO' in env:
                 request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
-            if 'QUERY_STRING' in env:
+            if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
                 request.iscope.span.set_tag("http.params", env['QUERY_STRING'])
             if 'HTTP_HOST' in env:
                 request.iscope.span.set_tag("http.host", env['HTTP_HOST'])

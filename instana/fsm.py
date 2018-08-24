@@ -64,13 +64,13 @@ class Fsm(object):
             "callbacks": {
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
-                "onready":        self.start_metric_reporting,
+                "onready":        self.agent.start,
                 "onchangestate":  self.printstatechange}})
 
-        timer = t.Timer(2, self.fsm.lookup)
-        timer.daemon = True
-        timer.name = "Startup"
-        timer.start()
+        self.timer = t.Timer(5, self.fsm.lookup)
+        self.timer.daemon = True
+        self.timer.name = "Startup"
+        self.timer.start()
 
     def printstatechange(self, e):
         logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
@@ -78,9 +78,6 @@ class Fsm(object):
 
     def reset(self):
         self.fsm.lookup()
-
-    def start_metric_reporting(self, e):
-        self.agent.sensor.meter.run()
 
     def lookup_agent_host(self, e):
         host, port = self.__get_agent_host_port()

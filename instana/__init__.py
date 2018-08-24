@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 import pkg_resources
+from threading import Timer
 
 
 """
@@ -54,9 +55,18 @@ eum_api_key = ''
 
 import instana.singletons #noqa
 
-if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
-    # Import & initialize instrumentation
-    from .instrumentation import urllib3  # noqa
-    from .instrumentation import sudsjurko  # noqa
-    from .instrumentation import mysqlpython  # noqa
-    from .instrumentation.django import middleware  # noqa
+def load_instrumentation():
+    if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
+        # Import & initialize instrumentation
+        from .instrumentation import urllib3  # noqa
+        from .instrumentation import sudsjurko  # noqa
+        from .instrumentation import mysqlpython  # noqa
+        from .instrumentation.django import middleware  # noqa
+
+if "INSTANA_MAGIC" in os.environ:
+    # If we're being loaded into an already running process, then delay
+    # instrumentation load.
+    t = Timer(2.0, load_instrumentation)
+    t.start()
+else:
+    load_instrumentation()

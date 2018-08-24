@@ -5,7 +5,7 @@ from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from nose.tools import assert_equals
 
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 from .apps.app_django import INSTALLED_APPS
 
@@ -123,3 +123,48 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals('/complex', django_span.data.http.url)
         assert_equals('GET', django_span.data.http.method)
         assert_equals(200, django_span.data.http.status)
+
+    def test_custom_header_capture(self):
+        # Hack together a manual custom headers list
+        agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
+
+        request_headers = {}
+        request_headers['X-Capture-This'] = 'this'
+        request_headers['X-Capture-That'] = 'that'
+
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
+            # response = self.client.get('/')
+
+        assert_equals(response.status, 200)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(3, len(spans))
+
+        test_span = spans[2]
+        urllib3_span = spans[1]
+        django_span = spans[0]
+
+        # import ipdb; ipdb.set_trace()
+
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals("urllib3", urllib3_span.n)
+        assert_equals("django", django_span.n)
+
+        assert_equals(test_span.t, urllib3_span.t)
+        assert_equals(urllib3_span.t, django_span.t)
+
+        assert_equals(urllib3_span.p, test_span.s)
+        assert_equals(django_span.p, urllib3_span.s)
+
+        assert_equals(None, django_span.error)
+        assert_equals(None, django_span.ec)
+
+        assert_equals('/', django_span.data.http.url)
+        assert_equals('GET', django_span.data.http.method)
+        assert_equals(200, django_span.data.http.status)
+
+        assert_equals(True, "http.X-Capture-This" in django_span.data.custom.__dict__['tags'])
+        assert_equals("this", django_span.data.custom.__dict__['tags']["http.X-Capture-This"])
+        assert_equals(True, "http.X-Capture-That" in django_span.data.custom.__dict__['tags'])
+        assert_equals("that", django_span.data.custom.__dict__['tags']["http.X-Capture-That"])

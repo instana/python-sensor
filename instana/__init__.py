@@ -55,6 +55,7 @@ eum_api_key = ''
 
 import instana.singletons #noqa
 
+
 def load_instrumentation():
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
@@ -62,6 +63,7 @@ def load_instrumentation():
         from .instrumentation import sudsjurko  # noqa
         from .instrumentation import mysqlpython  # noqa
         from .instrumentation.django import middleware  # noqa
+
 
 if "INSTANA_MAGIC" in os.environ:
     # If we're being loaded into an already running process, then delay

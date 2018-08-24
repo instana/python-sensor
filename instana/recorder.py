@@ -44,9 +44,11 @@ class InstanaRecorder(SpanRecorder):
         """ Periodically report the queued spans """
         logger.debug("Span reporting thread is now alive")
         while 1:
-            if self.queue.qsize() > 0 and instana.singletons.agent.can_send():
+            queue_size = self.queue.qsize()
+            if queue_size > 0 and instana.singletons.agent.can_send():
                 url = instana.singletons.agent.make_url(AGENT_TRACES_URL)
                 instana.singletons.agent.request(url, "POST", self.queued_spans())
+                logger.debug("reported %d spans" % queue_size)
             time.sleep(1)
 
     def queue_size(self):
@@ -91,20 +93,20 @@ class InstanaRecorder(SpanRecorder):
                                       logs=self.collect_logs(span)))
 
         if span.operation_name in self.http_spans:
-            data.http = HttpData(host=self.get_host_name(span),
-                                 url=self.get_string_tag(span, ext.HTTP_URL),
-                                 method=self.get_string_tag(span, ext.HTTP_METHOD),
-                                 status=self.get_tag(span, ext.HTTP_STATUS_CODE),
-                                 error=self.get_tag(span, 'http.error'))
+            data.http = HttpData(host=self.get_http_host_name(span),
+                                 url=span.tags.pop(ext.HTTP_URL, ""),
+                                 method=span.tags.pop(ext.HTTP_METHOD, ""),
+                                 status=span.tags.pop(ext.HTTP_STATUS_CODE, None),
+                                 error=span.tags.pop('http.error', None))
 
         if span.operation_name == "soap":
-            data.soap = SoapData(action=self.get_tag(span, 'soap.action'))
+            data.soap = SoapData(action=span.tags.pop('soap.action', None))
 
         if span.operation_name == "mysql":
-            data.mysql = MySQLData(host=self.get_tag(span, 'host'),
-                                   db=self.get_tag(span, ext.DATABASE_INSTANCE),
-                                   user=self.get_tag(span, ext.DATABASE_USER),
-                                   stmt=self.get_tag(span, ext.DATABASE_STATEMENT))
+            data.mysql = MySQLData(host=span.tags.pop('host', None),
+                                   db=span.tags.pop(ext.DATABASE_INSTANCE, None),
+                                   user=span.tags.pop(ext.DATABASE_USER, None),
+                                   stmt=span.tags.pop(ext.DATABASE_STATEMENT, None))
             if len(data.custom.logs.keys()):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
@@ -121,8 +123,8 @@ class InstanaRecorder(SpanRecorder):
                              f=entityFrom,
                              data=data)
 
-        error = self.get_tag(span, "error", False)
-        ec = self.get_tag(span, "ec", None)
+        error = span.tags.pop("error", False)
+        ec = span.tags.pop("ec", None)
 
         if error and ec:
             json_span.error = error
@@ -154,8 +156,8 @@ class InstanaRecorder(SpanRecorder):
                              f=entityFrom,
                              data=data)
 
-        error = self.get_tag(span, "error", False)
-        ec = self.get_tag(span, "ec", None)
+        error = span.tags.pop("error", False)
+        ec = span.tags.pop("ec", None)
 
         if error and ec:
             json_span.error = error
@@ -163,21 +165,8 @@ class InstanaRecorder(SpanRecorder):
 
         return json_span
 
-    def get_tag(self, span, tag, default=None):
-        if tag in span.tags:
-            return span.tags[tag]
-
-        return default
-
-    def get_string_tag(self, span, tag):
-        ret = self.get_tag(span, tag)
-        if not ret:
-            return ""
-
-        return ret
-
-    def get_host_name(self, span):
-        h = self.get_string_tag(span, "http.host")
+    def get_http_host_name(self, span):
+        h = span.tags.pop("http.host", "")
         if len(h) > 0:
             return h
 

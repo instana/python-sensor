@@ -33,10 +33,17 @@ class InstanaMiddleware(MiddlewareMixin):
 
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
+            if agent.extra_headers is not None:
+                for custom_header in agent.extra_headers:
+                    # Headers are available in this format: HTTP_X_CAPTURE_THIS
+                    django_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
+                    if django_header in env:
+                        request.iscope.span.set_tag("http.%s" % custom_header, env[django_header])
+
             request.iscope.span.set_tag(ext.HTTP_METHOD, request.method)
             if 'PATH_INFO' in env:
                 request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
-            if 'QUERY_STRING' in env:
+            if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
                 request.iscope.span.set_tag("http.params", env['QUERY_STRING'])
             if 'HTTP_HOST' in env:
                 request.iscope.span.set_tag("http.host", env['HTTP_HOST'])

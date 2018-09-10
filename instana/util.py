@@ -2,9 +2,12 @@ import binascii
 import json
 import os
 import random
+import re
 import struct
 import sys
 import time
+
+import pkg_resources
 
 from instana import log
 
@@ -69,3 +72,41 @@ def to_json(obj):
                           sort_keys=False, separators=(',', ':')).encode()
     except Exception as e:
         log.info("to_json: ", e, obj)
+
+
+def package_version():
+    try:
+        version = ""
+        version = pkg_resources.get_distribution('instana').version
+    except pkg_resources.DistributionNotFound:
+        version = 'unknown'
+    finally:
+        return version
+
+
+def get_py_source(file):
+    """
+    Retrieves and returns the source code for any ruby
+    files requested by the UI via the host agent
+
+    @param file [String] The fully qualified path to a file
+    """
+    try:
+        response = None
+        pysource = ""
+
+        if (regexp_py.match(file)):
+            response = {"error": "Only Python source files are allowed. (*.py)"}
+        else:
+            with open(file, 'r') as pyfile:
+                pysource = pyfile.read()
+
+            response = {"data": pysource}
+
+    except Exception as e:
+        response = {"error": str(e)}
+    finally:
+        return response
+
+# Used by get_py_source
+regexp_py = re.compile('.py$')

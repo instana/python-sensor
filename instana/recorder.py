@@ -11,7 +11,6 @@ from basictracer import Sampler, SpanRecorder
 
 import instana.singletons
 
-from .agent_const import AGENT_TRACES_URL
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
                         SDKData, SoapData)
 from .log import logger
@@ -46,9 +45,9 @@ class InstanaRecorder(SpanRecorder):
         while 1:
             queue_size = self.queue.qsize()
             if queue_size > 0 and instana.singletons.agent.can_send():
-                url = instana.singletons.agent.make_url(AGENT_TRACES_URL)
-                instana.singletons.agent.request(url, "POST", self.queued_spans())
-                logger.debug("reported %d spans" % queue_size)
+                response = instana.singletons.agent.report_traces(self.queued_spans())
+                if response:
+                    logger.debug("reported %d spans" % queue_size)
             time.sleep(1)
 
     def queue_size(self):

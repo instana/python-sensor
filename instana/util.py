@@ -9,7 +9,7 @@ import time
 
 import pkg_resources
 
-from instana import log
+from .log import logger
 
 if sys.version_info.major is 2:
     string_types = basestring
@@ -44,7 +44,7 @@ def id_to_header(id):
         byteString = struct.pack('>q', id)
         return str(binascii.hexlify(byteString).decode('UTF-8').lstrip('0'))
     except Exception as e:
-        log.debug(e)
+        logger.debug(e)
         return BAD_ID_HEADER
 
 
@@ -71,7 +71,7 @@ def to_json(obj):
         return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
                           sort_keys=False, separators=(',', ':')).encode()
     except Exception as e:
-        log.info("to_json: ", e, obj)
+        logger.info("to_json: ", e, obj)
 
 
 def package_version():

@@ -6,8 +6,8 @@ import opentracing as ot
 from basictracer import BasicTracer
 from basictracer.context import SpanContext
 
-from . import options as o
-from . import recorder as r
+from .options import Options
+from .recorder import InstanaSampler, InstanaRecorder
 from .http_propagator import HTTPPropagator
 from .span import InstanaSpan
 from .text_propagator import TextPropagator
@@ -15,9 +15,9 @@ from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
-    def __init__(self, options=o.Options()):
+    def __init__(self, options=Options()):
         super(InstanaTracer, self).__init__(
-            r.InstanaRecorder(), r.InstanaSampler())
+            InstanaRecorder(), InstanaSampler())
 
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
@@ -104,4 +104,4 @@ class InstanaTracer(BasicTracer):
             raise ot.UnsupportedFormatException()
 
     def handle_fork(self):
-        self.recorder = r.InstanaRecorder()
+        self.recorder = InstanaRecorder()

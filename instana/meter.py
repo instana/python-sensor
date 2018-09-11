@@ -1,5 +1,6 @@
 import copy
 import gc as gc_
+import json
 import os
 import platform
 import resource
@@ -10,8 +11,8 @@ from types import ModuleType
 
 from pkg_resources import DistributionNotFound, get_distribution
 
-from .agent_const import AGENT_DATA_URL
-from .log import logger as log
+from .log import logger
+from .util import get_py_source, package_version
 
 
 class Snapshot(object):
@@ -105,7 +106,7 @@ class EntityData(object):
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 35
+    snapshot_countdown = 5
 
     # The agent that this instance belongs to
     agent = None
@@ -113,6 +114,7 @@ class Meter(object):
     last_usage = None
     last_collect = None
     last_metrics = None
+    last_data_report_status = None
     djmw = None
 
     # A True value signals the metric reporting thread to shutdown
@@ -134,15 +136,19 @@ class Meter(object):
         self.last_usage = None
         self.last_collect = None
         self.last_metrics = None
+        self.snapshot_countdown = 5
         self.run()
 
     def collect_and_report(self):
-        """ Target function for the metric reporting thread """
-        log.debug("Metric reporting thread is now alive")
+        """
+        Target function for the metric reporting thread.  This is a simple loop to
+        collect and report entity data every 1 second.
+        """
+        logger.debug("Metric reporting thread is now alive")
         while 1:
             self.process()
             if self.agent.is_timed_out():
-                log.warn("Host agent offline for >1 min.  Going to sit in a corner...")
+                logger.warn("Host agent offline for >1 min.  Going to sit in a corner...")
                 self.agent.reset()
                 break
             time.sleep(1)
@@ -154,7 +160,7 @@ class Meter(object):
             ss = None
             cm = self.collect_metrics()
 
-            if self.snapshot_countdown < 1:
+            if self.snapshot_countdown < 1 and self.last_data_report_status is 200:
                 self.snapshot_countdown = self.SNAPSHOT_PERIOD
                 ss = self.collect_snapshot()
                 md = copy.deepcopy(cm).delta_data(None)
@@ -162,9 +168,35 @@ class Meter(object):
                 md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
             ed = EntityData(pid=self.agent.from_.pid, snapshot=ss, metrics=md)
-            url = self.agent.make_url(AGENT_DATA_URL)
-            self.agent.request(url, "POST", ed)
-            self.last_metrics = cm.__dict__
+            response = self.agent.report_data(ed)
+
+            if response:
+                self.last_data_report_status = response.status_code
+
+                if response.status_code is 200 and len(response.content) > 2:
+                    # The host agent returned something indicating that is has a request for us that we
+                    # need to process.
+                    logger.debug("data response length: %d" % len(response.content))
+                    self.handle_agent_tasks(json.loads(response.content))
+
+                self.last_metrics = cm.__dict__
+
+    def handle_agent_tasks(self, task):
+        """
+        When request(s) are received by the host agent, it is sent here
+        for handling & processing.
+        """
+        if "action" in task:
+            if task["action"] == "python.source":
+                payload = get_py_source(task["args"]["file"])
+            else:
+                message = "Unrecognized action: %s. An newer Instana package may be required for this. Current version: %s" % (task["action"], package_version())
+                payload = {"error": message}
+        else:
+            payload = {"error": "Instana Python: No action specified in request." }
+
+        self.agent.task_response(task["messageId"], payload)
+
 
     def collect_snapshot(self):
         """  Collects snapshot related information to this process and environment """
@@ -188,7 +220,7 @@ class Meter(object):
             s.version = sys.version
             s.versions = self.collect_modules()
         except Exception as e:
-            log.debug(e.message)
+            logger.debug(e.message)
         else:
             return s
 
@@ -202,7 +234,7 @@ class Meter(object):
                 result = value
             return str(result)
         except Exception as e:
-            log.debug(e)
+            logger.debug(e)
 
     def collect_modules(self):
         """ Collect up the list of modules in use """
@@ -226,10 +258,10 @@ class Meter(object):
                     except DistributionNotFound:
                         pass
                     except Exception:
-                        log.debug("collect_modules: could not process module: %s" % k)
+                        logger.debug("collect_modules: could not process module: %s" % k)
 
         except Exception:
-            log.debug("collect_modules", exc_info=True)
+            logger.debug("collect_modules", exc_info=True)
         else:
             return res
 

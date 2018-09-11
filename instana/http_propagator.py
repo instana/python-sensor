@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import opentracing as ot
 from basictracer.context import SpanContext
 
-from instana import log, util
+from .log import logger
+from .util import id_to_header, header_to_id
 
 # The carrier can be a dict or a list.
 # Using the trace header as an example, it can be in the following forms
@@ -30,8 +31,8 @@ class HTTPPropagator():
 
     def inject(self, span_context, carrier):
         try:
-            trace_id = util.id_to_header(span_context.trace_id)
-            span_id = util.id_to_header(span_context.span_id)
+            trace_id = id_to_header(span_context.trace_id)
+            span_id = id_to_header(span_context.span_id)
 
             if type(carrier) is dict or hasattr(carrier, "__dict__"):
                 carrier[self.HEADER_KEY_T] = trace_id
@@ -45,7 +46,7 @@ class HTTPPropagator():
                 raise Exception("Unsupported carrier type", type(carrier))
 
         except Exception as e:
-            log.debug("inject error: ", str(e))
+            logger.debug("inject error: ", str(e))
 
     def extract(self, carrier):  # noqa
         try:
@@ -58,13 +59,13 @@ class HTTPPropagator():
 
             # Look for standard X-Instana-T/S format
             if self.HEADER_KEY_T in dc and self.header_key_s in dc:
-                trace_id = util.header_to_id(dc[self.HEADER_KEY_T])
-                span_id = util.header_to_id(dc[self.HEADER_KEY_S])
+                trace_id = header_to_id(dc[self.HEADER_KEY_T])
+                span_id = header_to_id(dc[self.HEADER_KEY_S])
 
             # Alternatively check for alternate HTTP_X_INSTANA_T/S style
             elif self.ALT_HEADER_KEY_T in dc and self.ALT_HEADER_KEY_S in dc:
-                trace_id = util.header_to_id(dc[self.ALT_HEADER_KEY_T])
-                span_id = util.header_to_id(dc[self.ALT_HEADER_KEY_S])
+                trace_id = header_to_id(dc[self.ALT_HEADER_KEY_T])
+                span_id = header_to_id(dc[self.ALT_HEADER_KEY_S])
 
             return SpanContext(span_id=span_id,
                                trace_id=trace_id,
@@ -72,4 +73,4 @@ class HTTPPropagator():
                                sampled=True)
 
         except Exception as e:
-            log.debug("extract error: ", str(e))
+            logger.debug("extract error: ", str(e))

@@ -145,8 +145,6 @@ class TestDjango(StaticLiveServerTestCase):
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        # import ipdb; ipdb.set_trace()
-
         assert_equals("test", test_span.data.sdk.name)
         assert_equals("urllib3", urllib3_span.n)
         assert_equals("django", django_span.n)

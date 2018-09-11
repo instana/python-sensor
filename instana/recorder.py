@@ -25,6 +25,8 @@ class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "mysql", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
+    exit_spans = ("memcache", "mysql", "rpc-client", "soap", "urllib3")
+
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
     queue = queue.Queue()
@@ -121,6 +123,9 @@ class InstanaRecorder(SpanRecorder):
                              d=int(round(span.duration * 1000)),
                              f=entityFrom,
                              data=data)
+
+        if span.stack:
+            json_span.stack = span.stack
 
         error = span.tags.pop("error", False)
         ec = span.tags.pop("ec", None)

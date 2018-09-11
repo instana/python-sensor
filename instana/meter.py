@@ -177,7 +177,7 @@ class Meter(object):
                     # The host agent returned something indicating that is has a request for us that we
                     # need to process.
                     logger.debug("data response length: %d" % len(response.content))
-                    self.handle_agent_tasks(json.loads(response.content))
+                    self.handle_agent_tasks(json.loads(response.content)[0])
 
                 self.last_metrics = cm.__dict__
 
@@ -190,10 +190,11 @@ class Meter(object):
             if task["action"] == "python.source":
                 payload = get_py_source(task["args"]["file"])
             else:
-                message = "Unrecognized action: %s. An newer Instana package may be required for this. Current version: %s" % (task["action"], package_version())
+                message = "Unrecognized action: %s. An newer Instana package may be required " \
+                          "for this. Current version: %s" % (task["action"], package_version())
                 payload = {"error": message}
         else:
-            payload = {"error": "Instana Python: No action specified in request." }
+            payload = {"error": "Instana Python: No action specified in request."}
 
         self.agent.task_response(task["messageId"], payload)
 

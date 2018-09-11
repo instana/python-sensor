@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import time
+import traceback
 
 import opentracing as ot
 from basictracer import BasicTracer
@@ -82,14 +83,19 @@ class InstanaTracer(BasicTracer):
             ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
+
         # Tie it all together
-        return InstanaSpan(
-            self,
-            operation_name=operation_name,
-            context=ctx,
-            parent_id=(None if parent_ctx is None else parent_ctx.span_id),
-            tags=tags,
-            start_time=start_time)
+        span = InstanaSpan(self,
+                           operation_name=operation_name,
+                           context=ctx,
+                           parent_id=(None if parent_ctx is None else parent_ctx.span_id),
+                           tags=tags,
+                           start_time=start_time)
+
+        if operation_name in self.recorder.exit_spans:
+            self.__add_stack(span)
+
+        return span
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:
@@ -105,3 +111,15 @@ class InstanaTracer(BasicTracer):
 
     def handle_fork(self):
         self.recorder = InstanaRecorder()
+
+    def __add_stack(self, span):
+        """ Adds a backtrace to this span """
+        span.stack = []
+
+        # import ipdb; ipdb.set_trace()
+        for frame in traceback.extract_stack():
+            span.stack.append({
+                "f": frame[0],
+                "n": frame[1],
+                "m": frame[2]
+            })

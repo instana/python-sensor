@@ -80,50 +80,6 @@ class Agent(object):
 
         return False
 
-    def full_request_response(self, url, method, o, body, header):
-        b = None
-        h = None
-        try:
-            if method == "HEAD":
-                request = Head(url)
-            elif method == "GET":
-                request = urllib2.Request(url)
-            elif method == "PUT":
-                request = Put(url, self.to_json(o))
-                request.add_header("Content-Type", "application/json")
-            else:
-                request = urllib2.Request(url, self.to_json(o))
-                request.add_header("Content-Type", "application/json")
-
-            response = urllib2.urlopen(request, timeout=2)
-
-            if not response:
-                self.reset()
-            else:
-                if response.getcode() < 200 or response.getcode() >= 300:
-                    logger.error("Request returned erroneous code", response.getcode())
-                    if self.can_send():
-                        self.reset()
-                else:
-                    self.last_seen = datetime.now()
-                    if body:
-                        b = response.read()
-
-                    if header:
-                        h = response.info().get(header)
-
-                    if method == "HEAD":
-                        b = True
-                    # logger.warn("%s %s --> response: %s" % (method, url, b))
-        except Exception as e:
-            # No need to show the initial 404s or timeouts.  The agent
-            # should handle those correctly.
-            if not (type(e) is urllib2.HTTPError and e.code == 404):
-                logger.debug("%s: full_request_response: %s" %
-                             (threading.current_thread().name, str(e)))
-
-        return (b, h)
-
     def set_from(self, json_string):
         if type(json_string) is bytes:
             raw_json = json_string.decode("UTF-8")
@@ -134,7 +90,7 @@ class Agent(object):
 
         if "extraHeaders" in res_data:
             self.extra_headers = res_data['extraHeaders']
-            logger.debug("Will also capture these custom headers: %s", self.extra_headers)
+            logger.info("Will also capture these custom headers: %s", self.extra_headers)
 
         self.from_ = From(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
@@ -157,19 +113,18 @@ class Agent(object):
         """
         try:
             rv = False
-
-            # import ipdb; ipdb.set_trace()
-
             url = "http://%s:%s/" % (host, port)
             response = self.client.get(url, timeout=0.8)
 
-            if response.headers["Server"] == AGENT_HEADER:
+            server_header = response.headers["Server"]
+            if server_header == AGENT_HEADER:
                 logger.debug("Host agent found on %s:%d" % (host, port))
                 rv = True
             else:
-                logger.debug("Host agent NOT found on %s:%d" % (host, port))
-        except requests.ConnectTimeout, requests.ConnectionError:
-            logger.debug("is_agent_listening", exc_info=True)
+                logger.debug("...something is listening on %s:%d but it's not the Instana Agent: %s"
+                             % (host, port, server_header))
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("No host agent listening on %s:%d" % (host, port))
             rv = False
         finally:
             return rv
@@ -189,7 +144,7 @@ class Agent(object):
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
-        except requests.ConnectTimeout, requests.ConnectionError:
+        except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("announce", exc_info=True)
         finally:
             return response
@@ -207,8 +162,8 @@ class Agent(object):
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
-        except requests.ConnectTimeout, requests.ConnectionError:
-            logger.debug("report_data", exc_info=True)
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("report_data: host agent connection error")
         finally:
             return response
 
@@ -224,8 +179,8 @@ class Agent(object):
                                         timeout=0.8)
             if response.status_code is 200:
                 self.last_seen = datetime.now()
-        except requests.ConnectTimeout, requests.ConnectionError:
-            logger.debug("report_traces", exc_info=True)
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("report_traces: host agent connection error")
         finally:
             return response
 
@@ -240,7 +195,7 @@ class Agent(object):
                                         data=self.to_json(data),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
-        except requests.ConnectTimeout, requests.ConnectionError:
+        except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("task_response", exc_info=True)
         finally:
             return response

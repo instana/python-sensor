@@ -176,7 +176,6 @@ class Meter(object):
                 if response.status_code is 200 and len(response.content) > 2:
                     # The host agent returned something indicating that is has a request for us that we
                     # need to process.
-                    logger.debug("data response length: %d" % len(response.content))
                     self.handle_agent_tasks(json.loads(response.content)[0])
 
                 self.last_metrics = cm.__dict__
@@ -186,6 +185,7 @@ class Meter(object):
         When request(s) are received by the host agent, it is sent here
         for handling & processing.
         """
+        logger.debug("Received agent request with messageId: %s" % task["messageId"])
         if "action" in task:
             if task["action"] == "python.source":
                 payload = get_py_source(task["args"]["file"])
@@ -197,7 +197,6 @@ class Meter(object):
             payload = {"error": "Instana Python: No action specified in request."}
 
         self.agent.task_response(task["messageId"], payload)
-
 
     def collect_snapshot(self):
         """  Collects snapshot related information to this process and environment """

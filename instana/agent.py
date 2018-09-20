@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import json
 import os
-import threading
+import re
 from datetime import datetime
 
 import requests
@@ -15,11 +15,6 @@ from .agent_const import (AGENT_DATA_PATH, AGENT_DEFAULT_HOST,
 from .fsm import Fsm
 from .log import logger
 from .sensor import Sensor
-
-try:
-    import urllib.request as urllib2
-except ImportError:
-    import urllib2
 
 
 class From(object):
@@ -191,12 +186,18 @@ class Agent(object):
         """
         try:
             response = None
+            payload = json.dumps(data)
+
+            logger.debug("Task response is %s: %s" % (self.__response_url(message_id), payload))
+
             response = self.client.post(self.__response_url(message_id),
-                                        data=self.to_json(data),
+                                        data=payload,
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("task_response", exc_info=True)
+        except Exception:
+            logger.debug("task_response Exception", exc_info=True)
         finally:
             return response
 
@@ -229,8 +230,6 @@ class Agent(object):
         URL for responding to agent requests.
         """
         if self.from_.pid != 0:
-            url = AGENT_RESPONSE_PATH % (self.from_.pid, message_id)
-        else:
-            url = None
+            path = AGENT_RESPONSE_PATH % (self.from_.pid, message_id)
 
-        return url
+        return "http://%s:%s/%s" % (self.host, self.port, path)

@@ -44,7 +44,6 @@ class iWSGIMiddleware(object):
                 if wsgi_header in env:
                     self.scope.span.set_tag("http.%s" % custom_header, env[wsgi_header])
 
-
         if 'PATH_INFO' in env:
             self.scope.span.set_tag(tags.HTTP_URL, env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):

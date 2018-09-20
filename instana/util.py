@@ -86,7 +86,7 @@ def package_version():
 
 def get_py_source(file):
     """
-    Retrieves and returns the source code for any ruby
+    Retrieves and returns the source code for any Python
     files requested by the UI via the host agent
 
     @param file [String] The fully qualified path to a file
@@ -107,6 +107,7 @@ def get_py_source(file):
         response = {"error": str(e)}
     finally:
         return response
+
 
 # Used by get_py_source
 regexp_py = re.compile('.py$')

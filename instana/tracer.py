@@ -116,10 +116,9 @@ class InstanaTracer(BasicTracer):
         """ Adds a backtrace to this span """
         span.stack = []
 
-        # import ipdb; ipdb.set_trace()
         for frame in traceback.extract_stack():
             span.stack.append({
-                "f": frame[0],
+                "c": frame[0],
                 "n": frame[1],
                 "m": frame[2]
             })

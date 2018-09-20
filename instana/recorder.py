@@ -25,7 +25,9 @@ class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "mysql", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
+
     exit_spans = ("memcache", "mysql", "rpc-client", "soap", "urllib3")
+    entry_spans = ("django", "wsgi", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]

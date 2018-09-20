@@ -95,7 +95,7 @@ def get_py_source(file):
         response = None
         pysource = ""
 
-        if (regexp_py.match(file)):
+        if regexp_py.search(file) is None:
             response = {"error": "Only Python source files are allowed. (*.py)"}
         else:
             with open(file, 'r') as pyfile:
@@ -110,4 +110,4 @@ def get_py_source(file):
 
 
 # Used by get_py_source
-regexp_py = re.compile('.py$')
+regexp_py = re.compile('\.py$')

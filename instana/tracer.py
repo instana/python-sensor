@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import re
 import time
 import traceback
 
@@ -7,9 +8,9 @@ import opentracing as ot
 from basictracer import BasicTracer
 from basictracer.context import SpanContext
 
-from .options import Options
-from .recorder import InstanaSampler, InstanaRecorder
 from .http_propagator import HTTPPropagator
+from .options import Options
+from .recorder import InstanaRecorder, InstanaSampler
 from .span import InstanaSpan
 from .text_propagator import TextPropagator
 from .util import generate_id
@@ -92,6 +93,10 @@ class InstanaTracer(BasicTracer):
                            tags=tags,
                            start_time=start_time)
 
+        if operation_name in self.recorder.entry_spans:
+            # For entry spans, add only a backtrace fingerprint
+            self.__add_stack(span, limit=2)
+
         if operation_name in self.recorder.exit_spans:
             self.__add_stack(span)
 
@@ -112,13 +117,33 @@ class InstanaTracer(BasicTracer):
     def handle_fork(self):
         self.recorder = InstanaRecorder()
 
-    def __add_stack(self, span):
+    def __add_stack(self, span, limit=None):
         """ Adds a backtrace to this span """
         span.stack = []
+        frame_count = 0
 
-        for frame in traceback.extract_stack():
+        tb = traceback.extract_stack()
+        tb.reverse()
+        for frame in tb:
+            if limit is not None and frame_count >= limit:
+                break
+
+            if re_tracer_frame.search(frame[0]) is not None:
+                continue
+
+            if re_with_stan_frame.search(frame[2]) is not None:
+                continue
+
             span.stack.append({
                 "c": frame[0],
                 "n": frame[1],
                 "m": frame[2]
             })
+
+            if limit is not None:
+                frame_count += 1
+
+
+# Used by get_py_source
+re_tracer_frame = re.compile('instana/tracer.py$')
+re_with_stan_frame = re.compile('with_instana')

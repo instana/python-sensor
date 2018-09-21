@@ -10,6 +10,7 @@ class JsonSpan(object):
     ec = None
     error = None
     data = None
+    stack = None
 
     def __init__(self, **kwds):
         for key in kwds:

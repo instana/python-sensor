@@ -2,11 +2,14 @@ import binascii
 import json
 import os
 import random
+import re
 import struct
 import sys
 import time
 
-from instana import log
+import pkg_resources
+
+from .log import logger
 
 if sys.version_info.major is 2:
     string_types = basestring
@@ -41,7 +44,7 @@ def id_to_header(id):
         byteString = struct.pack('>q', id)
         return str(binascii.hexlify(byteString).decode('UTF-8').lstrip('0'))
     except Exception as e:
-        log.debug(e)
+        logger.debug(e)
         return BAD_ID_HEADER
 
 
@@ -68,4 +71,43 @@ def to_json(obj):
         return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
                           sort_keys=False, separators=(',', ':')).encode()
     except Exception as e:
-        log.info("to_json: ", e, obj)
+        logger.info("to_json: ", e, obj)
+
+
+def package_version():
+    try:
+        version = ""
+        version = pkg_resources.get_distribution('instana').version
+    except pkg_resources.DistributionNotFound:
+        version = 'unknown'
+    finally:
+        return version
+
+
+def get_py_source(file):
+    """
+    Retrieves and returns the source code for any Python
+    files requested by the UI via the host agent
+
+    @param file [String] The fully qualified path to a file
+    """
+    try:
+        response = None
+        pysource = ""
+
+        if regexp_py.search(file) is None:
+            response = {"error": "Only Python source files are allowed. (*.py)"}
+        else:
+            with open(file, 'r') as pyfile:
+                pysource = pyfile.read()
+
+            response = {"data": pysource}
+
+    except Exception as e:
+        response = {"error": str(e)}
+    finally:
+        return response
+
+
+# Used by get_py_source
+regexp_py = re.compile('\.py$')

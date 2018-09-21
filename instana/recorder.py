@@ -11,7 +11,6 @@ from basictracer import Sampler, SpanRecorder
 
 import instana.singletons
 
-from .agent_const import AGENT_TRACES_URL
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
                         SDKData, SoapData)
 from .log import logger
@@ -26,6 +25,10 @@ class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "mysql", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
+
+    exit_spans = ("memcache", "mysql", "rpc-client", "soap", "urllib3")
+    entry_spans = ("django", "wsgi", "rpc-server")
+
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
     queue = queue.Queue()
@@ -46,9 +49,9 @@ class InstanaRecorder(SpanRecorder):
         while 1:
             queue_size = self.queue.qsize()
             if queue_size > 0 and instana.singletons.agent.can_send():
-                url = instana.singletons.agent.make_url(AGENT_TRACES_URL)
-                instana.singletons.agent.request(url, "POST", self.queued_spans())
-                logger.debug("reported %d spans" % queue_size)
+                response = instana.singletons.agent.report_traces(self.queued_spans())
+                if response:
+                    logger.debug("reported %d spans" % queue_size)
             time.sleep(1)
 
     def queue_size(self):
@@ -122,6 +125,9 @@ class InstanaRecorder(SpanRecorder):
                              d=int(round(span.duration * 1000)),
                              f=entityFrom,
                              data=data)
+
+        if span.stack:
+            json_span.stack = span.stack
 
         error = span.tags.pop("error", False)
         ec = span.tags.pop("ec", None)

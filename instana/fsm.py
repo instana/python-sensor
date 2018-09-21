@@ -10,9 +10,7 @@ import threading as t
 import fysom as f
 import pkg_resources
 
-from .agent_const import (AGENT_DATA_URL, AGENT_DEFAULT_HOST,
-                          AGENT_DEFAULT_PORT, AGENT_DISCOVERY_URL,
-                          AGENT_HEADER)
+from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
 from .log import logger
 
 
@@ -82,8 +80,7 @@ class Fsm(object):
     def lookup_agent_host(self, e):
         host, port = self.__get_agent_host_port()
 
-        h = self.check_host(host, port)
-        if h == AGENT_HEADER:
+        if self.agent.is_agent_listening(host, port):
             self.agent.host = host
             self.agent.port = port
             self.fsm.announce()
@@ -91,8 +88,7 @@ class Fsm(object):
         elif os.path.exists("/proc/"):
             host = self.get_default_gateway()
             if host:
-                h = self.check_host(host, port)
-                if h == AGENT_HEADER:
+                if self.agent.is_agent_listening(host, port):
                     self.agent.host = host
                     self.agent.port = port
                     self.fsm.announce()
@@ -120,17 +116,9 @@ class Fsm(object):
 
             return None
 
-    def check_host(self, host, port):
-        logger.debug("checking %s:%d" % (host, port))
-
-        (_, h) = self.agent.request_header(
-            self.agent.make_host_url(host, "/"), "GET", "Server")
-
-        return h
-
     def announce_sensor(self, e):
         logger.debug("announcing sensor to the agent")
-        s = None
+        sock = None
         pid = os.getpid()
         cmdline = []
 
@@ -159,16 +147,16 @@ class Fsm(object):
 
         # If we're on a system with a procfs
         if os.path.exists("/proc/"):
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.agent.host, 42699))
-            path = "/proc/%d/fd/%d" % (pid, s.fileno())
-            d.fd = s.fileno()
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.agent.host, 42699))
+            path = "/proc/%d/fd/%d" % (pid, sock.fileno())
+            d.fd = sock.fileno()
             d.inode = os.readlink(path)
 
-        (b, _) = self.agent.request_response(
-            self.agent.make_url(AGENT_DISCOVERY_URL), "PUT", d)
-        if b:
-            self.agent.set_from(b)
+        response = self.agent.announce(d)
+
+        if response and (response.status_code is 200) and (len(response.content) > 2):
+            self.agent.set_from(response.content)
             self.fsm.ready()
             logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
                         (str(pid), str(self.agent.from_.pid)))
@@ -184,16 +172,6 @@ class Fsm(object):
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
-
-    def test_agent(self, e):
-        logger.debug("testing communication with the agent")
-
-        (b, _) = self.agent.head(self.agent.make_url(AGENT_DATA_URL))
-
-        if not b:
-            self.schedule_retry(self.test_agent, e, "agent test")
-        else:
-            self.fsm.test()
 
     def __get_real_pid(self):
         """

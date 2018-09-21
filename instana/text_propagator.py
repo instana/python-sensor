@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import opentracing as ot
 from basictracer.context import SpanContext
 
-from instana import log, util
+from .log import logger
+from .util import id_to_header, header_to_id
 
 prefix_tracer_state = 'X-INSTANA-'
 prefix_baggage = 'X-INSTANA-BAGGAGE-'
@@ -24,7 +25,7 @@ class TextPropagator():
                 for k in span_context.baggage:
                     carrier[prefix_baggage+k] = span_context.baggage[k]
         except Exception as e:
-            log.debug("inject error: ", str(e))
+            logger.debug("inject error: ", str(e))
 
     def extract(self, carrier):  # noqa
         try:
@@ -36,8 +37,8 @@ class TextPropagator():
                 raise ot.SpanContextCorruptedException()
 
             if field_name_trace_id in dc and field_name_span_id in dc:
-                trace_id = util.header_to_id(dc[field_name_trace_id])
-                span_id = util.header_to_id(dc[field_name_span_id])
+                trace_id = header_to_id(dc[field_name_trace_id])
+                span_id = header_to_id(dc[field_name_span_id])
 
             return SpanContext(span_id=span_id,
                                trace_id=trace_id,
@@ -45,5 +46,5 @@ class TextPropagator():
                                sampled=True)
 
         except Exception as e:
-            log.debug("extract error: ", str(e))
+            logger.debug("extract error: ", str(e))
             return SpanContext()

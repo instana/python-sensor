@@ -1,8 +1,9 @@
-from basictracer.context import SpanContext
 from basictracer.span import BasicSpan
 
 
 class InstanaSpan(BasicSpan):
+    stack = None
+
     def finish(self, finish_time=None):
         super(InstanaSpan, self).finish(finish_time)
 

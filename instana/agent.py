@@ -2,20 +2,18 @@ from __future__ import absolute_import
 
 import json
 import os
-import threading
 from datetime import datetime
+
+import requests
 
 import instana.singletons
 
-from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
+from .agent_const import (AGENT_DATA_PATH, AGENT_DEFAULT_HOST,
+                          AGENT_DEFAULT_PORT, AGENT_DISCOVERY_PATH,
+                          AGENT_HEADER, AGENT_RESPONSE_PATH, AGENT_TRACES_PATH)
 from .fsm import Fsm
 from .log import logger
 from .sensor import Sensor
-
-try:
-    import urllib.request as urllib2
-except ImportError:
-    import urllib2
 
 
 class From(object):
@@ -24,18 +22,6 @@ class From(object):
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
-
-
-class Head(urllib2.Request):
-
-    def get_method(self):
-        return "HEAD"
-
-
-class Put(urllib2.Request):
-
-    def get_method(self):
-        return "PUT"
 
 
 class Agent(object):
@@ -48,6 +34,7 @@ class Agent(object):
     last_fork_check = None
     _boot_pid = os.getpid()
     extra_headers = None
+    client = requests.Session()
 
     def __init__(self):
         logger.debug("initializing agent")
@@ -87,79 +74,6 @@ class Agent(object):
 
         return False
 
-    def head(self, url):
-        return self.request(url, "HEAD", None)
-
-    def request(self, url, method, o):
-        return self.full_request_response(url, method, o, False, "")
-
-    def request_response(self, url, method, o):
-        return self.full_request_response(url, method, o, True, "")
-
-    def request_header(self, url, method, header):
-        return self.full_request_response(url, method, None, False, header)
-
-    def full_request_response(self, url, method, o, body, header):
-        b = None
-        h = None
-        try:
-            if method == "HEAD":
-                request = Head(url)
-            elif method == "GET":
-                request = urllib2.Request(url)
-            elif method == "PUT":
-                request = Put(url, self.to_json(o))
-                request.add_header("Content-Type", "application/json")
-            else:
-                request = urllib2.Request(url, self.to_json(o))
-                request.add_header("Content-Type", "application/json")
-
-            response = urllib2.urlopen(request, timeout=2)
-
-            if not response:
-                self.reset()
-            else:
-                if response.getcode() < 200 or response.getcode() >= 300:
-                    logger.error("Request returned erroneous code", response.getcode())
-                    if self.can_send():
-                        self.reset()
-                else:
-                    self.last_seen = datetime.now()
-                    if body:
-                        b = response.read()
-
-                    if header:
-                        h = response.info().get(header)
-
-                    if method == "HEAD":
-                        b = True
-                    # logger.warn("%s %s --> response: %s" % (method, url, b))
-        except Exception as e:
-            # No need to show the initial 404s or timeouts.  The agent
-            # should handle those correctly.
-            if not (type(e) is urllib2.HTTPError and e.code == 404):
-                logger.debug("%s: full_request_response: %s" %
-                             (threading.current_thread().name, str(e)))
-
-        return (b, h)
-
-    def make_url(self, prefix):
-        return self.make_host_url(self.host, prefix)
-
-    def make_host_url(self, host, prefix):
-        port = self.sensor.options.agent_port
-        if port == 0:
-            port = AGENT_DEFAULT_PORT
-
-        return self.make_full_url(host, port, prefix)
-
-    def make_full_url(self, host, port, prefix):
-        s = "http://%s:%s%s" % (host, str(port), prefix)
-        if self.from_.pid != 0:
-            s = "%s%s" % (s, self.from_.pid)
-
-        return s
-
     def set_from(self, json_string):
         if type(json_string) is bytes:
             raw_json = json_string.decode("UTF-8")
@@ -170,7 +84,7 @@ class Agent(object):
 
         if "extraHeaders" in res_data:
             self.extra_headers = res_data['extraHeaders']
-            logger.debug("Will also capture these custom headers: %s", self.extra_headers)
+            logger.info("Will also capture these custom headers: %s", self.extra_headers)
 
         self.from_ = From(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
@@ -180,6 +94,141 @@ class Agent(object):
         self.fsm.reset()
 
     def handle_fork(self):
+        """
+        Forks happen.  Here we handle them.
+        """
         self.reset()
         self.sensor.handle_fork()
         instana.singletons.tracer.handle_fork()
+
+    def is_agent_listening(self, host, port):
+        """
+        Check if the Instana Agent is listening on <host> and <port>.
+        """
+        try:
+            rv = False
+            url = "http://%s:%s/" % (host, port)
+            response = self.client.get(url, timeout=0.8)
+
+            server_header = response.headers["Server"]
+            if server_header == AGENT_HEADER:
+                logger.debug("Host agent found on %s:%d" % (host, port))
+                rv = True
+            else:
+                logger.debug("...something is listening on %s:%d but it's not the Instana Agent: %s"
+                             % (host, port, server_header))
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("No host agent listening on %s:%d" % (host, port))
+            rv = False
+        finally:
+            return rv
+
+    def announce(self, discovery):
+        """
+        With the passed in Discovery class, attempt to announce to the host agent.
+        """
+        try:
+            url = self.__discovery_url()
+            logger.debug("making announce request to %s" % (url))
+            response = None
+            response = self.client.put(url,
+                                       data=self.to_json(discovery),
+                                       headers={"Content-Type": "application/json"},
+                                       timeout=0.8)
+
+            if response.status_code is 200:
+                self.last_seen = datetime.now()
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("announce", exc_info=True)
+        finally:
+            return response
+
+    def report_data(self, entity_data):
+        """
+        Used to report entity data (metrics & snapshot) to the host agent.
+        """
+        try:
+            response = None
+            response = self.client.post(self.__data_url(),
+                                        data=self.to_json(entity_data),
+                                        headers={"Content-Type": "application/json"},
+                                        timeout=0.8)
+
+            if response.status_code is 200:
+                self.last_seen = datetime.now()
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("report_data: host agent connection error")
+        finally:
+            return response
+
+    def report_traces(self, spans):
+        """
+        Used to report entity data (metrics & snapshot) to the host agent.
+        """
+        try:
+            response = None
+            response = self.client.post(self.__traces_url(),
+                                        data=self.to_json(spans),
+                                        headers={"Content-Type": "application/json"},
+                                        timeout=0.8)
+            if response.status_code is 200:
+                self.last_seen = datetime.now()
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("report_traces: host agent connection error")
+        finally:
+            return response
+
+    def task_response(self, message_id, data):
+        """
+        When the host agent passes us a task and we do it, this function is used to
+        respond with the results of the task.
+        """
+        try:
+            response = None
+            payload = json.dumps(data)
+
+            logger.debug("Task response is %s: %s" % (self.__response_url(message_id), payload))
+
+            response = self.client.post(self.__response_url(message_id),
+                                        data=payload,
+                                        headers={"Content-Type": "application/json"},
+                                        timeout=0.8)
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("task_response", exc_info=True)
+        except Exception:
+            logger.debug("task_response Exception", exc_info=True)
+        finally:
+            return response
+
+    def __discovery_url(self):
+        """
+        URL for announcing to the host agent
+        """
+        port = self.sensor.options.agent_port
+        if port == 0:
+            port = AGENT_DEFAULT_PORT
+
+        return "http://%s:%s/%s" % (self.host, port, AGENT_DISCOVERY_PATH)
+
+    def __data_url(self):
+        """
+        URL for posting metrics to the host agent.  Only valid when announced.
+        """
+        path = AGENT_DATA_PATH % self.from_.pid
+        return "http://%s:%s/%s" % (self.host, self.port, path)
+
+    def __traces_url(self):
+        """
+        URL for posting traces to the host agent.  Only valid when announced.
+        """
+        path = AGENT_TRACES_PATH % self.from_.pid
+        return "http://%s:%s/%s" % (self.host, self.port, path)
+
+    def __response_url(self, message_id):
+        """
+        URL for responding to agent requests.
+        """
+        if self.from_.pid != 0:
+            path = AGENT_RESPONSE_PATH % (self.from_.pid, message_id)
+
+        return "http://%s:%s/%s" % (self.host, self.port, path)

@@ -1,23 +1,26 @@
 from __future__ import absolute_import
 
+import os
+import re
 import time
+import traceback
 
 import opentracing as ot
 from basictracer import BasicTracer
 from basictracer.context import SpanContext
 
-from . import options as o
-from . import recorder as r
 from .http_propagator import HTTPPropagator
+from .options import Options
+from .recorder import InstanaRecorder, InstanaSampler
 from .span import InstanaSpan
 from .text_propagator import TextPropagator
 from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
-    def __init__(self, options=o.Options()):
+    def __init__(self, options=Options()):
         super(InstanaTracer, self).__init__(
-            r.InstanaRecorder(), r.InstanaSampler())
+            InstanaRecorder(), InstanaSampler())
 
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
@@ -83,13 +86,21 @@ class InstanaTracer(BasicTracer):
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
         # Tie it all together
-        return InstanaSpan(
-            self,
-            operation_name=operation_name,
-            context=ctx,
-            parent_id=(None if parent_ctx is None else parent_ctx.span_id),
-            tags=tags,
-            start_time=start_time)
+        span = InstanaSpan(self,
+                           operation_name=operation_name,
+                           context=ctx,
+                           parent_id=(None if parent_ctx is None else parent_ctx.span_id),
+                           tags=tags,
+                           start_time=start_time)
+
+        if operation_name in self.recorder.entry_spans:
+            # For entry spans, add only a backtrace fingerprint
+            self.__add_stack(span, limit=2)
+
+        if operation_name in self.recorder.exit_spans:
+            self.__add_stack(span)
+
+        return span
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:
@@ -104,4 +115,37 @@ class InstanaTracer(BasicTracer):
             raise ot.UnsupportedFormatException()
 
     def handle_fork(self):
-        self.recorder = r.InstanaRecorder()
+        self.recorder = InstanaRecorder()
+
+    def __add_stack(self, span, limit=None):
+        """ Adds a backtrace to this span """
+        span.stack = []
+        frame_count = 0
+
+        tb = traceback.extract_stack()
+        tb.reverse()
+        for frame in tb:
+            if limit is not None and frame_count >= limit:
+                break
+
+            # Exclude Instana frames unless we're in dev mode
+            if "INSTANA_DEV" not in os.environ:
+                if re_tracer_frame.search(frame[0]) is not None:
+                    continue
+
+                if re_with_stan_frame.search(frame[2]) is not None:
+                    continue
+
+            span.stack.append({
+                "c": frame[0],
+                "n": frame[1],
+                "m": frame[2]
+            })
+
+            if limit is not None:
+                frame_count += 1
+
+
+# Used by __add_stack
+re_tracer_frame = re.compile('/instana/.*\.py$')
+re_with_stan_frame = re.compile('with_instana')

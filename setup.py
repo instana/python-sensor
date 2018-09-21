@@ -36,6 +36,7 @@ traces to your Instana dashboard.",
                         'certifi>=2018.4.16',
                         'fysom>=2.1.2',
                         'opentracing>=2.0.0',
+                        'requests>=2.8.0',
                         'urllib3>=1.18.1'],
       entry_points={
                     'instana':  ['string = instana:load'],

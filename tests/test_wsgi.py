@@ -66,6 +66,8 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
     def test_complex_request(self):
         with tracer.start_active_span('test'):
@@ -116,6 +118,9 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
+
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -163,6 +168,9 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
+
 
         self.assertEqual(True, "http.X-Capture-This" in wsgi_span.data.custom.__dict__['tags'])
         self.assertEqual("this", wsgi_span.data.custom.__dict__['tags']["http.X-Capture-This"])

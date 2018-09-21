@@ -64,6 +64,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -71,6 +73,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(200, urllib3_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/", urllib3_span.data.http.url)
         self.assertEqual("GET", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_put_request(self):
         with tracer.start_active_span('test'):
@@ -110,6 +115,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('PUT', wsgi_span.data.http.method)
         self.assertEqual('404', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -117,6 +124,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(404, urllib3_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/notfound", urllib3_span.data.http.url)
         self.assertEqual("PUT", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_301_redirect(self):
         with tracer.start_active_span('test'):
@@ -167,6 +177,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span1.data.http.method)
         self.assertEqual('200', wsgi_span1.data.http.status)
         self.assertIsNone(wsgi_span1.data.http.error)
+        self.assertIsNotNone(wsgi_span1.stack)
+        self.assertEqual(2, len(wsgi_span1.stack))
 
         self.assertEqual("wsgi", wsgi_span2.n)
         self.assertEqual('127.0.0.1:5000', wsgi_span2.data.http.host)
@@ -174,6 +186,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span2.data.http.method)
         self.assertEqual('301', wsgi_span2.data.http.status)
         self.assertIsNone(wsgi_span2.data.http.error)
+        self.assertIsNotNone(wsgi_span2.stack)
+        self.assertEqual(2, len(wsgi_span2.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -181,11 +195,17 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(200, urllib3_span1.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/", urllib3_span1.data.http.url)
         self.assertEqual("GET", urllib3_span1.data.http.method)
+        self.assertIsNotNone(urllib3_span1.stack)
+        self.assertTrue(type(urllib3_span1.stack) is list)
+        self.assertTrue(len(urllib3_span1.stack) > 1)
 
         self.assertEqual("urllib3", urllib3_span2.n)
         self.assertEqual(301, urllib3_span2.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/301", urllib3_span2.data.http.url)
         self.assertEqual("GET", urllib3_span2.data.http.method)
+        self.assertIsNotNone(urllib3_span2.stack)
+        self.assertTrue(type(urllib3_span2.stack) is list)
+        self.assertTrue(len(urllib3_span2.stack) > 1)
 
     def test_302_redirect(self):
         with tracer.start_active_span('test'):
@@ -236,6 +256,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span1.data.http.method)
         self.assertEqual('200', wsgi_span1.data.http.status)
         self.assertIsNone(wsgi_span1.data.http.error)
+        self.assertIsNotNone(wsgi_span1.stack)
+        self.assertEqual(2, len(wsgi_span1.stack))
 
         self.assertEqual("wsgi", wsgi_span2.n)
         self.assertEqual('127.0.0.1:5000', wsgi_span2.data.http.host)
@@ -243,6 +265,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span2.data.http.method)
         self.assertEqual('302', wsgi_span2.data.http.status)
         self.assertIsNone(wsgi_span2.data.http.error)
+        self.assertIsNotNone(wsgi_span2.stack)
+        self.assertEqual(2, len(wsgi_span2.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -250,11 +274,17 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(200, urllib3_span1.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/", urllib3_span1.data.http.url)
         self.assertEqual("GET", urllib3_span1.data.http.method)
+        self.assertIsNotNone(urllib3_span1.stack)
+        self.assertTrue(type(urllib3_span1.stack) is list)
+        self.assertTrue(len(urllib3_span1.stack) > 1)
 
         self.assertEqual("urllib3", urllib3_span2.n)
         self.assertEqual(302, urllib3_span2.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/302", urllib3_span2.data.http.url)
         self.assertEqual("GET", urllib3_span2.data.http.method)
+        self.assertIsNotNone(urllib3_span2.stack)
+        self.assertTrue(type(urllib3_span2.stack) is list)
+        self.assertTrue(len(urllib3_span2.stack) > 1)
 
     def test_5xx_request(self):
         with tracer.start_active_span('test'):
@@ -295,6 +325,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('504', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -302,6 +334,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(504, urllib3_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/504", urllib3_span.data.http.url)
         self.assertEqual("GET", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_exception_logging(self):
         with tracer.start_active_span('test'):
@@ -345,6 +380,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('500', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -352,6 +389,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(500, urllib3_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/exception", urllib3_span.data.http.url)
         self.assertEqual("GET", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_client_error(self):
         r = None
@@ -383,8 +423,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertIsNone(urllib3_span.data.http.status)
         self.assertEqual("http://doesnotexist.asdf:5000/504", urllib3_span.data.http.url)
         self.assertEqual("GET", urllib3_span.data.http.method)
-        self.assertTrue(urllib3_span.error)
-        self.assertEqual(1, urllib3_span.ec)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
 
         # Error logging
         self.assertFalse(test_span.error)
@@ -430,6 +471,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -437,6 +480,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(200, urllib3_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/", urllib3_span.data.http.url)
         self.assertEqual("GET", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_requestspkg_put(self):
         with tracer.start_active_span('test'):
@@ -475,6 +521,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('PUT', wsgi_span.data.http.method)
         self.assertEqual('404', wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
 
         # urllib3
         self.assertEqual("test", test_span.data.sdk.name)
@@ -482,3 +530,6 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(404, urllib3_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/notfound", urllib3_span.data.http.url)
         self.assertEqual("PUT", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)

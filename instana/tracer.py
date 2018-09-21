@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import os
 import re
 import time
 import traceback
@@ -84,7 +85,6 @@ class InstanaTracer(BasicTracer):
             ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
 
-
         # Tie it all together
         span = InstanaSpan(self,
                            operation_name=operation_name,
@@ -130,8 +130,10 @@ class InstanaTracer(BasicTracer):
 
             # Exclude Instana frames unless we're in dev mode
             if "INSTANA_DEV" not in os.environ:
-                if re_tracer_frame.search(frame[0]) is not None or
-                    re_with_stan_frame.search(frame[2]) is not None:
+                if re_tracer_frame.search(frame[0]) is not None:
+                    continue
+
+                if re_with_stan_frame.search(frame[2]) is not None:
                     continue
 
             span.stack.append({

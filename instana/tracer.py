@@ -128,11 +128,11 @@ class InstanaTracer(BasicTracer):
             if limit is not None and frame_count >= limit:
                 break
 
-            if re_tracer_frame.search(frame[0]) is not None:
-                continue
-
-            if re_with_stan_frame.search(frame[2]) is not None:
-                continue
+            # Exclude Instana frames unless we're in dev mode
+            if "INSTANA_DEV" not in os.environ:
+                if re_tracer_frame.search(frame[0]) is not None or
+                    re_with_stan_frame.search(frame[2]) is not None:
+                    continue
 
             span.stack.append({
                 "c": frame[0],
@@ -144,6 +144,6 @@ class InstanaTracer(BasicTracer):
                 frame_count += 1
 
 
-# Used by get_py_source
-re_tracer_frame = re.compile('instana/tracer.py$')
+# Used by __add_stack
+re_tracer_frame = re.compile('/instana/.*\.py$')
 re_with_stan_frame = re.compile('with_instana')

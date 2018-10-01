@@ -47,6 +47,7 @@ traces to your Instana dashboard.",
                     },
       extras_require={
         'test': [
+            'asynqp>=0.4',
             'django>=1.11',
             'nose>=1.0',
             'flask>=0.12.2',

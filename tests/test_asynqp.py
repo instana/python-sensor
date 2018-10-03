@@ -2,17 +2,23 @@ from __future__ import absolute_import
 
 import asyncio
 import unittest
-import time
+import os
 
 import asynqp
 from instana.singletons import tracer
+
+rabbitmq_host = ""
+if "RABBITMQ_HOST" in os.environ:
+    rabbitmq_host = os.environ["RABBITMQ_HOST"]
+else:
+    rabbitmq_host = "localhost"
 
 
 class TestAsynqp(unittest.TestCase):
     @asyncio.coroutine
     def connect(self):
         # connect to the RabbitMQ broker
-        self.connection = yield from asynqp.connect('192.168.201.129', 5672, username='guest', password='guest')
+        self.connection = yield from asynqp.connect(rabbitmq_host, 5672, username='guest', password='guest')
 
         # Open a communications channel
         self.channel = yield from self.connection.open_channel()
@@ -23,6 +29,7 @@ class TestAsynqp(unittest.TestCase):
 
         # Bind the queue to the exchange, so the queue will get messages published to the exchange
         yield from self.queue.bind(self.exchange, 'routing.key')
+        yield from self.queue.purge()
 
     def setUp(self):
         """ Clear all spans before a test run """
@@ -33,11 +40,11 @@ class TestAsynqp(unittest.TestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(None)
         self.loop.run_until_complete(self.connect())
-        self.queue.purge()
 
     def tearDown(self):
         """ Purge the queue """
         self.queue.purge()
+        self.queue.delete(if_unused=False, if_empty=False)
 
     def test_publish(self):
         @asyncio.coroutine
@@ -108,11 +115,6 @@ class TestAsynqp(unittest.TestCase):
         self.assertIsNotNone(rabbitmq_span.data.rabbitmq.address)
 
     def test_consume(self):
-        def async_to_callback(coro):
-            def callback(*args, **kwargs):
-                asyncio.ensure_future(coro(*args, **kwargs))
-            return callback
-
         def handle_message(msg):
             print('>> {}'.format(msg.body))
             msg.ack()

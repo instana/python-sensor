@@ -22,6 +22,11 @@ try:
         with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
             host, port = instance.sender.protocol.transport._sock.getsockname()
 
+            msg = args[0]
+            if msg.headers is None:
+                msg.headers = {}
+            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, msg.headers)
+
             try:
                 scope.span.set_tag("exchange", instance.name)
                 scope.span.set_tag("sort", "publish")
@@ -46,7 +51,7 @@ try:
             host, port = instance.sender.protocol.transport._sock.getsockname()
 
             try:
-                scope.span.set_tag("exchange", instance.name)
+                scope.span.set_tag("queue", instance.name)
                 scope.span.set_tag("sort", "consume")
                 scope.span.set_tag("address", host + ":" + str(port) )
 
@@ -62,15 +67,20 @@ try:
 
     @wrapt.patch_function_wrapper('asynqp.queue','Consumers.deliver')
     def deliver_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
 
-        with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
-            host, port = instance.sender.protocol.transport._sock.getsockname()
+        ctx = None
+        msg = args[1]
+        if 'X-Instana-T' in msg.headers and 'X-Instana-S' in msg.headers:
+            ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers))
+
+        with tracer.start_active_span("rabbitmq", child_of=ctx) as scope:
+            host, port = args[1].sender.protocol.transport._sock.getsockname()
 
             try:
-                scope.span.set_tag("exchange", instance.name)
+                scope.span.set_tag("exchange", msg.exchange_name)
                 scope.span.set_tag("sort", "consume")
                 scope.span.set_tag("address", host + ":" + str(port) )
+                scope.span.set_tag("key", msg.routing_key)
 
                 rv = wrapped(*args, **kwargs)
             except Exception as e:

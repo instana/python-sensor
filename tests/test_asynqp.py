@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import asyncio
 import unittest
+import time
 
 import asynqp
 from instana.singletons import tracer
@@ -32,7 +33,7 @@ class TestAsynqp(unittest.TestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(None)
         self.loop.run_until_complete(self.connect())
-
+        self.queue.purge()
 
     def tearDown(self):
         """ Purge the queue """
@@ -67,8 +68,11 @@ class TestAsynqp(unittest.TestCase):
         self.assertFalse(rabbitmq_span.error)
         self.assertIsNone(rabbitmq_span.ec)
 
-        # RabbitMQ span
-        # self.assertEqual()
+        # Rabbitmq
+        self.assertEqual('test.exchange', rabbitmq_span.data.rabbitmq.exchange)
+        self.assertEqual('publish', rabbitmq_span.data.rabbitmq.sort)
+        self.assertIsNotNone(rabbitmq_span.data.rabbitmq.address)
+        self.assertEqual('routing.key', rabbitmq_span.data.rabbitmq.key)
 
     def test_get(self):
         @asyncio.coroutine
@@ -98,47 +102,65 @@ class TestAsynqp(unittest.TestCase):
         self.assertFalse(rabbitmq_span.error)
         self.assertIsNone(rabbitmq_span.ec)
 
-        # RabbitMQ span
-        # self.assertEqual()
-
-    # TBD
-    # def test_get_without_parent_span(self):
+        # Rabbitmq
+        self.assertEqual('test.queue', rabbitmq_span.data.rabbitmq.queue)
+        self.assertEqual('consume', rabbitmq_span.data.rabbitmq.sort)
+        self.assertIsNotNone(rabbitmq_span.data.rabbitmq.address)
 
     def test_consume(self):
+        def async_to_callback(coro):
+            def callback(*args, **kwargs):
+                asyncio.ensure_future(coro(*args, **kwargs))
+            return callback
+
         def handle_message(msg):
-            print("got the message")
+            print('>> {}'.format(msg.body))
+            msg.ack()
 
         @asyncio.coroutine
         def test():
-            self.queue.consume(handle_message)
+            with tracer.start_active_span('test'):
+                msg1 = asynqp.Message({'consume': 'this'})
+                self.exchange.publish(msg1, 'routing.key')
 
-            msg1 = asynqp.Message({'consume': 'this'})
-            self.exchange.publish(msg1, 'routing.key')
-            msg2 = asynqp.Message({'consume': 'that'})
-            self.exchange.publish(msg2, 'routing.key')
+            yield from self.queue.consume(handle_message)
+            yield from asyncio.sleep(0.5)
 
         self.loop.run_until_complete(test())
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        self.assertEqual(3, len(spans))
 
-        rabbitmq_span1 = spans[0]
-        rabbitmq_span2 = spans[1]
-        test_span = spans[2]
+        publish_span = spans[0]
+        test_span = spans[1]
+        consume_span = spans[2]
 
         self.assertIsNone(tracer.active_span)
 
         # Same traceId
-        self.assertEqual(test_span.t, rabbitmq_span.t)
+        self.assertEqual(test_span.t, publish_span.t)
+        self.assertEqual(test_span.t, consume_span.t)
 
         # Parent relationships
-        self.assertEqual(rabbitmq_span.p, test_span.s)
+        self.assertEqual(publish_span.p, test_span.s)
+        self.assertEqual(consume_span.p, publish_span.s)
+
+        # publish
+        self.assertEqual('test.exchange', publish_span.data.rabbitmq.exchange)
+        self.assertEqual('publish', publish_span.data.rabbitmq.sort)
+        self.assertIsNotNone(publish_span.data.rabbitmq.address)
+        self.assertEqual('routing.key', publish_span.data.rabbitmq.key)
+
+        # consume
+        self.assertEqual('test.exchange', consume_span.data.rabbitmq.exchange)
+        self.assertEqual('consume', consume_span.data.rabbitmq.sort)
+        self.assertIsNotNone(consume_span.data.rabbitmq.address)
+        self.assertEqual('routing.key', consume_span.data.rabbitmq.key)
 
         # Error logging
         self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rabbitmq_span.error)
-        self.assertIsNone(rabbitmq_span.ec)
-
-        # RabbitMQ span
-        # self.assertEqual()
+        self.assertFalse(consume_span.error)
+        self.assertIsNone(consume_span.ec)
+        self.assertFalse(publish_span.error)
+        self.assertIsNone(publish_span.ec)

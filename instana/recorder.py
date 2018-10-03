@@ -12,7 +12,7 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        SDKData, SoapData)
+                        RabbitmqData, SDKData, SoapData)
 from .log import logger
 
 if sys.version_info.major is 2:
@@ -22,7 +22,7 @@ else:
 
 
 class InstanaRecorder(SpanRecorder):
-    registered_spans = ("django", "memcache", "mysql", "rpc-client",
+    registered_spans = ("django", "memcache", "mysql", "rabbitmq", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
@@ -101,6 +101,13 @@ class InstanaRecorder(SpanRecorder):
                                  method=span.tags.pop(ext.HTTP_METHOD, ""),
                                  status=span.tags.pop(ext.HTTP_STATUS_CODE, None),
                                  error=span.tags.pop('http.error', None))
+
+        if span.operation_name == "rabbitmq":
+            data.rabbitmq = RabbitmqData(exchange=span.tags.pop('exchange', None),
+                                         queue=span.tags.pop('queue', None),
+                                         sort=span.tags.pop('sort', None),
+                                         address=span.tags.pop('address', None),
+                                         key=span.tags.pop('key', None))
 
         if span.operation_name == "soap":
             data.soap = SoapData(action=span.tags.pop('soap.action', None))

@@ -1,11 +1,17 @@
 from __future__ import absolute_import
 
-import asyncio
-import unittest
 import os
+import sys
+import unittest
+from distutils.version import LooseVersion
 
-import asynqp
 from instana.singletons import tracer
+
+if (LooseVersion(sys.version) < LooseVersion('3.5')):
+    raise unittest.SkipTest("asynqp tests only on Python >= 3.5")
+
+import asyncio
+import asynqp
 
 rabbitmq_host = ""
 if "RABBITMQ_HOST" in os.environ:

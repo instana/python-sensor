@@ -18,4 +18,4 @@ sudo: required
 services:
   - rabbitmq
 
-script: nosetests -v
+script: python runtests.py

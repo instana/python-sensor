@@ -17,6 +17,14 @@ class JsonSpan(object):
             self.__dict__[key] = kwds[key]
 
 
+class CustomData(object):
+    tags = None
+    logs = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+
 class Data(object):
     service = None
     http = None
@@ -24,17 +32,7 @@ class Data(object):
     custom = None
     sdk = None
     soap = None
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
-class MySQLData(object):
-    db = None
-    host = None
-    user = None
-    stmt = None
-    error = None
+    rabbitmq = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -51,16 +49,30 @@ class HttpData(object):
         self.__dict__.update(kwds)
 
 
-class SoapData(object):
-    action = None
+class MySQLData(object):
+    db = None
+    host = None
+    user = None
+    stmt = None
+    error = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
 
-class CustomData(object):
-    tags = None
-    logs = None
+class RabbitmqData(object):
+    exchange = None
+    queue = None
+    sort = None
+    address = None
+    key = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+
+class SoapData(object):
+    action = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

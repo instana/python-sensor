@@ -13,5 +13,9 @@ before_install:
 
 install: "pip install -r requirements-test.txt"
 
+sudo: required
 
-script: nosetests -v
+services:
+  - rabbitmq
+
+script: python runtests.py

@@ -58,7 +58,7 @@ class HTTPPropagator():
                 raise ot.SpanContextCorruptedException()
 
             # Look for standard X-Instana-T/S format
-            if self.HEADER_KEY_T in dc and self.header_key_s in dc:
+            if self.HEADER_KEY_T in dc and self.HEADER_KEY_S in dc:
                 trace_id = header_to_id(dc[self.HEADER_KEY_T])
                 span_id = header_to_id(dc[self.HEADER_KEY_S])
 

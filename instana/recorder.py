@@ -12,7 +12,7 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        SDKData, SoapData)
+                        RabbitmqData, SDKData, SoapData)
 from .log import logger
 
 if sys.version_info.major is 2:
@@ -22,12 +22,12 @@ else:
 
 
 class InstanaRecorder(SpanRecorder):
-    registered_spans = ("django", "memcache", "mysql", "rpc-client",
+    registered_spans = ("django", "memcache", "mysql", "rabbitmq", "rpc-client",
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
-    exit_spans = ("memcache", "mysql", "rpc-client", "soap", "urllib3")
-    entry_spans = ("django", "wsgi", "rpc-server")
+    exit_spans = ("memcache", "mysql", "rabbitmq", "rpc-client", "soap", "urllib3")
+    entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
@@ -91,9 +91,13 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
-        data = Data(baggage=span.context.baggage,
-                    custom=CustomData(tags=span.tags,
-                                      logs=self.collect_logs(span)))
+        data = Data(baggage=span.context.baggage)
+
+        logs = self.collect_logs(span)
+        if len(logs) > 0:
+            if data.custom is None:
+                data.custom = CustomData()
+            data.custom.logs = logs
 
         if span.operation_name in self.http_spans:
             data.http = HttpData(host=self.get_http_host_name(span),
@@ -101,6 +105,13 @@ class InstanaRecorder(SpanRecorder):
                                  method=span.tags.pop(ext.HTTP_METHOD, ""),
                                  status=span.tags.pop(ext.HTTP_STATUS_CODE, None),
                                  error=span.tags.pop('http.error', None))
+
+        if span.operation_name == "rabbitmq":
+            data.rabbitmq = RabbitmqData(exchange=span.tags.pop('exchange', None),
+                                         queue=span.tags.pop('queue', None),
+                                         sort=span.tags.pop('sort', None),
+                                         address=span.tags.pop('address', None),
+                                         key=span.tags.pop('key', None))
 
         if span.operation_name == "soap":
             data.soap = SoapData(action=span.tags.pop('soap.action', None))
@@ -110,9 +121,14 @@ class InstanaRecorder(SpanRecorder):
                                    db=span.tags.pop(ext.DATABASE_INSTANCE, None),
                                    user=span.tags.pop(ext.DATABASE_USER, None),
                                    stmt=span.tags.pop(ext.DATABASE_STATEMENT, None))
-            if len(data.custom.logs.keys()):
+            if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
+
+        if len(span.tags) > 0:
+            if data.custom is None:
+                data.custom = CustomData()
+            data.custom.tags = span.tags
 
         entityFrom = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}

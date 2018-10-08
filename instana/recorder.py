@@ -26,8 +26,8 @@ class InstanaRecorder(SpanRecorder):
                         "rpc-server", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
-    exit_spans = ("memcache", "mysql", "rpc-client", "soap", "urllib3")
-    entry_spans = ("django", "wsgi", "rpc-server")
+    exit_spans = ("memcache", "mysql", "rabbitmq", "rpc-client", "soap", "urllib3")
+    entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
@@ -91,9 +91,13 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
-        data = Data(baggage=span.context.baggage,
-                    custom=CustomData(tags=span.tags,
-                                      logs=self.collect_logs(span)))
+        data = Data(baggage=span.context.baggage)
+
+        logs = self.collect_logs(span)
+        if len(logs) > 0:
+            if data.custom is None:
+                data.custom = CustomData()
+            data.custom.logs = logs
 
         if span.operation_name in self.http_spans:
             data.http = HttpData(host=self.get_http_host_name(span),
@@ -117,9 +121,14 @@ class InstanaRecorder(SpanRecorder):
                                    db=span.tags.pop(ext.DATABASE_INSTANCE, None),
                                    user=span.tags.pop(ext.DATABASE_USER, None),
                                    stmt=span.tags.pop(ext.DATABASE_STATEMENT, None))
-            if len(data.custom.logs.keys()):
+            if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
+
+        if len(span.tags) > 0:
+            if data.custom is None:
+                data.custom = CustomData()
+            data.custom.tags = span.tags
 
         entityFrom = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}

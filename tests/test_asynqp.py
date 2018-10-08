@@ -81,6 +81,9 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual('publish', rabbitmq_span.data.rabbitmq.sort)
         self.assertIsNotNone(rabbitmq_span.data.rabbitmq.address)
         self.assertEqual('routing.key', rabbitmq_span.data.rabbitmq.key)
+        self.assertIsNotNone(rabbitmq_span.stack)
+        self.assertTrue(type(rabbitmq_span.stack) is list)
+        self.assertGreater(len(rabbitmq_span.stack), 0)
 
     def test_get(self):
         @asyncio.coroutine
@@ -114,10 +117,14 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual('test.queue', rabbitmq_span.data.rabbitmq.queue)
         self.assertEqual('consume', rabbitmq_span.data.rabbitmq.sort)
         self.assertIsNotNone(rabbitmq_span.data.rabbitmq.address)
+        self.assertIsNotNone(rabbitmq_span.stack)
+        self.assertTrue(type(rabbitmq_span.stack) is list)
+        self.assertGreater(len(rabbitmq_span.stack), 0)
+
 
     def test_consume(self):
         def handle_message(msg):
-            print('>> {}'.format(msg.body))
+            # print('>> {}'.format(msg.body))
             msg.ack()
 
         @asyncio.coroutine
@@ -153,12 +160,18 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual('publish', publish_span.data.rabbitmq.sort)
         self.assertIsNotNone(publish_span.data.rabbitmq.address)
         self.assertEqual('routing.key', publish_span.data.rabbitmq.key)
+        self.assertIsNotNone(publish_span.stack)
+        self.assertTrue(type(publish_span.stack) is list)
+        self.assertGreater(len(publish_span.stack), 0)
 
         # consume
         self.assertEqual('test.exchange', consume_span.data.rabbitmq.exchange)
         self.assertEqual('consume', consume_span.data.rabbitmq.sort)
         self.assertIsNotNone(consume_span.data.rabbitmq.address)
         self.assertEqual('routing.key', consume_span.data.rabbitmq.key)
+        self.assertIsNotNone(consume_span.stack)
+        self.assertTrue(type(consume_span.stack) is list)
+        self.assertGreater(len(consume_span.stack), 0)
 
         # Error logging
         self.assertFalse(test_span.error)

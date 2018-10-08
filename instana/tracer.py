@@ -93,12 +93,12 @@ class InstanaTracer(BasicTracer):
                            tags=tags,
                            start_time=start_time)
 
-        if operation_name in self.recorder.entry_spans:
-            # For entry spans, add only a backtrace fingerprint
-            self.__add_stack(span, limit=2)
-
         if operation_name in self.recorder.exit_spans:
             self.__add_stack(span)
+
+        elif operation_name in self.recorder.entry_spans:
+            # For entry spans, add only a backtrace fingerprint
+            self.__add_stack(span, limit=2)
 
         return span
 

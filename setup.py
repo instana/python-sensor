@@ -57,9 +57,10 @@ traces to your Instana dashboard.",
             'pyOpenSSL>=16.1.0;python_version<="2.7"',
             'pytest>=3.0.1',
             'requests>=2.17.1',
-            'urllib3[secure]>=1.15',
+            'sqlalchemy>=1.1.15',
             'spyne>=2.9',
-            'suds-jurko>=0.6'
+            'suds-jurko>=0.6',
+            'urllib3[secure]>=1.15'
         ],
       },
       test_suite='nose.collector',

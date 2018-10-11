@@ -26,13 +26,14 @@ class CustomData(object):
 
 
 class Data(object):
-    service = None
-    http = None
     baggage = None
     custom = None
-    sdk = None
-    soap = None
+    http = None
     rabbitmq = None
+    sdk = None
+    service = None
+    sqlalchemy = None
+    soap = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -66,6 +67,15 @@ class RabbitmqData(object):
     sort = None
     address = None
     key = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+class SQLAlchemyData(object):
+    sql = None
+    url = None
+    eng = None
+    error = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

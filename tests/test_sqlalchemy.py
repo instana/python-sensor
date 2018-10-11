@@ -8,9 +8,13 @@ from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from .helpers import testenv
+
 from instana.singletons import tracer
 
-engine = create_engine('sqlite:///:memory:', echo=False)
+# engine = create_engine('sqlite:///:memory:', echo=False)
+engine = create_engine("postgresql://%s:%s@%s/%s" % (testenv['postgresql_user'], testenv['postgresql_pw'],
+                                                     testenv['postgresql_host'], testenv['postgresql_db']))
 Base = declarative_base()
 
 class StanUser(Base):
@@ -45,7 +49,7 @@ class TestSQLAlchemy(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_execute(self):
+    def test_session_add(self):
         with tracer.start_active_span('test'):
             session.add(stan_user)
             session.commit()
@@ -71,7 +75,14 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertIsNone(sql_span.ec)
 
         # SQLAlchemy span
-        self.assertEqual("sqlalchemy", sql_span.n)
+        self.assertEqual('sqlalchemy', sql_span.n)
+        self.assertFalse('custom' in sql_span.data.__dict__)
+        self.assertTrue('sqlalchemy' in sql_span.data.__dict__)
+
+        self.assertEqual('postgresql', sql_span.data.sqlalchemy.eng)
+        self.assertEqual('postgresql://tester@mazzo/rails5_stack', sql_span.data.sqlalchemy.url)
+        self.assertEqual('INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id', sql_span.data.sqlalchemy.sql)
+        self.assertIsNone(sql_span.data.sqlalchemy.err)
 
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)

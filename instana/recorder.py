@@ -12,7 +12,7 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        RabbitmqData, SDKData, SoapData)
+                        RabbitmqData, SDKData, SoapData, SQLAlchemyData)
 from .log import logger
 
 if sys.version_info.major is 2:
@@ -113,6 +113,13 @@ class InstanaRecorder(SpanRecorder):
                                          sort=span.tags.pop('sort', None),
                                          address=span.tags.pop('address', None),
                                          key=span.tags.pop('key', None))
+
+        if span.operation_name == "sqlalchemy":
+            data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sql', None),
+                                             eng=span.tags.pop('eng', None),
+                                             url=span.tags.pop('url', None),
+                                             err=span.tags.pop('err', None))
+
 
         if span.operation_name == "soap":
             data.soap = SoapData(action=span.tags.pop('soap.action', None))

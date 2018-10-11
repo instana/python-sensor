@@ -9,6 +9,8 @@ from nose.tools import assert_equals
 
 from instana.singletons import tracer
 
+from .helpers import testenv
+
 if sys.version_info < (3, 0):
     import MySQLdb
 else:
@@ -16,36 +18,6 @@ else:
 
 
 logger = logging.getLogger(__name__)
-
-
-if 'MYSQL_HOST' in os.environ:
-    mysql_host = os.environ['MYSQL_HOST']
-elif 'TRAVIS_MYSQL_HOST' in os.environ:
-    mysql_host = os.environ['TRAVIS_MYSQL_HOST']
-else:
-    mysql_host = '127.0.0.1'
-
-if 'MYSQL_PORT' in os.environ:
-    mysql_port = int(os.environ['MYSQL_PORT'])
-else:
-    mysql_port = 3306
-
-if 'MYSQL_DB' in os.environ:
-    mysql_db = os.environ['MYSQL_DB']
-else:
-    mysql_db = "travis_ci_test"
-
-if 'MYSQL_USER' in os.environ:
-    mysql_user = os.environ['MYSQL_USER']
-else:
-    mysql_user = "root"
-
-if 'MYSQL_PW' in os.environ:
-    mysql_pw = os.environ['MYSQL_PW']
-elif 'TRAVIS_MYSQL_PASS' in os.environ:
-    mysql_pw = os.environ['TRAVIS_MYSQL_PASS']
-else:
-    mysql_pw = ''
 
 create_table_query = 'CREATE TABLE IF NOT EXISTS users(id serial primary key, \
                       name varchar(40) NOT NULL, email varchar(40) NOT NULL)'
@@ -57,9 +29,9 @@ BEGIN
 END
 """
 
-db = MySQLdb.connect(host=mysql_host, port=mysql_port,
-                     user=mysql_user, passwd=mysql_pw,
-                     db=mysql_db)
+db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
+                     user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
+                     db=testenv['mysql_db'])
 
 cursor = db.cursor()
 cursor.execute(create_table_query)
@@ -83,10 +55,10 @@ db.close()
 
 class TestMySQLPython:
     def setUp(self):
-        logger.warn("MySQL connecting: %s:<pass>@%s:3306/%s", mysql_user, mysql_host, mysql_db)
-        self.db = MySQLdb.connect(host=mysql_host, port=mysql_port,
-                                  user=mysql_user, passwd=mysql_pw,
-                                  db=mysql_db)
+        logger.warn("MySQL connecting: %s:<pass>@%s:3306/%s", testenv['mysql_user'], testenv['mysql_host'], testenv['mysql_db'])
+        self.db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
+                                  user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
+                                  db=testenv['mysql_db'])
         self.cursor = self.db.cursor()
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
@@ -126,10 +98,10 @@ class TestMySQLPython:
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
-        assert_equals(db_span.data.mysql.db, mysql_db)
-        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from users')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
 
     def test_basic_insert(self):
         result = None
@@ -154,10 +126,10 @@ class TestMySQLPython:
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
-        assert_equals(db_span.data.mysql.db, mysql_db)
-        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
 
     def test_executemany(self):
         result = None
@@ -182,10 +154,10 @@ class TestMySQLPython:
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
-        assert_equals(db_span.data.mysql.db, mysql_db)
-        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
 
     def test_call_proc(self):
         result = None
@@ -208,10 +180,10 @@ class TestMySQLPython:
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
-        assert_equals(db_span.data.mysql.db, mysql_db)
-        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'test_proc')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
 
     def test_error_capture(self):
         result = None
@@ -240,10 +212,10 @@ class TestMySQLPython:
 
         assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
-        assert_equals(db_span.data.mysql.error, '(1146, "Table \'%s.blah\' doesn\'t exist")' % mysql_db)
+        assert_equals(db_span.data.mysql.error, '(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
 
         assert_equals(db_span.n, "mysql")
-        assert_equals(db_span.data.mysql.db, mysql_db)
-        assert_equals(db_span.data.mysql.user, mysql_user)
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from blah')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % mysql_host)
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])

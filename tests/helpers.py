@@ -27,7 +27,7 @@ else:
 PostgreSQL Environment
 """
 if 'POSTGRESQL_HOST' in os.environ:
-    testenv['postgresql_host ']= os.environ['POSTGRESQL_HOST']
+    testenv['postgresql_host']= os.environ['POSTGRESQL_HOST']
 elif 'TRAVIS_POSTGRESQL_HOST' in os.environ:
     testenv['postgresql_host'] = os.environ['TRAVIS_POSTGRESQL_HOST']
 else:

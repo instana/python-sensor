@@ -115,10 +115,10 @@ class InstanaRecorder(SpanRecorder):
                                          key=span.tags.pop('key', None))
 
         if span.operation_name == "sqlalchemy":
-            data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sql', None),
-                                             eng=span.tags.pop('eng', None),
-                                             url=span.tags.pop('url', None),
-                                             err=span.tags.pop('err', None))
+            data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),
+                                             eng=span.tags.pop('sqlalchemy.eng', None),
+                                             url=span.tags.pop('sqlalchemy.url', None),
+                                             err=span.tags.pop('sqlalchemy.err', None))
 
 
         if span.operation_name == "soap":
@@ -132,11 +132,6 @@ class InstanaRecorder(SpanRecorder):
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
-
-        if len(span.tags) > 0:
-            if data.custom is None:
-                data.custom = CustomData()
-            data.custom.tags = span.tags
 
         entityFrom = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
@@ -159,6 +154,11 @@ class InstanaRecorder(SpanRecorder):
         if error and ec:
             json_span.error = error
             json_span.ec = ec
+
+        if len(span.tags) > 0:
+            if data.custom is None:
+                data.custom = CustomData()
+            data.custom.tags = span.tags
 
         return json_span
 

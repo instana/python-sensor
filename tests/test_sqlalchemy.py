@@ -35,7 +35,6 @@ stan_user = StanUser(name='IAmStan', fullname='Stan Robot', password='3X}vP66ADo
 
 Session = sessionmaker(bind=engine)
 Session.configure(bind=engine)
-session = Session()
 
 
 class TestSQLAlchemy(unittest.TestCase):
@@ -45,14 +44,15 @@ class TestSQLAlchemy(unittest.TestCase):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
+        self.session = Session()
 
     def tearDown(self):
         pass
 
     def test_session_add(self):
         with tracer.start_active_span('test'):
-            session.add(stan_user)
-            session.commit()
+            self.session.add(stan_user)
+            self.session.commit()
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -83,6 +83,50 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertEqual('postgresql://tester@mazzo/rails5_stack', sql_span.data.sqlalchemy.url)
         self.assertEqual('INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id', sql_span.data.sqlalchemy.sql)
         self.assertIsNone(sql_span.data.sqlalchemy.err)
+
+        self.assertIsNotNone(sql_span.stack)
+        self.assertTrue(type(sql_span.stack) is list)
+        self.assertGreater(len(sql_span.stack), 0)
+
+    def test_error_logging(self):
+        try:
+            with tracer.start_active_span('test'):
+                self.session.execute("htVwGrCwVThisIsInvalidSQLaw4ijXd88")
+                self.session.commit()
+        except:
+            pass
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        sql_span = spans[0]
+        test_span = spans[1]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, sql_span.t)
+
+        # Parent relationships
+        self.assertEqual(sql_span.p, test_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(sql_span.error)
+        self.assertIs(sql_span.ec, 1)
+
+        # SQLAlchemy span
+        self.assertEqual('sqlalchemy', sql_span.n)
+        # import ipdb; ipdb.set_trace()
+
+        self.assertFalse('custom' in sql_span.data.__dict__)
+        self.assertTrue('sqlalchemy' in sql_span.data.__dict__)
+
+        self.assertEqual('postgresql', sql_span.data.sqlalchemy.eng)
+        self.assertEqual('postgresql://tester@mazzo/rails5_stack', sql_span.data.sqlalchemy.url)
+        self.assertEqual('htVwGrCwVThisIsInvalidSQLaw4ijXd88', sql_span.data.sqlalchemy.sql)
+        self.assertEqual('syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88"\nLINE 1: htVwGrCwVThisIsInvalidSQLaw4ijXd88\n        ^\n', sql_span.data.sqlalchemy.err)
 
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)

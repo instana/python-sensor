@@ -13,7 +13,7 @@ try:
     from sqlalchemy import event
     from sqlalchemy.engine import Engine
 
-    url_regexp = re.compile(':@')
+    url_regexp = re.compile('\/\/(\S+@)')
 
     @event.listens_for(Engine, 'before_cursor_execute', named=True)
     def receive_before_cursor_execute(**kw):
@@ -32,7 +32,7 @@ try:
             url = str(conn.engine.url)
             scope.span.set_tag('sqlalchemy.sql', kw['statement'])
             scope.span.set_tag('sqlalchemy.eng', conn.engine.name)
-            scope.span.set_tag('sqlalchemy.url', url_regexp.sub('@', url))
+            scope.span.set_tag('sqlalchemy.url', url_regexp.sub('//', url))
         except Exception as e:
             logger.debug(e)
         finally:

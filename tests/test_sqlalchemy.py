@@ -38,8 +38,6 @@ Session.configure(bind=engine)
 
 
 class TestSQLAlchemy(unittest.TestCase):
-    # def connect(self):
-
     def setUp(self):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
@@ -87,6 +85,66 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)
         self.assertGreater(len(sql_span.stack), 0)
+
+    def test_transaction(self):
+        result = None
+        with tracer.start_active_span('test'):
+            with engine.begin() as connection:
+                result = connection.execute("select 1")
+                result = connection.execute("select (name, fullname, password) from churchofstan where name='doesntexist'")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        sql_span0 = spans[0]
+        sql_span1 = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, sql_span0.t)
+        self.assertEqual(test_span.t, sql_span1.t)
+
+        # Parent relationships
+        self.assertEqual(sql_span0.p, test_span.s)
+        self.assertEqual(sql_span1.p, test_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(sql_span0.error)
+        self.assertIsNone(sql_span0.ec)
+        self.assertFalse(sql_span1.error)
+        self.assertIsNone(sql_span1.ec)
+
+        # SQLAlchemy span0
+        self.assertEqual('sqlalchemy', sql_span0.n)
+        self.assertFalse('custom' in sql_span0.data.__dict__)
+        self.assertTrue('sqlalchemy' in sql_span0.data.__dict__)
+
+        self.assertEqual('postgresql', sql_span0.data.sqlalchemy.eng)
+        self.assertEqual('postgresql://tester@mazzo/rails5_stack', sql_span0.data.sqlalchemy.url)
+        self.assertEqual('select 1', sql_span0.data.sqlalchemy.sql)
+        self.assertIsNone(sql_span0.data.sqlalchemy.err)
+
+        self.assertIsNotNone(sql_span0.stack)
+        self.assertTrue(type(sql_span0.stack) is list)
+        self.assertGreater(len(sql_span0.stack), 0)
+
+        # SQLAlchemy span1
+        self.assertEqual('sqlalchemy', sql_span1.n)
+        self.assertFalse('custom' in sql_span1.data.__dict__)
+        self.assertTrue('sqlalchemy' in sql_span1.data.__dict__)
+
+        self.assertEqual('postgresql', sql_span1.data.sqlalchemy.eng)
+        self.assertEqual('postgresql://tester@mazzo/rails5_stack', sql_span1.data.sqlalchemy.url)
+        self.assertEqual("select (name, fullname, password) from churchofstan where name='doesntexist'", sql_span1.data.sqlalchemy.sql)
+        self.assertIsNone(sql_span1.data.sqlalchemy.err)
+
+        self.assertIsNotNone(sql_span1.stack)
+        self.assertTrue(type(sql_span1.stack) is list)
+        self.assertGreater(len(sql_span1.stack), 0)
 
     def test_error_logging(self):
         try:

@@ -12,7 +12,7 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        RabbitmqData, SDKData, SoapData)
+                        RabbitmqData, SDKData, SoapData, SQLAlchemyData)
 from .log import logger
 
 if sys.version_info.major is 2:
@@ -23,10 +23,11 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "mysql", "rabbitmq", "rpc-client",
-                        "rpc-server", "soap", "urllib3", "wsgi")
+                        "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
-    exit_spans = ("memcache", "mysql", "rabbitmq", "rpc-client", "soap", "urllib3")
+    exit_spans = ("memcache", "mysql", "rabbitmq", "rpc-client", "sqlalchemy",
+                  "soap", "urllib3")
     entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
@@ -113,6 +114,13 @@ class InstanaRecorder(SpanRecorder):
                                          address=span.tags.pop('address', None),
                                          key=span.tags.pop('key', None))
 
+        if span.operation_name == "sqlalchemy":
+            data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),
+                                             eng=span.tags.pop('sqlalchemy.eng', None),
+                                             url=span.tags.pop('sqlalchemy.url', None),
+                                             err=span.tags.pop('sqlalchemy.err', None))
+
+
         if span.operation_name == "soap":
             data.soap = SoapData(action=span.tags.pop('soap.action', None))
 
@@ -124,11 +132,6 @@ class InstanaRecorder(SpanRecorder):
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
-
-        if len(span.tags) > 0:
-            if data.custom is None:
-                data.custom = CustomData()
-            data.custom.tags = span.tags
 
         entityFrom = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
@@ -151,6 +154,11 @@ class InstanaRecorder(SpanRecorder):
         if error and ec:
             json_span.error = error
             json_span.ec = ec
+
+        if len(span.tags) > 0:
+            if data.custom is None:
+                data.custom = CustomData()
+            data.custom.tags = span.tags
 
         return json_span
 

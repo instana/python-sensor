@@ -94,3 +94,5 @@ ENV/
 # Mac Finder dot files
 .DS_Store
 
+# IntelliJ Idea files
+.idea

@@ -44,6 +44,7 @@ class HttpData(object):
     url = None
     status = 0
     method = None
+    path_tpl = None
     error = None
 
     def __init__(self, **kwds):

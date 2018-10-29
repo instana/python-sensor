@@ -102,9 +102,10 @@ class InstanaRecorder(SpanRecorder):
 
         if span.operation_name in self.http_spans:
             data.http = HttpData(host=self.get_http_host_name(span),
-                                 url=span.tags.pop(ext.HTTP_URL, ""),
-                                 method=span.tags.pop(ext.HTTP_METHOD, ""),
+                                 url=span.tags.pop(ext.HTTP_URL, None),
+                                 method=span.tags.pop(ext.HTTP_METHOD, None),
                                  status=span.tags.pop(ext.HTTP_STATUS_CODE, None),
+                                 path_tpl=span.tags.pop("http.path_tpl", None),
                                  error=span.tags.pop('http.error', None))
 
         if span.operation_name == "rabbitmq":

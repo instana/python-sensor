@@ -17,7 +17,7 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 None
 
-_Instana automatically instruments your Python web servers automatically.  No user steps are required.  To configure which Python processes this applies to, see the [Configuration page](https://docs.instana.io/ecosystem/python/configuration/#general)._
+_Instana remotely instruments your Python web servers automatically. To configure which Python processes this applies to, see the [Configuration page](https://docs.instana.io/ecosystem/python/configuration/#general)._
 
 ##  Manual Installation
 

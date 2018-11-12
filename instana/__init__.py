@@ -61,6 +61,7 @@ def load_instrumentation():
         # Import & initialize instrumentation
         from .instrumentation import asynqp  # noqa
         from .instrumentation import mysqlpython  # noqa
+        from .instrumentation import redis  # noqa
         from .instrumentation import sqlalchemy  # noqa
         from .instrumentation import sudsjurko  # noqa
         from .instrumentation import urllib3  # noqa

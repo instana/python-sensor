@@ -30,6 +30,7 @@ class Data(object):
     custom = None
     http = None
     rabbitmq = None
+    redis = None
     sdk = None
     service = None
     sqlalchemy = None
@@ -71,6 +72,17 @@ class RabbitmqData(object):
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
+
+
+class RedisData(object):
+    connection = None
+    driver = None
+    command = None
+    error = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
 
 class SQLAlchemyData(object):
     sql = None

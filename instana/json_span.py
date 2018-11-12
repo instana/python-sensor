@@ -79,6 +79,7 @@ class RedisData(object):
     driver = None
     command = None
     error = None
+    subCommands = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

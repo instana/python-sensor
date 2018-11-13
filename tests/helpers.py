@@ -43,3 +43,11 @@ elif 'TRAVIS_POSTGRESQL_PASS' in os.environ:
     testenv['postgresql_pw'] = os.environ['TRAVIS_POSTGRESQL_PASS']
 else:
     testenv['postgresql_pw'] = ''
+
+"""
+Redis Environment
+"""
+if 'REDIS' in os.environ:
+    testenv['redis_url']= os.environ['REDIS']
+else:
+    testenv['redis_url'] = '127.0.0.1:6379'

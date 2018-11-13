@@ -12,7 +12,8 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        RabbitmqData, SDKData, SoapData, SQLAlchemyData)
+                        RabbitmqData, RedisData, SDKData, SoapData,
+                        SQLAlchemyData)
 from .log import logger
 
 if sys.version_info.major is 2:
@@ -22,12 +23,12 @@ else:
 
 
 class InstanaRecorder(SpanRecorder):
-    registered_spans = ("django", "memcache", "mysql", "rabbitmq", "rpc-client",
-                        "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi")
+    registered_spans = ("django", "memcache", "mysql", "rabbitmq", "redis",
+                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
-    exit_spans = ("memcache", "mysql", "rabbitmq", "rpc-client", "sqlalchemy",
-                  "soap", "urllib3")
+    exit_spans = ("memcache", "mysql", "rabbitmq", "redis", "rpc-client",
+                  "sqlalchemy", "soap", "urllib3")
     entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
@@ -114,6 +115,13 @@ class InstanaRecorder(SpanRecorder):
                                          sort=span.tags.pop('sort', None),
                                          address=span.tags.pop('address', None),
                                          key=span.tags.pop('key', None))
+
+        if span.operation_name == "redis":
+            data.redis = RedisData(connection=span.tags.pop('connection', None),
+                                   driver=span.tags.pop('driver', None),
+                                   command=span.tags.pop('command', None),
+                                   error=span.tags.pop('redis.error', None),
+                                   subCommands=span.tags.pop('subCommands', None))
 
         if span.operation_name == "sqlalchemy":
             data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),

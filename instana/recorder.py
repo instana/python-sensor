@@ -120,7 +120,7 @@ class InstanaRecorder(SpanRecorder):
             data.redis = RedisData(connection=span.tags.pop('connection', None),
                                    driver=span.tags.pop('driver', None),
                                    command=span.tags.pop('command', None),
-                                   error=span.tags.pop('error', None),
+                                   error=span.tags.pop('redis.error', None),
                                    subCommands=span.tags.pop('subCommands', None))
 
         if span.operation_name == "sqlalchemy":

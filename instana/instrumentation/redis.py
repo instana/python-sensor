@@ -29,7 +29,7 @@ try:
 
                 rv = wrapped(*args, **kwargs)
             except Exception as e:
-                scope.span.log_kv({'message': e})
+                scope.span.set_tag("redis.error", str(e))
                 scope.span.set_tag("error", True)
                 ec = scope.span.tags.get('ec', 0)
                 scope.span.set_tag("ec", ec+1)
@@ -66,7 +66,7 @@ try:
 
                 rv = wrapped(*args, **kwargs)
             except Exception as e:
-                scope.span.log_kv({'message': e})
+                scope.span.set_tag("redis.error", str(e))
                 scope.span.set_tag("error", True)
                 ec = scope.span.tags.get('ec', 0)
                 scope.span.set_tag("ec", ec+1)

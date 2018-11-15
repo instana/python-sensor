@@ -8,7 +8,6 @@ from ..log import logger
 from ..singletons import tracer
 
 try:
-    import asyncio
     import asynqp
 
     @wrapt.patch_function_wrapper('asynqp.exchange','Exchange.publish')

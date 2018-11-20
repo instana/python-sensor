@@ -17,5 +17,5 @@ agent = Agent()
 #
 tracer = InstanaTracer()
 
-# Set ourselves as the tracer.
+# Set ourselves  as the tracer.
 opentracing.tracer = tracer

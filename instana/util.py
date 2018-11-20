@@ -8,8 +8,10 @@ import sys
 import time
 
 import pkg_resources
+from urllib import parse
 
 from .log import logger
+
 
 if sys.version_info.major is 2:
     string_types = basestring
@@ -28,7 +30,7 @@ def generate_id():
     global _current_pid
 
     pid = os.getpid()
-    if (_current_pid != pid):
+    if _current_pid != pid:
         _current_pid = pid
         _rnd.seed(int(1000000 * time.time()) ^ pid)
     return _rnd.randint(-9223372036854775808, 9223372036854775807)
@@ -41,8 +43,8 @@ def id_to_header(id):
         if not isinstance(id, int):
             return BAD_ID_HEADER
 
-        byteString = struct.pack('>q', id)
-        return str(binascii.hexlify(byteString).decode('UTF-8').lstrip('0'))
+        byte_string = struct.pack('>q', id)
+        return str(binascii.hexlify(byte_string).decode('UTF-8').lstrip('0'))
     except Exception as e:
         logger.debug(e)
         return BAD_ID_HEADER
@@ -75,13 +77,56 @@ def to_json(obj):
 
 
 def package_version():
+    version = ""
     try:
-        version = ""
         version = pkg_resources.get_distribution('instana').version
     except pkg_resources.DistributionNotFound:
         version = 'unknown'
     finally:
         return version
+
+
+def strip_secrets(qp, matcher, kwlist):
+    """
+    This function will scrub the secrets from a query param string based on the passed in matcher and kwlist.
+
+    :param qp: a string representing the query params in URL form (unencoded)
+    :param matcher: the matcher to use
+    :param kwlist: the list of keywords to match
+    :return: a scrubbed query param string
+    """
+    params = parse.parse_qs(qp, keep_blank_values=True)
+    redacted = ['<redacted>']
+
+    if matcher == 'equals-ignore-case':
+        for keyword in kwlist:
+            for key in params.keys():
+                if key.lower() == keyword.lower():
+                    params[key] = redacted
+    elif matcher == 'equals':
+        for keyword in kwlist:
+            if keyword in params:
+                params[keyword] = redacted
+    elif matcher == 'contains-ignore-case':
+        for keyword in kwlist:
+            for key in params.keys():
+                if keyword.lower() in key.lower():
+                    params[key] = redacted
+    elif matcher == 'contains':
+        for keyword in kwlist:
+            for key in params.keys():
+                if keyword in key:
+                    params[key] = redacted
+    elif matcher == 'regex':
+        for regexp in kwlist:
+            for key in params.keys():
+                if re.match(regexp, key):
+                    params[key] = redacted
+    else:
+        logger.debug("strip_secrets: unknown matcher")
+
+    result = parse.urlencode(params, doseq=True)
+    return parse.unquote(result)
 
 
 def get_py_source(file):

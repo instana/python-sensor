@@ -59,7 +59,7 @@ try:
                 if ec is 0:
                     span.set_tag("ec", ec+1)
 
-            span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
+            span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
             response.headers.add('HTTP_X_INSTANA_T', id_to_header(span.context.trace_id))
             response.headers.add('HTTP_X_INSTANA_S', id_to_header(span.context.span_id))
             response.headers.add('HTTP_X_INSTANA_L', 1)
@@ -69,6 +69,30 @@ try:
             if scope is not None:
                 scope.close()
             return response
+
+    @wrapt.patch_function_wrapper('flask.templating', '_render')
+    def render_with_instana(wrapped, instance, argv, kwargs):
+        span = tracer.active_span
+
+        # If we're not tracing, just return
+        if span is None:
+            return wrapped(*argv, **kwargs)
+
+        with tracer.start_active_span("render") as rscope:
+            try:
+                template = argv[0]
+
+                rscope.span.set_tag("type", "template")
+                if hasattr(template, 'name'):
+                    if template.name is None:
+                        rscope.span.set_tag("name", '(from string)')
+                    else:
+                        rscope.span.set_tag("name", template.name)
+                return wrapped(*argv, **kwargs)
+            except Exception as e:
+                span.log_exception(e)
+                raise
+
 
     @wrapt.patch_function_wrapper('flask', 'Flask.__init__')
     def init_with_instana(wrapped, instance, args, kwargs):

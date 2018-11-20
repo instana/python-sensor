@@ -175,7 +175,6 @@ class TestSQLAlchemy(unittest.TestCase):
 
         # SQLAlchemy span
         self.assertEqual('sqlalchemy', sql_span.n)
-        # import ipdb; ipdb.set_trace()
 
         self.assertFalse('custom' in sql_span.data.__dict__)
         self.assertTrue('sqlalchemy' in sql_span.data.__dict__)

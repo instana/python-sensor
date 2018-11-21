@@ -5,7 +5,8 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
-from ..singletons import tracer
+from ..singletons import agent, tracer
+from ..util import strip_secrets
 
 try:
     import urllib3 # noqa
@@ -20,12 +21,15 @@ try:
 
             if args is not None and len(args) is 2:
                 kvs['method'] = args[0]
-                kvs['path'] = args[1]
+                kvs['path'] = strip_secrets(args[1], agent.secrets_matcher, agent.secrets_list)
             else:
                 kvs['method'] = kwargs.get('method')
                 kvs['path'] = kwargs.get('path')
                 if kvs['path'] is None:
                     kvs['path'] = kwargs.get('url')
+
+                # Strip any secrets from potential query params
+                kvs['path'] = strip_secrets(kvs['path'], agent.secrets_matcher, agent.secrets_list)
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
                 kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])

@@ -34,6 +34,8 @@ class Agent(object):
     last_fork_check = None
     _boot_pid = os.getpid()
     extra_headers = None
+    secrets_matcher = 'contains-ignore-case'
+    secrets_list = ['key', 'password', 'secret']
     client = requests.Session()
 
     def __init__(self):
@@ -69,7 +71,7 @@ class Agent(object):
             self.handle_fork()
             return False
 
-        if (self.fsm.fsm.current == "good2go"):
+        if self.fsm.fsm.current == "good2go":
             return True
 
         return False
@@ -81,6 +83,10 @@ class Agent(object):
             raw_json = json_string
 
         res_data = json.loads(raw_json)
+
+        if "secrets" in res_data:
+            self.secrets_matcher = res_data['secrets']['matcher']
+            self.secrets_list = res_data['secrets']['list']
 
         if "extraHeaders" in res_data:
             self.extra_headers = res_data['extraHeaders']

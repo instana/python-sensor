@@ -104,6 +104,7 @@ class InstanaRecorder(SpanRecorder):
         if span.operation_name in self.http_spans:
             data.http = HttpData(host=self.get_http_host_name(span),
                                  url=span.tags.pop(ext.HTTP_URL, None),
+                                 params=span.tags.pop('http.params', None),
                                  method=span.tags.pop(ext.HTTP_METHOD, None),
                                  status=span.tags.pop(ext.HTTP_STATUS_CODE, None),
                                  path_tpl=span.tags.pop("http.path_tpl", None),
@@ -128,7 +129,6 @@ class InstanaRecorder(SpanRecorder):
                                              eng=span.tags.pop('sqlalchemy.eng', None),
                                              url=span.tags.pop('sqlalchemy.url', None),
                                              err=span.tags.pop('sqlalchemy.err', None))
-
 
         if span.operation_name == "soap":
             data.soap = SoapData(action=span.tags.pop('soap.action', None))

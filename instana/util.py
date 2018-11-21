@@ -103,61 +103,63 @@ def strip_secrets(qp, matcher, kwlist):
     """
     path = None
 
-    if qp is None:
-        return ''
+    try:
+        if qp is None:
+            return ''
 
-    if type(kwlist) is not list:
-        logger.debug("strip_secrets: bad keyword list")
-        return qp
+        if type(kwlist) is not list:
+            logger.debug("strip_secrets: bad keyword list")
+            return qp
 
-    # If there are no key=values, then just return
-    if not '=' in qp:
-        return qp
+        # If there are no key=values, then just return
+        if not '=' in qp:
+            return qp
 
-    if '?' in qp:
-        path, query = qp.split('?')
-    else:
-        query = qp
+        if '?' in qp:
+            path, query = qp.split('?')
+        else:
+            query = qp
 
-    params = parse.parse_qs(query, keep_blank_values=True)
-    redacted = ['<redacted>']
+        params = parse.parse_qs(query, keep_blank_values=True)
+        redacted = ['<redacted>']
 
-    if matcher == 'equals-ignore-case':
-        for keyword in kwlist:
-            for key in params.keys():
-                if key.lower() == keyword.lower():
-                    params[key] = redacted
-    elif matcher == 'equals':
-        for keyword in kwlist:
-            if keyword in params:
-                params[keyword] = redacted
-    elif matcher == 'contains-ignore-case':
-        for keyword in kwlist:
-            for key in params.keys():
-                if keyword.lower() in key.lower():
-                    params[key] = redacted
-    elif matcher == 'contains':
-        for keyword in kwlist:
-            for key in params.keys():
-                if keyword in key:
-                    params[key] = redacted
-    elif matcher == 'regex':
-        for regexp in kwlist:
-            for key in params.keys():
-                if re.match(regexp, key):
-                    params[key] = redacted
-    else:
-        logger.debug("strip_secrets: unknown matcher")
-        return qp
+        if matcher == 'equals-ignore-case':
+            for keyword in kwlist:
+                for key in params.keys():
+                    if key.lower() == keyword.lower():
+                        params[key] = redacted
+        elif matcher == 'equals':
+            for keyword in kwlist:
+                if keyword in params:
+                    params[keyword] = redacted
+        elif matcher == 'contains-ignore-case':
+            for keyword in kwlist:
+                for key in params.keys():
+                    if keyword.lower() in key.lower():
+                        params[key] = redacted
+        elif matcher == 'contains':
+            for keyword in kwlist:
+                for key in params.keys():
+                    if keyword in key:
+                        params[key] = redacted
+        elif matcher == 'regex':
+            for regexp in kwlist:
+                for key in params.keys():
+                    if re.match(regexp, key):
+                        params[key] = redacted
+        else:
+            logger.debug("strip_secrets: unknown matcher")
+            return qp
 
-    result = parse.urlencode(params, doseq=True)
-    query = parse.unquote(result)
+        result = parse.urlencode(params, doseq=True)
+        query = parse.unquote(result)
 
-    if path:
-        query = path + '?' + query
+        if path:
+            query = path + '?' + query
 
-    return query
-
+        return query
+    except:
+        logger.debug("strip_secrets", exc_info=True)
 
 def get_py_source(file):
     """

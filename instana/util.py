@@ -90,12 +90,32 @@ def strip_secrets(qp, matcher, kwlist):
     """
     This function will scrub the secrets from a query param string based on the passed in matcher and kwlist.
 
+    blah=1&secret=password&valid=true will result in blah=1&secret=<redacted>&valid=true
+
+    You can even pass in path query combinations:
+
+    /signup?blah=1&secret=password&valid=true will result in /signup?blah=1&secret=<redacted>&valid=true
+
     :param qp: a string representing the query params in URL form (unencoded)
     :param matcher: the matcher to use
     :param kwlist: the list of keywords to match
     :return: a scrubbed query param string
     """
-    params = parse.parse_qs(qp, keep_blank_values=True)
+    path = None
+
+    if qp is None:
+        return ''
+
+    # If there are no key=values, then just return
+    if not '=' in qp:
+        return qp
+
+    if '?' in qp:
+        path, query = qp.split('?')
+    else:
+        query = qp
+
+    params = parse.parse_qs(query, keep_blank_values=True)
     redacted = ['<redacted>']
 
     if matcher == 'equals-ignore-case':
@@ -126,7 +146,12 @@ def strip_secrets(qp, matcher, kwlist):
         logger.debug("strip_secrets: unknown matcher")
 
     result = parse.urlencode(params, doseq=True)
-    return parse.unquote(result)
+    query = parse.unquote(result)
+
+    if path:
+        query = path + '?' + query
+
+    return query
 
 
 def get_py_source(file):

@@ -102,3 +102,33 @@ class TestSecrets(unittest.TestCase):
         stripped = strip_secrets(query_params, matcher, kwlist)
 
         self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+
+    def test_equals_with_path_component(self):
+        matcher = 'equals'
+        kwlist = ['Two']
+
+        query_params = "/signup?one=1&Two=two&THREE=&4='+'&five='okyeah'"
+
+        stripped = strip_secrets(query_params, matcher, kwlist)
+
+        self.assertEquals(stripped, "/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
+
+    def test_equals_with_full_url(self):
+        matcher = 'equals'
+        kwlist = ['Two']
+
+        query_params = "http://www.x.org/signup?one=1&Two=two&THREE=&4='+'&five='okyeah'"
+
+        stripped = strip_secrets(query_params, matcher, kwlist)
+
+        self.assertEquals(stripped, "http://www.x.org/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
+
+    def test_equals_with_none(self):
+        matcher = 'equals'
+        kwlist = ['Two']
+
+        query_params = None
+
+        stripped = strip_secrets(query_params, matcher, kwlist)
+
+        self.assertEqual('', stripped)

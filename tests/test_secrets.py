@@ -132,3 +132,23 @@ class TestSecrets(unittest.TestCase):
         stripped = strip_secrets(query_params, matcher, kwlist)
 
         self.assertEqual('', stripped)
+
+    def test_bad_matcher(self):
+        matcher = 'BADCAFE'
+        kwlist = ['Two']
+
+        query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
+
+        stripped = strip_secrets(query_params, matcher, kwlist)
+
+        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+
+    def test_bad_kwlist(self):
+        matcher = 'equals'
+        kwlist = None
+
+        query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
+
+        stripped = strip_secrets(query_params, matcher, kwlist)
+
+        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")

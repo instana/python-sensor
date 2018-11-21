@@ -106,6 +106,10 @@ def strip_secrets(qp, matcher, kwlist):
     if qp is None:
         return ''
 
+    if type(kwlist) is not list:
+        logger.debug("strip_secrets: bad keyword list")
+        return qp
+
     # If there are no key=values, then just return
     if not '=' in qp:
         return qp
@@ -144,6 +148,7 @@ def strip_secrets(qp, matcher, kwlist):
                     params[key] = redacted
     else:
         logger.debug("strip_secrets: unknown matcher")
+        return qp
 
     result = parse.urlencode(params, doseq=True)
     query = parse.unquote(result)

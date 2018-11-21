@@ -34,8 +34,8 @@ class Agent(object):
     last_fork_check = None
     _boot_pid = os.getpid()
     extra_headers = None
-    secrets_matcher = None
-    secrets_list = None
+    secrets_matcher = 'contains-ignore-case'
+    secrets_list = ['key', 'password', 'secret']
     client = requests.Session()
 
     def __init__(self):

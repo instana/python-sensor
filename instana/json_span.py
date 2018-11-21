@@ -43,6 +43,7 @@ class Data(object):
 class HttpData(object):
     host = None
     url = None
+    params = None
     status = 0
     method = None
     path_tpl = None

@@ -39,7 +39,7 @@ try:
                 span.set_tag("http.params", env['QUERY_STRING'])
             if 'HTTP_HOST' in env:
                 span.set_tag("http.host", env['HTTP_HOST'])
-        except Exception:
+        except:
             logger.debug("Flask before_request", exc_info=True)
         finally:
             return None
@@ -63,7 +63,7 @@ try:
             response.headers.add('HTTP_X_INSTANA_T', id_to_header(span.context.trace_id))
             response.headers.add('HTTP_X_INSTANA_S', id_to_header(span.context.span_id))
             response.headers.add('HTTP_X_INSTANA_L', 1)
-        except Exception:
+        except:
             logger.debug("Flask after_request", exc_info=True)
         finally:
             if scope is not None:

@@ -55,6 +55,9 @@ class HTTPPropagator():
             logger.debug("inject error: ", str(e))
 
     def extract(self, carrier):  # noqa
+        trace_id = None
+        span_id = None
+
         try:
             if type(carrier) is dict or hasattr(carrier, "__dict__"):
                 dc = carrier
@@ -78,10 +81,13 @@ class HTTPPropagator():
                 elif self.ALT_LC_HEADER_KEY_S == lc_key:
                     span_id = header_to_id(dc[key])
 
-            return SpanContext(span_id=span_id,
-                               trace_id=trace_id,
-                               baggage={},
-                               sampled=True)
+            ctx = None
+            if trace_id is not None and span_id is not None:
+                ctx = SpanContext(span_id=span_id,
+                                  trace_id=trace_id,
+                                  baggage={},
+                                  sampled=True)
+            return ctx
 
         except Exception as e:
             logger.debug("extract error: ", str(e))

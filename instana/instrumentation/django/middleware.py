@@ -27,11 +27,8 @@ class InstanaMiddleware(MiddlewareMixin):
     def process_request(self, request):
         try:
             env = request.environ
-            ctx = None
 
-            if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-                ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
-
+            ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
             if agent.extra_headers is not None:

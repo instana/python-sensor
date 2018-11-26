@@ -59,3 +59,13 @@ def test_mixed_case_extract():
     assert type(ctx) is basictracer.context.SpanContext
     assert_equals(1, ctx.trace_id)
     assert_equals(1, ctx.span_id)
+
+
+def test_no_context_extract():
+    opts = options.Options()
+    ot.tracer = InstanaTracer(opts)
+
+    carrier = {}
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert ctx is None

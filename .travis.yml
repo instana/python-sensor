@@ -9,7 +9,9 @@ python:
 before_install:
   - "pip install --upgrade pip"
   - "pip install --upgrade setuptools"
-  - "mysql -e 'CREATE DATABASE travis_ci_test;'"
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
 
 install: "pip install -r requirements-test.txt"
 

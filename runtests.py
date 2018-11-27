@@ -7,7 +7,7 @@ command_line = ['-v']
 if (LooseVersion(sys.version) < LooseVersion('3.4')):
     command_line.extend(['-e', 'asynqp'])
 
-print("Node arguments: %s" % command_line)
+print("Nose arguments: %s" % command_line)
 result = nose.run(argv=command_line)
 
 if result is True:

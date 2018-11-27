@@ -1,9 +1,8 @@
+import sys
 import opentracing
 
 from .agent import Agent  # noqa
 from .tracer import InstanaTracer  # noqa
-
-from opentracing.scope_managers.asyncio import AsyncioScopeManager
 
 # The Instana Agent which carries along with it a Sensor that collects metrics.
 agent = Agent()
@@ -18,7 +17,10 @@ agent = Agent()
 # instana.tracer.start_span(...)
 #
 tracer = InstanaTracer()
-async_tracer = InstanaTracer(AsyncioScopeManager())
+
+if sys.version_info >= (3,4):
+    from opentracing.scope_managers.asyncio import AsyncioScopeManager
+    async_tracer = InstanaTracer(AsyncioScopeManager())
 
 # Set ourselves  as the tracer.
 opentracing.tracer = tracer

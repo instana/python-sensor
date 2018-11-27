@@ -8,8 +8,11 @@ import sys
 import time
 
 import pkg_resources
-from urllib import parse
 
+try:
+    from urllib import parse
+except ImportError:
+     from urlparse import urlparse as parse
 from .log import logger
 
 

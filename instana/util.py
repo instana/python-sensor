@@ -12,7 +12,9 @@ import pkg_resources
 try:
     from urllib import parse
 except ImportError:
-     from urlparse import urlparse as parse
+     import urlparse as parse
+     import urllib
+
 from .log import logger
 
 
@@ -123,38 +125,42 @@ def strip_secrets(qp, matcher, kwlist):
         else:
             query = qp
 
-        params = parse.parse_qs(query, keep_blank_values=True)
+        params = parse.parse_qsl(query, keep_blank_values=True)
         redacted = ['<redacted>']
 
         if matcher == 'equals-ignore-case':
             for keyword in kwlist:
-                for key in params.keys():
-                    if key.lower() == keyword.lower():
-                        params[key] = redacted
+                for index, kv in enumerate(params):
+                    if kv[0].lower() == keyword.lower():
+                        params[index] = (kv[0], redacted)
         elif matcher == 'equals':
             for keyword in kwlist:
-                if keyword in params:
-                    params[keyword] = redacted
+                for index, kv in enumerate(params):
+                    if kv[0] == keyword:
+                        params[index] = (kv[0], redacted)
         elif matcher == 'contains-ignore-case':
             for keyword in kwlist:
-                for key in params.keys():
-                    if keyword.lower() in key.lower():
-                        params[key] = redacted
+                for index, kv in enumerate(params):
+                    if keyword.lower() in kv[0].lower():
+                        params[index] = (kv[0], redacted)
         elif matcher == 'contains':
             for keyword in kwlist:
-                for key in params.keys():
-                    if keyword in key:
-                        params[key] = redacted
+                for index, kv in enumerate(params):
+                    if keyword in kv[0]:
+                        params[index] = (kv[0], redacted)
         elif matcher == 'regex':
             for regexp in kwlist:
-                for key in params.keys():
-                    if re.match(regexp, key):
-                        params[key] = redacted
+                for index, kv in enumerate(params):
+                    if re.match(regexp, kv[0]):
+                        params[index] = (kv[0], redacted)
         else:
             logger.debug("strip_secrets: unknown matcher")
             return qp
 
-        result = parse.urlencode(params, doseq=True)
+        if sys.version_info < (3, 0):
+            result = urllib.urlencode(params, doseq=True)
+        else:
+            result = parse.urlencode(params, doseq=True)
         query = parse.unquote(result)
 
         if path:

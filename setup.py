@@ -28,7 +28,7 @@ setup(name='instana',
       author_email='peter.lombardo@instana.com',
       description='🐍 Python Distributed Tracing & Metrics Sensor for Instana',
       packages=find_packages(exclude=['tests', 'examples']),
-      long_description="The instana package collects and reports Python metrics and distibuted \
+      long_description="The instana package collects and reports Python metrics and distributed \
 traces to your Instana dashboard.",
       zip_safe=False,
       install_requires=['autowrapt>=1.0',

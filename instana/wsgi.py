@@ -32,10 +32,7 @@ class iWSGIMiddleware(object):
             self.scope.close()
             return res
 
-        ctx = None
-        if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-            ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
-
+        ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
         self.scope = tracer.start_active_span("wsgi", child_of=ctx)
 
         if agent.extra_headers is not None:

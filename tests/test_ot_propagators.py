@@ -1,5 +1,6 @@
 import inspect
 
+import basictracer
 import opentracing as ot
 from nose.tools import assert_equals
 
@@ -34,3 +35,37 @@ def test_inject():
     assert_equals(carrier['X-Instana-S'], util.id_to_header(span.context.span_id))
     assert 'X-Instana-L' in carrier
     assert_equals(carrier['X-Instana-L'], "1")
+
+
+def test_basic_extract():
+    opts = options.Options()
+    ot.tracer = InstanaTracer(opts)
+
+    carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1'}
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert type(ctx) is basictracer.context.SpanContext
+    assert_equals(1, ctx.trace_id)
+    assert_equals(1, ctx.span_id)
+
+
+def test_mixed_case_extract():
+    opts = options.Options()
+    ot.tracer = InstanaTracer(opts)
+
+    carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1'}
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert type(ctx) is basictracer.context.SpanContext
+    assert_equals(1, ctx.trace_id)
+    assert_equals(1, ctx.span_id)
+
+
+def test_no_context_extract():
+    opts = options.Options()
+    ot.tracer = InstanaTracer(opts)
+
+    carrier = {}
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert ctx is None

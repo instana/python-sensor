@@ -35,7 +35,7 @@ else:
 
 testenv['postgresql_port'] = int(os.environ.get('POSTGRESQL_PORT', '3306'))
 testenv['postgresql_db']   = os.environ.get('POSTGRESQL_DB', 'travis_ci_test')
-testenv['postgresql_user'] = os.environ.get('POSTGRESQL_USER', 'root')
+testenv['postgresql_user'] = os.environ.get('POSTGRESQL_USER', 'postgres')
 
 if 'POSTGRESQL_PW' in os.environ:
     testenv['postgresql_pw'] = os.environ['POSTGRESQL_PW']

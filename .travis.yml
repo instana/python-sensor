@@ -9,13 +9,19 @@ python:
 before_install:
   - "pip install --upgrade pip"
   - "pip install --upgrade setuptools"
-  - "mysql -e 'CREATE DATABASE travis_ci_test;'"
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+  - mysql -e 'CREATE DATABASE travis_ci_test;'
 
 install: "pip install -r requirements-test.txt"
 
 sudo: required
 
 services:
+  - mysql
+  - postgresql
   - rabbitmq
+  - redis
 
 script: python runtests.py

@@ -2,9 +2,15 @@ import sys
 import nose
 from distutils.version import LooseVersion
 
-args = ['nosetests', '-v']
+command_line = ['-v']
 
-if (LooseVersion(sys.version) <= LooseVersion('3.5')):
-    args.extend(['-e', 'asynqp'])
+if (LooseVersion(sys.version) < LooseVersion('3.5')):
+    command_line.extend(['-e', 'asynqp'])
 
-result = nose.run(argv=args)
+print("Nose arguments: %s" % command_line)
+result = nose.run(argv=command_line)
+
+if result is True:
+    exit(0)
+else:
+    exit(-1)

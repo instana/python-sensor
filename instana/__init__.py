@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import pkg_resources
 from threading import Timer
 
@@ -59,7 +60,8 @@ import instana.singletons #noqa
 def load_instrumentation():
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
-        from .instrumentation import asynqp  # noqa
+        if sys.version_info >= (3, 4):
+            from .instrumentation import asynqp  # noqa
         from .instrumentation import mysqlpython  # noqa
         from .instrumentation import redis  # noqa
         from .instrumentation import sqlalchemy  # noqa

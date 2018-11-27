@@ -1,3 +1,4 @@
+import sys
 import opentracing
 
 from .agent import Agent  # noqa
@@ -16,6 +17,10 @@ agent = Agent()
 # instana.tracer.start_span(...)
 #
 tracer = InstanaTracer()
+
+if sys.version_info >= (3,4):
+    from opentracing.scope_managers.asyncio import AsyncioScopeManager
+    async_tracer = InstanaTracer(AsyncioScopeManager())
 
 # Set ourselves  as the tracer.
 opentracing.tracer = tracer

@@ -217,3 +217,37 @@ class TestWSGI(unittest.TestCase):
         self.assertIsNone(wsgi_span.data.http.error)
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+
+    def test_with_incoming_context(self):
+        request_headers = {}
+        request_headers['X-Instana-T'] = '1'
+        request_headers['X-Instana-S'] = '1'
+
+        response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
+
+        self.assertEqual(response.status, 200)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        django_span = spans[0]
+
+        self.assertEqual(django_span.t, 1)
+        self.assertEqual(django_span.p, 1)
+
+    def test_with_incoming_mixed_case_context(self):
+        request_headers = {}
+        request_headers['X-InSTANa-T'] = '1'
+        request_headers['X-instana-S'] = '1'
+
+        response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
+
+        self.assertEqual(response.status, 200)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        django_span = spans[0]
+
+        self.assertEqual(django_span.t, 1)
+        self.assertEqual(django_span.p, 1)

@@ -91,7 +91,6 @@ class TestDjango(StaticLiveServerTestCase):
         assert(django_span.stack)
         assert_equals(2, len(django_span.stack))
 
-
     def test_complex_request(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/complex')
@@ -176,3 +175,37 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals("this", django_span.data.custom.__dict__['tags']["http.X-Capture-This"])
         assert_equals(True, "http.X-Capture-That" in django_span.data.custom.__dict__['tags'])
         assert_equals("that", django_span.data.custom.__dict__['tags']["http.X-Capture-That"])
+
+    def test_with_incoming_context(self):
+        request_headers = {}
+        request_headers['X-Instana-T'] = '1'
+        request_headers['X-Instana-S'] = '1'
+
+        response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
+
+        assert_equals(response.status, 200)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(1, len(spans))
+
+        django_span = spans[0]
+
+        assert_equals(django_span.t, 1)
+        assert_equals(django_span.p, 1)
+
+    def test_with_incoming_mixed_case_context(self):
+        request_headers = {}
+        request_headers['X-InSTANa-T'] = '1'
+        request_headers['X-instana-S'] = '1'
+
+        response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
+
+        assert_equals(response.status, 200)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(1, len(spans))
+
+        django_span = spans[0]
+
+        assert_equals(django_span.t, 1)
+        assert_equals(django_span.p, 1)

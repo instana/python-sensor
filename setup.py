@@ -20,7 +20,7 @@ def check_setuptools():
 check_setuptools()
 
 setup(name='instana',
-      version='1.8.1',
+      version='1.8.2',
       download_url='https://github.com/instana/python-sensor',
       url='https://www.instana.com/',
       license='MIT',

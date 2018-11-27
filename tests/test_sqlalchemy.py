@@ -33,6 +33,8 @@ stan_user = StanUser(name='IAmStan', fullname='Stan Robot', password='3X}vP66ADo
 Session = sessionmaker(bind=engine)
 Session.configure(bind=engine)
 
+sqlalchemy_url = 'postgresql://%s/%s' % (testenv['postgresql_host'], testenv['postgresql_db'])
+
 
 class TestSQLAlchemy(unittest.TestCase):
     def setUp(self):
@@ -75,7 +77,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertTrue('sqlalchemy' in sql_span.data.__dict__)
 
         self.assertEqual('postgresql', sql_span.data.sqlalchemy.eng)
-        self.assertEqual('postgresql://mazzo/rails5_stack', sql_span.data.sqlalchemy.url)
+        self.assertEqual(sqlalchemy_url, sql_span.data.sqlalchemy.url)
         self.assertEqual('INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id', sql_span.data.sqlalchemy.sql)
         self.assertIsNone(sql_span.data.sqlalchemy.err)
 
@@ -121,7 +123,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertTrue('sqlalchemy' in sql_span0.data.__dict__)
 
         self.assertEqual('postgresql', sql_span0.data.sqlalchemy.eng)
-        self.assertEqual('postgresql://mazzo/rails5_stack', sql_span0.data.sqlalchemy.url)
+        self.assertEqual(sqlalchemy_url, sql_span0.data.sqlalchemy.url)
         self.assertEqual('select 1', sql_span0.data.sqlalchemy.sql)
         self.assertIsNone(sql_span0.data.sqlalchemy.err)
 
@@ -135,7 +137,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertTrue('sqlalchemy' in sql_span1.data.__dict__)
 
         self.assertEqual('postgresql', sql_span1.data.sqlalchemy.eng)
-        self.assertEqual('postgresql://mazzo/rails5_stack', sql_span1.data.sqlalchemy.url)
+        self.assertEqual(sqlalchemy_url, sql_span1.data.sqlalchemy.url)
         self.assertEqual("select (name, fullname, password) from churchofstan where name='doesntexist'", sql_span1.data.sqlalchemy.sql)
         self.assertIsNone(sql_span1.data.sqlalchemy.err)
 
@@ -179,7 +181,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertTrue('sqlalchemy' in sql_span.data.__dict__)
 
         self.assertEqual('postgresql', sql_span.data.sqlalchemy.eng)
-        self.assertEqual('postgresql://mazzo/rails5_stack', sql_span.data.sqlalchemy.url)
+        self.assertEqual(sqlalchemy_url, sql_span.data.sqlalchemy.url)
         self.assertEqual('htVwGrCwVThisIsInvalidSQLaw4ijXd88', sql_span.data.sqlalchemy.sql)
         self.assertEqual('syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88"\nLINE 1: htVwGrCwVThisIsInvalidSQLaw4ijXd88\n        ^\n', sql_span.data.sqlalchemy.err)
 

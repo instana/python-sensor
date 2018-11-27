@@ -66,6 +66,13 @@ traces to your Instana dashboard.",
         ],
       },
       test_suite='nose.collector',
+      project_urls={
+          'CI: Travis': 'https://travis-ci.org/instana/python-sensor',
+          'Documentation': 'https://docs.instana.io/ecosystem/python/',
+          'GitHub: issues': 'https://github.com/instana/python-sensor/issues',
+          'GitHub: repo': 'https://github.com/instana/python-sensor',
+          'Support': 'https://support.instana.com',
+      },
       keywords=['performance', 'opentracing', 'metrics', 'monitoring', 'tracing', 'distributed-tracing'],
       classifiers=[
         'Development Status :: 5 - Production/Stable',

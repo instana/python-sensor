@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import os
-import sys
 import unittest
 
 from sqlalchemy import Column, Integer, String, create_engine
@@ -12,7 +10,6 @@ from .helpers import testenv
 
 from instana.singletons import tracer
 
-# engine = create_engine('sqlite:///:memory:', echo=False)
 engine = create_engine("postgresql://%s:%s@%s/%s" % (testenv['postgresql_user'], testenv['postgresql_pw'],
                                                      testenv['postgresql_host'], testenv['postgresql_db']))
 Base = declarative_base()

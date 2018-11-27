@@ -16,6 +16,8 @@ install: "pip install -r requirements-test.txt"
 sudo: required
 
 services:
+  - postgresql
   - rabbitmq
+  - redis
 
-script: python runtests.py
+script: nosetests -v

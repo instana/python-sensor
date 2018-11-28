@@ -20,9 +20,15 @@ def check_setuptools():
 check_setuptools()
 
 setup(name='instana',
-      version='1.8.2',
-      download_url='https://github.com/instana/python-sensor',
+      version='1.8.3',
       url='https://www.instana.com/',
+      project_urls={
+          'CI: Travis': 'https://travis-ci.org/instana/python-sensor',
+          'Documentation': 'https://docs.instana.io/ecosystem/python/',
+          'GitHub: issues': 'https://github.com/instana/python-sensor/issues',
+          'GitHub: repo': 'https://github.com/instana/python-sensor',
+          'Support': 'https://support.instana.com',
+      },
       license='MIT',
       author='Instana Inc.',
       author_email='peter.lombardo@instana.com',
@@ -66,13 +72,6 @@ traces to your Instana dashboard.",
         ],
       },
       test_suite='nose.collector',
-      project_urls={
-          'CI: Travis': 'https://travis-ci.org/instana/python-sensor',
-          'Documentation': 'https://docs.instana.io/ecosystem/python/',
-          'GitHub: issues': 'https://github.com/instana/python-sensor/issues',
-          'GitHub: repo': 'https://github.com/instana/python-sensor',
-          'Support': 'https://support.instana.com',
-      },
       keywords=['performance', 'opentracing', 'metrics', 'monitoring', 'tracing', 'distributed-tracing'],
       classifiers=[
         'Development Status :: 5 - Production/Stable',

@@ -31,6 +31,7 @@ class Data(object):
     http = None
     rabbitmq = None
     redis = None
+    rpc = None
     sdk = None
     service = None
     sqlalchemy = None
@@ -81,6 +82,20 @@ class RedisData(object):
     command = None
     error = None
     subCommands = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+
+class RPCData(object):
+    flavor = None
+    host = None
+    port = None
+    call = None
+    call_type = None
+    params = None
+    baggage = None
+    error = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

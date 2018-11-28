@@ -12,7 +12,7 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        RabbitmqData, RedisData, SDKData, SoapData,
+                        RabbitmqData, RedisData, RPCData, SDKData, SoapData,
                         SQLAlchemyData)
 from .log import logger
 
@@ -124,6 +124,16 @@ class InstanaRecorder(SpanRecorder):
                                    error=span.tags.pop('redis.error', None),
                                    subCommands=span.tags.pop('subCommands', None))
 
+        if span.operation_name == "rpc-client" or span.operation_name == "rpc-server":
+            data.rpc = RPCData(flavor=span.tags.pop('rpc.flavor', None),
+                               host=span.tags.pop('rpc.host', None),
+                               port=span.tags.pop('rpc.port', None),
+                               call=span.tags.pop('rpc.call', None),
+                               call_type=span.tags.pop('rpc.call_type', None),
+                               params=span.tags.pop('rpc.params', None),
+                               baggage=span.tags.pop('rpc.baggage', None),
+                               error=span.tags.pop('rpc.error', None))
+
         if span.operation_name == "sqlalchemy":
             data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),
                                              eng=span.tags.pop('sqlalchemy.eng', None),
@@ -142,7 +152,7 @@ class InstanaRecorder(SpanRecorder):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
 
-        entityFrom = {'e': instana.singletons.agent.from_.pid,
+        entity_from = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(n=span.operation_name,
@@ -151,7 +161,7 @@ class InstanaRecorder(SpanRecorder):
                              s=span.context.span_id,
                              ts=int(round(span.start_time * 1000)),
                              d=int(round(span.duration * 1000)),
-                             f=entityFrom,
+                             f=entity_from,
                              data=data)
 
         if span.stack:
@@ -182,7 +192,7 @@ class InstanaRecorder(SpanRecorder):
 
         sdk_data.Type = self.get_span_kind(span)
         data = Data(service=self.get_service_name(span), sdk=sdk_data)
-        entityFrom = {'e': instana.singletons.agent.from_.pid,
+        entity_from = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(
@@ -192,7 +202,7 @@ class InstanaRecorder(SpanRecorder):
                              ts=int(round(span.start_time * 1000)),
                              d=int(round(span.duration * 1000)),
                              n="sdk",
-                             f=entityFrom,
+                             f=entity_from,
                              data=data)
 
         error = span.tags.pop("error", False)

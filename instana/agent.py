@@ -50,11 +50,13 @@ class Agent(object):
         instana.singletons.tracer.recorder.run()
 
     def to_json(self, o):
+        def extractor(o):
+            return {k: v for k, v in o.__dict__.items() if v is not None}
+
         try:
-            return json.dumps(o, default=lambda o: {k.lower(): v for k, v in o.__dict__.items()},
-                              sort_keys=False, separators=(',', ':')).encode()
+            return json.dumps(o, default=extractor, sort_keys=False, separators=(',', ':')).encode()
         except Exception as e:
-            logger.info("to_json: ", e, o)
+            logger.debug("to_json", exc_info=True)
 
     def is_timed_out(self):
         if self.last_seen and self.can_send:

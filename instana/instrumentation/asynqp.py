@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import sys
-
 import opentracing
 import wrapt
 
@@ -65,32 +63,36 @@ try:
 
             return msg
 
-    @wrapt.patch_function_wrapper('asynqp.queue','Consumers.deliver')
-    def deliver_with_instana(wrapped, instance, argv, kwargs):
+    @wrapt.patch_function_wrapper('asynqp.queue','Queue.consume')
+    def consume_with_instana(wrapped, instance, argv, kwargs):
+        def callback_generator(original_callback):
+            def callback_with_instana(*argv, **kwargs):
+                ctx = None
+                msg = argv[0]
+                if msg.headers is not None:
+                    ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers))
 
-        ctx = None
-        msg = argv[1]
-        if msg.headers is not None:
-            ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers))
+                with async_tracer.start_active_span("rabbitmq", child_of=ctx) as scope:
+                    host, port = msg.sender.protocol.transport._sock.getsockname()
 
-        with async_tracer.start_active_span("rabbitmq", child_of=ctx) as scope:
-            host, port = argv[1].sender.protocol.transport._sock.getsockname()
+                    try:
+                        scope.span.set_tag("exchange", msg.exchange_name)
+                        scope.span.set_tag("sort", "consume")
+                        scope.span.set_tag("address", host + ":" + str(port) )
+                        scope.span.set_tag("key", msg.routing_key)
 
-            try:
-                scope.span.set_tag("exchange", msg.exchange_name)
-                scope.span.set_tag("sort", "consume")
-                scope.span.set_tag("address", host + ":" + str(port) )
-                scope.span.set_tag("key", msg.routing_key)
+                        original_callback(*argv, **kwargs)
+                    except Exception as e:
+                        scope.span.log_kv({'message': e})
+                        scope.span.set_tag("error", True)
+                        ec = scope.span.tags.get('ec', 0)
+                        scope.span.set_tag("ec", ec+1)
+                        raise
+            return callback_with_instana
 
-                rv = wrapped(*argv, **kwargs)
-            except Exception as e:
-                scope.span.log_kv({'message': e})
-                scope.span.set_tag("error", True)
-                ec = scope.span.tags.get('ec', 0)
-                scope.span.set_tag("ec", ec+1)
-                raise
-            else:
-                return rv
+        cb = argv[0]
+        argv = (callback_generator(cb),)
+        return wrapped(*argv, **kwargs)
 
     logger.debug("Instrumenting asynqp")
 except ImportError:

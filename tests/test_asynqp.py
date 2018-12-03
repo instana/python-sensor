@@ -218,13 +218,12 @@ class TestAsynqp(unittest.TestCase):
         self.loop.run_until_complete(test())
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
+        self.assertEqual(4, len(spans))
 
         publish1_span = spans[0]
-        consume1_span = spans[1]
-        publish2_span = spans[2]
-        consume2_span = spans[3]
-        test_span = spans[4]
+        publish2_span = spans[1]
+        consume1_span = spans[2]
+        test_span = spans[3]
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -232,13 +231,11 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(test_span.t, publish1_span.t)
         self.assertEqual(test_span.t, publish2_span.t)
         self.assertEqual(test_span.t, consume1_span.t)
-        self.assertEqual(test_span.t, consume2_span.t)
 
         # Parent relationships
         self.assertEqual(publish1_span.p, test_span.s)
-        self.assertEqual(publish2_span.p, test_span.s)
         self.assertEqual(consume1_span.p, publish1_span.s)
-        self.assertEqual(consume2_span.p, publish2_span.s)
+        self.assertEqual(publish2_span.p, consume1_span.s)
 
         # publish
         self.assertEqual('test.exchange', publish1_span.data.rabbitmq.exchange)
@@ -266,21 +263,11 @@ class TestAsynqp(unittest.TestCase):
         self.assertTrue(type(consume1_span.stack) is list)
         self.assertGreater(len(consume1_span.stack), 0)
 
-        self.assertEqual('test.exchange', consume2_span.data.rabbitmq.exchange)
-        self.assertEqual('consume', consume2_span.data.rabbitmq.sort)
-        self.assertIsNotNone(consume2_span.data.rabbitmq.address)
-        self.assertEqual('another.key', consume2_span.data.rabbitmq.key)
-        self.assertIsNotNone(consume2_span.stack)
-        self.assertTrue(type(consume2_span.stack) is list)
-        self.assertGreater(len(consume2_span.stack), 0)
-
         # Error logging
         self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
         self.assertFalse(consume1_span.error)
         self.assertIsNone(consume1_span.ec)
-        self.assertFalse(consume2_span.error)
-        self.assertIsNone(consume2_span.ec)
         self.assertFalse(publish1_span.error)
         self.assertIsNone(publish1_span.ec)
         self.assertFalse(publish2_span.error)

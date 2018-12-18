@@ -201,7 +201,9 @@ class Meter(object):
     def collect_snapshot(self):
         """  Collects snapshot related information to this process and environment """
         try:
-            if "FLASK_APP" in os.environ:
+            if "INSTANA_SERVICE_NAME" in os.environ:
+                appname = os.environ["INSTANA_SERVICE_NAME"]
+            elif "FLASK_APP" in os.environ:
                 appname = os.environ["FLASK_APP"]
             elif "DJANGO_SETTINGS_MODULE" in os.environ:
                 appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]

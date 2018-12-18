@@ -3,7 +3,7 @@ import os
 
 
 class Options(object):
-    service = ''
+    service = None
     service_name = None
     agent_host = ''
     agent_port = 0

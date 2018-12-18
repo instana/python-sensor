@@ -191,7 +191,8 @@ class InstanaRecorder(SpanRecorder):
                            custom=custom_data)
 
         sdk_data.Type = self.get_span_kind(span)
-        data = Data(service=self.get_service_name(span), sdk=sdk_data)
+        data = Data(service=instana.singletons.agent.sensor.options.service_name,
+                    sdk=sdk_data)
         entity_from = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
 
@@ -224,9 +225,6 @@ class InstanaRecorder(SpanRecorder):
             return h
 
         return "localhost"
-
-    def get_service_name(self, span):
-        return instana.singletons.agent.sensor.options.service_name
 
     def get_span_kind(self, span):
         kind = ""

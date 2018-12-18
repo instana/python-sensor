@@ -93,8 +93,7 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
-        data = Data(baggage=span.context.baggage,
-                    service=instana.singletons.agent.sensor.options.service_name)
+        data = Data(baggage=span.context.baggage)
 
         logs = self.collect_logs(span)
         if len(logs) > 0:

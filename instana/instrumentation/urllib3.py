@@ -15,21 +15,24 @@ try:
         """ Build and return a fully qualified URL for this request """
         try:
             kvs = {}
-
             kvs['host'] = instance.host
             kvs['port'] = instance.port
 
             if args is not None and len(args) is 2:
                 kvs['method'] = args[0]
-                kvs['path'] = strip_secrets(args[1], agent.secrets_matcher, agent.secrets_list)
+                kvs['path'] = args[1]
             else:
                 kvs['method'] = kwargs.get('method')
                 kvs['path'] = kwargs.get('path')
                 if kvs['path'] is None:
                     kvs['path'] = kwargs.get('url')
 
-                # Strip any secrets from potential query params
-                kvs['path'] = strip_secrets(kvs['path'], agent.secrets_matcher, agent.secrets_list)
+            # Strip any secrets from potential query params
+            if '?' in kvs['path']:
+                parts = kvs['path'].split('?')
+                kvs['path'] = parts[0]
+                if len(parts) is 2:
+                    kvs['query'] = strip_secrets(parts[1], agent.secrets_matcher, agent.secrets_list)
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
                 kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
@@ -54,6 +57,8 @@ try:
                 kvs = collect(instance, args, kwargs)
                 if 'url' in kvs:
                     scope.span.set_tag(ext.HTTP_URL, kvs['url'])
+                if 'query' in kvs:
+                    scope.span.set_tag("http.params", kvs['query'])
                 if 'method' in kvs:
                     scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 

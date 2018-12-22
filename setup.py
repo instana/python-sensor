@@ -66,7 +66,7 @@ traces to your Instana dashboard.",
             'redis<3.0.0',
             'requests>=2.17.1',
             'sqlalchemy>=1.1.15',
-            'spyne>=2.9',
+            'spyne>=2.9,<=2.12.14',
             'suds-jurko>=0.6',
             'urllib3[secure]>=1.15'
         ],

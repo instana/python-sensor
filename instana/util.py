@@ -170,6 +170,26 @@ def strip_secrets(qp, matcher, kwlist):
     except:
         logger.debug("strip_secrets", exc_info=True)
 
+
+def get_default_gateway():
+    try:
+        # The first line is the header line
+        # We look for the line where the Destination is 00000000 - that is the default route
+        # The Gateway IP is encoded backwards in hex.
+        with open("/proc/self/net/route") as routes:
+            for line in routes:
+                parts = line.split('\t')
+                if '00000000' == parts[1]:
+                    hip = parts[2]
+
+        if hip is not None:
+            # Reverse order, convert hex to int
+            return "%i.%i.%i.%i" % (int(hip[6:8], 16), int(hip[4:6], 16), int(hip[2:4], 16), int(hip[0:2], 16))
+
+    except:
+        logger.warn("get_default_gateway: ", exc_info=True)
+
+
 def get_py_source(file):
     """
     Retrieves and returns the source code for any Python

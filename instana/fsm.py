@@ -12,6 +12,7 @@ import pkg_resources
 
 from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
 from .log import logger
+from .util import get_default_gateway
 
 
 class Discovery(object):
@@ -86,7 +87,7 @@ class Fsm(object):
             self.fsm.announce()
             return True
         elif os.path.exists("/proc/"):
-            host = self.get_default_gateway()
+            host = get_default_gateway()
             if host:
                 if self.agent.is_agent_listening(host, port):
                     self.agent.host = host
@@ -100,21 +101,6 @@ class Fsm(object):
 
         self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
         return False
-
-    def get_default_gateway(self):
-        logger.debug("checking default gateway")
-
-        try:
-            proc = subprocess.Popen(
-                "/sbin/ip route | awk '/default/' | cut -d ' ' -f 3 | tr -d '\n'",
-                shell=True, stdout=subprocess.PIPE)
-
-            addr = proc.stdout.read()
-            return addr.decode("UTF-8")
-        except Exception as e:
-            logger.error(e)
-
-            return None
 
     def announce_sensor(self, e):
         logger.debug("announcing sensor to the agent")

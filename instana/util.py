@@ -172,6 +172,11 @@ def strip_secrets(qp, matcher, kwlist):
 
 
 def get_default_gateway():
+    """
+    Attempts to read /proc/self/net/route to determine the default gateway in use.
+
+    :return: String - the ip address of the default gateway or None if not found/possible/non-existant
+    """
     try:
         # The first line is the header line
         # We look for the line where the Destination is 00000000 - that is the default route
@@ -182,7 +187,7 @@ def get_default_gateway():
                 if '00000000' == parts[1]:
                     hip = parts[2]
 
-        if hip is not None:
+        if hip is not None and len(hip) is 8:
             # Reverse order, convert hex to int
             return "%i.%i.%i.%i" % (int(hip[6:8], 16), int(hip[4:6], 16), int(hip[2:4], 16), int(hip[0:2], 16))
 

@@ -69,3 +69,17 @@ def test_no_context_extract():
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert ctx is None
+
+
+def test_128bit_headers():
+    opts = options.Options()
+    ot.tracer = InstanaTracer(opts)
+
+    carrier = {'X-Instana-T': '0000000000000000b0789916ff8f319f',
+               'X-Instana-S': '0000000000000000b0789916ff8f319f', 'X-Instana-L': '1'}
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert type(ctx) is basictracer.context.SpanContext
+    assert_equals('b0789916ff8f319f', ctx.trace_id)
+    assert_equals('b0789916ff8f319f', ctx.span_id)
+

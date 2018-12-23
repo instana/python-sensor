@@ -31,8 +31,8 @@ class TestOTSpan:
             count += 1
             span = opentracing.tracer.start_span("test_span_ids")
             context = span.context
-            assert -9223372036854775808 <= context.span_id <= 9223372036854775807
-            assert -9223372036854775808 <= context.trace_id <= 9223372036854775807
+            assert 0 <= int(context.span_id, 16) <= 18446744073709551615
+            assert 0 <= int(context.trace_id, 16) <= 18446744073709551615
 
     def test_span_fields(self):
         span = opentracing.tracer.start_span("mycustom")

@@ -223,8 +223,8 @@ class TestDjango(StaticLiveServerTestCase):
 
         django_span = spans[0]
 
-        assert_equals(django_span.t, 1)
-        assert_equals(django_span.p, 1)
+        assert_equals(django_span.t, '0000000000000001')
+        assert_equals(django_span.p, '0000000000000001')
 
     def test_with_incoming_mixed_case_context(self):
         request_headers = dict()
@@ -248,5 +248,5 @@ class TestDjango(StaticLiveServerTestCase):
 
         django_span = spans[0]
 
-        assert_equals(django_span.t, 1)
-        assert_equals(django_span.p, 1)
+        assert_equals(django_span.t, '0000000000000001')
+        assert_equals(django_span.p, '0000000000000001')

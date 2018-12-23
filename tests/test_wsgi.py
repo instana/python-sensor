@@ -264,8 +264,8 @@ class TestWSGI(unittest.TestCase):
 
         django_span = spans[0]
 
-        self.assertEqual(django_span.t, 1)
-        self.assertEqual(django_span.p, 1)
+        self.assertEqual(django_span.t, '0000000000000001')
+        self.assertEqual(django_span.p, '0000000000000001')
 
     def test_with_incoming_mixed_case_context(self):
         request_headers = dict()
@@ -289,5 +289,5 @@ class TestWSGI(unittest.TestCase):
 
         django_span = spans[0]
 
-        self.assertEqual(django_span.t, 1)
-        self.assertEqual(django_span.p, 1)
+        self.assertEqual(django_span.t, '0000000000000001')
+        self.assertEqual(django_span.p, '0000000000000001')

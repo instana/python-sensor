@@ -91,7 +91,7 @@ def render_string():
 
 @app.route("/render_error")
 def render_error():
-    return render_template_string('hello {{ what }', what='world')
+    return render_template('flask_render_error.html', what='world')
 
 
 if __name__ == '__main__':

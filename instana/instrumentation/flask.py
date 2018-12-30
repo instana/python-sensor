@@ -13,6 +13,7 @@ try:
 
     def before_request_with_instana(*argv, **kwargs):
         try:
+            logger.debug("before_request_with_instana")
             if not agent.can_send():
                 return
 
@@ -49,6 +50,8 @@ try:
             scope = tracer.scope_manager.active
             span = tracer.active_span
 
+            logger.debug("after_request_with_instana")
+
             # If we're not tracing, just return
             if span is None:
                 return response
@@ -70,9 +73,39 @@ try:
                 scope.close()
             return response
 
-    @wrapt.patch_function_wrapper('flask.templating', '_render')
+    def handle_error_with_instana(e):
+        try:
+            scope = tracer.scope_manager.active
+            span = tracer.active_span
+
+            logger.debug("handle_error_with_instana")
+
+            if not hasattr(e, 'code'):
+                if span is not None:
+                    span.log_exception(e)
+        except:
+            logger.debug("Flask.handle_error_with_instana", exc_info=True)
+        finally:
+            return e
+
+
+    @wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
+    def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
+        if not hasattr(instance, '_stan_wuz_here'):
+            logger.debug("Applying flask before/after instrumentation funcs")
+            instance.before_request(before_request_with_instana)
+            instance.after_request(after_request_with_instana)
+            # instance.register_error_handler(Exception, handle_error_with_instana)
+            setattr(instance, "_stan_wuz_here", True)
+
+        return wrapped(*argv, **kwargs)
+
+
+    @wrapt.patch_function_wrapper('flask', 'templating._render')
     def render_with_instana(wrapped, instance, argv, kwargs):
         span = tracer.active_span
+
+        logger.debug("flask.templating._render")
 
         # If we're not tracing, just return
         if span is None:
@@ -83,23 +116,14 @@ try:
                 template = argv[0]
 
                 rscope.span.set_tag("type", "template")
-                if hasattr(template, 'name'):
-                    if template.name is None:
-                        rscope.span.set_tag("name", '(from string)')
-                    else:
-                        rscope.span.set_tag("name", template.name)
+                if template.name is None:
+                    rscope.span.set_tag("name", '(from string)')
+                else:
+                    rscope.span.set_tag("name", template.name)
                 return wrapped(*argv, **kwargs)
             except Exception as e:
                 span.log_exception(e)
                 raise
-
-
-    @wrapt.patch_function_wrapper('flask', 'Flask.__init__')
-    def init_with_instana(wrapped, instance, args, kwargs):
-        rv = wrapped(*args, **kwargs)
-        instance.before_request(before_request_with_instana)
-        instance.after_request(after_request_with_instana)
-        return rv
 
     logger.debug("Instrumenting flask")
 except ImportError:

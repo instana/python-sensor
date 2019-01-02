@@ -13,7 +13,6 @@ try:
 
     def before_request_with_instana(*argv, **kwargs):
         try:
-            logger.debug("before_request_with_instana")
             if not agent.can_send():
                 return
 
@@ -24,7 +23,8 @@ try:
             if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
                 ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
 
-            span = tracer.start_active_span('wsgi', child_of=ctx).span
+            rc.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
+            span = rc.g.scope.span
 
             if agent.extra_headers is not None:
                 for custom_header in agent.extra_headers:
@@ -47,14 +47,14 @@ try:
 
     def after_request_with_instana(response):
         try:
-            scope = tracer.scope_manager.active
-            span = tracer.active_span
-
-            logger.debug("after_request_with_instana")
+            rc = flask._request_ctx_stack.top
 
             # If we're not tracing, just return
-            if span is None:
+            if not hasattr(rc.g, 'scope'):
                 return response
+
+            scope = rc.g.scope
+            span = scope.span
 
             if 500 <= response.status_code <= 511:
                 span.set_tag("error", True)
@@ -73,45 +73,15 @@ try:
                 scope.close()
             return response
 
-    def handle_error_with_instana(e):
-        try:
-            scope = tracer.scope_manager.active
-            span = tracer.active_span
-
-            logger.debug("handle_error_with_instana")
-
-            if not hasattr(e, 'code'):
-                if span is not None:
-                    span.log_exception(e)
-        except:
-            logger.debug("Flask.handle_error_with_instana", exc_info=True)
-        finally:
-            return e
-
-
-    @wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
-    def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
-        if not hasattr(instance, '_stan_wuz_here'):
-            logger.debug("Applying flask before/after instrumentation funcs")
-            instance.before_request(before_request_with_instana)
-            instance.after_request(after_request_with_instana)
-            # instance.register_error_handler(Exception, handle_error_with_instana)
-            setattr(instance, "_stan_wuz_here", True)
-
-        return wrapped(*argv, **kwargs)
-
-
     @wrapt.patch_function_wrapper('flask', 'templating._render')
     def render_with_instana(wrapped, instance, argv, kwargs):
-        span = tracer.active_span
-
-        logger.debug("flask.templating._render")
+        ctx = argv[1]
 
         # If we're not tracing, just return
-        if span is None:
+        if not hasattr(ctx['g'], 'scope'):
             return wrapped(*argv, **kwargs)
 
-        with tracer.start_active_span("render") as rscope:
+        with tracer.start_active_span("render", child_of=ctx['g'].scope.span) as rscope:
             try:
                 template = argv[0]
 
@@ -122,8 +92,17 @@ try:
                     rscope.span.set_tag("name", template.name)
                 return wrapped(*argv, **kwargs)
             except Exception as e:
-                span.log_exception(e)
+                rscope.span.log_exception(e)
                 raise
+
+    @wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
+    def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
+        if not hasattr(instance, '_stan_wuz_here'):
+            logger.debug("Applying flask before/after instrumentation funcs")
+            setattr(instance, "_stan_wuz_here", True)
+            instance.after_request(after_request_with_instana)
+            instance.before_request(before_request_with_instana)
+        return wrapped(*argv, **kwargs)
 
     logger.debug("Instrumenting flask")
 except ImportError:

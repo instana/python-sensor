@@ -493,7 +493,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data.http.host)
         self.assertEqual('/exception', wsgi_span.data.http.url)
         self.assertEqual('GET', wsgi_span.data.http.method)
-        self.assertEqual('500', wsgi_span.data.http.status)
+        self.assertEqual(500, wsgi_span.data.http.status)
         self.assertIsNone(wsgi_span.data.http.error)
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))

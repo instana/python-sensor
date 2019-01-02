@@ -6,7 +6,7 @@ import wrapt
 
 from ..log import logger
 from ..singletons import agent, tracer
-from ..util import id_to_header
+from ..util import id_to_header, strip_secrets
 
 try:
     import flask
@@ -37,7 +37,8 @@ try:
             if 'PATH_INFO' in env:
                 span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
             if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-                span.set_tag("http.params", env['QUERY_STRING'])
+                scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
+                span.set_tag("http.params", scrubbed_params)
             if 'HTTP_HOST' in env:
                 span.set_tag("http.host", env['HTTP_HOST'])
         except:

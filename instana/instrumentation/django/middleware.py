@@ -75,8 +75,6 @@ class InstanaMiddleware(MiddlewareMixin):
             request.iscope.span.set_tag("error", True)
             ec = request.iscope.span.tags.get('ec', 0)
             request.iscope.span.set_tag("ec", ec+1)
-            request.iscope.close()
-            request.iscope = None
 
 
 def load_middleware_wrapper(wrapped, instance, args, kwargs):

@@ -40,8 +40,14 @@ class TestWSGI(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert(response)
+        assert response
         self.assertEqual(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -83,8 +89,14 @@ class TestWSGI(unittest.TestCase):
         urllib3_span = spans[3]
         test_span = spans[4]
 
-        assert(response)
+        assert response
         self.assertEqual(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         # Same traceId
         trace_id = test_span.t
@@ -141,8 +153,14 @@ class TestWSGI(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert(response)
+        assert response
         self.assertEqual(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -190,6 +208,12 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -219,13 +243,21 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(2, len(wsgi_span.stack))
 
     def test_with_incoming_context(self):
-        request_headers = {}
-        request_headers['X-Instana-T'] = '1'
-        request_headers['X-Instana-S'] = '1'
+        request_headers = dict()
+        request_headers['X-Instana-T'] = '0000000000000001'
+        request_headers['X-Instana-S'] = '0000000000000001'
 
         response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
 
-        self.assertEqual(response.status, 200)
+        assert response
+        self.assertEqual(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual('1', response.headers['X-Instana-T'])
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
@@ -236,13 +268,21 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(django_span.p, 1)
 
     def test_with_incoming_mixed_case_context(self):
-        request_headers = {}
-        request_headers['X-InSTANa-T'] = '1'
-        request_headers['X-instana-S'] = '1'
+        request_headers = dict()
+        request_headers['X-InSTANa-T'] = '0000000000000001'
+        request_headers['X-instana-S'] = '0000000000000001'
 
         response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
 
-        self.assertEqual(response.status, 200)
+        assert response
+        self.assertEqual(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual('1', response.headers['X-Instana-T'])
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))

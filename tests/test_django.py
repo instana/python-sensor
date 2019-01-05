@@ -26,9 +26,15 @@ class TestDjango(StaticLiveServerTestCase):
     def test_basic_request(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/')
-            # response = self.client.get('/')
 
-        assert_equals(response.status, 200)
+        assert response
+        assert_equals(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        assert_equals('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -53,16 +59,21 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals('/', django_span.data.http.url)
         assert_equals('GET', django_span.data.http.method)
         assert_equals(200, django_span.data.http.status)
-        assert(django_span.stack)
+        assert django_span.stack
         assert_equals(2, len(django_span.stack))
-
 
     def test_request_with_error(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/cause_error')
-            # response = self.client.get('/')
 
-        assert_equals(response.status, 500)
+        assert response
+        assert_equals(500, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        assert_equals('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -95,7 +106,14 @@ class TestDjango(StaticLiveServerTestCase):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/complex')
 
-        assert_equals(response.status, 200)
+        assert response
+        assert_equals(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        assert_equals('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         assert_equals(5, len(spans))
@@ -135,7 +153,7 @@ class TestDjango(StaticLiveServerTestCase):
         # Hack together a manual custom headers list
         agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
 
-        request_headers = {}
+        request_headers = dict()
         request_headers['X-Capture-This'] = 'this'
         request_headers['X-Capture-That'] = 'that'
 
@@ -143,7 +161,14 @@ class TestDjango(StaticLiveServerTestCase):
             response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
             # response = self.client.get('/')
 
-        assert_equals(response.status, 200)
+        assert response
+        assert_equals(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        assert_equals('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         assert_equals(3, len(spans))
@@ -177,13 +202,21 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals("that", django_span.data.custom.__dict__['tags']["http.X-Capture-That"])
 
     def test_with_incoming_context(self):
-        request_headers = {}
+        request_headers = dict()
         request_headers['X-Instana-T'] = '1'
         request_headers['X-Instana-S'] = '1'
 
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
 
-        assert_equals(response.status, 200)
+        assert response
+        assert_equals(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual('1', response.headers['X-Instana-T'])
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        assert_equals('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         assert_equals(1, len(spans))
@@ -194,13 +227,21 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(django_span.p, 1)
 
     def test_with_incoming_mixed_case_context(self):
-        request_headers = {}
-        request_headers['X-InSTANa-T'] = '1'
-        request_headers['X-instana-S'] = '1'
+        request_headers = dict()
+        request_headers['X-InSTANa-T'] = '0000000000000001'
+        request_headers['X-instana-S'] = '0000000000000001'
 
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
 
-        assert_equals(response.status, 200)
+        assert response
+        assert_equals(200, response.status)
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual('1', response.headers['X-Instana-T'])
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        assert('X-Instana-L' in response.headers)
+        assert_equals('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         assert_equals(1, len(spans))

@@ -253,7 +253,7 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(200, response.status)
         assert('X-Instana-T' in response.headers)
         assert(int(response.headers['X-Instana-T'], 16))
-        self.assertEqual('1', response.headers['X-Instana-T'])
+        self.assertEqual('0000000000000001', response.headers['X-Instana-T'])
         assert('X-Instana-S' in response.headers)
         assert(int(response.headers['X-Instana-S'], 16))
         assert('X-Instana-L' in response.headers)
@@ -264,8 +264,8 @@ class TestWSGI(unittest.TestCase):
 
         django_span = spans[0]
 
-        self.assertEqual(django_span.t, 1)
-        self.assertEqual(django_span.p, 1)
+        self.assertEqual(django_span.t, '0000000000000001')
+        self.assertEqual(django_span.p, '0000000000000001')
 
     def test_with_incoming_mixed_case_context(self):
         request_headers = dict()
@@ -278,7 +278,7 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(200, response.status)
         assert('X-Instana-T' in response.headers)
         assert(int(response.headers['X-Instana-T'], 16))
-        self.assertEqual('1', response.headers['X-Instana-T'])
+        self.assertEqual('0000000000000001', response.headers['X-Instana-T'])
         assert('X-Instana-S' in response.headers)
         assert(int(response.headers['X-Instana-S'], 16))
         assert('X-Instana-L' in response.headers)
@@ -289,5 +289,5 @@ class TestWSGI(unittest.TestCase):
 
         django_span = spans[0]
 
-        self.assertEqual(django_span.t, 1)
-        self.assertEqual(django_span.p, 1)
+        self.assertEqual(django_span.t, '0000000000000001')
+        self.assertEqual(django_span.p, '0000000000000001')

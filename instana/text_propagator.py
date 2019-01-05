@@ -4,7 +4,7 @@ import opentracing as ot
 from basictracer.context import SpanContext
 
 from .log import logger
-from .util import id_to_header, header_to_id
+from .util import header_to_id
 
 prefix_tracer_state = 'X-INSTANA-'
 prefix_baggage = 'X-INSTANA-BAGGAGE-'
@@ -19,8 +19,8 @@ class TextPropagator():
 
     def inject(self, span_context, carrier):
         try:
-            carrier[field_name_trace_id] = '{0:x}'.format(span_context.trace_id)
-            carrier[field_name_span_id] = '{0:x}'.format(span_context.span_id)
+            carrier[field_name_trace_id] = span_context.trace_id
+            carrier[field_name_span_id] = span_context.span_id
             if span_context.baggage is not None:
                 for k in span_context.baggage:
                     carrier[prefix_baggage+k] = span_context.baggage[k]

@@ -4,7 +4,7 @@ import opentracing as ot
 from basictracer.context import SpanContext
 
 from .log import logger
-from .util import id_to_header, header_to_id
+from .util import header_to_id
 
 # The carrier can be a dict or a list.
 # Using the trace header as an example, it can be in the following forms
@@ -37,8 +37,8 @@ class HTTPPropagator():
 
     def inject(self, span_context, carrier):
         try:
-            trace_id = id_to_header(span_context.trace_id)
-            span_id = id_to_header(span_context.span_id)
+            trace_id = span_context.trace_id
+            span_id = span_context.span_id
 
             if type(carrier) is dict or hasattr(carrier, "__dict__"):
                 carrier[self.HEADER_KEY_T] = trace_id

@@ -1,9 +1,7 @@
-import binascii
 import json
 import os
 import random
 import re
-import struct
 import sys
 import time
 
@@ -26,54 +24,62 @@ else:
 _rnd = random.Random()
 _current_pid = 0
 
-BAD_ID_LONG = 3135097598  # Bad Cafe in base 10
-BAD_ID_HEADER = "BADDCAFE"  # Bad Cafe
+BAD_ID = "BADCAFFE"  # Bad Caffe
 
 
 def generate_id():
-    """ Generate a 64bit signed integer for use as a Span or Trace ID """
+    """ Generate a 64bit base 16 ID for use as a Span or Trace ID """
     global _current_pid
 
     pid = os.getpid()
     if _current_pid != pid:
         _current_pid = pid
         _rnd.seed(int(1000000 * time.time()) ^ pid)
-    return _rnd.randint(-9223372036854775808, 9223372036854775807)
+    id = format(_rnd.randint(0, 18446744073709551615), '02x')
 
+    if len(id) < 16:
+        id = id.zfill(16)
 
-def id_to_header(id):
-    """ Convert a 64bit signed integer to an unsigned base 16 hex string """
-
-    try:
-        if not isinstance(id, int):
-            return BAD_ID_HEADER
-
-        byte_string = struct.pack('>q', id)
-        return str(binascii.hexlify(byte_string).decode('UTF-8').lstrip('0'))
-    except Exception as e:
-        logger.debug(e)
-        return BAD_ID_HEADER
+    return id
 
 
 def header_to_id(header):
-    """ Convert an unsigned base 16 hex string into a 64bit signed integer """
+    """
+    We can receive headers in the following formats:
+      1. unsigned base 16 hex string of variable length
+      2. [eventual]
 
+    :param header: the header to analyze, validate and convert (if needed)
+    :return: a valid ID to be used internal to the tracer
+    """
     if not isinstance(header, string_types):
-        return BAD_ID_LONG
+        return BAD_ID
 
     try:
         # Test that header is truly a hexadecimal value before we try to convert
         int(header, 16)
 
-        # Pad the header to 16 chars
-        header = header.zfill(16)
-        r = binascii.unhexlify(header)
-        return struct.unpack('>q', r)[0]
+        length = len(header)
+        if length < 16:
+            # Left pad ID with zeros
+            header = header.zfill(16)
+        elif length > 16:
+            # Phase 0: Discard everything but the last 16byte
+            header = header[-16:]
+
+        return header
     except ValueError:
-        return BAD_ID_LONG
+        return BAD_ID
 
 
 def to_json(obj):
+    """
+    Convert obj to json.  Used mostly to convert the classes in json_span.py until we switch to nested
+    dicts (or something better)
+
+    :param obj: the object to serialize to json
+    :return:  json string
+    """
     try:
         return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
                           sort_keys=False, separators=(',', ':')).encode()
@@ -82,6 +88,11 @@ def to_json(obj):
 
 
 def package_version():
+    """
+    Determine the version of this package.
+
+    :return: String representing known version
+    """
     version = ""
     try:
         version = pkg_resources.get_distribution('instana').version

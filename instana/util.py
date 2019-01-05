@@ -1,9 +1,7 @@
-import binascii
 import json
 import os
 import random
 import re
-import struct
 import sys
 import time
 
@@ -75,6 +73,13 @@ def header_to_id(header):
 
 
 def to_json(obj):
+    """
+    Convert obj to json.  Used mostly to convert the classes in json_span.py until we switch to nested
+    dicts (or something better)
+
+    :param obj: the object to serialize to json
+    :return:  json string
+    """
     try:
         return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
                           sort_keys=False, separators=(',', ':')).encode()
@@ -83,6 +88,11 @@ def to_json(obj):
 
 
 def package_version():
+    """
+    Determine the version of this package.
+
+    :return: String representing known version
+    """
     version = ""
     try:
         version = pkg_resources.get_distribution('instana').version

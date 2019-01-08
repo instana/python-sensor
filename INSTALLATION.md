@@ -18,6 +18,13 @@ The Instana package sensor can be enabled without any code modifications require
 
 This will cause the Instana Python package to automatically instrument your Python application.  Once it finds the Instana host agent, it will begin to report Python metrics.
 
+*IMPORTANT:* Automatic Instana instrumentation with Python currently works with statically-linked Python executables, e.g., those that expose the following behavior:
+
+```
+$ ldd /path/to/python
+not a dynamic executable
+```
+
 # Manual
 
 In any Python 2.7 or greater application, to manually enable the Instana sensor, simply import the package:

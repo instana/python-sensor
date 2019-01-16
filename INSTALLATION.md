@@ -113,6 +113,29 @@ app = iWSGIMiddleware(app)
 
 Then booting your stack with `gunicorn myfalcon:app` as an example
 
+## Tornado WSGI
+
+You can have request visbility in Tornado by adding the Instana WSGI to your application:
+
+```python
+import tornado.web
+import tornado.wsgi
+import wsgiref.simple_server
+from instana.wsgi import iWSGIMiddleware
+
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("Hello, world")
+
+if __name__ == "__main__":
+    application = tornado.web.Application([
+        (r"/", MainHandler),
+    ])
+    wsgi_app = iWSGIMiddleware(tornado.wsgi.WSGIAdapter(application))
+    server = wsgiref.simple_server.make_server('', 8888, wsgi_app)
+    server.serve_forever()
+```
+
 # uWSGI Webserver
 
 tldr; Make sure `enable-threads` and `lazy-apps` is enabled for uwsgi.

@@ -18,6 +18,7 @@ import time
 import certifi
 import urllib3
 from .log import logger as log
+from .util import package_version
 
 
 PY2 = sys.version_info[0] == 2
@@ -138,7 +139,7 @@ class APIClient(object):
             log.warn("APIClient: API token or Base URL not set.  No-op mode")
         else:
             self.api_key = "apiToken %s" % self.api_token
-            self.headers = {'Authorization': self.api_key}
+            self.headers = {'Authorization': self.api_key, 'User-Agent': 'instana-python-sensor v' + package_version()}
             self.http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
                                             ca_certs=certifi.where())
 

@@ -272,18 +272,18 @@ class APIClient(object):
         return self.put(path, service_extraction_config)
 
     def snapshot(self, id, timestamp=None):
-        if timestamp is None:
-            timestamp = self.ts_now()
+        params = {}
+        if timestamp is not None:
+            params['time'] = timestamp
 
-        params = {'time': timestamp}
         path = "/api/snapshots/%s" % id
         return self.get(path, query_args=params)
 
     def snapshots(self, query, timestamp=None, size=5):
-        if timestamp is None:
-            timestamp = self.ts_now()
+        params = {'q': query, 'size': size}
+        if timestamp is not None:
+            params['time'] = timestamp
 
-        params = {'time': timestamp, 'q': query, 'size': size}
         path = "/api/snapshots"
         return self.get(path, query_args=params)
 

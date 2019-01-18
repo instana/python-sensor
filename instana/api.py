@@ -18,6 +18,7 @@ import time
 import certifi
 import urllib3
 from .log import logger as log
+from .util import package_version
 
 
 PY2 = sys.version_info[0] == 2
@@ -138,7 +139,7 @@ class APIClient(object):
             log.warn("APIClient: API token or Base URL not set.  No-op mode")
         else:
             self.api_key = "apiToken %s" % self.api_token
-            self.headers = {'Authorization': self.api_key}
+            self.headers = {'Authorization': self.api_key, 'User-Agent': 'instana-python-sensor v' + package_version()}
             self.http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
                                             ca_certs=certifi.where())
 
@@ -271,18 +272,18 @@ class APIClient(object):
         return self.put(path, service_extraction_config)
 
     def snapshot(self, id, timestamp=None):
-        if timestamp is None:
-            timestamp = self.ts_now()
+        params = {}
+        if timestamp is not None:
+            params['time'] = timestamp
 
-        params = {'time': timestamp}
         path = "/api/snapshots/%s" % id
         return self.get(path, query_args=params)
 
     def snapshots(self, query, timestamp=None, size=5):
-        if timestamp is None:
-            timestamp = self.ts_now()
+        params = {'q': query, 'size': size}
+        if timestamp is not None:
+            params['time'] = timestamp
 
-        params = {'time': timestamp, 'q': query, 'size': size}
         path = "/api/snapshots"
         return self.get(path, query_args=params)
 

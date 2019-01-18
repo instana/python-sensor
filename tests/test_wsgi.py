@@ -42,12 +42,21 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
+
         assert('X-Instana-T' in response.headers)
         assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
         assert('X-Instana-S' in response.headers)
         assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
         assert('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -91,12 +100,21 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
+
         assert('X-Instana-T' in response.headers)
         assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
         assert('X-Instana-S' in response.headers)
         assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
         assert('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
         # Same traceId
         trace_id = test_span.t
@@ -155,12 +173,21 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
+
         assert('X-Instana-T' in response.headers)
         assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
         assert('X-Instana-S' in response.headers)
         assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
         assert('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -208,12 +235,21 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
+
         assert('X-Instana-T' in response.headers)
         assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
         assert('X-Instana-S' in response.headers)
         assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
         assert('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
         # Same traceId
         self.assertEqual(test_span.t, urllib3_span.t)
@@ -251,21 +287,29 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
-        assert('X-Instana-T' in response.headers)
-        assert(int(response.headers['X-Instana-T'], 16))
-        self.assertEqual('0000000000000001', response.headers['X-Instana-T'])
-        assert('X-Instana-S' in response.headers)
-        assert(int(response.headers['X-Instana-S'], 16))
-        assert('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
 
-        django_span = spans[0]
+        wsgi_span = spans[0]
 
-        self.assertEqual(django_span.t, '0000000000000001')
-        self.assertEqual(django_span.p, '0000000000000001')
+        self.assertEqual(wsgi_span.t, '0000000000000001')
+        self.assertEqual(wsgi_span.p, '0000000000000001')
+
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
     def test_with_incoming_mixed_case_context(self):
         request_headers = dict()
@@ -276,18 +320,58 @@ class TestWSGI(unittest.TestCase):
 
         assert response
         self.assertEqual(200, response.status)
-        assert('X-Instana-T' in response.headers)
-        assert(int(response.headers['X-Instana-T'], 16))
-        self.assertEqual('0000000000000001', response.headers['X-Instana-T'])
-        assert('X-Instana-S' in response.headers)
-        assert(int(response.headers['X-Instana-S'], 16))
-        assert('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
 
-        django_span = spans[0]
+        wsgi_span = spans[0]
 
-        self.assertEqual(django_span.t, '0000000000000001')
-        self.assertEqual(django_span.p, '0000000000000001')
+        self.assertEqual(wsgi_span.t, '0000000000000001')
+        self.assertEqual(wsgi_span.p, '0000000000000001')
+
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
+
+    def test_response_headers(self):
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', 'http://127.0.0.1:5000/')
+
+        spans = self.recorder.queued_spans()
+
+        self.assertEqual(3, len(spans))
+        self.assertIsNone(tracer.active_span)
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
+

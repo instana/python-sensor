@@ -25,15 +25,20 @@ class HTTPPropagator():
     HEADER_KEY_T = 'X-Instana-T'
     HEADER_KEY_S = 'X-Instana-S'
     HEADER_KEY_L = 'X-Instana-L'
+    HEADER_KEY_ST = 'Server-Timing'
     LC_HEADER_KEY_T = 'x-instana-t'
     LC_HEADER_KEY_S = 'x-instana-s'
     LC_HEADER_KEY_L = 'x-instana-l'
+    LC_HEADER_KEY_ST = 'server-timing'
+
     ALT_HEADER_KEY_T = 'HTTP_X_INSTANA_T'
     ALT_HEADER_KEY_S = 'HTTP_X_INSTANA_S'
     ALT_HEADER_KEY_L = 'HTTP_X_INSTANA_L'
+    ATL_HEADER_KEY_ST = 'HTTP_SERVER_TIMING'
     ALT_LC_HEADER_KEY_T = 'http_x_instana_t'
     ALT_LC_HEADER_KEY_S = 'http_x_instana_s'
     ALT_LC_HEADER_KEY_L = 'http_x_instana_l'
+    ATL_LC_HEADER_KEY_ST = 'http_server_timing'
 
     def inject(self, span_context, carrier):
         try:
@@ -44,10 +49,12 @@ class HTTPPropagator():
                 carrier[self.HEADER_KEY_T] = trace_id
                 carrier[self.HEADER_KEY_S] = span_id
                 carrier[self.HEADER_KEY_L] = "1"
+                carrier[self.HEADER_KEY_ST] = "intid;desc=%s" % trace_id
             elif type(carrier) is list:
                 carrier.append((self.HEADER_KEY_T, trace_id))
                 carrier.append((self.HEADER_KEY_S, span_id))
                 carrier.append((self.HEADER_KEY_L, "1"))
+                carrier.append((self.HEADER_KEY_ST, "intid;desc=%s" % trace_id))
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

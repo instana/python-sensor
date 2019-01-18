@@ -21,7 +21,7 @@ def test_basics():
     assert callable(extract_func)
 
 
-def test_inject():
+def test_inject_with_dict():
     opts = options.Options()
     ot.tracer = InstanaTracer(opts)
 
@@ -35,6 +35,24 @@ def test_inject():
     assert_equals(carrier['X-Instana-S'], span.context.span_id)
     assert 'X-Instana-L' in carrier
     assert_equals(carrier['X-Instana-L'], "1")
+    assert 'Server-Timing' in carrier
+    server_timing_value = "intid;desc=%s" % span.context.trace_id
+    assert_equals(carrier['Server-Timing'], server_timing_value)
+
+
+def test_inject_with_list():
+    opts = options.Options()
+    ot.tracer = InstanaTracer(opts)
+
+    carrier = []
+    span = ot.tracer.start_span("nosetests")
+    ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
+
+    assert ('X-Instana-T', span.context.trace_id) in carrier
+    assert ('X-Instana-S', span.context.span_id) in carrier
+    assert ('X-Instana-L', "1") in carrier
+    server_timing_value = "intid;desc=%s" % span.context.trace_id
+    assert ('Server-Timing', server_timing_value) in carrier
 
 
 def test_basic_extract():

@@ -54,13 +54,13 @@ def load(module):
 # User configurable EUM API key for instana.helpers.eum_snippet()
 eum_api_key = ''
 
-import instana.singletons #noqa
 
+def boot_agent():
+    import instana.singletons  # noqa
 
-def load_instrumentation():
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
-        if sys.version_info >= (3, 4) and sys.version_info < (3, 7):
+        if (sys.version_info >= (3, 4)) and (sys.version_info < (3, 7)):
             from .instrumentation import asynqp  # noqa
         from .instrumentation import mysqlpython  # noqa
         from .instrumentation import redis  # noqa
@@ -71,9 +71,8 @@ def load_instrumentation():
 
 
 if "INSTANA_MAGIC" in os.environ:
-    # If we're being loaded into an already running process, then delay
-    # instrumentation load.
-    t = Timer(2.0, load_instrumentation)
+    # If we're being loaded into an already running process, then delay agent initialization
+    t = Timer(3.0, boot_agent)
     t.start()
 else:
-    load_instrumentation()
+    boot_agent()

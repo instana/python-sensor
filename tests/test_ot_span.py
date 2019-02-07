@@ -127,4 +127,4 @@ class TestOTSpan:
         assert_equals('exit', span.data.sdk.Type)
 
         span = spans[4]
-        assert_equals('local', span.data.sdk.Type)
+        assert_equals('intermediate', span.data.sdk.Type)

@@ -95,6 +95,13 @@ class InstanaRecorder(SpanRecorder):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
         data = Data(baggage=span.context.baggage)
 
+        kind = 1 # entry
+        if span.operation_name in self.exit_spans:
+            kind = 2 # exit
+        # log is a special case as it is not entry nor exit
+        if span.operation_name == "log":
+            kind = 3 # intermediate span
+
         logs = self.collect_logs(span)
         if len(logs) > 0:
             if data.custom is None:
@@ -116,6 +123,8 @@ class InstanaRecorder(SpanRecorder):
                                          sort=span.tags.pop('sort', None),
                                          address=span.tags.pop('address', None),
                                          key=span.tags.pop('key', None))
+            if data.rabbitmq.sort == 'consume':
+                kind = 1 # entry
 
         if span.operation_name == "redis":
             data.redis = RedisData(connection=span.tags.pop('connection', None),
@@ -153,7 +162,6 @@ class InstanaRecorder(SpanRecorder):
                 data.mysql.error = data.custom.logs[tskey]['message']
 
         if span.operation_name == "log":
-            logger.debug('found a log')
             data.log = {}
             # use last special key values
             # TODO - logic might need a tweak here
@@ -167,6 +175,7 @@ class InstanaRecorder(SpanRecorder):
                       'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(n=span.operation_name,
+                             k=kind,
                              t=span.context.trace_id,
                              p=span.parent_id,
                              s=span.context.span_id,
@@ -174,10 +183,6 @@ class InstanaRecorder(SpanRecorder):
                              d=int(round(span.duration * 1000)),
                              f=entity_from,
                              data=data)
-
-        # log is a special case as it is not entry nor exit
-        if span.operation_name == "log":
-            json_span.k = 3 # intermediate span
 
         if span.stack:
             json_span.stack = span.stack

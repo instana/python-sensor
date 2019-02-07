@@ -1,4 +1,5 @@
 class JsonSpan(object):
+    k = None
     t = 0
     p = None
     s = 0

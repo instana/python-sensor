@@ -175,6 +175,10 @@ class InstanaRecorder(SpanRecorder):
                              f=entity_from,
                              data=data)
 
+        # log is a special case as it is not entry nor exit
+        if span.operation_name == "log":
+            json_span.k = 3 # intermediate span
+
         if span.stack:
             json_span.stack = span.stack
 
@@ -245,7 +249,8 @@ class InstanaRecorder(SpanRecorder):
             elif span.tags["span.kind"] in self.exit_kind:
                 kind = "exit"
             else:
-                kind = "local"
+                kind = "intermediate"
+
         return kind
 
     def collect_logs(self, span):

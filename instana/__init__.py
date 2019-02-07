@@ -62,6 +62,7 @@ def boot_agent():
         # Import & initialize instrumentation
         if (sys.version_info >= (3, 4)) and (sys.version_info < (3, 7)):
             from .instrumentation import asynqp  # noqa
+        from .instrumentation import logging  # noqa
         from .instrumentation import mysqlpython  # noqa
         from .instrumentation import redis  # noqa
         from .instrumentation import sqlalchemy  # noqa

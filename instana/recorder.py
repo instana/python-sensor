@@ -24,11 +24,11 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "mysql", "rabbitmq", "redis",
-                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi")
+                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi", "log")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
     exit_spans = ("memcache", "mysql", "rabbitmq", "redis", "rpc-client",
-                  "sqlalchemy", "soap", "urllib3")
+                  "sqlalchemy", "soap", "urllib3", "log")
     entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
@@ -151,6 +151,17 @@ class InstanaRecorder(SpanRecorder):
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
+
+        if span.operation_name == "log":
+            logger.debug('found a log')
+            data.log = {}
+            # use last special key values
+            # TODO - logic might need a tweak here
+            for l in span.logs:
+                if "message" in l.key_values:
+                    data.log["message"] = l.key_values.pop("message", None)
+                if "parameters" in l.key_values:
+                    data.log["parameters"] = l.key_values.pop("parameters", None)
 
         entity_from = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}

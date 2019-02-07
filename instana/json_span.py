@@ -36,6 +36,7 @@ class Data(object):
     service = None
     sqlalchemy = None
     soap = None
+    log = None
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)

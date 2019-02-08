@@ -25,7 +25,8 @@ Tracer
   Recorder
 """
 
-pkg_resources.working_set.add_entry("/tmp/instana/python")
+if "INSTANA_MAGIC" in os.environ:
+    pkg_resources.working_set.add_entry("/tmp/instana/python")
 
 __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2018 Instana Inc.'

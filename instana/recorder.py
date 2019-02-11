@@ -24,11 +24,11 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     registered_spans = ("django", "memcache", "mysql", "rabbitmq", "redis",
-                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi")
+                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi", "log")
     http_spans = ("django", "wsgi", "urllib3", "soap")
 
     exit_spans = ("memcache", "mysql", "rabbitmq", "redis", "rpc-client",
-                  "sqlalchemy", "soap", "urllib3")
+                  "sqlalchemy", "soap", "urllib3", "log")
     entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
@@ -95,6 +95,13 @@ class InstanaRecorder(SpanRecorder):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
         data = Data(baggage=span.context.baggage)
 
+        kind = 1 # entry
+        if span.operation_name in self.exit_spans:
+            kind = 2 # exit
+        # log is a special case as it is not entry nor exit
+        if span.operation_name == "log":
+            kind = 3 # intermediate span
+
         logs = self.collect_logs(span)
         if len(logs) > 0:
             if data.custom is None:
@@ -116,6 +123,8 @@ class InstanaRecorder(SpanRecorder):
                                          sort=span.tags.pop('sort', None),
                                          address=span.tags.pop('address', None),
                                          key=span.tags.pop('key', None))
+            if data.rabbitmq.sort == 'consume':
+                kind = 1 # entry
 
         if span.operation_name == "redis":
             data.redis = RedisData(connection=span.tags.pop('connection', None),
@@ -152,10 +161,21 @@ class InstanaRecorder(SpanRecorder):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
 
+        if span.operation_name == "log":
+            data.log = {}
+            # use last special key values
+            # TODO - logic might need a tweak here
+            for l in span.logs:
+                if "message" in l.key_values:
+                    data.log["message"] = l.key_values.pop("message", None)
+                if "parameters" in l.key_values:
+                    data.log["parameters"] = l.key_values.pop("parameters", None)
+
         entity_from = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(n=span.operation_name,
+                             k=kind,
                              t=span.context.trace_id,
                              p=span.parent_id,
                              s=span.context.span_id,
@@ -234,7 +254,8 @@ class InstanaRecorder(SpanRecorder):
             elif span.tags["span.kind"] in self.exit_kind:
                 kind = "exit"
             else:
-                kind = "local"
+                kind = "intermediate"
+
         return kind
 
     def collect_logs(self, span):

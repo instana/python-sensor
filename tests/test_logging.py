@@ -26,13 +26,23 @@ class TestLogging(unittest.TestCase):
 
     def test_extra_span(self):
         with tracer.start_active_span('test'):
-            self.logger.warn('foo %s', 'bar')
+            self.logger.warning('foo %s', 'bar')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
         self.assertEqual(3, spans[0].k) # intermediate kind
 
         self.assertEqual('foo bar', spans[0].data.log.get('message'))
+
+    def test_log_with_tuple(self):
+        with tracer.start_active_span('test'):
+            self.logger.warning('foo %s', ("bar",))
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+        self.assertEqual(3, spans[0].k) # intermediate kind
+
+        self.assertEqual("foo ('bar',)", spans[0].data.log.get('message'))
 
     def test_parameters(self):
         with tracer.start_active_span('test'):

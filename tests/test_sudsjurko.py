@@ -64,10 +64,13 @@ class TestSudsJurko:
                 pass
 
         spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
-        wsgi_span = spans[0]
-        soap_span = spans[1]
-        test_span = spans[2]
+        assert_equals(5, len(spans))
+
+        log_span1 = spans[0]
+        wsgi_span = spans[1]
+        log_span2 = spans[2]
+        soap_span = spans[3]
+        test_span = spans[4]
 
         assert_equals(None, response)
         assert_equals("test", test_span.data.sdk.name)
@@ -98,10 +101,12 @@ class TestSudsJurko:
                 pass
 
         spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
-        wsgi_span = spans[0]
-        soap_span = spans[1]
-        test_span = spans[2]
+        assert_equals(5, len(spans))
+        log_span1 = spans[0]
+        wsgi_span = spans[1]
+        log_span2 = spans[2]
+        soap_span = spans[3]
+        test_span = spans[4]
 
         assert_equals(None, response)
         assert_equals("test", test_span.data.sdk.name)
@@ -132,10 +137,13 @@ class TestSudsJurko:
                 pass
 
         spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
-        wsgi_span = spans[0]
-        soap_span = spans[1]
-        test_span = spans[2]
+        assert_equals(5, len(spans))
+
+        log_span1 = spans[0]
+        wsgi_span = spans[1]
+        log_span2 = spans[2]
+        soap_span = spans[3]
+        test_span = spans[4]
 
         assert_equals(None, response)
         assert_equals("test", test_span.data.sdk.name)

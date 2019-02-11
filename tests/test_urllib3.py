@@ -450,11 +450,12 @@ class TestUrllib3(unittest.TestCase):
                 pass
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        self.assertEqual(4, len(spans))
 
-        wsgi_span = spans[0]
-        urllib3_span = spans[1]
-        test_span = spans[2]
+        log_span = spans[0]
+        wsgi_span = spans[1]
+        urllib3_span = spans[2]
+        test_span = spans[3]
 
         assert(r)
         self.assertEqual(500, r.status)
@@ -464,10 +465,12 @@ class TestUrllib3(unittest.TestCase):
         traceId = test_span.t
         self.assertEqual(traceId, urllib3_span.t)
         self.assertEqual(traceId, wsgi_span.t)
+        self.assertEqual(traceId, log_span.t)
 
         # Parent relationships
         self.assertEqual(urllib3_span.p, test_span.s)
         self.assertEqual(wsgi_span.p, urllib3_span.s)
+        self.assertEqual(log_span.p, wsgi_span.s)
 
         # Error logging
         self.assertFalse(test_span.error)
@@ -476,6 +479,13 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(1, urllib3_span.ec)
         self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
+
+        # log span
+        self.assertEqual('log', log_span.n)
+        self.assertEqual(3, log_span.k)
+        self.assertTrue(type(log_span.stack) is list)
+        self.assertTrue('log' in log_span.data.__dict__)
+        self.assertTrue('message' in log_span.data.log)
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)

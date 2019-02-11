@@ -7,6 +7,7 @@ import sys
 from ..log import logger
 from ..singletons import tracer
 
+
 @wrapt.patch_function_wrapper('logging', 'Logger._log')
 def log_with_instana(wrapped, instance, argv, kwargs):
     # argv[0] = level
@@ -18,7 +19,9 @@ def log_with_instana(wrapped, instance, argv, kwargs):
         # Only needed if we're tracing and serious log
         if parent_span and argv[0] >= logging.WARN:
             # get the formatted log message
-            msg = argv[1] % argv[2]
+            # clients such as suds-jurko log things such as: Fault(Server: 'Server side fault example.')
+            # So make sure we're working with a string
+            msg = str(argv[1]) % argv[2]
 
             # get additional information if an exception is being handled
             parameters = None
@@ -40,6 +43,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
         logger.debug('Exception: %s', e, exc_info=True)
     finally:
         return wrapped(*argv, **kwargs)
+
 
 logger.debug('Instrumenting logging')
 

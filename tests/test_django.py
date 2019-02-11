@@ -79,11 +79,12 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(500, response.status)
 
         spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
+        assert_equals(4, len(spans))
 
-        test_span = spans[2]
-        urllib3_span = spans[1]
-        django_span = spans[0]
+        test_span = spans[3]
+        urllib3_span = spans[2]
+        django_span = spans[1]
+        log_span = spans[0]
 
         assert ('X-Instana-T' in response.headers)
         assert (int(response.headers['X-Instana-T'], 16))
@@ -103,12 +104,15 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals("test", test_span.data.sdk.name)
         assert_equals("urllib3", urllib3_span.n)
         assert_equals("django", django_span.n)
+        assert_equals("log", log_span.n)
 
         assert_equals(test_span.t, urllib3_span.t)
         assert_equals(urllib3_span.t, django_span.t)
+        assert_equals(django_span.t, log_span.t)
 
         assert_equals(urllib3_span.p, test_span.s)
         assert_equals(django_span.p, urllib3_span.s)
+        assert_equals(log_span.p, django_span.s)
 
         assert_equals(True, django_span.error)
         assert_equals(1, django_span.ec)

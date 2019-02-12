@@ -1,11 +1,12 @@
 # encoding=utf-8
+import os
 import sys
 import time
 
 import opentracing as ot
 import opentracing.ext.tags as ext
 
-SERVICE = "🦄 Stan ❤️s Python 🦄"
+os.environ['INSTANA_SERVICE_NAME'] = "🦄 Stan ❤️s Python 🦄"
 
 
 def main(argv):

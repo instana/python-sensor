@@ -124,7 +124,7 @@ class SDKData(object):
     name = None
     type = None
     arguments = None
-    Return = None
+    return = None
     custom = None
 
     def __init__(self, **kwds):

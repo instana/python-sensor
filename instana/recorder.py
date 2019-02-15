@@ -210,7 +210,7 @@ class InstanaRecorder(SpanRecorder):
         sdk_data = SDKData(name=span.operation_name,
                            custom=custom_data)
 
-        sdk_data.Type = self.get_span_kind(span)
+        sdk_data.type = self.get_span_kind(span)
         data = Data(service=instana.singletons.agent.sensor.options.service_name,
                     sdk=sdk_data)
         entity_from = {'e': instana.singletons.agent.from_.pid,

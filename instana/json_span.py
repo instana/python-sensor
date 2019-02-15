@@ -122,7 +122,7 @@ class SoapData(object):
 
 class SDKData(object):
     name = None
-    Type = None
+    type = None
     arguments = None
     Return = None
     custom = None

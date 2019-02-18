@@ -53,6 +53,7 @@ traces to your Instana dashboard.",
                     },
       extras_require={
         'test': [
+            'aiohttp>=3.5.4;python_version>="3.4"',
             'asynqp>=0.4;python_version>="3.4"',
             'django>=1.11',
             'nose>=1.0',

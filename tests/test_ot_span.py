@@ -128,3 +128,18 @@ class TestOTSpan:
 
         span = spans[4]
         assert_equals('intermediate', span.data.sdk.Type)
+
+        span = spans[0]
+        assert_equals(1, span.k)
+
+        span = spans[1]
+        assert_equals(1, span.k)
+
+        span = spans[2]
+        assert_equals(2, span.k)
+
+        span = spans[3]
+        assert_equals(2, span.k)
+
+        span = spans[4]
+        assert_equals(3, span.k)

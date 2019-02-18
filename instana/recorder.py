@@ -33,6 +33,7 @@ class InstanaRecorder(SpanRecorder):
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
+
     queue = queue.Queue()
 
     def __init__(self):
@@ -208,11 +209,16 @@ class InstanaRecorder(SpanRecorder):
                                  logs=self.collect_logs(span))
 
         sdk_data = SDKData(name=span.operation_name,
-                           custom=custom_data)
+                           custom=custom_data,
+                           Type=self.get_span_kind_as_string(span))
 
-        sdk_data.Type = self.get_span_kind(span)
-        data = Data(service=instana.singletons.agent.sensor.options.service_name,
-                    sdk=sdk_data)
+        if "arguments" in span.tags:
+            sdk_data.arguments = span.tags["arguments"]
+
+        if "return" in span.tags:
+            sdk_data.Return = span.tags["return"]
+
+        data = Data(service=instana.singletons.agent.sensor.options.service_name, sdk=sdk_data)
         entity_from = {'e': instana.singletons.agent.from_.pid,
                       'h': instana.singletons.agent.from_.agentUuid}
 
@@ -222,6 +228,7 @@ class InstanaRecorder(SpanRecorder):
                              s=span.context.span_id,
                              ts=int(round(span.start_time * 1000)),
                              d=int(round(span.duration * 1000)),
+                             k=self.get_span_kind_as_int(span),
                              n="sdk",
                              f=entity_from,
                              data=data)
@@ -246,8 +253,15 @@ class InstanaRecorder(SpanRecorder):
 
         return "localhost"
 
-    def get_span_kind(self, span):
-        kind = ""
+    def get_span_kind_as_string(self, span):
+        """
+            Will retrieve the `span.kind` tag and return the appropriate string value for the Instana backend or
+            None if the tag is set to something we don't recognize.
+
+        :param span: The span to search for the `span.kind` tag
+        :return: String
+        """
+        kind = None
         if "span.kind" in span.tags:
             if span.tags["span.kind"] in self.entry_kind:
                 kind = "entry"
@@ -255,7 +269,24 @@ class InstanaRecorder(SpanRecorder):
                 kind = "exit"
             else:
                 kind = "intermediate"
+        return kind
 
+    def get_span_kind_as_int(self, span):
+        """
+            Will retrieve the `span.kind` tag and return the appropriate integer value for the Instana backend or
+            None if the tag is set to something we don't recognize.
+
+        :param span: The span to search for the `span.kind` tag
+        :return: Integer
+        """
+        kind = None
+        if "span.kind" in span.tags:
+            if span.tags["span.kind"] in self.entry_kind:
+                kind = 1
+            elif span.tags["span.kind"] in self.exit_kind:
+                kind = 2
+            else:
+                kind = 3
         return kind
 
     def collect_logs(self, span):

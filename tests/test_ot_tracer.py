@@ -1,7 +1,4 @@
 import opentracing
-from nose.tools import assert_equals
-
-from instana.singletons import tracer
 
 
 def test_tracer_basics():

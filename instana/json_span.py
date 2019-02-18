@@ -122,9 +122,13 @@ class SoapData(object):
 
 class SDKData(object):
     name = None
+
+    # Since 'type' and 'return' are a Python builtin and a reserved keyword respectively, these keys (all keys) are
+    # lower-case'd in json encoding.  See Agent.to_json
     Type = None
-    arguments = None
     Return = None
+
+    arguments = None
     custom = None
 
     def __init__(self, **kwds):

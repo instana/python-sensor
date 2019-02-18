@@ -51,11 +51,11 @@ class Agent(object):
 
     def to_json(self, o):
         def extractor(o):
-            return {k: v for k, v in o.__dict__.items() if v is not None}
+            return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
 
         try:
             return json.dumps(o, default=extractor, sort_keys=False, separators=(',', ':')).encode()
-        except Exception as e:
+        except:
             logger.debug("to_json", exc_info=True)
 
     def is_timed_out(self):

@@ -55,11 +55,16 @@ class HTTPPropagator():
                 carrier.append((self.HEADER_KEY_S, span_id))
                 carrier.append((self.HEADER_KEY_L, "1"))
                 carrier.append((self.HEADER_KEY_ST, "intid;desc=%s" % trace_id))
+            elif hasattr(carrier, '__setitem__'):
+                carrier.__setitem__(self.HEADER_KEY_T, trace_id)
+                carrier.__setitem__(self.HEADER_KEY_S, span_id)
+                carrier.__setitem__(self.HEADER_KEY_L, "1")
+                carrier.__setitem__(self.HEADER_KEY_ST, "intid;desc=%s" % trace_id)
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 
-        except Exception as e:
-            logger.debug("inject error: ", str(e))
+        except:
+            logger.debug("inject error:", exc_info=True)
 
     def extract(self, carrier):  # noqa
         trace_id = None
@@ -97,4 +102,4 @@ class HTTPPropagator():
             return ctx
 
         except Exception as e:
-            logger.debug("extract error: ", str(e))
+            logger.debug("extract error:", exc_info=True)

@@ -62,6 +62,7 @@ def boot_agent():
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
         if (sys.version_info >= (3, 4)) and (sys.version_info < (3, 7)):
+            from .instrumentation.aiohttp import client  # noqa
             from .instrumentation import asynqp  # noqa
         from .instrumentation import logging  # noqa
         from .instrumentation import mysqlpython  # noqa

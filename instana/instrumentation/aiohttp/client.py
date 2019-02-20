@@ -50,10 +50,9 @@ try:
     async def stan_request_exception(session, trace_config_ctx, params):
         logger.debug("Request exception")
         scope = trace_config_ctx.scope
-        import ipdb;
-        ipdb.set_trace()
-        # span.log_exception()
-
+        scope.span.log_exception(params.exception)
+        scope.span.set_tag("http.error", str(params.exception))
+        scope.close()
 
     @wrapt.patch_function_wrapper('aiohttp.client','ClientSession.__init__')
     def init_with_instana(wrapped, instance, argv, kwargs):

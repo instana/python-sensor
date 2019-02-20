@@ -6,6 +6,7 @@ import unittest
 
 from instana.singletons import async_tracer
 
+
 class TestAiohttp(unittest.TestCase):
     async def connect(self):
         pass
@@ -76,6 +77,64 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["X-Instana-T"], traceId)
         assert("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_get_301(self):
+        response = None
+
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, 'http://127.0.0.1:5000/301')
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(4, len(spans))
+
+        wsgi_span1 = spans[0]
+        wsgi_span2 = spans[1]
+        aiohttp_span = spans[2]
+        test_span = spans[3]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aiohttp_span.t)
+        self.assertEqual(traceId, wsgi_span1.t)
+        self.assertEqual(traceId, wsgi_span2.t)
+
+        # Parent relationships
+        self.assertEqual(aiohttp_span.p, test_span.s)
+        self.assertEqual(wsgi_span1.p, aiohttp_span.s)
+        self.assertEqual(wsgi_span2.p, aiohttp_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(aiohttp_span.error)
+        self.assertIsNone(aiohttp_span.ec)
+        self.assertFalse(wsgi_span1.error)
+        self.assertIsNone(wsgi_span1.ec)
+        self.assertFalse(wsgi_span2.error)
+        self.assertIsNone(wsgi_span2.ec)
+
+        self.assertEqual("aiohttp", aiohttp_span.n)
+        self.assertEqual(200, aiohttp_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5000/301", aiohttp_span.data.http.url)
+        self.assertEqual("GET", aiohttp_span.data.http.method)
+        self.assertIsNotNone(aiohttp_span.stack)
+        self.assertTrue(type(aiohttp_span.stack) is list)
+        self.assertTrue(len(aiohttp_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], wsgi_span2.s)
         assert("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
         assert("Server-Timing" in response.headers)
@@ -189,13 +248,13 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-    def test_get_with_params(self):
+    def test_get_with_params_to_scrub(self):
         response = None
 
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://127.0.0.1:5000/?ok=yeah')
+                    return await self.fetch(session, 'http://127.0.0.1:5000/?secret=yeah')
 
         response = self.loop.run_until_complete(test())
 
@@ -229,7 +288,7 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(200, aiohttp_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
-        self.assertEqual("ok=yeah", aiohttp_span.data.http.params)
+        self.assertEqual("secret=<redacted>", aiohttp_span.data.http.params)
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
@@ -243,4 +302,48 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
+    def test_client_error(self):
+        response = None
+
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, 'http://doesnotexist:10/')
+
+        try:
+            response = self.loop.run_until_complete(test())
+        except:
+            pass
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        aiohttp_span = spans[0]
+        test_span = spans[1]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aiohttp_span.t)
+
+        # Parent relationships
+        self.assertEqual(aiohttp_span.p, test_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(aiohttp_span.error)
+        self.assertEqual(aiohttp_span.ec, 1)
+
+        self.assertEqual("aiohttp", aiohttp_span.n)
+        self.assertIsNone(aiohttp_span.data.http.status)
+        self.assertEqual("http://doesnotexist:10/", aiohttp_span.data.http.url)
+        self.assertEqual("GET", aiohttp_span.data.http.method)
+        self.assertEqual('Cannot connect to host doesnotexist:10 ssl:None [nodename nor servname provided, or not known]', aiohttp_span.data.http.error)
+        self.assertIsNotNone(aiohttp_span.stack)
+        self.assertTrue(type(aiohttp_span.stack) is list)
+        self.assertTrue(len(aiohttp_span.stack) > 1)
+
+        self.assertIsNone(response)
 

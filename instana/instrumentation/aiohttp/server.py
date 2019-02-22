@@ -35,7 +35,7 @@ try:
             if agent.extra_headers is not None:
                 for custom_header in agent.extra_headers:
                     if custom_header in request.headers:
-                        scope.span.set_tag("http.%s" % custom_header, request.header[custom_header])
+                        scope.span.set_tag("http.%s" % custom_header, request.headers[custom_header])
 
             response = await handler(request)
 

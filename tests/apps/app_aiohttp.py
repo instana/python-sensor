@@ -14,7 +14,7 @@ def run_server():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    app = web.Application(debug=True)
+    app = web.Application(debug=False)
     app.add_routes([web.get('/', say_hello)])
 
     runner = web.AppRunner(app)

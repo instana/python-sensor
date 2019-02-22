@@ -13,8 +13,6 @@ try:
     import asyncio
 
     async def stan_request_start(session, trace_config_ctx, params):
-        logger.debug("Starting request")
-
         parent_span = async_tracer.active_span
 
         # If we're not tracing, just return
@@ -35,7 +33,6 @@ try:
         scope.span.set_tag('http.method', params.method)
 
     async def stan_request_end(session, trace_config_ctx, params):
-        logger.debug("Ending request")
         scope = trace_config_ctx.scope
         scope.span.set_tag('http.status_code', params.response.status)
 
@@ -48,7 +45,6 @@ try:
         scope.close()
 
     async def stan_request_exception(session, trace_config_ctx, params):
-        logger.debug("Request exception")
         scope = trace_config_ctx.scope
         scope.span.log_exception(params.exception)
         scope.span.set_tag("http.error", str(params.exception))

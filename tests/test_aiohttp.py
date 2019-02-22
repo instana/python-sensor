@@ -4,13 +4,14 @@ import aiohttp
 import asyncio
 import unittest
 
-from instana.singletons import async_tracer
+from instana.singletons import async_tracer, agent
 
 from .helpers import testenv
 
+
 class TestAiohttp(unittest.TestCase):
-    async def fetch(self, session, url):
-        async with session.get(url) as response:
+    async def fetch(self, session, url, headers=None):
+        async with session.get(url, headers=headers) as response:
             return response
 
     def setUp(self):
@@ -395,4 +396,127 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["X-Instana-L"], '1')
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_server_get_with_params_to_scrub(self):
+        response = None
+
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/?secret=iloveyou")
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aioclient_span.t)
+        self.assertEqual(traceId, aioserver_span.t)
+
+        # Parent relationships
+        self.assertEqual(aioclient_span.p, test_span.s)
+        self.assertEqual(aioserver_span.p, aioclient_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(aioclient_span.error)
+        self.assertIsNone(aioclient_span.ec)
+        self.assertFalse(aioserver_span.error)
+        self.assertIsNone(aioserver_span.ec)
+
+        self.assertEqual("aiohttp", aioclient_span.n)
+        self.assertEqual(200, aioclient_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5002/", aioclient_span.data.http.url)
+        self.assertEqual("GET", aioclient_span.data.http.method)
+        self.assertEqual("secret=<redacted>", aioclient_span.data.http.params)
+        self.assertIsNotNone(aioclient_span.stack)
+        self.assertTrue(type(aioclient_span.stack) is list)
+        self.assertTrue(len(aioclient_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], aioserver_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+
+    def test_server_custom_header_capture(self):
+        response = None
+
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    # Hack together a manual custom headers list
+                    agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
+
+                    headers = dict()
+                    headers['X-Capture-This'] = 'this'
+                    headers['X-Capture-That'] = 'that'
+
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/?secret=iloveyou", headers=headers)
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aioclient_span.t)
+        self.assertEqual(traceId, aioserver_span.t)
+
+        # Parent relationships
+        self.assertEqual(aioclient_span.p, test_span.s)
+        self.assertEqual(aioserver_span.p, aioclient_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(aioclient_span.error)
+        self.assertIsNone(aioclient_span.ec)
+        self.assertFalse(aioserver_span.error)
+        self.assertIsNone(aioserver_span.ec)
+
+        self.assertEqual("aiohttp", aioclient_span.n)
+        self.assertEqual(200, aioclient_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5002/", aioclient_span.data.http.url)
+        self.assertEqual("GET", aioclient_span.data.http.method)
+        self.assertEqual("secret=<redacted>", aioclient_span.data.http.params)
+        self.assertIsNotNone(aioclient_span.stack)
+        self.assertTrue(type(aioclient_span.stack) is list)
+        self.assertTrue(len(aioclient_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], aioserver_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+        assert("http.X-Capture-This" in aioserver_span.data.custom.tags)
+        self.assertEqual('this', aioserver_span.data.custom.tags['http.X-Capture-This'])
+        assert("http.X-Capture-That" in aioserver_span.data.custom.tags)
+        self.assertEqual('that', aioserver_span.data.custom.tags['http.X-Capture-That'])
+
+
 

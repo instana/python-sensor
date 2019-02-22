@@ -6,11 +6,9 @@ import unittest
 
 from instana.singletons import async_tracer
 
+from .helpers import testenv
 
 class TestAiohttp(unittest.TestCase):
-    async def connect(self):
-        pass
-
     async def fetch(self, session, url):
         async with session.get(url) as response:
             return response
@@ -23,19 +21,17 @@ class TestAiohttp(unittest.TestCase):
         # New event loop for every test
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(None)
-        self.loop.run_until_complete(self.connect())
 
     def tearDown(self):
-        """ Purge the queue """
         pass
 
-    def test_get(self):
+    def test_client_get(self):
         response = None
 
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://127.0.0.1:5000/')
+                    return await self.fetch(session, testenv["wsgi_server"] + "/")
 
         response = self.loop.run_until_complete(test())
 
@@ -82,13 +78,13 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-    def test_get_301(self):
+    def test_client_get_301(self):
         response = None
 
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://127.0.0.1:5000/301')
+                    return await self.fetch(session, testenv["wsgi_server"] + "/301")
 
         response = self.loop.run_until_complete(test())
 
@@ -140,13 +136,13 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-    def test_get_500(self):
+    def test_client_get_500(self):
         response = None
 
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://127.0.0.1:5000/500')
+                    return await self.fetch(session, testenv["wsgi_server"] + "/500")
 
         response = self.loop.run_until_complete(test())
 
@@ -194,13 +190,13 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-    def test_get_504(self):
+    def test_client_get_504(self):
         response = None
 
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://127.0.0.1:5000/504')
+                    return await self.fetch(session, testenv["wsgi_server"] + "/504")
 
         response = self.loop.run_until_complete(test())
 
@@ -248,13 +244,13 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-    def test_get_with_params_to_scrub(self):
+    def test_client_get_with_params_to_scrub(self):
         response = None
 
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://127.0.0.1:5000/?secret=yeah')
+                    return await self.fetch(session, testenv["wsgi_server"] + "/?secret=yeah")
 
         response = self.loop.run_until_complete(test())
 
@@ -346,4 +342,57 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
         self.assertIsNone(response)
+
+    def test_server_get(self):
+        response = None
+
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/")
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aioclient_span.t)
+        self.assertEqual(traceId, aioserver_span.t)
+
+        # Parent relationships
+        self.assertEqual(aioclient_span.p, test_span.s)
+        self.assertEqual(aioserver_span.p, aioclient_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(aioclient_span.error)
+        self.assertIsNone(aioclient_span.ec)
+        self.assertFalse(aioserver_span.error)
+        self.assertIsNone(aioserver_span.ec)
+
+        self.assertEqual("aiohttp", aioclient_span.n)
+        self.assertEqual(200, aioclient_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5002/", aioclient_span.data.http.url)
+        self.assertEqual("GET", aioclient_span.data.http.method)
+        self.assertIsNotNone(aioclient_span.stack)
+        self.assertTrue(type(aioclient_span.stack) is list)
+        self.assertTrue(len(aioclient_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], aioserver_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 

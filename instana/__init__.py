@@ -63,6 +63,7 @@ def boot_agent():
         # Import & initialize instrumentation
         if (sys.version_info >= (3, 4)) and (sys.version_info < (3, 7)):
             from .instrumentation.aiohttp import client  # noqa
+            from .instrumentation.aiohttp import server  # noqa
         if sys.version_info >= (3, 5, 3):
             from .instrumentation import asynqp  # noqa
         from .instrumentation import logging  # noqa

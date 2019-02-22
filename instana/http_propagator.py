@@ -71,8 +71,10 @@ class HTTPPropagator():
         span_id = None
 
         try:
-            if type(carrier) is dict or hasattr(carrier, "__dict__"):
+            if type(carrier) is dict or hasattr(carrier, "__getitem__"):
                 dc = carrier
+            elif hasattr(carrier, "__dict__"):
+                dc = carrier.__dict__
             elif type(carrier) is list:
                 dc = dict(carrier)
             else:

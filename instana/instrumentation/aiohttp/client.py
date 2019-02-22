@@ -67,7 +67,7 @@ try:
 
         return wrapped(*argv, **kwargs)
 
-    logger.debug("Instrumenting aiohttp")
+    logger.debug("Instrumenting aiohttp client")
 except ImportError:
     pass
 

@@ -40,7 +40,7 @@ try:
             if scope is not None:
                 scope.span.set_tag('http.status_code', params.response.status)
 
-                if 500 <= params.response.status <= 599:
+                if 400 <= params.response.status <= 599:
                     scope.span.set_tag("http.error", params.response.reason)
                     scope.span.set_tag("error", True)
                     ec = scope.span.tags.get('ec', 0)

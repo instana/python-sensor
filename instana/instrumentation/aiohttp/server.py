@@ -49,12 +49,12 @@ try:
             scope.span.set_tag("http.status", response.status)
             async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
 
-        except Exception:
+            return response
+        except:
             logger.debug("aiohttp stan_middleware", exc_info=True)
         finally:
             if scope is not None:
                 scope.close()
-            return response
 
 
     @wrapt.patch_function_wrapper('aiohttp.web','Application.__init__')

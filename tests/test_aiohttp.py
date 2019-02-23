@@ -11,8 +11,11 @@ from .helpers import testenv
 
 class TestAiohttp(unittest.TestCase):
     async def fetch(self, session, url, headers=None):
-        async with session.get(url, headers=headers) as response:
-            return response
+        try:
+            async with session.get(url, headers=headers) as response:
+                return response
+        except aiohttp.web_exceptions.HTTPException:
+            pass
 
     def setUp(self):
         """ Clear all spans before a test run """
@@ -27,8 +30,6 @@ class TestAiohttp(unittest.TestCase):
         pass
 
     def test_client_get(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -80,8 +81,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_301(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -137,9 +136,60 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-    def test_client_get_500(self):
-        response = None
+    def test_client_get_405(self):
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["wsgi_server"] + "/405")
 
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        wsgi_span = spans[0]
+        aiohttp_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aiohttp_span.t)
+        self.assertEqual(traceId, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(aiohttp_span.p, test_span.s)
+        self.assertEqual(wsgi_span.p, aiohttp_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(aiohttp_span.error)
+        self.assertEqual(aiohttp_span.ec, 1)
+        self.assertIsNone(wsgi_span.error)
+        self.assertIsNone(wsgi_span.ec)
+
+        self.assertEqual("aiohttp", aiohttp_span.n)
+        self.assertEqual(405, aiohttp_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5000/405", aiohttp_span.data.http.url)
+        self.assertEqual("GET", aiohttp_span.data.http.method)
+        self.assertEqual('METHOD NOT ALLOWED', aiohttp_span.data.http.error)
+        self.assertIsNotNone(aiohttp_span.stack)
+        self.assertTrue(type(aiohttp_span.stack) is list)
+        self.assertTrue(len(aiohttp_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+
+    def test_client_get_500(self):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -192,8 +242,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_504(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -246,8 +294,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_with_params_to_scrub(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -300,13 +346,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_error(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, 'http://doesnotexist:10/')
 
+        response = None
         try:
             response = self.loop.run_until_complete(test())
         except:
@@ -345,8 +390,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertIsNone(response)
 
     def test_server_get(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -398,8 +441,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_server_get_with_params_to_scrub(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -453,8 +494,6 @@ class TestAiohttp(unittest.TestCase):
 
 
     def test_server_custom_header_capture(self):
-        response = None
-
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
@@ -518,5 +557,107 @@ class TestAiohttp(unittest.TestCase):
         assert("http.X-Capture-That" in aioserver_span.data.custom.tags)
         self.assertEqual('that', aioserver_span.data.custom.tags['http.X-Capture-That'])
 
+    def test_server_get_401(self):
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/401")
 
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aioclient_span.t)
+        self.assertEqual(traceId, aioserver_span.t)
+
+        # Parent relationships
+        self.assertEqual(aioclient_span.p, test_span.s)
+        self.assertEqual(aioserver_span.p, aioclient_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(aioclient_span.error)
+        self.assertEqual(aioclient_span.ec, 1)
+        self.assertFalse(aioserver_span.error)
+        self.assertIsNone(aioserver_span.ec)
+
+        self.assertEqual("aiohttp", aioclient_span.n)
+        self.assertEqual(401, aioclient_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5002/401", aioclient_span.data.http.url)
+        self.assertEqual("GET", aioclient_span.data.http.method)
+        self.assertEqual('I must simulate errors.', aioclient_span.data.http.error)
+        self.assertIsNotNone(aioclient_span.stack)
+        self.assertTrue(type(aioclient_span.stack) is list)
+        self.assertTrue(len(aioclient_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], aioserver_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_server_get_500(self):
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/500")
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aioclient_span.t)
+        self.assertEqual(traceId, aioserver_span.t)
+
+        # Parent relationships
+        self.assertEqual(aioclient_span.p, test_span.s)
+        self.assertEqual(aioserver_span.p, aioclient_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(aioclient_span.error)
+        self.assertEqual(aioclient_span.ec, 1)
+        self.assertTrue(aioserver_span.error)
+        self.assertEqual(aioserver_span.ec, 1)
+
+        self.assertEqual("aiohttp", aioclient_span.n)
+        self.assertEqual(500, aioclient_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:5002/500", aioclient_span.data.http.url)
+        self.assertEqual("GET", aioclient_span.data.http.method)
+        self.assertEqual('I must simulate errors.', aioclient_span.data.http.error)
+        self.assertIsNotNone(aioclient_span.stack)
+        self.assertTrue(type(aioclient_span.stack) is list)
+        self.assertTrue(len(aioclient_span.stack) > 1)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], aioserver_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 

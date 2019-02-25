@@ -5,7 +5,6 @@ import time
 import threading
 
 from .apps.flaskalino import flask_server
-from .apps.soapserver4132 import soapserver
 
 os.environ["INSTANA_TEST"] = "true"
 
@@ -21,15 +20,17 @@ print("Starting background Flask app...")
 flask.start()
 
 
-# Background Soap Server
-#
-# Spawn our background Soap server that the tests will throw
-# requests at.
-soap = threading.Thread(target=soapserver.serve_forever)
-soap.daemon = True
-soap.name = "Background Soap server"
-print("Starting background Soap server...")
-soap.start()
+if sys.version_info < (3, 7, 0):
+    # Background Soap Server
+    from .apps.soapserver4132 import soapserver
+
+    # Spawn our background Soap server that the tests will throw
+    # requests at.
+    soap = threading.Thread(target=soapserver.serve_forever)
+    soap.daemon = True
+    soap.name = "Background Soap server"
+    print("Starting background Soap server...")
+    soap.start()
 
 
 if sys.version_info >= (3, 5, 3):

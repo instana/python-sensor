@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 import os
+import sys
 import time
 import threading
 
 from .apps.flaskalino import flask_server
 from .apps.soapserver4132 import soapserver
-from .apps.app_aiohttp import run_server
 
 os.environ["INSTANA_TEST"] = "true"
 
@@ -32,14 +32,16 @@ print("Starting background Soap server...")
 soap.start()
 
 
-# Background aiohttp application
-#
-# Spawn our background aiohttp app that the tests will throw
-# requests at.
-aio_server = threading.Thread(target=run_server)
-aio_server.daemon = True
-aio_server.name = "Background aiohttp server"
-print("Starting background aiohttp server...")
-aio_server.start()
+if sys.version_info >= (3, 5, 3):
+    # Background aiohttp application
+    from .apps.app_aiohttp import run_server
+
+    # Spawn our background aiohttp app that the tests will throw
+    # requests at.
+    aio_server = threading.Thread(target=run_server)
+    aio_server.daemon = True
+    aio_server.name = "Background aiohttp server"
+    print("Starting background aiohttp server...")
+    aio_server.start()
 
 time.sleep(1)

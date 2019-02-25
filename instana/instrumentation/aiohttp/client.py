@@ -20,7 +20,7 @@ try:
             if parent_span is None:
                 return
 
-            scope = async_tracer.start_active_span("aiohttp", child_of=parent_span)
+            scope = async_tracer.start_active_span("aiohttp-client", child_of=parent_span)
             trace_config_ctx.scope = scope
 
             async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, params.headers)

@@ -18,7 +18,7 @@ try:
     async def stan_middleware(request, handler):
         try:
             ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, request.headers)
-            request['scope'] = async_tracer.start_active_span('aiohttp', child_of=ctx)
+            request['scope'] = async_tracer.start_active_span('aiohttp-server', child_of=ctx)
             scope = request['scope']
 
             # Query param scrubbing
@@ -46,7 +46,7 @@ try:
                 if ec is 0:
                     scope.span.set_tag("ec", ec + 1)
 
-            scope.span.set_tag("http.status", response.status)
+            scope.span.set_tag("http.status_code", response.status)
             async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
 
             return response

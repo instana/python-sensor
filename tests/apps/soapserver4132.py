@@ -9,6 +9,11 @@ from spyne.server.wsgi import WsgiApplication
 
 from instana.wsgi import iWSGIMiddleware
 
+from ..helpers import testenv
+
+testenv["soap_server"] = "http://127.0.0.1:4132"
+
+
 # Simple in test suite SOAP server to test suds client instrumentation against.
 # Configured to listen on localhost port 4132
 # WSDL: http://localhost:4232/?wsdl

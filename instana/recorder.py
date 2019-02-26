@@ -23,13 +23,14 @@ else:
 
 
 class InstanaRecorder(SpanRecorder):
-    registered_spans = ("django", "memcache", "mysql", "rabbitmq", "redis",
-                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "urllib3", "wsgi", "log")
-    http_spans = ("django", "wsgi", "urllib3", "soap")
+    registered_spans = ("aiohttp-client", "aiohttp-server", "django", "log", "memcache", "mysql",
+                        "rabbitmq", "redis", "rpc-client", "rpc-server", "sqlalchemy", "soap",
+                        "urllib3", "wsgi")
+    http_spans = ("aiohttp-client", "aiohttp-server", "django", "wsgi", "urllib3", "soap")
 
-    exit_spans = ("memcache", "mysql", "rabbitmq", "redis", "rpc-client",
-                  "sqlalchemy", "soap", "urllib3", "log")
-    entry_spans = ("django", "wsgi", "rabbitmq", "rpc-server")
+    exit_spans = ("aiohttp-client", "log", "memcache", "mysql", "rabbitmq", "redis", "rpc-client",
+                  "sqlalchemy", "soap", "urllib3")
+    entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]

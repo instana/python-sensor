@@ -6,6 +6,9 @@ from instana.wsgi import iWSGIMiddleware
 from wsgiref.simple_server import make_server
 from instana.singletons import tracer
 
+from ..helpers import testenv
+
+testenv["wsgi_server"] = "http://127.0.0.1:5000"
 
 app = Flask(__name__)
 app.debug = False

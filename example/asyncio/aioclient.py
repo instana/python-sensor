@@ -10,7 +10,7 @@ async def test():
         await asyncio.sleep(1)
         with async_tracer.start_active_span('JobRunner'):
             async with aiohttp.ClientSession() as session:
-                    async with session.get("http://localhost:5002/?secret=iloveyou") as response:
+                    async with session.get("http://localhost:5102/?secret=iloveyou") as response:
                         print(response.status)
 
 

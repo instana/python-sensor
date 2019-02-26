@@ -15,7 +15,7 @@ This directory includes an example asyncio application and client with aiohttp a
 
 * Set the environment variable `AUTOWRAPT_BOOTSTRAP=instana` for immediate instrumentation.
 
-* Boot the aiohttpserver.py file as follows.  It will launch an aiohttp server that listens on port localhost:5002.  See the source code for published endpoints.
+* Boot the aiohttpserver.py file as follows.  It will launch an aiohttp server that listens on port localhost:5102.  See the source code for published endpoints.
 
 ```bash
 python aiohttpserver.py

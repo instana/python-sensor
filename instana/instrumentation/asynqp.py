@@ -8,6 +8,7 @@ from ..singletons import async_tracer
 
 try:
     import asynqp
+    import asyncio
 
     @wrapt.patch_function_wrapper('asynqp.exchange','Exchange.publish')
     def publish_with_instana(wrapped, instance, argv, kwargs):
@@ -41,6 +42,7 @@ try:
             else:
                 return rv
 
+    @asyncio.coroutine
     @wrapt.patch_function_wrapper('asynqp.queue','Queue.get')
     def get_with_instana(wrapped, instance, argv, kwargs):
         parent_span = async_tracer.active_span
@@ -63,6 +65,7 @@ try:
 
             return msg
 
+    @asyncio.coroutine
     @wrapt.patch_function_wrapper('asynqp.queue','Queue.consume')
     def consume_with_instana(wrapped, instance, argv, kwargs):
         def callback_generator(original_callback):

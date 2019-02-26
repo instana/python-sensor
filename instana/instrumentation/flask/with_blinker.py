@@ -6,7 +6,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, tracer
-from ...util import id_to_header, strip_secrets
+from ...util import strip_secrets
 
 import flask
 from flask import request_started, request_finished, got_request_exception
@@ -61,8 +61,8 @@ def request_finished_with_instana(sender, response, **extra):
                 span.set_tag("ec", ec+1)
 
         span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
-        response.headers.add('HTTP_X_INSTANA_T', id_to_header(span.context.trace_id))
-        response.headers.add('HTTP_X_INSTANA_S', id_to_header(span.context.span_id))
+        response.headers.add('HTTP_X_INSTANA_T', span.context.trace_id)
+        response.headers.add('HTTP_X_INSTANA_S', span.context.span_id)
         response.headers.add('HTTP_X_INSTANA_L', 1)
     except:
         logger.debug("Flask after_request", exc_info=True)

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package stan;
+
+service Stan{
+ rpc SayHello(IncomingMessage) returns (OutgoingMessage) {}
+}
+
+message IncomingMessage{
+ string ToDigest = 1;
+}
+
+message OutgoingMessage{
+ string Response = 1;
+ bool WasHandled = 2;
+}

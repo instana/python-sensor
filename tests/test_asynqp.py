@@ -87,13 +87,39 @@ class TestAsynqp(unittest.TestCase):
         self.assertTrue(type(rabbitmq_span.stack) is list)
         self.assertGreater(len(rabbitmq_span.stack), 0)
 
+    def test_many_publishes(self):
+        @asyncio.coroutine
+        def test():
+            @asyncio.coroutine
+            def publish_a_bunch(msg):
+                for _ in range(20):
+                    self.exchange.publish(msg, 'routing.key')
+
+            with async_tracer.start_active_span('test'):
+                msg = asynqp.Message({'hello': 'world'})
+                yield from publish_a_bunch(msg)
+
+                for _ in range(10):
+                    msg = yield from self.queue.get()
+                    self.assertIsNotNone(msg)
+
+        self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(31, len(spans))
+
+        trace_id = spans[0].t
+        for span in spans:
+            self.assertEqual(span.t, trace_id)
+
+        self.assertIsNone(async_tracer.active_span)
+
     def test_get(self):
         @asyncio.coroutine
         def publish():
             with async_tracer.start_active_span('test'):
                 msg1 = asynqp.Message({'consume': 'this'})
                 self.exchange.publish(msg1, 'routing.key')
-                asyncio.sleep(0.5)
                 msg = yield from self.queue.get()
                 self.assertIsNotNone(msg)
 

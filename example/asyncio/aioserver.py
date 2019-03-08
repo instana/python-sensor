@@ -9,8 +9,8 @@ if "RABBITMQ_HOST" in os.environ:
 else:
     RABBITMQ_HOST = "localhost"
 
-class RabbitUtil():
 
+class RabbitUtil():
     def __init__(self, loop):
         self.loop = loop
         self.loop.run_until_complete(self.connect())

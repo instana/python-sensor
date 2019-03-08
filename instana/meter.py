@@ -269,47 +269,51 @@ class Meter(object):
 
     def collect_metrics(self):
         """ Collect up and return various metrics """
-        u = resource.getrusage(resource.RUSAGE_SELF)
-        if gc_.isenabled():
-            c = list(gc_.get_count())
-            th = list(gc_.get_threshold())
-            g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
-                   collect1=c[1] if not self.last_collect else c[
-                       1] - self.last_collect[1],
-                   collect2=c[2] if not self.last_collect else c[
-                       2] - self.last_collect[2],
-                   threshold0=th[0],
-                   threshold1=th[1],
-                   threshold2=th[2])
+        try:
+            g = None
+            u = resource.getrusage(resource.RUSAGE_SELF)
+            if gc_.isenabled():
+                c = list(gc_.get_count())
+                th = list(gc_.get_threshold())
+                g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
+                       collect1=c[1] if not self.last_collect else c[
+                           1] - self.last_collect[1],
+                       collect2=c[2] if not self.last_collect else c[
+                           2] - self.last_collect[2],
+                       threshold0=th[0],
+                       threshold1=th[1],
+                       threshold2=th[2])
 
-        thr = threading.enumerate()
-        daemon_threads = [tr.daemon is True for tr in thr].count(True)
-        alive_threads = [tr.daemon is False for tr in thr].count(True)
-        dummy_threads = [type(tr) is threading._DummyThread for tr in thr].count(True)
+            thr = threading.enumerate()
+            daemon_threads = [tr.daemon is True for tr in thr].count(True)
+            alive_threads = [tr.daemon is False for tr in thr].count(True)
+            dummy_threads = [type(tr) is threading._DummyThread for tr in thr].count(True)
 
-        m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
-                    ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
-                    ru_maxrss=u[2],
-                    ru_ixrss=u[3],
-                    ru_idrss=u[4],
-                    ru_isrss=u[5],
-                    ru_minflt=u[6] if not self.last_usage else u[6] - self.last_usage[6],
-                    ru_majflt=u[7] if not self.last_usage else u[7] - self.last_usage[7],
-                    ru_nswap=u[8] if not self.last_usage else u[8] - self.last_usage[8],
-                    ru_inblock=u[9] if not self.last_usage else u[9] - self.last_usage[9],
-                    ru_oublock=u[10] if not self.last_usage else u[10] - self.last_usage[10],
-                    ru_msgsnd=u[11] if not self.last_usage else u[11] - self.last_usage[11],
-                    ru_msgrcv=u[12] if not self.last_usage else u[12] - self.last_usage[12],
-                    ru_nsignals=u[13] if not self.last_usage else u[13] - self.last_usage[13],
-                    ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
-                    ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
-                    alive_threads=alive_threads,
-                    dummy_threads=dummy_threads,
-                    daemon_threads=daemon_threads,
-                    gc=g)
+            m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
+                        ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
+                        ru_maxrss=u[2],
+                        ru_ixrss=u[3],
+                        ru_idrss=u[4],
+                        ru_isrss=u[5],
+                        ru_minflt=u[6] if not self.last_usage else u[6] - self.last_usage[6],
+                        ru_majflt=u[7] if not self.last_usage else u[7] - self.last_usage[7],
+                        ru_nswap=u[8] if not self.last_usage else u[8] - self.last_usage[8],
+                        ru_inblock=u[9] if not self.last_usage else u[9] - self.last_usage[9],
+                        ru_oublock=u[10] if not self.last_usage else u[10] - self.last_usage[10],
+                        ru_msgsnd=u[11] if not self.last_usage else u[11] - self.last_usage[11],
+                        ru_msgrcv=u[12] if not self.last_usage else u[12] - self.last_usage[12],
+                        ru_nsignals=u[13] if not self.last_usage else u[13] - self.last_usage[13],
+                        ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
+                        ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
+                        alive_threads=alive_threads,
+                        dummy_threads=dummy_threads,
+                        daemon_threads=daemon_threads,
+                        gc=g)
 
-        self.last_usage = u
-        if gc_.isenabled():
-            self.last_collect = c
+            self.last_usage = u
+            if gc_.isenabled():
+                self.last_collect = c
 
-        return m
+            return m
+        except:
+            logger.debug("collect_metrics", exc_info=True)

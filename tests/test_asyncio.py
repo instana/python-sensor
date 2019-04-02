@@ -33,14 +33,14 @@ class TestAsyncio(unittest.TestCase):
 
     def test_ensure_future(self):
         async def run_later(msg="Hello"):
-            print("run_later: %s" % async_tracer.active_span.operation_name)
+            # print("run_later: %s" % async_tracer.active_span.operation_name)
             async with aiohttp.ClientSession() as session:
                 return await self.fetch(session, testenv["wsgi_server"] + "/")
 
         async def test():
             with async_tracer.start_active_span('test'):
                 asyncio.ensure_future(run_later("Hello"))
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
 
         self.loop.run_until_complete(test())
 
@@ -57,3 +57,21 @@ class TestAsyncio(unittest.TestCase):
         self.assertEqual(test_span.p, None)
         self.assertEqual(wsgi_span.p, aioclient_span.s)
         self.assertEqual(aioclient_span.p, test_span.s)
+
+    def test_ensure_future_without_context(self):
+        async def run_later(msg="Hello"):
+            # print("run_later: %s" % async_tracer.active_span.operation_name)
+            async with aiohttp.ClientSession() as session:
+                return await self.fetch(session, testenv["wsgi_server"] + "/")
+
+        async def test():
+            asyncio.ensure_future(run_later("Hello"))
+            await asyncio.sleep(0.5)
+
+        self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+
+        # Only the WSGI webserver generated a span (entry span)
+        self.assertEqual(1, len(spans))
+        self.assertEqual("wsgi", spans[0].n)

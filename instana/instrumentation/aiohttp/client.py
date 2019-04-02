@@ -18,6 +18,7 @@ try:
 
             # If we're not tracing, just return
             if parent_span is None:
+                trace_config_ctx.scope = None
                 return
 
             scope = async_tracer.start_active_span("aiohttp-client", child_of=parent_span)

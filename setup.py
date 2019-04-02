@@ -55,7 +55,7 @@ traces to your Instana dashboard.",
         'test': [
             'aiohttp>=3.5.4;python_version>="3.5"',
             'asynqp>=0.4;python_version>="3.5"',
-            'django>=1.11',
+            'django>=1.11,<2.2',
             'nose>=1.0',
             'flask>=0.12.2',
             'lxml>=3.4',

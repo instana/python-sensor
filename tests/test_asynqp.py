@@ -5,8 +5,13 @@ import os
 import unittest
 
 import asynqp
+import aiohttp
+import opentracing
 
 from instana.singletons import async_tracer
+
+from .helpers import testenv
+
 
 rabbitmq_host = ""
 if "RABBITMQ_HOST" in os.environ:
@@ -48,6 +53,14 @@ class TestAsynqp(unittest.TestCase):
     def tearDown(self):
         """ Purge the queue """
         self.loop.run_until_complete(self.reset())
+
+    async def fetch(self, session, url, headers=None):
+        try:
+            async with session.get(url, headers=headers) as response:
+                return response
+        except aiohttp.web_exceptions.HTTPException:
+            pass
+
 
     def test_publish(self):
         @asyncio.coroutine
@@ -298,3 +311,88 @@ class TestAsynqp(unittest.TestCase):
         self.assertIsNone(publish1_span.ec)
         self.assertFalse(publish2_span.error)
         self.assertIsNone(publish2_span.ec)
+
+    def test_consume_with_ensure_future(self):
+        async def run_later(msg):
+            # Extract the context from the message (if there is any)
+            ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers))
+
+            # Start a new span to track work that is done processing this message
+            with async_tracer.start_active_span("run_later", child_of=ctx) as scope:
+                scope.span.set_tag("exchange", msg.exchange_name)
+                # print("")
+                # print("run_later active scope: %s" % async_tracer.scope_manager.active)
+                # print("")
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["wsgi_server"] + "/")
+
+        def handle_message(msg):
+            # print("")
+            # print("handle_message active scope: %s" % async_tracer.scope_manager.active)
+            # print("")
+            async_tracer.inject(async_tracer.active_span.context, opentracing.Format.HTTP_HEADERS, msg.headers)
+            asyncio.ensure_future(run_later(msg))
+            msg.ack()
+
+        @asyncio.coroutine
+        def test():
+            with async_tracer.start_active_span('test'):
+                msg1 = asynqp.Message({'consume': 'this'})
+                self.exchange.publish(msg1, 'routing.key')
+
+            self.consumer = yield from self.queue.consume(handle_message)
+            yield from asyncio.sleep(0.5)
+            self.consumer.cancel()
+
+        self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(6, len(spans))
+
+        publish_span = spans[0]
+        test_span = spans[1]
+        consume_span = spans[2]
+        wsgi_span = spans[3]
+        aioclient_span = spans[4]
+        run_later_span = spans[5]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, publish_span.t)
+        self.assertEqual(test_span.t, consume_span.t)
+        self.assertEqual(test_span.t, aioclient_span.t)
+        self.assertEqual(test_span.t, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(publish_span.p, test_span.s)
+        self.assertEqual(consume_span.p, publish_span.s)
+        self.assertEqual(aioclient_span.p, run_later_span.s)
+        self.assertEqual(run_later_span.p, consume_span.s)
+        self.assertEqual(wsgi_span.p, aioclient_span.s)
+
+        # publish
+        self.assertEqual('test.exchange', publish_span.data.rabbitmq.exchange)
+        self.assertEqual('publish', publish_span.data.rabbitmq.sort)
+        self.assertIsNotNone(publish_span.data.rabbitmq.address)
+        self.assertEqual('routing.key', publish_span.data.rabbitmq.key)
+        self.assertIsNotNone(publish_span.stack)
+        self.assertTrue(type(publish_span.stack) is list)
+        self.assertGreater(len(publish_span.stack), 0)
+
+        # consume
+        self.assertEqual('test.exchange', consume_span.data.rabbitmq.exchange)
+        self.assertEqual('consume', consume_span.data.rabbitmq.sort)
+        self.assertIsNotNone(consume_span.data.rabbitmq.address)
+        self.assertEqual('routing.key', consume_span.data.rabbitmq.key)
+        self.assertIsNotNone(consume_span.stack)
+        self.assertTrue(type(consume_span.stack) is list)
+        self.assertGreater(len(consume_span.stack), 0)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(consume_span.error)
+        self.assertIsNone(consume_span.ec)
+        self.assertFalse(publish_span.error)
+        self.assertIsNone(publish_span.ec)

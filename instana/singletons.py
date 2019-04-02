@@ -20,7 +20,7 @@ tracer = InstanaTracer()
 
 if sys.version_info >= (3,4):
     from opentracing.scope_managers.asyncio import AsyncioScopeManager
-    async_tracer = InstanaTracer(AsyncioScopeManager())
+    async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager())
 
 # Set ourselves as the tracer.
 opentracing.tracer = tracer

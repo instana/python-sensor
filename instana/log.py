@@ -3,6 +3,7 @@ import os
 
 logger = log.getLogger('instana')
 
+
 def init(level):
     ch = log.StreamHandler()
     f = log.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')

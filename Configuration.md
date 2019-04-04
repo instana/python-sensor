@@ -25,6 +25,22 @@ or
 instana.service_name = "myservice"
 ```
 
+## Package Configuration
+
+The Instana package includes a runtime configuration module that manages the configuration of various components.
+
+_Note: as the package evolves, more options will be added here_
+
+```python
+from instana.configurator import config
+
+# To enable tracing context propagation across Asyncio ensure_future and create_task calls
+# Default is false
+config['asyncio_task_context_propagation']['enabled'] = True
+
+```
+
+
 ## Debugging & More Verbosity
 
 Setting `INSTANA_DEV` to a non nil value will enable extra logging output generally useful

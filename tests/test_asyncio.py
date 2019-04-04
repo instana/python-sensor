@@ -6,6 +6,7 @@ import unittest
 import aiohttp
 
 from instana.singletons import async_tracer
+from instana.configurator import config
 
 from .helpers import testenv
 
@@ -20,6 +21,9 @@ class TestAsyncio(unittest.TestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(None)
 
+        # Restore default
+        config['asyncio_task_context_propagation']['enabled'] = False
+
     def tearDown(self):
         """ Purge the queue """
         pass
@@ -31,7 +35,7 @@ class TestAsyncio(unittest.TestCase):
         except aiohttp.web_exceptions.HTTPException:
             pass
 
-    def test_ensure_future(self):
+    def test_ensure_future_with_context(self):
         async def run_later(msg="Hello"):
             # print("run_later: %s" % async_tracer.active_span.operation_name)
             async with aiohttp.ClientSession() as session:
@@ -41,6 +45,9 @@ class TestAsyncio(unittest.TestCase):
             with async_tracer.start_active_span('test'):
                 asyncio.ensure_future(run_later("Hello"))
             await asyncio.sleep(0.5)
+
+        # Override default task context propagation
+        config['asyncio_task_context_propagation']['enabled'] = True
 
         self.loop.run_until_complete(test())
 
@@ -65,19 +72,23 @@ class TestAsyncio(unittest.TestCase):
                 return await self.fetch(session, testenv["wsgi_server"] + "/")
 
         async def test():
-            asyncio.ensure_future(run_later("Hello"))
+            with async_tracer.start_active_span('test'):
+                asyncio.ensure_future(run_later("Hello"))
             await asyncio.sleep(0.5)
 
         self.loop.run_until_complete(test())
 
         spans = self.recorder.queued_spans()
 
-        # Only the WSGI webserver generated a span (entry span)
-        self.assertEqual(1, len(spans))
-        self.assertEqual("wsgi", spans[0].n)
+        self.assertEqual(2, len(spans))
+        self.assertEqual("sdk", spans[0].n)
+        self.assertEqual("wsgi", spans[1].n)
+
+        # Without the context propagated, we should get two separate traces
+        self.assertNotEqual(spans[0].t, spans[1].t)
 
     if hasattr(asyncio, "create_task"):
-        def test_create_task(self):
+        def test_create_task_with_context(self):
             async def run_later(msg="Hello"):
                 # print("run_later: %s" % async_tracer.active_span.operation_name)
                 async with aiohttp.ClientSession() as session:
@@ -87,6 +98,9 @@ class TestAsyncio(unittest.TestCase):
                 with async_tracer.start_active_span('test'):
                     asyncio.create_task(run_later("Hello"))
                 await asyncio.sleep(0.5)
+
+            # Override default task context propagation
+            config['asyncio_task_context_propagation']['enabled'] = True
 
             self.loop.run_until_complete(test())
 
@@ -111,13 +125,17 @@ class TestAsyncio(unittest.TestCase):
                     return await self.fetch(session, testenv["wsgi_server"] + "/")
 
             async def test():
-                asyncio.create_task(run_later("Hello"))
+                with async_tracer.start_active_span('test'):
+                    asyncio.create_task(run_later("Hello"))
                 await asyncio.sleep(0.5)
 
             self.loop.run_until_complete(test())
 
             spans = self.recorder.queued_spans()
 
-            # Only the WSGI webserver generated a span (entry span)
-            self.assertEqual(1, len(spans))
-            self.assertEqual("wsgi", spans[0].n)
+            self.assertEqual(2, len(spans))
+            self.assertEqual("sdk", spans[0].n)
+            self.assertEqual("wsgi", spans[1].n)
+
+            # Without the context propagated, we should get two separate traces
+            self.assertNotEqual(spans[0].t, spans[1].t)

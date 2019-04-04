@@ -151,6 +151,22 @@ class Agent(object):
         finally:
             return response
 
+    def is_agent_ready(self):
+        """
+        Used after making a successful announce to test when the agent is ready to accept data.
+        """
+        try:
+            response = None
+            response = self.client.head(self.__data_url(), timeout=0.8)
+
+            if response.status_code is 200:
+                return True
+            return False
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("is_agent_ready: host agent connection error")
+        finally:
+            return response
+
     def report_data(self, entity_data):
         """
         Used to report entity data (metrics & snapshot) to the host agent.
@@ -161,6 +177,8 @@ class Agent(object):
                                         data=self.to_json(entity_data),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
+
+            # logger.warn("report_data: response.status_code is %s" % response.status_code)
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
@@ -179,6 +197,9 @@ class Agent(object):
                                         data=self.to_json(spans),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
+
+            # logger.warn("report_traces: response.status_code is %s" % response.status_code)
+
             if response.status_code is 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):

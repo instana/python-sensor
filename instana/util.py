@@ -231,5 +231,26 @@ def get_py_source(file):
         return response
 
 
+def every(delay, task, name):
+    """
+    Executes a task every `delay` seconds
+    
+    :param delay: the delay in seconds
+    :param task: the method to run.  The method should return False if you want the loop to stop.
+    :return: None
+    """
+    next_time = time.time() + delay
+
+    while True:
+        time.sleep(max(0, next_time - time.time()))
+        try:
+            if task() is False:
+                break
+        except Exception:
+            logger.debug("Problem while executing repetitive task: %s" % name, exc_info=True)
+
+        # skip tasks if we are behind schedule:
+        next_time += (time.time() - next_time) // delay * delay + delay
+
 # Used by get_py_source
 regexp_py = re.compile('\.py$')

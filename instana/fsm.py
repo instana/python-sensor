@@ -81,7 +81,7 @@ class Fsm(object):
         self.fsm.lookup()
 
     def lookup_agent_host(self, e):
-        logger.warn("lookup_agent_host")
+        logger.debug("lookup_agent_host")
         host, port = self.__get_agent_host_port()
 
         if self.agent.is_agent_listening(host, port):

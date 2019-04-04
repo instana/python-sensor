@@ -156,7 +156,6 @@ class Agent(object):
         Used after making a successful announce to test when the agent is ready to accept data.
         """
         try:
-            response = None
             response = self.client.head(self.__data_url(), timeout=0.8)
 
             if response.status_code is 200:
@@ -164,8 +163,6 @@ class Agent(object):
             return False
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("is_agent_ready: host agent connection error")
-        finally:
-            return response
 
     def report_data(self, entity_data):
         """

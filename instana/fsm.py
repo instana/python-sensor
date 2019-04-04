@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading as t
 
-import fysom as f
+from fysom import Fysom
 import pkg_resources
 
 from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
@@ -35,7 +35,7 @@ class Discovery(object):
         return kvs
 
 
-class Fsm(object):
+class TheMachine(object):
     RETRY_PERIOD = 30
 
     agent = None
@@ -55,7 +55,7 @@ class Fsm(object):
         logger.debug("initializing fsm")
 
         self.agent = agent
-        self.fsm = f.Fysom({
+        self.fsm = Fysom({
             "events": [
                 ("lookup",   "*",            "found"),
                 ("announce", "found",        "announced"),

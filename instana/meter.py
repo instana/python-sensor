@@ -6,8 +6,6 @@ import platform
 import resource
 import sys
 import threading
-import sched
-import time
 from types import ModuleType
 
 from pkg_resources import DistributionNotFound, get_distribution
@@ -159,10 +157,10 @@ class Meter(object):
 
     def process(self):
         """ Collects, processes & reports metrics """
-        if self.agent.fsm.fsm.current is "wait4init":
+        if self.agent.machine.fsm.current is "wait4init":
             # Test the host agent if we're ready to send data
             if self.agent.is_agent_ready():
-                self.agent.fsm.fsm.ready()
+                self.agent.machine.fsm.ready()
             else:
                 return
 

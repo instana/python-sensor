@@ -11,7 +11,7 @@ import instana.singletons
 from .agent_const import (AGENT_DATA_PATH, AGENT_DEFAULT_HOST,
                           AGENT_DEFAULT_PORT, AGENT_DISCOVERY_PATH,
                           AGENT_HEADER, AGENT_RESPONSE_PATH, AGENT_TRACES_PATH)
-from .fsm import Fsm
+from .fsm import TheMachine
 from .log import logger
 from .sensor import Sensor
 
@@ -28,7 +28,7 @@ class Agent(object):
     sensor = None
     host = AGENT_DEFAULT_HOST
     port = AGENT_DEFAULT_PORT
-    fsm = None
+    machine = None
     from_ = From()
     last_seen = None
     last_fork_check = None
@@ -41,7 +41,7 @@ class Agent(object):
     def __init__(self):
         logger.debug("initializing agent")
         self.sensor = Sensor(self)
-        self.fsm = Fsm(self)
+        self.machine = TheMachine(self)
 
     def start(self, e):
         """ Starts the agent and required threads """
@@ -73,7 +73,7 @@ class Agent(object):
             self.handle_fork()
             return False
 
-        if self.fsm.fsm.current == "good2go":
+        if self.machine.fsm.current == "good2go":
             return True
 
         return False
@@ -99,7 +99,7 @@ class Agent(object):
     def reset(self):
         self.last_seen = None
         self.from_ = From()
-        self.fsm.reset()
+        self.machine.reset()
 
     def handle_fork(self):
         """

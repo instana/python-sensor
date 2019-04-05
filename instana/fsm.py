@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading as t
 
-import fysom as f
+from fysom import Fysom
 import pkg_resources
 
 from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
@@ -35,7 +35,7 @@ class Discovery(object):
         return kvs
 
 
-class Fsm(object):
+class TheMachine(object):
     RETRY_PERIOD = 30
 
     agent = None
@@ -55,15 +55,17 @@ class Fsm(object):
         logger.debug("initializing fsm")
 
         self.agent = agent
-        self.fsm = f.Fysom({
+        self.fsm = Fysom({
             "events": [
                 ("lookup",   "*",            "found"),
                 ("announce", "found",        "announced"),
-                ("ready",    "announced",    "good2go")],
+                ("pending",  "announced",    "wait4init"),
+                ("ready",    "wait4init",    "good2go")],
             "callbacks": {
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
-                "onready":        self.agent.start,
+                "onpending":      self.agent.start,
+                "onready":        self.on_ready,
                 "onchangestate":  self.printstatechange}})
 
         self.timer = t.Timer(5, self.fsm.lookup)
@@ -79,6 +81,7 @@ class Fsm(object):
         self.fsm.lookup()
 
     def lookup_agent_host(self, e):
+        logger.debug("lookup_agent_host")
         host, port = self.__get_agent_host_port()
 
         if self.agent.is_agent_listening(host, port):
@@ -95,7 +98,7 @@ class Fsm(object):
                     self.fsm.announce()
                     return True
 
-        if (self.warnedPeriodic is False):
+        if self.warnedPeriodic is False:
             logger.warn("Instana Host Agent couldn't be found. Will retry periodically...")
             self.warnedPeriodic = True
 
@@ -143,9 +146,8 @@ class Fsm(object):
 
         if response and (response.status_code is 200) and (len(response.content) > 2):
             self.agent.set_from(response.content)
-            self.fsm.ready()
-            logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
-                        (str(pid), str(self.agent.from_.pid)))
+            self.fsm.pending()
+            logger.debug("Announced pid: %s (true pid: %s) Waiting for Agent Ready" % (str(pid), str(self.agent.from_.pid)))
             return True
         else:
             logger.debug("Cannot announce sensor. Scheduling retry.")
@@ -158,6 +160,10 @@ class Fsm(object):
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
+
+    def on_ready(self, e):
+        logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
+                    (str(os.getpid()), str(self.agent.from_.pid)))
 
     def __get_real_pid(self):
         """

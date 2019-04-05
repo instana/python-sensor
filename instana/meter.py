@@ -6,13 +6,12 @@ import platform
 import resource
 import sys
 import threading
-import time
 from types import ModuleType
 
 from pkg_resources import DistributionNotFound, get_distribution
 
 from .log import logger
-from .util import get_py_source, package_version
+from .util import get_py_source, package_version, every
 
 
 class Snapshot(object):
@@ -106,7 +105,7 @@ class EntityData(object):
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 5
+    snapshot_countdown = 0
 
     # The agent that this instance belongs to
     agent = None
@@ -114,8 +113,8 @@ class Meter(object):
     last_usage = None
     last_collect = None
     last_metrics = None
-    last_data_report_status = None
     djmw = None
+    thr = None
 
     # A True value signals the metric reporting thread to shutdown
     _shutdown = False
@@ -136,7 +135,7 @@ class Meter(object):
         self.last_usage = None
         self.last_collect = None
         self.last_metrics = None
-        self.snapshot_countdown = 5
+        self.snapshot_countdown = 0
         self.run()
 
     def collect_and_report(self):
@@ -145,22 +144,33 @@ class Meter(object):
         collect and report entity data every 1 second.
         """
         logger.debug("Metric reporting thread is now alive")
-        while 1:
+
+        def metric_work():
             self.process()
             if self.agent.is_timed_out():
                 logger.warn("Host agent offline for >1 min.  Going to sit in a corner...")
                 self.agent.reset()
-                break
-            time.sleep(1)
+                return False
+            return True
+
+        every(1, metric_work, "Metrics Collection")
 
     def process(self):
         """ Collects, processes & reports metrics """
+        if self.agent.machine.fsm.current is "wait4init":
+            # Test the host agent if we're ready to send data
+            if self.agent.is_agent_ready():
+                self.agent.machine.fsm.ready()
+            else:
+                return
+
         if self.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1
             ss = None
             cm = self.collect_metrics()
 
-            if self.snapshot_countdown < 1 and self.last_data_report_status is 200:
+            if self.snapshot_countdown < 1:
+                logger.debug("Sending process snapshot data")
                 self.snapshot_countdown = self.SNAPSHOT_PERIOD
                 ss = self.collect_snapshot()
                 md = copy.deepcopy(cm).delta_data(None)
@@ -171,8 +181,6 @@ class Meter(object):
             response = self.agent.report_data(ed)
 
             if response:
-                self.last_data_report_status = response.status_code
-
                 if response.status_code is 200 and len(response.content) > 2:
                     # The host agent returned something indicating that is has a request for us that we
                     # need to process.

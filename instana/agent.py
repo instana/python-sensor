@@ -11,7 +11,7 @@ import instana.singletons
 from .agent_const import (AGENT_DATA_PATH, AGENT_DEFAULT_HOST,
                           AGENT_DEFAULT_PORT, AGENT_DISCOVERY_PATH,
                           AGENT_HEADER, AGENT_RESPONSE_PATH, AGENT_TRACES_PATH)
-from .fsm import Fsm
+from .fsm import TheMachine
 from .log import logger
 from .sensor import Sensor
 
@@ -28,7 +28,7 @@ class Agent(object):
     sensor = None
     host = AGENT_DEFAULT_HOST
     port = AGENT_DEFAULT_PORT
-    fsm = None
+    machine = None
     from_ = From()
     last_seen = None
     last_fork_check = None
@@ -41,7 +41,7 @@ class Agent(object):
     def __init__(self):
         logger.debug("initializing agent")
         self.sensor = Sensor(self)
-        self.fsm = Fsm(self)
+        self.machine = TheMachine(self)
 
     def start(self, e):
         """ Starts the agent and required threads """
@@ -73,7 +73,7 @@ class Agent(object):
             self.handle_fork()
             return False
 
-        if self.fsm.fsm.current == "good2go":
+        if self.machine.fsm.current == "good2go":
             return True
 
         return False
@@ -99,7 +99,7 @@ class Agent(object):
     def reset(self):
         self.last_seen = None
         self.from_ = From()
-        self.fsm.reset()
+        self.machine.reset()
 
     def handle_fork(self):
         """
@@ -151,6 +151,19 @@ class Agent(object):
         finally:
             return response
 
+    def is_agent_ready(self):
+        """
+        Used after making a successful announce to test when the agent is ready to accept data.
+        """
+        try:
+            response = self.client.head(self.__data_url(), timeout=0.8)
+
+            if response.status_code is 200:
+                return True
+            return False
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("is_agent_ready: host agent connection error")
+
     def report_data(self, entity_data):
         """
         Used to report entity data (metrics & snapshot) to the host agent.
@@ -161,6 +174,8 @@ class Agent(object):
                                         data=self.to_json(entity_data),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
+
+            # logger.warn("report_data: response.status_code is %s" % response.status_code)
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
@@ -179,6 +194,9 @@ class Agent(object):
                                         data=self.to_json(spans),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
+
+            # logger.warn("report_traces: response.status_code is %s" % response.status_code)
+
             if response.status_code is 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):

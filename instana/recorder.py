@@ -4,7 +4,6 @@ import os
 import socket
 import sys
 import threading as t
-import time
 
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
@@ -15,6 +14,7 @@ from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
                         RabbitmqData, RedisData, RPCData, SDKData, SoapData,
                         SQLAlchemyData)
 from .log import logger
+from .util import every
 
 if sys.version_info.major is 2:
     import Queue as queue
@@ -37,6 +37,8 @@ class InstanaRecorder(SpanRecorder):
 
     queue = queue.Queue()
 
+    timer = None
+
     def __init__(self):
         super(InstanaRecorder, self).__init__()
 
@@ -50,13 +52,16 @@ class InstanaRecorder(SpanRecorder):
     def report_spans(self):
         """ Periodically report the queued spans """
         logger.debug("Span reporting thread is now alive")
-        while 1:
+
+        def span_work():
             queue_size = self.queue.qsize()
             if queue_size > 0 and instana.singletons.agent.can_send():
                 response = instana.singletons.agent.report_traces(self.queued_spans())
                 if response:
                     logger.debug("reported %d spans" % queue_size)
-            time.sleep(1)
+            return True
+
+        every(2, span_work, "Span Reporting")
 
     def queue_size(self):
         """ Return the size of the queue; how may spans are queued, """

@@ -20,6 +20,8 @@ class iWSGIMiddleware(object):
         def new_start_response(status, headers, exc_info=None):
             """Modified start response with additional headers."""
             tracer.inject(self.scope.span.context, ot.Format.HTTP_HEADERS, headers)
+            headers.append(('Server-Timing', "intid;desc=%s" % self.scope.span.context.trace_id))
+
             res = start_response(status, headers, exc_info)
 
             sc = status.split(' ')[0]

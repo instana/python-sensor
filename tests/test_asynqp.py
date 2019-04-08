@@ -66,7 +66,7 @@ class TestAsynqp(unittest.TestCase):
         @asyncio.coroutine
         def test():
             with async_tracer.start_active_span('test'):
-                msg = asynqp.Message({'hello': 'world'})
+                msg = asynqp.Message({'hello': 'world'}, content_type='application/json')
                 self.exchange.publish(msg, 'routing.key')
 
         self.loop.run_until_complete(test())

@@ -30,7 +30,9 @@ try:
                 scope.span.set_tag("exchange", instance.name)
                 scope.span.set_tag("sort", "publish")
                 scope.span.set_tag("address", host + ":" + str(port) )
-                scope.span.set_tag("key", argv[1])
+
+                if len(argv) > 1 and argv[1] is not None:
+                    scope.span.set_tag("key", argv[1])
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:

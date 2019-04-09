@@ -60,6 +60,8 @@ class InstanaMiddleware(MiddlewareMixin):
 
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
                 tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
+                response['Server-Timing'] = "intid;desc=%s" % request.iscope.span.context.trace_id
+
         except Exception:
             logger.debug("Instana middleware @ process_response", exc_info=True)
         finally:

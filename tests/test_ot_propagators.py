@@ -35,9 +35,6 @@ def test_inject_with_dict():
     assert_equals(carrier['X-Instana-S'], span.context.span_id)
     assert 'X-Instana-L' in carrier
     assert_equals(carrier['X-Instana-L'], "1")
-    assert 'Server-Timing' in carrier
-    server_timing_value = "intid;desc=%s" % span.context.trace_id
-    assert_equals(carrier['Server-Timing'], server_timing_value)
 
 
 def test_inject_with_list():
@@ -51,8 +48,6 @@ def test_inject_with_list():
     assert ('X-Instana-T', span.context.trace_id) in carrier
     assert ('X-Instana-S', span.context.span_id) in carrier
     assert ('X-Instana-L', "1") in carrier
-    server_timing_value = "intid;desc=%s" % span.context.trace_id
-    assert ('Server-Timing', server_timing_value) in carrier
 
 
 def test_basic_extract():

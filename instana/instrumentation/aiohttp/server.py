@@ -49,6 +49,7 @@ try:
 
                 scope.span.set_tag("http.status_code", response.status)
                 async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+                response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             return response
         except:

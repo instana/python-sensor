@@ -61,13 +61,50 @@ class TestAsynqp(unittest.TestCase):
         except aiohttp.web_exceptions.HTTPException:
             pass
 
-
     def test_publish(self):
         @asyncio.coroutine
         def test():
             with async_tracer.start_active_span('test'):
                 msg = asynqp.Message({'hello': 'world'}, content_type='application/json')
                 self.exchange.publish(msg, 'routing.key')
+
+        self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        rabbitmq_span = spans[0]
+        test_span = spans[1]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, rabbitmq_span.t)
+
+        # Parent relationships
+        self.assertEqual(rabbitmq_span.p, test_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(rabbitmq_span.error)
+        self.assertIsNone(rabbitmq_span.ec)
+
+        # Rabbitmq
+        self.assertEqual('test.exchange', rabbitmq_span.data.rabbitmq.exchange)
+        self.assertEqual('publish', rabbitmq_span.data.rabbitmq.sort)
+        self.assertIsNotNone(rabbitmq_span.data.rabbitmq.address)
+        self.assertEqual('routing.key', rabbitmq_span.data.rabbitmq.key)
+        self.assertIsNotNone(rabbitmq_span.stack)
+        self.assertTrue(type(rabbitmq_span.stack) is list)
+        self.assertGreater(len(rabbitmq_span.stack), 0)
+
+    def test_publish_alternative(self):
+        @asyncio.coroutine
+        def test():
+            with async_tracer.start_active_span('test'):
+                msg = asynqp.Message({'hello': 'world'}, content_type='application/json')
+                self.exchange.publish(msg, routing_key='routing.key')
 
         self.loop.run_until_complete(test())
 

@@ -31,7 +31,9 @@ try:
                 scope.span.set_tag("sort", "publish")
                 scope.span.set_tag("address", host + ":" + str(port) )
 
-                if len(argv) > 1 and argv[1] is not None:
+                if 'routing_key' in kwargs:
+                    scope.span.set_tag("key", kwargs['routing_key'])
+                elif len(argv) > 1 and argv[1] is not None:
                     scope.span.set_tag("key", argv[1])
 
                 rv = wrapped(*argv, **kwargs)

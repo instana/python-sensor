@@ -367,7 +367,7 @@ class TestAsynqp(unittest.TestCase):
             # print("")
             # print("handle_message active scope: %s" % async_tracer.scope_manager.active)
             # print("")
-            async_tracer.inject(async_tracer.active_span.context, opentracing.Format.HTTP_HEADERS, msg.headers)
+            async_tracer.inject(async_tracer.active_span.context, opentracing.Format.TEXT_MAP, msg.headers)
             asyncio.ensure_future(run_later(msg))
             msg.ack()
 

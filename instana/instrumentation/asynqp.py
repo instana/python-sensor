@@ -24,7 +24,7 @@ try:
             msg = argv[0]
             if msg.headers is None:
                 msg.headers = {}
-            async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, msg.headers)
+            async_tracer.inject(scope.span.context, opentracing.Format.TEXT_MAP, msg.headers)
 
             try:
                 scope.span.set_tag("exchange", instance.name)
@@ -77,7 +77,7 @@ try:
                 ctx = None
                 msg = argv[0]
                 if msg.headers is not None:
-                    ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers))
+                    ctx = async_tracer.extract(opentracing.Format.TEXT_MAP, dict(msg.headers))
 
                 with async_tracer.start_active_span("rabbitmq", child_of=ctx) as scope:
                     host, port = msg.sender.protocol.transport._sock.getsockname()

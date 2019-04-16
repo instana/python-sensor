@@ -116,7 +116,7 @@ class InstanaRecorder(SpanRecorder):
             data.custom.logs = logs
 
         if span.operation_name in self.http_spans:
-            data.http = HttpData(host=self.get_http_host_name(span),
+            data.http = HttpData(host=span.tags.pop("http.host", None),
                                  url=span.tags.pop(ext.HTTP_URL, None),
                                  params=span.tags.pop('http.params', None),
                                  method=span.tags.pop(ext.HTTP_METHOD, None),
@@ -247,17 +247,6 @@ class InstanaRecorder(SpanRecorder):
             json_span.ec = ec
 
         return json_span
-
-    def get_http_host_name(self, span):
-        h = span.tags.pop("http.host", "")
-        if len(h) > 0:
-            return h
-
-        h = socket.gethostname()
-        if h and len(h) > 0:
-            return h
-
-        return "localhost"
 
     def get_span_kind_as_string(self, span):
         """

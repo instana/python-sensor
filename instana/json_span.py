@@ -49,6 +49,7 @@ class HttpData(object):
     params = None
     status = 0
     method = None
+    path = None
     path_tpl = None
     error = None
 

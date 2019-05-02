@@ -81,7 +81,6 @@ class TheMachine(object):
         self.fsm.lookup()
 
     def lookup_agent_host(self, e):
-        logger.debug("lookup_agent_host")
         host, port = self.__get_agent_host_port()
 
         if self.agent.is_agent_listening(host, port):
@@ -147,7 +146,7 @@ class TheMachine(object):
         if response and (response.status_code is 200) and (len(response.content) > 2):
             self.agent.set_from(response.content)
             self.fsm.pending()
-            logger.debug("Announced pid: %s (true pid: %s) Waiting for Agent Ready" % (str(pid), str(self.agent.from_.pid)))
+            logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready..." % (str(pid), str(self.agent.from_.pid)))
             return True
         else:
             logger.debug("Cannot announce sensor. Scheduling retry.")

@@ -17,7 +17,6 @@ class Sensor(object):
 
         self.agent = agent
         self.meter = Meter(agent)
-        logger.debug("initialized sensor")
 
     def set_options(self, options):
         self.options = options

@@ -123,10 +123,10 @@ class Agent(object):
                 logger.debug("Host agent found on %s:%d" % (host, port))
                 rv = True
             else:
-                logger.debug("...something is listening on %s:%d but it's not the Instana Agent: %s"
+                logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s"
                              % (host, port, server_header))
         except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("No host agent listening on %s:%d" % (host, port))
+            logger.debug("Instana Host Agent not found on %s:%d" % (host, port))
             rv = False
         finally:
             return rv

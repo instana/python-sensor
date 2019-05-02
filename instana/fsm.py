@@ -105,7 +105,7 @@ class TheMachine(object):
         return False
 
     def announce_sensor(self, e):
-        logger.debug("announcing sensor to the agent")
+        logger.debug("Announcing sensor to the agent")
         sock = None
         pid = os.getpid()
         cmdline = []
@@ -154,7 +154,6 @@ class TheMachine(object):
         return False
 
     def schedule_retry(self, fun, e, name):
-        logger.debug("Scheduling: " + name)
         self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
         self.timer.daemon = True
         self.timer.name = name

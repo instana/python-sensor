@@ -165,8 +165,8 @@ class TestAiohttp(unittest.TestCase):
         # Error logging
         self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aiohttp_span.error)
-        self.assertEqual(aiohttp_span.ec, 1)
+        self.assertFalse(aiohttp_span.error)
+        self.assertIsNone(aiohttp_span.ec)
         self.assertIsNone(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
@@ -174,7 +174,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(405, aiohttp_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5000/405", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
-        self.assertEqual('METHOD NOT ALLOWED', aiohttp_span.data.http.error)
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
@@ -613,8 +612,8 @@ class TestAiohttp(unittest.TestCase):
         # Error logging
         self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aioclient_span.error)
-        self.assertEqual(aioclient_span.ec, 1)
+        self.assertFalse(aioclient_span.error)
+        self.assertIsNone(aioclient_span.ec)
         self.assertFalse(aioserver_span.error)
         self.assertIsNone(aioserver_span.ec)
 
@@ -630,7 +629,6 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(401, aioclient_span.data.http.status)
         self.assertEqual("http://127.0.0.1:5002/401", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)
-        self.assertEqual('I must simulate errors.', aioclient_span.data.http.error)
         self.assertIsNotNone(aioclient_span.stack)
         self.assertTrue(type(aioclient_span.stack) is list)
         self.assertTrue(len(aioclient_span.stack) > 1)

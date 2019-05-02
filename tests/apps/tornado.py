@@ -26,7 +26,7 @@ class Application(tornado.web.Application):
             cookie_secret="7FpA2}3dgri2GEDr",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
-            xsrf_cookies=True,
+            xsrf_cookies=False,
             debug=True,
             autoreload=False,
             autoescape=None,

@@ -86,8 +86,9 @@ try:
             if not hasattr(instance.request, '_instana'):
                 return wrapped(*argv, **kwargs)
 
-            scope = instance.request._instana
-            scope.span.log_exception(argv[0])
+            if not isinstance(argv[1], tornado.web.HTTPError):
+                scope = instance.request._instana
+                scope.span.log_exception(argv[0])
 
             return wrapped(*argv, **kwargs)
         except Exception:

@@ -32,12 +32,12 @@ class TestTornadoServer(unittest.TestCase):
         self.recorder = async_tracer.recorder
         self.recorder.clear_spans()
 
-        self.http_client = AsyncHTTPClient()
-
         # New event loop for every test
         # self.loop = tornado.ioloop.IOLoop.current()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
+
+        self.http_client = AsyncHTTPClient()
 
     def tearDown(self):
         self.http_client.close()

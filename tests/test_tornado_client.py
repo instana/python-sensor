@@ -180,7 +180,7 @@ class TestTornadoClient(unittest.TestCase):
         # Parent relationships
         self.assertEqual(client301_span.p, test_span.s)
         self.assertEqual(server301_span.p, client301_span.s)
-        self.assertEqual()
+        self.assertEqual(client_span.p, test_span.s)
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
@@ -201,6 +201,16 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(server_span.stack) is list)
         self.assertTrue(len(server_span.stack) > 1)
 
+        self.assertEqual("tornado-server", server301_span.n)
+        self.assertEqual(301, server301_span.data.http.status)
+        self.assertEqual("127.0.0.1:4133", server301_span.data.http.host)
+        self.assertEqual("/301", server301_span.data.http.path)
+        self.assertIsNone(server301_span.data.http.params)
+        self.assertEqual("GET", server301_span.data.http.method)
+        self.assertIsNotNone(server301_span.stack)
+        self.assertTrue(type(server301_span.stack) is list)
+        self.assertTrue(len(server301_span.stack) > 1)
+
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(200, client_span.data.http.status)
         self.assertEqual("http://127.0.0.1:4133/", client_span.data.http.url)
@@ -208,6 +218,14 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
+
+        self.assertEqual("tornado-client", client301_span.n)
+        self.assertEqual(200, client301_span.data.http.status)
+        self.assertEqual("http://127.0.0.1:4133/301", client301_span.data.http.url)
+        self.assertEqual("GET", client301_span.data.http.method)
+        self.assertIsNotNone(client301_span.stack)
+        self.assertTrue(type(client301_span.stack) is list)
+        self.assertTrue(len(client301_span.stack) > 1)
 
         assert("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)

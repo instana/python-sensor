@@ -3,9 +3,10 @@ from __future__ import absolute_import
 import opentracing
 import wrapt
 import functools
+import basictracer
 
 from ...log import logger
-from ...singletons import agent, async_tracer, tornado_tracer
+from ...singletons import agent, tornado_tracer
 from ...util import strip_secrets
 
 
@@ -35,7 +36,17 @@ try:
                         new_kwargs[param] = kwargs.pop(param)
                 kwargs = new_kwargs
 
-            scope = tornado_tracer.start_active_span('tornado-client', child_of=parent_span)
+            if parent_span.operation_name == "tornado-client":
+                # In the case of 3xx responses, the tornado client follows the redirects and calls this
+                # function recursively which ends up chaining HTTP requests.  Here we tie subsequent
+                # calls to the true parent span of the original tornado-client call.
+                ctx = basictracer.context.SpanContext()
+                ctx.trace_id = parent_span.context.trace_id
+                ctx.span_id = parent_span.parent_id
+            else:
+                ctx = parent_span.context
+
+            scope = tornado_tracer.start_active_span('tornado-client', child_of=ctx)
             tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers)
 
             # Query param scrubbing

@@ -1,4 +1,16 @@
-class JsonSpan(object):
+
+class BaseSpan(object):
+    def __str__(self):
+        return self.__class__.__str__() + ": " + self.__dict__.__str__()
+
+    def __repr__(self):
+        return self.__dict__.__str__()
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+
+class JsonSpan(BaseSpan):
     k = None
     t = 0
     p = None
@@ -13,20 +25,13 @@ class JsonSpan(object):
     data = None
     stack = None
 
-    def __init__(self, **kwds):
-        for key in kwds:
-            self.__dict__[key] = kwds[key]
 
-
-class CustomData(object):
+class CustomData(BaseSpan):
     tags = None
     logs = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class Data(object):
+class Data(BaseSpan):
     baggage = None
     custom = None
     http = None
@@ -39,11 +44,8 @@ class Data(object):
     soap = None
     log = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class HttpData(object):
+class HttpData(BaseSpan):
     host = None
     url = None
     params = None
@@ -52,44 +54,32 @@ class HttpData(object):
     path_tpl = None
     error = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class MySQLData(object):
+class MySQLData(BaseSpan):
     db = None
     host = None
     user = None
     stmt = None
     error = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class RabbitmqData(object):
+class RabbitmqData(BaseSpan):
     exchange = None
     queue = None
     sort = None
     address = None
     key = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class RedisData(object):
+class RedisData(BaseSpan):
     connection = None
     driver = None
     command = None
     error = None
     subCommands = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class RPCData(object):
+class RPCData(BaseSpan):
     flavor = None
     host = None
     port = None
@@ -99,28 +89,19 @@ class RPCData(object):
     baggage = None
     error = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class SQLAlchemyData(object):
+class SQLAlchemyData(BaseSpan):
     sql = None
     url = None
     eng = None
     error = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class SoapData(object):
+class SoapData(BaseSpan):
     action = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
-
-class SDKData(object):
+class SDKData(BaseSpan):
     name = None
 
     # Since 'type' and 'return' are a Python builtin and a reserved keyword respectively, these keys (all keys) are
@@ -131,5 +112,3 @@ class SDKData(object):
     arguments = None
     custom = None
 
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)

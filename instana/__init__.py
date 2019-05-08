@@ -1,11 +1,3 @@
-from __future__ import absolute_import
-
-import os
-import sys
-import pkg_resources
-from threading import Timer
-
-
 """
 The Instana package has two core components: the agent and the tracer.
 
@@ -25,6 +17,14 @@ Tracer
   Recorder
 """
 
+from __future__ import absolute_import
+
+import os
+import sys
+from threading import Timer
+import pkg_resources
+
+
 if "INSTANA_MAGIC" in os.environ:
     pkg_resources.working_set.add_entry("/tmp/instana/python")
 
@@ -41,7 +41,7 @@ except pkg_resources.DistributionNotFound:
     __version__ = 'unknown'
 
 
-def load(module):
+def load(_):
     """
     Method used to activate the Instana sensor via AUTOWRAPT_BOOTSTRAP
     environment variable.
@@ -53,28 +53,33 @@ def load(module):
 
 
 # User configurable EUM API key for instana.helpers.eum_snippet()
+# pylint: disable=invalid-name
 eum_api_key = ''
 
 
 def boot_agent():
-    import instana.singletons  # noqa
+    """Initialize the Instana agent and conditionally load auto-instrumentation."""
+    # Disable all the unused-import violations in this function
+    # pylint: disable=unused-import
+
+    import instana.singletons
 
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
         if sys.version_info >= (3, 5, 3):
-            from .instrumentation import asyncio  # noqa
-            from .instrumentation.aiohttp import client  # noqa
-            from .instrumentation.aiohttp import server  # noqa
-            from .instrumentation import asynqp  # noqa
+            from .instrumentation import asyncio
+            from .instrumentation.aiohttp import client
+            from .instrumentation.aiohttp import server
+            from .instrumentation import asynqp
             from .instrumentation.tornado import client
             from .instrumentation.tornado import server
-        from .instrumentation import logging  # noqa
-        from .instrumentation import mysqlpython  # noqa
-        from .instrumentation import redis  # noqa
-        from .instrumentation import sqlalchemy  # noqa
-        from .instrumentation import sudsjurko  # noqa
-        from .instrumentation import urllib3  # noqa
-        from .instrumentation.django import middleware  # noqa
+        from .instrumentation import logging
+        from .instrumentation import mysqlpython
+        from .instrumentation import redis
+        from .instrumentation import sqlalchemy
+        from .instrumentation import sudsjurko
+        from .instrumentation import urllib3
+        from .instrumentation.django import middleware
 
 
 if "INSTANA_MAGIC" in os.environ:

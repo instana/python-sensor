@@ -28,7 +28,7 @@ if (('tornado' in sys.modules) and
                 parent_span = tornado_tracer.active_span
 
                 # If we're not tracing, just return
-                if parent_span is None:
+                if (parent_span is None) or (parent_span.operation_name == "tornado-client"):
                     return wrapped(*argv, **kwargs)
 
                 request = argv[0]
@@ -45,17 +45,7 @@ if (('tornado' in sys.modules) and
                             new_kwargs[param] = kwargs.pop(param)
                     kwargs = new_kwargs
 
-                if parent_span.operation_name == "tornado-client":
-                    # In the case of 3xx responses, the tornado client follows the redirects and calls this
-                    # function recursively which ends up chaining HTTP requests.  Here we tie subsequent
-                    # calls to the true parent span of the original tornado-client call.
-                    ctx = basictracer.context.SpanContext()
-                    ctx.trace_id = parent_span.context.trace_id
-                    ctx.span_id = parent_span.parent_id
-                else:
-                    ctx = parent_span.context
-
-                scope = tornado_tracer.start_active_span('tornado-client', child_of=ctx)
+                scope = tornado_tracer.start_active_span('tornado-client', child_of=parent_span)
                 tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers)
 
                 # Query param scrubbing

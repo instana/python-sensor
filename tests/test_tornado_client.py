@@ -160,26 +160,23 @@ class TestTornadoClient(unittest.TestCase):
 
         spans = self.recorder.queued_spans()
 
-        self.assertEqual(5, len(spans))
+        self.assertEqual(4, len(spans))
 
         server301_span = spans[0]
         server_span = spans[1]
         client_span = spans[2]
-        client301_span = spans[3]
-        test_span = spans[4]
+        test_span = spans[3]
 
         self.assertIsNone(tornado_tracer.active_span)
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client301_span.t)
         self.assertEqual(traceId, client_span.t)
         self.assertEqual(traceId, server301_span.t)
         self.assertEqual(traceId, server_span.t)
 
         # Parent relationships
-        self.assertEqual(client301_span.p, test_span.s)
-        self.assertEqual(server301_span.p, client301_span.s)
+        self.assertEqual(server301_span.p, client_span.s)
         self.assertEqual(client_span.p, test_span.s)
         self.assertEqual(server_span.p, client_span.s)
 
@@ -213,19 +210,11 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(200, client_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:4133/", client_span.data.http.url)
+        self.assertEqual("http://127.0.0.1:4133/301", client_span.data.http.url)
         self.assertEqual("GET", client_span.data.http.method)
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
-
-        self.assertEqual("tornado-client", client301_span.n)
-        self.assertEqual(200, client301_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:4133/301", client301_span.data.http.url)
-        self.assertEqual("GET", client301_span.data.http.method)
-        self.assertIsNotNone(client301_span.stack)
-        self.assertTrue(type(client301_span.stack) is list)
-        self.assertTrue(len(client301_span.stack) > 1)
 
         assert("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)

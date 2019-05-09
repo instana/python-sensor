@@ -45,4 +45,17 @@ if sys.version_info >= (3, 5, 3):
     print("Starting background aiohttp server...")
     aio_server.start()
 
+
+if sys.version_info >= (3, 5, 3):
+    # Background Tornado application
+    from .apps.tornado import run_server
+
+    # Spawn our background Tornado app that the tests will throw
+    # requests at.
+    tornado_server = threading.Thread(target=run_server)
+    tornado_server.daemon = True
+    tornado_server.name = "Background Tornado server"
+    print("Starting background Tornado server...")
+    tornado_server.start()
+
 time.sleep(1)

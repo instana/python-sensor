@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import os
-import socket
 import sys
 import threading as t
 
@@ -25,12 +24,13 @@ else:
 class InstanaRecorder(SpanRecorder):
     registered_spans = ("aiohttp-client", "aiohttp-server", "django", "log", "memcache", "mysql",
                         "rabbitmq", "redis", "rpc-client", "rpc-server", "sqlalchemy", "soap",
-                        "urllib3", "wsgi")
-    http_spans = ("aiohttp-client", "aiohttp-server", "django", "wsgi", "urllib3", "soap")
+                        "tornado-server", "tornado-client", "urllib3", "wsgi")
+    http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-server",
+                  "tornado-client", "urllib3", "wsgi")
 
     exit_spans = ("aiohttp-client", "log", "memcache", "mysql", "rabbitmq", "redis", "rpc-client",
-                  "sqlalchemy", "soap", "urllib3")
-    entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server")
+                  "sqlalchemy", "soap", "tornado-client", "urllib3")
+    entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
@@ -118,6 +118,7 @@ class InstanaRecorder(SpanRecorder):
         if span.operation_name in self.http_spans:
             data.http = HttpData(host=span.tags.pop("http.host", None),
                                  url=span.tags.pop(ext.HTTP_URL, None),
+                                 path=span.tags.pop("http.path", None),
                                  params=span.tags.pop('http.params', None),
                                  method=span.tags.pop(ext.HTTP_METHOD, None),
                                  status=span.tags.pop(ext.HTTP_STATUS_CODE, None),

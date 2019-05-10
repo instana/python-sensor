@@ -32,9 +32,9 @@ try:
                         cleaned_qp = strip_secrets(instance.request.query, agent.secrets_matcher, agent.secrets_list)
                         scope.span.set_tag("http.params", cleaned_qp)
 
-                    scope.span.set_tag("http.host", instance.request.host)
+                    url = "%s://%s%s" % (instance.request.protocol, instance.request.host, instance.request.path)
+                    scope.span.set_tag("http.url", url)
                     scope.span.set_tag("http.method", instance.request.method)
-                    scope.span.set_tag("http.path", instance.request.path)
 
                     # Custom header tracking support
                     if agent.extra_headers is not None:

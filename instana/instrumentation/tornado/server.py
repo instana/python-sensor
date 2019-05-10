@@ -11,15 +11,13 @@ from ...util import strip_secrets
 
 from distutils.version import LooseVersion
 
-# Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
-# scope managers which we will tackle soon.
-# Limit Tornado version for the time being.
-if (('tornado' in sys.modules) and
-        hasattr(sys.modules['tornado'], 'version') and
-        (LooseVersion(sys.modules['tornado'].version) < LooseVersion('6.0.0'))):
+try:
+    import tornado
 
-    try:
-        import tornado
+    # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
+    # scope managers which we will tackle soon.
+    # Limit Tornado version for the time being.
+    if hasattr(tornado, 'version') and (LooseVersion(tornado.version) < LooseVersion('6.0.0')):
 
         @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler._execute')
         def execute_with_instana(wrapped, instance, argv, kwargs):
@@ -104,6 +102,6 @@ if (('tornado' in sys.modules) and
                 logger.debug("tornado log_exception", exc_info=True)
 
         logger.debug("Instrumenting tornado server")
-    except ImportError:
-        pass
+except ImportError:
+    pass
 

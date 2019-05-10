@@ -71,8 +71,8 @@ def boot_agent():
             from .instrumentation.aiohttp import client
             from .instrumentation.aiohttp import server
             from .instrumentation import asynqp
-            from .instrumentation.tornado import client
-            from .instrumentation.tornado import server
+        from .instrumentation.tornado import client
+        from .instrumentation.tornado import server
         from .instrumentation import logging
         from .instrumentation import mysqlpython
         from .instrumentation import redis

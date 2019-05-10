@@ -22,25 +22,26 @@ try:
         @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler._execute')
         def execute_with_instana(wrapped, instance, argv, kwargs):
             try:
-                ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS, instance.request.headers)
-                scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
-
-                # Query param scrubbing
-                if instance.request.query is not None and len(instance.request.query) > 0:
-                    cleaned_qp = strip_secrets(instance.request.query, agent.secrets_matcher, agent.secrets_list)
-                    scope.span.set_tag("http.params", cleaned_qp)
-
-                scope.span.set_tag("http.host", instance.request.host)
-                scope.span.set_tag("http.method", instance.request.method)
-                scope.span.set_tag("http.path", instance.request.path)
-
-                # Custom header tracking support
-                if agent.extra_headers is not None:
-                    for custom_header in agent.extra_headers:
-                        if custom_header in instance.request.headers:
-                            scope.span.set_tag("http.%s" % custom_header, instance.request.headers[custom_header])
-
                 with tracer_stack_context():
+
+                    ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS, instance.request.headers)
+                    scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
+
+                    # Query param scrubbing
+                    if instance.request.query is not None and len(instance.request.query) > 0:
+                        cleaned_qp = strip_secrets(instance.request.query, agent.secrets_matcher, agent.secrets_list)
+                        scope.span.set_tag("http.params", cleaned_qp)
+
+                    scope.span.set_tag("http.host", instance.request.host)
+                    scope.span.set_tag("http.method", instance.request.method)
+                    scope.span.set_tag("http.path", instance.request.path)
+
+                    # Custom header tracking support
+                    if agent.extra_headers is not None:
+                        for custom_header in agent.extra_headers:
+                            if custom_header in instance.request.headers:
+                                scope.span.set_tag("http.%s" % custom_header, instance.request.headers[custom_header])
+
                     setattr(instance.request, "_instana", scope)
 
                     # Set the context response headers now because tornado doesn't give us a better option to do so
@@ -80,7 +81,6 @@ try:
                         scope.span.set_tag("ec", ec + 1)
 
                 scope.span.set_tag("http.status_code", status_code)
-                scope.span.finish()
                 scope.close()
 
                 return wrapped(*argv, **kwargs)

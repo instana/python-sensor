@@ -136,6 +136,9 @@ class Meter(object):
         self.last_collect = None
         self.last_metrics = None
         self.snapshot_countdown = 0
+
+    def handle_fork(self):
+        self.reset()
         self.run()
 
     def collect_and_report(self):

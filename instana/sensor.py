@@ -24,7 +24,8 @@ class Sensor(object):
             self.options = Options()
 
     def handle_fork(self):
-        self.meter.reset()
+        # Nothing to do for the Sensor;  Pass onto Meter
+        self.meter.handle_fork()
 
 
 global_sensor = None

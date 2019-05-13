@@ -1,17 +1,19 @@
 from __future__ import absolute_import
 
 import opentracing
-from opentracing.scope_managers.tornado import tracer_stack_context
 import wrapt
 
 from ...log import logger
-from ...singletons import agent, tornado_tracer
+from ...singletons import agent, setup_tornado_tracer, tornado_tracer
 from ...util import strip_secrets
 
 from distutils.version import LooseVersion
 
 try:
     import tornado
+    from opentracing.scope_managers.tornado import tracer_stack_context
+
+    setup_tornado_tracer()
 
     # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
     # scope managers which we will tackle soon.

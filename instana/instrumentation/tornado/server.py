@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import opentracing
 from opentracing.scope_managers.tornado import tracer_stack_context
 import wrapt
-import sys
 
 from ...log import logger
 from ...singletons import agent, tornado_tracer
@@ -23,7 +22,6 @@ try:
         def execute_with_instana(wrapped, instance, argv, kwargs):
             try:
                 with tracer_stack_context():
-
                     ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS, instance.request.headers)
                     scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
 
@@ -35,6 +33,8 @@ try:
                     url = "%s://%s%s" % (instance.request.protocol, instance.request.host, instance.request.path)
                     scope.span.set_tag("http.url", url)
                     scope.span.set_tag("http.method", instance.request.method)
+
+                    scope.span.set_tag("handler", instance.__class__.__name__)
 
                     # Custom header tracking support
                     if agent.extra_headers is not None:

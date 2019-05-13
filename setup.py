@@ -20,7 +20,7 @@ def check_setuptools():
 check_setuptools()
 
 setup(name='instana',
-      version='1.10.7',
+      version='1.11.0',
       url='https://www.instana.com/',
       project_urls={
           'CI: Travis': 'https://travis-ci.org/instana/python-sensor',

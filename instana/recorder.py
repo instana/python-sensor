@@ -24,9 +24,9 @@ else:
 class InstanaRecorder(SpanRecorder):
     registered_spans = ("aiohttp-client", "aiohttp-server", "django", "log", "memcache", "mysql",
                         "rabbitmq", "redis", "rpc-client", "rpc-server", "sqlalchemy", "soap",
-                        "tornado-server", "tornado-client", "urllib3", "wsgi")
-    http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-server",
-                  "tornado-client", "urllib3", "wsgi")
+                        "tornado-client", "tornado-server", "urllib3", "wsgi")
+    http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
+                  "tornado-server", "urllib3", "wsgi")
 
     exit_spans = ("aiohttp-client", "log", "memcache", "mysql", "rabbitmq", "redis", "rpc-client",
                   "sqlalchemy", "soap", "tornado-client", "urllib3")
@@ -100,7 +100,9 @@ class InstanaRecorder(SpanRecorder):
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
-        data = Data(baggage=span.context.baggage)
+        data = Data()
+        if len(span.context.baggage) > 0:
+            data.baggage = span.context.baggage
 
         kind = 1 # entry
         if span.operation_name in self.exit_spans:

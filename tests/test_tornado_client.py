@@ -64,8 +64,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/", server_span.data.http.url)
         self.assertIsNone(server_span.data.http.params)
         self.assertEqual("GET", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)
@@ -125,8 +124,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/", server_span.data.http.url)
         self.assertIsNone(server_span.data.http.params)
         self.assertEqual("POST", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)
@@ -190,8 +188,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/", server_span.data.http.url)
         self.assertIsNone(server_span.data.http.params)
         self.assertEqual("GET", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)
@@ -200,8 +197,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server301_span.n)
         self.assertEqual(301, server301_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server301_span.data.http.host)
-        self.assertEqual("/301", server301_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/301", server301_span.data.http.url)
         self.assertIsNone(server301_span.data.http.params)
         self.assertEqual("GET", server301_span.data.http.method)
         self.assertIsNotNone(server301_span.stack)
@@ -264,8 +260,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(405, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/405", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/405", server_span.data.http.url)
         self.assertIsNone(server_span.data.http.params)
         self.assertEqual("GET", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)
@@ -328,8 +323,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(500, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/500", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/500", server_span.data.http.url)
         self.assertIsNone(server_span.data.http.params)
         self.assertEqual("GET", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)
@@ -392,8 +386,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(504, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/504", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/504", server_span.data.http.url)
         self.assertIsNone(server_span.data.http.params)
         self.assertEqual("GET", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)
@@ -453,8 +446,7 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data.http.status)
-        self.assertEqual("127.0.0.1:4133", server_span.data.http.host)
-        self.assertEqual("/", server_span.data.http.path)
+        self.assertEqual("http://127.0.0.1:4133/", server_span.data.http.url)
         self.assertEqual('secret=<redacted>', server_span.data.http.params)
         self.assertEqual("GET", server_span.data.http.method)
         self.assertIsNotNone(server_span.stack)

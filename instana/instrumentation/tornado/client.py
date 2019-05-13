@@ -3,8 +3,6 @@ from __future__ import absolute_import
 import opentracing
 import wrapt
 import functools
-import basictracer
-import sys
 
 from ...log import logger
 from ...singletons import agent, tornado_tracer
@@ -12,15 +10,13 @@ from ...util import strip_secrets
 
 from distutils.version import LooseVersion
 
+try:
+    import tornado
 
-# Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
-# scope managers which we will tackle soon.
-# Limit Tornado version for the time being.
-if (('tornado' in sys.modules) and
-        hasattr(sys.modules['tornado'], 'version') and
-        (LooseVersion(sys.modules['tornado'].version) < LooseVersion('6.0.0'))):
-    try:
-        import tornado
+    # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
+    # scope managers which we will tackle soon.
+    # Limit Tornado version for the time being.
+    if hasattr(tornado, 'version') and (LooseVersion(tornado.version) < LooseVersion('6.0.0')):
 
         @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
         def fetch_with_instana(wrapped, instance, argv, kwargs):
@@ -81,6 +77,6 @@ if (('tornado' in sys.modules) and
 
 
         logger.debug("Instrumenting tornado client")
-    except ImportError:
-        pass
+except ImportError:
+    pass
 

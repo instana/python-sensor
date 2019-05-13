@@ -5,13 +5,15 @@ import wrapt
 import functools
 
 from ...log import logger
-from ...singletons import agent, tornado_tracer
+from ...singletons import agent, setup_tornado_tracer, tornado_tracer
 from ...util import strip_secrets
 
 from distutils.version import LooseVersion
 
 try:
     import tornado
+
+    setup_tornado_tracer()
 
     # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
     # scope managers which we will tackle soon.

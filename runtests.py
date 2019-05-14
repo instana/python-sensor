@@ -10,6 +10,8 @@ if (LooseVersion(sys.version) < LooseVersion('3.5.3')):
 if (LooseVersion(sys.version) >= LooseVersion('3.7.0')):
     command_line.extend(['-e', 'sudsjurko'])
 
+command_line.extend(sys.argv[1:])
+
 print("Nose arguments: %s" % command_line)
 result = nose.main(argv=command_line)
 

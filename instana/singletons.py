@@ -25,8 +25,16 @@ if sys.version_info >= (3,4):
     from opentracing.scope_managers.asyncio import AsyncioScopeManager
     async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager())
 
-from opentracing.scope_managers.tornado import TornadoScopeManager
-tornado_tracer = InstanaTracer(scope_manager=TornadoScopeManager())
+
+# Mock the tornado tracer until tornado is detected and instrumented first
+tornado_tracer = tracer
+
+
+def setup_tornado_tracer():
+    global tornado_tracer
+    from opentracing.scope_managers.tornado import TornadoScopeManager
+    tornado_tracer = InstanaTracer(scope_manager=TornadoScopeManager())
+
 
 # Set ourselves as the tracer.
 opentracing.tracer = tracer

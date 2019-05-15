@@ -46,7 +46,7 @@ def load(_):
     Method used to activate the Instana sensor via AUTOWRAPT_BOOTSTRAP
     environment variable.
     """
-    if "INSTANA_DEV" in os.environ:
+    if "INSTANA_DEBUG" in os.environ:
         print("==========================================================")
         print("Instana: Loading...")
         print("==========================================================")

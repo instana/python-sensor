@@ -129,7 +129,7 @@ class InstanaTracer(BasicTracer):
                 break
 
             # Exclude Instana frames unless we're in dev mode
-            if "INSTANA_DEV" not in os.environ:
+            if "INSTANA_DEBUG" not in os.environ:
                 if re_tracer_frame.search(frame[0]) is not None:
                     continue
 

@@ -43,11 +43,11 @@ config['asyncio_task_context_propagation']['enabled'] = True
 
 ## Debugging & More Verbosity
 
-Setting `INSTANA_DEV` to a non nil value will enable extra logging output generally useful
+Setting `INSTANA_DEBUG` to a non nil value will enable extra logging output generally useful
 for development.
 
 ```Python
-export INSTANA_DEV="true"
+export INSTANA_DEBUG="true"
 ```
 
 ## Disabling Automatic instrumentation

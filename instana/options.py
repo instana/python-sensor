@@ -13,7 +13,7 @@ class Options(object):
         """ Initialize Options
         Respect any environment variables that may be set.
         """
-        if "INSTANA_DEV" in os.environ:
+        if "INSTANA_DEBUG" in os.environ:
             self.log_level = logging.DEBUG
 
         if "INSTANA_SERVICE_NAME" in os.environ:

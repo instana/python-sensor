@@ -15,7 +15,7 @@ def wrapper(wrapped, instance, args, kwargs):
 
 def hook(module):
     """ Hook method to install the Instana middleware into Flask """
-    if "INSTANA_DEV" in os.environ:
+    if "INSTANA_DEBUG" in os.environ:
         print("==============================================================")
         print("Instana: Running flask hook")
         print("==============================================================")

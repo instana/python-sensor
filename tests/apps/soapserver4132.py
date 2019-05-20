@@ -11,7 +11,9 @@ from instana.wsgi import iWSGIMiddleware
 
 from ..helpers import testenv
 
-testenv["soap_server"] = "http://127.0.0.1:4132"
+LISTEN_PORT=10812
+
+testenv["soap_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
 
 
 # Simple in test suite SOAP server to test suds client instrumentation against.
@@ -59,7 +61,7 @@ app = Application([StanSoapService], 'instana.tests.app.ask_question',
 
 # Use Instana middleware so we can test context passing and Soap server traces.
 wsgi_app = iWSGIMiddleware(WsgiApplication(app))
-soapserver = make_server('127.0.0.1', 4132, wsgi_app)
+soapserver = make_server('127.0.0.1', LISTEN_PORT, wsgi_app)
 
 if __name__ == '__main__':
     soapserver.serve_forever()

@@ -3,7 +3,9 @@ from aiohttp import web
 
 from ..helpers import testenv
 
-testenv["aiohttp_server"] = "http://127.0.0.1:5002"
+LISTEN_PORT=10810
+
+testenv["aiohttp_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
 
 
 def say_hello(request):
@@ -29,7 +31,7 @@ def run_server():
 
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, 'localhost', 5002)
+    site = web.TCPSite(runner, 'localhost', LISTEN_PORT)
 
     loop.run_until_complete(site.start())
     loop.run_forever()

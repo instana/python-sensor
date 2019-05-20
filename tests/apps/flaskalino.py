@@ -8,14 +8,17 @@ from instana.singletons import tracer
 
 from ..helpers import testenv
 
-testenv["wsgi_server"] = "http://127.0.0.1:5000"
+LISTEN_PORT=10811
+
+
+testenv["wsgi_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
 
 app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
 
 wsgi_app = iWSGIMiddleware(app.wsgi_app)
-flask_server = make_server('127.0.0.1', 5000, wsgi_app)
+flask_server = make_server('127.0.0.1', LISTEN_PORT, wsgi_app)
 
 
 @app.route("/")

@@ -4,21 +4,20 @@ import opentracing.ext.tags as ext
 from flask import Flask, redirect
 from instana.wsgi import iWSGIMiddleware
 from wsgiref.simple_server import make_server
-from instana.singletons import tracer
 
+from instana.singletons import tracer
 from ..helpers import testenv
 
-LISTEN_PORT=10811
 
-
-testenv["wsgi_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
+testenv["wsgi_port"] = 10811
+testenv["wsgi_server"] = ("http://127.0.0.1:" + str(testenv["wsgi_port"]))
 
 app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
 
 wsgi_app = iWSGIMiddleware(app.wsgi_app)
-flask_server = make_server('127.0.0.1', LISTEN_PORT, wsgi_app)
+flask_server = make_server('127.0.0.1', testenv["wsgi_port"], wsgi_app)
 
 
 @app.route("/")

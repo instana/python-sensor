@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os.path
 import tornado.auth
 import tornado.escape
@@ -10,10 +12,9 @@ import asyncio
 
 from ..helpers import testenv
 
-LISTEN_PORT=10813
 
-
-testenv["tornado_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
+testenv["tornado_port"] = 10813
+testenv["tornado_server"] = ("http://127.0.0.1:" + str(testenv["tornado_port"]))
 
 
 class Application(tornado.web.Application):
@@ -71,5 +72,5 @@ def run_server():
     asyncio.set_event_loop(loop)
 
     http_server = tornado.httpserver.HTTPServer(Application())
-    http_server.listen(LISTEN_PORT)
+    http_server.listen(testenv["tornado_port"])
     tornado.ioloop.IOLoop.current().start()

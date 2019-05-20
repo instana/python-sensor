@@ -1,26 +1,23 @@
-# vim: set fileencoding=UTF-8 :
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import logging
 from wsgiref.simple_server import make_server
 
-from spyne import (Application, Fault, Integer, Iterable, ServiceBase, Unicode,
-                   rpc)
+from spyne import (Application, Fault, Integer, Iterable, ServiceBase, Unicode, rpc)
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 
 from instana.wsgi import iWSGIMiddleware
-
 from ..helpers import testenv
 
-LISTEN_PORT=10812
 
-testenv["soap_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
+testenv["soap_server"] = 10812
+testenv["soap_server"] = ("http://127.0.0.1:" + str(testenv["soap_port"]))
 
 
 # Simple in test suite SOAP server to test suds client instrumentation against.
 # Configured to listen on localhost port 4132
 # WSDL: http://localhost:4232/?wsdl
-
-
 class StanSoapService(ServiceBase):
     @rpc(Unicode, Integer, _returns=Iterable(Unicode))
     def ask_question(ctx, question, answer):
@@ -61,7 +58,7 @@ app = Application([StanSoapService], 'instana.tests.app.ask_question',
 
 # Use Instana middleware so we can test context passing and Soap server traces.
 wsgi_app = iWSGIMiddleware(WsgiApplication(app))
-soapserver = make_server('127.0.0.1', LISTEN_PORT, wsgi_app)
+soapserver = make_server('127.0.0.1', testenv["soap_port"], wsgi_app)
 
 if __name__ == '__main__':
     soapserver.serve_forever()

@@ -1,11 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import asyncio
 from aiohttp import web
 
 from ..helpers import testenv
 
-LISTEN_PORT=10810
 
-testenv["aiohttp_server"] = "http://127.0.0.1:" + str(LISTEN_PORT)
+testenv["aiohttp_port"] = 10810
+testenv["aiohttp_server"] = ("http://127.0.0.1:" + str(testenv["aiohttp_port"]))
 
 
 def say_hello(request):
@@ -31,7 +33,7 @@ def run_server():
 
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, '127.0.0.1', LISTEN_PORT)
+    site = web.TCPSite(runner, '127.0.0.1', testenv["aiohttp_port"])
 
     loop.run_until_complete(site.start())
     loop.run_forever()

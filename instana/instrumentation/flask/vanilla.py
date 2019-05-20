@@ -13,9 +13,6 @@ import flask
 
 def before_request_with_instana(*argv, **kwargs):
     try:
-        if not agent.can_send():
-            return
-
         env = flask.request.environ
         ctx = None
 
@@ -48,6 +45,8 @@ def before_request_with_instana(*argv, **kwargs):
 
 def after_request_with_instana(response):
     try:
+        scope = None
+
         # If we're not tracing, just return
         if not hasattr(flask.g, 'scope'):
             return response
@@ -62,9 +61,8 @@ def after_request_with_instana(response):
                 span.set_tag("ec", ec+1)
 
         span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
-        response.headers.add('HTTP_X_INSTANA_T', span.context.trace_id)
-        response.headers.add('HTTP_X_INSTANA_S', span.context.span_id)
-        response.headers.add('HTTP_X_INSTANA_L', 1)
+        tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+        response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
     except:
         logger.debug("Flask after_request", exc_info=True)
     finally:

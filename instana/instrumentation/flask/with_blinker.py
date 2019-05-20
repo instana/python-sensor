@@ -14,9 +14,6 @@ from flask import request_started, request_finished, got_request_exception
 
 def request_started_with_instana(sender, **extra):
     try:
-        if not agent.can_send():
-            return
-
         env = flask.request.environ
         ctx = None
 
@@ -47,6 +44,8 @@ def request_started_with_instana(sender, **extra):
 
 def request_finished_with_instana(sender, response, **extra):
     try:
+        scope = None
+
         # If we're not tracing, just return
         if not hasattr(flask.g, 'scope'):
             return
@@ -61,14 +60,14 @@ def request_finished_with_instana(sender, response, **extra):
                 span.set_tag("ec", ec+1)
 
         span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
-        response.headers.add('HTTP_X_INSTANA_T', span.context.trace_id)
-        response.headers.add('HTTP_X_INSTANA_S', span.context.span_id)
-        response.headers.add('HTTP_X_INSTANA_L', 1)
+        tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+        response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
     except:
         logger.debug("Flask after_request", exc_info=True)
     finally:
         if scope is not None:
             scope.close()
+        return response
 
 
 def log_exception_with_instana(sender, exception, **extra):

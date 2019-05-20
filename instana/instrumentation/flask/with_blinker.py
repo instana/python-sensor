@@ -76,10 +76,11 @@ def log_exception_with_instana(sender, exception, **extra):
         return
 
     scope = flask.g.scope
-    span = scope.span
 
-    if span is not None:
-        span.log_exception(exception)
+    if scope is not None:
+        span = scope.span
+        if span is not None:
+            span.log_exception(exception)
 
 
 @wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
@@ -91,9 +92,10 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
         span = scope.span
 
         if not hasattr(exc, 'code'):
-            span.log_exception(argv[0])
+            span.log_exception(exc)
             span.set_tag(ext.HTTP_STATUS_CODE, 500)
             scope.close()
+            flask.g.scope = None
 
     return wrapped(*argv, **kwargs)
 

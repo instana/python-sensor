@@ -11,7 +11,7 @@ from instana.wsgi import iWSGIMiddleware
 from ..helpers import testenv
 
 
-testenv["soap_server"] = 10812
+testenv["soap_port"] = 10812
 testenv["soap_server"] = ("http://127.0.0.1:" + str(testenv["soap_port"]))
 
 

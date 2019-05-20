@@ -16,6 +16,7 @@ jobs:
       - image: circleci/postgres:9.6.5-alpine-ram
       - image: circleci/mysql:8.0.16
       - image: circleci/redis:5.0.4
+      - image: rabbitmq:3.5.4
 
     working_directory: ~/repo
 

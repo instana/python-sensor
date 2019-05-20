@@ -31,7 +31,7 @@ def run_server():
 
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, 'localhost', LISTEN_PORT)
+    site = web.TCPSite(runner, '127.0.0.1', LISTEN_PORT)
 
     loop.run_until_complete(site.start())
     loop.run_forever()

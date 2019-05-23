@@ -23,6 +23,10 @@ class Sensor(object):
         if not self.options:
             self.options = Options()
 
+    def start(self):
+        # Nothing to do for the Sensor;  Pass onto Meter
+        self.meter.start()
+
     def handle_fork(self):
         # Nothing to do for the Sensor;  Pass onto Meter
         self.meter.handle_fork()

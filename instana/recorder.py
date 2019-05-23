@@ -15,13 +15,14 @@ from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
 from .log import logger
 from .util import every
 
-if sys.version_info.major is 2:
+if sys.version_info.major == 2:
     import Queue as queue
 else:
     import queue
 
 
 class InstanaRecorder(SpanRecorder):
+    THREAD_NAME = "Instana Span Reporting"
     registered_spans = ("aiohttp-client", "aiohttp-server", "django", "log", "memcache", "mysql",
                         "rabbitmq", "redis", "rpc-client", "rpc-server", "sqlalchemy", "soap",
                         "tornado-client", "tornado-server", "urllib3", "wsgi")
@@ -35,19 +36,40 @@ class InstanaRecorder(SpanRecorder):
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
 
-    queue = queue.Queue()
-
-    timer = None
+    # Recorder thread for collection/reporting of spans
+    thread = None
 
     def __init__(self):
         super(InstanaRecorder, self).__init__()
+        self.queue = queue.Queue()
 
-    def run(self):
-        """ Span a background thread to periodically report queued spans """
-        self.timer = t.Thread(target=self.report_spans)
-        self.timer.daemon = True
-        self.timer.name = "Instana Span Reporting"
-        self.timer.start()
+    def start(self):
+        """
+        This function can be called at first boot or after a fork.  In either case, it will
+        assure that the Recorder is in a proper state (via reset()) and spawn a new background
+        thread to periodically report queued spans
+
+        Note that this will abandon any previous thread object that (in the case of an `os.fork()`)
+        should no longer exist in the forked process.
+
+        (Forked processes carry forward only the thread that called `os.fork()`
+        into the new process space.  All other background threads need to be recreated.)
+
+        Calling this directly more than once without an actual fork will cause errors.
+        """
+        self.reset()
+
+        if self.thread.isAlive() is False:
+            self.thread.start()
+
+    def reset(self):
+        # Prepare the thread for span collection/reporting
+        self.thread = t.Thread(target=self.report_spans)
+        self.thread.daemon = True
+        self.thread.name = self.THREAD_NAME
+
+    def handle_fork(self):
+        self.start()
 
     def report_spans(self):
         """ Periodically report the queued spans """
@@ -69,14 +91,15 @@ class InstanaRecorder(SpanRecorder):
 
     def queued_spans(self):
         """ Get all of the spans in the queue """
+        span = None
         spans = []
         while True:
             try:
-                s = self.queue.get(False)
+                span = self.queue.get(False)
             except queue.Empty:
                 break
             else:
-                spans.append(s)
+                spans.append(span)
         return spans
 
     def clear_spans(self):

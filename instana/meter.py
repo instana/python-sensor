@@ -105,16 +105,19 @@ class EntityData(object):
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 0
+    THREAD_NAME = "Instana Metric Collection"
 
     # The agent that this instance belongs to
     agent = None
+
+    # We send Snapshot data every 10 minutes.  This is the countdown variable.
+    snapshot_countdown = 0
 
     last_usage = None
     last_collect = None
     last_metrics = None
     djmw = None
-    thr = None
+    thread = None
 
     # A True value signals the metric reporting thread to shutdown
     _shutdown = False
@@ -123,12 +126,24 @@ class Meter(object):
         self.agent = agent
         pass
 
-    def run(self):
-        """ Spawns the metric reporting thread """
-        self.thr = threading.Thread(target=self.collect_and_report)
-        self.thr.daemon = True
-        self.thr.name = "Instana Metric Collection"
-        self.thr.start()
+    def start(self):
+        """
+        This function can be called at first boot or after a fork.  In either case, it will
+        assure that the Meter is in a proper state (via reset()) and spawn a new background
+        thread to periodically report queued spans
+
+        Note that this will abandon any previous thread object that (in the case of an `os.fork()`)
+        should no longer exist in the forked process.
+
+        (Forked processes carry forward only the thread that called `os.fork()`
+        into the new process space.  All other background threads need to be recreated.)
+
+        Calling this directly more than once without an actual fork will cause errors.
+        """
+        self.reset()
+
+        if self.thread.isAlive() is False:
+            self.thread.start()
 
     def reset(self):
         """" Reset the state as new """
@@ -137,9 +152,13 @@ class Meter(object):
         self.last_metrics = None
         self.snapshot_countdown = 0
 
+        # Prepare the thread for metric collection/reporting
+        self.thread = threading.Thread(target=self.collect_and_report)
+        self.thread.daemon = True
+        self.thread.name = self.THREAD_NAME
+
     def handle_fork(self):
-        self.reset()
-        self.run()
+        self.start()
 
     def collect_and_report(self):
         """
@@ -163,7 +182,8 @@ class Meter(object):
         if self.agent.machine.fsm.current is "wait4init":
             # Test the host agent if we're ready to send data
             if self.agent.is_agent_ready():
-                self.agent.machine.fsm.ready()
+                if self.agent.machine.fsm.current is not "good2go":
+                    self.agent.machine.fsm.ready()
             else:
                 return
 

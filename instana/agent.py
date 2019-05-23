@@ -25,6 +25,16 @@ class From(object):
 
 
 class Agent(object):
+    """
+    The Agent class is the central controlling entity for the Instana Python language sensor.  The key
+    parts it handles are the announce state and the collection and reporting of metrics and spans to the
+    Instana Host agent.
+
+    To do this, there are 3 major components to this class:
+      1. TheMachine - finite state machine related to announce state
+      2. Sensor -> Meter - metric collection and reporting
+      3. Tracer -> Recorder - span queueing and reporting
+    """
     sensor = None
     host = AGENT_DEFAULT_HOST
     port = AGENT_DEFAULT_PORT
@@ -46,8 +56,26 @@ class Agent(object):
     def start(self, e):
         """ Starts the agent and required threads """
         logger.debug("Spawning metric & trace reporting threads")
-        self.sensor.meter.run()
-        instana.singletons.tracer.recorder.run()
+        self.sensor.start()
+        instana.singletons.tracer.recorder.start()
+
+    def handle_fork(self):
+        """
+        Forks happen.  Here we handle them.  Affected components are the singletons: Agent, Sensor & Tracers
+        """
+        # Reset the Agent
+        self.reset()
+
+        # Ask the sensor to handle the fork
+        self.sensor.handle_fork()
+
+        # Ask the tracer to handle the fork
+        instana.singletons.tracer.handle_fork()
+
+    def reset(self):
+        self.last_seen = None
+        self.from_ = From()
+        self.machine.reset()
 
     def to_json(self, o):
         def extractor(o):
@@ -95,19 +123,6 @@ class Agent(object):
             logger.info("Will also capture these custom headers: %s", self.extra_headers)
 
         self.from_ = From(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
-
-    def reset(self):
-        self.last_seen = None
-        self.from_ = From()
-        self.machine.reset()
-
-    def handle_fork(self):
-        """
-        Forks happen.  Here we handle them.
-        """
-        self.reset()
-        self.sensor.handle_fork()
-        instana.singletons.tracer.handle_fork()
 
     def is_agent_listening(self, host, port):
         """

@@ -70,7 +70,7 @@ class TheMachine(object):
 
         self.timer = t.Timer(5, self.fsm.lookup)
         self.timer.daemon = True
-        self.timer.name = "Startup"
+        self.timer.name = "Instana Machine"
         self.timer.start()
 
     def printstatechange(self, e):

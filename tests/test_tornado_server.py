@@ -59,6 +59,10 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aiohttp_span.t)
@@ -76,7 +80,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(200, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", tornado_span.data.http.url)
         self.assertIsNone(tornado_span.data.http.params)
@@ -85,7 +88,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
@@ -119,6 +121,10 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aiohttp_span.t)
@@ -136,7 +142,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(200, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", tornado_span.data.http.url)
         self.assertIsNone(tornado_span.data.http.params)
@@ -145,7 +150,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", aiohttp_span.data.http.url)
         self.assertEqual("POST", aiohttp_span.data.http.method)
@@ -180,6 +184,11 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_301_span.n)
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aiohttp_span.t)
@@ -201,7 +210,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
-        self.assertEqual("tornado-server", tornado_301_span.n)
         self.assertEqual(301, tornado_301_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/301", tornado_301_span.data.http.url)
         self.assertIsNone(tornado_span.data.http.params)
@@ -210,7 +218,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_301_span.stack) is list)
         self.assertTrue(len(tornado_301_span.stack) > 1)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(200, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", tornado_span.data.http.url)
         self.assertEqual("GET", tornado_span.data.http.method)
@@ -218,7 +225,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/301", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
@@ -252,6 +258,10 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aiohttp_span.t)
@@ -269,7 +279,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(405, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/405", tornado_span.data.http.url)
         self.assertIsNone(tornado_span.data.http.params)
@@ -278,7 +287,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(405, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/405", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
@@ -312,6 +320,10 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aiohttp_span.t)
@@ -329,7 +341,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(tornado_span.error)
         self.assertEqual(tornado_span.ec, 1)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(500, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/500", tornado_span.data.http.url)
         self.assertIsNone(tornado_span.data.http.params)
@@ -338,7 +349,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(500, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/500", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
@@ -373,6 +383,10 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aiohttp_span.t)
@@ -390,7 +404,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(tornado_span.error)
         self.assertEqual(tornado_span.ec, 1)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(504, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/504", tornado_span.data.http.url)
         self.assertIsNone(tornado_span.data.http.params)
@@ -399,7 +412,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(504, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/504", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
@@ -428,11 +440,15 @@ class TestTornadoServer(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
+        self.assertIsNone(async_tracer.active_span)
+
         tornado_span = spans[0]
         aiohttp_span = spans[1]
         test_span = spans[2]
 
-        self.assertIsNone(async_tracer.active_span)
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual("sdk", test_span.n)
 
         # Same traceId
         traceId = test_span.t
@@ -451,7 +467,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(200, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", tornado_span.data.http.url)
         self.assertEqual("secret=<redacted>", tornado_span.data.http.params)
@@ -460,7 +475,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
@@ -502,6 +516,10 @@ class TestTornadoServer(unittest.TestCase):
 
         self.assertIsNone(async_tracer.active_span)
 
+        self.assertEqual("tornado-server", tornado_span.n)
+        self.assertEqual("aiohttp-client", aioclient_span.n)
+        self.assertEqual("sdk", test_span.n)
+
         # Same traceId
         traceId = test_span.t
         self.assertEqual(traceId, aioclient_span.t)
@@ -519,7 +537,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
-        self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual(200, tornado_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", tornado_span.data.http.url)
         self.assertEqual("secret=<redacted>", tornado_span.data.http.params)
@@ -528,7 +545,6 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)
 
-        self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data.http.status)
         self.assertEqual(testenv["tornado_server"] + "/", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)

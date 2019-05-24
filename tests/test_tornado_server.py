@@ -57,9 +57,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -95,13 +95,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_post(self):
@@ -119,9 +119,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -161,13 +161,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_301(self):
@@ -188,8 +188,10 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_301_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -241,13 +243,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_405(self):
@@ -265,9 +267,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -307,13 +309,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_500(self):
@@ -331,9 +333,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -374,13 +376,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_504(self):
@@ -398,9 +400,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -441,13 +443,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_with_params_to_scrub(self):
@@ -467,9 +469,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertEqual("tornado-server", tornado_span.n)
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -508,13 +510,13 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_custom_header_capture(self):
@@ -539,9 +541,9 @@ class TestTornadoServer(unittest.TestCase):
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 
-        assert(tornado_span)
-        assert(aiohttp_span)
-        assert(test_span)
+        self.assertIsNotNone(tornado_span)
+        self.assertIsNotNone(aiohttp_span)
+        self.assertIsNotNone(test_span)
 
         self.assertIsNone(async_tracer.active_span)
 
@@ -582,16 +584,16 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert("X-Instana-T" in response.headers)
+        self.assertTrue("X-Instana-T" in response.headers)
         self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert("X-Instana-S" in response.headers)
+        self.assertTrue("X-Instana-S" in response.headers)
         self.assertEqual(response.headers["X-Instana-S"], tornado_span.s)
-        assert("X-Instana-L" in response.headers)
+        self.assertTrue("X-Instana-L" in response.headers)
         self.assertEqual(response.headers["X-Instana-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-        assert("http.X-Capture-This" in tornado_span.data.custom.tags)
+        self.assertTrue("http.X-Capture-This" in tornado_span.data.custom.tags)
         self.assertEqual('this', tornado_span.data.custom.tags['http.X-Capture-This'])
-        assert("http.X-Capture-That" in tornado_span.data.custom.tags)
+        self.assertTrue("http.X-Capture-That" in tornado_span.data.custom.tags)
         self.assertEqual('that', tornado_span.data.custom.tags['http.X-Capture-That'])

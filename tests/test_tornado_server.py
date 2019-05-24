@@ -168,7 +168,7 @@ class TestTornadoServer(unittest.TestCase):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["tornado_server"] + "/301")
 
-        response = self.loop.run_until_complete(test())
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
@@ -241,7 +241,7 @@ class TestTornadoServer(unittest.TestCase):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["tornado_server"] + "/405")
 
-        response = self.loop.run_until_complete(test())
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -301,7 +301,7 @@ class TestTornadoServer(unittest.TestCase):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["tornado_server"] + "/500")
 
-        response = self.loop.run_until_complete(test())
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -362,7 +362,7 @@ class TestTornadoServer(unittest.TestCase):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["tornado_server"] + "/504")
 
-        response = self.loop.run_until_complete(test())
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -423,7 +423,7 @@ class TestTornadoServer(unittest.TestCase):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["tornado_server"] + "/?secret=yeah")
 
-        response = self.loop.run_until_complete(test())
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -491,7 +491,7 @@ class TestTornadoServer(unittest.TestCase):
 
                     return await self.fetch(session, testenv["tornado_server"] + "/?secret=iloveyou", headers=headers)
 
-        response = self.loop.run_until_complete(test())
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))

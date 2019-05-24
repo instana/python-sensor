@@ -5,6 +5,7 @@ import unittest
 
 import urllib3
 from instana.singletons import agent, tracer
+from .helpers import testenv
 
 
 class TestWSGI(unittest.TestCase):
@@ -20,7 +21,7 @@ class TestWSGI(unittest.TestCase):
         return None
 
     def test_vanilla_requests(self):
-        response = self.http.request('GET', 'http://127.0.0.1:5000/')
+        response = self.http.request('GET', testenv["wsgi_server"] + '/')
         spans = self.recorder.queued_spans()
 
         self.assertEqual(1, len(spans))
@@ -29,7 +30,7 @@ class TestWSGI(unittest.TestCase):
 
     def test_get_request(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', 'http://127.0.0.1:5000/')
+            response = self.http.request('GET', testenv["wsgi_server"] + '/')
 
         spans = self.recorder.queued_spans()
 
@@ -76,7 +77,7 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:5000', wsgi_span.data.http.host)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
         self.assertEqual('/', wsgi_span.data.http.url)
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
@@ -86,7 +87,7 @@ class TestWSGI(unittest.TestCase):
 
     def test_complex_request(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', 'http://127.0.0.1:5000/complex')
+            response = self.http.request('GET', testenv["wsgi_server"] + '/complex')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(5, len(spans))
@@ -143,7 +144,7 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:5000', wsgi_span.data.http.host)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
         self.assertEqual('/complex', wsgi_span.data.http.url)
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
@@ -160,7 +161,7 @@ class TestWSGI(unittest.TestCase):
         request_headers['X-Capture-That'] = 'that'
 
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
+            response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=request_headers)
 
         spans = self.recorder.queued_spans()
 
@@ -207,7 +208,7 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:5000', wsgi_span.data.http.host)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
         self.assertEqual('/', wsgi_span.data.http.url)
         self.assertEqual('GET', wsgi_span.data.http.method)
         self.assertEqual('200', wsgi_span.data.http.status)
@@ -222,7 +223,7 @@ class TestWSGI(unittest.TestCase):
 
     def test_secret_scrubbing(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', 'http://127.0.0.1:5000/?secret=shhh')
+            response = self.http.request('GET', testenv["wsgi_server"] + '/?secret=shhh')
 
         spans = self.recorder.queued_spans()
 
@@ -269,7 +270,7 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:5000', wsgi_span.data.http.host)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
         self.assertEqual('/', wsgi_span.data.http.url)
         self.assertEqual('secret=<redacted>', wsgi_span.data.http.params)
         self.assertEqual('GET', wsgi_span.data.http.method)
@@ -283,7 +284,7 @@ class TestWSGI(unittest.TestCase):
         request_headers['X-Instana-T'] = '0000000000000001'
         request_headers['X-Instana-S'] = '0000000000000001'
 
-        response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
+        response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=request_headers)
 
         assert response
         self.assertEqual(200, response.status)
@@ -316,7 +317,7 @@ class TestWSGI(unittest.TestCase):
         request_headers['X-InSTANa-T'] = '0000000000000001'
         request_headers['X-instana-S'] = '0000000000000001'
 
-        response = self.http.request('GET', 'http://127.0.0.1:5000/', headers=request_headers)
+        response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=request_headers)
 
         assert response
         self.assertEqual(200, response.status)
@@ -346,7 +347,7 @@ class TestWSGI(unittest.TestCase):
 
     def test_response_headers(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', 'http://127.0.0.1:5000/')
+            response = self.http.request('GET', testenv["wsgi_server"] + '/')
 
         spans = self.recorder.queued_spans()
 

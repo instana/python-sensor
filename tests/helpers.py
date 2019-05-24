@@ -13,7 +13,7 @@ else:
     testenv['mysql_host'] = '127.0.0.1'
 
 testenv['mysql_port'] = int(os.environ.get('MYSQL_PORT', '3306'))
-testenv['mysql_db']   = os.environ.get('MYSQL_DB', 'travis_ci_test')
+testenv['mysql_db']   = os.environ.get('MYSQL_DB', 'circle_test')
 testenv['mysql_user'] = os.environ.get('MYSQL_USER', 'root')
 
 if 'MYSQL_PW' in os.environ:
@@ -34,8 +34,8 @@ else:
     testenv['postgresql_host'] = '127.0.0.1'
 
 testenv['postgresql_port'] = int(os.environ.get('POSTGRESQL_PORT', '3306'))
-testenv['postgresql_db']   = os.environ.get('POSTGRESQL_DB', 'travis_ci_test')
-testenv['postgresql_user'] = os.environ.get('POSTGRESQL_USER', 'postgres')
+testenv['postgresql_db']   = os.environ.get('POSTGRESQL_DB', 'circle_test')
+testenv['postgresql_user'] = os.environ.get('POSTGRESQL_USER', 'root')
 
 if 'POSTGRESQL_PW' in os.environ:
     testenv['postgresql_pw'] = os.environ['POSTGRESQL_PW']

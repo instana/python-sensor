@@ -5,11 +5,13 @@ from suds.client import Client
 
 from instana.singletons import tracer
 
+from .helpers import testenv
+
 
 class TestSudsJurko:
     def setUp(self):
         """ Clear all spans before a test run """
-        self.client = Client('http://localhost:4132/?wsdl', cache=None)
+        self.client = Client(testenv["soap_server"] + '/?wsdl', cache=None)
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
         tracer.cur_ctx = None
@@ -53,7 +55,7 @@ class TestSudsJurko:
         assert_equals(None, soap_span.ec)
 
         assert_equals('ask_question', soap_span.data.soap.action)
-        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+        assert_equals(testenv["soap_server"] + '/', soap_span.data.http.url)
 
     def test_server_exception(self):
         response = None
@@ -90,7 +92,7 @@ class TestSudsJurko:
                       soap_span.data.custom.logs[tskey]['message'])
 
         assert_equals('server_exception', soap_span.data.soap.action)
-        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+        assert_equals(testenv["soap_server"] + '/', soap_span.data.http.url)
 
     def test_server_fault(self):
         response = None
@@ -126,7 +128,7 @@ class TestSudsJurko:
                       soap_span.data.custom.logs[tskey]['message'])
 
         assert_equals('server_fault', soap_span.data.soap.action)
-        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+        assert_equals(testenv["soap_server"] + '/', soap_span.data.http.url)
 
     def test_client_fault(self):
         response = None
@@ -163,4 +165,4 @@ class TestSudsJurko:
                       soap_span.data.custom.logs[tskey]['message'])
 
         assert_equals('client_fault', soap_span.data.soap.action)
-        assert_equals('http://localhost:4132/', soap_span.data.http.url)
+        assert_equals(testenv["soap_server"] + '/', soap_span.data.http.url)

@@ -10,6 +10,7 @@ from .helpers import testenv
 
 
 class TestAiohttp(unittest.TestCase):
+
     async def fetch(self, session, url, headers=None):
         try:
             async with session.get(url, headers=headers) as response:
@@ -65,7 +66,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5000/", aiohttp_span.data.http.url)
+        self.assertEqual(testenv["wsgi_server"] + "/", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -121,7 +122,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5000/301", aiohttp_span.data.http.url)
+        self.assertEqual(testenv["wsgi_server"] + "/301", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -172,7 +173,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(405, aiohttp_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5000/405", aiohttp_span.data.http.url)
+        self.assertEqual(testenv["wsgi_server"] + "/405", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -224,7 +225,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(500, aiohttp_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5000/500", aiohttp_span.data.http.url)
+        self.assertEqual(testenv["wsgi_server"] + "/500", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
         self.assertEqual('INTERNAL SERVER ERROR', aiohttp_span.data.http.error)
         self.assertIsNotNone(aiohttp_span.stack)
@@ -276,7 +277,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(504, aiohttp_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5000/504", aiohttp_span.data.http.url)
+        self.assertEqual(testenv["wsgi_server"] + "/504", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
         self.assertEqual('GATEWAY TIMEOUT', aiohttp_span.data.http.error)
         self.assertIsNotNone(aiohttp_span.stack)
@@ -328,7 +329,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5000/", aiohttp_span.data.http.url)
+        self.assertEqual(testenv["wsgi_server"] + "/", aiohttp_span.data.http.url)
         self.assertEqual("GET", aiohttp_span.data.http.method)
         self.assertEqual("secret=<redacted>", aiohttp_span.data.http.params)
         self.assertIsNotNone(aiohttp_span.stack)
@@ -425,7 +426,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
         self.assertEqual(200, aioserver_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/", aioserver_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/", aioserver_span.data.http.url)
         self.assertEqual("GET", aioserver_span.data.http.method)
         self.assertIsNotNone(aioserver_span.stack)
         self.assertTrue(type(aioserver_span.stack) is list)
@@ -433,7 +434,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/", aioclient_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)
         self.assertIsNotNone(aioclient_span.stack)
         self.assertTrue(type(aioclient_span.stack) is list)
@@ -484,7 +485,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
         self.assertEqual(200, aioserver_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/", aioserver_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/", aioserver_span.data.http.url)
         self.assertEqual("GET", aioserver_span.data.http.method)
         self.assertEqual("secret=<redacted>", aioserver_span.data.http.params)
         self.assertIsNotNone(aioserver_span.stack)
@@ -493,7 +494,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/", aioclient_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)
         self.assertEqual("secret=<redacted>", aioclient_span.data.http.params)
         self.assertIsNotNone(aioclient_span.stack)
@@ -553,7 +554,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
         self.assertEqual(200, aioserver_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/", aioserver_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/", aioserver_span.data.http.url)
         self.assertEqual("GET", aioserver_span.data.http.method)
         self.assertEqual("secret=<redacted>", aioserver_span.data.http.params)
         self.assertIsNotNone(aioserver_span.stack)
@@ -562,7 +563,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/", aioclient_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)
         self.assertEqual("secret=<redacted>", aioclient_span.data.http.params)
         self.assertIsNotNone(aioclient_span.stack)
@@ -619,7 +620,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
         self.assertEqual(401, aioserver_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/401", aioserver_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/401", aioserver_span.data.http.url)
         self.assertEqual("GET", aioserver_span.data.http.method)
         self.assertIsNotNone(aioserver_span.stack)
         self.assertTrue(type(aioserver_span.stack) is list)
@@ -627,7 +628,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(401, aioclient_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/401", aioclient_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/401", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)
         self.assertIsNotNone(aioclient_span.stack)
         self.assertTrue(type(aioclient_span.stack) is list)
@@ -678,7 +679,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
         self.assertEqual(500, aioserver_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/500", aioserver_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/500", aioserver_span.data.http.url)
         self.assertEqual("GET", aioserver_span.data.http.method)
         self.assertIsNotNone(aioserver_span.stack)
         self.assertTrue(type(aioserver_span.stack) is list)
@@ -686,7 +687,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(500, aioclient_span.data.http.status)
-        self.assertEqual("http://127.0.0.1:5002/500", aioclient_span.data.http.url)
+        self.assertEqual(testenv["aiohttp_server"] + "/500", aioclient_span.data.http.url)
         self.assertEqual("GET", aioclient_span.data.http.method)
         self.assertEqual('I must simulate errors.', aioclient_span.data.http.error)
         self.assertIsNotNone(aioclient_span.stack)

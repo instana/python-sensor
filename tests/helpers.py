@@ -51,3 +51,17 @@ if 'REDIS' in os.environ:
     testenv['redis_url']= os.environ['REDIS']
 else:
     testenv['redis_url'] = '127.0.0.1:6379'
+
+
+def get_first_span_by_name(spans, name):
+    for span in spans:
+        if span.n == name:
+            return span
+    return None
+
+
+def get_span_by_filter(spans, filter):
+    for span in spans:
+        if filter(span) is True:
+            return span
+    return None

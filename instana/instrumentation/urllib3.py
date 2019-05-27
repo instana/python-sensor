@@ -23,12 +23,12 @@ try:
                 kvs['path'] = args[1]
             else:
                 kvs['method'] = kwargs.get('method')
-                kvs['path'] = kwargs.get('path', '')
+                kvs['path'] = kwargs.get('path')
                 if kvs['path'] is None:
                     kvs['path'] = kwargs.get('url')
 
             # Strip any secrets from potential query params
-            if kvs.get('path') and ('?' in kvs['path']):
+            if kvs.get('path') is not None and ('?' in kvs['path']):
                 parts = kvs['path'].split('?')
                 kvs['path'] = parts[0]
                 if len(parts) is 2:

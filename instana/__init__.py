@@ -24,12 +24,8 @@ import sys
 from threading import Timer
 import pkg_resources
 
-
-if "INSTANA_MAGIC" in os.environ:
-    pkg_resources.working_set.add_entry("/tmp/instana/python")
-
 __author__ = 'Instana Inc.'
-__copyright__ = 'Copyright 2018 Instana Inc.'
+__copyright__ = 'Copyright 2019 Instana Inc.'
 __credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo']
 __license__ = 'MIT'
 __maintainer__ = 'Peter Giacomo Lombardo'
@@ -47,14 +43,7 @@ def load(_):
     environment variable.
     """
     if "INSTANA_DEBUG" in os.environ:
-        print("==========================================================")
-        print("Instana: Loading...")
-        print("==========================================================")
-
-
-# User configurable EUM API key for instana.helpers.eum_snippet()
-# pylint: disable=invalid-name
-eum_api_key = ''
+        print("Instana: activated via AUTOWRAPT_BOOTSTRAP")
 
 
 def boot_agent():
@@ -83,8 +72,36 @@ def boot_agent():
 
 
 if "INSTANA_MAGIC" in os.environ:
-    # If we're being loaded into an already running process, then delay agent initialization
-    t = Timer(3.0, boot_agent)
-    t.start()
+    pkg_resources.working_set.add_entry("/tmp/instana/python")
+
+    if "INSTANA_DEBUG" in os.environ:
+        print("Instana: activated via AutoTrace")
 else:
-    boot_agent()
+    if ("INSTANA_DEBUG" in os.environ) and ("AUTOWRAPT_BOOTSTRAP" not in os.environ):
+            print("Instana: activated via manual import")
+
+# User configurable EUM API key for instana.helpers.eum_snippet()
+# pylint: disable=invalid-name
+eum_api_key = ''
+
+# This Python package can be loaded into Python processes one of three ways:
+#   1. manual import statement
+#   2. autowrapt hook
+#   3. dynamically injected remotely
+#
+# With such magic, we may get pulled into Python processes that we have no interest being in.
+# As a safety measure, we maintain a "do not load list" and if this process matches something
+# in that list, then we go sit in a corner quietly and don't load anything at all.
+do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_install", "easy_install-2.7",
+                    "smtpd.py", "ufw", "unattended-upgrade"]
+
+if os.path.basename(sys.argv[0]) in do_not_load_list:
+    if "INSTANA_DEBUG" in os.environ:
+        print("Instana: No use in monitoring this process type (%s).  Will go sit in a corner quietly.", sys.argv[0])
+else:
+    if "INSTANA_MAGIC" in os.environ:
+        # If we're being loaded into an already running process, then delay agent initialization
+        t = Timer(3.0, boot_agent)
+        t.start()
+    else:
+        boot_agent()

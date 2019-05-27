@@ -18,9 +18,13 @@ from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
-    def __init__(self, options=Options(), scope_manager=None):
+    def __init__(self, options=Options(), scope_manager=None, recorder=None):
+
+        if recorder is None:
+            recorder = InstanaRecorder()
+
         super(InstanaTracer, self).__init__(
-            InstanaRecorder(), InstanaSampler(), scope_manager)
+            recorder, InstanaSampler(), scope_manager)
 
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()

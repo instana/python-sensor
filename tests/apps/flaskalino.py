@@ -15,7 +15,7 @@ app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
 
-flask_server = make_server('127.0.0.1', testenv["wsgi_port"], wsgi_app)
+flask_server = make_server('127.0.0.1', testenv["wsgi_port"], app.wsgi_app)
 
 @app.route("/")
 def hello():

@@ -31,6 +31,11 @@ __license__ = 'MIT'
 __maintainer__ = 'Peter Giacomo Lombardo'
 __email__ = 'peter.lombardo@instana.com'
 
+try:
+    __version__ = pkg_resources.get_distribution('instana').version
+except pkg_resources.DistributionNotFound:
+    __version__ = 'unknown'
+
 
 def load(_):
     """
@@ -70,15 +75,10 @@ if "INSTANA_MAGIC" in os.environ:
     pkg_resources.working_set.add_entry("/tmp/instana/python")
 
     if "INSTANA_DEBUG" in os.environ:
-        print("Instana: activated via Automatic Remote Instrumentation")
+        print("Instana: activated via AutoTrace")
 else:
     if ("INSTANA_DEBUG" in os.environ) and ("AUTOWRAPT_BOOTSTRAP" not in os.environ):
             print("Instana: activated via manual import")
-
-try:
-    __version__ = pkg_resources.get_distribution('instana').version
-except pkg_resources.DistributionNotFound:
-    __version__ = 'unknown'
 
 # User configurable EUM API key for instana.helpers.eum_snippet()
 # pylint: disable=invalid-name

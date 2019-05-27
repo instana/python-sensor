@@ -90,13 +90,14 @@ eum_api_key = ''
 #   3. dynamically injected remotely
 #
 # With such magic, we may get pulled into Python processes that we have no interest being in.
-# Here we maintain a "do not load list" and if this process matches something in that list,
-# then we go sit in a corner quietly and don't load anything at all.
-do_not_load_list = ["pip", "pipenv"]
+# As a safety measure, we maintain a "do not load list" and if this process matches something
+# in that list, then we go sit in a corner quietly and don't load anything at all.
+do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_install", "easy_install-2.7",
+                    "smtpd.py", "ufw", "unattended-upgrade"]
 
 if os.path.basename(sys.argv[0]) in do_not_load_list:
     if "INSTANA_DEBUG" in os.environ:
-        print("Instana: No use in monitoring this process type.  Will go sit in a corner quietly.")
+        print("Instana: No use in monitoring this process type (%s).  Will go sit in a corner quietly.", sys.argv[0])
 else:
     if "INSTANA_MAGIC" in os.environ:
         # If we're being loaded into an already running process, then delay agent initialization

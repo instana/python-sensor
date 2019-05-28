@@ -62,18 +62,20 @@ class TheMachine(object):
                 ("pending",  "announced",    "wait4init"),
                 ("ready",    "wait4init",    "good2go")],
             "callbacks": {
+                # Can add the following to debug
+                # "onchangestate":  self.print_state_change,
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
                 "onpending":      self.agent.start,
-                "onready":        self.on_ready,
-                "onchangestate":  self.printstatechange}})
+                "onready":        self.on_ready}})
 
         self.timer = t.Timer(5, self.fsm.lookup)
         self.timer.daemon = True
-        self.timer.name = "Startup"
+        self.timer.name = "Instana Machine"
         self.timer.start()
 
-    def printstatechange(self, e):
+    @staticmethod
+    def print_state_change(e):
         logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
                      (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 

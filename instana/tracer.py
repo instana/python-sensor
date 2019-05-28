@@ -29,6 +29,10 @@ class InstanaTracer(BasicTracer):
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
 
+    def handle_fork(self):
+        # Nothing to do for the Tracer;  Pass onto Recorder
+        self.recorder.handle_fork()
+
     def start_active_span(self,
                           operation_name,
                           child_of=None,
@@ -117,9 +121,6 @@ class InstanaTracer(BasicTracer):
             return self._propagators[format].extract(carrier)
         else:
             raise ot.UnsupportedFormatException()
-
-    def handle_fork(self):
-        self.recorder = InstanaRecorder()
 
     def __add_stack(self, span, limit=None):
         """ Adds a backtrace to this span """

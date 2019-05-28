@@ -7,6 +7,7 @@ import resource
 import sys
 import threading
 from types import ModuleType
+from fysom import FysomError
 
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -105,16 +106,19 @@ class EntityData(object):
 
 class Meter(object):
     SNAPSHOT_PERIOD = 600
-    snapshot_countdown = 0
+    THREAD_NAME = "Instana Metric Collection"
 
     # The agent that this instance belongs to
     agent = None
+
+    # We send Snapshot data every 10 minutes.  This is the countdown variable.
+    snapshot_countdown = 0
 
     last_usage = None
     last_collect = None
     last_metrics = None
     djmw = None
-    thr = None
+    thread = None
 
     # A True value signals the metric reporting thread to shutdown
     _shutdown = False
@@ -123,12 +127,24 @@ class Meter(object):
         self.agent = agent
         pass
 
-    def run(self):
-        """ Spawns the metric reporting thread """
-        self.thr = threading.Thread(target=self.collect_and_report)
-        self.thr.daemon = True
-        self.thr.name = "Instana Metric Collection"
-        self.thr.start()
+    def start(self):
+        """
+        This function can be called at first boot or after a fork.  In either case, it will
+        assure that the Meter is in a proper state (via reset()) and spawn a new background
+        thread to periodically report queued spans
+
+        Note that this will abandon any previous thread object that (in the case of an `os.fork()`)
+        should no longer exist in the forked process.
+
+        (Forked processes carry forward only the thread that called `os.fork()`
+        into the new process space.  All other background threads need to be recreated.)
+
+        Calling this directly more than once without an actual fork will cause errors.
+        """
+        self.reset()
+
+        if self.thread.isAlive() is False:
+            self.thread.start()
 
     def reset(self):
         """" Reset the state as new """
@@ -136,20 +152,32 @@ class Meter(object):
         self.last_collect = None
         self.last_metrics = None
         self.snapshot_countdown = 0
+        self.thread = None
+
+        # Prepare the thread for metric collection/reporting
+        for thread in threading.enumerate():
+            if thread.getName() == self.THREAD_NAME:
+                # Metric thread already exists; Make sure we re-use this one.
+                self.thread = thread
+
+        if self.thread is None:
+            self.thread = threading.Thread(target=self.collect_and_report)
+            self.thread.daemon = True
+            self.thread.name = self.THREAD_NAME
 
     def handle_fork(self):
-        self.reset()
-        self.run()
+        self.start()
 
     def collect_and_report(self):
         """
         Target function for the metric reporting thread.  This is a simple loop to
         collect and report entity data every 1 second.
         """
-        logger.debug("Metric reporting thread is now alive")
+        logger.debug(" -> Metric reporting thread is now alive")
 
         def metric_work():
             self.process()
+
             if self.agent.is_timed_out():
                 logger.warn("Host agent offline for >1 min.  Going to sit in a corner...")
                 self.agent.reset()
@@ -160,12 +188,17 @@ class Meter(object):
 
     def process(self):
         """ Collects, processes & reports metrics """
-        if self.agent.machine.fsm.current is "wait4init":
-            # Test the host agent if we're ready to send data
-            if self.agent.is_agent_ready():
-                self.agent.machine.fsm.ready()
-            else:
-                return
+        try:
+            if self.agent.machine.fsm.current is "wait4init":
+                # Test the host agent if we're ready to send data
+                if self.agent.is_agent_ready():
+                    if self.agent.machine.fsm.current is not "good2go":
+                        self.agent.machine.fsm.ready()
+                else:
+                    return
+        except FysomError:
+            logger.debug('Harmless state machine thread disagreement.  Will self-correct on next timer cycle.')
+            return
 
         if self.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1

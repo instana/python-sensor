@@ -4,8 +4,6 @@ import opentracing
 from .agent import Agent
 from .tracer import InstanaTracer, InstanaRecorder
 
-from distutils.version import LooseVersion
-
 
 # The Instana Agent which carries along with it a Sensor that collects metrics.
 agent = Agent()

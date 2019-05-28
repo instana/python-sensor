@@ -141,7 +141,7 @@ class Agent(object):
             else:
                 logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s"
                              % (host, port, server_header))
-        except (requests.ConnectTimeout, requests.ConnectionError):
+        except requests.exceptions.RequestException:
             logger.debug("Instana Host Agent not found on %s:%d" % (host, port))
             rv = False
         finally:
@@ -162,7 +162,7 @@ class Agent(object):
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
-        except (requests.ConnectTimeout, requests.ConnectionError):
+        except requests.exceptions.RequestException:
             logger.debug("announce", exc_info=True)
         finally:
             return response
@@ -177,8 +177,8 @@ class Agent(object):
             if response.status_code is 200:
                 return True
             return False
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("is_agent_ready: host agent connection error")
+        except requests.exceptions.RequestException:
+            logger.debug("is_agent_ready: host agent connection error", exc_info=True)
 
     def report_data(self, entity_data):
         """
@@ -195,8 +195,8 @@ class Agent(object):
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_data: host agent connection error")
+        except requests.exceptions.RequestException:
+            logger.debug("report_data: host agent connection error", exc_info=True)
         finally:
             return response
 
@@ -215,8 +215,8 @@ class Agent(object):
 
             if response.status_code is 200:
                 self.last_seen = datetime.now()
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_traces: host agent connection error")
+        except requests.exceptions.RequestException:
+            logger.debug("report_traces: host agent connection error", exc_info=True)
         finally:
             return response
 
@@ -235,7 +235,7 @@ class Agent(object):
                                         data=payload,
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
-        except (requests.ConnectTimeout, requests.ConnectionError):
+        except requests.exceptions.RequestException:
             logger.debug("task_response", exc_info=True)
         except Exception:
             logger.debug("task_response Exception", exc_info=True)

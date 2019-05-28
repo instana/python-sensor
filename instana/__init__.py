@@ -96,7 +96,7 @@ do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_ins
                     "smtpd.py", "ufw", "unattended-upgrade"]
 
 # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
-# and some Pipenv installs.  If this is the case, we don't activate.
+# and some Pipenv installs.  If this is the case, it's best effort.
 if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0]) in do_not_load_list):
     if "INSTANA_DEBUG" in os.environ:
         print("Instana: No use in monitoring this process type (%s).  Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))

@@ -7,6 +7,7 @@ import resource
 import sys
 import threading
 from types import ModuleType
+from fysom import FysomError
 
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -179,13 +180,17 @@ class Meter(object):
 
     def process(self):
         """ Collects, processes & reports metrics """
-        if self.agent.machine.fsm.current is "wait4init":
-            # Test the host agent if we're ready to send data
-            if self.agent.is_agent_ready():
-                if self.agent.machine.fsm.current is not "good2go":
-                    self.agent.machine.fsm.ready()
-            else:
-                return
+        try:
+            if self.agent.machine.fsm.current is "wait4init":
+                # Test the host agent if we're ready to send data
+                if self.agent.is_agent_ready():
+                    if self.agent.machine.fsm.current is not "good2go":
+                        self.agent.machine.fsm.ready()
+                else:
+                    return
+        except FysomError:
+            logger.debug('Harmless state machine thread disagreement.  Will self-correct on next timer cycle.')
+            return
 
         if self.agent.can_send():
             self.snapshot_countdown = self.snapshot_countdown - 1

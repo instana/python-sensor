@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import json
 import os
 from datetime import datetime
-
+from threading import Timer
 import requests
 
 import instana.singletons
@@ -55,7 +55,7 @@ class Agent(object):
 
     def start(self, e):
         """ Starts the agent and required threads """
-        logger.debug("Spawning metric & trace reporting threads")
+        logger.debug("Spawning metric & span reporting threads")
         self.sensor.start()
         instana.singletons.tracer.recorder.start()
 
@@ -94,10 +94,11 @@ class Agent(object):
         return False
 
     def can_send(self):
-        # Watch for pid change in the case of ; if so, re-announce
+        # Watch for pid change (fork)
         current_pid = os.getpid()
         if self._boot_pid != current_pid:
             self._boot_pid = current_pid
+            logger.debug("Fork detected; Handling like a pro...")
             self.handle_fork()
             return False
 

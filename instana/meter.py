@@ -152,11 +152,18 @@ class Meter(object):
         self.last_collect = None
         self.last_metrics = None
         self.snapshot_countdown = 0
+        self.thread = None
 
         # Prepare the thread for metric collection/reporting
-        self.thread = threading.Thread(target=self.collect_and_report)
-        self.thread.daemon = True
-        self.thread.name = self.THREAD_NAME
+        for thread in threading.enumerate():
+            if thread.getName() == self.THREAD_NAME:
+                # Metric thread already exists; Make sure we re-use this one.
+                self.thread = thread
+
+        if self.thread is None:
+            self.thread = threading.Thread(target=self.collect_and_report)
+            self.thread.daemon = True
+            self.thread.name = self.THREAD_NAME
 
     def handle_fork(self):
         self.start()
@@ -166,10 +173,11 @@ class Meter(object):
         Target function for the metric reporting thread.  This is a simple loop to
         collect and report entity data every 1 second.
         """
-        logger.debug("Metric reporting thread is now alive")
+        logger.debug(" -> Metric reporting thread is now alive")
 
         def metric_work():
             self.process()
+
             if self.agent.is_timed_out():
                 logger.warn("Host agent offline for >1 min.  Going to sit in a corner...")
                 self.agent.reset()

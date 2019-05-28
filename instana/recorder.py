@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import os
 import sys
-import threading as t
+import threading
 
 import opentracing.ext.tags as ext
 from basictracer import Sampler, SpanRecorder
@@ -63,17 +63,24 @@ class InstanaRecorder(SpanRecorder):
             self.thread.start()
 
     def reset(self):
+        # Prepare the thread for metric collection/reporting
+        for thread in threading.enumerate():
+            if thread.getName() == self.THREAD_NAME:
+                # Span reporting thread already exists; Make sure we re-use this one.
+                self.thread = thread
+
         # Prepare the thread for span collection/reporting
-        self.thread = t.Thread(target=self.report_spans)
-        self.thread.daemon = True
-        self.thread.name = self.THREAD_NAME
+        if self.thread is None:
+            self.thread = threading.Thread(target=self.report_spans)
+            self.thread.daemon = True
+            self.thread.name = self.THREAD_NAME
 
     def handle_fork(self):
         self.start()
 
     def report_spans(self):
         """ Periodically report the queued spans """
-        logger.debug("Span reporting thread is now alive")
+        logger.debug(" -> Span reporting thread is now alive")
 
         def span_work():
             queue_size = self.queue.qsize()

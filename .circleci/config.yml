@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  build-test-python27:
+  python27:
     docker:
       - image: circleci/python:2.7.16
 
@@ -55,7 +55,7 @@ jobs:
           path: test-reports
           destination: test-reports
 
-  build-test-python35:
+  python35:
     docker:
       - image: circleci/python:3.5.6
 
@@ -104,7 +104,7 @@ jobs:
           path: test-reports
           destination: test-reports
 
-  build-test-python36:
+  python36:
     docker:
       - image: circleci/python:3.6.8
 
@@ -156,6 +156,6 @@ workflows:
   version: 2
   build:
     jobs:
-      - build-test-python27
-      - build-test-python35
-      - build-test-python36
+      - python27
+      - python35
+      - python36

@@ -12,7 +12,7 @@ jobs:
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
       - image: circleci/postgres:9.6.5-alpine-ram
-      - image: circleci/mysql:8.0.16
+      - image: circleci/mysql:5.5.62-ram
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
 
@@ -32,11 +32,10 @@ jobs:
           name: install dependencies
           command: |
             pip install virtualenv
-            virtualenv venv
+            virtualenv --python=python2.7 venv
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -r requirements.txt
             pip install -r requirements-test.txt
 
       - save_cache:

@@ -37,6 +37,7 @@ class Discovery(object):
 
 class TheMachine(object):
     RETRY_PERIOD = 30
+    THREAD_NAME = "Instana Machine"
 
     agent = None
     fsm = None
@@ -71,7 +72,7 @@ class TheMachine(object):
 
         self.timer = t.Timer(5, self.fsm.lookup)
         self.timer.daemon = True
-        self.timer.name = "Instana Machine"
+        self.timer.name = self.THREAD_NAME
         self.timer.start()
 
     @staticmethod
@@ -80,9 +81,25 @@ class TheMachine(object):
                      (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
 
     def reset(self):
-        self.fsm.lookup()
+        """
+        reset is called to start from scratch in a process.  It may be called on first boot or
+        after a detected fork.
+
+        Here we time a new announce cycle in the future so that any existing threads have time
+        to exit before we re-create them.
+
+        :return: void
+        """
+        logger.debug("State machine being reset.  Will schedule new announce cycle 6 seconds from now.")
+
+        self.timer = t.Timer(6, self.fsm.lookup)
+        self.timer.daemon = True
+        self.timer.name = self.THREAD_NAME
+        self.timer.start()
 
     def lookup_agent_host(self, e):
+        self.agent.should_threads_shutdown = False
+
         host, port = self.__get_agent_host_port()
 
         if self.agent.is_agent_listening(host, port):
@@ -103,14 +120,12 @@ class TheMachine(object):
             logger.warn("Instana Host Agent couldn't be found. Will retry periodically...")
             self.warnedPeriodic = True
 
-        self.schedule_retry(self.lookup_agent_host, e, "agent_lookup")
+        self.schedule_retry(self.lookup_agent_host, e, self.THREAD_NAME + ": agent_lookup")
         return False
 
     def announce_sensor(self, e):
         logger.debug("Announcing sensor to the agent")
-        sock = None
         pid = os.getpid()
-        cmdline = []
 
         try:
             if os.path.isfile("/proc/self/cmdline"):
@@ -152,7 +167,7 @@ class TheMachine(object):
             return True
         else:
             logger.debug("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e, "announce")
+            self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
         return False
 
     def schedule_retry(self, fun, e, name):

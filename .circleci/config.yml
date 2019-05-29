@@ -31,6 +31,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            rm -rf venv
             export PATH=/home/circleci/.local/bin:$PATH
             pip install --user -U pip setuptools virtualenv
             virtualenv --python=python2.7 --always-copy venv

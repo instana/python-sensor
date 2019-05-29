@@ -31,8 +31,9 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            pip install virtualenv
-            virtualenv --python=python2.7 venv
+            export PATH=/home/circleci/.local/bin:$PATH
+            pip install --user -U pip setuptools virtualenv
+            virtualenv --python=python2.7 --always-copy venv
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info

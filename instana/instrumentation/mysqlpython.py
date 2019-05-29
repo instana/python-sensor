@@ -9,7 +9,7 @@ try:
     cf = ConnectionFactory(connect_func=MySQLdb.connect, module_name='mysql')
 
     setattr(MySQLdb, 'connect', cf)
-    if hasattr(MySQLdb, 'Connect'):
+    if hasattr(MySQLdb,  'Connect'):
         setattr(MySQLdb, 'Connect', cf)
 
     logger.debug("Instrumenting mysql-python")

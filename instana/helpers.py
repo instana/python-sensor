@@ -12,7 +12,7 @@ from instana.log import logger
 # eum_snippet(meta=meta_kvs)
 
 
-def eum_snippet(trace_id=None, eum_api_key=None, meta={}):
+def eum_snippet(trace_id=None, eum_api_key=None, meta=None):
     """
     Return an EUM snippet for use in views, templates and layouts that reports
     client side metrics to Instana that will automagically be linked to the
@@ -30,7 +30,7 @@ def eum_snippet(trace_id=None, eum_api_key=None, meta={}):
         eum_src = Template(eum_file.read())
 
         # Prepare the standard required IDs
-        ids = {}
+        ids = dict()
         ids['meta_kvs'] = ''
 
         parent_span = tracer.active_span
@@ -48,15 +48,17 @@ def eum_snippet(trace_id=None, eum_api_key=None, meta={}):
             ids['eum_api_key'] = global_eum_api_key
 
         # Process passed in EUM 'meta' key/values
-        for key, value in meta.items():
-            ids['meta_kvs'] += ("'ineum('meta', '%s', '%s');'" % (key, value))
+        if meta is not None:
+            for key, value in meta.items():
+                ids['meta_kvs'] += ("'ineum('meta', '%s', '%s');'" % (key, value))
 
         return eum_src.substitute(ids)
-    except Exception as e:
-        logger.debug(e)
+    except Exception:
+        logger.debug("eum_snippet: ", exc_info=True)
         return ''
 
-def eum_test_snippet(trace_id=None, eum_api_key=None, meta={}):
+
+def eum_test_snippet(trace_id=None, eum_api_key=None, meta=None):
     """
     Return an EUM snippet for use in views, templates and layouts that reports
     client side metrics to Instana that will automagically be linked to the
@@ -92,10 +94,11 @@ def eum_test_snippet(trace_id=None, eum_api_key=None, meta={}):
             ids['eum_api_key'] = global_eum_api_key
 
         # Process passed in EUM 'meta' key/values
-        for key, value in meta.items():
-            ids['meta_kvs'] += ("'ineum('meta', '%s', '%s');'" % (key, value))
+        if meta is not None:
+            for key, value in meta.items():
+                ids['meta_kvs'] += ("'ineum('meta', '%s', '%s');'" % (key, value))
 
         return eum_src.substitute(ids)
-    except Exception as e:
-        logger.debug(e)
+    except Exception:
+        logger.debug("eum_snippet: ", exc_info=True)
         return ''

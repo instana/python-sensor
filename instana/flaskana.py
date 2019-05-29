@@ -13,7 +13,7 @@ def wrapper(wrapped, instance, args, kwargs):
     return rv
 
 
-def hook(module):
+def hook(_):
     """ Hook method to install the Instana middleware into Flask """
     if "INSTANA_DEBUG" in os.environ:
         print("==============================================================")

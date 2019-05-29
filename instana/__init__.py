@@ -78,7 +78,7 @@ if "INSTANA_MAGIC" in os.environ:
         print("Instana: activated via AutoTrace")
 else:
     if ("INSTANA_DEBUG" in os.environ) and ("AUTOWRAPT_BOOTSTRAP" not in os.environ):
-            print("Instana: activated via manual import")
+        print("Instana: activated via manual import")
 
 # User configurable EUM API key for instana.helpers.eum_snippet()
 # pylint: disable=invalid-name

@@ -58,22 +58,13 @@ class InstanaRecorder(SpanRecorder):
         Calling this directly more than once without an actual fork will cause errors.
         """
         self.reset()
-
-        if self.thread.isAlive() is False:
-            self.thread.start()
+        self.thread.start()
 
     def reset(self):
-        # Prepare the thread for metric collection/reporting
-        for thread in threading.enumerate():
-            if thread.getName() == self.THREAD_NAME:
-                # Span reporting thread already exists; Make sure we re-use this one.
-                self.thread = thread
-
         # Prepare the thread for span collection/reporting
-        if self.thread is None:
-            self.thread = threading.Thread(target=self.report_spans)
-            self.thread.daemon = True
-            self.thread.name = self.THREAD_NAME
+        self.thread = threading.Thread(target=self.report_spans)
+        self.thread.daemon = True
+        self.thread.name = self.THREAD_NAME
 
     def handle_fork(self):
         self.start()
@@ -83,6 +74,10 @@ class InstanaRecorder(SpanRecorder):
         logger.debug(" -> Span reporting thread is now alive")
 
         def span_work():
+            if instana.singletons.agent.should_threads_shutdown.is_set():
+                logger.debug("Thread shutdown signal from agent is active: Shutting down span reporting thread")
+                return False
+
             queue_size = self.queue.qsize()
             if queue_size > 0 and instana.singletons.agent.can_send():
                 response = instana.singletons.agent.report_traces(self.queued_spans())

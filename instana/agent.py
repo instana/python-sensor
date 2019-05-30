@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import json
 import os
 from datetime import datetime
-from threading import Timer
+import threading
 import requests
 
 import instana.singletons
@@ -47,6 +47,7 @@ class Agent(object):
     secrets_matcher = 'contains-ignore-case'
     secrets_list = ['key', 'password', 'secret']
     client = requests.Session()
+    should_threads_shutdown = threading.Event()
 
     def __init__(self):
         logger.debug("initializing agent")
@@ -54,8 +55,13 @@ class Agent(object):
         self.machine = TheMachine(self)
 
     def start(self, e):
-        """ Starts the agent and required threads """
+        """
+        Starts the agent and required threads
+
+        This method is called after a successful announce.  See fsm.py
+        """
         logger.debug("Spawning metric & span reporting threads")
+        self.should_threads_shutdown.clear()
         self.sensor.start()
         instana.singletons.tracer.recorder.start()
 
@@ -66,15 +72,18 @@ class Agent(object):
         # Reset the Agent
         self.reset()
 
-        # Ask the sensor to handle the fork
-        self.sensor.handle_fork()
-
-        # Ask the tracer to handle the fork
-        instana.singletons.tracer.handle_fork()
-
     def reset(self):
+        """
+        This will reset the agent to a fresh unannounced state.
+        :return: None
+        """
+        # Will signal to any running background threads to shutdown.
+        self.should_threads_shutdown.set()
+
         self.last_seen = None
         self.from_ = From()
+
+        # Will schedule a restart of the announce cycle in the future
         self.machine.reset()
 
     def to_json(self, o):

@@ -142,9 +142,7 @@ class Meter(object):
         Calling this directly more than once without an actual fork will cause errors.
         """
         self.reset()
-
-        if self.thread.isAlive() is False:
-            self.thread.start()
+        self.thread.start()
 
     def reset(self):
         """" Reset the state as new """
@@ -154,16 +152,9 @@ class Meter(object):
         self.snapshot_countdown = 0
         self.thread = None
 
-        # Prepare the thread for metric collection/reporting
-        for thread in threading.enumerate():
-            if thread.getName() == self.THREAD_NAME:
-                # Metric thread already exists; Make sure we re-use this one.
-                self.thread = thread
-
-        if self.thread is None:
-            self.thread = threading.Thread(target=self.collect_and_report)
-            self.thread.daemon = True
-            self.thread.name = self.THREAD_NAME
+        self.thread = threading.Thread(target=self.collect_and_report)
+        self.thread.daemon = True
+        self.thread.name = self.THREAD_NAME
 
     def handle_fork(self):
         self.start()
@@ -176,6 +167,10 @@ class Meter(object):
         logger.debug(" -> Metric reporting thread is now alive")
 
         def metric_work():
+            if self.agent.should_threads_shutdown.is_set():
+                logger.debug("Thread shutdown signal from agent is active: Shutting down metric reporting thread")
+                return False
+
             self.process()
 
             if self.agent.is_timed_out():

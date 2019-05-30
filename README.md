@@ -10,7 +10,7 @@ This package supports Python 2.7 or greater.
 
 Any and all feedback is welcome.  Happy Python visibility.
 
-[![Build Status](https://travis-ci.org/instana/python-sensor.svg?branch=master)](https://travis-ci.org/instana/python-sensor)
+[![CircleCI](https://circleci.com/gh/instana/python-sensor/tree/master.svg?style=svg)](https://circleci.com/gh/instana/python-sensor/tree/master)
 [![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-enabled-blue.svg)](http://opentracing.io)
 
 ## Installation

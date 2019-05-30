@@ -167,7 +167,7 @@ class Meter(object):
         logger.debug(" -> Metric reporting thread is now alive")
 
         def metric_work():
-            if self.agent.should_threads_shutdown is True:
+            if self.agent.should_threads_shutdown.is_set():
                 logger.debug("Thread shutdown signal from agent is active: Shutting down metric reporting thread")
                 return False
 

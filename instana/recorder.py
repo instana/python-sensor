@@ -74,7 +74,7 @@ class InstanaRecorder(SpanRecorder):
         logger.debug(" -> Span reporting thread is now alive")
 
         def span_work():
-            if instana.singletons.agent.should_threads_shutdown is True:
+            if instana.singletons.agent.should_threads_shutdown.is_set():
                 logger.debug("Thread shutdown signal from agent is active: Shutting down span reporting thread")
                 return False
 

@@ -98,7 +98,7 @@ class TheMachine(object):
         self.timer.start()
 
     def lookup_agent_host(self, e):
-        self.agent.should_threads_shutdown = False
+        self.agent.should_threads_shutdown.clear()
 
         host, port = self.__get_agent_host_port()
 

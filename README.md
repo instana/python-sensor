@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://disznc.s3.amazonaws.com/Python-1-2017-06-29-at-22.34.00.png"/>
+<img src="https://disznc.s3.amazonaws.com/python-dashboard-2019.gif"/>
 </div>
 
 # Instana
@@ -17,7 +17,7 @@ Any and all feedback is welcome.  Happy Python visibility.
 
 None
 
-_Instana remotely instruments your Python web servers automatically. To configure which Python processes this applies to, see the [Configuration page](https://docs.instana.io/ecosystem/python/configuration/#general)._
+_Instana remotely instruments your Python web servers automatically via Instana [AutoTrace™️](https://www.instana.com/supported-technologies/instana-autotrace/).  To configure which Python processes this applies to, see the [Configuration page](https://docs.instana.io/ecosystem/python/configuration/#general)._
 
 ##  Manual Installation
 

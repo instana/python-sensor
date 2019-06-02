@@ -114,6 +114,10 @@ class Meter(object):
     # We send Snapshot data every 10 minutes.  This is the countdown variable.
     snapshot_countdown = 0
 
+    # Collect the Snapshot only once and store the resulting Snapshot object here.
+    # We use this for every repeated snapshot send (every 10 minutes)
+    cached_snapshot = None
+
     last_usage = None
     last_collect = None
     last_metrics = None
@@ -240,6 +244,9 @@ class Meter(object):
     def collect_snapshot(self):
         """  Collects snapshot related information to this process and environment """
         try:
+            if self.cached_snapshot is not None:
+                return self.cached_snapshot
+
             if "INSTANA_SERVICE_NAME" in os.environ:
                 appname = os.environ["INSTANA_SERVICE_NAME"]
             elif "FLASK_APP" in os.environ:
@@ -260,6 +267,9 @@ class Meter(object):
                          djmw=self.djmw)
             s.version = sys.version
             s.versions = self.collect_modules()
+
+            # Cache the snapshot
+            self.cached_snapshot = s
         except Exception as e:
             logger.debug(e.message)
         else:

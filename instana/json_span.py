@@ -74,6 +74,14 @@ class MySQLData(BaseSpan):
     error = None
 
 
+class PostgresData(BaseSpan):
+    db = None
+    host = None
+    user = None
+    stmt = None
+    error = None
+
+
 class RabbitmqData(BaseSpan):
     exchange = None
     queue = None

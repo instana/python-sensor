@@ -207,7 +207,13 @@ class TestPyMySQL:
 
         assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
-        assert_equals(db_span.data.mysql.error, '(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
+
+        if sys.version_info[0] >= 3:
+            # Python 3
+            assert_equals(db_span.data.mysql.error, u'(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
+        else:
+            # Python 2
+            assert_equals(db_span.data.mysql.error, u'(1146, u"Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
 
         assert_equals(db_span.n, "mysql")
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])

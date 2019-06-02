@@ -1,8 +1,8 @@
 # coding: utf-8
-from distutils.version import LooseVersion
-from setuptools import find_packages, setup
 import sys
 from os import path
+from distutils.version import LooseVersion
+from setuptools import find_packages, setup
 
 # Import README.md into long_description
 pwd = path.abspath(path.dirname(__file__))
@@ -16,6 +16,7 @@ else:
 
 
 def check_setuptools():
+    """ Validate that we have min version required of setuptools """
     import pkg_resources
     st_version = pkg_resources.get_distribution('setuptools').version
     if LooseVersion(st_version) < LooseVersion('20.2.2'):
@@ -73,6 +74,7 @@ setup(name='instana',
               'mock>=2.0.0',
               'MySQL-python>=1.2.5;python_version<="2.7"',
               'psycopg2>=2.7.1',
+              'PyMySQL[rsa]>=0.9.1',
               'pyOpenSSL>=16.1.0;python_version<="2.7"',
               'pytest>=3.0.1',
               'redis<3.0.0',
@@ -85,7 +87,8 @@ setup(name='instana',
           ],
       },
       test_suite='nose.collector',
-      keywords=['performance', 'opentracing', 'metrics', 'monitoring', 'tracing', 'distributed-tracing'],
+      keywords=['performance', 'opentracing', 'metrics', 'monitoring',
+                'tracing', 'distributed-tracing'],
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Framework :: Django',

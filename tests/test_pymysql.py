@@ -10,11 +10,7 @@ from instana.singletons import tracer
 
 from .helpers import testenv
 
-if sys.version_info < (3, 0):
-    import MySQLdb
-else:
-    raise SkipTest("MySQL-python supported on Python 2.7 only")
-
+import pymysql
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +24,7 @@ BEGIN
 END
 """
 
-db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
+db = pymysql.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
                      user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
                      db=testenv['mysql_db'])
 
@@ -52,10 +48,10 @@ cursor.close()
 db.close()
 
 
-class TestMySQLPython:
+class TestPyMySQL:
     def setUp(self):
         logger.warn("MySQL connecting: %s:<pass>@%s:3306/%s", testenv['mysql_user'], testenv['mysql_host'], testenv['mysql_db'])
-        self.db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
+        self.db = pymysql.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
                                   user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
                                   db=testenv['mysql_db'])
         self.cursor = self.db.cursor()

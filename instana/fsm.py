@@ -52,7 +52,7 @@ class TheMachine(object):
         except pkg_resources.DistributionNotFound:
             pass
 
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s" % package_version)
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version)
         logger.debug("initializing fsm")
 
         self.agent = agent
@@ -77,8 +77,8 @@ class TheMachine(object):
 
     @staticmethod
     def print_state_change(e):
-        logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========' %
-                     (os.getpid(), t.current_thread().name, e.event, e.src, e.dst))
+        logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========',
+                     os.getpid(), t.current_thread().name, e.event, e.src, e.dst)
 
     def reset(self):
         """
@@ -163,7 +163,7 @@ class TheMachine(object):
         if response and (response.status_code is 200) and (len(response.content) > 2):
             self.agent.set_from(response.content)
             self.fsm.pending()
-            logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready..." % (str(pid), str(self.agent.from_.pid)))
+            logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...", str(pid), str(self.agent.from_.pid))
             return True
         else:
             logger.debug("Cannot announce sensor. Scheduling retry.")
@@ -176,9 +176,9 @@ class TheMachine(object):
         self.timer.name = name
         self.timer.start()
 
-    def on_ready(self, e):
-        logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)" %
-                    (str(os.getpid()), str(self.agent.from_.pid)))
+    def on_ready(self, _):
+        logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)",
+                    str(os.getpid()), str(self.agent.from_.pid))
 
     def __get_real_pid(self):
         """
@@ -200,7 +200,6 @@ class TheMachine(object):
                         pid = int(g.groups()[0])
                 except Exception:
                     logger.debug("parsing sched file failed", exc_info=True)
-                    pass
 
         if pid is None:
             pid = os.getpid()

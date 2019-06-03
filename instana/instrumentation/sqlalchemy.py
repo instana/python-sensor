@@ -1,8 +1,5 @@
 from __future__ import absolute_import
 
-import opentracing
-import opentracing.ext.tags as ext
-import wrapt
 import re
 
 from ..log import logger

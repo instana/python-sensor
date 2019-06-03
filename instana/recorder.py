@@ -82,7 +82,7 @@ class InstanaRecorder(SpanRecorder):
             if queue_size > 0 and instana.singletons.agent.can_send():
                 response = instana.singletons.agent.report_traces(self.queued_spans())
                 if response:
-                    logger.debug("reported %d spans" % queue_size)
+                    logger.debug("reported %d spans", queue_size)
             return True
 
         every(2, span_work, "Span Reporting")

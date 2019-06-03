@@ -246,7 +246,7 @@ class APIClient(object):
         return self.put(path, rule_binding_config)
 
     def delete_rule_binding(self, rule_binding_id):
-        return self.detel('/api/ruleBindings/%s' % rule_binding_id)
+        return self.delete('/api/ruleBindings/%s' % rule_binding_id)
 
     def rules(self):
         return self.get('/api/rules')

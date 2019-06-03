@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from .log import init as init_logger
-from .log import logger
 from .meter import Meter
 from .options import Options
 
@@ -30,6 +29,3 @@ class Sensor(object):
     def handle_fork(self):
         # Nothing to do for the Sensor;  Pass onto Meter
         self.meter.handle_fork()
-
-
-global_sensor = None

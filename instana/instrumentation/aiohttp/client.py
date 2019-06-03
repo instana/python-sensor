@@ -32,7 +32,7 @@ try:
                 scope.span.set_tag("http.params", cleaned_qp)
             scope.span.set_tag("http.url", parts[0])
             scope.span.set_tag('http.method', params.method)
-        except:
+        except Exception:
             logger.debug("stan_request_start", exc_info=True)
 
     async def stan_request_end(session, trace_config_ctx, params):
@@ -48,7 +48,7 @@ try:
                     scope.span.set_tag("ec", ec + 1)
 
                 scope.close()
-        except:
+        except Exception:
             logger.debug("stan_request_end", exc_info=True)
 
     async def stan_request_exception(session, trace_config_ctx, params):
@@ -58,7 +58,7 @@ try:
                 scope.span.log_exception(params.exception)
                 scope.span.set_tag("http.error", str(params.exception))
                 scope.close()
-        except:
+        except Exception:
             logger.debug("stan_request_exception", exc_info=True)
 
     @wrapt.patch_function_wrapper('aiohttp.client','ClientSession.__init__')

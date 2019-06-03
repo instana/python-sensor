@@ -36,7 +36,7 @@ class TextPropagator():
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 
-        except:
+        except Exception:
             logger.debug("inject error:", exc_info=True)
 
     def extract(self, carrier):  # noqa
@@ -67,5 +67,5 @@ class TextPropagator():
                                   sampled=True)
             return ctx
 
-        except Exception as e:
+        except Exception:
             logger.debug("extract error:", exc_info=True)

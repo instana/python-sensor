@@ -129,7 +129,6 @@ class Meter(object):
 
     def __init__(self, agent):
         self.agent = agent
-        pass
 
     def start(self):
         """
@@ -228,7 +227,7 @@ class Meter(object):
         When request(s) are received by the host agent, it is sent here
         for handling & processing.
         """
-        logger.debug("Received agent request with messageId: %s" % task["messageId"])
+        logger.debug("Received agent request with messageId: %s", task["messageId"])
         if "action" in task:
             if task["action"] == "python.source":
                 payload = get_py_source(task["args"]["file"])
@@ -271,7 +270,7 @@ class Meter(object):
             # Cache the snapshot
             self.cached_snapshot = s
         except Exception as e:
-            logger.debug(e.message)
+            logger.debug("collect_snapshot: ", exc_info=True)
         else:
             return s
 
@@ -284,8 +283,8 @@ class Meter(object):
             else:
                 result = value
             return str(result)
-        except Exception as e:
-            logger.debug(e)
+        except Exception:
+            logger.debug("jsonable: ", exc_info=True)
 
     def collect_modules(self):
         """ Collect up the list of modules in use """
@@ -309,7 +308,7 @@ class Meter(object):
                     except DistributionNotFound:
                         pass
                     except Exception:
-                        logger.debug("collect_modules: could not process module: %s" % k)
+                        logger.debug("collect_modules: could not process module: %s", k)
 
         except Exception:
             logger.debug("collect_modules", exc_info=True)
@@ -364,5 +363,5 @@ class Meter(object):
                 self.last_collect = c
 
             return m
-        except:
+        except Exception:
             logger.debug("collect_metrics", exc_info=True)

@@ -52,7 +52,7 @@ try:
                 response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             return response
-        except:
+        except Exception:
             logger.debug("aiohttp stan_middleware", exc_info=True)
         finally:
             if scope is not None:

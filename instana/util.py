@@ -10,8 +10,8 @@ import pkg_resources
 try:
     from urllib import parse
 except ImportError:
-     import urlparse as parse
-     import urllib
+    import urlparse as parse
+    import urllib
 
 from .log import logger
 
@@ -35,12 +35,12 @@ def generate_id():
     if _current_pid != pid:
         _current_pid = pid
         _rnd.seed(int(1000000 * time.time()) ^ pid)
-    id = format(_rnd.randint(0, 18446744073709551615), '02x')
+    new_id = format(_rnd.randint(0, 18446744073709551615), '02x')
 
-    if len(id) < 16:
-        id = id.zfill(16)
+    if len(new_id) < 16:
+        new_id = new_id.zfill(16)
 
-    return id
+    return new_id
 
 
 def header_to_id(header):
@@ -83,8 +83,8 @@ def to_json(obj):
     try:
         return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
                           sort_keys=False, separators=(',', ':')).encode()
-    except Exception as e:
-        logger.info("to_json: ", e, obj)
+    except Exception:
+        logger.debug("to_json: ", exc_info=True)
 
 
 def package_version():
@@ -178,7 +178,7 @@ def strip_secrets(qp, matcher, kwlist):
             query = path + '?' + query
 
         return query
-    except:
+    except Exception:
         logger.debug("strip_secrets", exc_info=True)
 
 
@@ -202,7 +202,7 @@ def get_default_gateway():
             # Reverse order, convert hex to int
             return "%i.%i.%i.%i" % (int(hip[6:8], 16), int(hip[4:6], 16), int(hip[2:4], 16), int(hip[0:2], 16))
 
-    except:
+    except Exception:
         logger.warn("get_default_gateway: ", exc_info=True)
 
 
@@ -247,10 +247,11 @@ def every(delay, task, name):
             if task() is False:
                 break
         except Exception:
-            logger.debug("Problem while executing repetitive task: %s" % name, exc_info=True)
+            logger.debug("Problem while executing repetitive task: %s", name, exc_info=True)
 
         # skip tasks if we are behind schedule:
         next_time += (time.time() - next_time) // delay * delay + delay
+
 
 # Used by get_py_source
 regexp_py = re.compile('\.py$')

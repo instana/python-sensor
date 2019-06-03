@@ -54,7 +54,7 @@ class Agent(object):
         self.sensor = Sensor(self)
         self.machine = TheMachine(self)
 
-    def start(self, e):
+    def start(self, _):
         """
         Starts the agent and required threads
 
@@ -92,7 +92,7 @@ class Agent(object):
 
         try:
             return json.dumps(o, default=extractor, sort_keys=False, separators=(',', ':')).encode()
-        except:
+        except Exception:
             logger.debug("to_json", exc_info=True)
 
     def is_timed_out(self):
@@ -145,13 +145,13 @@ class Agent(object):
 
             server_header = response.headers["Server"]
             if server_header == AGENT_HEADER:
-                logger.debug("Host agent found on %s:%d" % (host, port))
+                logger.debug("Host agent found on %s:%d", host, port)
                 rv = True
             else:
-                logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s"
-                             % (host, port, server_header))
+                logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s",
+                             host, port, server_header)
         except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("Instana Host Agent not found on %s:%d" % (host, port))
+            logger.debug("Instana Host Agent not found on %s:%d", host, port)
             rv = False
         finally:
             return rv
@@ -162,7 +162,7 @@ class Agent(object):
         """
         try:
             url = self.__discovery_url()
-            logger.debug("making announce request to %s" % (url))
+            logger.debug("making announce request to %s", url)
             response = None
             response = self.client.put(url,
                                        data=self.to_json(discovery),
@@ -238,7 +238,7 @@ class Agent(object):
             response = None
             payload = json.dumps(data)
 
-            logger.debug("Task response is %s: %s" % (self.__response_url(message_id), payload))
+            logger.debug("Task response is %s: %s", self.__response_url(message_id), payload)
 
             response = self.client.post(self.__response_url(message_id),
                                         data=payload,

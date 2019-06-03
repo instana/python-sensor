@@ -22,7 +22,6 @@ class InstanaMiddleware(MiddlewareMixin):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response=None):
         self.get_response = get_response
-        self
 
     def process_request(self, request):
         try:
@@ -118,7 +117,7 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
 
         return wrapped(*args, **kwargs)
     except Exception:
-            logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", exc_info=True)
+        logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", exc_info=True)
 
 
 try:

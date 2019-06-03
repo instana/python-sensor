@@ -1,13 +1,18 @@
 # coding: utf-8
 from distutils.version import LooseVersion
-
 from setuptools import find_packages, setup
+import sys
+from os import path
 
 # Import README.md into long_description
-from os import path
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+pwd = path.abspath(path.dirname(__file__))
+
+if sys.version_info[0] > 2:
+    with open(path.join(pwd, 'README.md'), encoding='utf-8') as f:
+        long_description = f.read()
+else:
+    with open(path.join(pwd, 'README.md')) as f:
+        long_description = f.read()
 
 
 def check_setuptools():

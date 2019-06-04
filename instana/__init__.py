@@ -60,11 +60,18 @@ def boot_agent():
             from .instrumentation.aiohttp import client
             from .instrumentation.aiohttp import server
             from .instrumentation import asynqp
+
+        if sys.version_info[0] < 3:
+            # MySQL-python
+            from .instrumentation import mysqlpython
+        else:
+            # mysqlclient
+            from .instrumentation import mysqlclient
+
         from .instrumentation import flask
         from .instrumentation.tornado import client
         from .instrumentation.tornado import server
         from .instrumentation import logging
-        from .instrumentation import mysqlpython
         from .instrumentation import pymysql
         from .instrumentation import redis
         from .instrumentation import sqlalchemy

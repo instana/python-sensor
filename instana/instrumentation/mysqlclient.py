@@ -12,6 +12,6 @@ try:
     if hasattr(MySQLdb, 'Connect'):
         setattr(MySQLdb, 'Connect', cf)
 
-    logger.debug("Instrumenting mysql-python")
+    logger.debug("Instrumenting mysqlclient")
 except ImportError:
     pass

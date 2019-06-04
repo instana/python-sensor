@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import opentracing.ext.tags as ext
-from flask import Flask, redirect
-from instana.wsgi import iWSGIMiddleware
+from flask import Flask, redirect, render_template, render_template_string
 from wsgiref.simple_server import make_server
 
 from instana.singletons import tracer
@@ -16,9 +15,7 @@ app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
 
-wsgi_app = iWSGIMiddleware(app.wsgi_app)
-flask_server = make_server('127.0.0.1', testenv["wsgi_port"], wsgi_app)
-
+flask_server = make_server('127.0.0.1', testenv["wsgi_port"], app.wsgi_app)
 
 @app.route("/")
 def hello():
@@ -80,6 +77,21 @@ def fivehundredfour():
 @app.route("/exception")
 def exception():
     raise Exception('fake error')
+
+
+@app.route("/render")
+def render():
+    return render_template('flask_render_template.html', name="Peter")
+
+
+@app.route("/render_string")
+def render_string():
+    return render_template_string('hello {{ what }}', what='world')
+
+
+@app.route("/render_error")
+def render_error():
+    return render_template('flask_render_error.html', what='world')
 
 
 if __name__ == '__main__':

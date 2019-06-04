@@ -35,9 +35,11 @@ class Data(BaseSpan):
     baggage = None
     custom = None
     http = None
+    log = None
     rabbitmq = None
     redis = None
     rpc = None
+    render = None
     sdk = None
     service = None
     sqlalchemy = None
@@ -54,6 +56,14 @@ class HttpData(BaseSpan):
     path = None
     path_tpl = None
     error = None
+
+
+class LogData(object):
+    message = None
+    parameters = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
 
 
 class MySQLData(BaseSpan):
@@ -89,6 +99,16 @@ class RPCData(BaseSpan):
     params = None
     baggage = None
     error = None
+
+
+class RenderData(object):
+    type = None
+    name = None
+    message = None
+    parameters = None
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
 
 
 class SQLAlchemyData(BaseSpan):

@@ -9,8 +9,8 @@ from basictracer import Sampler, SpanRecorder
 
 import instana.singletons
 
-from .json_span import (CustomData, Data, HttpData, JsonSpan, MySQLData,
-                        RabbitmqData, RedisData, RPCData, SDKData, SoapData,
+from .json_span import (CustomData, Data, HttpData, JsonSpan, LogData, MySQLData,
+                        RabbitmqData, RedisData, RenderData, RPCData, SDKData, SoapData,
                         SQLAlchemyData)
 from .log import logger
 from .util import every
@@ -24,7 +24,7 @@ else:
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
     registered_spans = ("aiohttp-client", "aiohttp-server", "django", "log", "memcache", "mysql",
-                        "rabbitmq", "redis", "rpc-client", "rpc-server", "sqlalchemy", "soap",
+                        "rabbitmq", "redis", "render", "rpc-client", "rpc-server", "sqlalchemy", "soap",
                         "tornado-client", "tornado-server", "urllib3", "wsgi")
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
@@ -32,6 +32,7 @@ class InstanaRecorder(SpanRecorder):
     exit_spans = ("aiohttp-client", "log", "memcache", "mysql", "rabbitmq", "redis", "rpc-client",
                   "sqlalchemy", "soap", "tornado-client", "urllib3")
     entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
+    local_spans = ("log", "render")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
@@ -132,8 +133,7 @@ class InstanaRecorder(SpanRecorder):
         kind = 1 # entry
         if span.operation_name in self.exit_spans:
             kind = 2 # exit
-        # log is a special case as it is not entry nor exit
-        if span.operation_name == "log":
+        if span.operation_name in self.local_spans:
             kind = 3 # intermediate span
 
         logs = self.collect_logs(span)
@@ -178,6 +178,12 @@ class InstanaRecorder(SpanRecorder):
                                baggage=span.tags.pop('rpc.baggage', None),
                                error=span.tags.pop('rpc.error', None))
 
+        if span.operation_name == "render":
+            data.render = RenderData(name=span.tags.pop('name', None),
+                                     type=span.tags.pop('type', None))
+            data.log = LogData(message=span.tags.pop('message', None),
+                               parameters=span.tags.pop('parameters', None))
+
         if span.operation_name == "sqlalchemy":
             data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),
                                              eng=span.tags.pop('sqlalchemy.eng', None),
@@ -207,7 +213,7 @@ class InstanaRecorder(SpanRecorder):
                     data.log["parameters"] = l.key_values.pop("parameters", None)
 
         entity_from = {'e': instana.singletons.agent.from_.pid,
-                      'h': instana.singletons.agent.from_.agentUuid}
+                       'h': instana.singletons.agent.from_.agentUuid}
 
         json_span = JsonSpan(n=span.operation_name,
                              k=kind,
@@ -254,10 +260,9 @@ class InstanaRecorder(SpanRecorder):
 
         data = Data(service=instana.singletons.agent.sensor.options.service_name, sdk=sdk_data)
         entity_from = {'e': instana.singletons.agent.from_.pid,
-                      'h': instana.singletons.agent.from_.agentUuid}
+                       'h': instana.singletons.agent.from_.agentUuid}
 
-        json_span = JsonSpan(
-                             t=span.context.trace_id,
+        json_span = JsonSpan(t=span.context.trace_id,
                              p=span.parent_id,
                              s=span.context.span_id,
                              ts=int(round(span.start_time * 1000)),

@@ -9,12 +9,12 @@ from ..singletons import agent, tracer
 from ..util import strip_secrets
 
 try:
-    import urllib3 # noqa
+    import urllib3
 
     def collect(instance, args, kwargs):
         """ Build and return a fully qualified URL for this request """
         try:
-            kvs = {}
+            kvs = dict()
             kvs['host'] = instance.host
             kvs['port'] = instance.port
 
@@ -28,7 +28,7 @@ try:
                     kvs['path'] = kwargs.get('url')
 
             # Strip any secrets from potential query params
-            if '?' in kvs['path']:
+            if kvs.get('path') is not None and ('?' in kvs['path']):
                 parts = kvs['path'].split('?')
                 kvs['path'] = parts[0]
                 if len(parts) is 2:

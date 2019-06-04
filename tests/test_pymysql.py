@@ -98,6 +98,33 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from users')
         assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
 
+    def test_query_with_params(self):
+        result = None
+        with tracer.start_active_span('test'):
+            result = self.cursor.execute("""SELECT * from users where id=1""")
+            self.cursor.fetchone()
+
+        assert(result >= 0)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, db_span.t)
+        assert_equals(db_span.p, test_span.s)
+
+        assert_equals(None, db_span.error)
+        assert_equals(None, db_span.ec)
+
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
+        assert_equals(db_span.data.mysql.stmt, 'SELECT * from users where id=?')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+
     def test_basic_insert(self):
         result = None
         with tracer.start_active_span('test'):

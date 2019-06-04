@@ -15,13 +15,8 @@ else:
 testenv['mysql_port'] = int(os.environ.get('MYSQL_PORT', '3306'))
 testenv['mysql_db']   = os.environ.get('MYSQL_DB', 'circle_test')
 testenv['mysql_user'] = os.environ.get('MYSQL_USER', 'root')
+testenv['mysql_pw'] = os.environ.get('MYSQL_PW', '')
 
-if 'MYSQL_PW' in os.environ:
-    testenv['mysql_pw'] = os.environ['MYSQL_PW']
-elif 'TRAVIS_MYSQL_PASS' in os.environ:
-    testenv['mysql_pw'] = os.environ['TRAVIS_MYSQL_PASS']
-else:
-    testenv['mysql_pw'] = ''
 
 """
 PostgreSQL Environment

@@ -10,11 +10,7 @@ from instana.singletons import tracer
 
 from .helpers import testenv
 
-if sys.version_info < (3, 0):
-    import MySQLdb
-else:
-    raise SkipTest("MySQL-python supported on Python 2.7 only")
-
+import pymysql
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +24,7 @@ BEGIN
 END
 """
 
-db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
+db = pymysql.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
                      user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
                      db=testenv['mysql_db'])
 
@@ -52,10 +48,10 @@ cursor.close()
 db.close()
 
 
-class TestMySQLPython:
+class TestPyMySQL:
     def setUp(self):
         logger.warn("MySQL connecting: %s:<pass>@%s:3306/%s", testenv['mysql_user'], testenv['mysql_host'], testenv['mysql_db'])
-        self.db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
+        self.db = pymysql.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
                                   user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
                                   db=testenv['mysql_db'])
         self.cursor = self.db.cursor()
@@ -100,6 +96,33 @@ class TestMySQLPython:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from users')
+        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+
+    def test_query_with_params(self):
+        result = None
+        with tracer.start_active_span('test'):
+            result = self.cursor.execute("""SELECT * from users where id=1""")
+            self.cursor.fetchone()
+
+        assert(result >= 0)
+
+        spans = self.recorder.queued_spans()
+        assert_equals(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        assert_equals("test", test_span.data.sdk.name)
+        assert_equals(test_span.t, db_span.t)
+        assert_equals(db_span.p, test_span.s)
+
+        assert_equals(None, db_span.error)
+        assert_equals(None, db_span.ec)
+
+        assert_equals(db_span.n, "mysql")
+        assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
+        assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
+        assert_equals(db_span.data.mysql.stmt, 'SELECT * from users where id=?')
         assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
 
     def test_basic_insert(self):
@@ -211,7 +234,13 @@ class TestMySQLPython:
 
         assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
-        assert_equals(db_span.data.mysql.error, '(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
+
+        if sys.version_info[0] >= 3:
+            # Python 3
+            assert_equals(db_span.data.mysql.error, u'(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
+        else:
+            # Python 2
+            assert_equals(db_span.data.mysql.error, u'(1146, u"Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
 
         assert_equals(db_span.n, "mysql")
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])

@@ -4,6 +4,7 @@ import wrapt
 
 from ..log import logger
 from ..singletons import tracer
+from ..util import sql_sanitizer
 
 
 class CursorWrapper(wrapt.ObjectProxy):
@@ -20,7 +21,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         try:
             span.set_tag(ext.SPAN_KIND, 'exit')
             span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
-            span.set_tag(ext.DATABASE_STATEMENT, sql)
+            span.set_tag(ext.DATABASE_STATEMENT, sql_sanitizer(sql))
             span.set_tag(ext.DATABASE_TYPE, 'mysql')
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
             span.set_tag('host', "%s:%s" %

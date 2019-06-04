@@ -65,6 +65,7 @@ def boot_agent():
         from .instrumentation.tornado import server
         from .instrumentation import logging
         from .instrumentation import mysqlpython
+        from .instrumentation import pymysql
         from .instrumentation import redis
         from .instrumentation import sqlalchemy
         from .instrumentation import sudsjurko

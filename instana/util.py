@@ -182,6 +182,20 @@ def strip_secrets(qp, matcher, kwlist):
         logger.debug("strip_secrets", exc_info=True)
 
 
+def sql_sanitizer(sql):
+    """
+    Removes values from valid SQL statements and returns a stripped version.
+
+    :param sql: The SQL statement to be sanitized
+    :return: String - A sanitized SQL statement without values.
+    """
+    return regexp_sql_values.sub('?', sql)
+
+
+# Used by sql_sanitizer
+regexp_sql_values = re.compile('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)')
+
+
 def get_default_gateway():
     """
     Attempts to read /proc/self/net/route to determine the default gateway in use.
@@ -230,6 +244,9 @@ def get_py_source(file):
     finally:
         return response
 
+# Used by get_py_source
+regexp_py = re.compile('\.py$')
+
 
 def every(delay, task, name):
     """
@@ -253,5 +270,5 @@ def every(delay, task, name):
         next_time += (time.time() - next_time) // delay * delay + delay
 
 
-# Used by get_py_source
-regexp_py = re.compile('\.py$')
+
+

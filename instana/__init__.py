@@ -94,7 +94,7 @@ eum_api_key = ''
 # As a safety measure, we maintain a "do not load list" and if this process matches something
 # in that list, then we go sit in a corner quietly and don't load anything at all.
 do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_install", "easy_install-2.7",
-                    "smtpd.py", "ufw", "unattended-upgrade"]
+                    "smtpd.py", "twine", "ufw", "unattended-upgrade"]
 
 # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
 # and some Pipenv installs.  If this is the case, it's best effort.

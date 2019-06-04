@@ -115,6 +115,7 @@ class TestFlask(unittest.TestCase):
 
         # render
         self.assertEqual("render", render_span.n)
+        self.assertEqual(3, render_span.k)
         self.assertEqual('flask_render_template.html', render_span.data.render.name)
         self.assertEqual('template', render_span.data.render.type)
         self.assertIsNone(render_span.data.log.message)
@@ -178,6 +179,7 @@ class TestFlask(unittest.TestCase):
 
         # render
         self.assertEqual("render", render_span.n)
+        self.assertEqual(3, render_span.k)
         self.assertEqual('(from string)', render_span.data.render.name)
         self.assertEqual('template', render_span.data.render.type)
         self.assertIsNone(render_span.data.log.message)

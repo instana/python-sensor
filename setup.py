@@ -31,7 +31,7 @@ def check_setuptools():
 check_setuptools()
 
 setup(name='instana',
-      version='1.11.5',
+      version='1.11.6',
       url='https://www.instana.com/',
       project_urls={
           'CI: CircleCI': 'https://circleci.com/gh/instana/python-sensor',

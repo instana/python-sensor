@@ -4,6 +4,8 @@ from os import path
 from distutils.version import LooseVersion
 from setuptools import find_packages, setup
 
+VERSION = '1.12.0'
+
 # Import README.md into long_description
 pwd = path.abspath(path.dirname(__file__))
 
@@ -32,7 +34,7 @@ def check_setuptools():
 check_setuptools()
 
 setup(name='instana',
-      version='1.11.6',
+      version=VERSION,
       url='https://www.instana.com/',
       project_urls={
           'CI: CircleCI': 'https://circleci.com/gh/instana/python-sensor',

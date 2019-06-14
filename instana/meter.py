@@ -153,6 +153,7 @@ class Meter(object):
         self.last_collect = None
         self.last_metrics = None
         self.snapshot_countdown = 0
+        self.cached_snapshot = None
         self.thread = None
 
         self.thread = threading.Thread(target=self.collect_and_report)
@@ -240,25 +241,49 @@ class Meter(object):
 
         self.agent.task_response(task["messageId"], payload)
 
+    def get_application_name(self):
+        if "INSTANA_SERVICE_NAME" in os.environ:
+            return os.environ["INSTANA_SERVICE_NAME"]
+
+        if "FLASK_APP" in os.environ:
+            app_name = os.environ["FLASK_APP"]
+        elif "DJANGO_SETTINGS_MODULE" in os.environ:
+            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
+        elif os.path.basename(sys.argv[0]) == '' and sys.stdout.isatty():
+            app_name = "Interactive Console"
+        else:
+            if os.path.basename(sys.argv[0]) == '':
+                app_name = os.path.basename(sys.executable)
+            else:
+                app_name = os.path.basename(sys.argv[0])
+
+        # We have an app name by this point.  Now to if uwsgi, augment the appname
+        try:
+            import uwsgi
+
+            if app_name == "uwsgi":
+                app_name = ""
+            else:
+                app_name = " [%s]" % app_name
+
+            if os.getpid() == uwsgi.masterpid():
+                uwsgi_type = "uWSGI Master%s"
+            else:
+                uwsgi_type = "uWSGI Worker%s"
+
+            app_name = uwsgi_type % app_name
+        except ImportError:
+            pass
+
+        return app_name
+
     def collect_snapshot(self):
         """  Collects snapshot related information to this process and environment """
         try:
             if self.cached_snapshot is not None:
                 return self.cached_snapshot
 
-            if "INSTANA_SERVICE_NAME" in os.environ:
-                appname = os.environ["INSTANA_SERVICE_NAME"]
-            elif "FLASK_APP" in os.environ:
-                appname = os.environ["FLASK_APP"]
-            elif "DJANGO_SETTINGS_MODULE" in os.environ:
-                appname = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-            elif os.path.basename(sys.argv[0]) == '' and sys.stdout.isatty():
-                appname = "Interactive Console"
-            else:
-                if os.path.basename(sys.argv[0]) == '':
-                    appname = os.path.basename(sys.executable)
-                else:
-                    appname = os.path.basename(sys.argv[0])
+            appname = self.get_application_name()
 
             s = Snapshot(name=appname, version=platform.version(),
                          f=platform.python_implementation(),

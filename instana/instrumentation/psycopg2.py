@@ -16,7 +16,7 @@ try:
     if hasattr(psycopg2, 'Connect'):
         setattr(psycopg2, 'Connect', cf)
 
-    @wrapt.patch_function_wrapper('psycopg2', 'extensions.register_type')
+    @wrapt.patch_function_wrapper('psycopg2.extensions', 'register_type')
     def register_type_with_instana(wrapped, instance, args, kwargs):
         args_clone = list(copy.copy(args))
 
@@ -24,7 +24,6 @@ try:
             args_clone[1] = args_clone[1].__wrapped__
 
         return wrapped(*args_clone, **kwargs)
-
 
     logger.debug("Instrumenting psycopg2")
 except ImportError:

@@ -36,6 +36,7 @@ class Data(BaseSpan):
     custom = None
     http = None
     log = None
+    pg = None
     rabbitmq = None
     redis = None
     rpc = None
@@ -77,6 +78,7 @@ class MySQLData(BaseSpan):
 class PostgresData(BaseSpan):
     db = None
     host = None
+    port = None
     user = None
     stmt = None
     error = None

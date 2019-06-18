@@ -25,12 +25,14 @@ CREATE TABLE IF NOT EXISTS users(
 
 create_proc_query = """\
 CREATE OR REPLACE FUNCTION test_proc(candidate VARCHAR(70)) 
-RETURNS void AS $$
+RETURNS text AS $$
 BEGIN
-    SELECT * FROM users where email = candidate;
+    RETURN(SELECT name FROM users where email = candidate);
 END;
 $$ LANGUAGE plpgsql;
 """
+
+drop_proc_query = "DROP FUNCTION IF EXISTS test_proc(VARCHAR(70));"
 
 db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
                      user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
@@ -38,6 +40,7 @@ db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_
 
 cursor = db.cursor()
 cursor.execute(create_table_query)
+cursor.execute(drop_proc_query)
 cursor.execute(create_proc_query)
 db.commit()
 cursor.close()
@@ -62,7 +65,8 @@ class TestPsycoPG2:
     def test_vanilla_query(self):
         self.cursor.execute("""SELECT * from users""")
         result = self.cursor.fetchone()
-        assert_equals(3, len(result))
+
+        assert_equals(6, len(result))
 
         spans = self.recorder.queued_spans()
         assert_equals(0, len(spans))
@@ -93,13 +97,8 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
 
     def test_basic_insert(self):
-        result = None
         with tracer.start_active_span('test'):
-            result = self.cursor.execute(
-                        """INSERT INTO users(name, email) VALUES(%s, %s)""",
-                        ('beaker', 'beaker@muppets.com'))
-
-        assert_equals(1, result)
+            self.cursor.execute("""INSERT INTO users(name, email) VALUES(%s, %s)""", ('beaker', 'beaker@muppets.com'))
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -127,8 +126,6 @@ class TestPsycoPG2:
                                              [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
             self.db.commit()
 
-        assert_equals(2, result)
-
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
 
@@ -153,7 +150,7 @@ class TestPsycoPG2:
         with tracer.start_active_span('test'):
             result = self.cursor.callproc('test_proc', ('beaker',))
 
-        assert(result)
+        assert(type(result) is tuple)
 
         spans = self.recorder.queued_spans()
         assert_equals(2, len(spans))
@@ -201,7 +198,7 @@ class TestPsycoPG2:
 
         assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
-        assert_equals(db_span.data.pg.error, '(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['postgresql_db'])
+        assert_equals(db_span.data.pg.error, 'relation "blah" does not exist\nLINE 1: SELECT * from blah\n                      ^\n')
 
         assert_equals(db_span.n, "postgres")
         assert_equals(db_span.data.pg.db, testenv['postgresql_db'])

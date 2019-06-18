@@ -20,9 +20,14 @@ class CursorWrapper(wrapt.ObjectProxy):
     def _collect_kvs(self, span, sql):
         try:
             span.set_tag(ext.SPAN_KIND, 'exit')
-            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+
+            if 'db' in self._connect_params[1]:
+                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+            elif 'database' in self._connect_params[1]:
+                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['database'])
+
             span.set_tag(ext.DATABASE_STATEMENT, sql_sanitizer(sql))
-            span.set_tag(ext.DATABASE_TYPE, 'mysql')
+            # span.set_tag(ext.DATABASE_TYPE, 'mysql')
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
             span.set_tag('host', "%s:%s" %
                          (self._connect_params[1]['host'],

@@ -203,13 +203,14 @@ class InstanaRecorder(SpanRecorder):
                 data.mysql.error = data.custom.logs[tskey]['message']
 
         if span.operation_name == "postgres":
-            data.mysql = PostgresData(host=span.tags.pop('host', None),
-                                      db=span.tags.pop(ext.DATABASE_INSTANCE, None),
-                                      user=span.tags.pop(ext.DATABASE_USER, None),
-                                      stmt=span.tags.pop(ext.DATABASE_STATEMENT, None))
+            data.pg = PostgresData(host=span.tags.pop('host', None),
+                                   db=span.tags.pop(ext.DATABASE_INSTANCE, None),
+                                   user=span.tags.pop(ext.DATABASE_USER, None),
+                                   stmt=span.tags.pop(ext.DATABASE_STATEMENT, None),
+                                   error=span.tags.pop('pg.error', None))
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
-                data.mysql.error = data.custom.logs[tskey]['message']
+                data.pg.error = data.custom.logs[tskey]['message']
 
         if span.operation_name == "log":
             data.log = {}

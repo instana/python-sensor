@@ -20,9 +20,14 @@ class CursorWrapper(wrapt.ObjectProxy):
     def _collect_kvs(self, span, sql):
         try:
             span.set_tag(ext.SPAN_KIND, 'exit')
-            span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+
+            if 'db' in self._connect_params[1]:
+                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
+            elif 'database' in self._connect_params[1]:
+                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['database'])
+
             span.set_tag(ext.DATABASE_STATEMENT, sql_sanitizer(sql))
-            span.set_tag(ext.DATABASE_TYPE, 'mysql')
+            # span.set_tag(ext.DATABASE_TYPE, 'mysql')
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
             span.set_tag('host', "%s:%s" %
                          (self._connect_params[1]['host'],
@@ -35,8 +40,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def execute(self, sql, params=None):
         parent_span = tracer.active_span
 
-        # If we're not tracing, just return
-        if parent_span is None:
+        # If not tracing or we're being called from sqlalchemy, just pass through
+        if (parent_span is None) or (parent_span.operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(sql, params)
 
         with tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
@@ -54,8 +59,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def executemany(self, sql, seq_of_parameters):
         parent_span = tracer.active_span
 
-        # If we're not tracing, just return
-        if parent_span is None:
+        # If not tracing or we're being called from sqlalchemy, just pass through
+        if (parent_span is None) or (parent_span.operation_name == "sqlalchemy"):
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
         with tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
@@ -73,8 +78,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def callproc(self, proc_name, params):
         parent_span = tracer.active_span
 
-        # If we're not tracing, just return
-        if parent_span is None:
+        # If not tracing or we're being called from sqlalchemy, just pass through
+        if (parent_span is None) or (parent_span.operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(proc_name, params)
 
         with tracer.start_active_span(self._module_name, child_of=parent_span) as scope:

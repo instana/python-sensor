@@ -9,6 +9,7 @@ from instana.singletons import tracer
 from .helpers import testenv
 
 import psycopg2
+import psycopg2.extras
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ db.close()
 
 class TestPsycoPG2:
     def setUp(self):
-        logger.warn("Postgresql connecting: %s:<pass>@%s:5432/%s", testenv['postgresql_user'], testenv['postgresql_host'], testenv['postgresql_db'])
+        logger.warning("Postgresql connecting: %s:<pass>@%s:5432/%s", testenv['postgresql_user'], testenv['postgresql_host'], testenv['postgresql_db'])
         self.db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
                                    user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
                                    database=testenv['postgresql_db'])
@@ -63,6 +64,9 @@ class TestPsycoPG2:
         return None
 
     def test_vanilla_query(self):
+        assert psycopg2.extras.register_uuid(None, self.db)
+        assert psycopg2.extras.register_uuid(None, self.db.cursor())
+
         self.cursor.execute("""SELECT * from users""")
         result = self.cursor.fetchone()
 

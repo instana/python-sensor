@@ -16,8 +16,8 @@ try:
     if hasattr(psycopg2, 'Connect'):
         setattr(psycopg2, 'Connect', cf)
 
-    @wrapt.patch_function_wrapper('psycopg2', 'extras.register_uuid')
-    def register_uuid_with_instana(wrapped, instance, args, kwargs):
+    @wrapt.patch_function_wrapper('psycopg2', 'extensions.register_type')
+    def register_type_with_instana(wrapped, instance, args, kwargs):
         args_clone = list(copy.copy(args))
 
         if hasattr(args_clone[1], '__wrapped__'):

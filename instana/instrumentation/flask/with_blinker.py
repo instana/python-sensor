@@ -94,8 +94,9 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
         if not hasattr(exc, 'code'):
             span.log_exception(exc)
             span.set_tag(ext.HTTP_STATUS_CODE, 500)
-            scope.close()
-            flask.g.scope = None
+            # Issue 172 - leave scope open for downstream error handlers
+            #scope.close()
+            #flask.g.scope = None
 
     return wrapped(*argv, **kwargs)
 

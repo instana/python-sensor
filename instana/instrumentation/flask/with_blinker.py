@@ -87,6 +87,8 @@ def log_exception_with_instana(sender, exception, **extra):
 def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
     exc = argv[0]
 
+    result = wrapped(*argv, **kwargs)
+
     if hasattr(flask.g, 'scope'):
         scope = flask.g.scope
         span = scope.span
@@ -97,8 +99,7 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
             scope.close()
             flask.g.scope = None
 
-    return wrapped(*argv, **kwargs)
-
+    return result
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')
 def render_with_instana(wrapped, instance, argv, kwargs):

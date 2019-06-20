@@ -75,16 +75,19 @@ def after_request_with_instana(response):
 def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
     exc = argv[0]
 
+    result = wrapped(*argv, **kwargs)
+
     if hasattr(flask.g, 'scope'):
         scope = flask.g.scope
         span = scope.span
 
         if not hasattr(exc, 'code'):
-            span.log_exception(argv[0])
+            span.log_exception(exc)
             span.set_tag(ext.HTTP_STATUS_CODE, 500)
             scope.close()
+            flask.g.scope = None
 
-    return wrapped(*argv, **kwargs)
+    return result
 
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')

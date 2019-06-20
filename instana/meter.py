@@ -241,40 +241,68 @@ class Meter(object):
 
         self.agent.task_response(task["messageId"], payload)
 
+    def get_proc_cmdline(self):
+        name = None
+        if os.path.isfile("/proc/self/cmdline"):
+            with open("/proc/self/cmdline") as cmd:
+                name = cmd.read()
+        return name
+
     def get_application_name(self):
+        # One environment variable to rule them all
         if "INSTANA_SERVICE_NAME" in os.environ:
             return os.environ["INSTANA_SERVICE_NAME"]
 
-        if "FLASK_APP" in os.environ:
+        # Now best effort in naming this process.  No nice package.json like in Node.js
+        # so we do best effort detection here.
+
+        basename = os.path.basename(sys.argv[0])
+        if basename == "gunicorn":
+            # gunicorn renames their processes to pretty things - we use those by default
+            # gunicorn: master [djface.wsgi]
+            # gunicorn: worker [djface.wsgi]
+            app_name = self.get_proc_cmdline()
+
+            if app_name is None:
+                app_name = basename
+        elif "FLASK_APP" in os.environ:
             app_name = os.environ["FLASK_APP"]
         elif "DJANGO_SETTINGS_MODULE" in os.environ:
             app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-        elif os.path.basename(sys.argv[0]) == '' and sys.stdout.isatty():
-            app_name = "Interactive Console"
-        else:
-            if os.path.basename(sys.argv[0]) == '':
+        elif basename == '':
+            if sys.stdout.isatty():
+                app_name = "Interactive Console"
+            else:
+                # No arguments.  Take executable as app_name
                 app_name = os.path.basename(sys.executable)
-            else:
-                app_name = os.path.basename(sys.argv[0])
+        else:
+            # Last chance.  app_name for "python main.py" would be "main.py" here.
+            app_name = basename
 
-        # We have an app name by this point.  Now to if uwsgi, augment the appname
-        try:
-            import uwsgi
+        # We should have a good app_name by this point.
+        # Last conditional, if uwsgi, then wrap the name
+        # with the uwsgi process type
+        if basename == "uwsgi":
+            # We have an app name by this point.  Now if running under
+            # uwsgi, augment the appname
+            try:
+                import uwsgi
 
-            if app_name == "uwsgi":
-                app_name = ""
-            else:
-                app_name = " [%s]" % app_name
+                if app_name == "uwsgi":
+                    app_name = ""
+                else:
+                    app_name = " [%s]" % app_name
 
-            if os.getpid() == uwsgi.masterpid():
-                uwsgi_type = "uWSGI Master%s"
-            else:
-                uwsgi_type = "uWSGI Worker%s"
+                if os.getpid() == uwsgi.masterpid():
+                    uwsgi_type = "uWSGI master%s"
+                else:
+                    uwsgi_type = "uWSGI worker%s"
 
-            app_name = uwsgi_type % app_name
-        except ImportError:
-            pass
+                app_name = uwsgi_type % app_name
+            except ImportError:
+                pass
 
+        logger.warn("App name is: %s", app_name)
         return app_name
 
     def collect_snapshot(self):

@@ -214,6 +214,8 @@ class Agent(object):
         Used to report entity data (metrics & snapshot) to the host agent.
         """
         try:
+            # Concurrency double check:  Don't report if we don't have
+            # any spans
             if len(spans) == 0:
                 return 0
 

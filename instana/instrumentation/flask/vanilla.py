@@ -74,16 +74,18 @@ def after_request_with_instana(response):
 @wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
 def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
     exc = argv[0]
+    handler = instance._find_error_handler(exc)
 
     if hasattr(flask.g, 'scope'):
         scope = flask.g.scope
         span = scope.span
 
         if not hasattr(exc, 'code'):
-            span.log_exception(argv[0])
+            span.log_exception(exc)
             span.set_tag(ext.HTTP_STATUS_CODE, 500)
             # Issue 172 - leave scope open for downstream error handlers
-            #scope.close()
+            if handler is None:
+                scope.close()
 
     return wrapped(*argv, **kwargs)
 

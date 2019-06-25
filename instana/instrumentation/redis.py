@@ -8,7 +8,7 @@ from ..singletons import tracer
 try:
     import redis
 
-    if redis.VERSION < (3, 0, 0):
+    if ((redis.VERSION >= (2, 10, 6)) and (redis.VERSION < (3, 0, 0))):
 
         @wrapt.patch_function_wrapper('redis.client','StrictRedis.execute_command')
         def execute_command_with_instana(wrapped, instance, args, kwargs):
@@ -76,6 +76,7 @@ try:
 
         logger.debug("Instrumenting redis")
     else:
-        logger.debug("redis >=3.0.0 not supported (yet)")
+        logger.debug("redis <= 2.10.5 >=3.0.0 not supported.")
+        logger.debug("  --> https://docs.instana.io/ecosystem/python/supported-versions/#tracing")
 except ImportError:
     pass

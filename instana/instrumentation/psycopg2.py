@@ -20,7 +20,7 @@ try:
     def register_type_with_instana(wrapped, instance, args, kwargs):
         args_clone = list(copy.copy(args))
 
-        if (len(args_clone) >= 2) and (args_clone[1], '__wrapped__'):
+        if (len(args_clone) >= 2) and hasattr(args_clone[1], '__wrapped__'):
             args_clone[1] = args_clone[1].__wrapped__
 
         return wrapped(*args_clone, **kwargs)

@@ -10,6 +10,7 @@ from .helpers import testenv
 
 import psycopg2
 import psycopg2.extras
+import psycopg2.extensions as ext
 
 logger = logging.getLogger(__name__)
 
@@ -209,3 +210,29 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.user, testenv['postgresql_user'])
         assert_equals(db_span.data.pg.stmt, 'SELECT * from blah')
         assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
+
+    # Added to validate unicode support and register_type.
+    def test_unicode(self):
+        ext.register_type(ext.UNICODE, self.cursor)
+        snowman = "\u2603"
+
+        self.cursor.execute("delete from users where id in (1,2,3)")
+
+        # unicode in statement
+        psycopg2.extras.execute_batch(self.cursor,
+            "insert into users (id, name) values (%%s, %%s) -- %s" % snowman, [(1, 'x')])
+        self.cursor.execute("select id, name from users where id = 1")
+        assert_equals(self.cursor.fetchone(), (1, 'x'))
+
+        # unicode in data
+        psycopg2.extras.execute_batch(self.cursor,
+            "insert into users (id, name) values (%s, %s)", [(2, snowman)])
+        self.cursor.execute("select id, name from users where id = 2")
+        assert_equals(self.cursor.fetchone(), (2, snowman))
+
+        # unicode in both
+        psycopg2.extras.execute_batch(self.cursor,
+            "insert into users (id, name) values (%%s, %%s) -- %s" % snowman, [(3, snowman)])
+        self.cursor.execute("select id, name from users where id = 3")
+        assert_equals(self.cursor.fetchone(), (3, snowman))
+

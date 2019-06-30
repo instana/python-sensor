@@ -1,0 +1,58 @@
+version: '2'
+services:
+  redis:
+    image: redis:4.0.6
+    ports:
+      - 6379:6379
+
+  # Kafka test will sometimes fail because Zookeeper won't start due to
+  # java.io.IOException: Unable to create data directory /opt/zookeeper-3.4.9/data/version-2, which seems to be a known issue:
+  # -> https://issues.apache.org/jira/browse/ZOOKEEPER-1936
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: wurstmeister/kafka:0.10.1.0-2
+    ports:
+      - 9092:9092
+    depends_on:
+      - "zookeeper"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
+      KAFKA_CREATE_TOPICS: test:1:1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./bin:/nodejs-collector-bin
+#    command: ["/nodejs-collector-bin/wait-for-it.sh", "-s", "-t", "120", "zookeeper:2181", "--", "start-kafka.sh"]
+
+  mysql:
+    image: mysql:8.0.1
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+      MYSQL_ROOT_PASSWORD: ''
+      MYSQL_DATABASE: circle_test
+      MYSQL_USER: root
+      MYSQL_PASSWORD:
+      MYSQL_ROOT_HOST: '0.0.0.0'
+    volumes:
+      - ./tests/config/database/mysql/conf.d:/etc/mysql/conf.d
+
+  postgres:
+    image: postgres:10.5
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: ''
+      POSTGRES_DB: circle_test
+
+  rabbitmq:
+    image: rabbitmq:3.7.8-alpine
+    ports:
+      - 5671:5671
+      - 5672:5672

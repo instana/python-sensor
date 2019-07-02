@@ -14,6 +14,7 @@ from .agent_const import (AGENT_DATA_PATH, AGENT_DEFAULT_HOST,
 from .fsm import TheMachine
 from .log import logger
 from .sensor import Sensor
+from .util import to_json
 
 
 class From(object):
@@ -86,15 +87,6 @@ class Agent(object):
         # Will schedule a restart of the announce cycle in the future
         self.machine.reset()
 
-    def to_json(self, o):
-        def extractor(o):
-            return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
-
-        try:
-            return json.dumps(o, default=extractor, sort_keys=False, separators=(',', ':')).encode()
-        except Exception:
-            logger.debug("to_json", exc_info=True)
-
     def is_timed_out(self):
         if self.last_seen and self.can_send:
             diff = datetime.now() - self.last_seen
@@ -165,7 +157,7 @@ class Agent(object):
             logger.debug("making announce request to %s", url)
             response = None
             response = self.client.put(url,
-                                       data=self.to_json(discovery),
+                                       data=to_json(discovery),
                                        headers={"Content-Type": "application/json"},
                                        timeout=0.8)
 
@@ -196,7 +188,7 @@ class Agent(object):
         try:
             response = None
             response = self.client.post(self.__data_url(),
-                                        data=self.to_json(entity_data),
+                                        data=to_json(entity_data),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
 
@@ -221,7 +213,7 @@ class Agent(object):
 
             response = None
             response = self.client.post(self.__traces_url(),
-                                        data=self.to_json(spans),
+                                        data=to_json(spans),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
 

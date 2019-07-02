@@ -81,10 +81,16 @@ def to_json(obj):
     :return:  json string
     """
     try:
-        return json.dumps(obj, default=lambda obj: {k.lower(): v for k, v in obj.__dict__.items()},
-                          sort_keys=False, separators=(',', ':')).encode()
+        def extractor(o):
+            if not hasattr(o, '__dict__'):
+                logger.debug("Couldn't serialize non dict type: %s", type(o))
+                return {}
+            else:
+                return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
+
+        return json.dumps(obj, default=extractor, sort_keys=False, separators=(',', ':')).encode()
     except Exception:
-        logger.debug("to_json: ", exc_info=True)
+        logger.debug("to_json non-fatal encoding issue: ", exc_info=True)
 
 
 def package_version():

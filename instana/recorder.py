@@ -328,14 +328,24 @@ class InstanaRecorder(SpanRecorder):
         return kind
 
     def collect_logs(self, span):
+        """
+            Collect up log data and feed it to the Instana brain.
+
+        :param span: The span to search for logs in
+        :return: Logs ready for consumption by the Instana brain.
+        """
         logs = {}
-        for l in span.logs:
-            ts = int(round(l.timestamp * 1000))
+        for log in span.logs:
+            ts = int(round(log.timestamp * 1000))
             if ts not in logs:
                 logs[ts] = {}
 
-            for f in l.key_values:
-                logs[ts][f] = l.key_values[f]
+            if 'message' in log.key_values:
+                logs[ts]['message'] = log.key_values['message']
+            if 'event' in log.key_values:
+                logs[ts]['event'] = log.key_values['event']
+            if 'parameters' in log.key_values:
+                logs[ts]['parameters'] = log.key_values['parameters']
 
         return logs
 

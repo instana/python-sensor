@@ -45,7 +45,7 @@ class iWSGIMiddleware(object):
                     self.scope.span.set_tag("http.%s" % custom_header, env[wsgi_header])
 
         if 'PATH_INFO' in env:
-            self.scope.span.set_tag(tags.HTTP_URL, env['PATH_INFO'])
+            self.scope.span.set_tag('http.path', env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
             scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
             self.scope.span.set_tag("http.params", scrubbed_params)

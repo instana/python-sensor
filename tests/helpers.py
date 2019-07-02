@@ -31,10 +31,7 @@ testenv['postgresql_pw'] = os.environ.get('POSTGRESQL_PW', '')
 """
 Redis Environment
 """
-if 'REDIS' in os.environ:
-    testenv['redis_url']= os.environ['REDIS']
-else:
-    testenv['redis_url'] = '127.0.0.1:6379'
+testenv['redis_host'] = os.environ.get('REDIS_HOST', '127.0.0.1')
 
 
 def get_first_span_by_name(spans, name):

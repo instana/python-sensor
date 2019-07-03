@@ -302,7 +302,6 @@ class Meter(object):
             except ImportError:
                 pass
 
-        logger.warn("App name is: %s", app_name)
         return app_name
 
     def collect_snapshot(self):

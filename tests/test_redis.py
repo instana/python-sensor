@@ -1,10 +1,9 @@
 from __future__ import absolute_import
 
-import os
-import sys
 import unittest
 
 import redis
+from redis.sentinel import Sentinel
 
 from .helpers import testenv
 from instana.singletons import tracer
@@ -15,18 +14,26 @@ class TestRedis(unittest.TestCase):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        self.strict_redis = redis.StrictRedis.from_url("redis://%s/0" % testenv['redis_url'])
-        self.redis = redis.Redis.from_url("redis://%s/0" % testenv['redis_url'])
+
+        # self.sentinel = Sentinel([(testenv['redis_host'], 26379)], socket_timeout=0.1)
+        # self.sentinel_master = self.sentinel.discover_master('mymaster')
+        # self.client = redis.Redis(host=self.sentinel_master[0])
+
+        self.client = redis.Redis(host=testenv['redis_host'])
 
     def tearDown(self):
         pass
 
+    def test_vanilla(self):
+        self.client.set('instrument', 'piano')
+        result = self.client.get('instrument')
+
     def test_set_get(self):
         result = None
         with tracer.start_active_span('test'):
-            self.strict_redis.set('foox', 'barX')
-            self.strict_redis.set('fooy', 'barY')
-            result = self.strict_redis.get('foox')
+            self.client.set('foox', 'barX')
+            self.client.set('fooy', 'barY')
+            result = self.client.get('foox')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
@@ -66,7 +73,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs1_span.data.__dict__)
 
         self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs1_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
         self.assertEqual("SET", rs1_span.data.redis.command)
         self.assertIsNone(rs1_span.data.redis.error)
 
@@ -80,7 +87,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs2_span.data.__dict__)
 
         self.assertEqual('redis-py', rs2_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs2_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data.redis.connection)
         self.assertEqual("SET", rs2_span.data.redis.command)
         self.assertIsNone(rs2_span.data.redis.error)
 
@@ -94,7 +101,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs3_span.data.__dict__)
 
         self.assertEqual('redis-py', rs3_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs3_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data.redis.connection)
         self.assertEqual("GET", rs3_span.data.redis.command)
         self.assertIsNone(rs3_span.data.redis.error)
 
@@ -105,9 +112,9 @@ class TestRedis(unittest.TestCase):
     def test_set_incr_get(self):
         result = None
         with tracer.start_active_span('test'):
-            self.strict_redis.set('counter', '10')
-            self.strict_redis.incr('counter')
-            result = self.strict_redis.get('counter')
+            self.client.set('counter', '10')
+            self.client.incr('counter')
+            result = self.client.get('counter')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
@@ -147,7 +154,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs1_span.data.__dict__)
 
         self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs1_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
         self.assertEqual("SET", rs1_span.data.redis.command)
         self.assertIsNone(rs1_span.data.redis.error)
 
@@ -161,7 +168,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs2_span.data.__dict__)
 
         self.assertEqual('redis-py', rs2_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs2_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data.redis.connection)
         self.assertEqual("INCRBY", rs2_span.data.redis.command)
         self.assertIsNone(rs2_span.data.redis.error)
 
@@ -175,7 +182,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs3_span.data.__dict__)
 
         self.assertEqual('redis-py', rs3_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs3_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data.redis.connection)
         self.assertEqual("GET", rs3_span.data.redis.command)
         self.assertIsNone(rs3_span.data.redis.error)
 
@@ -186,9 +193,9 @@ class TestRedis(unittest.TestCase):
     def test_old_redis_client(self):
         result = None
         with tracer.start_active_span('test'):
-            self.redis.set('foox', 'barX')
-            self.redis.set('fooy', 'barY')
-            result = self.redis.get('foox')
+            self.client.set('foox', 'barX')
+            self.client.set('fooy', 'barY')
+            result = self.client.get('foox')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
@@ -228,7 +235,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs1_span.data.__dict__)
 
         self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs1_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
         self.assertEqual("SET", rs1_span.data.redis.command)
         self.assertIsNone(rs1_span.data.redis.error)
 
@@ -242,7 +249,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs2_span.data.__dict__)
 
         self.assertEqual('redis-py', rs2_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs2_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data.redis.connection)
         self.assertEqual("SET", rs2_span.data.redis.command)
         self.assertIsNone(rs2_span.data.redis.error)
 
@@ -256,7 +263,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs3_span.data.__dict__)
 
         self.assertEqual('redis-py', rs3_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs3_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data.redis.connection)
         self.assertEqual("GET", rs3_span.data.redis.command)
         self.assertIsNone(rs3_span.data.redis.error)
 
@@ -267,7 +274,7 @@ class TestRedis(unittest.TestCase):
     def test_pipelined_requests(self):
         result = None
         with tracer.start_active_span('test'):
-            pipe = self.strict_redis.pipeline()
+            pipe = self.client.pipeline()
             pipe.set('foox', 'barX')
             pipe.set('fooy', 'barY')
             pipe.get('foox')
@@ -301,7 +308,7 @@ class TestRedis(unittest.TestCase):
         self.assertTrue('redis' in rs1_span.data.__dict__)
 
         self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s/0" % testenv['redis_url'], rs1_span.data.redis.connection)
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
         self.assertEqual("PIPELINE", rs1_span.data.redis.command)
         self.assertEqual(['SET', 'SET', 'GET'], rs1_span.data.redis.subCommands)
         self.assertIsNone(rs1_span.data.redis.error)

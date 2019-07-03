@@ -1,9 +1,21 @@
 version: '2'
 services:
   redis:
-    image: redis:4.0.6
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 6379:6379
+
+#
+#  Dev: Optionally enable to validate Redis Sentinel
+#
+#  redis-sentinel:
+#    image: 'bitnami/redis-sentinel:latest'
+#    environment:
+#      - REDIS_MASTER_HOST=redis
+#    ports:
+#      - '26379:26379'
 
   # Kafka test will sometimes fail because Zookeeper won't start due to
   # java.io.IOException: Unable to create data directory /opt/zookeeper-3.4.9/data/version-2, which seems to be a known issue:

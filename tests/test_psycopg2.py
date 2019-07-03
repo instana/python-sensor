@@ -214,6 +214,11 @@ class TestPsycoPG2:
     # Added to validate unicode support and register_type.
     def test_unicode(self):
         ext.register_type(ext.UNICODE, self.cursor)
+        #
+        # Python 2 chokes on Unicode and CircleCI tests are hanging (but pass locally).
+        # Disable these tests for now as we want to really just test register_type
+        # anyways
+        #
         # snowman = "\u2603"
         #
         # self.cursor.execute("delete from users where id in (1,2,3)")

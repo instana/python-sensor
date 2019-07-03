@@ -21,11 +21,11 @@ testenv['mysql_pw'] = os.environ.get('MYSQL_PW', '')
 """
 PostgreSQL Environment
 """
-testenv['postgresql_host'] = os.environ.get('POSTGRESQL_HOST', '127.0.0.1')
-testenv['postgresql_port'] = int(os.environ.get('POSTGRESQL_PORT', '5432'))
-testenv['postgresql_db']   = os.environ.get('POSTGRESQL_DB', 'circle_test')
-testenv['postgresql_user'] = os.environ.get('POSTGRESQL_USER', 'root')
-testenv['postgresql_pw'] = os.environ.get('POSTGRESQL_PW', '')
+testenv['postgresql_host'] = os.environ.get('POSTGRES_HOST', '127.0.0.1')
+testenv['postgresql_port'] = int(os.environ.get('POSTGRES_PORT', '5432'))
+testenv['postgresql_db']   = os.environ.get('POSTGRES_DB', 'circle_test')
+testenv['postgresql_user'] = os.environ.get('POSTGRES_USER', 'root')
+testenv['postgresql_pw'] = os.environ.get('POSTGRES_PW', '')
 
 
 """

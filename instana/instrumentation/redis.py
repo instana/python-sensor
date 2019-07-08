@@ -10,29 +10,44 @@ try:
 
     if ((redis.VERSION >= (2, 10, 6)) and (redis.VERSION < (3, 0, 0))):
 
+        def collect_tags(span, instance, args, kwargs):
+            try:
+                ckw = instance.connection_pool.connection_kwargs
+
+                span.set_tag("driver", "redis-py")
+
+                host = ckw.get('host', None)
+                port = ckw.get('port', '6379')
+                db = ckw.get('db',   None)
+
+                if host is not None:
+                    url = "redis://%s:%s" % (host, port)
+                    if db is not None:
+                        url = url + "/%s" % db
+                    span.set_tag('connection', url)
+
+            except:
+                logger.debug("redis.collect_tags non-fatal error", exc_info=True)
+            finally:
+                return span
+
         @wrapt.patch_function_wrapper('redis.client','StrictRedis.execute_command')
         def execute_command_with_instana(wrapped, instance, args, kwargs):
             parent_span = tracer.active_span
 
             # If we're not tracing, just return
-            if parent_span is None:
+            if parent_span is None or parent_span.operation_name == "redis":
                 return wrapped(*args, **kwargs)
 
             with tracer.start_active_span("redis", child_of=parent_span) as scope:
-
                 try:
-                    ckw = instance.connection_pool.connection_kwargs
-                    url = "redis://%s:%d/%d" % (ckw['host'], ckw['port'], ckw['db'])
-                    scope.span.set_tag("connection", url)
-                    scope.span.set_tag("driver", "redis-py")
-                    scope.span.set_tag("command", args[0])
+                    collect_tags(scope.span, instance, args, kwargs)
+                    if (len(args) > 0):
+                        scope.span.set_tag("command", args[0])
 
                     rv = wrapped(*args, **kwargs)
                 except Exception as e:
-                    scope.span.set_tag("redis.error", str(e))
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    scope.span.set_tag("ec", ec+1)
+                    scope.span.log_exception(e)
                     raise
                 else:
                     return rv
@@ -42,34 +57,26 @@ try:
             parent_span = tracer.active_span
 
             # If we're not tracing, just return
-            if parent_span is None:
+            if parent_span is None or parent_span.operation_name == "redis":
                 return wrapped(*args, **kwargs)
 
             with tracer.start_active_span("redis", child_of=parent_span) as scope:
-
                 try:
-                    ckw = instance.connection_pool.connection_kwargs
-                    url = "redis://%s:%d/%d" % (ckw['host'], ckw['port'], ckw['db'])
-                    scope.span.set_tag("connection", url)
-                    scope.span.set_tag("driver", "redis-py")
+                    collect_tags(scope.span, instance, args, kwargs)
                     scope.span.set_tag("command", 'PIPELINE')
 
-                    try:
-                        pipe_cmds = []
-                        for e in instance.command_stack:
-                            pipe_cmds.append(e[0][0])
-                        scope.span.set_tag("subCommands", pipe_cmds)
-                    except Exception as e:
-                        # If anything breaks during cmd collection, just log a
-                        # debug message
-                        logger.debug("Error collecting pipeline commands")
+                    pipe_cmds = []
+                    for e in instance.command_stack:
+                        pipe_cmds.append(e[0][0])
+                    scope.span.set_tag("subCommands", pipe_cmds)
+                except Exception as e:
+                    # If anything breaks during K/V collection, just log a debug message
+                    logger.debug("Error collecting pipeline commands", exc_info=True)
 
+                try:
                     rv = wrapped(*args, **kwargs)
                 except Exception as e:
-                    scope.span.set_tag("redis.error", str(e))
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    scope.span.set_tag("ec", ec+1)
+                    scope.span.log_exception(e)
                     raise
                 else:
                     return rv

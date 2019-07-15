@@ -6,7 +6,7 @@ from nose.tools import assert_equals
 
 import instana.http_propagator as ihp
 import instana.text_propagator as itp
-from instana import options, util
+from instana import options, span_context
 from instana.tracer import InstanaTracer
 
 
@@ -58,7 +58,7 @@ def test_http_basic_extract():
     carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert type(ctx) is basictracer.context.SpanContext
+    assert type(ctx) is span_context.InstanaSpanContext
     assert_equals('0000000000000001', ctx.trace_id)
     assert_equals('0000000000000001', ctx.span_id)
 
@@ -70,7 +70,7 @@ def test_http_mixed_case_extract():
     carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert type(ctx) is basictracer.context.SpanContext
+    assert type(ctx) is span_context.InstanaSpanContext
     assert_equals('0000000000000001', ctx.trace_id)
     assert_equals('0000000000000001', ctx.span_id)
 
@@ -93,7 +93,7 @@ def test_http_128bit_headers():
                'X-Instana-S': '0000000000000000b0789916ff8f319f', 'X-Instana-L': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert type(ctx) is basictracer.context.SpanContext
+    assert type(ctx) is span_context.InstanaSpanContext
     assert_equals('b0789916ff8f319f', ctx.trace_id)
     assert_equals('b0789916ff8f319f', ctx.span_id)
 
@@ -146,7 +146,7 @@ def test_text_basic_extract():
     carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
-    assert type(ctx) is basictracer.context.SpanContext
+    assert type(ctx) is span_context.InstanaSpanContext
     assert_equals('0000000000000001', ctx.trace_id)
     assert_equals('0000000000000001', ctx.span_id)
 
@@ -179,6 +179,6 @@ def test_text_128bit_headers():
                'X-INSTANA-S': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
-    assert type(ctx) is basictracer.context.SpanContext
+    assert type(ctx) is span_context.InstanaSpanContext
     assert_equals('b0789916ff8f319f', ctx.trace_id)
     assert_equals('b0789916ff8f319f', ctx.span_id)

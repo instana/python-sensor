@@ -7,13 +7,14 @@ import traceback
 
 import opentracing as ot
 from basictracer import BasicTracer
-from basictracer.context import SpanContext
 
+from .binary_propagator import BinaryPropagator
 from .http_propagator import HTTPPropagator
+from .text_propagator import TextPropagator
+from .span_context import InstanaSpanContext
 from .options import Options
 from .recorder import InstanaRecorder, InstanaSampler
 from .span import InstanaSpan
-from .text_propagator import TextPropagator
 from .util import generate_id
 
 
@@ -28,6 +29,7 @@ class InstanaTracer(BasicTracer):
 
         self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
+        self._propagators[ot.Format.BINARY] = BinaryPropagator()
 
     def handle_fork(self):
         # Nothing to do for the Tracer;  Pass onto Recorder
@@ -83,7 +85,7 @@ class InstanaTracer(BasicTracer):
 
         # Assemble the child ctx
         gid = generate_id()
-        ctx = SpanContext(span_id=gid)
+        ctx = InstanaSpanContext(span_id=gid)
         if parent_ctx is not None:
             if parent_ctx._baggage is not None:
                 ctx._baggage = parent_ctx._baggage.copy()
@@ -112,7 +114,7 @@ class InstanaTracer(BasicTracer):
 
     def inject(self, span_context, format, carrier):
         if format in self._propagators:
-            self._propagators[format].inject(span_context, carrier)
+            return self._propagators[format].inject(span_context, carrier)
         else:
             raise ot.UnsupportedFormatException()
 

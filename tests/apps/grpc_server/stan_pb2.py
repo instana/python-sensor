@@ -19,21 +19,21 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='stan',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\nstan.proto\x12\x04stan\"#\n\x0fIncomingMessage\x12\x10\n\x08ToDigest\x18\x01 \x01(\t\"7\n\x0fOutgoingMessage\x12\x10\n\x08Response\x18\x01 \x01(\t\x12\x12\n\nWasHandled\x18\x02 \x01(\x08\x32\x42\n\x04Stan\x12:\n\x08SayHello\x12\x15.stan.IncomingMessage\x1a\x15.stan.OutgoingMessage\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\nstan.proto\x12\x04stan\"#\n\x0fQuestionRequest\x12\x10\n\x08question\x18\x01 \x01(\t\"8\n\x10QuestionResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t\x12\x14\n\x0cwas_answered\x18\x02 \x01(\x08\x32\x46\n\x04Stan\x12>\n\x0b\x41skQuestion\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x62\x06proto3')
 )
 
 
 
 
-_INCOMINGMESSAGE = _descriptor.Descriptor(
-  name='IncomingMessage',
-  full_name='stan.IncomingMessage',
+_QUESTIONREQUEST = _descriptor.Descriptor(
+  name='QuestionRequest',
+  full_name='stan.QuestionRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='ToDigest', full_name='stan.IncomingMessage.ToDigest', index=0,
+      name='question', full_name='stan.QuestionRequest.question', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -56,22 +56,22 @@ _INCOMINGMESSAGE = _descriptor.Descriptor(
 )
 
 
-_OUTGOINGMESSAGE = _descriptor.Descriptor(
-  name='OutgoingMessage',
-  full_name='stan.OutgoingMessage',
+_QUESTIONRESPONSE = _descriptor.Descriptor(
+  name='QuestionResponse',
+  full_name='stan.QuestionResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='Response', full_name='stan.OutgoingMessage.Response', index=0,
+      name='answer', full_name='stan.QuestionResponse.answer', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='WasHandled', full_name='stan.OutgoingMessage.WasHandled', index=1,
+      name='was_answered', full_name='stan.QuestionResponse.was_answered', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -90,26 +90,26 @@ _OUTGOINGMESSAGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=57,
-  serialized_end=112,
+  serialized_end=113,
 )
 
-DESCRIPTOR.message_types_by_name['IncomingMessage'] = _INCOMINGMESSAGE
-DESCRIPTOR.message_types_by_name['OutgoingMessage'] = _OUTGOINGMESSAGE
+DESCRIPTOR.message_types_by_name['QuestionRequest'] = _QUESTIONREQUEST
+DESCRIPTOR.message_types_by_name['QuestionResponse'] = _QUESTIONRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-IncomingMessage = _reflection.GeneratedProtocolMessageType('IncomingMessage', (_message.Message,), dict(
-  DESCRIPTOR = _INCOMINGMESSAGE,
+QuestionRequest = _reflection.GeneratedProtocolMessageType('QuestionRequest', (_message.Message,), dict(
+  DESCRIPTOR = _QUESTIONREQUEST,
   __module__ = 'stan_pb2'
-  # @@protoc_insertion_point(class_scope:stan.IncomingMessage)
+  # @@protoc_insertion_point(class_scope:stan.QuestionRequest)
   ))
-_sym_db.RegisterMessage(IncomingMessage)
+_sym_db.RegisterMessage(QuestionRequest)
 
-OutgoingMessage = _reflection.GeneratedProtocolMessageType('OutgoingMessage', (_message.Message,), dict(
-  DESCRIPTOR = _OUTGOINGMESSAGE,
+QuestionResponse = _reflection.GeneratedProtocolMessageType('QuestionResponse', (_message.Message,), dict(
+  DESCRIPTOR = _QUESTIONRESPONSE,
   __module__ = 'stan_pb2'
-  # @@protoc_insertion_point(class_scope:stan.OutgoingMessage)
+  # @@protoc_insertion_point(class_scope:stan.QuestionResponse)
   ))
-_sym_db.RegisterMessage(OutgoingMessage)
+_sym_db.RegisterMessage(QuestionResponse)
 
 
 
@@ -119,16 +119,16 @@ _STAN = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=114,
-  serialized_end=180,
+  serialized_start=115,
+  serialized_end=185,
   methods=[
   _descriptor.MethodDescriptor(
-    name='SayHello',
-    full_name='stan.Stan.SayHello',
+    name='AskQuestion',
+    full_name='stan.Stan.AskQuestion',
     index=0,
     containing_service=None,
-    input_type=_INCOMINGMESSAGE,
-    output_type=_OUTGOINGMESSAGE,
+    input_type=_QUESTIONREQUEST,
+    output_type=_QUESTIONRESPONSE,
     serialized_options=None,
   ),
 ])

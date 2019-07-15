@@ -14,10 +14,10 @@ class StanStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.SayHello = channel.unary_unary(
-        '/stan.Stan/SayHello',
-        request_serializer=stan__pb2.IncomingMessage.SerializeToString,
-        response_deserializer=stan__pb2.OutgoingMessage.FromString,
+    self.AskQuestion = channel.unary_unary(
+        '/stan.Stan/AskQuestion',
+        request_serializer=stan__pb2.QuestionRequest.SerializeToString,
+        response_deserializer=stan__pb2.QuestionResponse.FromString,
         )
 
 
@@ -25,7 +25,7 @@ class StanServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def SayHello(self, request, context):
+  def AskQuestion(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -35,10 +35,10 @@ class StanServicer(object):
 
 def add_StanServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'SayHello': grpc.unary_unary_rpc_method_handler(
-          servicer.SayHello,
-          request_deserializer=stan__pb2.IncomingMessage.FromString,
-          response_serializer=stan__pb2.OutgoingMessage.SerializeToString,
+      'AskQuestion': grpc.unary_unary_rpc_method_handler(
+          servicer.AskQuestion,
+          request_deserializer=stan__pb2.QuestionRequest.FromString,
+          response_serializer=stan__pb2.QuestionResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

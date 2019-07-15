@@ -3,14 +3,15 @@ syntax = "proto3";
 package stan;
 
 service Stan{
- rpc SayHello(IncomingMessage) returns (OutgoingMessage) {}
+ rpc AskQuestion(QuestionRequest) returns (QuestionResponse) {}
 }
 
-message IncomingMessage{
- string ToDigest = 1;
+
+message QuestionRequest {
+    string question = 1;
 }
 
-message OutgoingMessage{
- string Response = 1;
- bool WasHandled = 2;
+message QuestionResponse {
+    string answer = 1;
+    bool was_answered = 2;
 }

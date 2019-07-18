@@ -33,7 +33,6 @@ rpc_server_thread.name = "Background RPC app"
 print("Starting background RPC app...")
 rpc_server_thread.start()
 
-
 if sys.version_info < (3, 7, 0):
     # Background Soap Server
     from .apps.soapserver4132 import soapserver

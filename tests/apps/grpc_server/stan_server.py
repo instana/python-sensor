@@ -20,13 +20,10 @@ class StanServicer(stan_pb2_grpc.StanServicer):
 
     def OneQuestionOneResponse(self, request, context):
         # print("😇:I was asked: %s" % request.question)
-
         response = """\
 Invention, my dear friends, is 93% perspiration, 6% electricity, \
 4% evaporation, and 2% butterscotch ripple. – Willy Wonka"""
-
         result = {'answer': response, 'was_answered': True}
-
         return stan_pb2.QuestionResponse(**result)
 
     def ManyQuestionsOneResponse(self, request_iterator, context):

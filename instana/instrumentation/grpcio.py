@@ -66,6 +66,29 @@ try:
             else:
                 return rv
 
+    @wrapt.patch_function_wrapper('grpc._channel', '_UnaryUnaryMultiCallable.future')
+    def unary_unary_future_with_instana(wrapped, instance, argv, kwargs):
+        parent_span = tracer.active_span
+
+        # If we're not tracing, just return
+        if parent_span is None:
+            return wrapped(*argv, **kwargs)
+
+        with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
+            try:
+                if "metadata" not in kwargs:
+                    kwargs["metadata"] = []
+
+                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'])
+                collect_tags(scope.span, instance, argv, kwargs)
+                scope.span.set_tag('rpc.call_type', 'unary')
+
+                rv = wrapped(*argv, **kwargs)
+            except Exception as e:
+                scope.span.log_exception(e)
+                raise
+            else:
+                return rv
 
     @wrapt.patch_function_wrapper('grpc._channel', '_UnaryUnaryMultiCallable.__call__')
     def unary_unary_call_with_instana(wrapped, instance, argv, kwargs):
@@ -117,6 +140,30 @@ try:
 
     @wrapt.patch_function_wrapper('grpc._channel', '_StreamUnaryMultiCallable.with_call')
     def stream_unary_with_call_with_instana(wrapped, instance, argv, kwargs):
+        parent_span = tracer.active_span
+
+        # If we're not tracing, just return
+        if parent_span is None:
+            return wrapped(*argv, **kwargs)
+
+        with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
+            try:
+                if not "metadata" in kwargs:
+                    kwargs["metadata"] = []
+
+                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'])
+                collect_tags(scope.span, instance, argv, kwargs)
+                scope.span.set_tag('rpc.call_type', 'stream')
+
+                rv = wrapped(*argv, **kwargs)
+            except Exception as e:
+                scope.span.log_exception(e)
+                raise
+            else:
+                return rv
+
+    @wrapt.patch_function_wrapper('grpc._channel', '_StreamUnaryMultiCallable.future')
+    def stream_unary_future_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
         # If we're not tracing, just return

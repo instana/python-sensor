@@ -3,7 +3,10 @@ syntax = "proto3";
 package stan;
 
 service Stan{
- rpc AskQuestion(QuestionRequest) returns (QuestionResponse) {}
+ rpc OneQuestionOneResponse(QuestionRequest) returns (QuestionResponse) {}
+ rpc ManyQuestionsOneResponse(stream QuestionRequest) returns (QuestionResponse){}
+ rpc OneQuestionManyResponses(QuestionRequest) returns (stream QuestionResponse){}
+ rpc ManyQuestionsManyReponses(stream QuestionRequest) returns (stream QuestionResponse){}
 }
 
 

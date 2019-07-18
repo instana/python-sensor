@@ -4,6 +4,7 @@ import grpc
 import tests.apps.grpc_server.stan_pb2 as stan__pb2
 
 
+
 class StanStub(object):
   # missing associated documentation comment in .proto file
   pass
@@ -14,8 +15,23 @@ class StanStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.AskQuestion = channel.unary_unary(
-        '/stan.Stan/AskQuestion',
+    self.OneQuestionOneResponse = channel.unary_unary(
+        '/stan.Stan/OneQuestionOneResponse',
+        request_serializer=stan__pb2.QuestionRequest.SerializeToString,
+        response_deserializer=stan__pb2.QuestionResponse.FromString,
+        )
+    self.ManyQuestionsOneResponse = channel.stream_unary(
+        '/stan.Stan/ManyQuestionsOneResponse',
+        request_serializer=stan__pb2.QuestionRequest.SerializeToString,
+        response_deserializer=stan__pb2.QuestionResponse.FromString,
+        )
+    self.OneQuestionManyResponses = channel.unary_stream(
+        '/stan.Stan/OneQuestionManyResponses',
+        request_serializer=stan__pb2.QuestionRequest.SerializeToString,
+        response_deserializer=stan__pb2.QuestionResponse.FromString,
+        )
+    self.ManyQuestionsManyReponses = channel.stream_stream(
+        '/stan.Stan/ManyQuestionsManyReponses',
         request_serializer=stan__pb2.QuestionRequest.SerializeToString,
         response_deserializer=stan__pb2.QuestionResponse.FromString,
         )
@@ -25,7 +41,28 @@ class StanServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def AskQuestion(self, request, context):
+  def OneQuestionOneResponse(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ManyQuestionsOneResponse(self, request_iterator, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def OneQuestionManyResponses(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ManyQuestionsManyReponses(self, request_iterator, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -35,8 +72,23 @@ class StanServicer(object):
 
 def add_StanServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'AskQuestion': grpc.unary_unary_rpc_method_handler(
-          servicer.AskQuestion,
+      'OneQuestionOneResponse': grpc.unary_unary_rpc_method_handler(
+          servicer.OneQuestionOneResponse,
+          request_deserializer=stan__pb2.QuestionRequest.FromString,
+          response_serializer=stan__pb2.QuestionResponse.SerializeToString,
+      ),
+      'ManyQuestionsOneResponse': grpc.stream_unary_rpc_method_handler(
+          servicer.ManyQuestionsOneResponse,
+          request_deserializer=stan__pb2.QuestionRequest.FromString,
+          response_serializer=stan__pb2.QuestionResponse.SerializeToString,
+      ),
+      'OneQuestionManyResponses': grpc.unary_stream_rpc_method_handler(
+          servicer.OneQuestionManyResponses,
+          request_deserializer=stan__pb2.QuestionRequest.FromString,
+          response_serializer=stan__pb2.QuestionResponse.SerializeToString,
+      ),
+      'ManyQuestionsManyReponses': grpc.stream_stream_rpc_method_handler(
+          servicer.ManyQuestionsManyReponses,
           request_deserializer=stan__pb2.QuestionRequest.FromString,
           response_serializer=stan__pb2.QuestionResponse.SerializeToString,
       ),

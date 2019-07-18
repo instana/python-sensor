@@ -4,28 +4,51 @@ import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 from concurrent import futures
 
+from ...helpers import testenv
+
+testenv["grpc_port"] = 10814
+testenv["grpc_host"] = "127.0.0.1"
+testenv["grpc_server"] = testenv["grpc_host"] + ":" + str(testenv["grpc_port"])
+
 
 class StanServicer(stan_pb2_grpc.StanServicer):
     """
     gRPC server for Stan Service
     """
     def __init__(self, *args, **kwargs):
-        self.server_port = 5030
+        self.server_port = testenv['grpc_port']
 
-    def AskQuestion(self, request, context):
-        # get the string from the incoming request
-        question = request.question
+    def OneQuestionOneResponse(self, request, context):
+        # print("😇:I was asked: %s" % request.question)
 
         response = """\
 Invention, my dear friends, is 93% perspiration, 6% electricity, \
 4% evaporation, and 2% butterscotch ripple. – Willy Wonka"""
 
-        # # print the output here
-        # print(response)54a
-
         result = {'answer': response, 'was_answered': True}
 
         return stan_pb2.QuestionResponse(**result)
+
+    def ManyQuestionsOneResponse(self, request_iterator, context):
+        for request in request_iterator:
+            # print("😇:I was asked: %s" % request.question)
+            pass
+
+        result = {'answer': 'Ok', 'was_answered': True}
+        return stan_pb2.QuestionResponse(**result)
+
+    def OneQuestionManyResponses(self, request, context):
+        # print("😇:I was asked: %s" % request.question)
+
+        for count in range(6):
+            result = {'answer': 'Ok', 'was_answered': True}
+            yield stan_pb2.QuestionResponse(**result)
+
+    def ManyQuestionsManyReponses(self, request_iterator, context):
+        for request in request_iterator:
+            # print("😇:I was asked: %s" % request.question)
+            result = {'answer': 'Ok', 'was_answered': True}
+            yield stan_pb2.QuestionResponse(**result)
 
     def start_server(self):
         """

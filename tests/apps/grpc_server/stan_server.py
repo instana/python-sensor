@@ -36,7 +36,6 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
 
     def OneQuestionManyResponses(self, request, context):
         # print("😇:I was asked: %s" % request.question)
-
         for count in range(6):
             result = {'answer': 'Ok', 'was_answered': True}
             yield stan_pb2.QuestionResponse(**result)
@@ -46,6 +45,12 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
             # print("😇:I was asked: %s" % request.question)
             result = {'answer': 'Ok', 'was_answered': True}
             yield stan_pb2.QuestionResponse(**result)
+
+    def OneQuestionOneErrorResponse(self, request, context):
+            # print("😇:I was asked: %s" % request.question)
+            raise Exception('Simulated error')
+            result = {'answer': "ThisError", 'was_answered': True}
+            return stan_pb2.QuestionResponse(**result)
 
     def start_server(self):
         """

@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='stan',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\nstan.proto\x12\x04stan\"#\n\x0fQuestionRequest\x12\x10\n\x08question\x18\x01 \x01(\t\"8\n\x10QuestionResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t\x12\x14\n\x0cwas_answered\x18\x02 \x01(\x08\x32\xc1\x02\n\x04Stan\x12I\n\x16OneQuestionOneResponse\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x12M\n\x18ManyQuestionsOneResponse\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00(\x01\x12M\n\x18OneQuestionManyResponses\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x30\x01\x12P\n\x19ManyQuestionsManyReponses\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00(\x01\x30\x01\x62\x06proto3')
+  serialized_pb=_b('\n\nstan.proto\x12\x04stan\"#\n\x0fQuestionRequest\x12\x10\n\x08question\x18\x01 \x01(\t\"8\n\x10QuestionResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t\x12\x14\n\x0cwas_answered\x18\x02 \x01(\x08\x32\xe3\x03\n\x04Stan\x12I\n\x16OneQuestionOneResponse\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x12M\n\x18ManyQuestionsOneResponse\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00(\x01\x12M\n\x18OneQuestionManyResponses\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x30\x01\x12P\n\x19ManyQuestionsManyReponses\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00(\x01\x30\x01\x12N\n\x1bOneQuestionOneErrorResponse\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x12P\n\x1dOneErroredQuestionOneResponse\x12\x15.stan.QuestionRequest\x1a\x16.stan.QuestionResponse\"\x00\x62\x06proto3')
 )
 
 
@@ -120,7 +120,7 @@ _STAN = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   serialized_start=116,
-  serialized_end=437,
+  serialized_end=599,
   methods=[
   _descriptor.MethodDescriptor(
     name='OneQuestionOneResponse',
@@ -153,6 +153,24 @@ _STAN = _descriptor.ServiceDescriptor(
     name='ManyQuestionsManyReponses',
     full_name='stan.Stan.ManyQuestionsManyReponses',
     index=3,
+    containing_service=None,
+    input_type=_QUESTIONREQUEST,
+    output_type=_QUESTIONRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='OneQuestionOneErrorResponse',
+    full_name='stan.Stan.OneQuestionOneErrorResponse',
+    index=4,
+    containing_service=None,
+    input_type=_QUESTIONREQUEST,
+    output_type=_QUESTIONRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='OneErroredQuestionOneResponse',
+    full_name='stan.Stan.OneErroredQuestionOneResponse',
+    index=5,
     containing_service=None,
     input_type=_QUESTIONREQUEST,
     output_type=_QUESTIONRESPONSE,

@@ -567,3 +567,74 @@ class TestGRPCIO(unittest.TestCase):
         # test-span
         self.assertEqual(test_span.n, 'sdk')
         self.assertEqual(test_span.data.sdk.name, 'test')
+
+    def test_server_error(self):
+        try:
+            response = None
+            with tracer.start_active_span('test'):
+                response = self.server_stub.OneQuestionOneErrorResponse(stan_pb2.QuestionRequest(question="Do u error?"))
+        except:
+            pass
+
+        self.assertIsNone(tracer.active_span)
+        self.assertIsNone(response)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(4, len(spans))
+
+        log_span = get_first_span_by_name(spans, 'log')
+        server_span = get_first_span_by_name(spans, 'rpc-server')
+        client_span = get_first_span_by_name(spans, 'rpc-client')
+        test_span = get_first_span_by_name(spans, 'sdk')
+
+        assert(log_span)
+        assert(server_span)
+        assert(client_span)
+        assert(test_span)
+
+        # Same traceId
+        self.assertEqual(server_span.t, client_span.t)
+        self.assertEqual(server_span.t, test_span.t)
+
+        # Parent relationships
+        self.assertEqual(server_span.p, client_span.s)
+        self.assertEqual(client_span.p, test_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(client_span.error)
+        self.assertEqual(client_span.ec, 1)
+        self.assertFalse(server_span.error)
+        self.assertIsNone(server_span.ec)
+
+        # rpc-server
+        self.assertEqual(server_span.n, 'rpc-server')
+        self.assertEqual(server_span.k, 1)
+        self.assertIsNotNone(server_span.stack)
+        self.assertEqual(2, len(server_span.stack))
+        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
+        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/OneQuestionOneErrorResponse')
+        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
+        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data.rpc.error)
+
+        # rpc-client
+        self.assertEqual(client_span.n, 'rpc-client')
+        self.assertEqual(client_span.k, 2)
+        self.assertIsNotNone(client_span.stack)
+        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
+        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/OneQuestionOneErrorResponse')
+        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
+        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data.rpc.call_type, 'unary')
+        self.assertIsNotNone(client_span.data.rpc.error)
+
+        # log
+        self.assertEqual(log_span.n, 'log')
+        self.assertIsNotNone(log_span.data.log)
+        self.assertEqual(log_span.data.log['message'], 'Exception calling application: Simulated error')
+
+        # test-span
+        self.assertEqual(test_span.n, 'sdk')
+        self.assertEqual(test_span.data.sdk.name, 'test')

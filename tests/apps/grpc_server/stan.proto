@@ -3,10 +3,17 @@ syntax = "proto3";
 package stan;
 
 service Stan{
+ // Unary
  rpc OneQuestionOneResponse(QuestionRequest) returns (QuestionResponse) {}
+
+ // Streaming
  rpc ManyQuestionsOneResponse(stream QuestionRequest) returns (QuestionResponse){}
  rpc OneQuestionManyResponses(QuestionRequest) returns (stream QuestionResponse){}
  rpc ManyQuestionsManyReponses(stream QuestionRequest) returns (stream QuestionResponse){}
+
+ // Error Testing
+ rpc OneQuestionOneErrorResponse(QuestionRequest) returns (QuestionResponse) {}
+ rpc OneErroredQuestionOneResponse(QuestionRequest) returns (QuestionResponse) {}
 }
 
 

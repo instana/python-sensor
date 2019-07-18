@@ -5,7 +5,9 @@ from distutils.version import LooseVersion
 command_line = [__file__, '--verbose']
 
 if LooseVersion(sys.version) < LooseVersion('3.5.3'):
-    command_line.extend(['-e', 'asynqp', '-e', 'aiohttp', '-e', 'async', '-e', 'tornado'])
+    command_line.extend(['-e', 'asynqp', '-e', 'aiohttp',
+                         '-e', 'async', '-e', 'tornado',
+                         '-e', 'grpcio'])
 
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
     command_line.extend(['-e', 'sudsjurko'])

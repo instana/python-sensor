@@ -1,4 +1,5 @@
 from basictracer.span import BasicSpan
+from .log import logger
 
 
 class InstanaSpan(BasicSpan):
@@ -8,11 +9,24 @@ class InstanaSpan(BasicSpan):
         super(InstanaSpan, self).finish(finish_time)
 
     def log_exception(self, e):
-        if hasattr(e, '__str__'):
-            self.log_kv({'message': str(e)})
-        elif hasattr(e, 'message') and e.message is not None:
-            self.log_kv({'message': e.message})
+        try:
+            message = ""
 
-        self.set_tag("error", True)
-        ec = self.tags.get('ec', 0)
-        self.set_tag("ec", ec+1)
+            self.set_tag("error", True)
+            ec = self.tags.get('ec', 0)
+            self.set_tag("ec", ec+1)
+
+            if hasattr(e, '__str__'):
+                message = str(e)
+            elif hasattr(e, 'message') and e.message is not None:
+                message = e.message
+
+            if self.operation_name in ['rpc-server', 'rpc-client']:
+                self.set_tag('rpc.error', message)
+
+            self.log_kv({'message': message})
+
+        except Exception:
+            logger.debug("span.log_exception", exc_info=True)
+            raise
+

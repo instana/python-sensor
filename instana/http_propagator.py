@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import opentracing as ot
-from basictracer.context import SpanContext
+from .span_context import InstanaSpanContext
 
 from .log import logger
 from .util import header_to_id
@@ -62,6 +62,7 @@ class HTTPPropagator():
     def extract(self, carrier):  # noqa
         trace_id = None
         span_id = None
+        level = 1
 
         try:
             if type(carrier) is dict or hasattr(carrier, "__getitem__"):
@@ -82,18 +83,23 @@ class HTTPPropagator():
                     trace_id = header_to_id(dc[key])
                 elif self.LC_HEADER_KEY_S == lc_key:
                     span_id = header_to_id(dc[key])
+                elif self.LC_HEADER_KEY_L == lc_key:
+                    level = dc[key]
 
                 elif self.ALT_LC_HEADER_KEY_T == lc_key:
                     trace_id = header_to_id(dc[key])
                 elif self.ALT_LC_HEADER_KEY_S == lc_key:
                     span_id = header_to_id(dc[key])
+                elif self.ALT_LC_HEADER_KEY_L == lc_key:
+                    level = dc[key]
 
             ctx = None
             if trace_id is not None and span_id is not None:
-                ctx = SpanContext(span_id=span_id,
-                                  trace_id=trace_id,
-                                  baggage={},
-                                  sampled=True)
+                ctx = InstanaSpanContext(span_id=span_id,
+                                         trace_id=trace_id,
+                                         level=level,
+                                         baggage={},
+                                         sampled=True)
             return ctx
 
         except Exception:

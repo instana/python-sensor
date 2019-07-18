@@ -69,6 +69,7 @@ def boot_agent():
             from .instrumentation import mysqlclient
 
         from .instrumentation import flask
+        from .instrumentation import grpcio
         from .instrumentation.tornado import client
         from .instrumentation.tornado import server
         from .instrumentation import logging

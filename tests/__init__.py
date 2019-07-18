@@ -20,6 +20,21 @@ print("Starting background Flask app...")
 flask.start()
 
 
+if sys.version_info >= (3, 5, 3):
+    # Background RPC application
+    #
+    # Spawn the background RPC app that the tests will throw
+    # requests at.
+    import tests.apps.grpc_server
+    from .apps.grpc_server.stan_server import StanServicer
+    stan_servicer = StanServicer()
+    rpc_server_thread = threading.Thread(target=stan_servicer.start_server)
+    rpc_server_thread.daemon = True
+    rpc_server_thread.name = "Background RPC app"
+    print("Starting background RPC app...")
+    rpc_server_thread.start()
+
+
 if sys.version_info < (3, 7, 0):
     # Background Soap Server
     from .apps.soapserver4132 import soapserver

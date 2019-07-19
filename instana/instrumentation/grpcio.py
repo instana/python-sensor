@@ -254,5 +254,6 @@ try:
             else:
                 return rv
 
+    logger.debug("Instrumenting grpcio")
 except ImportError:
     pass

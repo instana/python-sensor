@@ -1,10 +1,16 @@
+import os
+import sys
 import grpc
 import time
 import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 from concurrent import futures
 
-from ...helpers import testenv
+try:
+    from ...helpers import testenv
+except ValueError:
+    # We must be running from the command line...
+    testenv = {}
 
 testenv["grpc_port"] = 10814
 testenv["grpc_host"] = "127.0.0.1"
@@ -80,3 +86,12 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
             rpc_server.stop(0)
             print('Stan as a Service RPC Server Stopped ...')
 
+
+if __name__ == "__main__":
+    print ("Booting foreground GRPC application...")
+    # os.environ["INSTANA_TEST"] = "true"
+
+    if sys.version_info >= (3, 5, 3):
+        StanServicer().start_server()
+    else:
+        print("Python v3.5.3 or higher only")

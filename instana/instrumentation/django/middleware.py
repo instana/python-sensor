@@ -23,7 +23,6 @@ class InstanaMiddleware(MiddlewareMixin):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response=None):
         self.get_response = get_response
-        super(InstanaMiddleware, self).__init__(get_response=get_response)
 
     def process_request(self, request):
         try:

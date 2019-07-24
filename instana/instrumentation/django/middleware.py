@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import os
 import sys
 
 import opentracing as ot
@@ -22,6 +23,7 @@ class InstanaMiddleware(MiddlewareMixin):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response=None):
         self.get_response = get_response
+        super(InstanaMiddleware, self).__init__(get_response=get_response)
 
     def process_request(self, request):
         try:
@@ -124,5 +126,14 @@ try:
     if 'django' in sys.modules:
         logger.debug("Instrumenting django")
         wrapt.wrap_function_wrapper('django.core.handlers.base', 'BaseHandler.load_middleware', load_middleware_wrapper)
+
+        if 'INSTANA_MAGIC' in os.environ:
+            # If we are instrumenting via AutoTrace (in an already running process), then the
+            # WSGI middleware has to be live reloaded.
+            from django.core.servers.basehttp import get_internal_wsgi_application
+            wsgiapp = get_internal_wsgi_application()
+            wsgiapp.load_middleware()
+
 except Exception:
+    logger.debug("django.middleware:", exc_info=True)
     pass

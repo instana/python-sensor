@@ -209,6 +209,7 @@ def get_default_gateway():
     :return: String - the ip address of the default gateway or None if not found/possible/non-existant
     """
     try:
+        hip = None
         # The first line is the header line
         # We look for the line where the Destination is 00000000 - that is the default route
         # The Gateway IP is encoded backwards in hex.

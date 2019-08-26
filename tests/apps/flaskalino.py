@@ -3,10 +3,15 @@
 import opentracing.ext.tags as ext
 from flask import Flask, redirect, render_template, render_template_string
 from wsgiref.simple_server import make_server
+from flask import jsonify
 
 from instana.singletons import tracer
 from ..helpers import testenv
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 testenv["wsgi_port"] = 10811
 testenv["wsgi_server"] = ("http://127.0.0.1:" + str(testenv["wsgi_port"]))
@@ -16,6 +21,23 @@ app.debug = False
 app.use_reloader = False
 
 flask_server = make_server('127.0.0.1', testenv["wsgi_port"], app.wsgi_app)
+
+
+class InvalidUsage(Exception):
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
 
 @app.route("/")
 def hello():
@@ -79,6 +101,11 @@ def exception():
     raise Exception('fake error')
 
 
+@app.route("/exception-invalid-usage")
+def exception_invalid_usage():
+    raise InvalidUsage("Simulated custom exception", status_code=502)
+
+
 @app.route("/render")
 def render():
     return render_template('flask_render_template.html', name="Peter")
@@ -92,6 +119,14 @@ def render_string():
 @app.route("/render_error")
 def render_error():
     return render_template('flask_render_error.html', what='world')
+
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    logger.error("InvalidUsage error handler invoked")
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 
 if __name__ == '__main__':

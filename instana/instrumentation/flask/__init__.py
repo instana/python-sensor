@@ -10,6 +10,8 @@ try:
     # Blinker support is preferred but we do the best we can when it's not available.
     #
 
+    from . import common
+
     if signals_available is True:
         import instana.instrumentation.flask.with_blinker
     else:

@@ -157,7 +157,6 @@ class TestSudsJurko:
         assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
         assert('logs' in soap_span.data.custom.__dict__)
-        assert_equals(1, len(soap_span.data.custom.logs.keys()))
 
         tskey = list(soap_span.data.custom.logs.keys())[0]
         assert('message' in soap_span.data.custom.logs[tskey])

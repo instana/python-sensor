@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 
+import sys
 import unittest
-
 import urllib3
+from flask.signals import signals_available
 
 from instana.singletons import tracer
 from .helpers import testenv
-from flask.signals import signals_available
 
 
 class TestFlask(unittest.TestCase):
@@ -578,7 +578,10 @@ class TestFlask(unittest.TestCase):
         # error log
         self.assertEqual("log", log_span.n)
         self.assertEqual('Exception on /exception [GET]', log_span.data.log['message'])
-        self.assertEqual("<class 'Exception'> fake error", log_span.data.log['parameters'])
+        if sys.version_info < (3, 0):
+            self.assertEqual("<type 'exceptions.Exception'> fake error", log_span.data.log['parameters'])
+        else:
+            self.assertEqual("<class 'Exception'> fake error", log_span.data.log['parameters'])
 
 
         # wsgis

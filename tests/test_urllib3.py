@@ -451,12 +451,11 @@ class TestUrllib3(unittest.TestCase):
                 pass
 
         spans = self.recorder.queued_spans()
+        self.assertEqual(4, len(spans))
 
-        self.assertEqual(3, len(spans))
-
-        wsgi_span = spans[0]
-        urllib3_span = spans[1]
-        test_span = spans[2]
+        wsgi_span = spans[1]
+        urllib3_span = spans[2]
+        test_span = spans[3]
 
         assert(r)
         self.assertEqual(500, r.status)

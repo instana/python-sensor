@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from .log import init as init_logger
 from .meter import Meter
 from .options import Options
 
@@ -12,15 +11,14 @@ class Sensor(object):
 
     def __init__(self, agent, options=None):
         self.set_options(options)
-        init_logger(self.options.log_level)
-
         self.agent = agent
         self.meter = Meter(agent)
 
     def set_options(self, options):
-        self.options = options
-        if not self.options:
+        if options is None:
             self.options = Options()
+        else:
+            self.options = options
 
     def start(self):
         # Nothing to do for the Sensor;  Pass onto Meter

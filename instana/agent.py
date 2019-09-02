@@ -137,7 +137,7 @@ class Agent(object):
 
             server_header = response.headers["Server"]
             if server_header == AGENT_HEADER:
-                logger.debug("Host agent found on %s:%d", host, port)
+                logger.debug("Instana host agent found on %s:%d", host, port)
                 rv = True
             else:
                 logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s",
@@ -179,7 +179,7 @@ class Agent(object):
                 return True
             return False
         except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("is_agent_ready: host agent connection error")
+            logger.debug("is_agent_ready: Instana host agent connection error")
 
     def report_data(self, entity_data):
         """
@@ -197,7 +197,7 @@ class Agent(object):
             if response.status_code is 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_data: host agent connection error")
+            logger.debug("report_data: Instana host agent connection error")
         finally:
             return response
 
@@ -222,7 +222,7 @@ class Agent(object):
             if response.status_code is 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_traces: host agent connection error")
+            logger.debug("report_traces: Instana host agent connection error")
         finally:
             return response
 

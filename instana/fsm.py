@@ -117,7 +117,7 @@ class TheMachine(object):
                     return True
 
         if self.warnedPeriodic is False:
-            logger.warn("Instana Host Agent couldn't be found. Will retry periodically...")
+            logger.info("Instana Host Agent couldn't be found. Will retry periodically...")
             self.warnedPeriodic = True
 
         self.schedule_retry(self.lookup_agent_host, e, self.THREAD_NAME + ": agent_lookup")
@@ -177,7 +177,7 @@ class TheMachine(object):
         self.timer.start()
 
     def on_ready(self, _):
-        logger.info("Host agent available. We're in business. Announced pid: %s (true pid: %s)",
+        logger.info("Instana host agent available. We're in business. Announced pid: %s (true pid: %s)",
                     str(os.getpid()), str(self.agent.from_.pid))
 
     def __get_real_pid(self):

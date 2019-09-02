@@ -1,31 +1,55 @@
-import logging as log
+import logging
 import os
+import sys
 
-logger = log.getLogger('instana')
+logger = None
 
 
-def init(level):
-    ch = log.StreamHandler()
-    f = log.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')
+def get_standard_logger():
+    """
+    Retrieves and configures a standard logger for the Instana package
+
+    :return: Logger
+    """
+    standard_logger = logging.getLogger("instana")
+
+    ch = logging.StreamHandler()
+    f = logging.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')
     ch.setFormatter(f)
-    logger.addHandler(ch)
+    standard_logger.addHandler(ch)
     if "INSTANA_DEBUG" in os.environ:
-        logger.setLevel(log.DEBUG)
+        standard_logger.setLevel(logging.DEBUG)
     else:
-        logger.setLevel(level)
+        standard_logger.setLevel(logging.WARN)
+
+    return standard_logger
 
 
-def debug(s, *args):
-    logger.debug("%s %s", s, ' '.join(args))
+def running_in_gunicorn():
+    """
+    Determines if we are running inside of a gunicorn process and that the gunicorn logging package
+    is available.
+
+    :return:  Boolean
+    """
+    process_check = False
+    package_check = False
+
+    for arg in sys.argv:
+        if arg.find('gunicorn') >= 0:
+            process_check = True
+
+    try:
+        from gunicorn import glogging
+    except ImportError:
+        pass
+    else:
+        package_check = True
+
+    return process_check and package_check
 
 
-def info(s, *args):
-    logger.info("%s %s", s, ' '.join(args))
-
-
-def warn(s, *args):
-    logger.warn("%s %s", s, ' '.join(args))
-
-
-def error(s, *args):
-    logger.error("%s %s", s, ' '.join(args))
+if running_in_gunicorn():
+    logger = logging.getLogger("gunicorn.error")
+else:
+    logger = get_standard_logger()

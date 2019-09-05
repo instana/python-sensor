@@ -35,9 +35,13 @@ def running_in_gunicorn():
     process_check = False
     package_check = False
 
-    for arg in sys.argv:
-        if arg.find('gunicorn') >= 0:
-            process_check = True
+    if hasattr(sys, 'argv'):
+        for arg in sys.argv:
+            if arg.find('gunicorn') >= 0:
+                process_check = True
+    else:
+        # We have no command line so rely on the gunicorn package presence entirely
+        process_check = True
 
     try:
         from gunicorn import glogging

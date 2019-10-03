@@ -70,7 +70,7 @@ class TheMachine(object):
                 "onpending":      self.agent.start,
                 "onready":        self.on_ready}})
 
-        self.timer = t.Timer(5, self.fsm.lookup)
+        self.timer = t.Timer(1, self.fsm.lookup)
         self.timer.daemon = True
         self.timer.name = self.THREAD_NAME
         self.timer.start()

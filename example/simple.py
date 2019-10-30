@@ -24,7 +24,9 @@ def simple():
         pscope.span.set_tag(ext.HTTP_URL, "/python/simple/one")
         pscope.span.set_tag(ext.HTTP_METHOD, "GET")
         pscope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
-        pscope.span.log_kv({"foo": "bar"})
+        pscope.span.set_tag("Pete's RequestId", "0xdeadbeef")
+        pscope.span.set_tag("X-Peter-Header", "👀")
+        pscope.span.set_tag("X-Job-Id", "1947282")
         time.sleep(.2)
 
         with ot.tracer.start_active_span('spacedust', child_of=pscope.span) as cscope:

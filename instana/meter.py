@@ -342,7 +342,7 @@ class Meter(object):
         """ Collect up the list of modules in use """
         try:
             res = {}
-            m = sys.modules
+            m = sys.modules.copy()
             for k in m:
                 # Don't report submodules (e.g. django.x, django.y, django.z)
                 # Skip modules that begin with underscore

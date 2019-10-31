@@ -63,9 +63,3 @@ try:
         return wrapped(env, new_start_response)
 except ImportError:
     pass
-
-
-
-
-
-

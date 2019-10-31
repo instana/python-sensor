@@ -79,6 +79,7 @@ def boot_agent():
         from .instrumentation import sqlalchemy
         from .instrumentation import sudsjurko
         from .instrumentation import urllib3
+        from .instrumentation import webapp2_inst
         from .instrumentation.django import middleware
 
 
@@ -114,7 +115,7 @@ if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0])
 else:
     if "INSTANA_MAGIC" in os.environ:
         # If we're being loaded into an already running process, then delay agent initialization
-        t = Timer(3.0, boot_agent)
+        t = Timer(2.0, boot_agent)
         t.start()
     else:
         boot_agent()

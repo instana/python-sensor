@@ -62,10 +62,9 @@ def boot_agent():
             from .instrumentation import asynqp
 
         if sys.version_info[0] < 3:
-            # MySQL-python
             from .instrumentation import mysqlpython
+            from .instrumentation import webapp2_inst
         else:
-            # mysqlclient
             from .instrumentation import mysqlclient
 
         from .instrumentation import flask
@@ -79,7 +78,6 @@ def boot_agent():
         from .instrumentation import sqlalchemy
         from .instrumentation import sudsjurko
         from .instrumentation import urllib3
-        from .instrumentation import webapp2_inst
         from .instrumentation.django import middleware
 
 

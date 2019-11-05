@@ -112,7 +112,10 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
 
                 if hasattr(response, 'headers'):
                     tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
-                    response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
+                    if hasattr(response.headers, 'add'):
+                        response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
+                    elif type(response.headers) is dict or hasattr(response.headers, "__dict__"):
+                        response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             scope.close()
             flask.g.scope = None

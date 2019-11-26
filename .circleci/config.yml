@@ -115,6 +115,7 @@ jobs:
       - image: circleci/mariadb:10-ram
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
+      - image: couchbase:6.0.3
 
     working_directory: ~/repo
 

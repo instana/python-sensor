@@ -48,6 +48,14 @@ class Data(BaseSpan):
     log = None
 
 
+class CouchbaseData(BaseSpan):
+    hostname = None
+    bucket = None
+    type = None
+    error = None
+    error_code = None
+
+
 class HttpData(BaseSpan):
     host = None
     url = None

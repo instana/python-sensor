@@ -9,7 +9,7 @@ from basictracer import Sampler, SpanRecorder
 
 import instana.singletons
 
-from .json_span import (CustomData, Data, HttpData, JsonSpan, LogData, MySQLData, PostgresData,
+from .json_span import (CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData, MySQLData, PostgresData,
                         RabbitmqData, RedisData, RenderData, RPCData, SDKData, SoapData,
                         SQLAlchemyData)
 from .log import logger
@@ -23,15 +23,18 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
-    registered_spans = ("aiohttp-client", "aiohttp-server", "django", "log", "memcache", "mysql",
+    registered_spans = ("aiohttp-client", "aiohttp-server", "couchbase", "django", "log", "memcache", "mysql",
                         "postgres", "rabbitmq", "redis", "render", "rpc-client", "rpc-server", "sqlalchemy", "soap",
                         "tornado-client", "tornado-server", "urllib3", "wsgi")
+
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    exit_spans = ("aiohttp-client", "log", "memcache", "mysql", "postgres", "rabbitmq", "redis", "rpc-client",
+    exit_spans = ("aiohttp-client", "couchbase", "log", "memcache", "mysql", "postgres", "rabbitmq", "redis", "rpc-client",
                   "sqlalchemy", "soap", "tornado-client", "urllib3")
+
     entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
+
     local_spans = ("log", "render")
 
     entry_kind = ["entry", "server", "consumer"]
@@ -160,6 +163,13 @@ class InstanaRecorder(SpanRecorder):
                                          key=span.tags.pop('key', None))
             if data.rabbitmq.sort == 'consume':
                 kind = 1 # entry
+
+        if span.operation_name == "couchbase":
+            data.couchbase = CouchbaseData(hostname=span.tags.pop('couchbase.hostname', None),
+                                           bucket=span.tags.pop('couchbase.bucket', None),
+                                           type=span.tags.pop('couchbase.type', None),
+                                           error=span.tags.pop('couchbase.error', None),
+                                           error_type=span.tags.pop('couchbase.error_type', None))
 
         if span.operation_name == "redis":
             data.redis = RedisData(connection=span.tags.pop('connection', None),

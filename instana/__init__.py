@@ -67,6 +67,7 @@ def boot_agent():
         else:
             from .instrumentation import mysqlclient
 
+        from .instrumentation import couchbase_inst
         from .instrumentation import flask
         from .instrumentation import grpcio
         from .instrumentation.tornado import client

@@ -54,6 +54,7 @@ class CouchbaseData(BaseSpan):
     type = None
     error = None
     error_code = None
+    q = None
 
 
 class HttpData(BaseSpan):

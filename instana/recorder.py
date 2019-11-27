@@ -169,7 +169,8 @@ class InstanaRecorder(SpanRecorder):
                                            bucket=span.tags.pop('couchbase.bucket', None),
                                            type=span.tags.pop('couchbase.type', None),
                                            error=span.tags.pop('couchbase.error', None),
-                                           error_type=span.tags.pop('couchbase.error_type', None))
+                                           error_type=span.tags.pop('couchbase.error_type', None),
+                                           q=span.tags.pop('couchbase.q', None))
 
         if span.operation_name == "redis":
             data.redis = RedisData(connection=span.tags.pop('connection', None),

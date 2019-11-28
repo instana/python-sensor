@@ -55,7 +55,7 @@ try:
                 scope.span.set_tag('couchbase.hostname', instance.server_nodes[0])
                 scope.span.set_tag('couchbase.bucket', instance.bucket)
                 scope.span.set_tag('couchbase.type', 'n1ql_query')
-                scope.span.set_tag('couchbase.q', args[0])
+                scope.span.set_tag('couchbase.sql', args[0])
                 return wrapped(*args, **kwargs)
             except Exception as e:
                 scope.span.log_exception(e)

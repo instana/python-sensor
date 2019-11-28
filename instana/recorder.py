@@ -170,7 +170,7 @@ class InstanaRecorder(SpanRecorder):
                                            type=span.tags.pop('couchbase.type', None),
                                            error=span.tags.pop('couchbase.error', None),
                                            error_type=span.tags.pop('couchbase.error_type', None),
-                                           q=span.tags.pop('couchbase.q', None))
+                                           sql=span.tags.pop('couchbase.sql', None))
 
         if span.operation_name == "redis":
             data.redis = RedisData(connection=span.tags.pop('connection', None),

@@ -1220,4 +1220,4 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
         self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'n1ql_query')
-        self.assertEqual(cb_span.data.couchbase.q, 'SELECT 1')
+        self.assertEqual(cb_span.data.couchbase.sql, 'SELECT 1')

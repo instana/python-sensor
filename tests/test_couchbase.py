@@ -2,15 +2,24 @@ from __future__ import absolute_import
 
 import unittest
 
-import requests
-import urllib3
-
 from instana.singletons import tracer
 from .helpers import testenv, get_first_span_by_name, get_span_by_filter
 
+from couchbase.admin import Admin
+from couchbase.cluster import Cluster
 from couchbase.bucket import Bucket
-from couchbase.exceptions import CouchbaseTransientError, KeyExistsError, NotFoundError
+from couchbase.exceptions import CouchbaseTransientError, HTTPError, KeyExistsError, NotFoundError
 import couchbase.subdocument as SD
+
+# Delete any pre-existing buckets.  Create new.
+cb_adm = Admin('Administrator', testenv['couchdb_password'], host=testenv['couchdb_host'], port=8091)
+
+# Make sure a test bucket exists
+try:
+    cb_adm.bucket_create('instana-test')
+    cb_adm.wait_ready('instana-test', timeout=30)
+except HTTPError:
+    pass
 
 
 class TestStandardCouchDB(unittest.TestCase):
@@ -18,14 +27,17 @@ class TestStandardCouchDB(unittest.TestCase):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        self.bucket = Bucket('couchbase://mazzo/beer-sample', username='test', password='testtest')
+        self.cluster = Cluster('couchbase://%s' % testenv['couchdb_host'])
+        self.bucket = Bucket('couchbase://%s/instana-test' % testenv['couchdb_host'],
+                             username=testenv['couchdb_username'], password=testenv['couchdb_password'])
+        self.bucket.upsert('test-key', 1)
 
     def tearDown(self):
         """ Do nothing for now """
         return None
 
     def test_vanilla_get(self):
-        res = self.bucket.get("21st_amendment_brewery_cafe")
+        res = self.bucket.get("test-key")
         self.assertIsNotNone(res)
 
     def test_pipeline(self):
@@ -58,7 +70,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'upsert')
 
     def test_upsert_multi(self):
@@ -94,7 +106,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'upsert_multi')
 
     def test_insert_new(self):
@@ -129,7 +141,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'insert')
 
     def test_insert_existing(self):
@@ -169,7 +181,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(found == -1, "Error substring not found.")
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'insert')
 
     def test_insert_multi(self):
@@ -179,8 +191,11 @@ class TestStandardCouchDB(unittest.TestCase):
         kvs['first_test_upsert_multi'] = 1
         kvs['second_test_upsert_multi'] = 1
 
-        self.bucket.remove('first_test_upsert_multi')
-        self.bucket.remove('second_test_upsert_multi')
+        try:
+            self.bucket.remove('first_test_upsert_multi')
+            self.bucket.remove('second_test_upsert_multi')
+        except NotFoundError:
+            pass
 
         with tracer.start_active_span('test'):
             res = self.bucket.insert_multi(kvs)
@@ -208,7 +223,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'insert_multi')
 
     def test_replace(self):
@@ -243,7 +258,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'replace')
 
     def test_replace_non_existent(self):
@@ -284,7 +299,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(found == -1, "Error substring not found.")
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'replace')
 
     def test_replace_multi(self):
@@ -323,7 +338,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'replace_multi')
 
     def test_append(self):
@@ -355,7 +370,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'append')
 
     def test_append_multi(self):
@@ -394,7 +409,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'append_multi')
 
     def test_prepend(self):
@@ -426,7 +441,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'prepend')
 
     def test_prepend_multi(self):
@@ -465,14 +480,14 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'prepend_multi')
 
     def test_get(self):
         res = None
 
         with tracer.start_active_span('test'):
-            res = self.bucket.get("21st_amendment_brewery_cafe")
+            res = self.bucket.get("test-key")
 
         self.assertIsNotNone(res)
         self.assertTrue(res.success)
@@ -496,7 +511,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'get')
 
     def test_rget(self):
@@ -504,7 +519,7 @@ class TestStandardCouchDB(unittest.TestCase):
 
         try:
             with tracer.start_active_span('test'):
-                res = self.bucket.rget("21st_amendment_brewery_cafe", replica_index=None)
+                res = self.bucket.rget("test-key", replica_index=None)
         except CouchbaseTransientError:
             pass
 
@@ -532,7 +547,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(found == -1, "Error substring not found.")
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'rget')
 
     def test_get_not_found(self):
@@ -572,7 +587,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(found == -1, "Error substring not found.")
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'get')
 
     def test_get_multi(self):
@@ -607,7 +622,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'get_multi')
 
     def test_touch(self):
@@ -639,7 +654,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'touch')
 
     def test_touch_multi(self):
@@ -674,7 +689,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'touch_multi')
 
     def test_lock(self):
@@ -721,10 +736,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_upsert_span.ec)
 
         self.assertEqual(cb_lock_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_lock_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_lock_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_lock_span.data.couchbase.type, 'lock')
         self.assertEqual(cb_upsert_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_upsert_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_upsert_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_upsert_span.data.couchbase.type, 'upsert')
 
     def test_lock_unlock(self):
@@ -771,10 +786,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_unlock_span.ec)
 
         self.assertEqual(cb_lock_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_lock_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_lock_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_lock_span.data.couchbase.type, 'lock')
         self.assertEqual(cb_unlock_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_unlock_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_unlock_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_unlock_span.data.couchbase.type, 'unlock')
 
     def test_lock_unlock_muilti(self):
@@ -823,10 +838,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_unlock_span.ec)
 
         self.assertEqual(cb_lock_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_lock_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_lock_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_lock_span.data.couchbase.type, 'lock_multi')
         self.assertEqual(cb_unlock_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_unlock_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_unlock_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_unlock_span.data.couchbase.type, 'unlock_multi')
 
     def test_remove(self):
@@ -858,7 +873,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'remove')
 
     def test_remove_multi(self):
@@ -894,7 +909,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'remove_multi')
 
     def test_counter(self):
@@ -926,7 +941,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'counter')
 
     def test_counter_multi(self):
@@ -960,7 +975,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'counter_multi')
 
     def test_mutate_in(self):
@@ -995,7 +1010,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'mutate_in')
 
     def test_lookup_in(self):
@@ -1030,7 +1045,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'lookup_in')
 
     def test_stats(self):
@@ -1060,7 +1075,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'stats')
 
     def test_ping(self):
@@ -1090,7 +1105,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'ping')
 
     def test_diagnostics(self):
@@ -1120,7 +1135,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'diagnostics')
 
     def test_observe(self):
@@ -1152,7 +1167,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'observe')
 
     def test_observe_multi(self):
@@ -1188,7 +1203,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'observe_multi')
 
     def test_n1ql_query(self):
@@ -1218,6 +1233,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
-        self.assertEqual(cb_span.data.couchbase.bucket, 'beer-sample')
+        self.assertEqual(cb_span.data.couchbase.bucket, 'instana-test')
         self.assertEqual(cb_span.data.couchbase.type, 'n1ql_query')
         self.assertEqual(cb_span.data.couchbase.sql, 'SELECT 1')

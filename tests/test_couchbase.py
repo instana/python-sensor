@@ -10,6 +10,7 @@ from couchbase.cluster import Cluster
 from couchbase.bucket import Bucket
 from couchbase.exceptions import CouchbaseTransientError, HTTPError, KeyExistsError, NotFoundError
 import couchbase.subdocument as SD
+from couchbase.n1ql import N1QLQuery
 
 # Delete any pre-existing buckets.  Create new.
 cb_adm = Admin(testenv['couchdb_username'], testenv['couchdb_password'], host=testenv['couchdb_host'], port=8091)
@@ -1207,7 +1208,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'observe_multi')
 
-    def test_n1ql_query(self):
+    def test_raw_n1ql_query(self):
         res = None
 
         with tracer.start_active_span('test'):
@@ -1237,3 +1238,34 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'n1ql_query')
         self.assertEqual(cb_span.data.couchbase.sql, 'SELECT 1')
+
+    def test_n1ql_query(self):
+        res = None
+
+        with tracer.start_active_span('test'):
+            res = self.bucket.n1ql_query(N1QLQuery('SELECT name FROM `travel-sample` WHERE brewery_id ="mishawaka_brewing"'))
+
+        self.assertIsNotNone(res)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        test_span = get_first_span_by_name(spans, 'sdk')
+        self.assertIsNotNone(test_span)
+        self.assertEqual(test_span.data.sdk.name, 'test')
+
+        cb_span = get_first_span_by_name(spans, 'couchbase')
+        self.assertIsNotNone(cb_span)
+
+        # Same traceId and parent relationship
+        self.assertEqual(test_span.t, cb_span.t)
+        self.assertEqual(cb_span.p, test_span.s)
+
+        self.assertIsNotNone(cb_span.stack)
+        self.assertFalse(cb_span.error)
+        self.assertIsNone(cb_span.ec)
+
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
+        self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
+        self.assertEqual(cb_span.data.couchbase.type, 'n1ql_query')
+        self.assertEqual(cb_span.data.couchbase.sql, 'SELECT name FROM `travel-sample` WHERE brewery_id ="mishawaka_brewing"')

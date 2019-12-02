@@ -6,8 +6,8 @@ testenv = {}
 CouchDB Environment
 """
 testenv['couchdb_host'] = os.environ.get('COUCHDB_HOST', '127.0.0.1')
-testenv['couchdb_username'] = os.environ.get('COUCHDB_USERNAME', 'test')
-testenv['couchdb_password'] = os.environ.get('COUCHDB_PASSWORD', 'testtest')
+testenv['couchdb_username'] = os.environ.get('COUCHDB_USERNAME', 'Administrator')
+testenv['couchdb_password'] = os.environ.get('COUCHDB_PASSWORD', 'password')
 
 """
 MySQL Environment

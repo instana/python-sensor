@@ -116,6 +116,7 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase:6.0.3
+      - image: couchbase/server-sandbox:5.5.0
 
     working_directory: ~/repo
 

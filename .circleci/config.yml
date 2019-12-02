@@ -15,6 +15,7 @@ jobs:
       - image: circleci/mariadb:10.1-ram
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
+      - image: couchbase/server-sandbox:5.5.0
 
     working_directory: ~/repo
 
@@ -31,6 +32,12 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            sudo apt-get update
+            sudo apt install lsb-release -y
+            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
+            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
+            sudo apt-get update
+            sudo apt install libcouchbase-dev -y
             rm -rf venv
             export PATH=/home/circleci/.local/bin:$PATH
             pip install --user -U pip setuptools virtualenv
@@ -66,6 +73,7 @@ jobs:
       - image: circleci/mariadb:10-ram
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
+      - image: couchbase/server-sandbox:5.5.0
 
     working_directory: ~/repo
 
@@ -82,6 +90,12 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            sudo apt-get update
+            sudo apt install lsb-release -y
+            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
+            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
+            sudo apt-get update
+            sudo apt install libcouchbase-dev -y
             python -m venv venv
             . venv/bin/activate
             pip install -U pip
@@ -115,6 +129,7 @@ jobs:
       - image: circleci/mariadb:10-ram
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
+      - image: couchbase/server-sandbox:5.5.0
 
     working_directory: ~/repo
 
@@ -131,6 +146,12 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            sudo apt-get update
+            sudo apt install lsb-release -y
+            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
+            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
+            sudo apt-get update
+            sudo apt install libcouchbase-dev -y
             python -m venv venv
             . venv/bin/activate
             pip install -U pip

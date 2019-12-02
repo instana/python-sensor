@@ -1,9 +1,10 @@
 """
-couchbase instrumentation - This instrumentation supports the Python CouchBase 2.5 SDK only currently:
+couchbase instrumentation - This instrumentation supports the Python CouchBase 2.3.4 --> 2.5.x SDK currently:
 https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 """
 from __future__ import absolute_import
 
+from distutils.version import LooseVersion
 import wrapt
 
 from ..log import logger
@@ -11,6 +12,7 @@ from ..singletons import tracer
 
 try:
     import couchbase
+    from couchbase.n1ql import N1QLQuery
 
     # List of operations to instrument
     # incr, incr_multi, decr, decr_multi, retrieve_in are wrappers around operations above
@@ -30,7 +32,7 @@ try:
 
             if query_arg is not None:
                 query = None
-                if type(query_arg) is couchbase.n1ql.N1QLQuery:
+                if type(query_arg) is N1QLQuery:
                     query = query_arg.statement
                 else:
                     query = query_arg
@@ -74,13 +76,14 @@ try:
                 scope.span.set_tag('couchbase.error', repr(e))
                 raise
 
+    if hasattr(couchbase, '__version__') \
+            and (LooseVersion(couchbase.__version__) >= LooseVersion('2.3.4')) \
+            and (LooseVersion(couchbase.__version__) < LooseVersion('3.0.0')):
+        logger.debug("Instrumenting couchbase")
+        wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.n1ql_query', query_with_instana)
+        for op in operations:
+            f = make_wrapper(op)
+            wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.%s' % op, f)
 
-    wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.n1ql_query', query_with_instana)
-
-    for op in operations:
-        f = make_wrapper(op)
-        wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.%s' % op, f)
-
-    logger.debug("Instrumenting couchbase")
 except ImportError:
     pass

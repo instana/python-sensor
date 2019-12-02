@@ -70,7 +70,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'upsert')
 
@@ -106,7 +106,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'upsert_multi')
 
@@ -141,7 +141,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'insert')
 
@@ -181,7 +181,7 @@ class TestStandardCouchDB(unittest.TestCase):
         found = cb_span.data.couchbase.error.find("_KeyExistsError")
         self.assertFalse(found == -1, "Error substring not found.")
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'insert')
 
@@ -223,7 +223,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'insert_multi')
 
@@ -258,7 +258,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'replace')
 
@@ -299,7 +299,7 @@ class TestStandardCouchDB(unittest.TestCase):
         found = cb_span.data.couchbase.error.find("NotFoundError")
         self.assertFalse(found == -1, "Error substring not found.")
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'replace')
 
@@ -338,7 +338,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'replace_multi')
 
@@ -370,7 +370,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'append')
 
@@ -409,7 +409,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'append_multi')
 
@@ -441,7 +441,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'prepend')
 
@@ -480,7 +480,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'prepend_multi')
 
@@ -511,7 +511,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'get')
 
@@ -547,7 +547,7 @@ class TestStandardCouchDB(unittest.TestCase):
         found = cb_span.data.couchbase.error.find("CouchbaseTransientError")
         self.assertFalse(found == -1, "Error substring not found.")
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'rget')
 
@@ -587,7 +587,7 @@ class TestStandardCouchDB(unittest.TestCase):
         found = cb_span.data.couchbase.error.find("NotFoundError")
         self.assertFalse(found == -1, "Error substring not found.")
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'get')
 
@@ -622,7 +622,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'get_multi')
 
@@ -654,7 +654,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'touch')
 
@@ -689,7 +689,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'touch_multi')
 
@@ -736,10 +736,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_upsert_span.error)
         self.assertIsNone(cb_upsert_span.ec)
 
-        self.assertEqual(cb_lock_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_lock_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_lock_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_lock_span.data.couchbase.type, 'lock')
-        self.assertEqual(cb_upsert_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_upsert_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_upsert_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_upsert_span.data.couchbase.type, 'upsert')
 
@@ -786,10 +786,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_unlock_span.error)
         self.assertIsNone(cb_unlock_span.ec)
 
-        self.assertEqual(cb_lock_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_lock_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_lock_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_lock_span.data.couchbase.type, 'lock')
-        self.assertEqual(cb_unlock_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_unlock_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_unlock_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_unlock_span.data.couchbase.type, 'unlock')
 
@@ -838,10 +838,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_unlock_span.error)
         self.assertIsNone(cb_unlock_span.ec)
 
-        self.assertEqual(cb_lock_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_lock_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_lock_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_lock_span.data.couchbase.type, 'lock_multi')
-        self.assertEqual(cb_unlock_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_unlock_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_unlock_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_unlock_span.data.couchbase.type, 'unlock_multi')
 
@@ -873,7 +873,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'remove')
 
@@ -909,7 +909,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'remove_multi')
 
@@ -941,7 +941,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'counter')
 
@@ -975,7 +975,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'counter_multi')
 
@@ -1010,7 +1010,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'mutate_in')
 
@@ -1045,7 +1045,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'lookup_in')
 
@@ -1075,7 +1075,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'stats')
 
@@ -1105,7 +1105,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'ping')
 
@@ -1135,7 +1135,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'diagnostics')
 
@@ -1167,7 +1167,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'observe')
 
@@ -1203,7 +1203,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'observe_multi')
 
@@ -1233,7 +1233,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
-        self.assertEqual(cb_span.data.couchbase.hostname, 'mazzo:8091')
+        self.assertEqual(cb_span.data.couchbase.hostname, "%s:8091" % testenv['couchdb_host'])
         self.assertEqual(cb_span.data.couchbase.bucket, 'travel-sample')
         self.assertEqual(cb_span.data.couchbase.type, 'n1ql_query')
         self.assertEqual(cb_span.data.couchbase.sql, 'SELECT 1')

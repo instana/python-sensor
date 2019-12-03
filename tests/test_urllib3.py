@@ -589,6 +589,60 @@ class TestUrllib3(unittest.TestCase):
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
 
+    def test_requestspkg_get_with_custom_headers(self):
+        my_custom_headers = dict()
+        my_custom_headers['X-PGL-1'] = '1'
+
+        with tracer.start_active_span('test'):
+            r = requests.get(testenv["wsgi_server"] + '/', timeout=2, headers=my_custom_headers)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        assert(r)
+        self.assertEqual(200, r.status_code)
+        self.assertIsNone(tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(wsgi_span.p, urllib3_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(urllib3_span.error)
+        self.assertIsNone(urllib3_span.ec)
+        self.assertFalse(wsgi_span.error)
+        self.assertIsNone(wsgi_span.ec)
+
+        # wsgi
+        self.assertEqual("wsgi", wsgi_span.n)
+        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data.http.host)
+        self.assertEqual('/', wsgi_span.data.http.url)
+        self.assertEqual('GET', wsgi_span.data.http.method)
+        self.assertEqual(200, wsgi_span.data.http.status)
+        self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
+
+        # urllib3
+        self.assertEqual("test", test_span.data.sdk.name)
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual(200, urllib3_span.data.http.status)
+        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data.http.url)
+        self.assertEqual("GET", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
+
     def test_requestspkg_put(self):
         with tracer.start_active_span('test'):
             r = requests.put(testenv["wsgi_server"] + '/notfound')

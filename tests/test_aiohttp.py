@@ -510,7 +510,6 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-
     def test_server_custom_header_capture(self):
         async def test():
             with async_tracer.start_active_span('test'):
@@ -703,3 +702,54 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
+
+    def test_server_get_exception(self):
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/exception")
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aioclient_span.t)
+        self.assertEqual(traceId, aioserver_span.t)
+
+        # Parent relationships
+        self.assertEqual(aioclient_span.p, test_span.s)
+        self.assertEqual(aioserver_span.p, aioclient_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertTrue(aioclient_span.error)
+        self.assertEqual(aioclient_span.ec, 1)
+        self.assertTrue(aioserver_span.error)
+        self.assertEqual(aioserver_span.ec, 1)
+
+        self.assertEqual("aiohttp-server", aioserver_span.n)
+        self.assertEqual(500, aioserver_span.data.http.status)
+        self.assertEqual(testenv["aiohttp_server"] + "/exception", aioserver_span.data.http.url)
+        self.assertEqual("GET", aioserver_span.data.http.method)
+        self.assertIsNotNone(aioserver_span.stack)
+        self.assertTrue(type(aioserver_span.stack) is list)
+        self.assertTrue(len(aioserver_span.stack) > 1)
+
+        self.assertEqual("aiohttp-client", aioclient_span.n)
+        self.assertEqual(500, aioclient_span.data.http.status)
+        self.assertEqual(testenv["aiohttp_server"] + "/exception", aioclient_span.data.http.url)
+        self.assertEqual("GET", aioclient_span.data.http.method)
+        self.assertEqual('Internal Server Error', aioclient_span.data.http.error)
+        self.assertIsNotNone(aioclient_span.stack)
+        self.assertTrue(type(aioclient_span.stack) is list)
+        self.assertTrue(len(aioclient_span.stack) > 1)

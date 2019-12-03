@@ -52,8 +52,12 @@ try:
                 response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             return response
-        except Exception:
+        except Exception as e:
             logger.debug("aiohttp stan_middleware", exc_info=True)
+            if scope is not None:
+                scope.span.set_tag("http.status_code", 500)
+                scope.span.log_exception(e)
+            raise
         finally:
             if scope is not None:
                 scope.close()
@@ -62,7 +66,7 @@ try:
     @wrapt.patch_function_wrapper('aiohttp.web','Application.__init__')
     def init_with_instana(wrapped, instance, argv, kwargs):
         if "middlewares" in kwargs:
-            kwargs["middlewares"].append(stan_middleware)
+            kwargs["middlewares"].insert(0, stan_middleware)
         else:
             kwargs["middlewares"] = [stan_middleware]
 

@@ -130,8 +130,13 @@ try:
             # If we are instrumenting via AutoTrace (in an already running process), then the
             # WSGI middleware has to be live reloaded.
             from django.core.servers.basehttp import get_internal_wsgi_application
-            wsgiapp = get_internal_wsgi_application()
-            wsgiapp.load_middleware()
+            from django.core.exceptions import ImproperlyConfigured
+
+            try:
+                wsgiapp = get_internal_wsgi_application()
+                wsgiapp.load_middleware()
+            except ImproperlyConfigured:
+                pass
 
 except Exception:
     logger.debug("django.middleware:", exc_info=True)

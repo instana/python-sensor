@@ -4,7 +4,7 @@ from os import path
 from distutils.version import LooseVersion
 from setuptools import find_packages, setup
 
-VERSION = '1.17.0'
+VERSION = '1.17.1'
 
 # Import README.md into long_description
 pwd = path.abspath(path.dirname(__file__))

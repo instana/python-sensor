@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import asyncio
 from aiohttp import web
@@ -22,6 +22,10 @@ def five_hundred(request):
     return web.HTTPInternalServerError(reason="I must simulate errors.", text="Simulated server error.")
 
 
+def raise_exception(request):
+    raise Exception("Simulated exception")
+
+
 def run_server():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -30,6 +34,7 @@ def run_server():
     app.add_routes([web.get('/', say_hello)])
     app.add_routes([web.get('/401', four_hundred_one)])
     app.add_routes([web.get('/500', five_hundred)])
+    app.add_routes([web.get('/exception', raise_exception)])
 
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())

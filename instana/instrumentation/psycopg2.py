@@ -25,6 +25,14 @@ try:
 
         return wrapped(*args_clone, **kwargs)
 
+    @wrapt.patch_function_wrapper('psycopg2._json', 'register_json')
+    def register_json_with_instana(wrapped, instance, args, kwargs):
+        if 'conn_or_curs' in kwargs:
+            if hasattr(kwargs['conn_or_curs'], '__wrapped__'):
+                kwargs['conn_or_curs'] = kwargs['conn_or_curs'].__wrapped__
+
+        return wrapped(*args, **kwargs)
+
     logger.debug("Instrumenting psycopg2")
 except ImportError:
     pass

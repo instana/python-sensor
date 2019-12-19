@@ -241,68 +241,98 @@ class Meter(object):
 
         self.agent.task_response(task["messageId"], payload)
 
-    def get_proc_cmdline(self):
-        name = None
+    def get_proc_cmdline(self, as_string=False):
+        """
+        Parse the proc file system for the command line of this process.  If not available, then return a default.
+        Return is dependent on the value of `as_string`.  If True, return the full command line as a string,
+        otherwise a list.
+        """
+        name = "python"
         if os.path.isfile("/proc/self/cmdline"):
             with open("/proc/self/cmdline") as cmd:
                 name = cmd.read()
-        return name
+        else:
+            # Most likely not on a *nix based OS.  Return a default
+            if as_string is True:
+                return name
+            else:
+                return [name]
+
+        # /proc/self/command line will have strings with null bytes such as "/usr/bin/python\0-s\0-d\0".  This
+        # bit will prep the return value and drop the trailing null byte
+        parts = name.split('\0')
+        parts.pop()
+
+        if as_string is True:
+            parts = " ".join(parts)
+
+        return parts
 
     def get_application_name(self):
+        """ This function makes a best effort to name this application process. """
+
         # One environment variable to rule them all
         if "INSTANA_SERVICE_NAME" in os.environ:
             return os.environ["INSTANA_SERVICE_NAME"]
 
-        # Now best effort in naming this process.  No nice package.json like in Node.js
-        # so we do best effort detection here.
+        try:
+            # Now best effort in naming this process.  No nice package.json like in Node.js
+            # so we do best effort detection here.
+            app_name = "python" # the default name
 
-        basename = os.path.basename(sys.argv[0])
-        if basename == "gunicorn":
-            # gunicorn renames their processes to pretty things - we use those by default
-            # gunicorn: master [djface.wsgi]
-            # gunicorn: worker [djface.wsgi]
-            app_name = self.get_proc_cmdline()
+            if not hasattr(sys, 'argv'):
+                proc_cmdline = self.get_proc_cmdline(as_string=False)
+                return os.path.basename(proc_cmdline[0])
 
-            if app_name is None:
-                app_name = basename
-        elif "FLASK_APP" in os.environ:
-            app_name = os.environ["FLASK_APP"]
-        elif "DJANGO_SETTINGS_MODULE" in os.environ:
-            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-        elif basename == '':
-            if sys.stdout.isatty():
-                app_name = "Interactive Console"
+            basename = os.path.basename(sys.argv[0])
+            if basename == "gunicorn":
+                # gunicorn renames their processes to pretty things - we use those by default
+                # gunicorn: master [djface.wsgi]
+                # gunicorn: worker [djface.wsgi]
+                app_name = self.get_proc_cmdline(as_string=True)
+
+                if app_name is None:
+                    app_name = basename
+            elif "FLASK_APP" in os.environ:
+                app_name = os.environ["FLASK_APP"]
+            elif "DJANGO_SETTINGS_MODULE" in os.environ:
+                app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
+            elif basename == '':
+                if sys.stdout.isatty():
+                    app_name = "Interactive Console"
+                else:
+                    # No arguments.  Take executable as app_name
+                    app_name = os.path.basename(sys.executable)
             else:
-                # No arguments.  Take executable as app_name
-                app_name = os.path.basename(sys.executable)
-        else:
-            # Last chance.  app_name for "python main.py" would be "main.py" here.
-            app_name = basename
+                # Last chance.  app_name for "python main.py" would be "main.py" here.
+                app_name = basename
 
-        # We should have a good app_name by this point.
-        # Last conditional, if uwsgi, then wrap the name
-        # with the uwsgi process type
-        if basename == "uwsgi":
-            # We have an app name by this point.  Now if running under
-            # uwsgi, augment the appname
-            try:
-                import uwsgi
+            # We should have a good app_name by this point.
+            # Last conditional, if uwsgi, then wrap the name
+            # with the uwsgi process type
+            if basename == "uwsgi":
+                # We have an app name by this point.  Now if running under
+                # uwsgi, augment the app name
+                try:
+                    import uwsgi
 
-                if app_name == "uwsgi":
-                    app_name = ""
-                else:
-                    app_name = " [%s]" % app_name
+                    if app_name == "uwsgi":
+                        app_name = ""
+                    else:
+                        app_name = " [%s]" % app_name
 
-                if os.getpid() == uwsgi.masterpid():
-                    uwsgi_type = "uWSGI master%s"
-                else:
-                    uwsgi_type = "uWSGI worker%s"
+                    if os.getpid() == uwsgi.masterpid():
+                        uwsgi_type = "uWSGI master%s"
+                    else:
+                        uwsgi_type = "uWSGI worker%s"
 
-                app_name = uwsgi_type % app_name
-            except ImportError:
-                pass
-
-        return app_name
+                    app_name = uwsgi_type % app_name
+                except ImportError:
+                    pass
+            return app_name
+        except Exception as e:
+            logger.debug("get_application_name: ", exc_info=True)
+            return app_name
 
     def collect_snapshot(self):
         """  Collects snapshot related information to this process and environment """
@@ -310,9 +340,9 @@ class Meter(object):
             if self.cached_snapshot is not None:
                 return self.cached_snapshot
 
-            appname = self.get_application_name()
+            app_name = self.get_application_name()
 
-            s = Snapshot(name=appname, version=platform.version(),
+            s = Snapshot(name=app_name, version=platform.version(),
                          f=platform.python_implementation(),
                          a=platform.architecture()[0],
                          djmw=self.djmw)

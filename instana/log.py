@@ -4,6 +4,8 @@ import sys
 
 logger = None
 
+from .util import get_proc_cmdline
+
 
 def get_standard_logger():
     """
@@ -35,14 +37,17 @@ def running_in_gunicorn():
     process_check = False
     package_check = False
 
+    # Is this a gunicorn process?
     if hasattr(sys, 'argv'):
         for arg in sys.argv:
             if arg.find('gunicorn') >= 0:
                 process_check = True
     else:
-        # We have no command line so rely on the gunicorn package presence entirely
-        process_check = True
+        cmdline = get_proc_cmdline(as_string=True)
+        if cmdline.find('gunicorn') >= 0:
+            process_check = True
 
+    # Is the glogging package available?
     try:
         from gunicorn import glogging
     except ImportError:
@@ -50,6 +55,7 @@ def running_in_gunicorn():
     else:
         package_check = True
 
+    # Both have to be true for gunicorn logging
     return process_check and package_check
 
 

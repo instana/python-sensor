@@ -93,6 +93,34 @@ def to_json(obj):
         logger.debug("to_json non-fatal encoding issue: ", exc_info=True)
 
 
+def get_proc_cmdline(as_string=False):
+    """
+    Parse the proc file system for the command line of this process.  If not available, then return a default.
+    Return is dependent on the value of `as_string`.  If True, return the full command line as a string,
+    otherwise a list.
+    """
+    name = "python"
+    if os.path.isfile("/proc/self/cmdline"):
+        with open("/proc/self/cmdline") as cmd:
+            name = cmd.read()
+    else:
+        # Most likely not on a *nix based OS.  Return a default
+        if as_string is True:
+            return name
+        else:
+            return [name]
+
+    # /proc/self/command line will have strings with null bytes such as "/usr/bin/python\0-s\0-d\0".  This
+    # bit will prep the return value and drop the trailing null byte
+    parts = name.split('\0')
+    parts.pop()
+
+    if as_string is True:
+        parts = " ".join(parts)
+
+    return parts
+
+
 def package_version():
     """
     Determine the version of this package.

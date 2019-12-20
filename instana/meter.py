@@ -12,7 +12,7 @@ from fysom import FysomError
 from pkg_resources import DistributionNotFound, get_distribution
 
 from .log import logger
-from .util import get_py_source, package_version, every
+from .util import get_py_source, package_version, every, get_proc_cmdline
 
 
 class Snapshot(object):
@@ -241,33 +241,6 @@ class Meter(object):
 
         self.agent.task_response(task["messageId"], payload)
 
-    def get_proc_cmdline(self, as_string=False):
-        """
-        Parse the proc file system for the command line of this process.  If not available, then return a default.
-        Return is dependent on the value of `as_string`.  If True, return the full command line as a string,
-        otherwise a list.
-        """
-        name = "python"
-        if os.path.isfile("/proc/self/cmdline"):
-            with open("/proc/self/cmdline") as cmd:
-                name = cmd.read()
-        else:
-            # Most likely not on a *nix based OS.  Return a default
-            if as_string is True:
-                return name
-            else:
-                return [name]
-
-        # /proc/self/command line will have strings with null bytes such as "/usr/bin/python\0-s\0-d\0".  This
-        # bit will prep the return value and drop the trailing null byte
-        parts = name.split('\0')
-        parts.pop()
-
-        if as_string is True:
-            parts = " ".join(parts)
-
-        return parts
-
     def get_application_name(self):
         """ This function makes a best effort to name this application process. """
 
@@ -281,7 +254,7 @@ class Meter(object):
             app_name = "python" # the default name
 
             if not hasattr(sys, 'argv'):
-                proc_cmdline = self.get_proc_cmdline(as_string=False)
+                proc_cmdline = get_proc_cmdline(as_string=False)
                 return os.path.basename(proc_cmdline[0])
 
             basename = os.path.basename(sys.argv[0])
@@ -289,7 +262,7 @@ class Meter(object):
                 # gunicorn renames their processes to pretty things - we use those by default
                 # gunicorn: master [djface.wsgi]
                 # gunicorn: worker [djface.wsgi]
-                app_name = self.get_proc_cmdline(as_string=True)
+                app_name = get_proc_cmdline(as_string=True)
 
                 if app_name is None:
                     app_name = basename

@@ -85,6 +85,7 @@ def boot_agent():
     # Hooks
     from .hooks import hook_uwsgi
 
+
 if "INSTANA_MAGIC" in os.environ:
     pkg_resources.working_set.add_entry("/tmp/instana/python")
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 import os
 import sys
@@ -35,22 +36,36 @@ def running_in_gunicorn():
     process_check = False
     package_check = False
 
-    if hasattr(sys, 'argv'):
-        for arg in sys.argv:
-            if arg.find('gunicorn') >= 0:
-                process_check = True
-    else:
-        # We have no command line so rely on the gunicorn package presence entirely
-        process_check = True
-
     try:
-        from gunicorn import glogging
-    except ImportError:
-        pass
-    else:
-        package_check = True
+        # Is this a gunicorn process?
+        if hasattr(sys, 'argv'):
+            for arg in sys.argv:
+                if arg.find('gunicorn') >= 0:
+                    process_check = True
+        elif os.path.isfile("/proc/self/cmdline"):
+            with open("/proc/self/cmdline") as cmd:
+                contents = cmd.read()
 
-    return process_check and package_check
+            parts = contents.split('\0')
+            parts.pop()
+            cmdline = " ".join(parts)
+
+            if cmdline.find('gunicorn') >= 0:
+                process_check = True
+
+        # Is the glogging package available?
+        try:
+            from gunicorn import glogging
+        except ImportError:
+            pass
+        else:
+            package_check = True
+
+        # Both have to be true for gunicorn logging
+        return process_check and package_check
+    except Exception as e:
+        print("Instana.log.running_in_gunicorn: %s", e, file=sys.stderr)
+        return False
 
 
 if running_in_gunicorn():

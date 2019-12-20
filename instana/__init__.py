@@ -53,6 +53,7 @@ def boot_agent():
 
     import instana.singletons
 
+    # Instrumentation
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
         if sys.version_info >= (3, 5, 3):
@@ -81,6 +82,8 @@ def boot_agent():
         from .instrumentation import urllib3
         from .instrumentation.django import middleware
 
+    # Hooks
+    from .hooks import hook_uwsgi
 
 if "INSTANA_MAGIC" in os.environ:
     pkg_resources.working_set.add_entry("/tmp/instana/python")

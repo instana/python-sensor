@@ -154,7 +154,7 @@ class Agent(object):
         """
         try:
             url = self.__discovery_url()
-            logger.debug("making announce request to %s", url)
+            # logger.debug("making announce request to %s", url)
             response = None
             response = self.client.put(url,
                                        data=to_json(discovery),

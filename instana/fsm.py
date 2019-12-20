@@ -90,12 +90,8 @@ class TheMachine(object):
 
         :return: void
         """
-        logger.debug("State machine being reset.  Will schedule new announce cycle 6 seconds from now.")
-
-        self.timer = t.Timer(6, self.fsm.lookup)
-        self.timer.daemon = True
-        self.timer.name = self.THREAD_NAME
-        self.timer.start()
+        logger.debug("State machine being reset.  Will start a new announce cycle.")
+        self.fsm.lookup()
 
     def lookup_agent_host(self, e):
         self.agent.should_threads_shutdown.clear()

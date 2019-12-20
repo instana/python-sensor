@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import unittest
 
-from instana.singletons import agent
 from instana.util import strip_secrets
 
 

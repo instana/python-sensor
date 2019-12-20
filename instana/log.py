@@ -3,8 +3,7 @@ import os
 import sys
 
 logger = None
-
-from .util import get_proc_cmdline
+level_debug = "INSTANA_DEBUG" in os.environ
 
 
 def get_standard_logger():
@@ -19,7 +18,7 @@ def get_standard_logger():
     f = logging.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')
     ch.setFormatter(f)
     standard_logger.addHandler(ch)
-    if "INSTANA_DEBUG" in os.environ:
+    if level_debug is True:
         standard_logger.setLevel(logging.DEBUG)
     else:
         standard_logger.setLevel(logging.WARN)
@@ -37,29 +36,43 @@ def running_in_gunicorn():
     process_check = False
     package_check = False
 
-    # Is this a gunicorn process?
-    if hasattr(sys, 'argv'):
-        for arg in sys.argv:
-            if arg.find('gunicorn') >= 0:
-                process_check = True
-    else:
-        cmdline = get_proc_cmdline(as_string=True)
-        if cmdline.find('gunicorn') >= 0:
-            process_check = True
-
-    # Is the glogging package available?
     try:
-        from gunicorn import glogging
-    except ImportError:
-        pass
-    else:
-        package_check = True
+        # Is this a gunicorn process?
+        if hasattr(sys, 'argv'):
+            for arg in sys.argv:
+                if arg.find('gunicorn') >= 0:
+                    process_check = True
+        elif os.path.isfile("/proc/self/cmdline"):
+            with open("/proc/self/cmdline") as cmd:
+                contents = cmd.read()
 
-    # Both have to be true for gunicorn logging
-    return process_check and package_check
+            parts = contents.split('\0')
+            parts.pop()
+            cmdline = " ".join(parts)
+
+            if cmdline.find('gunicorn') >= 0:
+                process_check = True
+
+        # Is the glogging package available?
+        try:
+            from gunicorn import glogging
+        except ImportError:
+            pass
+        else:
+            package_check = True
+
+        # Both have to be true for gunicorn logging
+        return process_check and package_check
+    except Exception as e:
+        print("Instana.log.running_in_gunicorn: %s", e, file=sys.stderr)
+        return False
 
 
 if running_in_gunicorn():
+    if level_debug is True:
+        print("Instana: Using gunicorn logger")
     logger = logging.getLogger("gunicorn.error")
 else:
+    if level_debug is True:
+        print("Instana: Using standard logger")
     logger = get_standard_logger()

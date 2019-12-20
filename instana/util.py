@@ -262,13 +262,12 @@ def get_py_source(file):
 
     @param file [String] The fully qualified path to a file
     """
+    response = None
     try:
-        response = None
-        pysource = ""
-
         if regexp_py.search(file) is None:
             response = {"error": "Only Python source files are allowed. (*.py)"}
         else:
+            pysource = ""
             with open(file, 'r') as pyfile:
                 pysource = pyfile.read()
 
@@ -278,6 +277,7 @@ def get_py_source(file):
         response = {"error": str(e)}
     finally:
         return response
+
 
 # Used by get_py_source
 regexp_py = re.compile('\.py$')

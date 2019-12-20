@@ -3,7 +3,6 @@ import os
 import sys
 
 logger = None
-level_debug = "INSTANA_DEBUG" in os.environ
 
 
 def get_standard_logger():
@@ -18,7 +17,7 @@ def get_standard_logger():
     f = logging.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')
     ch.setFormatter(f)
     standard_logger.addHandler(ch)
-    if level_debug is True:
+    if "INSTANA_DEBUG" in os.environ:
         standard_logger.setLevel(logging.DEBUG)
     else:
         standard_logger.setLevel(logging.WARN)
@@ -69,10 +68,6 @@ def running_in_gunicorn():
 
 
 if running_in_gunicorn():
-    if level_debug is True:
-        print("Instana: Using gunicorn logger")
     logger = logging.getLogger("gunicorn.error")
 else:
-    if level_debug is True:
-        print("Instana: Using standard logger")
     logger = get_standard_logger()

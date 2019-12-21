@@ -259,12 +259,13 @@ class Meter(object):
 
             basename = os.path.basename(sys.argv[0])
             if basename == "gunicorn":
-                # gunicorn renames their processes to pretty things - we use those by default
-                # gunicorn: master [djface.wsgi]
-                # gunicorn: worker [djface.wsgi]
-                app_name = get_proc_cmdline(as_string=True)
-
-                if app_name is None:
+                if 'setproctitle' in sys.modules:
+                    # With the setproctitle package, gunicorn renames their processes
+                    # to pretty things - we use those by default
+                    # gunicorn: master [djface.wsgi]
+                    # gunicorn: worker [djface.wsgi]
+                    app_name = get_proc_cmdline(as_string=True)
+                else:
                     app_name = basename
             elif "FLASK_APP" in os.environ:
                 app_name = os.environ["FLASK_APP"]

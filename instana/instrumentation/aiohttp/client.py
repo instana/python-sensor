@@ -41,6 +41,11 @@ try:
             if scope is not None:
                 scope.span.set_tag('http.status_code', params.response.status)
 
+                if agent.extra_headers is not None:
+                    for custom_header in agent.extra_headers:
+                        if custom_header in params.response.headers:
+                            scope.span.set_tag("http.%s" % custom_header, params.response.headers[custom_header])
+
                 if 500 <= params.response.status <= 599:
                     scope.span.set_tag("http.error", params.response.reason)
                     scope.span.set_tag("error", True)

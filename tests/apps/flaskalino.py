@@ -3,7 +3,7 @@
 import opentracing.ext.tags as ext
 from flask import Flask, redirect, render_template, render_template_string
 from wsgiref.simple_server import make_server
-from flask import jsonify
+from flask import jsonify, Response
 
 from instana.singletons import tracer
 from ..helpers import testenv
@@ -120,6 +120,12 @@ def render_string():
 def render_error():
     return render_template('flask_render_error.html', what='world')
 
+
+@app.route("/response_headers")
+def response_headers():
+    resp = Response("Foo bar baz")
+    resp.headers['X-Capture-This'] = 'Ok'
+    return resp
 
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):

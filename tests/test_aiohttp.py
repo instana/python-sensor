@@ -188,7 +188,6 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-
     def test_client_get_500(self):
         async def test():
             with async_tracer.start_active_span('test'):
@@ -344,6 +343,64 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["X-Instana-L"], '1')
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_client_response_header_capture(self):
+        original_extra_headers = agent.extra_headers
+        agent.extra_headers = ['X-Capture-This']
+
+        async def test():
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["wsgi_server"] + "/response_headers")
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        wsgi_span = spans[0]
+        aiohttp_span = spans[1]
+        test_span = spans[2]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, aiohttp_span.t)
+        self.assertEqual(traceId, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(aiohttp_span.p, test_span.s)
+        self.assertEqual(wsgi_span.p, aiohttp_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(aiohttp_span.error)
+        self.assertIsNone(aiohttp_span.ec)
+        self.assertFalse(wsgi_span.error)
+        self.assertIsNone(wsgi_span.ec)
+
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual(200, aiohttp_span.data.http.status)
+        self.assertEqual(testenv["wsgi_server"] + "/response_headers", aiohttp_span.data.http.url)
+        self.assertEqual("GET", aiohttp_span.data.http.method)
+        self.assertIsNotNone(aiohttp_span.stack)
+        self.assertTrue(type(aiohttp_span.stack) is list)
+        self.assertTrue(len(aiohttp_span.stack) > 1)
+        self.assertTrue('http.X-Capture-This' in aiohttp_span.data.custom.tags)
+
+        assert("X-Instana-T" in response.headers)
+        self.assertEqual(response.headers["X-Instana-T"], traceId)
+        assert("X-Instana-S" in response.headers)
+        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
+        assert("X-Instana-L" in response.headers)
+        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert("Server-Timing" in response.headers)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+        agent.extra_headers = original_extra_headers
+
 
     def test_client_error(self):
         async def test():

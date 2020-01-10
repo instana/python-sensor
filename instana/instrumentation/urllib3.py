@@ -44,6 +44,23 @@ try:
         else:
             return kvs
 
+    def collect_response(scope, response):
+        try:
+            scope.span.set_tag(ext.HTTP_STATUS_CODE, response.status)
+
+            if agent.extra_headers is not None:
+                for custom_header in agent.extra_headers:
+                    if custom_header in response.headers:
+                        scope.span.set_tag("http.%s" % custom_header, response.headers[custom_header])
+
+            if 500 <= response.status <= 599:
+                scope.span.set_tag("error", True)
+                ec = scope.span.tags.get('ec', 0)
+                scope.span.set_tag("ec", ec + 1)
+        except Exception:
+            logger.debug("collect_response", exc_info=True)
+
+
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
         parent_span = tracer.active_span
@@ -65,15 +82,11 @@ try:
                 if 'headers' in kwargs:
                     tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
 
-                rv = wrapped(*args, **kwargs)
+                response = wrapped(*args, **kwargs)
 
-                scope.span.set_tag(ext.HTTP_STATUS_CODE, rv.status)
-                if 500 <= rv.status <= 599:
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    scope.span.set_tag("ec", ec+1)
+                collect_response(scope, response)
 
-                return rv
+                return response
             except Exception as e:
                 scope.span.log_kv({'message': e})
                 scope.span.set_tag("error", True)

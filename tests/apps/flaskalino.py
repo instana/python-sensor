@@ -46,7 +46,7 @@ def hello():
 
 @app.route("/users/<username>/sayhello")
 def username_hello(username):
-    return "<center><h1>🐍 Hello %s! 🦄</h1></center>" % username
+    return u"<center><h1>🐍 Hello %s! 🦄</h1></center>" % username
 
 
 @app.route("/complex")

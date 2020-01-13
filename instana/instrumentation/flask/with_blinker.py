@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import re
 import opentracing
 import opentracing.ext.tags as ext
 import wrapt
@@ -10,6 +11,8 @@ from ...util import strip_secrets
 
 import flask
 from flask import request_started, request_finished, got_request_exception
+
+path_tpl_re = re.compile('<.*>')
 
 
 def request_started_with_instana(sender, **extra):
@@ -38,6 +41,12 @@ def request_started_with_instana(sender, **extra):
             span.set_tag("http.params", scrubbed_params)
         if 'HTTP_HOST' in env:
             span.set_tag("http.host", env['HTTP_HOST'])
+
+        if hasattr(flask.request.url_rule, 'rule') and \
+                path_tpl_re.search(flask.request.url_rule.rule) is not None:
+            path_tpl = flask.request.url_rule.rule.replace("<", "{")
+            path_tpl = path_tpl.replace(">", "}")
+            span.set_tag("http.path_tpl", path_tpl)
     except:
         logger.debug("Flask before_request", exc_info=True)
 

@@ -94,6 +94,9 @@ class TestFlask(unittest.TestCase):
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
 
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
+
     def test_render_template(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', testenv["wsgi_server"] + '/render')
@@ -173,6 +176,9 @@ class TestFlask(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
 
     def test_render_template_string(self):
         with tracer.start_active_span('test'):
@@ -254,6 +260,9 @@ class TestFlask(unittest.TestCase):
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
 
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
+
     def test_301(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', testenv["wsgi_server"] + '/301', redirect=False)
@@ -321,6 +330,9 @@ class TestFlask(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
 
     def test_404(self):
         with tracer.start_active_span('test'):
@@ -390,6 +402,9 @@ class TestFlask(unittest.TestCase):
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
 
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
+
     def test_500(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', testenv["wsgi_server"] + '/500')
@@ -457,6 +472,9 @@ class TestFlask(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
 
     def test_render_error(self):
         if signals_available is True:
@@ -535,6 +553,9 @@ class TestFlask(unittest.TestCase):
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
 
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
+
     def test_exception(self):
         if signals_available is True:
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
@@ -603,6 +624,9 @@ class TestFlask(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
 
     def test_custom_exception_with_log(self):
         with tracer.start_active_span('test'):
@@ -679,3 +703,77 @@ class TestFlask(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data.http.path_tpl)
+
+    def test_path_templates(self):
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', testenv["wsgi_server"] + '/users/Ricky/sayhello')
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        assert('X-Instana-T' in response.headers)
+        assert(int(response.headers['X-Instana-T'], 16))
+        self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
+
+        assert('X-Instana-S' in response.headers)
+        assert(int(response.headers['X-Instana-S'], 16))
+        self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
+
+        assert('X-Instana-L' in response.headers)
+        self.assertEqual(response.headers['X-Instana-L'], '1')
+
+        assert('Server-Timing' in response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
+
+        self.assertIsNone(tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(wsgi_span.p, urllib3_span.s)
+
+        # Error logging
+        self.assertFalse(test_span.error)
+        self.assertIsNone(test_span.ec)
+        self.assertFalse(urllib3_span.error)
+        self.assertIsNone(urllib3_span.ec)
+        self.assertFalse(wsgi_span.error)
+        self.assertIsNone(wsgi_span.ec)
+
+        # wsgi
+        self.assertEqual("wsgi", wsgi_span.n)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
+        self.assertEqual('/users/Ricky/sayhello', wsgi_span.data.http.url)
+        self.assertEqual('GET', wsgi_span.data.http.method)
+        self.assertEqual(200, wsgi_span.data.http.status)
+        self.assertIsNone(wsgi_span.data.http.error)
+        self.assertIsNotNone(wsgi_span.stack)
+        self.assertEqual(2, len(wsgi_span.stack))
+
+        # urllib3
+        self.assertEqual("test", test_span.data.sdk.name)
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual(200, urllib3_span.data.http.status)
+        self.assertEqual(testenv["wsgi_server"] + '/users/Ricky/sayhello', urllib3_span.data.http.url)
+        self.assertEqual("GET", urllib3_span.data.http.method)
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should have a reported path template for this route
+        self.assertEqual("/users/{username}/sayhello", wsgi_span.data.http.path_tpl)
+

@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import re
 import flask
 
 import opentracing
@@ -9,6 +10,8 @@ import wrapt
 from ...log import logger
 from ...singletons import agent, tracer
 from ...util import strip_secrets
+
+path_tpl_re = re.compile('<.*>')
 
 
 def before_request_with_instana(*argv, **kwargs):
@@ -37,6 +40,12 @@ def before_request_with_instana(*argv, **kwargs):
             span.set_tag("http.params", scrubbed_params)
         if 'HTTP_HOST' in env:
             span.set_tag("http.host", env['HTTP_HOST'])
+
+        if hasattr(flask.request.url_rule, 'rule') and \
+                path_tpl_re.search(flask.request.url_rule.rule) is not None:
+            path_tpl = flask.request.url_rule.rule.replace("<", "{")
+            path_tpl = path_tpl.replace(">", "}")
+            span.set_tag("http.path_tpl", path_tpl)
     except:
         logger.debug("Flask before_request", exc_info=True)
     finally:

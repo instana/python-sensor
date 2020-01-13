@@ -44,6 +44,11 @@ def hello():
     return "<center><h1>🐍 Hello Stan! 🦄</h1></center>"
 
 
+@app.route("/users/<username>/sayhello")
+def username_hello(username):
+    return "<center><h1>🐍 Hello %s! 🦄</h1></center>" % username
+
+
 @app.route("/complex")
 def gen_opentracing():
     with tracer.start_active_span('asteroid') as pscope:

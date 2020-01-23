@@ -26,6 +26,16 @@ class JsonSpan(BaseSpan):
     stack = None
 
 
+class CassandraData(BaseSpan):
+    query = None
+    keyspace = None
+    fetchSize = None
+    achievedConsistency = None
+    triedHosts = None
+    fullyFetched = None
+    error = None
+
+
 class CustomData(BaseSpan):
     tags = None
     logs = None
@@ -33,6 +43,8 @@ class CustomData(BaseSpan):
 
 class Data(BaseSpan):
     baggage = None
+    cassandra = None
+    couchbase = None
     custom = None
     http = None
     log = None

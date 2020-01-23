@@ -3,6 +3,13 @@ import os
 testenv = {}
 
 """
+Cassandra Environment
+"""
+testenv['cassandra_host'] = os.environ.get('CASSANDRA_HOST', '127.0.0.1')
+testenv['cassandra_username'] = os.environ.get('CASSANDRA_USERNAME', 'Administrator')
+testenv['cassandra_password'] = os.environ.get('CASSANDRA_PASSWORD', 'password')
+
+"""
 CouchDB Environment
 """
 testenv['couchdb_host'] = os.environ.get('COUCHDB_HOST', '127.0.0.1')

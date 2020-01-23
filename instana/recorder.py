@@ -9,7 +9,7 @@ from basictracer import Sampler, SpanRecorder
 
 import instana.singletons
 
-from .json_span import (CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData, MySQLData, PostgresData,
+from .json_span import (CassandraData, CustomData, Data, HttpData, JsonSpan, LogData, MySQLData, PostgresData,
                         RabbitmqData, RedisData, RenderData, RPCData, SDKData, SoapData,
                         SQLAlchemyData)
 from .log import logger
@@ -23,15 +23,16 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
-    registered_spans = ("aiohttp-client", "aiohttp-server", "couchbase", "django", "log", "memcache", "mysql",
-                        "postgres", "rabbitmq", "redis", "render", "rpc-client", "rpc-server", "sqlalchemy", "soap",
-                        "tornado-client", "tornado-server", "urllib3", "wsgi")
+    registered_spans = ("aiohttp-client", "aiohttp-server", "cassandra", "couchbase", "django", "log",
+                        "memcache", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
+                        "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
+                        "urllib3", "wsgi")
 
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    exit_spans = ("aiohttp-client", "couchbase", "log", "memcache", "mysql", "postgres", "rabbitmq", "redis", "rpc-client",
-                  "sqlalchemy", "soap", "tornado-client", "urllib3")
+    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mysql", "postgres",
+                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3")
 
     entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
 
@@ -163,6 +164,15 @@ class InstanaRecorder(SpanRecorder):
                                          key=span.tags.pop('key', None))
             if data.rabbitmq.sort == 'consume':
                 kind = 1 # entry
+
+        if span.operation_name == "cassandra":
+            data.cassandra = CassandraData(query=span.tags.pop('cassandra.query', None),
+                                           keyspace=span.tags.pop('cassandra.keyspace', None),
+                                           fetchSize=span.tags.pop('cassandra.fetchSize', None),
+                                           achievedConsistency=span.tags.pop('cassandra.achievedConsistency', None),
+                                           triedHosts=span.tags.pop('cassandra.triedHosts', None),
+                                           fullyFetched=span.tags.pop('cassandra.fullyFetched', None),
+                                           error=span.tags.pop('cassandra.error', None))
 
         if span.operation_name == "couchbase":
             data.couchbase = CouchbaseData(hostname=span.tags.pop('couchbase.hostname', None),

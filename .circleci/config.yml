@@ -77,7 +77,6 @@ jobs:
       - image: couchbase/server-sandbox:5.5.0
       - image: cassandra:3.11.5
 
-
     working_directory: ~/repo
 
     steps:
@@ -128,12 +127,12 @@ jobs:
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
+      - image: cassandra:3.11.5
       - image: circleci/postgres:9.6.5-alpine-ram
       - image: circleci/mariadb:10-ram
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
-      - image: cassandra:3.11.5
 
     working_directory: ~/repo
 

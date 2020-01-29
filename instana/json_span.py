@@ -27,6 +27,7 @@ class JsonSpan(BaseSpan):
 
 
 class CassandraData(BaseSpan):
+    cluster = None
     query = None
     keyspace = None
     fetchSize = None

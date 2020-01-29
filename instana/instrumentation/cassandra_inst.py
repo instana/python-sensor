@@ -1,5 +1,7 @@
 """
 cassandra instrumentation
+https://docs.datastax.com/en/developer/python-driver/3.20/
+https://github.com/datastax/python-driver
 """
 from __future__ import absolute_import
 
@@ -12,12 +14,37 @@ from ..singletons import tracer
 try:
     import cassandra
 
-    def cb_request_finish(results, span):
-        logger.debug("cb_request_finish: closing out span")
+    consistency_levels = dict({0: "ANY",
+                               1: "ONE",
+                               2: "TWO",
+                               3: "THREE",
+                               4: "QUORUM",
+                               5: "ALL",
+                               6: "LOCAL_QUORUM",
+                               7: "EACH_QUORUM",
+                               8: "SERIAL",
+                               9: "LOCAL_SERIAL",
+                               10: "LOCAL_ONE"})
+
+    def collect_response(span, fn):
+        tried_hosts = list()
+        for host in fn.attempted_hosts:
+            tried_hosts.append("%s:%d" % (host.endpoint.address, host.endpoint.port))
+
+        span.set_tag("cassandra.triedHosts", tried_hosts)
+        span.set_tag("cassandra.coordHost", fn.coordinator_host)
+
+        cl = fn.query.consistency_level
+        if cl and cl in consistency_levels:
+            span.set_tag("cassandra.achievedConsistency", consistency_levels[cl])
+
+
+    def cb_request_finish(results, span, fn):
+        collect_response(span, fn)
         span.finish()
 
-    def cb_request_error(results, span):
-        logger.debug("cb_request_error: marking span as errored and closing out")
+    def cb_request_error(results, span, fn):
+        collect_response(span, fn)
 
         span.set_tag("error", True)
         ec = span.tags.get('ec', 0)
@@ -26,13 +53,9 @@ try:
         span.finish()
 
     def request_init_with_instana(fn):
-        logger.debug("request_init_with_instana")
-
         parent_span = tracer.active_span
 
         if parent_span is not None:
-            logger.debug("We are tracing: starting new cassandra span")
-
             ctags = dict()
             if isinstance(fn.query, cassandra.query.SimpleStatement):
                 ctags["cassandra.query"] = fn.query.query_string
@@ -40,20 +63,15 @@ try:
                 ctags["cassandra.query"] = fn.query.prepared_statement.query_string
 
             ctags["cassandra.keyspace"] = fn.session.keyspace
-
-            # if fn.query.consistency_level:
-            #     ctags["cassandra.achievedConsistency"] = fn.query.consistency_level
+            ctags["cassandra.cluster"] = fn.session.cluster.metadata.cluster_name
 
             span = tracer.start_span(
                 operation_name="cassandra",
                 child_of=parent_span,
                 tags=ctags)
 
-            fn.add_callback(cb_request_finish, span)
-            fn.add_errback(cb_request_error, span)
-        else:
-            logger.debug("We are NOT tracing: not tracing cassandra")
-
+            fn.add_callback(cb_request_finish, span, fn)
+            fn.add_errback(cb_request_error, span, fn)
 
     @wrapt.patch_function_wrapper('cassandra.cluster', 'Session.__init__')
     def init_with_instana(wrapped, instance, args, kwargs):

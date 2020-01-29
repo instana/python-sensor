@@ -11,7 +11,7 @@ from cassandra.cluster import Cluster
 from cassandra import ConsistencyLevel
 from cassandra.query import SimpleStatement
 
-cluster = Cluster(contact_points=[testenv['cassandra_host']], load_balancing_policy=None)
+cluster = Cluster([testenv['cassandra_host']], load_balancing_policy=None)
 session = cluster.connect()
 
 session.execute("CREATE KEYSPACE IF NOT EXISTS instana_tests WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};")
@@ -86,8 +86,11 @@ class TestCassandra(unittest.TestCase):
         self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
+        self.assertEqual(cspan.data.cassandra.cluster, 'Test Cluster')
         self.assertEqual(cspan.data.cassandra.query, 'SELECT name, age, email FROM users')
         self.assertEqual(cspan.data.cassandra.keyspace, 'instana_tests')
+        self.assertIsNone(cspan.data.cassandra.achievedConsistency)
+        self.assertIsNotNone(cspan.data.cassandra.triedHosts)
         self.assertIsNone(cspan.data.cassandra.error)
 
     def test_execute_async(self):
@@ -117,8 +120,11 @@ class TestCassandra(unittest.TestCase):
         self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
+        self.assertEqual(cspan.data.cassandra.cluster, 'Test Cluster')
         self.assertEqual(cspan.data.cassandra.query, 'SELECT name, age, email FROM users')
         self.assertEqual(cspan.data.cassandra.keyspace, 'instana_tests')
+        self.assertIsNone(cspan.data.cassandra.achievedConsistency)
+        self.assertIsNotNone(cspan.data.cassandra.triedHosts)
         self.assertIsNone(cspan.data.cassandra.error)
 
     def test_simple_statement(self):
@@ -152,8 +158,11 @@ class TestCassandra(unittest.TestCase):
         self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
+        self.assertEqual(cspan.data.cassandra.cluster, 'Test Cluster')
         self.assertEqual(cspan.data.cassandra.query, 'SELECT name, age, email FROM users')
         self.assertEqual(cspan.data.cassandra.keyspace, 'instana_tests')
+        self.assertIsNone(cspan.data.cassandra.achievedConsistency)
+        self.assertIsNotNone(cspan.data.cassandra.triedHosts)
         self.assertIsNone(cspan.data.cassandra.error)
 
     def test_execute_error(self):
@@ -187,8 +196,11 @@ class TestCassandra(unittest.TestCase):
         self.assertTrue(cspan.error)
         self.assertEqual(cspan.ec, 1)
 
+        self.assertEqual(cspan.data.cassandra.cluster, 'Test Cluster')
         self.assertEqual(cspan.data.cassandra.query, 'Not a real query')
         self.assertEqual(cspan.data.cassandra.keyspace, 'instana_tests')
+        self.assertIsNone(cspan.data.cassandra.achievedConsistency)
+        self.assertIsNotNone(cspan.data.cassandra.triedHosts)
         self.assertIsNotNone(cspan.data.cassandra.error)
 
     def test_prepared_statement(self):
@@ -223,6 +235,9 @@ class TestCassandra(unittest.TestCase):
         self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
+        self.assertEqual(cspan.data.cassandra.cluster, 'Test Cluster')
         self.assertEqual(cspan.data.cassandra.query, 'INSERT INTO users (id, name, age) VALUES (?, ?, ?)')
         self.assertEqual(cspan.data.cassandra.keyspace, 'instana_tests')
+        self.assertEqual(cspan.data.cassandra.achievedConsistency, "QUORUM")
+        self.assertIsNotNone(cspan.data.cassandra.triedHosts)
         self.assertIsNone(cspan.data.cassandra.error)

@@ -16,10 +16,6 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
-      - image: circleci/cassandra:3.10
-        environment:
-          MAX_HEAP_SIZE: 4096m
-          HEAP_NEWSIZE: 1024m
 
     working_directory: ~/repo
 
@@ -78,10 +74,6 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
-      - image: circleci/cassandra:3.10
-        environment:
-          MAX_HEAP_SIZE: 4096m
-          HEAP_NEWSIZE: 1024m
 
     working_directory: ~/repo
 
@@ -138,10 +130,6 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
-      - image: circleci/cassandra:3.10
-        environment:
-          MAX_HEAP_SIZE: 4096m
-          HEAP_NEWSIZE: 1024m
 
     working_directory: ~/repo
 
@@ -211,11 +199,13 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt install lsb-release -y
-            python -m venv venv
+            rm -rf venv
+            export PATH=/home/circleci/.local/bin:$PATH
+            pip install --user -U pip setuptools virtualenv
+            virtualenv --python=python2.7 --always-copy venv
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -r requirements.txt
             pip install -r requirements-test.txt
 
       - save_cache:

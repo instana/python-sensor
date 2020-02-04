@@ -58,10 +58,6 @@ jobs:
             . venv/bin/activate
             python runtests.py
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
-
   python35:
     docker:
       - image: circleci/python:3.5.6
@@ -113,10 +109,6 @@ jobs:
           command: |
             . venv/bin/activate
             python runtests.py
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
 
   python36:
     docker:
@@ -170,13 +162,9 @@ jobs:
             . venv/bin/activate
             python runtests.py
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
-
   py27cassandra:
     docker:
-      - image: circleci/python:2.7.17
+      - image: circleci/python:2.7.15
       - image: circleci/cassandra:3.10
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -223,10 +211,6 @@ jobs:
             . venv/bin/activate
             nosetests -v tests/test_cassandra-driver.py:TestCassandra
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
-
   py36cassandra:
     docker:
       - image: circleci/python:3.6.8
@@ -269,10 +253,6 @@ jobs:
           command: |
             . venv/bin/activate
             nosetests -v tests/test_cassandra-driver.py:TestCassandra
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
 
 workflows:
   version: 2

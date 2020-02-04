@@ -9,9 +9,10 @@ from basictracer import Sampler, SpanRecorder
 
 import instana.singletons
 
-from .json_span import (CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData, MySQLData, PostgresData,
-                        RabbitmqData, RedisData, RenderData, RPCData, SDKData, SoapData,
-                        SQLAlchemyData)
+from .json_span import (CassandraData, CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData,
+                        MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
+                        RPCData, SDKData, SoapData, SQLAlchemyData)
+
 from .log import logger
 from .util import every
 
@@ -23,15 +24,16 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
-    registered_spans = ("aiohttp-client", "aiohttp-server", "couchbase", "django", "log", "memcache", "mysql",
-                        "postgres", "rabbitmq", "redis", "render", "rpc-client", "rpc-server", "sqlalchemy", "soap",
-                        "tornado-client", "tornado-server", "urllib3", "wsgi")
+    registered_spans = ("aiohttp-client", "aiohttp-server", "cassandra", "couchbase", "django", "log",
+                        "memcache", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
+                        "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
+                        "urllib3", "wsgi")
 
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    exit_spans = ("aiohttp-client", "couchbase", "log", "memcache", "mysql", "postgres", "rabbitmq", "redis", "rpc-client",
-                  "sqlalchemy", "soap", "tornado-client", "urllib3")
+    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mysql", "postgres",
+                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3")
 
     entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
 
@@ -164,7 +166,17 @@ class InstanaRecorder(SpanRecorder):
             if data.rabbitmq.sort == 'consume':
                 kind = 1 # entry
 
-        if span.operation_name == "couchbase":
+        elif span.operation_name == "cassandra":
+            data.cassandra = CassandraData(cluster=span.tags.pop('cassandra.cluster', None),
+                                           query=span.tags.pop('cassandra.query', None),
+                                           keyspace=span.tags.pop('cassandra.keyspace', None),
+                                           fetchSize=span.tags.pop('cassandra.fetchSize', None),
+                                           achievedConsistency=span.tags.pop('cassandra.achievedConsistency', None),
+                                           triedHosts=span.tags.pop('cassandra.triedHosts', None),
+                                           fullyFetched=span.tags.pop('cassandra.fullyFetched', None),
+                                           error=span.tags.pop('cassandra.error', None))
+
+        elif span.operation_name == "couchbase":
             data.couchbase = CouchbaseData(hostname=span.tags.pop('couchbase.hostname', None),
                                            bucket=span.tags.pop('couchbase.bucket', None),
                                            type=span.tags.pop('couchbase.type', None),
@@ -172,14 +184,14 @@ class InstanaRecorder(SpanRecorder):
                                            error_type=span.tags.pop('couchbase.error_type', None),
                                            sql=span.tags.pop('couchbase.sql', None))
 
-        if span.operation_name == "redis":
+        elif span.operation_name == "redis":
             data.redis = RedisData(connection=span.tags.pop('connection', None),
                                    driver=span.tags.pop('driver', None),
                                    command=span.tags.pop('command', None),
                                    error=span.tags.pop('redis.error', None),
                                    subCommands=span.tags.pop('subCommands', None))
 
-        if span.operation_name == "rpc-client" or span.operation_name == "rpc-server":
+        elif span.operation_name == "rpc-client" or span.operation_name == "rpc-server":
             data.rpc = RPCData(flavor=span.tags.pop('rpc.flavor', None),
                                host=span.tags.pop('rpc.host', None),
                                port=span.tags.pop('rpc.port', None),
@@ -189,22 +201,22 @@ class InstanaRecorder(SpanRecorder):
                                baggage=span.tags.pop('rpc.baggage', None),
                                error=span.tags.pop('rpc.error', None))
 
-        if span.operation_name == "render":
+        elif span.operation_name == "render":
             data.render = RenderData(name=span.tags.pop('name', None),
                                      type=span.tags.pop('type', None))
             data.log = LogData(message=span.tags.pop('message', None),
                                parameters=span.tags.pop('parameters', None))
 
-        if span.operation_name == "sqlalchemy":
+        elif span.operation_name == "sqlalchemy":
             data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),
                                              eng=span.tags.pop('sqlalchemy.eng', None),
                                              url=span.tags.pop('sqlalchemy.url', None),
                                              err=span.tags.pop('sqlalchemy.err', None))
 
-        if span.operation_name == "soap":
+        elif span.operation_name == "soap":
             data.soap = SoapData(action=span.tags.pop('soap.action', None))
 
-        if span.operation_name == "mysql":
+        elif span.operation_name == "mysql":
             data.mysql = MySQLData(host=span.tags.pop('host', None),
                                    db=span.tags.pop(ext.DATABASE_INSTANCE, None),
                                    user=span.tags.pop(ext.DATABASE_USER, None),
@@ -213,7 +225,7 @@ class InstanaRecorder(SpanRecorder):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
 
-        if span.operation_name == "postgres":
+        elif span.operation_name == "postgres":
             data.pg = PostgresData(host=span.tags.pop('host', None),
                                    db=span.tags.pop(ext.DATABASE_INSTANCE, None),
                                    user=span.tags.pop(ext.DATABASE_USER, None),
@@ -223,7 +235,7 @@ class InstanaRecorder(SpanRecorder):
                 tskey = list(data.custom.logs.keys())[0]
                 data.pg.error = data.custom.logs[tskey]['message']
 
-        if span.operation_name == "log":
+        elif span.operation_name == "log":
             data.log = {}
             # use last special key values
             # TODO - logic might need a tweak here

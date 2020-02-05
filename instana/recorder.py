@@ -206,6 +206,7 @@ class InstanaRecorder(SpanRecorder):
 
         if span.operation_name == "mysql":
             data.mysql = MySQLData(host=span.tags.pop('host', None),
+                                   port=span.tags.pop('port', None),
                                    db=span.tags.pop(ext.DATABASE_INSTANCE, None),
                                    user=span.tags.pop(ext.DATABASE_USER, None),
                                    stmt=span.tags.pop(ext.DATABASE_STATEMENT, None))
@@ -215,6 +216,7 @@ class InstanaRecorder(SpanRecorder):
 
         if span.operation_name == "postgres":
             data.pg = PostgresData(host=span.tags.pop('host', None),
+                                   port=span.tags.pop('port', None),
                                    db=span.tags.pop(ext.DATABASE_INSTANCE, None),
                                    user=span.tags.pop(ext.DATABASE_USER, None),
                                    stmt=span.tags.pop(ext.DATABASE_STATEMENT, None),

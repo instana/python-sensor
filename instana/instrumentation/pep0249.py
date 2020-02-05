@@ -27,11 +27,9 @@ class CursorWrapper(wrapt.ObjectProxy):
                 span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['database'])
 
             span.set_tag(ext.DATABASE_STATEMENT, sql_sanitizer(sql))
-            # span.set_tag(ext.DATABASE_TYPE, 'mysql')
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])
-            span.set_tag('host', "%s:%s" %
-                         (self._connect_params[1]['host'],
-                          self._connect_params[1]['port']))
+            span.set_tag('host', self._connect_params[1]['host'])
+            span.set_tag('port', self._connect_params[1]['port'])
         except Exception as e:
             logger.debug(e)
         finally:

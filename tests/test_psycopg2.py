@@ -99,7 +99,8 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.db, testenv['postgresql_db'])
         assert_equals(db_span.data.pg.user, testenv['postgresql_user'])
         assert_equals(db_span.data.pg.stmt, 'SELECT * from users')
-        assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.host, testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.port, testenv['postgresql_port'])
 
     def test_basic_insert(self):
         with tracer.start_active_span('test'):
@@ -122,7 +123,8 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.db, testenv['postgresql_db'])
         assert_equals(db_span.data.pg.user, testenv['postgresql_user'])
         assert_equals(db_span.data.pg.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.host, testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.port, testenv['postgresql_port'])
 
     def test_executemany(self):
         result = None
@@ -148,7 +150,8 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.db, testenv['postgresql_db'])
         assert_equals(db_span.data.pg.user, testenv['postgresql_user'])
         assert_equals(db_span.data.pg.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.host, testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.port, testenv['postgresql_port'])
 
     def test_call_proc(self):
         result = None
@@ -174,7 +177,8 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.db, testenv['postgresql_db'])
         assert_equals(db_span.data.pg.user, testenv['postgresql_user'])
         assert_equals(db_span.data.pg.stmt, 'test_proc')
-        assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.host, testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.port, testenv['postgresql_port'])
 
     def test_error_capture(self):
         result = None
@@ -209,7 +213,8 @@ class TestPsycoPG2:
         assert_equals(db_span.data.pg.db, testenv['postgresql_db'])
         assert_equals(db_span.data.pg.user, testenv['postgresql_user'])
         assert_equals(db_span.data.pg.stmt, 'SELECT * from blah')
-        assert_equals(db_span.data.pg.host, "%s:5432" % testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.host, testenv['postgresql_host'])
+        assert_equals(db_span.data.pg.port, testenv['postgresql_port'])
 
     # Added to validate unicode support and register_type.
     def test_unicode(self):

@@ -96,7 +96,8 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from users')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.host, testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.port, testenv['mysql_port'])
 
     def test_query_with_params(self):
         result = None
@@ -123,7 +124,8 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from users where id=?')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.host, testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.port, testenv['mysql_port'])
 
     def test_basic_insert(self):
         result = None
@@ -151,7 +153,8 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.host, testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.port, testenv['mysql_port'])
 
     def test_executemany(self):
         result = None
@@ -179,7 +182,8 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.host, testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.port, testenv['mysql_port'])
 
     def test_call_proc(self):
         result = None
@@ -205,7 +209,8 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'test_proc')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.host, testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.port, testenv['mysql_port'])
 
     def test_error_capture(self):
         result = None
@@ -246,4 +251,5 @@ class TestPyMySQL:
         assert_equals(db_span.data.mysql.db, testenv['mysql_db'])
         assert_equals(db_span.data.mysql.user, testenv['mysql_user'])
         assert_equals(db_span.data.mysql.stmt, 'SELECT * from blah')
-        assert_equals(db_span.data.mysql.host, "%s:3306" % testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.host, testenv['mysql_host'])
+        assert_equals(db_span.data.mysql.port, testenv['mysql_port'])

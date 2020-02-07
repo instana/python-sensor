@@ -5,7 +5,7 @@ Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 
 1. Before releasing, assure that [tests have passed](https://circleci.com/gh/instana/workflows/python-sensor) and that the package has also been manually validated in various stacks.
 2. `git checkout master && git pull --rebase && pip install -U twine`
-3. Bump the package version in `setup.py`
+3. Bump the package version in `setup.py`. `git` commit & push the version change to the master branch
 4. Create a [draft Release on Github](https://github.com/instana/python-sensor/releases)
 5. `python setup.py sdist` to create the `instana-<version>.tar.gz` file in `./dist/` 
 6. Upload the package to Pypi with twine: `twine upload dist/instana-<version>*`

@@ -16,6 +16,7 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
+      - image: circleci/mongo:4.2.3-ram
 
     working_directory: ~/repo
 
@@ -70,6 +71,7 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
+      - image: circleci/mongo:4.2.3-ram
 
     working_directory: ~/repo
 
@@ -122,6 +124,7 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: couchbase/server-sandbox:5.5.0
+      - image: circleci/mongo:4.2.3-ram
 
     working_directory: ~/repo
 

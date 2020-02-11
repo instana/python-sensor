@@ -17,6 +17,8 @@ try:
         def failed(self, event):
             logger.debug("Command {0.command_name} with request id {0.request_id} failed on server {0.connection_id}".format(event))
 
+    monitoring.register(MongoCommandTracer())
+    
     logger.debug("Instrumenting pymongo")
     
 except ImportError:

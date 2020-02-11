@@ -82,6 +82,7 @@ def boot_agent():
         from .instrumentation import sudsjurko
         from .instrumentation import urllib3
         from .instrumentation.django import middleware
+        from .instrumentation import pymongo
 
     # Hooks
     from .hooks import hook_uwsgi

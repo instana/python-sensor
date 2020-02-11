@@ -48,6 +48,14 @@ Redis Environment
 testenv['redis_host'] = os.environ.get('REDIS_HOST', '127.0.0.1')
 
 
+"""
+MongoDB Environment
+"""
+testenv['mongodb_host'] = os.environ.get('MONGO_HOST', '127.0.0.1')
+testenv['mongodb_port'] = os.environ.get('MONGO_PORT', '27017')
+testenv['mongodb_user'] = os.environ.get('MONGO_USER', None)
+testenv['mongodb_pw'] = os.environ.get('MONGO_PW', None)
+
 def get_first_span_by_name(spans, name):
     for span in spans:
         if span.n == name:

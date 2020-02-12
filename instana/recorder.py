@@ -25,15 +25,16 @@ else:
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
     registered_spans = ("aiohttp-client", "aiohttp-server", "cassandra", "couchbase", "django", "log",
-                        "memcache", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
+                        "memcache", "mongo", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
                         "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
                         "urllib3", "wsgi")
 
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mysql", "postgres",
-                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3")
+    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mongo", "mysql", "postgres",
+                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3",
+                  "pymongo")
 
     entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
 

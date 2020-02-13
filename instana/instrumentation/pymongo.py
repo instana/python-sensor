@@ -19,10 +19,8 @@ try:
                 return
 
             with tracer.start_active_span("mongo", child_of=parent_span) as scope:
-                self._collect_tags(scope.span, event)
-
-                scope.span.set_tag("db", event.database_name)
-                scope.span.set_tag("command", event.command_name)
+                self._collect_connection_tags(scope.span, event)
+                self._collect_command_tags(scope.span, event)
 
                 # include collection name into the namespace if provided
                 if event.command.has_key(event.command_name):
@@ -46,12 +44,40 @@ try:
 
             active_span.log_exception(event.failure)
 
-        def _collect_tags(self, span, event):
+        def _collect_connection_tags(self, span, event):
             (host, port) = event.connection_id
 
             span.set_tag("driver", "pymongo")
             span.set_tag("host", host)
             span.set_tag("port", str(port))
+            span.set_tag("db", event.database_name)
+
+        def _collect_command_tags(self, span, event):
+            """
+            Extract MongoDB command name and arguments and attach it to the span
+            """
+            cmd = event.command_name
+            span.set_tag("command", cmd)
+            
+            if cmd == "find":
+                span.set_tag("filter", event.command.get("filter"))
+            elif cmd == "insert":
+                span.set_tag("json", event.command.get("documents"))
+            elif cmd == "update":
+                span.set_tag("json", event.command.get("updates"))
+            elif cmd == "delete":
+                span.set_tag("json", event.command.get("deletes"))
+            elif cmd == "aggregate":
+                span.set_tag("json", event.command.get("pipeline"))
+            elif cmd == "mapreduce":
+                data = {
+                    "map": event.command.get("map"),
+                    "reduce": event.command.get("reduce")
+                }
+                if event.command.has_key("query"):
+                    data["query"] = event.command.get("query")
+                
+                span.set_tag("json", data)
 
     monitoring.register(MongoCommandTracer())
 

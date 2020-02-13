@@ -54,6 +54,8 @@ class TestPyMongo:
         assert_equals(db_span.data.custom.tags["db"], "test")
         assert_equals(db_span.data.custom.tags["collection"], "records")
         assert_equals(db_span.data.custom.tags["command"], "find")
+        assert_equals(db_span.data.custom.tags["filter"], {"type": "string"})
+        assert_false("json" in db_span.data.custom.tags)
 
     def test_successful_insert_query(self):
         with tracer.start_active_span("test"):
@@ -80,6 +82,7 @@ class TestPyMongo:
         assert_equals(db_span.data.custom.tags["db"], "test")
         assert_equals(db_span.data.custom.tags["collection"], "records")
         assert_equals(db_span.data.custom.tags["command"], "insert")
+        assert_false("filter" in db_span.data.custom.tags)
 
     def test_successful_update_query(self):
         with tracer.start_active_span("test"):
@@ -106,6 +109,8 @@ class TestPyMongo:
         assert_equals(db_span.data.custom.tags["db"], "test")
         assert_equals(db_span.data.custom.tags["collection"], "records")
         assert_equals(db_span.data.custom.tags["command"], "update")
+        assert_false("filter" in db_span.data.custom.tags)
+        assert_equals(db_span.data.custom.tags["json"], [{"q": {"type": "string"}, "u": {"$set": {"type": "int"}}, "multi": False, "upsert": False}])
 
     def test_successful_delete_query(self):
         with tracer.start_active_span("test"):
@@ -132,6 +137,8 @@ class TestPyMongo:
         assert_equals(db_span.data.custom.tags["db"], "test")
         assert_equals(db_span.data.custom.tags["collection"], "records")
         assert_equals(db_span.data.custom.tags["command"], "delete")
+        assert_false("filter" in db_span.data.custom.tags)
+        assert_equals(db_span.data.custom.tags["json"], [{"q": {"type": "string"}, "limit": 1}])
 
     def test_successful_aggregate_query(self):
         with tracer.start_active_span("test"):
@@ -158,6 +165,8 @@ class TestPyMongo:
         assert_equals(db_span.data.custom.tags["db"], "test")
         assert_equals(db_span.data.custom.tags["collection"], "records")
         assert_equals(db_span.data.custom.tags["command"], "aggregate")
+        assert_false("filter" in db_span.data.custom.tags)
+        assert_equals(db_span.data.custom.tags["json"], [{'$match': {'type': 'string'}}, {'$group': {'_id': None, 'n': {'$sum': 1}}}])
 
     def test_successful_map_reduce_query(self):
         mapper = bson.code.Code("function () { this.tags.forEach(function(z) { emit(z, 1); }); }")
@@ -187,6 +196,7 @@ class TestPyMongo:
         assert_equals(db_span.data.custom.tags["db"], "test")
         assert_equals(db_span.data.custom.tags["collection"], "records")
         assert_equals(db_span.data.custom.tags["command"], "mapreduce")
+        assert_equals(db_span.data.custom.tags["json"], {"map": mapper, "reduce": reducer, "query": {"x": {"$lt": 2}}})
 
     def test_successful_mutiple_queries(self):
         with tracer.start_active_span("test"):

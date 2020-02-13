@@ -48,14 +48,11 @@ class TestPyMongo:
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data.custom.tags["driver"], "pymongo")
-        assert_equals(db_span.data.custom.tags["host"], testenv['mongodb_host'])
-        assert_equals(db_span.data.custom.tags["port"], testenv['mongodb_port'])
-        assert_equals(db_span.data.custom.tags["db"], "test")
-        assert_equals(db_span.data.custom.tags["collection"], "records")
-        assert_equals(db_span.data.custom.tags["command"], "find")
-        assert_equals(db_span.data.custom.tags["filter"], {"type": "string"})
-        assert_false("json" in db_span.data.custom.tags)
+        assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        assert_equals(db_span.data.mongo.namespace, "test.records")
+        assert_equals(db_span.data.mongo.command, "find")
+        assert_equals(db_span.data.mongo.filter, {"type": "string"})
+        assert_is_none(db_span.data.mongo.json)
 
     def test_successful_insert_query(self):
         with tracer.start_active_span("test"):
@@ -76,13 +73,10 @@ class TestPyMongo:
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data.custom.tags["driver"], "pymongo")
-        assert_equals(db_span.data.custom.tags["host"], testenv['mongodb_host'])
-        assert_equals(db_span.data.custom.tags["port"], testenv['mongodb_port'])
-        assert_equals(db_span.data.custom.tags["db"], "test")
-        assert_equals(db_span.data.custom.tags["collection"], "records")
-        assert_equals(db_span.data.custom.tags["command"], "insert")
-        assert_false("filter" in db_span.data.custom.tags)
+        assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        assert_equals(db_span.data.mongo.namespace, "test.records")
+        assert_equals(db_span.data.mongo.command, "insert")
+        assert_is_none(db_span.data.mongo.filter)
 
     def test_successful_update_query(self):
         with tracer.start_active_span("test"):
@@ -103,14 +97,11 @@ class TestPyMongo:
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data.custom.tags["driver"], "pymongo")
-        assert_equals(db_span.data.custom.tags["host"], testenv['mongodb_host'])
-        assert_equals(db_span.data.custom.tags["port"], testenv['mongodb_port'])
-        assert_equals(db_span.data.custom.tags["db"], "test")
-        assert_equals(db_span.data.custom.tags["collection"], "records")
-        assert_equals(db_span.data.custom.tags["command"], "update")
-        assert_false("filter" in db_span.data.custom.tags)
-        assert_equals(db_span.data.custom.tags["json"], [{"q": {"type": "string"}, "u": {"$set": {"type": "int"}}, "multi": False, "upsert": False}])
+        assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        assert_equals(db_span.data.mongo.namespace, "test.records")
+        assert_equals(db_span.data.mongo.command, "update")
+        assert_is_none(db_span.data.mongo.filter)
+        assert_equals(db_span.data.mongo.json, [{"q": {"type": "string"}, "u": {"$set": {"type": "int"}}, "multi": False, "upsert": False}])
 
     def test_successful_delete_query(self):
         with tracer.start_active_span("test"):
@@ -131,14 +122,11 @@ class TestPyMongo:
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data.custom.tags["driver"], "pymongo")
-        assert_equals(db_span.data.custom.tags["host"], testenv['mongodb_host'])
-        assert_equals(db_span.data.custom.tags["port"], testenv['mongodb_port'])
-        assert_equals(db_span.data.custom.tags["db"], "test")
-        assert_equals(db_span.data.custom.tags["collection"], "records")
-        assert_equals(db_span.data.custom.tags["command"], "delete")
-        assert_false("filter" in db_span.data.custom.tags)
-        assert_equals(db_span.data.custom.tags["json"], [{"q": {"type": "string"}, "limit": 1}])
+        assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        assert_equals(db_span.data.mongo.namespace, "test.records")
+        assert_equals(db_span.data.mongo.command, "delete")
+        assert_is_none(db_span.data.mongo.filter)
+        assert_equals(db_span.data.mongo.json, [{"q": {"type": "string"}, "limit": 1}])
 
     def test_successful_aggregate_query(self):
         with tracer.start_active_span("test"):
@@ -159,14 +147,11 @@ class TestPyMongo:
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data.custom.tags["driver"], "pymongo")
-        assert_equals(db_span.data.custom.tags["host"], testenv['mongodb_host'])
-        assert_equals(db_span.data.custom.tags["port"], testenv['mongodb_port'])
-        assert_equals(db_span.data.custom.tags["db"], "test")
-        assert_equals(db_span.data.custom.tags["collection"], "records")
-        assert_equals(db_span.data.custom.tags["command"], "aggregate")
-        assert_false("filter" in db_span.data.custom.tags)
-        assert_equals(db_span.data.custom.tags["json"], [{'$match': {'type': 'string'}}, {'$group': {'_id': None, 'n': {'$sum': 1}}}])
+        assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        assert_equals(db_span.data.mongo.namespace, "test.records")
+        assert_equals(db_span.data.mongo.command, "aggregate")
+        assert_is_none(db_span.data.mongo.filter)
+        assert_equals(db_span.data.mongo.json, [{'$match': {'type': 'string'}}, {'$group': {'_id': None, 'n': {'$sum': 1}}}])
 
     def test_successful_map_reduce_query(self):
         mapper = bson.code.Code("function () { this.tags.forEach(function(z) { emit(z, 1); }); }")
@@ -190,13 +175,10 @@ class TestPyMongo:
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data.custom.tags["driver"], "pymongo")
-        assert_equals(db_span.data.custom.tags["host"], testenv['mongodb_host'])
-        assert_equals(db_span.data.custom.tags["port"], testenv['mongodb_port'])
-        assert_equals(db_span.data.custom.tags["db"], "test")
-        assert_equals(db_span.data.custom.tags["collection"], "records")
-        assert_equals(db_span.data.custom.tags["command"], "mapreduce")
-        assert_equals(db_span.data.custom.tags["json"], {"map": mapper, "reduce": reducer, "query": {"x": {"$lt": 2}}})
+        assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        assert_equals(db_span.data.mongo.namespace, "test.records")
+        assert_equals(db_span.data.mongo.command, "mapreduce")
+        assert_equals(db_span.data.mongo.json, {"map": mapper, "reduce": reducer, "query": {"x": {"$lt": 2}}})
 
     def test_successful_mutiple_queries(self):
         with tracer.start_active_span("test"):
@@ -221,7 +203,7 @@ class TestPyMongo:
             assert_false(span.s in seen_span_ids)
             
             seen_span_ids.add(span.s)
-            commands.append(span.data.custom.tags["command"])
+            commands.append(span.data.mongo.command)
 
         # ensure spans are ordered the same way as commands
         assert_list_equal(commands, ["insert", "update", "delete"])

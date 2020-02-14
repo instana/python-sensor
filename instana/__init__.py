@@ -25,8 +25,8 @@ from threading import Timer
 import pkg_resources
 
 __author__ = 'Instana Inc.'
-__copyright__ = 'Copyright 2019 Instana Inc.'
-__credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo']
+__copyright__ = 'Copyright 2020 Instana Inc.'
+__credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo', 'Andrey Slotin']
 __license__ = 'MIT'
 __maintainer__ = 'Peter Giacomo Lombardo'
 __email__ = 'peter.lombardo@instana.com'

@@ -97,6 +97,15 @@ class MySQLData(BaseSpan):
     error = None
 
 
+class MongoDBData(BaseSpan):
+    service = None
+    namespace = None
+    command = None
+    filter = None
+    json = None
+    error = None
+
+
 class PostgresData(BaseSpan):
     db = None
     host = None

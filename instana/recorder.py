@@ -10,7 +10,7 @@ from basictracer import Sampler, SpanRecorder
 import instana.singletons
 
 from .json_span import (CassandraData, CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData,
-                        MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
+                        MongoDBData, MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
                         RPCData, SDKData, SoapData, SQLAlchemyData)
 
 from .log import logger
@@ -25,15 +25,16 @@ else:
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
     registered_spans = ("aiohttp-client", "aiohttp-server", "cassandra", "couchbase", "django", "log",
-                        "memcache", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
+                        "memcache", "mongo", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
                         "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
                         "urllib3", "wsgi")
 
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mysql", "postgres",
-                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3")
+    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mongo", "mysql", "postgres",
+                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3",
+                  "pymongo")
 
     entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
 
@@ -236,6 +237,16 @@ class InstanaRecorder(SpanRecorder):
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.pg.error = data.custom.logs[tskey]['message']
+
+        elif span.operation_name == "mongo":
+            service = "%s:%s" % (span.tags.pop('host', None), span.tags.pop('port', None))
+            namespace = "%s.%s" % (span.tags.pop('db', "?"), span.tags.pop('collection', "?"))
+            data.mongo = MongoDBData(service=service,
+                                     namespace=namespace,
+                                     command=span.tags.pop('command', None),
+                                     filter=span.tags.pop('filter', None),
+                                     json=span.tags.pop('json', None),
+                                     error=span.tags.pop('command', None))
 
         elif span.operation_name == "log":
             data.log = {}

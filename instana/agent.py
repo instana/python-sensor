@@ -8,24 +8,39 @@ import requests
 
 import instana.singletons
 
-from .agent_const import (AGENT_DATA_PATH, AGENT_DEFAULT_HOST,
-                          AGENT_DEFAULT_PORT, AGENT_DISCOVERY_PATH,
-                          AGENT_HEADER, AGENT_RESPONSE_PATH, AGENT_TRACES_PATH)
 from .fsm import TheMachine
 from .log import logger
 from .sensor import Sensor
-from .util import to_json
+from .util import to_json, get_py_source, package_version
+from .options import StandardOptions, AWSLambdaOptions
 
 
-class From(object):
-    pid = ""
+class AnnounceData(object):
+    pid = 0
     agentUuid = ""
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
 
-class Agent(object):
+class AWSLambdaFrom(object):
+    hl = True
+    cp = "aws"
+    e = "qualifiedARN"
+
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+
+class BaseAgent(object):
+    client = requests.Session()
+    sensor = None
+
+    def __init__(self):
+        pass
+
+
+class StandardAgent(BaseAgent):
     """
     The Agent class is the central controlling entity for the Instana Python language sensor.  The key
     parts it handles are the announce state and the collection and reporting of metrics and spans to the
@@ -36,21 +51,24 @@ class Agent(object):
       2. Sensor -> Meter - metric collection and reporting
       3. Tracer -> Recorder - span queueing and reporting
     """
-    sensor = None
-    host = AGENT_DEFAULT_HOST
-    port = AGENT_DEFAULT_PORT
+    AGENT_DISCOVERY_PATH = "com.instana.plugin.python.discovery"
+    AGENT_DATA_PATH = "com.instana.plugin.python.%d"
+    AGENT_HEADER = "Instana Agent"
+
+    announce_data = None
+    options = StandardOptions()
+
     machine = None
-    from_ = From()
     last_seen = None
     last_fork_check = None
     _boot_pid = os.getpid()
     extra_headers = None
     secrets_matcher = 'contains-ignore-case'
     secrets_list = ['key', 'password', 'secret']
-    client = requests.Session()
     should_threads_shutdown = threading.Event()
 
     def __init__(self):
+        super(StandardAgent, self).__init__()
         logger.debug("initializing agent")
         self.sensor = Sensor(self)
         self.machine = TheMachine(self)
@@ -82,7 +100,7 @@ class Agent(object):
         self.should_threads_shutdown.set()
 
         self.last_seen = None
-        self.from_ = From()
+        self.announce_data = None
 
         # Will schedule a restart of the announce cycle in the future
         self.machine.reset()
@@ -124,19 +142,19 @@ class Agent(object):
             self.extra_headers = res_data['extraHeaders']
             logger.info("Will also capture these custom headers: %s", self.extra_headers)
 
-        self.from_ = From(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
+        self.announce_data = AnnounceData(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
     def is_agent_listening(self, host, port):
         """
         Check if the Instana Agent is listening on <host> and <port>.
         """
+        rv = False
         try:
-            rv = False
             url = "http://%s:%s/" % (host, port)
             response = self.client.get(url, timeout=0.8)
 
             server_header = response.headers["Server"]
-            if server_header == AGENT_HEADER:
+            if server_header == self.AGENT_HEADER:
                 logger.debug("Instana host agent found on %s:%d", host, port)
                 rv = True
             else:
@@ -152,10 +170,10 @@ class Agent(object):
         """
         With the passed in Discovery class, attempt to announce to the host agent.
         """
+        response = None
         try:
             url = self.__discovery_url()
             # logger.debug("making announce request to %s", url)
-            response = None
             response = self.client.put(url,
                                        data=to_json(discovery),
                                        headers={"Content-Type": "application/json"},
@@ -185,8 +203,8 @@ class Agent(object):
         """
         Used to report entity data (metrics & snapshot) to the host agent.
         """
+        response = None
         try:
-            response = None
             response = self.client.post(self.__data_url(),
                                         data=to_json(entity_data),
                                         headers={"Content-Type": "application/json"},
@@ -205,13 +223,13 @@ class Agent(object):
         """
         Used to report entity data (metrics & snapshot) to the host agent.
         """
+        response = None
         try:
             # Concurrency double check:  Don't report if we don't have
             # any spans
             if len(spans) == 0:
                 return 0
 
-            response = None
             response = self.client.post(self.__traces_url(),
                                         data=to_json(spans),
                                         headers={"Content-Type": "application/json"},
@@ -226,13 +244,31 @@ class Agent(object):
         finally:
             return response
 
-    def task_response(self, message_id, data):
+    def handle_agent_tasks(self, task):
+        """
+        When request(s) are received by the host agent, it is sent here
+        for handling & processing.
+        """
+        logger.debug("Received agent request with messageId: %s", task["messageId"])
+        if "action" in task:
+            if task["action"] == "python.source":
+                payload = get_py_source(task["args"]["file"])
+            else:
+                message = "Unrecognized action: %s. An newer Instana package may be required " \
+                          "for this. Current version: %s" % (task["action"], package_version())
+                payload = {"error": message}
+        else:
+            payload = {"error": "Instana Python: No action specified in request."}
+
+        self.__task_response(task["messageId"], payload)
+
+    def __task_response(self, message_id, data):
         """
         When the host agent passes us a task and we do it, this function is used to
         respond with the results of the task.
         """
+        response = None
         try:
-            response = None
             payload = json.dumps(data)
 
             logger.debug("Task response is %s: %s", self.__response_url(message_id), payload)
@@ -252,31 +288,39 @@ class Agent(object):
         """
         URL for announcing to the host agent
         """
-        port = self.sensor.options.agent_port
-        if port == 0:
-            port = AGENT_DEFAULT_PORT
-
-        return "http://%s:%s/%s" % (self.host, port, AGENT_DISCOVERY_PATH)
+        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, self.AGENT_DISCOVERY_PATH)
 
     def __data_url(self):
         """
         URL for posting metrics to the host agent.  Only valid when announced.
         """
-        path = AGENT_DATA_PATH % self.from_.pid
-        return "http://%s:%s/%s" % (self.host, self.port, path)
+        path = self.AGENT_DATA_PATH % self.announce_data.pid
+        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
 
     def __traces_url(self):
         """
         URL for posting traces to the host agent.  Only valid when announced.
         """
-        path = AGENT_TRACES_PATH % self.from_.pid
-        return "http://%s:%s/%s" % (self.host, self.port, path)
+        path = "com.instana.plugin.python/traces.%d" % self.announce_data.pid
+        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
 
     def __response_url(self, message_id):
         """
         URL for responding to agent requests.
         """
-        if self.from_.pid != 0:
-            path = AGENT_RESPONSE_PATH % (self.from_.pid, message_id)
+        path = "com.instana.plugin.python/response.%d?messageId=%s" % (int(self.announce_data.pid), message_id)
+        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
 
-        return "http://%s:%s/%s" % (self.host, self.port, path)
+
+class AWSLambdaAgent(BaseAgent):
+    from_ = AWSLambdaFrom()
+    options = AWSLambdaOptions()
+
+    def __init__(self):
+        super(AWSLambdaAgent, self).__init__()
+
+        if self.options.endpoint_url is None  or self.options.agent_key is None:
+            logger.warn("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
+                        "We will not be able monitor this function.")
+
+

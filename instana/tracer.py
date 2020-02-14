@@ -12,14 +12,13 @@ from .binary_propagator import BinaryPropagator
 from .http_propagator import HTTPPropagator
 from .text_propagator import TextPropagator
 from .span_context import InstanaSpanContext
-from .options import Options
 from .recorder import InstanaRecorder, InstanaSampler
 from .span import InstanaSpan
 from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
-    def __init__(self, options=Options(), scope_manager=None, recorder=None):
+    def __init__(self, scope_manager=None, recorder=None):
 
         if recorder is None:
             recorder = InstanaRecorder()

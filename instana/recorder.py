@@ -258,8 +258,8 @@ class InstanaRecorder(SpanRecorder):
                 if "parameters" in l.key_values:
                     data.log["parameters"] = l.key_values.pop("parameters", None)
 
-        entity_from = {'e': instana.singletons.agent.from_.pid,
-                       'h': instana.singletons.agent.from_.agentUuid}
+        entity_from = {'e': instana.singletons.agent.announce_data.pid,
+                       'h': instana.singletons.agent.announce_data.agentUuid}
 
         json_span = JsonSpan(n=span.operation_name,
                              k=kind,
@@ -305,8 +305,8 @@ class InstanaRecorder(SpanRecorder):
             sdk_data.Return = span.tags["return"]
 
         data = Data(service=instana.singletons.agent.sensor.options.service_name, sdk=sdk_data)
-        entity_from = {'e': instana.singletons.agent.from_.pid,
-                       'h': instana.singletons.agent.from_.agentUuid}
+        entity_from = {'e': instana.singletons.agent.announce_data.pid,
+                       'h': instana.singletons.agent.announce_data.agentUuid}
 
         json_span = JsonSpan(t=span.context.trace_id,
                              p=span.parent_id,

@@ -1,12 +1,12 @@
 import sys
 import opentracing
 
-from .agent import Agent
+from .agent import StandardAgent, AWSLambdaAgent
 from .tracer import InstanaTracer, InstanaRecorder
 
 
 # The Instana Agent which carries along with it a Sensor that collects metrics.
-agent = Agent()
+agent = StandardAgent()
 
 
 span_recorder = InstanaRecorder()

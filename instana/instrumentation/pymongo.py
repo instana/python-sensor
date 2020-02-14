@@ -6,6 +6,7 @@ from ..singletons import tracer
 try:
     import pymongo
     from pymongo import monitoring
+    from bson import json_util
 
     class MongoCommandTracer(monitoring.CommandListener):
         def __init__(self):
@@ -58,26 +59,33 @@ try:
             """
             cmd = event.command_name
             span.set_tag("command", cmd)
-            
-            if cmd == "find":
-                span.set_tag("filter", event.command.get("filter"))
-            elif cmd == "insert":
-                span.set_tag("json", event.command.get("documents"))
-            elif cmd == "update":
-                span.set_tag("json", event.command.get("updates"))
-            elif cmd == "delete":
-                span.set_tag("json", event.command.get("deletes"))
-            elif cmd == "aggregate":
-                span.set_tag("json", event.command.get("pipeline"))
+
+            for key in ["filter", "query"]:
+                if event.command.has_key(key):
+                    span.set_tag("filter", json_util.dumps(event.command.get(key)))
+                    break
+
+            # The location of command documents within the command object depends on the name
+            # of this command. This is the name -> command object key mapping
+            cmd_doc_locations = {
+                "insert": "documents",
+                "update": "updates",
+                "delete": "deletes",
+                "aggregate": "pipeline"
+            }
+
+            cmd_doc = None
+            if cmd in cmd_doc_locations:
+                cmd_doc = event.command.get(cmd_doc_locations[cmd])
             elif cmd == "mapreduce":
-                data = {
+                # mapreduce command consists of two mandatory parts: map and reduce
+                cmd_doc = {
                     "map": event.command.get("map"),
                     "reduce": event.command.get("reduce")
                 }
-                if event.command.has_key("query"):
-                    data["query"] = event.command.get("query")
-                
-                span.set_tag("json", data)
+
+            if cmd_doc is not None:
+                span.set_tag("json", json_util.dumps(cmd_doc))
 
     monitoring.register(MongoCommandTracer())
 

@@ -197,7 +197,7 @@ class TestPyMongo:
         assert_equals(db_span.n, "mongo")
         assert_equals(db_span.data.mongo.service, "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
         assert_equals(db_span.data.mongo.namespace, "test.records")
-        assert_equals(db_span.data.mongo.command, "mapreduce")
+        assert_equals(db_span.data.mongo.command.lower(), "mapreduce") # mapreduce command was renamed to mapReduce in pymongo 3.9.0
 
         assert_equals(db_span.data.mongo.filter, '{"x": {"$lt": 2}}')
         assert_is_not_none(db_span.data.mongo.json)

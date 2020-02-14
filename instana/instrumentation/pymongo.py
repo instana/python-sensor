@@ -77,7 +77,7 @@ try:
             cmd_doc = None
             if cmd in cmd_doc_locations:
                 cmd_doc = event.command.get(cmd_doc_locations[cmd])
-            elif cmd == "mapreduce":
+            elif cmd.lower() == "mapreduce": # mapreduce command was renamed to mapReduce in pymongo 3.9.0
                 # mapreduce command consists of two mandatory parts: map and reduce
                 cmd_doc = {
                     "map": event.command.get("map"),

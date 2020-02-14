@@ -154,5 +154,5 @@ class InstanaTracer(BasicTracer):
 
 
 # Used by __add_stack
-re_tracer_frame = re.compile('/instana/.*\.py$')
+re_tracer_frame = re.compile(r"/instana/.*\.py$")
 re_with_stan_frame = re.compile('with_instana')

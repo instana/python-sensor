@@ -227,7 +227,7 @@ def sql_sanitizer(sql):
 
 
 # Used by sql_sanitizer
-regexp_sql_values = re.compile('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)')
+regexp_sql_values = re.compile(r"('[\s\S][^']*'|\d*\.\d+|\d+|NULL)")
 
 
 def get_default_gateway():
@@ -280,7 +280,7 @@ def get_py_source(file):
 
 
 # Used by get_py_source
-regexp_py = re.compile('\.py$')
+regexp_py = re.compile(r"\.py$")
 
 
 def every(delay, task, name):

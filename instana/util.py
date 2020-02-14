@@ -16,7 +16,7 @@ except ImportError:
 from .log import logger
 
 
-if sys.version_info.major is 2:
+if sys.version_info.major == 2:
     string_types = basestring
 else:
     string_types = str
@@ -247,7 +247,7 @@ def get_default_gateway():
                 if '00000000' == parts[1]:
                     hip = parts[2]
 
-        if hip is not None and len(hip) is 8:
+        if hip is not None and len(hip) == 8:
             # Reverse order, convert hex to int
             return "%i.%i.%i.%i" % (int(hip[6:8], 16), int(hip[4:6], 16), int(hip[2:4], 16), int(hip[0:2], 16))
 

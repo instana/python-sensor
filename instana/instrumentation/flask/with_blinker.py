@@ -64,7 +64,7 @@ def request_finished_with_instana(sender, response, **extra):
             if 500 <= response.status_code <= 511:
                 span.set_tag("error", True)
                 ec = span.tags.get('ec', 0)
-                if ec is 0:
+                if ec == 0:
                     span.set_tag("ec", ec+1)
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))

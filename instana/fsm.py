@@ -156,7 +156,7 @@ class TheMachine(object):
 
         response = self.agent.announce(d)
 
-        if response and (response.status_code is 200) and (len(response.content) > 2):
+        if response and (response.status_code == 200) and (len(response.content) > 2):
             self.agent.set_from(response.content)
             self.fsm.pending()
             logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...", str(pid), str(self.agent.from_.pid))

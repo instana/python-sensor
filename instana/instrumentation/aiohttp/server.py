@@ -44,7 +44,7 @@ try:
                 if 500 <= response.status <= 511:
                     scope.span.set_tag("error", True)
                     ec = scope.span.tags.get('ec', 0)
-                    if ec is 0:
+                    if ec == 0:
                         scope.span.set_tag("ec", ec + 1)
 
                 scope.span.set_tag("http.status_code", response.status)

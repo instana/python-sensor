@@ -5,7 +5,7 @@ from nose.tools import assert_equals
 
 import instana.util
 
-if sys.version_info.major is 2:
+if sys.version_info.major == 2:
     string_types = basestring
 else:
     string_types = str

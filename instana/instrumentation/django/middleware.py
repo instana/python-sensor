@@ -55,7 +55,7 @@ class InstanaMiddleware(MiddlewareMixin):
                 if 500 <= response.status_code <= 511:
                     request.iscope.span.set_tag("error", True)
                     ec = request.iscope.span.tags.get('ec', 0)
-                    if ec is 0:
+                    if ec == 0:
                         request.iscope.span.set_tag("ec", ec+1)
 
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)

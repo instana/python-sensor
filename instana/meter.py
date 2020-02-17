@@ -188,10 +188,10 @@ class Meter(object):
     def process(self):
         """ Collects, processes & reports metrics """
         try:
-            if self.agent.machine.fsm.current is "wait4init":
+            if self.agent.machine.fsm.current == "wait4init":
                 # Test the host agent if we're ready to send data
                 if self.agent.is_agent_ready():
-                    if self.agent.machine.fsm.current is not "good2go":
+                    if self.agent.machine.fsm.current != "good2go":
                         self.agent.machine.fsm.ready()
                 else:
                     return
@@ -216,7 +216,7 @@ class Meter(object):
             response = self.agent.report_data(ed)
 
             if response:
-                if response.status_code is 200 and len(response.content) > 2:
+                if response.status_code == 200 and len(response.content) > 2:
                     # The host agent returned something indicating that is has a request for us that we
                     # need to process.
                     self.handle_agent_tasks(json.loads(response.content)[0])

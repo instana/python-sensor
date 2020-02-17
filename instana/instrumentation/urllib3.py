@@ -18,7 +18,7 @@ try:
             kvs['host'] = instance.host
             kvs['port'] = instance.port
 
-            if args is not None and len(args) is 2:
+            if args is not None and len(args) == 2:
                 kvs['method'] = args[0]
                 kvs['path'] = args[1]
             else:
@@ -31,7 +31,7 @@ try:
             if kvs.get('path') is not None and ('?' in kvs['path']):
                 parts = kvs['path'].split('?')
                 kvs['path'] = parts[0]
-                if len(parts) is 2:
+                if len(parts) == 2:
                     kvs['query'] = strip_secrets(parts[1], agent.secrets_matcher, agent.secrets_list)
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:

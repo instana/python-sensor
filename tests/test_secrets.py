@@ -84,7 +84,7 @@ class TestSecrets(unittest.TestCase):
 
     def test_regex(self):
         matcher = 'regex'
-        kwlist = ['\d']
+        kwlist = [r"\d"]
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
@@ -94,7 +94,7 @@ class TestSecrets(unittest.TestCase):
 
     def test_regex_no_match(self):
         matcher = 'regex'
-        kwlist = ['\d\d\d']
+        kwlist = [r"\d\d\d"]
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 

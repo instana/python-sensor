@@ -10,7 +10,7 @@ try:
     from sqlalchemy import event
     from sqlalchemy.engine import Engine
 
-    url_regexp = re.compile('\/\/(\S+@)')
+    url_regexp = re.compile(r"\/\/(\S+@)")
 
     @event.listens_for(Engine, 'before_cursor_execute', named=True)
     def receive_before_cursor_execute(**kw):

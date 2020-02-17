@@ -161,7 +161,7 @@ class Agent(object):
                                        headers={"Content-Type": "application/json"},
                                        timeout=0.8)
 
-            if response.status_code is 200:
+            if response.status_code == 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("announce", exc_info=True)
@@ -175,7 +175,7 @@ class Agent(object):
         try:
             response = self.client.head(self.__data_url(), timeout=0.8)
 
-            if response.status_code is 200:
+            if response.status_code == 200:
                 return True
             return False
         except (requests.ConnectTimeout, requests.ConnectionError):
@@ -194,7 +194,7 @@ class Agent(object):
 
             # logger.warn("report_data: response.status_code is %s" % response.status_code)
 
-            if response.status_code is 200:
+            if response.status_code == 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("report_data: Instana host agent connection error")
@@ -219,7 +219,7 @@ class Agent(object):
 
             # logger.warn("report_traces: response.status_code is %s" % response.status_code)
 
-            if response.status_code is 200:
+            if response.status_code == 200:
                 self.last_seen = datetime.now()
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("report_traces: Instana host agent connection error")

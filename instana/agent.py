@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import json
 import os
+import time
 from datetime import datetime
 import threading
 import requests
@@ -13,6 +14,7 @@ from .log import logger
 from .sensor import Sensor
 from .util import to_json, get_py_source, package_version
 from .options import StandardOptions, AWSLambdaOptions
+from instana.collector import Collector
 
 
 class AnnounceData(object):
@@ -144,6 +146,9 @@ class StandardAgent(BaseAgent):
 
         self.announce_data = AnnounceData(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
+    def get_from_structure(self):
+        return {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+
     def is_agent_listening(self, host, port):
         """
         Check if the Instana Agent is listening on <host> and <port>.
@@ -199,7 +204,7 @@ class StandardAgent(BaseAgent):
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("is_agent_ready: Instana host agent connection error")
 
-    def report_data(self, entity_data):
+    def report_data_payload(self, entity_data):
         """
         Used to report entity data (metrics & snapshot) to the host agent.
         """
@@ -313,14 +318,71 @@ class StandardAgent(BaseAgent):
 
 
 class AWSLambdaAgent(BaseAgent):
-    from_ = AWSLambdaFrom()
-    options = AWSLambdaOptions()
+    from_ = None
+    options = None
+    meter = None
+    collector = None
+    report_headers = dict()
+
+    _can_send = False
+
+    AGENT_DATA_PATH = "com.instana.plugin.python.%d"
+    AGENT_HEADER = "Instana Agent"
 
     def __init__(self):
         super(AWSLambdaAgent, self).__init__()
 
-        if self.options.endpoint_url is None  or self.options.agent_key is None:
+        self.from_ = AWSLambdaFrom()
+        self.options = AWSLambdaOptions()
+
+        if self._validate_options():
+            self._can_send = True
+
+            # Prepare request headers
+            self.report_headers["Content-Type"] = "application/json"
+            self.report_headers["X-Instana-Host"] = "ARN"
+            self.report_headers["X-Instana-Key"] = self.options.agent_key
+            self.report_headers["X-Instana-Time"] = int(round(time.time() * 1000))
+
+            self.collector = Collector(self)
+            self.collector.start()
+        else:
             logger.warn("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
                         "We will not be able monitor this function.")
 
+    def can_send(self):
+        return self._can_send
 
+    def get_from_structure(self):
+        return {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+
+    def report_data_payload(self, payload):
+        """
+        Used to report metrics and span data to the endpoint URL in self.options.endpoint_url
+        """
+        response = None
+        try:
+            response = self.client.post(self.__data_bundle_url(),
+                                        data=to_json(payload),
+                                        headers=self.report_headers,
+                                        timeout=self.options.timeout)
+
+            logger.debug("report_data_payload: response.status_code is %s" % response.status_code)
+        except (requests.ConnectTimeout, requests.ConnectionError):
+            logger.debug("report_traces: Instana host agent connection error")
+            # FIXME: Larger exception capture space
+        finally:
+            return response
+
+    def _validate_options(self):
+        """
+        Validate that the options used by this Agent are valid.  e.g. can we report data?
+        """
+        # TODO: Endpoint and Agent key validation
+        return True
+
+    def __data_bundle_url(self):
+        """
+        URL for posting metrics to the host agent.  Only valid when announced.
+        """
+        return "%s/bundle" % self.options.endpoint_url

@@ -4,17 +4,15 @@ import os
 import sys
 import threading
 
-import opentracing.ext.tags as ext
-from basictracer import Sampler, SpanRecorder
-
-import instana.singletons
-
-from .json_span import (CassandraData, CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData,
-                        MongoDBData, MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
-                        RPCData, SDKData, SoapData, SQLAlchemyData)
-
 from .log import logger
 from .util import every
+import instana.singletons
+
+from basictracer import Sampler, SpanRecorder
+
+from .json_span import (AWSLambdaData, CassandraData, CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData,
+                        MongoDBData, MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
+                        RPCData, SDKData, SoapData, SQLAlchemyData)
 
 if sys.version_info.major == 2:
     import Queue as queue
@@ -24,9 +22,9 @@ else:
 
 class InstanaRecorder(SpanRecorder):
     THREAD_NAME = "Instana Span Reporting"
-    registered_spans = ("aiohttp-client", "aiohttp-server", "cassandra", "couchbase", "django", "log",
-                        "memcache", "mongo", "mysql", "postgres", "rabbitmq", "redis", "render", "rpc-client",
-                        "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
+    registered_spans = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra", "couchbase",
+                        "django", "log","memcache", "mongo", "mysql", "postgres", "rabbitmq", "redis", "render",
+                        "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
                         "urllib3", "wsgi")
 
     http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
@@ -36,9 +34,9 @@ class InstanaRecorder(SpanRecorder):
                   "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3",
                   "pymongo")
 
-    entry_spans = ("aiohttp-server", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
+    entry_spans = ("aiohttp-server", "aws.lambda.entry", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
 
-    local_spans = ("log", "render")
+    local_spans = ("render")
 
     entry_kind = ["entry", "server", "consumer"]
     exit_kind = ["exit", "client", "producer"]
@@ -128,125 +126,84 @@ class InstanaRecorder(SpanRecorder):
             else:
                 json_span = self.build_sdk_span(span)
 
+            logger.debug("Recorded span: %s", json_span)
+
             self.queue.put(json_span)
 
     def build_registered_span(self, span):
         """ Takes a BasicSpan and converts it into a registered JsonSpan """
         data = Data()
-        if len(span.context.baggage) > 0:
-            data.baggage = span.context.baggage
 
-        kind = 1 # entry
-        if span.operation_name in self.exit_spans:
+        kind = 1
+        if span.operation_name in self.entry_spans:
+            # entry
+            self._populate_entry_span_data(span, data)
+        elif span.operation_name in self.exit_spans:
             kind = 2 # exit
-        if span.operation_name in self.local_spans:
+            self._populate_exit_span_data(span, data)
+        elif span.operation_name in self.local_spans:
             kind = 3 # intermediate span
+            self._populate_local_span_data(span, data)
 
-        logs = self.collect_logs(span)
-        if len(logs) > 0:
-            if data.custom is None:
-                data.custom = CustomData()
-            data.custom.logs = logs
+        if data.rabbitmq and data.rabbitmq.sort == 'consume':
+            kind = 1  # entry
 
         if span.operation_name in self.http_spans:
-            data.http = HttpData(host=span.tags.pop("http.host", None),
-                                 url=span.tags.pop(ext.HTTP_URL, None),
-                                 path=span.tags.pop("http.path", None),
-                                 params=span.tags.pop('http.params', None),
-                                 method=span.tags.pop(ext.HTTP_METHOD, None),
-                                 status=span.tags.pop(ext.HTTP_STATUS_CODE, None),
-                                 path_tpl=span.tags.pop("http.path_tpl", None),
-                                 error=span.tags.pop('http.error', None))
+            data.http = HttpData(span)
 
+        return JsonSpan(span, kind, data, instana.singletons.agent)
+
+    def _populate_entry_span_data(self, span, data):
+        if span.operation_name == "rpc-server":
+            data.rpc = RPCData(span)
+        elif span.operation_name == "aws.lambda.entry":
+            data.aws_lambda = AWSLambdaData(span)
+        else:
+            logger.debug("SpanRecorder: Unknown entry span: %s" % span.operation_name)
+
+    def _populate_local_span_data(self, span, data):
+        if span.operation_name == "render":
+            data.render = RenderData(span)
+            data.log = LogData(span)
+        else:
+            logger.debug("SpanRecorder: Unknown local span: %s" % span.operation_name)
+
+    def _populate_exit_span_data(self, span, data):
         if span.operation_name == "rabbitmq":
-            data.rabbitmq = RabbitmqData(exchange=span.tags.pop('exchange', None),
-                                         queue=span.tags.pop('queue', None),
-                                         sort=span.tags.pop('sort', None),
-                                         address=span.tags.pop('address', None),
-                                         key=span.tags.pop('key', None))
-            if data.rabbitmq.sort == 'consume':
-                kind = 1 # entry
+            data.rabbitmq = RabbitmqData(span)
 
         elif span.operation_name == "cassandra":
-            data.cassandra = CassandraData(cluster=span.tags.pop('cassandra.cluster', None),
-                                           query=span.tags.pop('cassandra.query', None),
-                                           keyspace=span.tags.pop('cassandra.keyspace', None),
-                                           fetchSize=span.tags.pop('cassandra.fetchSize', None),
-                                           achievedConsistency=span.tags.pop('cassandra.achievedConsistency', None),
-                                           triedHosts=span.tags.pop('cassandra.triedHosts', None),
-                                           fullyFetched=span.tags.pop('cassandra.fullyFetched', None),
-                                           error=span.tags.pop('cassandra.error', None))
+            data.cassandra = CassandraData(span)
 
         elif span.operation_name == "couchbase":
-            data.couchbase = CouchbaseData(hostname=span.tags.pop('couchbase.hostname', None),
-                                           bucket=span.tags.pop('couchbase.bucket', None),
-                                           type=span.tags.pop('couchbase.type', None),
-                                           error=span.tags.pop('couchbase.error', None),
-                                           error_type=span.tags.pop('couchbase.error_type', None),
-                                           sql=span.tags.pop('couchbase.sql', None))
+            data.couchbase = CouchbaseData(span)
 
         elif span.operation_name == "redis":
-            data.redis = RedisData(connection=span.tags.pop('connection', None),
-                                   driver=span.tags.pop('driver', None),
-                                   command=span.tags.pop('command', None),
-                                   error=span.tags.pop('redis.error', None),
-                                   subCommands=span.tags.pop('subCommands', None))
+            data.redis = RedisData(span)
 
-        elif span.operation_name == "rpc-client" or span.operation_name == "rpc-server":
-            data.rpc = RPCData(flavor=span.tags.pop('rpc.flavor', None),
-                               host=span.tags.pop('rpc.host', None),
-                               port=span.tags.pop('rpc.port', None),
-                               call=span.tags.pop('rpc.call', None),
-                               call_type=span.tags.pop('rpc.call_type', None),
-                               params=span.tags.pop('rpc.params', None),
-                               baggage=span.tags.pop('rpc.baggage', None),
-                               error=span.tags.pop('rpc.error', None))
-
-        elif span.operation_name == "render":
-            data.render = RenderData(name=span.tags.pop('name', None),
-                                     type=span.tags.pop('type', None))
-            data.log = LogData(message=span.tags.pop('message', None),
-                               parameters=span.tags.pop('parameters', None))
+        elif span.operation_name == "rpc-client":
+            data.rpc = RPCData(span)
 
         elif span.operation_name == "sqlalchemy":
-            data.sqlalchemy = SQLAlchemyData(sql=span.tags.pop('sqlalchemy.sql', None),
-                                             eng=span.tags.pop('sqlalchemy.eng', None),
-                                             url=span.tags.pop('sqlalchemy.url', None),
-                                             err=span.tags.pop('sqlalchemy.err', None))
+            data.sqlalchemy = SQLAlchemyData(span)
 
         elif span.operation_name == "soap":
-            data.soap = SoapData(action=span.tags.pop('soap.action', None))
+            data.soap = SoapData(span)
 
         elif span.operation_name == "mysql":
-            data.mysql = MySQLData(host=span.tags.pop('host', None),
-                                   port=span.tags.pop('port', None),
-                                   db=span.tags.pop(ext.DATABASE_INSTANCE, None),
-                                   user=span.tags.pop(ext.DATABASE_USER, None),
-                                   stmt=span.tags.pop(ext.DATABASE_STATEMENT, None))
+            data.mysql = MySQLData(span)
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.mysql.error = data.custom.logs[tskey]['message']
 
         elif span.operation_name == "postgres":
-            data.pg = PostgresData(host=span.tags.pop('host', None),
-                                   port=span.tags.pop('port', None),
-                                   db=span.tags.pop(ext.DATABASE_INSTANCE, None),
-                                   user=span.tags.pop(ext.DATABASE_USER, None),
-                                   stmt=span.tags.pop(ext.DATABASE_STATEMENT, None),
-                                   error=span.tags.pop('pg.error', None))
+            data.pg = PostgresData(span)
             if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
                 tskey = list(data.custom.logs.keys())[0]
                 data.pg.error = data.custom.logs[tskey]['message']
 
         elif span.operation_name == "mongo":
-            service = "%s:%s" % (span.tags.pop('host', None), span.tags.pop('port', None))
-            namespace = "%s.%s" % (span.tags.pop('db', "?"), span.tags.pop('collection', "?"))
-            data.mongo = MongoDBData(service=service,
-                                     namespace=namespace,
-                                     command=span.tags.pop('command', None),
-                                     filter=span.tags.pop('filter', None),
-                                     json=span.tags.pop('json', None),
-                                     error=span.tags.pop('command', None))
+            data.mongo = MongoDBData(span)
 
         elif span.operation_name == "log":
             data.log = {}
@@ -257,42 +214,14 @@ class InstanaRecorder(SpanRecorder):
                     data.log["message"] = l.key_values.pop("message", None)
                 if "parameters" in l.key_values:
                     data.log["parameters"] = l.key_values.pop("parameters", None)
-
-        entity_from = {'e': instana.singletons.agent.announce_data.pid,
-                       'h': instana.singletons.agent.announce_data.agentUuid}
-
-        json_span = JsonSpan(n=span.operation_name,
-                             k=kind,
-                             t=span.context.trace_id,
-                             p=span.parent_id,
-                             s=span.context.span_id,
-                             ts=int(round(span.start_time * 1000)),
-                             d=int(round(span.duration * 1000)),
-                             f=entity_from,
-                             data=data)
-
-        if span.stack:
-            json_span.stack = span.stack
-
-        error = span.tags.pop("error", False)
-        ec = span.tags.pop("ec", None)
-
-        if error and ec:
-            json_span.error = error
-            json_span.ec = ec
-
-        if len(span.tags) > 0:
-            if data.custom is None:
-                data.custom = CustomData()
-            data.custom.tags = span.tags
-
-        return json_span
+        else:
+            logger.debug("SpanRecorder: Unknown exit span: %s" % span.operation_name)
 
     def build_sdk_span(self, span):
         """ Takes a BasicSpan and converts into an SDK type JsonSpan """
 
         custom_data = CustomData(tags=span.tags,
-                                 logs=self.collect_logs(span))
+                                 logs=span.collect_logs())
 
         sdk_data = SDKData(name=span.operation_name,
                            custom=custom_data,
@@ -304,28 +233,8 @@ class InstanaRecorder(SpanRecorder):
         if "return" in span.tags:
             sdk_data.Return = span.tags["return"]
 
-        data = Data(service=instana.singletons.agent.sensor.options.service_name, sdk=sdk_data)
-        entity_from = {'e': instana.singletons.agent.announce_data.pid,
-                       'h': instana.singletons.agent.announce_data.agentUuid}
-
-        json_span = JsonSpan(t=span.context.trace_id,
-                             p=span.parent_id,
-                             s=span.context.span_id,
-                             ts=int(round(span.start_time * 1000)),
-                             d=int(round(span.duration * 1000)),
-                             k=self.get_span_kind_as_int(span),
-                             n="sdk",
-                             f=entity_from,
-                             data=data)
-
-        error = span.tags.pop("error", False)
-        ec = span.tags.pop("ec", None)
-
-        if error and ec:
-            json_span.error = error
-            json_span.ec = ec
-
-        return json_span
+        data = Data(service=instana.singletons.agent.options.service_name, sdk=sdk_data)
+        return JsonSpan(span, self.get_span_kind_as_int(span), data, instana.singletons.agent)
 
     def get_span_kind_as_string(self, span):
         """
@@ -363,30 +272,7 @@ class InstanaRecorder(SpanRecorder):
                 kind = 3
         return kind
 
-    def collect_logs(self, span):
-        """
-            Collect up log data and feed it to the Instana brain.
-
-        :param span: The span to search for logs in
-        :return: Logs ready for consumption by the Instana brain.
-        """
-        logs = {}
-        for log in span.logs:
-            ts = int(round(log.timestamp * 1000))
-            if ts not in logs:
-                logs[ts] = {}
-
-            if 'message' in log.key_values:
-                logs[ts]['message'] = log.key_values['message']
-            if 'event' in log.key_values:
-                logs[ts]['event'] = log.key_values['event']
-            if 'parameters' in log.key_values:
-                logs[ts]['parameters'] = log.key_values['parameters']
-
-        return logs
-
 
 class InstanaSampler(Sampler):
-
     def sampled(self, _):
         return False

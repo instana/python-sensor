@@ -212,7 +212,7 @@ class Meter(object):
                 md = copy.deepcopy(cm).delta_data(self.last_metrics)
 
             ed = EntityData(pid=self.agent.announce_data.pid, snapshot=ss, metrics=md)
-            response = self.agent.report_data(ed)
+            response = self.agent.report_data_payload(ed)
 
             if response:
                 if response.status_code == 200 and len(response.content) > 2:

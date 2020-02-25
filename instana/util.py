@@ -6,6 +6,8 @@ import sys
 import time
 
 import pkg_resources
+from collections import defaultdict
+
 
 try:
     from urllib import parse
@@ -25,6 +27,16 @@ _rnd = random.Random()
 _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
+
+
+# Simple implementation of a nested dictionary.
+#
+# Same as:
+#   stan_dictionary = lambda: defaultdict(stan_dictionary)
+# but we use the function form because of PEP 8
+#
+def stan_dictionary():
+    return defaultdict(stan_dictionary)
 
 
 def generate_id():

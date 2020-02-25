@@ -1,3 +1,4 @@
+import os
 import sys
 import opentracing
 
@@ -5,9 +6,19 @@ from .agent import StandardAgent, AWSLambdaAgent
 from .tracer import InstanaTracer, InstanaRecorder
 
 
-# The Instana Agent which carries along with it a Sensor that collects metrics.
-agent = StandardAgent()
+def get_appropriate_agent():
+    if os.environ.get("INSTANA_ENDPOINT_URL", False):
+        print("Lambda environment")
+        return AWSLambdaAgent()
+    else:
+        print("Standard host environment")
+        return StandardAgent()
 
+def get_agent_instance():
+    global agent
+    return agent
+
+agent = get_appropriate_agent()
 
 span_recorder = InstanaRecorder()
 

@@ -45,6 +45,21 @@ def load(_):
     if "INSTANA_DEBUG" in os.environ:
         print("Instana: activated via AUTOWRAPT_BOOTSTRAP")
 
+    if "INSTANA_ENDPOINT_URL" in os.environ:
+        print("load: detected lambda environment")
+
+
+def lambda_handler(event, context):
+    print("Instana Python lives!")
+    print("Attempting import of default handler")
+    try:
+        from lambda_function import lambda_handler as original_lambda_handler
+    except ImportError:
+        print("couldn't import default lambda handler")
+    else:
+        print("found default lambda handler!")
+        original_lambda_handler(event, context)
+
 
 def boot_agent():
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
@@ -56,6 +71,8 @@ def boot_agent():
     # Instrumentation
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
+        from .instrumentation import aws_lambda
+
         if sys.version_info >= (3, 5, 3):
             from .instrumentation import asyncio
             from .instrumentation.aiohttp import client

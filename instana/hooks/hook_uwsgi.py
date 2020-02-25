@@ -33,6 +33,6 @@ try:
         logger.debug("Applied uWSGI hooks")
     else:
         logger.debug("uWSGI --master=%s --lazy-apps=%s: postfork hooks not applied", opt_master, opt_lazy_apps)
-except ImportError as e:
-    logger.debug('uwsgi hooks: decorators not available: %s', e)
+except ImportError:
+    logger.debug('uwsgi hooks: decorators not available: likely not running under uWSGI')
     pass

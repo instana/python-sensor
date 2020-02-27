@@ -3,24 +3,22 @@ import sys
 import opentracing
 
 from .agent import StandardAgent, AWSLambdaAgent
-from .tracer import InstanaTracer, InstanaRecorder
+from .tracer import InstanaTracer
+from .recorder import InstanaRecorder, AWSLambdaRecorder
 
 
-def get_appropriate_agent():
-    if os.environ.get("INSTANA_ENDPOINT_URL", False):
-        print("Lambda environment")
-        return AWSLambdaAgent()
-    else:
-        print("Standard host environment")
-        return StandardAgent()
+agent = None
+span_recorder = None
 
-def get_agent_instance():
-    global agent
-    return agent
+if os.environ.get("INSTANA_ENDPOINT_URL", False):
+    print("Lambda environment")
+    agent = AWSLambdaAgent()
+    span_recorder = AWSLambdaRecorder(agent)
+else:
+    print("Standard host environment")
+    agent = StandardAgent()
+    span_recorder = InstanaRecorder()
 
-agent = get_appropriate_agent()
-
-span_recorder = InstanaRecorder()
 
 # The global OpenTracing compatible tracer used internally by
 # this package.

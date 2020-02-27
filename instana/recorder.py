@@ -8,7 +8,7 @@ from .log import logger
 from .util import every
 import instana.singletons
 
-from basictracer import Sampler, SpanRecorder
+from basictracer import Sampler
 
 from .json_span import (AWSLambdaData, CassandraData, CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData,
                         MongoDBData, MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
@@ -20,7 +20,7 @@ else:
     import queue
 
 
-class InstanaRecorder(SpanRecorder):
+class InstanaRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
     registered_spans = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra", "couchbase",
                         "django", "log","memcache", "mongo", "mysql", "postgres", "rabbitmq", "redis", "render",
@@ -45,7 +45,6 @@ class InstanaRecorder(SpanRecorder):
     thread = None
 
     def __init__(self):
-        super(InstanaRecorder, self).__init__()
         self.queue = queue.Queue()
 
     def start(self):
@@ -126,7 +125,7 @@ class InstanaRecorder(SpanRecorder):
             else:
                 json_span = self.build_sdk_span(span)
 
-            logger.debug("Recorded span: %s", json_span)
+            # logger.debug("Recorded span: %s", json_span)
 
             self.queue.put(json_span)
 
@@ -148,13 +147,12 @@ class InstanaRecorder(SpanRecorder):
         if data.rabbitmq and data.rabbitmq.sort == 'consume':
             kind = 1  # entry
 
-        if span.operation_name in self.http_spans:
-            data.http = HttpData(span)
-
         return JsonSpan(span, kind, data, instana.singletons.agent)
 
     def _populate_entry_span_data(self, span, data):
-        if span.operation_name == "rpc-server":
+        if span.operation_name in self.http_spans:
+            data.http = HttpData(span)
+        elif span.operation_name == "rpc-server":
             data.rpc = RPCData(span)
         elif span.operation_name == "aws.lambda.entry":
             data.aws_lambda = AWSLambdaData(span)
@@ -169,7 +167,10 @@ class InstanaRecorder(SpanRecorder):
             logger.debug("SpanRecorder: Unknown local span: %s" % span.operation_name)
 
     def _populate_exit_span_data(self, span, data):
-        if span.operation_name == "rabbitmq":
+        if span.operation_name in self.http_spans:
+            data.http = HttpData(span)
+
+        elif span.operation_name == "rabbitmq":
             data.rabbitmq = RabbitmqData(span)
 
         elif span.operation_name == "cassandra":
@@ -271,6 +272,27 @@ class InstanaRecorder(SpanRecorder):
             else:
                 kind = 3
         return kind
+
+
+class AWSLambdaRecorder(InstanaRecorder):
+    def __init__(self, agent):
+        self.agent = agent
+        super(AWSLambdaRecorder, self).__init__()
+
+    def record_span(self, span):
+        """
+        Convert the passed BasicSpan into an JsonSpan and
+        add it to the span queue
+        """
+        json_span = None
+
+        if span.operation_name in self.registered_spans:
+            json_span = self.build_registered_span(span)
+        else:
+            json_span = self.build_sdk_span(span)
+
+        logger.debug("Recorded span: %s", json_span)
+        self.agent.collector.span_queue.put(json_span)
 
 
 class InstanaSampler(Sampler):

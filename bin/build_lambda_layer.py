@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import glob
 import shutil
 import time
 import distutils.spawn

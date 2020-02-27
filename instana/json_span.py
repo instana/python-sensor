@@ -4,7 +4,7 @@ import opentracing.ext.tags as ot_tags
 
 class BaseSpan(object):
     def __str__(self):
-        return self.__class__.__str__() + ": " + self.__dict__.__str__()
+        return "BaseSpan(%s)" % self.__dict__.__str__()
 
     def __repr__(self):
         return self.__dict__.__str__()
@@ -113,11 +113,11 @@ class SDKData(BaseSpan):
 
 class AWSLambdaData(BaseSpan):
     def __init__(self, span, **kwargs):
-        self.arn = ""
+        self.arn = span.tags.pop('lambda.arn', "Unknown")
         self.alias = None
-        self.runtime = "py"
-        self.functionName = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", "Unknown")
-        self.functionVersion = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION", "0")
+        self.runtime = "python"
+        self.functionName = span.tags.pop('lambda.name', "Unknown")
+        self.functionVersion = span.tags.pop('lambda.version', "Unknown")
         self.error = ""
         super(AWSLambdaData, self).__init__(**kwargs)
 

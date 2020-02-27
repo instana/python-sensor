@@ -147,7 +147,11 @@ class StandardAgent(BaseAgent):
         self.announce_data = AnnounceData(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
     def get_from_structure(self):
-        return {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+        if os.environ.get("INSTANA_TEST", False):
+            fs = {'e': os.getpid(), 'h': 'fake'}
+        else:
+            fs = {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+        return fs
 
     def is_agent_listening(self, host, port):
         """
@@ -318,32 +322,19 @@ class StandardAgent(BaseAgent):
 
 
 class AWSLambdaAgent(BaseAgent):
-    from_ = None
-    options = None
-    meter = None
-    collector = None
-    report_headers = dict()
-
-    _can_send = False
-
-    AGENT_DATA_PATH = "com.instana.plugin.python.%d"
-    AGENT_HEADER = "Instana Agent"
+    # AGENT_DATA_PATH = "com.instana.plugin.python.%d"
+    # AGENT_HEADER = "Instana Agent"
 
     def __init__(self):
         super(AWSLambdaAgent, self).__init__()
 
         self.from_ = AWSLambdaFrom()
         self.options = AWSLambdaOptions()
+        self.report_headers = None
+        self._can_send = False
 
         if self._validate_options():
             self._can_send = True
-
-            # Prepare request headers
-            self.report_headers["Content-Type"] = "application/json"
-            self.report_headers["X-Instana-Host"] = "ARN"
-            self.report_headers["X-Instana-Key"] = self.options.agent_key
-            self.report_headers["X-Instana-Time"] = int(round(time.time() * 1000))
-
             self.collector = Collector(self)
             self.collector.start()
         else:
@@ -354,7 +345,7 @@ class AWSLambdaAgent(BaseAgent):
         return self._can_send
 
     def get_from_structure(self):
-        return {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+        return {'hl': True, 'cp': 'aws', 'e': self.collector.context.invoked_function_arn}
 
     def report_data_payload(self, payload):
         """
@@ -362,6 +353,18 @@ class AWSLambdaAgent(BaseAgent):
         """
         response = None
         try:
+            logger.debug("report_data_payload entry: %s" % self.__data_bundle_url())
+
+            if self.report_headers is None:
+                # Prepare request headers
+                self.report_headers = dict()
+                self.report_headers["Content-Type"] = "application/json"
+                self.report_headers["X-Instana-Host"] = self.collector.context.invoked_function_arn
+                self.report_headers["X-Instana-Key"] = self.options.agent_key
+                self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
+
+            logger.debug("using these headers: %s" % self.report_headers)
+
             response = self.client.post(self.__data_bundle_url(),
                                         data=to_json(payload),
                                         headers=self.report_headers,
@@ -371,6 +374,8 @@ class AWSLambdaAgent(BaseAgent):
         except (requests.ConnectTimeout, requests.ConnectionError):
             logger.debug("report_traces: Instana host agent connection error")
             # FIXME: Larger exception capture space
+        except:
+            logger.debug("report_data_payload: ", exc_info=True)
         finally:
             return response
 

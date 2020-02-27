@@ -79,7 +79,6 @@ class TestOTSpan:
         assert sdk_span.ts > 0
         assert sdk_span.d
         assert sdk_span.d > 0
-        assert_equals("py", sdk_span.ta)
 
         assert sdk_span.data
         assert sdk_span.data.sdk

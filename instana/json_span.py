@@ -187,6 +187,7 @@ class MongoDBData(BaseSpan):
 class MySQLData(BaseSpan):
     def __init__(self, span, **kwargs):
         self.host = span.tags.pop('host', None)
+        self.port = span.tags.pop('port', None)
         self.db = span.tags.pop(ot_tags.DATABASE_INSTANCE, None)
         self.user = span.tags.pop(ot_tags.DATABASE_USER, None)
         self.stmt = span.tags.pop(ot_tags.DATABASE_STATEMENT, None)
@@ -197,6 +198,7 @@ class MySQLData(BaseSpan):
 class PostgresData(BaseSpan):
     def __init__(self, span, **kwargs):
         self.host = span.tags.pop('host', None)
+        self.port = span.tags.pop('port', None)
         self.db = span.tags.pop(ot_tags.DATABASE_INSTANCE, None)
         self.user = span.tags.pop(ot_tags.DATABASE_USER, None)
         self.stmt = span.tags.pop(ot_tags.DATABASE_STATEMENT, None)

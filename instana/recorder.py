@@ -152,14 +152,14 @@ class InstanaRecorder(object):
     def _populate_entry_span_data(self, span, data):
         if span.operation_name in self.http_spans:
             data.http = HttpData(span)
+            if span.operation_name == "soap":
+                data.soap = SoapData(span)
         elif span.operation_name == "aws.lambda.entry":
             data.aws_lambda = AWSLambdaData(span)
         elif span.operation_name == "rabbitmq":
             data.rabbitmq = RabbitmqData(span)
         elif span.operation_name == "rpc-server":
             data.rpc = RPCData(span)
-        elif span.operation_name == "soap":
-            data.soap = SoapData(span)
         else:
             logger.debug("SpanRecorder: Unknown entry span: %s" % span.operation_name)
 
@@ -173,6 +173,8 @@ class InstanaRecorder(object):
     def _populate_exit_span_data(self, span, data):
         if span.operation_name in self.http_spans:
             data.http = HttpData(span)
+            if span.operation_name == "soap":
+                data.soap = SoapData(span)
 
         elif span.operation_name == "rabbitmq":
             data.rabbitmq = RabbitmqData(span)
@@ -191,9 +193,6 @@ class InstanaRecorder(object):
 
         elif span.operation_name == "sqlalchemy":
             data.sqlalchemy = SQLAlchemyData(span)
-
-        elif span.operation_name == "soap":
-            data.soap = SoapData(span)
 
         elif span.operation_name == "mysql":
             data.mysql = MySQLData(span)

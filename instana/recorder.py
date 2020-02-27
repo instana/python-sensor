@@ -152,10 +152,14 @@ class InstanaRecorder(object):
     def _populate_entry_span_data(self, span, data):
         if span.operation_name in self.http_spans:
             data.http = HttpData(span)
-        elif span.operation_name == "rpc-server":
-            data.rpc = RPCData(span)
         elif span.operation_name == "aws.lambda.entry":
             data.aws_lambda = AWSLambdaData(span)
+        elif span.operation_name == "rabbitmq":
+            data.rabbitmq = RabbitmqData(span)
+        elif span.operation_name == "rpc-server":
+            data.rpc = RPCData(span)
+        elif span.operation_name == "soap":
+            data.soap = SoapData(span)
         else:
             logger.debug("SpanRecorder: Unknown entry span: %s" % span.operation_name)
 

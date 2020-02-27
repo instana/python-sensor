@@ -20,11 +20,10 @@ class JsonSpan(BaseSpan):
         self.p = span.parent_id
         self.s = span.context.span_id
         self.ts = int(round(span.start_time * 1000))
-        self.ta = "py"
         self.d = int(round(span.duration * 1000))
         self.f = agent.get_from_structure()
         self.ec = span.tags.pop("ec", None)
-        self.error = span.tags.pop("error", False)
+        self.error = span.tags.pop("error", None)
 
         if data.sdk:
             self.n = "sdk"
@@ -191,6 +190,7 @@ class MySQLData(BaseSpan):
         self.db = span.tags.pop(ot_tags.DATABASE_INSTANCE, None)
         self.user = span.tags.pop(ot_tags.DATABASE_USER, None)
         self.stmt = span.tags.pop(ot_tags.DATABASE_STATEMENT, None)
+        self.error = span.tags.pop('error', None)
         super(MySQLData, self).__init__(**kwargs)
 
 

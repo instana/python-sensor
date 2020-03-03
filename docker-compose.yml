@@ -40,6 +40,12 @@ services:
       - ./bin:/nodejs-collector-bin
 #    command: ["/nodejs-collector-bin/wait-for-it.sh", "-s", "-t", "120", "zookeeper:2181", "--", "start-kafka.sh"]
 
+  cassandra:
+    image: cassandra:3.11.5
+    ports:
+      - 9042:9042
+
+
   couchbase:
     image: couchbase
     ports:

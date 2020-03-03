@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import asyncio
 import aiohttp
 import unittest
+import time
 
 import tornado
 from tornado.httpclient import AsyncHTTPClient
@@ -112,6 +113,7 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 

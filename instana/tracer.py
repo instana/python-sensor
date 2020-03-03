@@ -15,6 +15,7 @@ from .span_context import InstanaSpanContext
 from .recorder import InstanaRecorder, InstanaSampler
 from .span import InstanaSpan
 from .util import generate_id
+from .json_span import RegisteredSpan
 
 
 class InstanaTracer(BasicTracer):
@@ -102,10 +103,10 @@ class InstanaTracer(BasicTracer):
                            tags=tags,
                            start_time=start_time)
 
-        if operation_name in self.recorder.exit_spans:
+        if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span)
 
-        elif operation_name in self.recorder.entry_spans:
+        elif operation_name in RegisteredSpan.ENTRY_SPANS:
             # For entry spans, add only a backtrace fingerprint
             self.__add_stack(span, limit=2)
 

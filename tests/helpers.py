@@ -56,6 +56,7 @@ testenv['mongodb_port'] = os.environ.get('MONGO_PORT', '27017')
 testenv['mongodb_user'] = os.environ.get('MONGO_USER', None)
 testenv['mongodb_pw'] = os.environ.get('MONGO_PW', None)
 
+
 def get_first_span_by_name(spans, name):
     for span in spans:
         if span.n == name:

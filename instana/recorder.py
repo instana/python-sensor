@@ -10,9 +10,7 @@ import instana.singletons
 
 from basictracer import Sampler
 
-from .json_span import (AWSLambdaData, CassandraData, CouchbaseData, CustomData, Data, HttpData, JsonSpan, LogData,
-                        MongoDBData, MySQLData, PostgresData, RabbitmqData, RedisData, RenderData,
-                        RPCData, SDKData, SoapData, SQLAlchemyData)
+from .json_span import (RegisteredSpan, SDKSpan)
 
 if sys.version_info.major == 2:
     import Queue as queue
@@ -22,24 +20,11 @@ else:
 
 class InstanaRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
-    registered_spans = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra", "couchbase",
-                        "django", "log","memcache", "mongo", "mysql", "postgres", "rabbitmq", "redis", "render",
+
+    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra", "couchbase",
+                        "django", "log","memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis", "render",
                         "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
                         "urllib3", "wsgi")
-
-    http_spans = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
-                  "tornado-server", "urllib3", "wsgi")
-
-    exit_spans = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mongo", "mysql", "postgres",
-                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3",
-                  "pymongo")
-
-    entry_spans = ("aiohttp-server", "aws.lambda.entry", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
-
-    local_spans = ("render")
-
-    entry_kind = ["entry", "server", "consumer"]
-    exit_kind = ["exit", "client", "producer"]
 
     # Recorder thread for collection/reporting of spans
     thread = None
@@ -114,167 +99,18 @@ class InstanaRecorder(object):
 
     def record_span(self, span):
         """
-        Convert the passed BasicSpan into an JsonSpan and
-        add it to the span queue
+        Convert the passed BasicSpan into and add it to the span queue
         """
         if instana.singletons.agent.can_send() or "INSTANA_TEST" in os.environ:
-            json_span = None
+            source = instana.singletons.agent.get_from_structure()
 
-            if span.operation_name in self.registered_spans:
-                json_span = self.build_registered_span(span)
+            if span.operation_name in self.REGISTERED_SPANS:
+                json_span = RegisteredSpan(span, source)
             else:
-                json_span = self.build_sdk_span(span)
-
-            # logger.debug("Recorded span: %s", json_span)
+                service_name = instana.singletons.agent.options.service_name
+                json_span = SDKSpan(span, source, service_name)
 
             self.queue.put(json_span)
-
-    def build_registered_span(self, span):
-        """ Takes a BasicSpan and converts it into a registered JsonSpan """
-        data = Data()
-
-        kind = 1
-        if span.operation_name in self.entry_spans:
-            # entry
-            self._populate_entry_span_data(span, data)
-        elif span.operation_name in self.exit_spans:
-            kind = 2 # exit
-            self._populate_exit_span_data(span, data)
-        elif span.operation_name in self.local_spans:
-            kind = 3 # intermediate span
-            self._populate_local_span_data(span, data)
-
-        if data.rabbitmq and data.rabbitmq.sort == 'consume':
-            kind = 1  # entry
-
-        return JsonSpan(span, kind, data, instana.singletons.agent)
-
-    def _populate_entry_span_data(self, span, data):
-        if span.operation_name in self.http_spans:
-            data.http = HttpData(span)
-            if span.operation_name == "soap":
-                data.soap = SoapData(span)
-        elif span.operation_name == "aws.lambda.entry":
-            data.aws_lambda = AWSLambdaData(span)
-        elif span.operation_name == "rabbitmq":
-            data.rabbitmq = RabbitmqData(span)
-        elif span.operation_name == "rpc-server":
-            data.rpc = RPCData(span)
-        else:
-            logger.debug("SpanRecorder: Unknown entry span: %s" % span.operation_name)
-
-    def _populate_local_span_data(self, span, data):
-        if span.operation_name == "render":
-            data.render = RenderData(span)
-            data.log = LogData(span)
-        else:
-            logger.debug("SpanRecorder: Unknown local span: %s" % span.operation_name)
-
-    def _populate_exit_span_data(self, span, data):
-        if span.operation_name in self.http_spans:
-            data.http = HttpData(span)
-            if span.operation_name == "soap":
-                data.soap = SoapData(span)
-
-        elif span.operation_name == "rabbitmq":
-            data.rabbitmq = RabbitmqData(span)
-
-        elif span.operation_name == "cassandra":
-            data.cassandra = CassandraData(span)
-
-        elif span.operation_name == "couchbase":
-            data.couchbase = CouchbaseData(span)
-
-        elif span.operation_name == "redis":
-            data.redis = RedisData(span)
-
-        elif span.operation_name == "rpc-client":
-            data.rpc = RPCData(span)
-
-        elif span.operation_name == "sqlalchemy":
-            data.sqlalchemy = SQLAlchemyData(span)
-
-        elif span.operation_name == "mysql":
-            data.mysql = MySQLData(span)
-            if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
-                tskey = list(data.custom.logs.keys())[0]
-                data.mysql.error = data.custom.logs[tskey]['message']
-
-        elif span.operation_name == "postgres":
-            data.pg = PostgresData(span)
-            if (data.custom is not None) and (data.custom.logs is not None) and len(data.custom.logs):
-                tskey = list(data.custom.logs.keys())[0]
-                data.pg.error = data.custom.logs[tskey]['message']
-
-        elif span.operation_name == "mongo":
-            data.mongo = MongoDBData(span)
-
-        elif span.operation_name == "log":
-            data.log = {}
-            # use last special key values
-            # TODO - logic might need a tweak here
-            for l in span.logs:
-                if "message" in l.key_values:
-                    data.log["message"] = l.key_values.pop("message", None)
-                if "parameters" in l.key_values:
-                    data.log["parameters"] = l.key_values.pop("parameters", None)
-        else:
-            logger.debug("SpanRecorder: Unknown exit span: %s" % span.operation_name)
-
-    def build_sdk_span(self, span):
-        """ Takes a BasicSpan and converts into an SDK type JsonSpan """
-
-        custom_data = CustomData(tags=span.tags,
-                                 logs=span.collect_logs())
-
-        sdk_data = SDKData(name=span.operation_name,
-                           custom=custom_data,
-                           Type=self.get_span_kind_as_string(span))
-
-        if "arguments" in span.tags:
-            sdk_data.arguments = span.tags["arguments"]
-
-        if "return" in span.tags:
-            sdk_data.Return = span.tags["return"]
-
-        data = Data(service=instana.singletons.agent.options.service_name, sdk=sdk_data)
-        return JsonSpan(span, self.get_span_kind_as_int(span), data, instana.singletons.agent)
-
-    def get_span_kind_as_string(self, span):
-        """
-            Will retrieve the `span.kind` tag and return the appropriate string value for the Instana backend or
-            None if the tag is set to something we don't recognize.
-
-        :param span: The span to search for the `span.kind` tag
-        :return: String
-        """
-        kind = None
-        if "span.kind" in span.tags:
-            if span.tags["span.kind"] in self.entry_kind:
-                kind = "entry"
-            elif span.tags["span.kind"] in self.exit_kind:
-                kind = "exit"
-            else:
-                kind = "intermediate"
-        return kind
-
-    def get_span_kind_as_int(self, span):
-        """
-            Will retrieve the `span.kind` tag and return the appropriate integer value for the Instana backend or
-            None if the tag is set to something we don't recognize.
-
-        :param span: The span to search for the `span.kind` tag
-        :return: Integer
-        """
-        kind = None
-        if "span.kind" in span.tags:
-            if span.tags["span.kind"] in self.entry_kind:
-                kind = 1
-            elif span.tags["span.kind"] in self.exit_kind:
-                kind = 2
-            else:
-                kind = 3
-        return kind
 
 
 class AWSLambdaRecorder(InstanaRecorder):
@@ -284,15 +120,15 @@ class AWSLambdaRecorder(InstanaRecorder):
 
     def record_span(self, span):
         """
-        Convert the passed BasicSpan into an JsonSpan and
-        add it to the span queue
+        Convert the passed BasicSpan and add it to the span queue
         """
-        json_span = None
+        source = instana.singletons.agent.get_from_structure()
 
-        if span.operation_name in self.registered_spans:
-            json_span = self.build_registered_span(span)
+        if span.operation_name in self.REGISTERED_SPANS:
+            json_span = RegisteredSpan(span, source)
         else:
-            json_span = self.build_sdk_span(span)
+            service_name = instana.singletons.agent.options.service_name
+            json_span = SDKSpan(span, source, service_name)
 
         logger.debug("Recorded span: %s", json_span)
         self.agent.collector.span_queue.put(json_span)

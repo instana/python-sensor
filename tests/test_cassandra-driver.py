@@ -73,7 +73,7 @@ class TestCassandra(unittest.TestCase):
 
         test_span = get_first_span_by_name(spans, 'sdk')
         self.assertIsNotNone(test_span)
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cspan = get_first_span_by_name(spans, 'cassandra')
         self.assertIsNotNone(cspan)
@@ -107,7 +107,7 @@ class TestCassandra(unittest.TestCase):
 
         test_span = get_first_span_by_name(spans, 'sdk')
         self.assertIsNotNone(test_span)
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cspan = get_first_span_by_name(spans, 'cassandra')
         self.assertIsNotNone(cspan)
@@ -145,7 +145,7 @@ class TestCassandra(unittest.TestCase):
 
         test_span = get_first_span_by_name(spans, 'sdk')
         self.assertIsNotNone(test_span)
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cspan = get_first_span_by_name(spans, 'cassandra')
         self.assertIsNotNone(cspan)
@@ -183,7 +183,7 @@ class TestCassandra(unittest.TestCase):
 
         test_span = get_first_span_by_name(spans, 'sdk')
         self.assertIsNotNone(test_span)
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cspan = get_first_span_by_name(spans, 'cassandra')
         self.assertIsNotNone(cspan)
@@ -222,7 +222,7 @@ class TestCassandra(unittest.TestCase):
 
         test_span = get_first_span_by_name(spans, 'sdk')
         self.assertIsNotNone(test_span)
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cspan = get_first_span_by_name(spans, 'cassandra')
         self.assertIsNotNone(cspan)

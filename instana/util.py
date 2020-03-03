@@ -8,7 +8,6 @@ import time
 import pkg_resources
 from collections import defaultdict
 
-
 try:
     from urllib import parse
 except ImportError:
@@ -16,7 +15,6 @@ except ImportError:
     import urllib
 
 from .log import logger
-
 
 if sys.version_info.major == 2:
     string_types = basestring
@@ -28,15 +26,8 @@ _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
 
-
 # Simple implementation of a nested dictionary.
-#
-# Same as:
-#   stan_dictionary = lambda: defaultdict(stan_dictionary)
-# but we use the function form because of PEP 8
-#
-def stan_dictionary():
-    return defaultdict(stan_dictionary)
+DictionaryOfStan = lambda: defaultdict(DictionaryOfStan)
 
 
 def generate_id():
@@ -327,7 +318,7 @@ def determine_service_name():
     try:
         # Now best effort in naming this process.  No nice package.json like in Node.js
         # so we do best effort detection here.
-        app_name = "python" # the default name
+        app_name = "python"  # the default name
 
         if not hasattr(sys, 'argv'):
             proc_cmdline = get_proc_cmdline(as_string=False)
@@ -383,7 +374,3 @@ def determine_service_name():
     except Exception as e:
         logger.debug("get_application_name: ", exc_info=True)
         return app_name
-
-
-
-

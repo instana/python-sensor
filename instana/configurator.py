@@ -3,10 +3,10 @@ This file contains a config object that will hold configuration options for the 
 Defaults are set and can be overridden after package load.
 """
 from __future__ import absolute_import
-from .util import stan_dictionary
+from .util import DictionaryOfStan
 
 # La Protagonista
-config = stan_dictionary()
+config = DictionaryOfStan()
 
 
 # This option determines if tasks created via asyncio (with ensure_future or create_task) will

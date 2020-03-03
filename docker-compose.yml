@@ -40,19 +40,30 @@ services:
       - ./bin:/nodejs-collector-bin
 #    command: ["/nodejs-collector-bin/wait-for-it.sh", "-s", "-t", "120", "zookeeper:2181", "--", "start-kafka.sh"]
 
-  mysql:
-    image: mysql:8.0.1
+  couchbase:
+    image: couchbase
+    ports:
+      - 8091-8094:8091-8094
+      - 11210:11210
+
+  mariadb:
+    image: mariadb
     ports:
       - 3306:3306
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+      MYSQL_DATABASE: 'circle_test'
+      MYSQL_USER: 'root'
+      MYSQL_PASSWORD: ''
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
       MYSQL_ROOT_PASSWORD: ''
-      MYSQL_DATABASE: circle_test
-      MYSQL_USER: root
-      MYSQL_PASSWORD:
-      MYSQL_ROOT_HOST: '0.0.0.0'
+      MYSQL_ROOT_HOST: '%'
     volumes:
       - ./tests/config/database/mysql/conf.d:/etc/mysql/conf.d
+
+  mongodb:
+    image: 'mongo:3.4.1'
+    ports:
+      - '27017:27017'
 
   postgres:
     image: postgres:10.5
@@ -68,3 +79,6 @@ services:
     ports:
       - 5671:5671
       - 5672:5672
+
+#volumes:
+#  mysql-data:

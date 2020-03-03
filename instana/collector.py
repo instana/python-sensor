@@ -2,7 +2,7 @@ import sys
 import threading
 
 from .log import logger
-from .util import every, to_json, stan_dictionary
+from .util import every, to_json, DictionaryOfStan
 
 
 if sys.version_info.major == 2:
@@ -49,7 +49,7 @@ class Collector(object):
     def prepare_and_report_data(self):
         lock_acquired = self.lock.acquire(False)
         if lock_acquired:
-            payload = stan_dictionary()
+            payload = DictionaryOfStan()
 
             if not self.span_queue.empty():
                 payload["spans"] = self.__queued_spans()
@@ -69,16 +69,15 @@ class Collector(object):
         return True
 
     def collect_snapshot(self, event, context):
-        self.snapshot_data = stan_dictionary()
-        metrics = stan_dictionary()
+        self.snapshot_data = DictionaryOfStan()
+        metrics = DictionaryOfStan()
 
         self.context = context
         self.event = event
 
         try:
-            metrics["name"] = "com.instana.plugin.aws.lambda"
-            metrics["entityId"] = self.context.invoked_function_arn
-            self.snapshot_data["plugins"] = [metrics]
+            self.snapshot_data["plugins"]["name"] = "com.instana.plugin.aws.lambda"
+            self.snapshot_data["plugins"]["entityId"] = self.context.invoked_function_arn
         except:
             logger.debug("collect_snapshot error", exc_info=True)
 

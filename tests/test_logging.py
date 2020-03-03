@@ -31,7 +31,7 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(2, len(spans))
         self.assertEqual(2, spans[0].k)
 
-        self.assertEqual('foo bar', spans[0].data.log.get('message'))
+        self.assertEqual('foo bar', spans[0].data["log"].get('message'))
 
     def test_log_with_tuple(self):
         with tracer.start_active_span('test'):
@@ -41,7 +41,7 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(2, len(spans))
         self.assertEqual(2, spans[0].k)
 
-        self.assertEqual("foo ('bar',)", spans[0].data.log.get('message'))
+        self.assertEqual("foo ('bar',)", spans[0].data["log"].get('message'))
 
     def test_parameters(self):
         with tracer.start_active_span('test'):
@@ -55,5 +55,5 @@ class TestLogging(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        self.assertIsNotNone(spans[0].data.log.get('parameters'))
+        self.assertIsNotNone(spans[0].data["log"].get('parameters'))
 

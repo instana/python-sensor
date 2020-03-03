@@ -52,7 +52,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert ('Server-Timing' in response.headers)
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
-        assert_equals("test", test_span.data.sdk.name)
+        assert_equals("test", test_span.data["sdk"]["name"])
         assert_equals("urllib3", urllib3_span.n)
         assert_equals("django", django_span.n)
 
@@ -65,9 +65,9 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(None, django_span.error)
         assert_equals(None, django_span.ec)
 
-        assert_equals('/', django_span.data.http.url)
-        assert_equals('GET', django_span.data.http.method)
-        assert_equals(200, django_span.data.http.status)
+        assert_equals('/', django_span.data["http"]["url"])
+        assert_equals('GET', django_span.data["http"]["method"])
+        assert_equals(200, django_span.data["http"]["status"])
         assert django_span.stack
         assert_equals(2, len(django_span.stack))
 
@@ -101,7 +101,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert ('Server-Timing' in response.headers)
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
-        assert_equals("test", test_span.data.sdk.name)
+        assert_equals("test", test_span.data["sdk"]["name"])
         assert_equals("urllib3", urllib3_span.n)
         assert_equals("django", django_span.n)
         assert_equals("log", log_span.n)
@@ -117,10 +117,10 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(True, django_span.error)
         assert_equals(1, django_span.ec)
 
-        assert_equals('/cause_error', django_span.data.http.url)
-        assert_equals('GET', django_span.data.http.method)
-        assert_equals(500, django_span.data.http.status)
-        assert_equals('This is a fake error: /cause-error', django_span.data.http.error)
+        assert_equals('/cause_error', django_span.data["http"]["url"])
+        assert_equals('GET', django_span.data["http"]["method"])
+        assert_equals(500, django_span.data["http"]["status"])
+        assert_equals('This is a fake error: /cause-error', django_span.data["http"]["error"])
         assert(django_span.stack)
         assert_equals(2, len(django_span.stack))
 
@@ -154,7 +154,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert ('Server-Timing' in response.headers)
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
-        assert_equals("test", test_span.data.sdk.name)
+        assert_equals("test", test_span.data["sdk"]["name"])
         assert_equals("urllib3", urllib3_span.n)
         assert_equals("django", django_span.n)
         assert_equals("sdk", ot_span1.n)
@@ -175,9 +175,9 @@ class TestDjango(StaticLiveServerTestCase):
         assert(django_span.stack)
         assert_equals(2, len(django_span.stack))
 
-        assert_equals('/complex', django_span.data.http.url)
-        assert_equals('GET', django_span.data.http.method)
-        assert_equals(200, django_span.data.http.status)
+        assert_equals('/complex', django_span.data["http"]["url"])
+        assert_equals('GET', django_span.data["http"]["method"])
+        assert_equals(200, django_span.data["http"]["status"])
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -201,7 +201,7 @@ class TestDjango(StaticLiveServerTestCase):
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        assert_equals("test", test_span.data.sdk.name)
+        assert_equals("test", test_span.data["sdk"]["name"])
         assert_equals("urllib3", urllib3_span.n)
         assert_equals("django", django_span.n)
 
@@ -216,14 +216,14 @@ class TestDjango(StaticLiveServerTestCase):
         assert(django_span.stack)
         assert_equals(2, len(django_span.stack))
 
-        assert_equals('/', django_span.data.http.url)
-        assert_equals('GET', django_span.data.http.method)
-        assert_equals(200, django_span.data.http.status)
+        assert_equals('/', django_span.data["http"]["url"])
+        assert_equals('GET', django_span.data["http"]["method"])
+        assert_equals(200, django_span.data["http"]["status"])
 
-        assert_equals(True, "http.X-Capture-This" in django_span.data.custom.__dict__['tags'])
-        assert_equals("this", django_span.data.custom.__dict__['tags']["http.X-Capture-This"])
-        assert_equals(True, "http.X-Capture-That" in django_span.data.custom.__dict__['tags'])
-        assert_equals("that", django_span.data.custom.__dict__['tags']["http.X-Capture-That"])
+        assert_equals(True, "http.X-Capture-This" in django_span.data["custom"]['tags'])
+        assert_equals("this", django_span.data["custom"]['tags']["http.X-Capture-This"])
+        assert_equals(True, "http.X-Capture-That" in django_span.data["custom"]['tags'])
+        assert_equals("that", django_span.data["custom"]['tags']["http.X-Capture-That"])
 
     def test_with_incoming_context(self):
         request_headers = dict()

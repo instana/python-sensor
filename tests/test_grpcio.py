@@ -89,26 +89,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/OneQuestionOneResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/OneQuestionOneResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'unary')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'unary')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_streaming_many_to_one(self):
 
@@ -153,26 +153,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/ManyQuestionsOneResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/ManyQuestionsOneResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'stream')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'stream')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_streaming_one_to_many(self):
 
@@ -220,26 +220,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/OneQuestionManyResponses')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionManyResponses')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/OneQuestionManyResponses')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'stream')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/OneQuestionManyResponses')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'stream')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_streaming_many_to_many(self):
         with tracer.start_active_span('test'):
@@ -286,26 +286,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/ManyQuestionsManyReponses')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsManyReponses')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/ManyQuestionsManyReponses')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'stream')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsManyReponses')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'stream')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_unary_one_to_one_with_call(self):
         with tracer.start_active_span('test'):
@@ -348,26 +348,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/OneQuestionOneResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/OneQuestionOneResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'unary')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'unary')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_streaming_many_to_one_with_call(self):
         with tracer.start_active_span('test'):
@@ -411,26 +411,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/ManyQuestionsOneResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/ManyQuestionsOneResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'stream')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'stream')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_async_unary(self):
         def process_response(future):
@@ -478,26 +478,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/OneQuestionOneResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/OneQuestionOneResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'unary')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'unary')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_async_stream(self):
         def process_response(future):
@@ -547,26 +547,26 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/ManyQuestionsOneResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/ManyQuestionsOneResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'stream')
-        self.assertIsNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'stream')
+        self.assertIsNone(client_span.data["rpc"]["error"])
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_server_error(self):
         try:
@@ -613,28 +613,28 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(server_span.k, 1)
         self.assertIsNotNone(server_span.stack)
         self.assertEqual(2, len(server_span.stack))
-        self.assertEqual(server_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(server_span.data.rpc.call, '/stan.Stan/OneQuestionOneErrorResponse')
-        self.assertEqual(server_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(server_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertIsNone(server_span.data.rpc.error)
+        self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneErrorResponse')
+        self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(server_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertIsNone(server_span.data["rpc"]["error"])
 
         # rpc-client
         self.assertEqual(client_span.n, 'rpc-client')
         self.assertEqual(client_span.k, 2)
         self.assertIsNotNone(client_span.stack)
-        self.assertEqual(client_span.data.rpc.flavor, 'grpc')
-        self.assertEqual(client_span.data.rpc.call, '/stan.Stan/OneQuestionOneErrorResponse')
-        self.assertEqual(client_span.data.rpc.host, testenv["grpc_host"])
-        self.assertEqual(client_span.data.rpc.port, str(testenv["grpc_port"]))
-        self.assertEqual(client_span.data.rpc.call_type, 'unary')
-        self.assertIsNotNone(client_span.data.rpc.error)
+        self.assertEqual(client_span.data["rpc"]["flavor"], 'grpc')
+        self.assertEqual(client_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneErrorResponse')
+        self.assertEqual(client_span.data["rpc"]["host"], testenv["grpc_host"])
+        self.assertEqual(client_span.data["rpc"]["port"], str(testenv["grpc_port"]))
+        self.assertEqual(client_span.data["rpc"]["call_type"], 'unary')
+        self.assertIsNotNone(client_span.data["rpc"]["error"])
 
         # log
         self.assertEqual(log_span.n, 'log')
-        self.assertIsNotNone(log_span.data.log)
-        self.assertEqual(log_span.data.log['message'], 'Exception calling application: Simulated error')
+        self.assertIsNotNone(log_span.data["log"])
+        self.assertEqual(log_span.data["log"]['message'], 'Exception calling application: Simulated error')
 
         # test-span
         self.assertEqual(test_span.n, 'sdk')
-        self.assertEqual(test_span.data.sdk.name, 'test')
+        self.assertEqual(test_span.data["sdk"]["name"], 'test')

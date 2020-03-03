@@ -10,6 +10,7 @@ class InstanaSpan(BasicSpan):
 
     def log_exception(self, e):
         try:
+            logger.debug("Logging error for span %s" % self.operation_name)
             message = ""
 
             self.set_tag("error", True)
@@ -23,9 +24,12 @@ class InstanaSpan(BasicSpan):
 
             if self.operation_name in ['rpc-server', 'rpc-client']:
                 self.set_tag('rpc.error', message)
-
-            self.log_kv({'message': message})
-
+            elif self.operation_name == "postgres":
+                self.set_tag('pg.error', message)
+            elif self.operation_name == "mysql":
+                self.set_tag('mysql.error', message)
+            else:
+                self.log_kv({'message': message})
         except Exception:
             logger.debug("span.log_exception", exc_info=True)
             raise

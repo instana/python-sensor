@@ -13,9 +13,8 @@ from .http_propagator import HTTPPropagator
 from .text_propagator import TextPropagator
 from .span_context import InstanaSpanContext
 from .recorder import InstanaRecorder, InstanaSampler
-from .span import InstanaSpan
+from .span import InstanaSpan, RegisteredSpan
 from .util import generate_id
-from .json_span import RegisteredSpan
 
 
 class InstanaTracer(BasicTracer):

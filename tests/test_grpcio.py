@@ -587,6 +587,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
+        import ipdb;
+        ipdb.set_trace()
+
         assert(log_span)
         assert(server_span)
         assert(client_span)

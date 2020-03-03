@@ -7,10 +7,8 @@ import threading
 from .log import logger
 from .util import every
 import instana.singletons
-
 from basictracer import Sampler
-
-from .json_span import (RegisteredSpan, SDKSpan)
+from .span import (RegisteredSpan, SDKSpan)
 
 if sys.version_info.major == 2:
     import Queue as queue
@@ -74,7 +72,8 @@ class InstanaRecorder(object):
                     logger.debug("reported %d spans", queue_size)
             return True
 
-        every(2, span_work, "Span Reporting")
+        if "INSTANA_TEST" not in os.environ:
+            every(2, span_work, "Span Reporting")
 
     def queue_size(self):
         """ Return the size of the queue; how may spans are queued, """

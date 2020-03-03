@@ -83,14 +83,7 @@ class TestSudsJurko:
 
         assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
-        assert('logs' in soap_span.data["custom"])
-        assert_equals(1, len(soap_span.data["custom"]["logs"].keys()))
-
-        tskey = list(soap_span.data["custom"]["logs"].keys())[0]
-        assert('message' in soap_span.data["custom"]["logs"][tskey])
-        assert_equals(u"Server raised fault: 'Internal Error'",
-                      soap_span.data["custom"]["logs"][tskey]['message'])
-
+        assert_equals(u"Server raised fault: 'Internal Error'", soap_span.data["http"]["error"])
         assert_equals('server_exception', soap_span.data["soap"]["action"])
         assert_equals(testenv["soap_server"] + '/', soap_span.data["http"]["url"])
 
@@ -119,14 +112,7 @@ class TestSudsJurko:
 
         assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
-        assert('logs' in soap_span.data["custom"])
-        assert_equals(1, len(soap_span.data["custom"]["logs"].keys()))
-
-        tskey = list(soap_span.data["custom"]["logs"].keys())[0]
-        assert('message' in soap_span.data["custom"]["logs"][tskey])
-        assert_equals(u"Server raised fault: 'Server side fault example.'",
-                      soap_span.data["custom"]["logs"][tskey]['message'])
-
+        assert_equals(u"Server raised fault: 'Server side fault example.'", soap_span.data["http"]["error"])
         assert_equals('server_fault', soap_span.data["soap"]["action"])
         assert_equals(testenv["soap_server"] + '/', soap_span.data["http"]["url"])
 
@@ -156,12 +142,6 @@ class TestSudsJurko:
 
         assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
-        assert('logs' in soap_span.data["custom"])
-
-        tskey = list(soap_span.data["custom"]["logs"].keys())[0]
-        assert('message' in soap_span.data["custom"]["logs"][tskey])
-        assert_equals(u"Server raised fault: 'Client side fault example'",
-                      soap_span.data["custom"]["logs"][tskey]['message'])
-
+        assert_equals(u"Server raised fault: 'Client side fault example'", soap_span.data["http"]["error"])
         assert_equals('client_fault', soap_span.data["soap"]["action"])
         assert_equals(testenv["soap_server"] + '/', soap_span.data["http"]["url"])

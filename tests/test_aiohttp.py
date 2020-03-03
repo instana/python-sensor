@@ -429,7 +429,7 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aiohttp_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
+        self.assertTrue(test_span.error)
         self.assertIsNone(test_span.ec)
         self.assertTrue(aiohttp_span.error)
         self.assertEqual(aiohttp_span.ec, 1)

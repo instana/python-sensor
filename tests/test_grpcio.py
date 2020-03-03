@@ -569,12 +569,12 @@ class TestGRPCIO(unittest.TestCase):
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
     def test_server_error(self):
-        try:
-            response = None
-            with tracer.start_active_span('test'):
+        response = None
+        with tracer.start_active_span('test'):
+            try:
                 response = self.server_stub.OneQuestionOneErrorResponse(stan_pb2.QuestionRequest(question="Do u error?"))
-        except:
-            pass
+            except:
+                pass
 
         self.assertIsNone(tracer.active_span)
         self.assertIsNone(response)
@@ -586,9 +586,6 @@ class TestGRPCIO(unittest.TestCase):
         server_span = get_first_span_by_name(spans, 'rpc-server')
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
-
-        import ipdb;
-        ipdb.set_trace()
 
         assert(log_span)
         assert(server_span)

@@ -18,12 +18,6 @@ if os.environ.get("INSTANA_ENDPOINT_URL", False):
         sys.path.insert(0, '/var/runtime')
         sys.path.insert(0, '/var/task')
 
-        # try:
-        #     import importlib
-        #     module = importlib.import_module(handler_module, package=None)
-        # except ImportError:
-        #     logger.warn("Couldn't do the manual import")
-
         @wrapt.patch_function_wrapper(handler_module, handler_function)
         def lambda_handler_with_instana(wrapped, instance, args, kwargs):
             agent.collector.collect_snapshot(*args)

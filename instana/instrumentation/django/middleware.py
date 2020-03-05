@@ -31,7 +31,7 @@ class InstanaMiddleware(MiddlewareMixin):
             ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
-            if agent.extra_headers is not None:
+            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
                 for custom_header in agent.extra_headers:
                     # Headers are available in this format: HTTP_X_CAPTURE_THIS
                     django_header = ('HTTP_' + custom_header.upper()).replace('-', '_')

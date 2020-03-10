@@ -322,16 +322,18 @@ class StandardAgent(BaseAgent):
 
 
 class AWSLambdaAgent(BaseAgent):
-    # AGENT_DATA_PATH = "com.instana.plugin.python.%d"
-    # AGENT_HEADER = "Instana Agent"
-
     def __init__(self):
         super(AWSLambdaAgent, self).__init__()
 
         self.from_ = AWSLambdaFrom()
+        self.collector = None
         self.options = AWSLambdaOptions()
         self.report_headers = None
         self._can_send = False
+        self.extra_headers = None
+
+        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
+            self.extra_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
 
         if self._validate_options():
             self._can_send = True
@@ -353,8 +355,6 @@ class AWSLambdaAgent(BaseAgent):
         """
         response = None
         try:
-            logger.debug("report_data_payload entry: %s" % self.__data_bundle_url())
-
             if self.report_headers is None:
                 # Prepare request headers
                 self.report_headers = dict()
@@ -372,8 +372,7 @@ class AWSLambdaAgent(BaseAgent):
 
             logger.debug("report_data_payload: response.status_code is %s" % response.status_code)
         except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_traces: Instana host agent connection error")
-            # FIXME: Larger exception capture space
+            logger.debug("report_data_payload: ", exc_info=True)
         except:
             logger.debug("report_data_payload: ", exc_info=True)
         finally:
@@ -383,8 +382,7 @@ class AWSLambdaAgent(BaseAgent):
         """
         Validate that the options used by this Agent are valid.  e.g. can we report data?
         """
-        # TODO: Endpoint and Agent key validation
-        return True
+        return self.options.endpoint_url is not None and self.options.agent_key is not None
 
     def __data_bundle_url(self):
         """

@@ -43,6 +43,11 @@ class AWSLambdaOptions:
             self.debug = True
 
         self.endpoint_url = os.environ.get("INSTANA_ENDPOINT_URL", None)
+
+        # Remove any trailing slash (if any)
+        if self.endpoint_url is not None and self.endpoint_url[-1] == "/":
+            self.endpoint_url = self.endpoint_url[:-1]
+
         self.agent_key = os.environ.get("INSTANA_AGENT_KEY", None)
 
         self.extra_http_headers = os.environ.get("INSTANA_EXTRA_HTTP_HEADERS", None)

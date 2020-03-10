@@ -16,7 +16,7 @@ else:
     import queue
 
 
-class InstanaRecorder(object):
+class StandardRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
     REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra", "couchbase",
@@ -112,7 +112,7 @@ class InstanaRecorder(object):
             self.queue.put(json_span)
 
 
-class AWSLambdaRecorder(InstanaRecorder):
+class AWSLambdaRecorder(StandardRecorder):
     def __init__(self, agent):
         self.agent = agent
         super(AWSLambdaRecorder, self).__init__()
@@ -121,12 +121,12 @@ class AWSLambdaRecorder(InstanaRecorder):
         """
         Convert the passed BasicSpan and add it to the span queue
         """
-        source = instana.singletons.agent.get_from_structure()
+        source = self.agent.get_from_structure()
 
         if span.operation_name in self.REGISTERED_SPANS:
             json_span = RegisteredSpan(span, source)
         else:
-            service_name = instana.singletons.agent.options.service_name
+            service_name = self.agent.options.service_name
             json_span = SDKSpan(span, source, service_name)
 
         logger.debug("Recorded span: %s", json_span)

@@ -1,8 +1,9 @@
+import os
 import sys
 import threading
 
 from .log import logger
-from .util import every, to_json, DictionaryOfStan
+from .util import every, DictionaryOfStan
 
 
 if sys.version_info.major == 2:
@@ -46,20 +47,29 @@ class Collector(object):
             return False
         return self.prepare_and_report_data()
 
+    def prepare_payload(self):
+        payload = DictionaryOfStan()
+        payload["spans"] = None
+        payload["metrics"] = None
+
+        if not self.span_queue.empty():
+            payload["spans"] = self.__queued_spans()
+
+        if self.snapshot_data and self.snapshot_data_sent is False:
+            payload["metrics"] = self.snapshot_data
+            self.snapshot_data_sent = True
+
+        return payload
+
     def prepare_and_report_data(self):
+        if "INSTANA_TEST" in os.environ:
+            return True
+
         lock_acquired = self.lock.acquire(False)
         if lock_acquired:
-            payload = DictionaryOfStan()
-
-            if not self.span_queue.empty():
-                payload["spans"] = self.__queued_spans()
-
-                if self.snapshot_data and self.snapshot_data_sent is False:
-                    payload["metrics"] = self.snapshot_data
-                    self.snapshot_data_sent = True
+            payload = self.prepare_payload()
 
             if len(payload) > 0:
-                logger.debug(to_json(payload))
                 self.agent.report_data_payload(payload)
             else:
                 logger.debug("prepare_and_report_data: No data to report")
@@ -70,7 +80,6 @@ class Collector(object):
 
     def collect_snapshot(self, event, context):
         self.snapshot_data = DictionaryOfStan()
-        metrics = DictionaryOfStan()
 
         self.context = context
         self.event = event
@@ -80,7 +89,8 @@ class Collector(object):
             self.snapshot_data["plugins"]["entityId"] = self.context.invoked_function_arn
         except:
             logger.debug("collect_snapshot error", exc_info=True)
-
+        finally:
+            return self.snapshot_data
 
     def __queued_spans(self):
         """ Get all of the spans in the queue """

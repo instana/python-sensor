@@ -12,7 +12,7 @@ from .binary_propagator import BinaryPropagator
 from .http_propagator import HTTPPropagator
 from .text_propagator import TextPropagator
 from .span_context import InstanaSpanContext
-from .recorder import InstanaRecorder, InstanaSampler
+from .recorder import StandardRecorder, InstanaSampler
 from .span import InstanaSpan, RegisteredSpan
 from .util import generate_id
 
@@ -21,7 +21,7 @@ class InstanaTracer(BasicTracer):
     def __init__(self, scope_manager=None, recorder=None):
 
         if recorder is None:
-            recorder = InstanaRecorder()
+            recorder = StandardRecorder()
 
         super(InstanaTracer, self).__init__(
             recorder, InstanaSampler(), scope_manager)

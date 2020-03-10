@@ -14,7 +14,8 @@ from instana.instrumentation.aws_lambda import lambda_handler_with_instana
 
 # Mock Context object
 class TestContext(dict):
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super(TestContext, self).__init__(**kwargs)
         self.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:1"
         self.function_name = "TestPython"
         self.function_version = "1"
@@ -27,9 +28,11 @@ def test_lambda_handler(event, context):
 
 
 class TestLambda(unittest.TestCase):
-    def setUp(self):
-        """ Clear all spans before a test run """
-        pass
+    def __init__(self, methodName='runTest'):
+        super(TestLambda, self).__init__(methodName)
+        self.agent = None
+        self.span_recorder = None
+        self.tracer = None
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
@@ -105,7 +108,8 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'}, span.f)
+        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
+                         span.f)
 
         self.assertIsNone(span.ec)
         self.assertIsNone(span.error)
@@ -116,9 +120,5 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-
-
-
-
 
 

@@ -21,8 +21,9 @@ from __future__ import absolute_import
 
 import os
 import sys
-from threading import Timer
+import importlib
 import pkg_resources
+from threading import Timer
 
 __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2020 Instana Inc.'
@@ -49,16 +50,52 @@ def load(_):
         print("load: detected lambda environment")
 
 
-def lambda_handler(event, context):
-    print("Instana Python lives!")
-    print("Attempting import of default handler")
+def get_lambda_handler_or_default():
+    """
+    For instrumenting AWS Lambda, users specify their original lambda handler in the LAMBDA_HANDLER environment
+    variable.  This function searches for and parses that environment variable or returns the defaults.
+
+    The default handler value for AWS Lambda is 'lambda_function.lambda_handler' which
+    equates to the function "lambda_handler in a file named "lambda_function.py" or in Python
+    terms "from lambda_function import lambda_handler"
+    """
+    handler_module = "lambda_function"
+    handler_function = "lambda_handler"
+
     try:
-        from lambda_function import lambda_handler as original_lambda_handler
+        handler = os.environ.get("LAMBDA_HANDLER", False)
+
+        if handler:
+            parts = handler.split(".")
+            handler_function = parts.pop()
+            handler_module = ".".join(parts)
+    except:
+        pass
+
+    return handler_module, handler_function
+
+
+def lambda_handler(event, context):
+    """
+    Entry point for AWS Lambda monitoring.
+
+    This function will trigger the initialization of Instana monitoring and then call
+    the original user specified lambda handler function.
+    """
+    module_name, function_name = get_lambda_handler_or_default()
+
+    try:
+        # Import the module specified in module_name
+        handler_module = importlib.import_module(module_name)
     except ImportError:
-        print("couldn't import default lambda handler")
+        print("Couldn't determine and locate default module handler: %s.%s", module_name, function_name)
     else:
-        print("found default lambda handler!")
-        original_lambda_handler(event, context)
+        # Now get the function and execute it
+        if hasattr(handler_module, function_name):
+            handler_function = getattr(handler_module, function_name)
+            return handler_function(event, context)
+        else:
+            print("Couldn't determine and locate default function handler: %s.%s", module_name, function_name)
 
 
 def boot_agent():

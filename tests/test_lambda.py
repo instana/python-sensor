@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 import os
-import wrapt
 import unittest
-from instana.singletons import set_agent, set_tracer
+import wrapt
+from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.tracer import InstanaTracer
 from instana.agent import AWSLambdaAgent
 from instana.recorder import AWSLambdaRecorder
@@ -22,7 +22,7 @@ class TestContext(dict):
 
 
 # This is the target handler that will be instrumented for these tests
-def test_lambda_handler(event, context):
+def my_lambda_handler(event, context):
     print("target_handler called")
     return "All Ok"
 
@@ -34,6 +34,9 @@ class TestLambda(unittest.TestCase):
         self.span_recorder = None
         self.tracer = None
 
+        self.original_agent = get_agent()
+        self.original_tracer = get_tracer()
+
     def tearDown(self):
         """ Reset all environment variables of consequence """
         if "LAMBDA_HANDLER" in os.environ:
@@ -44,6 +47,9 @@ class TestLambda(unittest.TestCase):
             os.environ.pop("INSTANA_ENDPOINT_URL")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
+
+        set_agent(self.original_agent)
+        set_tracer(self.original_tracer)
 
     def create_agent_and_setup_tracer(self):
         self.agent = AWSLambdaAgent()
@@ -73,7 +79,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(should_headers, self.agent.extra_headers)
 
     def test_api_gateway_tracing(self):
-        os.environ["LAMBDA_HANDLER"] = "tests.test_lambda.test_lambda_handler"
+        os.environ["LAMBDA_HANDLER"] = "tests.test_lambda.my_lambda_handler"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
 
@@ -81,7 +87,7 @@ class TestLambda(unittest.TestCase):
 
         module_name, function_name = get_lambda_handler_or_default()
         self.assertEqual("tests.test_lambda", module_name)
-        self.assertEqual("test_lambda_handler", function_name)
+        self.assertEqual("my_lambda_handler", function_name)
 
         wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 
@@ -96,7 +102,8 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
         self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', payload['metrics']['plugins']['entityId'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -120,5 +127,3 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-
-

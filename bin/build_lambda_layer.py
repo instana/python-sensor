@@ -57,18 +57,20 @@ fq_zip_filename = os.getcwd() + '/%s' % zip_filename
 aws_zip_filename = "fileb://%s" % fq_zip_filename
 print("Zipfile should be at: ", fq_zip_filename)
 
-# regions = ['ap-northeast-1', 'ap-northeast-2', 'ap-south-1', 'ap-southeast-1', 'ap-southeast-2', 'ca-central-1',
-#            'eu-central-1', 'eu-north-1', 'eu-west-1', 'eu-west-2', 'eu-west-3', 'sa-east-1', 'us-east-1',
-#            'us-east-2', 'us-west-1', 'us-west-2']
+regions = ['ap-northeast-1', 'ap-northeast-2', 'ap-south-1', 'ap-southeast-1', 'ap-southeast-2', 'ca-central-1',
+           'eu-central-1', 'eu-north-1', 'eu-west-1', 'eu-west-2', 'eu-west-3', 'sa-east-1', 'us-east-1',
+           'us-east-2', 'us-west-1', 'us-west-2']
 
-regions = ['us-west-1']
-# regions = ['us-east-2']
+# regions = ['us-west-1']
 
-LAYER_NAME = "instana-py-test"
+# LAYER_NAME = "instana-py-test"
+LAYER_NAME = "instana-python"
 
 published = dict()
 
 # response = check_output(["aws", "lambda", "list-layers"])
+# To update a Function
+# aws lambda update-function-configuration --function-name CanaryInACoalMine --layers arn:aws:lambda:us-west-1:410797082306:layer:instana-py-test:22
 
 for region in regions:
     print("===> Uploading layer to AWS %s " % region)
@@ -83,13 +85,13 @@ for region in regions:
     version = json_data['Version']
     print("===> Uploaded version is %s" % version)
 
-    # print("===> Making layer public...")
-    # response = check_output(["aws", "--region", region, "lambda", "add-layer-version-permission",
-    #                          "--layer-name", LAYER_NAME, "--version-number", str(version),
-    #                          "--statement-id", "public-permission-all-accounts",
-    #                          "--principal", "*",
-    #                          "--action", "lambda:GetLayerVersion",
-    #                          "--output", "text"])
+    print("===> Making layer public...")
+    response = check_output(["aws", "--region", region, "lambda", "add-layer-version-permission",
+                             "--layer-name", LAYER_NAME, "--version-number", str(version),
+                             "--statement-id", "public-permission-all-accounts",
+                             "--principal", "*",
+                             "--action", "lambda:GetLayerVersion",
+                             "--output", "text"])
 
     published[region] = json_data['LayerVersionArn']
 

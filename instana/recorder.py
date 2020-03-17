@@ -129,7 +129,7 @@ class AWSLambdaRecorder(StandardRecorder):
             service_name = self.agent.options.service_name
             json_span = SDKSpan(span, source, service_name)
 
-        logger.debug("Recorded span: %s", json_span)
+        # logger.debug("Recorded span: %s", json_span)
         self.agent.collector.span_queue.put(json_span)
 
 

@@ -3,10 +3,13 @@ import os
 import sys
 import time
 import threading
+import logging
+from instana.log import logger
 
 from .apps.flaskalino import flask_server
 
 os.environ["INSTANA_TEST"] = "true"
+logger.setLevel(logging.DEBUG)
 
 
 # Background Flask application

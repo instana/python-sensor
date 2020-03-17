@@ -185,17 +185,38 @@ class RegisteredSpan(BaseSpan):
         if len(span.tags):
             self.data["custom"]["tags"] = span.tags
 
-
     def _populate_entry_span_data(self, span):
         if span.operation_name in self.HTTP_SPANS:
             self._collect_http_tags(span)
+
         elif span.operation_name == "aws.lambda.entry":
             self.data["lambda"]["arn"] = span.tags.pop('lambda.arn', "Unknown")
             self.data["lambda"]["alias"] = None
             self.data["lambda"]["runtime"] = "python"
             self.data["lambda"]["functionName"] = span.tags.pop('lambda.name', "Unknown")
             self.data["lambda"]["functionVersion"] = span.tags.pop('lambda.version', "Unknown")
+            self.data["lambda"]["trigger"] = span.tags.pop('lambda.trigger', None)
             self.data["lambda"]["error"] = None
+
+            trigger_type = self.data["lambda"]["trigger"]
+
+            if trigger_type in ["aws:api.gateway", "aws:application.load.balancer"]:
+                self._collect_http_tags(span)
+            elif trigger_type == 'aws:cloudwatch.events':
+                self.data["lambda"]["cw"]["events"]["id"] = span.tags.pop('data.lambda.cw.events.id', None)
+                self.data["lambda"]["cw"]["events"]["more"] = span.tags.pop('lambda.cw.events.more', False)
+                self.data["lambda"]["cw"]["events"]["resources"] = span.tags.pop('lambda.cw.events.resources', None)
+
+            elif trigger_type == 'aws:cloudwatch.logs':
+                self.data["lambda"]["cw"]["logs"]["group"] = span.tags.pop('lambda.cw.logs.group', None)
+                self.data["lambda"]["cw"]["logs"]["stream"] = span.tags.pop('lambda.cw.logs.stream', None)
+                self.data["lambda"]["cw"]["logs"]["more"] = span.tags.pop('lambda.cw.logs.more', None)
+                self.data["lambda"]["cw"]["logs"]["events"] = span.tags.pop('lambda.cw.logs.events', None)
+
+            elif trigger_type == 'aws:s3':
+                self.data["lambda"]["s3"]["events"] = span.tags.pop('lambda.s3.events', None)
+            elif trigger_type == 'aws:sqs':
+                self.data["lambda"]["sqs"]["messages"] = span.tags.pop('lambda.sqs.messages', None)
 
         elif span.operation_name == "rabbitmq":
             self.data["rabbitmq"]["exchange"] = span.tags.pop('exchange', None)

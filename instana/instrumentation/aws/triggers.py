@@ -4,6 +4,7 @@ Module to handle the work related to the many AWS Lambda Triggers.
 import gzip
 import json
 import base64
+from io import BytesIO
 
 from ...log import logger
 
@@ -153,7 +154,7 @@ def enrich_lambda_span(agent, span, event, context):
                 if 'awslogs' in event and 'data' in event['awslogs']:
                     data = event['awslogs']['data']
                     decoded_data = base64.b64decode(data)
-                    decompressed_data = gzip.decompress(decoded_data)
+                    decompressed_data = gzip.GzipFile(fileobj=BytesIO(decoded_data)).read()
                     log_data = json.loads(decompressed_data)
 
                     span.set_tag('lambda.cw.logs.group', log_data.get('logGroup', None))

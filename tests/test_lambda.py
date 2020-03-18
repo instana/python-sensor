@@ -1,9 +1,11 @@
 from __future__ import absolute_import
 
 import os
-import unittest
+import sys
 import json
 import wrapt
+import unittest
+
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.tracer import InstanaTracer
 from instana.agent import AWSLambdaAgent
@@ -148,7 +150,10 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
-        self.assertEqual("foo=['bar']", span.data['http']['params'])
+        if sys.version[:3] == '2.7':
+            self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
+        else:
+            self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_application_lb_trigger_tracing(self):
         with open(self.pwd + '/data/lambda/api_gateway_event.json', 'r') as json_file:
@@ -197,7 +202,10 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
-        self.assertEqual("foo=['bar']", span.data['http']['params'])
+        if sys.version[:3] == '2.7':
+            self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
+        else:
+            self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_cloudwatch_trigger_tracing(self):
         with open(self.pwd + '/data/lambda/cloudwatch_event.json', 'r') as json_file:
@@ -296,6 +304,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('1', span.data['lambda']['functionVersion'])
 
         self.assertEqual('aws:cloudwatch.logs', span.data['lambda']['trigger'])
+        self.assertFalse("decodingError" in span.data['lambda']['cw']['logs'])
         self.assertEqual('testLogGroup', span.data['lambda']['cw']['logs']['group'])
         self.assertEqual('testLogStream', span.data['lambda']['cw']['logs']['stream'])
         self.assertEqual(None, span.data['lambda']['cw']['logs']['more'])

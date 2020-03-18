@@ -10,7 +10,7 @@ from instana.agent import AWSLambdaAgent
 from instana.recorder import AWSLambdaRecorder
 from instana import lambda_handler
 from instana import get_lambda_handler_or_default
-from instana.instrumentation.aws_lambda import lambda_handler_with_instana
+from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
 
 
 # Mock Context object

@@ -44,7 +44,7 @@ class TestLambda(unittest.TestCase):
         self.original_agent = get_agent()
         self.original_tracer = get_tracer()
 
-    def setUp(self) -> None:
+    def setUp(self):
         os.environ["LAMBDA_HANDLER"] = "tests.test_lambda.my_lambda_handler"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"

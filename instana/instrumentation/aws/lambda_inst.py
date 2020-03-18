@@ -1,3 +1,6 @@
+"""
+Instrumentation for AWS Lambda functions
+"""
 import os
 import sys
 import wrapt

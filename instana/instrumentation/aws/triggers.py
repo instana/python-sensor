@@ -1,3 +1,6 @@
+"""
+Module to handle the work related to the many AWS Lambda Triggers.
+"""
 import gzip
 import json
 import base64
@@ -74,6 +77,15 @@ def read_http_query_params(event):
 
 
 def capture_extra_headers(event, span, extra_headers):
+    """
+    Capture the headers specified in `extra_headers` from `event` and log them
+    as a tag in the span.
+
+    @param event: the lambda event
+    @param span: the lambda entry span
+    @param extra_headers: a list of http headers to capture
+    @return: None
+    """
     for custom_header in extra_headers:
         for key in event["headers"]:
             if key.lower() == custom_header.lower():
@@ -81,6 +93,16 @@ def capture_extra_headers(event, span, extra_headers):
 
 
 def enrich_lambda_span(agent, span, event, context):
+    """
+    Extract the required information about this Lambda run (and the trigger) and store the data
+    on `span`.
+
+    @param agent: the AWSLambdaAgent in use
+    @param span: the Lambda entry span
+    @param event: the lambda handler event
+    @param context: the lambda handler context
+    @return: None
+    """
     try:
         span.set_tag('lambda.arn', context.invoked_function_arn)
         span.set_tag('lambda.name', context.function_name)

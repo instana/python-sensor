@@ -79,14 +79,13 @@ class TestOTSpan:
         assert sdk_span.ts > 0
         assert sdk_span.d
         assert sdk_span.d > 0
-        assert_equals("py", sdk_span.ta)
 
         assert sdk_span.data
-        assert sdk_span.data.sdk
-        assert_equals('entry', sdk_span.data.sdk.Type)
-        assert_equals('custom_sdk_span', sdk_span.data.sdk.name)
-        assert sdk_span.data.sdk.custom
-        assert sdk_span.data.sdk.custom.tags
+        assert sdk_span.data["sdk"]
+        assert_equals('entry', sdk_span.data["sdk"]["type"])
+        assert_equals('custom_sdk_span', sdk_span.data["sdk"]["name"])
+        assert sdk_span.data["sdk"]["custom"]
+        assert sdk_span.data["sdk"]["custom"]["tags"]
 
     def test_span_kind(self):
         recorder = opentracing.tracer.recorder
@@ -115,19 +114,19 @@ class TestOTSpan:
         assert 5, len(spans)
 
         span = spans[0]
-        assert_equals('entry', span.data.sdk.Type)
+        assert_equals('entry', span.data["sdk"]["type"])
 
         span = spans[1]
-        assert_equals('entry', span.data.sdk.Type)
+        assert_equals('entry', span.data["sdk"]["type"])
 
         span = spans[2]
-        assert_equals('exit', span.data.sdk.Type)
+        assert_equals('exit', span.data["sdk"]["type"])
 
         span = spans[3]
-        assert_equals('exit', span.data.sdk.Type)
+        assert_equals('exit', span.data["sdk"]["type"])
 
         span = spans[4]
-        assert_equals('intermediate', span.data.sdk.Type)
+        assert_equals('intermediate', span.data["sdk"]["type"])
 
         span = spans[0]
         assert_equals(1, span.k)

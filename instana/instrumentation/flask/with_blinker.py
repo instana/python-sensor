@@ -26,7 +26,7 @@ def request_started_with_instana(sender, **extra):
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
 
-        if agent.extra_headers is not None:
+        if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
             for custom_header in agent.extra_headers:
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 header = ('HTTP_' + custom_header.upper()).replace('-', '_')

@@ -48,7 +48,7 @@ try:
         try:
             scope.span.set_tag(ext.HTTP_STATUS_CODE, response.status)
 
-            if agent.extra_headers is not None:
+            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
                 for custom_header in agent.extra_headers:
                     if custom_header in response.headers:
                         scope.span.set_tag("http.%s" % custom_header, response.headers[custom_header])

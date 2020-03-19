@@ -1,27 +1,43 @@
+import os
 import sys
 import opentracing
 
-from .agent import Agent
-from .tracer import InstanaTracer, InstanaRecorder
+from .agent import StandardAgent, AWSLambdaAgent
+from .tracer import InstanaTracer
+from .recorder import StandardRecorder, AWSLambdaRecorder
+
+agent = None
+tracer = None
+span_recorder = None
+
+if os.environ.get("INSTANA_ENDPOINT_URL", False):
+    print("Lambda environment")
+    agent = AWSLambdaAgent()
+    span_recorder = AWSLambdaRecorder(agent)
+else:
+    print("Standard host environment")
+    agent = StandardAgent()
+    span_recorder = StandardRecorder()
 
 
-# The Instana Agent which carries along with it a Sensor that collects metrics.
-agent = Agent()
+# Retrieve the globally configured agent
+def get_agent():
+    global agent
+    return agent
 
 
-span_recorder = InstanaRecorder()
+# Set the global agent for the Instana package.  This is used for the
+# test suite only currently.
+def set_agent(new_agent):
+    global agent
+    agent = new_agent
+
 
 # The global OpenTracing compatible tracer used internally by
 # this package.
-#
-# Usage example:
-#
-# import instana
-# instana.tracer.start_span(...)
-#
 tracer = InstanaTracer(recorder=span_recorder)
 
-if sys.version_info >= (3,4):
+if sys.version_info >= (3, 4):
     from opentracing.scope_managers.asyncio import AsyncioScopeManager
     async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
 
@@ -38,3 +54,16 @@ def setup_tornado_tracer():
 
 # Set ourselves as the tracer.
 opentracing.tracer = tracer
+
+
+# Retrieve the globally configured tracer
+def get_tracer():
+    global tracer
+    return tracer
+
+
+# Set the global tracer for the Instana package.  This is used for the
+# test suite only currently.
+def set_tracer(new_tracer):
+    global tracer
+    tracer = new_tracer

@@ -1,6 +1,5 @@
 import inspect
 
-import basictracer
 import opentracing as ot
 from nose.tools import assert_equals
 
@@ -23,8 +22,7 @@ def test_http_basics():
 
 
 def test_http_inject_with_dict():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {}
     span = ot.tracer.start_span("nosetests")
@@ -39,8 +37,7 @@ def test_http_inject_with_dict():
 
 
 def test_http_inject_with_list():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = []
     span = ot.tracer.start_span("nosetests")
@@ -52,8 +49,7 @@ def test_http_inject_with_list():
 
 
 def test_http_basic_extract():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
@@ -64,8 +60,7 @@ def test_http_basic_extract():
 
 
 def test_http_mixed_case_extract():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
@@ -76,8 +71,7 @@ def test_http_mixed_case_extract():
 
 
 def test_http_no_context_extract():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
@@ -86,8 +80,7 @@ def test_http_no_context_extract():
 
 
 def test_http_128bit_headers():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {'X-Instana-T': '0000000000000000b0789916ff8f319f',
                'X-Instana-S': '0000000000000000b0789916ff8f319f', 'X-Instana-L': '1'}
@@ -111,8 +104,7 @@ def test_text_basics():
 
 
 def test_text_inject_with_dict():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {}
     span = ot.tracer.start_span("nosetests")
@@ -127,8 +119,7 @@ def test_text_inject_with_dict():
 
 
 def test_text_inject_with_list():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = []
     span = ot.tracer.start_span("nosetests")
@@ -140,8 +131,7 @@ def test_text_inject_with_list():
 
 
 def test_text_basic_extract():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
@@ -152,8 +142,7 @@ def test_text_basic_extract():
 
 
 def test_text_mixed_case_extract():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
@@ -162,8 +151,7 @@ def test_text_mixed_case_extract():
 
 
 def test_text_no_context_extract():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
@@ -172,8 +160,7 @@ def test_text_no_context_extract():
 
 
 def test_text_128bit_headers():
-    opts = options.Options()
-    ot.tracer = InstanaTracer(opts)
+    ot.tracer = InstanaTracer()
 
     carrier = {'X-INSTANA-T': '0000000000000000b0789916ff8f319f',
                'X-INSTANA-S': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}

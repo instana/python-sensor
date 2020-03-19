@@ -73,13 +73,13 @@ class TestSQLAlchemy(unittest.TestCase):
 
         # SQLAlchemy span
         self.assertEqual('sqlalchemy', sql_span.n)
-        self.assertFalse('custom' in sql_span.data.__dict__)
-        self.assertTrue('sqlalchemy' in sql_span.data.__dict__)
+        self.assertFalse('custom' in sql_span.data)
+        self.assertTrue('sqlalchemy' in sql_span.data)
 
-        self.assertEqual('postgresql', sql_span.data.sqlalchemy.eng)
-        self.assertEqual(sqlalchemy_url, sql_span.data.sqlalchemy.url)
-        self.assertEqual('INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id', sql_span.data.sqlalchemy.sql)
-        self.assertIsNone(sql_span.data.sqlalchemy.err)
+        self.assertEqual('postgresql', sql_span.data["sqlalchemy"]["eng"])
+        self.assertEqual(sqlalchemy_url, sql_span.data["sqlalchemy"]["url"])
+        self.assertEqual('INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id', sql_span.data["sqlalchemy"]["sql"])
+        self.assertIsNone(sql_span.data["sqlalchemy"]["err"])
 
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)
@@ -119,13 +119,13 @@ class TestSQLAlchemy(unittest.TestCase):
 
         # SQLAlchemy span0
         self.assertEqual('sqlalchemy', sql_span0.n)
-        self.assertFalse('custom' in sql_span0.data.__dict__)
-        self.assertTrue('sqlalchemy' in sql_span0.data.__dict__)
+        self.assertFalse('custom' in sql_span0.data)
+        self.assertTrue('sqlalchemy' in sql_span0.data)
 
-        self.assertEqual('postgresql', sql_span0.data.sqlalchemy.eng)
-        self.assertEqual(sqlalchemy_url, sql_span0.data.sqlalchemy.url)
-        self.assertEqual('select 1', sql_span0.data.sqlalchemy.sql)
-        self.assertIsNone(sql_span0.data.sqlalchemy.err)
+        self.assertEqual('postgresql', sql_span0.data["sqlalchemy"]["eng"])
+        self.assertEqual(sqlalchemy_url, sql_span0.data["sqlalchemy"]["url"])
+        self.assertEqual('select 1', sql_span0.data["sqlalchemy"]["sql"])
+        self.assertIsNone(sql_span0.data["sqlalchemy"]["err"])
 
         self.assertIsNotNone(sql_span0.stack)
         self.assertTrue(type(sql_span0.stack) is list)
@@ -133,25 +133,25 @@ class TestSQLAlchemy(unittest.TestCase):
 
         # SQLAlchemy span1
         self.assertEqual('sqlalchemy', sql_span1.n)
-        self.assertFalse('custom' in sql_span1.data.__dict__)
-        self.assertTrue('sqlalchemy' in sql_span1.data.__dict__)
+        self.assertFalse('custom' in sql_span1.data)
+        self.assertTrue('sqlalchemy' in sql_span1.data)
 
-        self.assertEqual('postgresql', sql_span1.data.sqlalchemy.eng)
-        self.assertEqual(sqlalchemy_url, sql_span1.data.sqlalchemy.url)
-        self.assertEqual("select (name, fullname, password) from churchofstan where name='doesntexist'", sql_span1.data.sqlalchemy.sql)
-        self.assertIsNone(sql_span1.data.sqlalchemy.err)
+        self.assertEqual('postgresql', sql_span1.data["sqlalchemy"]["eng"])
+        self.assertEqual(sqlalchemy_url, sql_span1.data["sqlalchemy"]["url"])
+        self.assertEqual("select (name, fullname, password) from churchofstan where name='doesntexist'", sql_span1.data["sqlalchemy"]["sql"])
+        self.assertIsNone(sql_span1.data["sqlalchemy"]["err"])
 
         self.assertIsNotNone(sql_span1.stack)
         self.assertTrue(type(sql_span1.stack) is list)
         self.assertGreater(len(sql_span1.stack), 0)
 
     def test_error_logging(self):
-        try:
-            with tracer.start_active_span('test'):
+        with tracer.start_active_span('test'):
+            try:
                 self.session.execute("htVwGrCwVThisIsInvalidSQLaw4ijXd88")
                 self.session.commit()
-        except:
-            pass
+            except:
+                pass
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -176,13 +176,13 @@ class TestSQLAlchemy(unittest.TestCase):
         # SQLAlchemy span
         self.assertEqual('sqlalchemy', sql_span.n)
 
-        self.assertFalse('custom' in sql_span.data.__dict__)
-        self.assertTrue('sqlalchemy' in sql_span.data.__dict__)
+        self.assertFalse('custom' in sql_span.data)
+        self.assertTrue('sqlalchemy' in sql_span.data)
 
-        self.assertEqual('postgresql', sql_span.data.sqlalchemy.eng)
-        self.assertEqual(sqlalchemy_url, sql_span.data.sqlalchemy.url)
-        self.assertEqual('htVwGrCwVThisIsInvalidSQLaw4ijXd88', sql_span.data.sqlalchemy.sql)
-        self.assertEqual('syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88"\nLINE 1: htVwGrCwVThisIsInvalidSQLaw4ijXd88\n        ^\n', sql_span.data.sqlalchemy.err)
+        self.assertEqual('postgresql', sql_span.data["sqlalchemy"]["eng"])
+        self.assertEqual(sqlalchemy_url, sql_span.data["sqlalchemy"]["url"])
+        self.assertEqual('htVwGrCwVThisIsInvalidSQLaw4ijXd88', sql_span.data["sqlalchemy"]["sql"])
+        self.assertEqual('syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88"\nLINE 1: htVwGrCwVThisIsInvalidSQLaw4ijXd88\n        ^\n', sql_span.data["sqlalchemy"]["err"])
 
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)

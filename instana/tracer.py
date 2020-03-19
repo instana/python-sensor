@@ -12,17 +12,16 @@ from .binary_propagator import BinaryPropagator
 from .http_propagator import HTTPPropagator
 from .text_propagator import TextPropagator
 from .span_context import InstanaSpanContext
-from .options import Options
-from .recorder import InstanaRecorder, InstanaSampler
-from .span import InstanaSpan
+from .recorder import StandardRecorder, InstanaSampler
+from .span import InstanaSpan, RegisteredSpan
 from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
-    def __init__(self, options=Options(), scope_manager=None, recorder=None):
+    def __init__(self, scope_manager=None, recorder=None):
 
         if recorder is None:
-            recorder = InstanaRecorder()
+            recorder = StandardRecorder()
 
         super(InstanaTracer, self).__init__(
             recorder, InstanaSampler(), scope_manager)
@@ -103,10 +102,10 @@ class InstanaTracer(BasicTracer):
                            tags=tags,
                            start_time=start_time)
 
-        if operation_name in self.recorder.exit_spans:
+        if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span)
 
-        elif operation_name in self.recorder.entry_spans:
+        elif operation_name in RegisteredSpan.ENTRY_SPANS:
             # For entry spans, add only a backtrace fingerprint
             self.__add_stack(span, limit=2)
 

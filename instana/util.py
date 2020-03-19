@@ -6,6 +6,7 @@ import sys
 import time
 
 import pkg_resources
+from collections import defaultdict
 
 try:
     from urllib import parse
@@ -14,7 +15,6 @@ except ImportError:
     import urllib
 
 from .log import logger
-
 
 if sys.version_info.major == 2:
     string_types = basestring
@@ -25,6 +25,9 @@ _rnd = random.Random()
 _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
+
+# Simple implementation of a nested dictionary.
+DictionaryOfStan = lambda: defaultdict(DictionaryOfStan)
 
 
 def generate_id():
@@ -305,5 +308,69 @@ def every(delay, task, name):
         next_time += (time.time() - next_time) // delay * delay + delay
 
 
+def determine_service_name():
+    """ This function makes a best effort to name this application process. """
 
+    # One environment variable to rule them all
+    if "INSTANA_SERVICE_NAME" in os.environ:
+        return os.environ["INSTANA_SERVICE_NAME"]
 
+    try:
+        # Now best effort in naming this process.  No nice package.json like in Node.js
+        # so we do best effort detection here.
+        app_name = "python"  # the default name
+
+        if not hasattr(sys, 'argv'):
+            proc_cmdline = get_proc_cmdline(as_string=False)
+            return os.path.basename(proc_cmdline[0])
+
+        basename = os.path.basename(sys.argv[0])
+        if basename == "gunicorn":
+            if 'setproctitle' in sys.modules:
+                # With the setproctitle package, gunicorn renames their processes
+                # to pretty things - we use those by default
+                # gunicorn: master [djface.wsgi]
+                # gunicorn: worker [djface.wsgi]
+                app_name = get_proc_cmdline(as_string=True)
+            else:
+                app_name = basename
+        elif "FLASK_APP" in os.environ:
+            app_name = os.environ["FLASK_APP"]
+        elif "DJANGO_SETTINGS_MODULE" in os.environ:
+            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
+        elif basename == '':
+            if sys.stdout.isatty():
+                app_name = "Interactive Console"
+            else:
+                # No arguments.  Take executable as app_name
+                app_name = os.path.basename(sys.executable)
+        else:
+            # Last chance.  app_name for "python main.py" would be "main.py" here.
+            app_name = basename
+
+        # We should have a good app_name by this point.
+        # Last conditional, if uwsgi, then wrap the name
+        # with the uwsgi process type
+        if basename == "uwsgi":
+            # We have an app name by this point.  Now if running under
+            # uwsgi, augment the app name
+            try:
+                import uwsgi
+
+                if app_name == "uwsgi":
+                    app_name = ""
+                else:
+                    app_name = " [%s]" % app_name
+
+                if os.getpid() == uwsgi.masterpid():
+                    uwsgi_type = "uWSGI master%s"
+                else:
+                    uwsgi_type = "uWSGI worker%s"
+
+                app_name = uwsgi_type % app_name
+            except ImportError:
+                pass
+        return app_name
+    except Exception as e:
+        logger.debug("get_application_name: ", exc_info=True)
+        return app_name

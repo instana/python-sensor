@@ -69,13 +69,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 1
         self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data.__dict__)
-        self.assertTrue('redis' in rs1_span.data.__dict__)
+        self.assertFalse('custom' in rs1_span.data)
+        self.assertTrue('redis' in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
-        self.assertEqual("SET", rs1_span.data.redis.command)
-        self.assertIsNone(rs1_span.data.redis.error)
+        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs1_span.data["redis"]["command"])
+        self.assertIsNone(rs1_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs1_span.stack)
         self.assertTrue(type(rs1_span.stack) is list)
@@ -83,13 +83,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 2
         self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data.__dict__)
-        self.assertTrue('redis' in rs2_span.data.__dict__)
+        self.assertFalse('custom' in rs2_span.data)
+        self.assertTrue('redis' in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data.redis.connection)
-        self.assertEqual("SET", rs2_span.data.redis.command)
-        self.assertIsNone(rs2_span.data.redis.error)
+        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs2_span.data["redis"]["command"])
+        self.assertIsNone(rs2_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs2_span.stack)
         self.assertTrue(type(rs2_span.stack) is list)
@@ -97,13 +97,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 3
         self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data.__dict__)
-        self.assertTrue('redis' in rs3_span.data.__dict__)
+        self.assertFalse('custom' in rs3_span.data)
+        self.assertTrue('redis' in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data.redis.connection)
-        self.assertEqual("GET", rs3_span.data.redis.command)
-        self.assertIsNone(rs3_span.data.redis.error)
+        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("GET", rs3_span.data["redis"]["command"])
+        self.assertIsNone(rs3_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs3_span.stack)
         self.assertTrue(type(rs3_span.stack) is list)
@@ -150,13 +150,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 1
         self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data.__dict__)
-        self.assertTrue('redis' in rs1_span.data.__dict__)
+        self.assertFalse('custom' in rs1_span.data)
+        self.assertTrue('redis' in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
-        self.assertEqual("SET", rs1_span.data.redis.command)
-        self.assertIsNone(rs1_span.data.redis.error)
+        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs1_span.data["redis"]["command"])
+        self.assertIsNone(rs1_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs1_span.stack)
         self.assertTrue(type(rs1_span.stack) is list)
@@ -164,13 +164,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 2
         self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data.__dict__)
-        self.assertTrue('redis' in rs2_span.data.__dict__)
+        self.assertFalse('custom' in rs2_span.data)
+        self.assertTrue('redis' in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data.redis.connection)
-        self.assertEqual("INCRBY", rs2_span.data.redis.command)
-        self.assertIsNone(rs2_span.data.redis.error)
+        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("INCRBY", rs2_span.data["redis"]["command"])
+        self.assertIsNone(rs2_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs2_span.stack)
         self.assertTrue(type(rs2_span.stack) is list)
@@ -178,13 +178,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 3
         self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data.__dict__)
-        self.assertTrue('redis' in rs3_span.data.__dict__)
+        self.assertFalse('custom' in rs3_span.data)
+        self.assertTrue('redis' in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data.redis.connection)
-        self.assertEqual("GET", rs3_span.data.redis.command)
-        self.assertIsNone(rs3_span.data.redis.error)
+        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("GET", rs3_span.data["redis"]["command"])
+        self.assertIsNone(rs3_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs3_span.stack)
         self.assertTrue(type(rs3_span.stack) is list)
@@ -231,13 +231,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 1
         self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data.__dict__)
-        self.assertTrue('redis' in rs1_span.data.__dict__)
+        self.assertFalse('custom' in rs1_span.data)
+        self.assertTrue('redis' in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
-        self.assertEqual("SET", rs1_span.data.redis.command)
-        self.assertIsNone(rs1_span.data.redis.error)
+        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs1_span.data["redis"]["command"])
+        self.assertIsNone(rs1_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs1_span.stack)
         self.assertTrue(type(rs1_span.stack) is list)
@@ -245,13 +245,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 2
         self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data.__dict__)
-        self.assertTrue('redis' in rs2_span.data.__dict__)
+        self.assertFalse('custom' in rs2_span.data)
+        self.assertTrue('redis' in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data.redis.connection)
-        self.assertEqual("SET", rs2_span.data.redis.command)
-        self.assertIsNone(rs2_span.data.redis.error)
+        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs2_span.data["redis"]["command"])
+        self.assertIsNone(rs2_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs2_span.stack)
         self.assertTrue(type(rs2_span.stack) is list)
@@ -259,13 +259,13 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 3
         self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data.__dict__)
-        self.assertTrue('redis' in rs3_span.data.__dict__)
+        self.assertFalse('custom' in rs3_span.data)
+        self.assertTrue('redis' in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data.redis.connection)
-        self.assertEqual("GET", rs3_span.data.redis.command)
-        self.assertIsNone(rs3_span.data.redis.error)
+        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("GET", rs3_span.data["redis"]["command"])
+        self.assertIsNone(rs3_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs3_span.stack)
         self.assertTrue(type(rs3_span.stack) is list)
@@ -304,14 +304,14 @@ class TestRedis(unittest.TestCase):
 
         # Redis span 1
         self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data.__dict__)
-        self.assertTrue('redis' in rs1_span.data.__dict__)
+        self.assertFalse('custom' in rs1_span.data)
+        self.assertTrue('redis' in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data.redis.driver)
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data.redis.connection)
-        self.assertEqual("PIPELINE", rs1_span.data.redis.command)
-        self.assertEqual(['SET', 'SET', 'GET'], rs1_span.data.redis.subCommands)
-        self.assertIsNone(rs1_span.data.redis.error)
+        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("PIPELINE", rs1_span.data["redis"]["command"])
+        self.assertEqual(['SET', 'SET', 'GET'], rs1_span.data["redis"]["subCommands"])
+        self.assertIsNone(rs1_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs1_span.stack)
         self.assertTrue(type(rs1_span.stack) is list)

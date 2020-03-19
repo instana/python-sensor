@@ -10,7 +10,6 @@ import threading as t
 from fysom import Fysom
 import pkg_resources
 
-from .agent_const import AGENT_DEFAULT_HOST, AGENT_DEFAULT_PORT
 from .log import logger
 from .util import get_default_gateway
 
@@ -96,7 +95,8 @@ class TheMachine(object):
     def lookup_agent_host(self, e):
         self.agent.should_threads_shutdown.clear()
 
-        host, port = self.__get_agent_host_port()
+        host = self.agent.options.agent_host
+        port = self.agent.options.agent_port
 
         if self.agent.is_agent_listening(host, port):
             self.agent.host = host
@@ -159,7 +159,8 @@ class TheMachine(object):
         if response and (response.status_code == 200) and (len(response.content) > 2):
             self.agent.set_from(response.content)
             self.fsm.pending()
-            logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...", str(pid), str(self.agent.from_.pid))
+            logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
+                         str(pid), str(self.agent.announce_data.pid))
             return True
         else:
             logger.debug("Cannot announce sensor. Scheduling retry.")
@@ -174,7 +175,7 @@ class TheMachine(object):
 
     def on_ready(self, _):
         logger.info("Instana host agent available. We're in business. Announced pid: %s (true pid: %s)",
-                    str(os.getpid()), str(self.agent.from_.pid))
+                    str(os.getpid()), str(self.agent.announce_data.pid))
 
     def __get_real_pid(self):
         """
@@ -201,30 +202,3 @@ class TheMachine(object):
             pid = os.getpid()
 
         return pid
-
-    def __get_agent_host_port(self):
-        """
-        Iterates the the various ways the host and port of the Instana host
-        agent may be configured: default, env vars, sensor options...
-        """
-        host = AGENT_DEFAULT_HOST
-        port = AGENT_DEFAULT_PORT
-
-        if "INSTANA_AGENT_HOST" in os.environ:
-            host = os.environ["INSTANA_AGENT_HOST"]
-            if "INSTANA_AGENT_PORT" in os.environ:
-                port = int(os.environ["INSTANA_AGENT_PORT"])
-
-        elif "INSTANA_AGENT_IP" in os.environ:
-            # Deprecated: INSTANA_AGENT_IP environment variable
-            # To be removed in a future version
-            host = os.environ["INSTANA_AGENT_IP"]
-            if "INSTANA_AGENT_PORT" in os.environ:
-                port = int(os.environ["INSTANA_AGENT_PORT"])
-
-        elif self.agent.sensor.options.agent_host != "":
-            host = self.agent.sensor.options.agent_host
-            if self.agent.sensor.options.agent_port != 0:
-                port = self.agent.sensor.options.agent_port
-
-        return host, port

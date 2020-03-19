@@ -77,11 +77,11 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
-        self.assertEqual('/', wsgi_span.data.http.url)
-        self.assertEqual('GET', wsgi_span.data.http.method)
-        self.assertEqual(200, wsgi_span.data.http.status)
-        self.assertIsNone(wsgi_span.data.http.error)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
+        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('GET', wsgi_span.data["http"]["method"])
+        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 
@@ -144,11 +144,11 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
-        self.assertEqual('/complex', wsgi_span.data.http.url)
-        self.assertEqual('GET', wsgi_span.data.http.method)
-        self.assertEqual(200, wsgi_span.data.http.status)
-        self.assertIsNone(wsgi_span.data.http.error)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
+        self.assertEqual('/complex', wsgi_span.data["http"]["url"])
+        self.assertEqual('GET', wsgi_span.data["http"]["method"])
+        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 
@@ -208,18 +208,18 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
-        self.assertEqual('/', wsgi_span.data.http.url)
-        self.assertEqual('GET', wsgi_span.data.http.method)
-        self.assertEqual(200, wsgi_span.data.http.status)
-        self.assertIsNone(wsgi_span.data.http.error)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
+        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('GET', wsgi_span.data["http"]["method"])
+        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 
-        self.assertEqual(True, "http.X-Capture-This" in wsgi_span.data.custom.__dict__['tags'])
-        self.assertEqual("this", wsgi_span.data.custom.__dict__['tags']["http.X-Capture-This"])
-        self.assertEqual(True, "http.X-Capture-That" in wsgi_span.data.custom.__dict__['tags'])
-        self.assertEqual("that", wsgi_span.data.custom.__dict__['tags']["http.X-Capture-That"])
+        self.assertEqual(True, "http.X-Capture-This" in wsgi_span.data["custom"]['tags'])
+        self.assertEqual("this", wsgi_span.data["custom"]['tags']["http.X-Capture-This"])
+        self.assertEqual(True, "http.X-Capture-That" in wsgi_span.data["custom"]['tags'])
+        self.assertEqual("that", wsgi_span.data["custom"]['tags']["http.X-Capture-That"])
 
     def test_secret_scrubbing(self):
         with tracer.start_active_span('test'):
@@ -270,12 +270,12 @@ class TestWSGI(unittest.TestCase):
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data.http.host)
-        self.assertEqual('/', wsgi_span.data.http.url)
-        self.assertEqual('secret=<redacted>', wsgi_span.data.http.params)
-        self.assertEqual('GET', wsgi_span.data.http.method)
-        self.assertEqual(200, wsgi_span.data.http.status)
-        self.assertIsNone(wsgi_span.data.http.error)
+        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
+        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('secret=<redacted>', wsgi_span.data["http"]["params"])
+        self.assertEqual('GET', wsgi_span.data["http"]["method"])
+        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 

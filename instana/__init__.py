@@ -21,8 +21,9 @@ from __future__ import absolute_import
 
 import os
 import sys
-from threading import Timer
+import importlib
 import pkg_resources
+from threading import Timer
 
 __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2020 Instana Inc.'
@@ -45,6 +46,57 @@ def load(_):
     if "INSTANA_DEBUG" in os.environ:
         print("Instana: activated via AUTOWRAPT_BOOTSTRAP")
 
+    if "INSTANA_ENDPOINT_URL" in os.environ:
+        print("load: detected lambda environment")
+
+
+def get_lambda_handler_or_default():
+    """
+    For instrumenting AWS Lambda, users specify their original lambda handler in the LAMBDA_HANDLER environment
+    variable.  This function searches for and parses that environment variable or returns the defaults.
+
+    The default handler value for AWS Lambda is 'lambda_function.lambda_handler' which
+    equates to the function "lambda_handler in a file named "lambda_function.py" or in Python
+    terms "from lambda_function import lambda_handler"
+    """
+    handler_module = "lambda_function"
+    handler_function = "lambda_handler"
+
+    try:
+        handler = os.environ.get("LAMBDA_HANDLER", False)
+
+        if handler:
+            parts = handler.split(".")
+            handler_function = parts.pop()
+            handler_module = ".".join(parts)
+    except:
+        pass
+
+    return handler_module, handler_function
+
+
+def lambda_handler(event, context):
+    """
+    Entry point for AWS Lambda monitoring.
+
+    This function will trigger the initialization of Instana monitoring and then call
+    the original user specified lambda handler function.
+    """
+    module_name, function_name = get_lambda_handler_or_default()
+
+    try:
+        # Import the module specified in module_name
+        handler_module = importlib.import_module(module_name)
+    except ImportError:
+        print("Couldn't determine and locate default module handler: %s.%s", module_name, function_name)
+    else:
+        # Now get the function and execute it
+        if hasattr(handler_module, function_name):
+            handler_function = getattr(handler_module, function_name)
+            return handler_function(event, context)
+        else:
+            print("Couldn't determine and locate default function handler: %s.%s", module_name, function_name)
+
 
 def boot_agent():
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
@@ -56,6 +108,8 @@ def boot_agent():
     # Instrumentation
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
+        from .instrumentation.aws import lambda_inst
+
         if sys.version_info >= (3, 5, 3):
             from .instrumentation import asyncio
             from .instrumentation.aiohttp import client

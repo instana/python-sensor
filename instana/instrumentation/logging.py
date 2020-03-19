@@ -36,9 +36,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
                     scope.span.log_kv({ 'parameters': parameters })
                 # extra tags for an error
                 if argv[0] >= logging.ERROR:
-                    scope.span.set_tag('error', True)
-                    ec = scope.span.tags.get('ec', 0)
-                    scope.span.set_tag('ec', ec + 1)
+                    scope.span.mark_as_errored()
     except Exception as e:
         logger.debug('Exception: %s', e, exc_info=True)
     finally:

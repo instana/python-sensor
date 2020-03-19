@@ -68,7 +68,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -104,7 +103,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -176,7 +174,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertTrue(cb_span.error)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("_KeyExistsError")
@@ -221,7 +218,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -256,7 +252,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -294,7 +289,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertTrue(cb_span.error)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("NotFoundError")
@@ -336,7 +330,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -368,7 +361,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -407,7 +399,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -439,7 +430,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -478,7 +468,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -509,7 +498,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -542,7 +530,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertTrue(cb_span.error)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("CouchbaseTransientError")
@@ -582,7 +569,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertTrue(cb_span.error)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("NotFoundError")
@@ -620,7 +606,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -652,7 +637,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -687,7 +671,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -731,10 +714,8 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_upsert_span.p, test_span.s)
 
         self.assertIsNotNone(cb_lock_span.stack)
-        self.assertFalse(cb_lock_span.error)
         self.assertIsNone(cb_lock_span.ec)
         self.assertIsNotNone(cb_upsert_span.stack)
-        self.assertFalse(cb_upsert_span.error)
         self.assertIsNone(cb_upsert_span.ec)
 
         self.assertEqual(cb_lock_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -781,10 +762,8 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_unlock_span.p, test_span.s)
 
         self.assertIsNotNone(cb_lock_span.stack)
-        self.assertFalse(cb_lock_span.error)
         self.assertIsNone(cb_lock_span.ec)
         self.assertIsNotNone(cb_unlock_span.stack)
-        self.assertFalse(cb_unlock_span.error)
         self.assertIsNone(cb_unlock_span.ec)
 
         self.assertEqual(cb_lock_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -833,10 +812,8 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_unlock_span.p, test_span.s)
 
         self.assertIsNotNone(cb_lock_span.stack)
-        self.assertFalse(cb_lock_span.error)
         self.assertIsNone(cb_lock_span.ec)
         self.assertIsNotNone(cb_unlock_span.stack)
-        self.assertFalse(cb_unlock_span.error)
         self.assertIsNone(cb_unlock_span.ec)
 
         self.assertEqual(cb_lock_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -871,7 +848,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -907,7 +883,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -939,7 +914,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -973,7 +947,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1008,7 +981,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1043,7 +1015,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1073,7 +1044,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1103,7 +1073,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1133,7 +1102,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1165,7 +1133,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1201,7 +1168,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1231,7 +1197,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1262,7 +1227,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])

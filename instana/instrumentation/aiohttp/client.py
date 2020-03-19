@@ -47,10 +47,7 @@ try:
                             scope.span.set_tag("http.%s" % custom_header, params.response.headers[custom_header])
 
                 if 500 <= params.response.status <= 599:
-                    scope.span.set_tag("http.error", params.response.reason)
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    scope.span.set_tag("ec", ec + 1)
+                    scope.span.mark_as_errored({"http.error": params.response.reason})
 
                 scope.close()
         except Exception:

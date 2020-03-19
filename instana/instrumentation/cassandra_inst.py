@@ -45,11 +45,7 @@ try:
 
     def cb_request_error(results, span, fn):
         collect_response(span, fn)
-
-        span.set_tag("error", True)
-        ec = span.tags.get('ec', 0)
-        span.set_tag("ec", ec + 1)
-        span.set_tag("cassandra.error", results.message)
+        span.mark_as_errored("cassandra.error", results.message)
         span.finish()
 
     def request_init_with_instana(fn):

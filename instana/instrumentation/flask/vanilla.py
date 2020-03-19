@@ -64,10 +64,7 @@ def after_request_with_instana(response):
             span = scope.span
 
             if 500 <= response.status_code <= 511:
-                span.set_tag("error", True)
-                ec = span.tags.get('ec', 0)
-                if ec == 0:
-                    span.set_tag("ec", ec+1)
+                span.mark_as_errored()
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
             tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)

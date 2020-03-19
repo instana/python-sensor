@@ -45,7 +45,6 @@ class TestPyMongo:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_false(db_span.error)
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
@@ -71,7 +70,6 @@ class TestPyMongo:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_false(db_span.error)
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
@@ -96,7 +94,6 @@ class TestPyMongo:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_false(db_span.error)
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
@@ -130,7 +127,6 @@ class TestPyMongo:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_false(db_span.error)
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
@@ -159,7 +155,6 @@ class TestPyMongo:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_false(db_span.error)
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")
@@ -191,7 +186,6 @@ class TestPyMongo:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_false(db_span.error)
         assert_is_none(db_span.ec)
 
         assert_equals(db_span.n, "mongo")

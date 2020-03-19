@@ -51,7 +51,6 @@ class TestSudsJurko:
         assert_equals(wsgi_span.t, soap_span.t)
         assert_equals(wsgi_span.p, soap_span.s)
 
-        assert_equals(None, soap_span.error)
         assert_equals(None, soap_span.ec)
 
         assert_equals('ask_question', soap_span.data["soap"]["action"])
@@ -81,7 +80,6 @@ class TestSudsJurko:
         assert_equals(wsgi_span.t, soap_span.t)
         assert_equals(wsgi_span.p, soap_span.s)
 
-        assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
         assert_equals(u"Server raised fault: 'Internal Error'", soap_span.data["http"]["error"])
         assert_equals('server_exception', soap_span.data["soap"]["action"])
@@ -110,7 +108,6 @@ class TestSudsJurko:
         assert_equals(wsgi_span.t, soap_span.t)
         assert_equals(wsgi_span.p, soap_span.s)
 
-        assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
         assert_equals(u"Server raised fault: 'Server side fault example.'", soap_span.data["http"]["error"])
         assert_equals('server_fault', soap_span.data["soap"]["action"])
@@ -140,7 +137,6 @@ class TestSudsJurko:
         assert_equals(wsgi_span.t, soap_span.t)
         assert_equals(wsgi_span.p, soap_span.s)
 
-        assert_equals(True, soap_span.error)
         assert_equals(1, soap_span.ec)
         assert_equals(u"Server raised fault: 'Client side fault example'", soap_span.data["http"]["error"])
         assert_equals('client_fault', soap_span.data["soap"]["action"])

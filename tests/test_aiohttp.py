@@ -57,11 +57,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -111,13 +108,9 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span2.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(wsgi_span1.error)
         self.assertIsNone(wsgi_span1.ec)
-        self.assertFalse(wsgi_span2.error)
         self.assertIsNone(wsgi_span2.ec)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -164,11 +157,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertIsNone(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -215,11 +205,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aiohttp_span.error)
         self.assertEqual(aiohttp_span.ec, 1)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(wsgi_span.ec, 1)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -267,11 +254,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aiohttp_span.error)
         self.assertEqual(aiohttp_span.ec, 1)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(wsgi_span.ec, 1)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -319,11 +303,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -374,11 +355,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(wsgi_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -429,9 +407,7 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aiohttp_span.p, test_span.s)
 
         # Error logging
-        self.assertTrue(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aiohttp_span.error)
         self.assertEqual(aiohttp_span.ec, 1)
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
@@ -473,11 +449,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aioclient_span.error)
         self.assertIsNone(aioclient_span.ec)
-        self.assertFalse(aioserver_span.error)
         self.assertIsNone(aioserver_span.ec)
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
@@ -532,11 +505,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aioclient_span.error)
         self.assertIsNone(aioclient_span.ec)
-        self.assertFalse(aioserver_span.error)
         self.assertIsNone(aioserver_span.ec)
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
@@ -600,11 +570,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aioclient_span.error)
         self.assertIsNone(aioclient_span.ec)
-        self.assertFalse(aioserver_span.error)
         self.assertIsNone(aioserver_span.ec)
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
@@ -666,11 +633,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aioclient_span.error)
         self.assertIsNone(aioclient_span.ec)
-        self.assertFalse(aioserver_span.error)
         self.assertIsNone(aioserver_span.ec)
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
@@ -725,11 +689,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aioclient_span.error)
         self.assertEqual(aioclient_span.ec, 1)
-        self.assertTrue(aioserver_span.error)
         self.assertEqual(aioserver_span.ec, 1)
 
         self.assertEqual("aiohttp-server", aioserver_span.n)
@@ -786,11 +747,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aioclient_span.error)
         self.assertEqual(aioclient_span.ec, 1)
-        self.assertTrue(aioserver_span.error)
         self.assertEqual(aioserver_span.ec, 1)
 
         self.assertEqual("aiohttp-server", aioserver_span.n)

@@ -10,13 +10,23 @@ class InstanaSpan(BasicSpan):
     def finish(self, finish_time=None):
         super(InstanaSpan, self).finish(finish_time)
 
+    def mark_as_errored(self, tags = None):
+        try:
+            ec = self.tags.get('ec', 0)
+            self.set_tag('ec', ec + 1)
+
+            if tags is not None and type(tags) is dict:
+                for key in tags:
+                    self.set_tag(key, tags[key])
+        except Exception:
+            logger.debug('span.mark_as_errored', exc_info=True)
+            raise
+
     def log_exception(self, e):
         try:
             message = ""
 
-            self.set_tag("error", True)
-            ec = self.tags.get('ec', 0)
-            self.set_tag("ec", ec+1)
+            self.mark_as_errored()
 
             if hasattr(e, '__str__'):
                 message = str(e)
@@ -74,8 +84,7 @@ class BaseSpan(object):
         self.ts = int(round(span.start_time * 1000))
         self.d = int(round(span.duration * 1000))
         self.f = source
-        self.ec = span.tags.pop("ec", None)
-        self.error = span.tags.pop("error", None)
+        self.ec = span.tags.pop('ec', None)
 
         if span.stack:
             self.stack = span.stack

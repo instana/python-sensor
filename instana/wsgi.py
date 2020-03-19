@@ -26,9 +26,7 @@ class iWSGIMiddleware(object):
 
             sc = status.split(' ')[0]
             if 500 <= int(sc) <= 511:
-                self.scope.span.set_tag("error", True)
-                ec = self.scope.span.tags.get('ec', 0)
-                self.scope.span.set_tag("ec", ec+1)
+                self.scope.span.mark_as_errored()
 
             self.scope.span.set_tag(tags.HTTP_STATUS_CODE, sc)
             self.scope.close()

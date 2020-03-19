@@ -62,7 +62,6 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(urllib3_span.p, test_span.s)
         assert_equals(django_span.p, urllib3_span.s)
 
-        assert_equals(None, django_span.error)
         assert_equals(None, django_span.ec)
 
         assert_equals('/', django_span.data["http"]["url"])
@@ -114,7 +113,6 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(django_span.p, urllib3_span.s)
         assert_equals(log_span.p, django_span.s)
 
-        assert_equals(True, django_span.error)
         assert_equals(1, django_span.ec)
 
         assert_equals('/cause_error', django_span.data["http"]["url"])
@@ -170,7 +168,6 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(ot_span1.p, django_span.s)
         assert_equals(ot_span2.p, ot_span1.s)
 
-        assert_equals(None, django_span.error)
         assert_equals(None, django_span.ec)
         assert(django_span.stack)
         assert_equals(2, len(django_span.stack))
@@ -211,7 +208,6 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals(urllib3_span.p, test_span.s)
         assert_equals(django_span.p, urllib3_span.s)
 
-        assert_equals(None, django_span.error)
         assert_equals(None, django_span.ec)
         assert(django_span.stack)
         assert_equals(2, len(django_span.stack))

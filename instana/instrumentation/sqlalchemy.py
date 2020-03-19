@@ -40,27 +40,25 @@ try:
         context = kw['context']
 
         if context is not None and hasattr(context, '_stan_scope'):
-            this_scope = context._stan_scope
-            if this_scope is not None:
-                this_scope.close()
+            scope = context._stan_scope
+            if scope is not None:
+                scope.close()
 
     @event.listens_for(Engine, 'dbapi_error', named=True)
     def receive_dbapi_error(**kw):
         context = kw['context']
 
         if context is not None and hasattr(context, '_stan_scope'):
-            this_scope = context._stan_scope
-            if this_scope is not None:
-                this_scope.span.set_tag("error", True)
-                ec = this_scope.span.tags.get('ec', 0)
-                this_scope.span.set_tag("ec", ec+1)
+            scope = context._stan_scope
+            if scope is not None:
+                scope.span.mark_as_errored()
 
                 if 'exception' in kw:
                     e = kw['exception']
-                    this_scope.span.set_tag('sqlalchemy.err', str(e))
+                    scope.span.set_tag('sqlalchemy.err', str(e))
                 else:
-                    this_scope.span.set_tag('sqlalchemy.err', "No dbapi error specified.")
-                this_scope.close()
+                    scope.span.set_tag('sqlalchemy.err', "No dbapi error specified.")
+                scope.close()
 
 
     logger.debug("Instrumenting sqlalchemy")

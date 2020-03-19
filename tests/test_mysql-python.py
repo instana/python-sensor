@@ -93,7 +93,6 @@ class TestMySQLPython:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -122,7 +121,6 @@ class TestMySQLPython:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -151,7 +149,6 @@ class TestMySQLPython:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -178,7 +175,6 @@ class TestMySQLPython:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -213,7 +209,6 @@ class TestMySQLPython:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
         assert_equals(db_span.data["mysql"]["error"], '(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
 

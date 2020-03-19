@@ -42,10 +42,7 @@ try:
             if response is not None:
                 # Mark 500 responses as errored
                 if 500 <= response.status <= 511:
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    if ec == 0:
-                        scope.span.set_tag("ec", ec + 1)
+                    scope.span.mark_as_errored()
 
                 scope.span.set_tag("http.status_code", response.status)
                 async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)

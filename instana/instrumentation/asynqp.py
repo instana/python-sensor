@@ -38,10 +38,7 @@ try:
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
-                scope.span.log_kv({'message': e})
-                scope.span.set_tag("error", True)
-                ec = scope.span.tags.get('ec', 0)
-                scope.span.set_tag("ec", ec+1)
+                scope.span.mark_as_errored({'message': e})
                 raise
             else:
                 return rv
@@ -90,11 +87,9 @@ try:
 
                         original_callback(*argv, **kwargs)
                     except Exception as e:
-                        scope.span.log_kv({'message': e})
-                        scope.span.set_tag("error", True)
-                        ec = scope.span.tags.get('ec', 0)
-                        scope.span.set_tag("ec", ec+1)
+                        scope.span.mark_as_errored({'message': e})
                         raise
+
             return callback_with_instana
 
         cb = argv[0]

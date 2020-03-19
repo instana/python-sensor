@@ -74,11 +74,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
         self.assertEqual(200, tornado_span.data["http"]["status"])
@@ -141,11 +138,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
         self.assertEqual(200, tornado_span.data["http"]["status"])
@@ -214,13 +208,9 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(tornado_301_span.error)
         self.assertIsNone(tornado_301_span.ec)
-        self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
         self.assertEqual(301, tornado_301_span.data["http"]["status"])
@@ -289,11 +279,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
         self.assertEqual(405, tornado_span.data["http"]["status"])
@@ -355,11 +342,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aiohttp_span.error)
         self.assertEqual(aiohttp_span.ec, 1)
-        self.assertTrue(tornado_span.error)
         self.assertEqual(tornado_span.ec, 1)
 
         self.assertEqual(500, tornado_span.data["http"]["status"])
@@ -422,11 +406,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(aiohttp_span.error)
         self.assertEqual(aiohttp_span.ec, 1)
-        self.assertTrue(tornado_span.error)
         self.assertEqual(tornado_span.ec, 1)
 
         self.assertEqual(504, tornado_span.data["http"]["status"])
@@ -489,11 +470,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
         self.assertEqual(200, tornado_span.data["http"]["status"])
@@ -563,11 +541,8 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(aiohttp_span.error)
         self.assertIsNone(aiohttp_span.ec)
-        self.assertFalse(tornado_span.error)
         self.assertIsNone(tornado_span.ec)
 
         self.assertEqual(200, tornado_span.data["http"]["status"])

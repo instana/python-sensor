@@ -53,7 +53,7 @@ class InstanaMiddleware(MiddlewareMixin):
         try:
             if request.iscope is not None:
                 if 500 <= response.status_code <= 511:
-                    request.iscope.span.mark_as_errored()
+                    request.iscope.span.assure_errored()
 
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
                 tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
@@ -69,7 +69,7 @@ class InstanaMiddleware(MiddlewareMixin):
 
     def process_exception(self, request, exception):
         if request.iscope is not None:
-            request.iscope.span.mark_as_errored({ext.HTTP_STATUS_CODE: 500, 'http.error': str(exception)})
+            request.iscope.span.log_exception(exception)
 
 
 def load_middleware_wrapper(wrapped, instance, args, kwargs):

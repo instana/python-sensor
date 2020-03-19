@@ -137,7 +137,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.p, test_span.s)
 
         self.assertIsNotNone(cb_span.stack)
-        self.assertFalse(cb_span.error)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])

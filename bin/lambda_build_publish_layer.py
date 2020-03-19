@@ -68,10 +68,6 @@ LAYER_NAME = "instana-python"
 
 published = dict()
 
-# response = check_output(["aws", "lambda", "list-layers"])
-# To update a Function
-# aws lambda update-function-configuration --function-name CanaryInACoalMine --layers arn:aws:lambda:us-west-1:410797082306:layer:instana-py-test:22
-
 for region in regions:
     print("===> Uploading layer to AWS %s " % region)
     response = check_output(["aws", "--region", region, "lambda", "publish-layer-version",

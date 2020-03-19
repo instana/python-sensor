@@ -155,7 +155,7 @@ def enrich_lambda_span(agent, span, event, context):
                     data = event['awslogs']['data']
                     decoded_data = base64.b64decode(data)
                     decompressed_data = gzip.GzipFile(fileobj=BytesIO(decoded_data)).read()
-                    log_data = json.loads(decompressed_data)
+                    log_data = json.loads(decompressed_data.decode('utf-8'))
 
                     span.set_tag('lambda.cw.logs.group', log_data.get('logGroup', None))
                     span.set_tag('lambda.cw.logs.stream', log_data.get('logStream', None))

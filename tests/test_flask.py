@@ -67,11 +67,8 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -140,13 +137,9 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(render_span.p, wsgi_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
-        self.assertFalse(render_span.error)
         self.assertIsNone(render_span.ec)
 
         # render
@@ -223,13 +216,9 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(render_span.p, wsgi_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
-        self.assertFalse(render_span.error)
         self.assertIsNone(render_span.ec)
 
         # render
@@ -304,11 +293,8 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertEqual(None, urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertEqual(None, wsgi_span.ec)
 
         # wsgi
@@ -375,11 +361,8 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertEqual(None, urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertEqual(None, wsgi_span.ec)
 
         # wsgi
@@ -446,11 +429,8 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
 
         # wsgi
@@ -521,11 +501,8 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
 
         # error log
@@ -587,13 +564,9 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(log_span.p, wsgi_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
-        self.assertTrue(log_span.error)
         self.assertEqual(1, log_span.ec)
 
         # error log
@@ -670,13 +643,9 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
-        self.assertTrue(log_span.error)
         self.assertEqual(1, log_span.ec)
 
         # error log
@@ -690,7 +659,7 @@ class TestFlask(unittest.TestCase):
         self.assertEqual('/exception-invalid-usage', wsgi_span.data["http"]["url"])
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(502, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
+        self.assertEqual('Simulated custom exception', wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 
@@ -747,11 +716,8 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi

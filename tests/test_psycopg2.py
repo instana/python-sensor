@@ -92,7 +92,6 @@ class TestPsycoPG2:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "postgres")
@@ -116,7 +115,6 @@ class TestPsycoPG2:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "postgres")
@@ -143,7 +141,6 @@ class TestPsycoPG2:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "postgres")
@@ -170,7 +167,6 @@ class TestPsycoPG2:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "postgres")
@@ -201,7 +197,6 @@ class TestPsycoPG2:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
         assert_equals(db_span.data["pg"]["error"], 'relation "blah" does not exist\nLINE 1: SELECT * from blah\n                      ^\n')
 

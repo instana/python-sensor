@@ -10,18 +10,51 @@ class InstanaSpan(BasicSpan):
     def finish(self, finish_time=None):
         super(InstanaSpan, self).finish(finish_time)
 
+    def mark_as_errored(self, tags = None):
+        """
+        Mark this span as errored.
+
+        @param tags: optional tags to add to the span
+        """
+        try:
+            ec = self.tags.get('ec', 0)
+            self.set_tag('ec', ec + 1)
+
+            if tags is not None and type(tags) is dict:
+                for key in tags:
+                    self.set_tag(key, tags[key])
+        except Exception:
+            logger.debug('span.mark_as_errored', exc_info=True)
+
+    def assure_errored(self):
+        """
+        Make sure that this span is marked as errored.
+        @return: None
+        """
+        try:
+            ec = self.tags.get('ec', None)
+            if ec is None or ec == 0:
+                self.set_tag('ec', 1)
+        except Exception:
+            logger.debug('span.assure_errored', exc_info=True)
+
     def log_exception(self, e):
+        """
+        Log an exception onto this span.  This will log pertinent info from the exception and
+        assure that this span is marked as errored.
+
+        @param e: the exception to log
+        """
         try:
             message = ""
+            self.mark_as_errored()
 
-            self.set_tag("error", True)
-            ec = self.tags.get('ec', 0)
-            self.set_tag("ec", ec+1)
-
-            if hasattr(e, '__str__'):
+            if hasattr(e, '__str__') and len(str(e)) > 0:
                 message = str(e)
             elif hasattr(e, 'message') and e.message is not None:
                 message = e.message
+            else:
+                message = repr(e)
 
             if self.operation_name in ['rpc-server', 'rpc-client']:
                 self.set_tag('rpc.error', message)
@@ -29,7 +62,7 @@ class InstanaSpan(BasicSpan):
                 self.set_tag('mysql.error', message)
             elif self.operation_name == "postgres":
                 self.set_tag('pg.error', message)
-            elif self.operation_name == "soap":
+            elif self.operation_name in RegisteredSpan.HTTP_SPANS:
                 self.set_tag('http.error', message)
             else:
                 self.log_kv({'message': message})
@@ -39,7 +72,7 @@ class InstanaSpan(BasicSpan):
 
     def collect_logs(self):
         """
-            Collect up log data and feed it to the Instana brain.
+        Collect up log data and feed it to the Instana brain.
 
         :param span: The span to search for logs in
         :return: Logs ready for consumption by the Instana brain.
@@ -74,8 +107,7 @@ class BaseSpan(object):
         self.ts = int(round(span.start_time * 1000))
         self.d = int(round(span.duration * 1000))
         self.f = source
-        self.ec = span.tags.pop("ec", None)
-        self.error = span.tags.pop("error", None)
+        self.ec = span.tags.pop('ec', None)
 
         if span.stack:
             self.stack = span.stack

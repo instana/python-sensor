@@ -59,11 +59,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(client_span.error)
         self.assertIsNone(client_span.ec)
-        self.assertFalse(server_span.error)
         self.assertIsNone(server_span.ec)
 
         self.assertEqual("tornado-server", server_span.n)
@@ -119,11 +116,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(client_span.error)
         self.assertIsNone(client_span.ec)
-        self.assertFalse(server_span.error)
         self.assertIsNone(server_span.ec)
 
         self.assertEqual("tornado-server", server_span.n)
@@ -183,11 +177,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(client_span.error)
         self.assertIsNone(client_span.ec)
-        self.assertFalse(server_span.error)
         self.assertIsNone(server_span.ec)
 
         self.assertEqual("tornado-server", server_span.n)
@@ -255,11 +246,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(client_span.error)
         self.assertEqual(client_span.ec, 1)
-        self.assertFalse(server_span.error)
         self.assertIsNone(server_span.ec)
 
         self.assertEqual("tornado-server", server_span.n)
@@ -318,11 +306,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(client_span.error)
         self.assertEqual(client_span.ec, 1)
-        self.assertTrue(server_span.error)
         self.assertEqual(server_span.ec, 1)
 
         self.assertEqual("tornado-server", server_span.n)
@@ -381,11 +366,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(client_span.error)
         self.assertEqual(client_span.ec, 1)
-        self.assertTrue(server_span.error)
         self.assertEqual(server_span.ec, 1)
 
         self.assertEqual("tornado-server", server_span.n)
@@ -441,11 +423,8 @@ class TestTornadoClient(unittest.TestCase):
         self.assertEqual(server_span.p, client_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(client_span.error)
         self.assertIsNone(client_span.ec)
-        self.assertFalse(server_span.error)
         self.assertIsNone(server_span.ec)
 
         self.assertEqual("tornado-server", server_span.n)

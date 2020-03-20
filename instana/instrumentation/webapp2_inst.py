@@ -30,9 +30,7 @@ try:
 
                 sc = status.split(' ')[0]
                 if 500 <= int(sc) <= 511:
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    scope.span.set_tag("ec", ec+1)
+                    scope.span.mark_as_errored()
 
                 scope.span.set_tag(tags.HTTP_STATUS_CODE, sc)
                 scope.close()

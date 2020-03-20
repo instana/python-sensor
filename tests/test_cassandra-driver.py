@@ -83,7 +83,6 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.p, test_span.s)
 
         self.assertIsNotNone(cspan.stack)
-        self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
         self.assertEqual(cspan.data["cassandra"]["cluster"], 'Test Cluster')
@@ -117,7 +116,6 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.p, test_span.s)
 
         self.assertIsNotNone(cspan.stack)
-        self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
         self.assertEqual(cspan.data["cassandra"]["cluster"], 'Test Cluster')
@@ -155,7 +153,6 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.p, test_span.s)
 
         self.assertIsNotNone(cspan.stack)
-        self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
         self.assertEqual(cspan.data["cassandra"]["cluster"], 'Test Cluster')
@@ -193,7 +190,6 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.p, test_span.s)
 
         self.assertIsNotNone(cspan.stack)
-        self.assertTrue(cspan.error)
         self.assertEqual(cspan.ec, 1)
 
         self.assertEqual(cspan.data["cassandra"]["cluster"], 'Test Cluster')
@@ -232,7 +228,6 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.p, test_span.s)
 
         self.assertIsNotNone(cspan.stack)
-        self.assertFalse(cspan.error)
         self.assertIsNone(cspan.ec)
 
         self.assertEqual(cspan.data["cassandra"]["cluster"], 'Test Cluster')

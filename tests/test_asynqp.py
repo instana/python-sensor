@@ -85,9 +85,7 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(rabbitmq_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rabbitmq_span.error)
         self.assertIsNone(rabbitmq_span.ec)
 
         # Rabbitmq
@@ -123,9 +121,7 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(rabbitmq_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rabbitmq_span.error)
         self.assertIsNone(rabbitmq_span.ec)
 
         # Rabbitmq
@@ -193,11 +189,8 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(get_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(publish_span.error)
         self.assertIsNone(publish_span.ec)
-        self.assertFalse(get_span.error)
         self.assertIsNone(get_span.ec)
 
         # Publish
@@ -268,11 +261,8 @@ class TestAsynqp(unittest.TestCase):
         self.assertGreater(len(consume_span.stack), 0)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(consume_span.error)
         self.assertIsNone(consume_span.ec)
-        self.assertFalse(publish_span.error)
         self.assertIsNone(publish_span.ec)
 
     def test_consume_and_publish(self):
@@ -340,13 +330,9 @@ class TestAsynqp(unittest.TestCase):
         self.assertGreater(len(consume1_span.stack), 0)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(consume1_span.error)
         self.assertIsNone(consume1_span.ec)
-        self.assertFalse(publish1_span.error)
         self.assertIsNone(publish1_span.ec)
-        self.assertFalse(publish2_span.error)
         self.assertIsNone(publish2_span.ec)
 
     def test_consume_with_ensure_future(self):
@@ -427,9 +413,6 @@ class TestAsynqp(unittest.TestCase):
         self.assertGreater(len(consume_span.stack), 0)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(consume_span.error)
         self.assertIsNone(consume_span.ec)
-        self.assertFalse(publish_span.error)
         self.assertIsNone(publish_span.ec)

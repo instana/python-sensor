@@ -137,7 +137,6 @@ class TestLambda(unittest.TestCase):
                          span.f)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.error)
         self.assertIsNone(span.data['lambda']['error'])
 
         self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
@@ -190,7 +189,6 @@ class TestLambda(unittest.TestCase):
                          span.f)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.error)
         self.assertIsNone(span.data['lambda']['error'])
 
         self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
@@ -242,7 +240,6 @@ class TestLambda(unittest.TestCase):
                          span.f)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.error)
         self.assertIsNone(span.data['lambda']['error'])
 
         self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
@@ -294,7 +291,6 @@ class TestLambda(unittest.TestCase):
                          span.f)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.error)
         self.assertIsNone(span.data['lambda']['error'])
 
         self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
@@ -348,7 +344,6 @@ class TestLambda(unittest.TestCase):
                          span.f)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.error)
         self.assertIsNone(span.data['lambda']['error'])
 
         self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
@@ -401,7 +396,6 @@ class TestLambda(unittest.TestCase):
                          span.f)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.error)
         self.assertIsNone(span.data['lambda']['error'])
 
         self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])

@@ -89,7 +89,6 @@ class TestPyMySQL:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -117,7 +116,6 @@ class TestPyMySQL:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -146,7 +144,6 @@ class TestPyMySQL:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -175,7 +172,6 @@ class TestPyMySQL:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -202,7 +198,6 @@ class TestPyMySQL:
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
 
-        assert_equals(None, db_span.error)
         assert_equals(None, db_span.ec)
 
         assert_equals(db_span.n, "mysql")
@@ -236,7 +231,6 @@ class TestPyMySQL:
         assert_equals("test", test_span.data["sdk"]["name"])
         assert_equals(test_span.t, db_span.t)
         assert_equals(db_span.p, test_span.s)
-        assert_equals(True, db_span.error)
         assert_equals(1, db_span.ec)
 
         if sys.version_info[0] >= 3:

@@ -77,10 +77,7 @@ try:
 
                 # Mark 500 responses as errored
                 if 500 <= status_code <= 511:
-                    scope.span.set_tag("error", True)
-                    ec = scope.span.tags.get('ec', 0)
-                    if ec == 0:
-                        scope.span.set_tag("ec", ec + 1)
+                    scope.span.mark_as_errored()
 
                 scope.span.set_tag("http.status_code", status_code)
                 scope.close()

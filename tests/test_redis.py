@@ -58,13 +58,9 @@ class TestRedis(unittest.TestCase):
         self.assertEqual(rs3_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rs1_span.error)
         self.assertIsNone(rs1_span.ec)
-        self.assertFalse(rs2_span.error)
         self.assertIsNone(rs2_span.ec)
-        self.assertFalse(rs3_span.error)
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
@@ -139,13 +135,9 @@ class TestRedis(unittest.TestCase):
         self.assertEqual(rs3_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rs1_span.error)
         self.assertIsNone(rs1_span.ec)
-        self.assertFalse(rs2_span.error)
         self.assertIsNone(rs2_span.ec)
-        self.assertFalse(rs3_span.error)
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
@@ -220,13 +212,9 @@ class TestRedis(unittest.TestCase):
         self.assertEqual(rs3_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rs1_span.error)
         self.assertIsNone(rs1_span.ec)
-        self.assertFalse(rs2_span.error)
         self.assertIsNone(rs2_span.ec)
-        self.assertFalse(rs3_span.error)
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
@@ -297,9 +285,7 @@ class TestRedis(unittest.TestCase):
         self.assertEqual(rs1_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(rs1_span.error)
         self.assertIsNone(rs1_span.ec)
 
         # Redis span 1

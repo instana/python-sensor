@@ -51,11 +51,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -102,11 +99,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -154,11 +148,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -206,11 +197,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -264,15 +252,10 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span2.p, urllib3_span2.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span1.error)
         self.assertIsNone(urllib3_span1.ec)
-        self.assertFalse(wsgi_span1.error)
         self.assertIsNone(wsgi_span1.ec)
-        self.assertFalse(urllib3_span2.error)
         self.assertIsNone(urllib3_span2.ec)
-        self.assertFalse(wsgi_span2.error)
         self.assertIsNone(wsgi_span2.ec)
 
         # wsgi
@@ -343,15 +326,10 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span2.p, urllib3_span2.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span1.error)
         self.assertIsNone(urllib3_span1.ec)
-        self.assertFalse(wsgi_span1.error)
         self.assertIsNone(wsgi_span1.ec)
-        self.assertFalse(urllib3_span2.error)
         self.assertIsNone(urllib3_span2.ec)
-        self.assertFalse(wsgi_span2.error)
         self.assertIsNone(wsgi_span2.ec)
 
         # wsgi
@@ -416,11 +394,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
 
         # wsgi
@@ -471,11 +446,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
-        self.assertTrue(wsgi_span.error)
         self.assertEqual(1, wsgi_span.ec)
 
         # wsgi
@@ -533,9 +505,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertTrue(len(urllib3_span.stack) > 1)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(urllib3_span.error)
         self.assertEqual(1, urllib3_span.ec)
 
     def test_requestspkg_get(self):
@@ -562,11 +532,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -616,11 +583,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -666,11 +630,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -720,11 +681,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi

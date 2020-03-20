@@ -66,9 +66,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertEqual(sql_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(sql_span.error)
         self.assertIsNone(sql_span.ec)
 
         # SQLAlchemy span
@@ -110,11 +108,8 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertEqual(sql_span1.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(sql_span0.error)
         self.assertIsNone(sql_span0.ec)
-        self.assertFalse(sql_span1.error)
         self.assertIsNone(sql_span1.ec)
 
         # SQLAlchemy span0
@@ -168,9 +163,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertEqual(sql_span.p, test_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertTrue(sql_span.error)
         self.assertIs(sql_span.ec, 1)
 
         # SQLAlchemy span

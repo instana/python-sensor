@@ -68,11 +68,8 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -131,15 +128,10 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(spacedust_span.p, asteroid_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
-        self.assertFalse(asteroid_span.error)
         self.assertIsNone(asteroid_span.ec)
-        self.assertFalse(spacedust_span.error)
         self.assertIsNone(spacedust_span.ec)
 
         # wsgi
@@ -199,11 +191,8 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi
@@ -261,11 +250,8 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
         # Error logging
-        self.assertFalse(test_span.error)
         self.assertIsNone(test_span.ec)
-        self.assertFalse(urllib3_span.error)
         self.assertIsNone(urllib3_span.ec)
-        self.assertFalse(wsgi_span.error)
         self.assertIsNone(wsgi_span.ec)
 
         # wsgi

@@ -659,7 +659,7 @@ class TestFlask(unittest.TestCase):
         self.assertEqual('/exception-invalid-usage', wsgi_span.data["http"]["url"])
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(502, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
+        self.assertEqual('Simulated custom exception', wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 

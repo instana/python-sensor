@@ -47,13 +47,14 @@ class InstanaSpan(BasicSpan):
         """
         try:
             message = ""
-
             self.mark_as_errored()
 
-            if hasattr(e, '__str__'):
+            if hasattr(e, '__str__') and len(str(e)) > 0:
                 message = str(e)
             elif hasattr(e, 'message') and e.message is not None:
                 message = e.message
+            else:
+                message = repr(e)
 
             if self.operation_name in ['rpc-server', 'rpc-client']:
                 self.set_tag('rpc.error', message)

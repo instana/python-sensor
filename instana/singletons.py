@@ -11,11 +11,9 @@ tracer = None
 span_recorder = None
 
 if os.environ.get("INSTANA_ENDPOINT_URL", False):
-    print("Lambda environment")
     agent = AWSLambdaAgent()
     span_recorder = AWSLambdaRecorder(agent)
 else:
-    print("Standard host environment")
     agent = StandardAgent()
     span_recorder = StandardRecorder()
 

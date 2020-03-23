@@ -46,9 +46,6 @@ def load(_):
     if "INSTANA_DEBUG" in os.environ:
         print("Instana: activated via AUTOWRAPT_BOOTSTRAP")
 
-    if "INSTANA_ENDPOINT_URL" in os.environ:
-        print("load: detected lambda environment")
-
 
 def get_lambda_handler_or_default():
     """

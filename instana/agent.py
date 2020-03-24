@@ -365,10 +365,16 @@ class AWSLambdaAgent(BaseAgent):
 
             logger.debug("using these headers: %s" % self.report_headers)
 
+            if 'INSTANA_DEV_ACCEPT_SELF_SIGNED_CERT' in os.environ:
+                ssl_verify = False
+            else:
+                ssl_verify = True
+
             response = self.client.post(self.__data_bundle_url(),
                                         data=to_json(payload),
                                         headers=self.report_headers,
-                                        timeout=self.options.timeout)
+                                        timeout=self.options.timeout,
+                                        verify=ssl_verify)
 
             logger.debug("report_data_payload: response.status_code is %s" % response.status_code)
         except (requests.ConnectTimeout, requests.ConnectionError):

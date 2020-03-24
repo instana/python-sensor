@@ -365,7 +365,7 @@ class AWSLambdaAgent(BaseAgent):
 
             logger.debug("using these headers: %s" % self.report_headers)
 
-            if 'INSTANA_DEV_ACCEPT_SELF_SIGNED_CERT' in os.environ:
+            if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
                 ssl_verify = False
             else:
                 ssl_verify = True

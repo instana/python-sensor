@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import json
 import shutil
 import time
 import distutils.spawn
 from subprocess import call, check_output
+
+# Either -dev or -prod must be specified (and nothing else)
+if len(sys.argv) != 2 or (('-dev' not in sys.argv) and ('-prod' not in sys.argv)):
+    raise ValueError('Please specify -dev or -prod to indicate which type of layer to build.')
+
+dev_mode = '-dev' in sys.argv
 
 # Disable aws CLI pagination
 os.environ["AWS_PAGER"] = ""
@@ -57,14 +64,14 @@ fq_zip_filename = os.getcwd() + '/%s' % zip_filename
 aws_zip_filename = "fileb://%s" % fq_zip_filename
 print("Zipfile should be at: ", fq_zip_filename)
 
-regions = ['ap-northeast-1', 'ap-northeast-2', 'ap-south-1', 'ap-southeast-1', 'ap-southeast-2', 'ca-central-1',
-           'eu-central-1', 'eu-north-1', 'eu-west-1', 'eu-west-2', 'eu-west-3', 'sa-east-1', 'us-east-1',
-           'us-east-2', 'us-west-1', 'us-west-2']
-
-# regions = ['us-west-1']
-
-# LAYER_NAME = "instana-py-test"
-LAYER_NAME = "instana-python"
+if dev_mode:
+    regions = ['us-west-1']
+    LAYER_NAME = "instana-py-dev"
+else:
+    regions = ['ap-northeast-1', 'ap-northeast-2', 'ap-south-1', 'ap-southeast-1', 'ap-southeast-2', 'ca-central-1',
+               'eu-central-1', 'eu-north-1', 'eu-west-1', 'eu-west-2', 'eu-west-3', 'sa-east-1', 'us-east-1',
+               'us-east-2', 'us-west-1', 'us-west-2']
+    LAYER_NAME = "instana-python"
 
 published = dict()
 
@@ -81,13 +88,14 @@ for region in regions:
     version = json_data['Version']
     print("===> Uploaded version is %s" % version)
 
-    print("===> Making layer public...")
-    response = check_output(["aws", "--region", region, "lambda", "add-layer-version-permission",
-                             "--layer-name", LAYER_NAME, "--version-number", str(version),
-                             "--statement-id", "public-permission-all-accounts",
-                             "--principal", "*",
-                             "--action", "lambda:GetLayerVersion",
-                             "--output", "text"])
+    if dev_mode is False:
+        print("===> Making layer public...")
+        response = check_output(["aws", "--region", region, "lambda", "add-layer-version-permission",
+                                 "--layer-name", LAYER_NAME, "--version-number", str(version),
+                                 "--statement-id", "public-permission-all-accounts",
+                                 "--principal", "*",
+                                 "--action", "lambda:GetLayerVersion",
+                                 "--output", "text"])
 
     published[region] = json_data['LayerVersionArn']
 

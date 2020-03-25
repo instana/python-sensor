@@ -129,6 +129,9 @@ class APIClient(object):
         for key in kwds:
             self.__dict__[key] = kwds[key]
 
+        log.warn("APIClient: This APIClient will be removed in a future version of this package.  Please"
+                 "migrate away as soon as possible.")
+
         if "INSTANA_API_TOKEN" in os.environ:
             self.api_token = os.environ["INSTANA_API_TOKEN"]
 

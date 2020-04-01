@@ -13,6 +13,7 @@ from instana.recorder import AWSLambdaRecorder
 from instana import lambda_handler
 from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
+from instana.instrumentation.aws.triggers import read_http_query_params
 
 
 # Mock Context object
@@ -411,3 +412,19 @@ class TestLambda(unittest.TestCase):
         message = messages[0]
         self.assertEqual('arn:aws:sqs:us-west-1:123456789012:MyQueue', message['queue'])
 
+    def test_read_query_params(self):
+        event = { "queryStringParameters": {"foo": "bar" },
+                  "multiValueQueryStringParameters": { "foo": ["bar"] } }
+        params = read_http_query_params(event)
+        self.assertEqual("foo=['bar']", params)
+
+    def test_read_query_params_with_none_data(self):
+        event = { "queryStringParameters": None,
+                  "multiValueQueryStringParameters": None }
+        params = read_http_query_params(event)
+        self.assertEqual("", params)
+
+    def test_read_query_params_with_bad_event(self):
+        event = None
+        params = read_http_query_params(event)
+        self.assertEqual("", params)

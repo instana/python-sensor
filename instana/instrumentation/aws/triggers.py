@@ -61,15 +61,15 @@ def read_http_query_params(event):
     @param event: lambda event dict
     @return: String in the form of "a=b&c=d"
     """
-    # print("multiValueQueryStringParameters=%s" % event['multiValueQueryStringParameters'])
-    # print("queryStringParameters=%s" % event['queryStringParameters'])
+    if event is None or type(event) is not dict:
+        return ""
 
     params = []
-    if 'multiValueQueryStringParameters' in event:
+    if 'multiValueQueryStringParameters' in event and event['multiValueQueryStringParameters'] is not None:
         for key in event['multiValueQueryStringParameters']:
             params.append("%s=%s" % (key, event['multiValueQueryStringParameters'][key]))
         return "&".join(params)
-    elif 'queryStringParameters' in event:
+    elif 'queryStringParameters' in event and event['queryStringParameters'] is not None:
         for key in event['queryStringParameters']:
             params.append("%s=%s" % (key, event['queryStringParameters'][key]))
         return "&".join(params)

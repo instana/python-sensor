@@ -4,7 +4,7 @@ import opentracing as ot
 
 from .log import logger
 from .util import header_to_id
-from .span_context import InstanaSpanContext
+from .span import SpanContext
 
 
 class BinaryPropagator():
@@ -72,7 +72,7 @@ class BinaryPropagator():
 
             ctx = None
             if trace_id is not None and span_id is not None:
-                ctx = InstanaSpanContext(span_id=span_id,
+                ctx = SpanContext(span_id=span_id,
                                          trace_id=trace_id,
                                          level=level,
                                          baggage={},

@@ -19,6 +19,19 @@ class SpanContext():
         self.sampled = sampled
         self._baggage = baggage or {}
 
+    @property
+    def baggage(self):
+        return self._baggage
+
+    def with_baggage_item(self, key, value):
+        new_baggage = self._baggage.copy()
+        new_baggage[key] = value
+        return SpanContext(
+            trace_id=self.trace_id,
+            span_id=self.span_id,
+            sampled=self.sampled,
+            baggage=new_baggage)
+
 
 class InstanaSpan(BasicSpan):
     stack = None

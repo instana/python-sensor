@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 import opentracing as ot
-from .span_context import InstanaSpanContext
 
 from .log import logger
+from .span import SpanContext
 from .util import header_to_id
 
 # The carrier can be a dict or a list.
@@ -95,7 +95,7 @@ class HTTPPropagator():
 
             ctx = None
             if trace_id is not None and span_id is not None:
-                ctx = InstanaSpanContext(span_id=span_id,
+                ctx = SpanContext(span_id=span_id,
                                          trace_id=trace_id,
                                          level=level,
                                          baggage={},

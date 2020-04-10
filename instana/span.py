@@ -4,6 +4,35 @@ from basictracer.span import BasicSpan
 import opentracing.ext.tags as ot_tags
 
 
+class SpanContext():
+    def __init__(
+            self,
+            trace_id=None,
+            span_id=None,
+            baggage=None,
+            sampled=True,
+            level=1):
+
+        self.level = level
+        self.trace_id = trace_id
+        self.span_id = span_id
+        self.sampled = sampled
+        self._baggage = baggage or {}
+
+    @property
+    def baggage(self):
+        return self._baggage
+
+    def with_baggage_item(self, key, value):
+        new_baggage = self._baggage.copy()
+        new_baggage[key] = value
+        return SpanContext(
+            trace_id=self.trace_id,
+            span_id=self.span_id,
+            sampled=self.sampled,
+            baggage=new_baggage)
+
+
 class InstanaSpan(BasicSpan):
     stack = None
 

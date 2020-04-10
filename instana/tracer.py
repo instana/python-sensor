@@ -11,9 +11,8 @@ from basictracer import BasicTracer
 from .binary_propagator import BinaryPropagator
 from .http_propagator import HTTPPropagator
 from .text_propagator import TextPropagator
-from .span_context import InstanaSpanContext
 from .recorder import StandardRecorder, InstanaSampler
-from .span import InstanaSpan, RegisteredSpan
+from .span import InstanaSpan, RegisteredSpan, SpanContext
 from .util import generate_id
 
 
@@ -70,7 +69,7 @@ class InstanaTracer(BasicTracer):
         parent_ctx = None
         if child_of is not None:
             parent_ctx = (
-                child_of if isinstance(child_of, ot.SpanContext)
+                child_of if isinstance(child_of, SpanContext)
                 else child_of.context)
         elif references is not None and len(references) > 0:
             # TODO only the first reference is currently used
@@ -84,7 +83,7 @@ class InstanaTracer(BasicTracer):
 
         # Assemble the child ctx
         gid = generate_id()
-        ctx = InstanaSpanContext(span_id=gid)
+        ctx = SpanContext(span_id=gid)
         if parent_ctx is not None:
             if parent_ctx._baggage is not None:
                 ctx._baggage = parent_ctx._baggage.copy()

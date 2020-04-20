@@ -99,16 +99,14 @@ class TheMachine(object):
         port = self.agent.options.agent_port
 
         if self.agent.is_agent_listening(host, port):
-            self.agent.host = host
-            self.agent.port = port
             self.fsm.announce()
             return True
         elif os.path.exists("/proc/"):
             host = get_default_gateway()
             if host:
                 if self.agent.is_agent_listening(host, port):
-                    self.agent.host = host
-                    self.agent.port = port
+                    self.agent.options.agent_host = host
+                    self.agent.options.agent_port = port
                     self.fsm.announce()
                     return True
 
@@ -120,7 +118,8 @@ class TheMachine(object):
         return False
 
     def announce_sensor(self, e):
-        logger.debug("Attempting to make an announcement to the agent on %s:%d", self.agent.host, self.agent.port)
+        logger.debug("Attempting to make an announcement to the agent on %s:%d",
+                     self.agent.options.agent_host, self.agent.options.agent_port)
         pid = os.getpid()
 
         try:
@@ -149,7 +148,7 @@ class TheMachine(object):
         # If we're on a system with a procfs
         if os.path.exists("/proc/"):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.agent.host, 42699))
+            sock.connect((self.agent.options.agent_host, self.agent.options.agent_port))
             path = "/proc/%d/fd/%d" % (pid, sock.fileno())
             d.fd = sock.fileno()
             d.inode = os.readlink(path)

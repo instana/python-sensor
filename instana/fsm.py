@@ -99,16 +99,15 @@ class TheMachine(object):
         port = self.agent.options.agent_port
 
         if self.agent.is_agent_listening(host, port):
-            self.agent.host = host
-            self.agent.port = port
             self.fsm.announce()
             return True
-        elif os.path.exists("/proc/"):
+
+        if os.path.exists("/proc/"):
             host = get_default_gateway()
             if host:
                 if self.agent.is_agent_listening(host, port):
-                    self.agent.host = host
-                    self.agent.port = port
+                    self.agent.options.agent_host = host
+                    self.agent.options.agent_port = port
                     self.fsm.announce()
                     return True
 
@@ -120,7 +119,8 @@ class TheMachine(object):
         return False
 
     def announce_sensor(self, e):
-        logger.debug("Announcing sensor to the agent")
+        logger.debug("Attempting to make an announcement to the agent on %s:%d",
+                     self.agent.options.agent_host, self.agent.options.agent_port)
         pid = os.getpid()
 
         try:
@@ -135,7 +135,7 @@ class TheMachine(object):
                 # psutil which requires dev packages, gcc etc...
                 proc = subprocess.Popen(["ps", "-p", str(pid), "-o", "command"],
                                         stdout=subprocess.PIPE)
-                (out, err) = proc.communicate()
+                (out, _) = proc.communicate()
                 parts = out.split(b'\n')
                 cmdline = [parts[1].decode("utf-8")]
         except Exception:
@@ -149,7 +149,7 @@ class TheMachine(object):
         # If we're on a system with a procfs
         if os.path.exists("/proc/"):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.agent.host, 42699))
+            sock.connect((self.agent.options.agent_host, self.agent.options.agent_port))
             path = "/proc/%d/fd/%d" % (pid, sock.fileno())
             d.fd = sock.fileno()
             d.inode = os.readlink(path)
@@ -162,9 +162,9 @@ class TheMachine(object):
             logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
                          str(pid), str(self.agent.announce_data.pid))
             return True
-        else:
-            logger.debug("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
+
+        logger.debug("Cannot announce sensor. Scheduling retry.")
+        self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
         return False
 
     def schedule_retry(self, fun, e, name):

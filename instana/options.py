@@ -1,8 +1,10 @@
+""" Options for the in-process Instana agent """
 import logging
 import os
 
 
 class StandardOptions(object):
+    """ Configurable option bits for this package """
     service = None
     service_name = None
     agent_host = None

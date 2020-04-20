@@ -101,7 +101,8 @@ class TheMachine(object):
         if self.agent.is_agent_listening(host, port):
             self.fsm.announce()
             return True
-        elif os.path.exists("/proc/"):
+
+        if os.path.exists("/proc/"):
             host = get_default_gateway()
             if host:
                 if self.agent.is_agent_listening(host, port):
@@ -134,7 +135,7 @@ class TheMachine(object):
                 # psutil which requires dev packages, gcc etc...
                 proc = subprocess.Popen(["ps", "-p", str(pid), "-o", "command"],
                                         stdout=subprocess.PIPE)
-                (out, err) = proc.communicate()
+                (out, _) = proc.communicate()
                 parts = out.split(b'\n')
                 cmdline = [parts[1].decode("utf-8")]
         except Exception:
@@ -161,9 +162,9 @@ class TheMachine(object):
             logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
                          str(pid), str(self.agent.announce_data.pid))
             return True
-        else:
-            logger.debug("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
+
+        logger.debug("Cannot announce sensor. Scheduling retry.")
+        self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
         return False
 
     def schedule_retry(self, fun, e, name):

@@ -1,3 +1,4 @@
+""" The in-process Instana agent that manages monitoring state and reporting that data. """
 from __future__ import absolute_import
 
 import json
@@ -8,16 +9,17 @@ import threading
 import requests
 
 import instana.singletons
+from instana.collector import Collector
 
 from .fsm import TheMachine
 from .log import logger
 from .sensor import Sensor
 from .util import to_json, get_py_source, package_version
 from .options import StandardOptions, AWSLambdaOptions
-from instana.collector import Collector
 
 
 class AnnounceData(object):
+    """ The Announce Payload """
     pid = 0
     agentUuid = ""
 
@@ -26,6 +28,7 @@ class AnnounceData(object):
 
 
 class AWSLambdaFrom(object):
+    """ The source identifier for AWSLambdaAgent """
     hl = True
     cp = "aws"
     e = "qualifiedARN"
@@ -35,6 +38,7 @@ class AWSLambdaFrom(object):
 
 
 class BaseAgent(object):
+    """ Base class for all agent flavors """
     client = requests.Session()
     sensor = None
 
@@ -108,6 +112,11 @@ class StandardAgent(BaseAgent):
         self.machine.reset()
 
     def is_timed_out(self):
+        """
+        If we haven't heard from the Instana host agent in 60 seconds, this
+        method will return True.
+        @return: Boolean
+        """
         if self.last_seen and self.can_send:
             diff = datetime.now() - self.last_seen
             if diff.seconds > 60:
@@ -115,6 +124,10 @@ class StandardAgent(BaseAgent):
         return False
 
     def can_send(self):
+        """
+        Are we in a state where we can send data?
+        @return: Boolean
+        """
         # Watch for pid change (fork)
         current_pid = os.getpid()
         if self._boot_pid != current_pid:
@@ -129,6 +142,11 @@ class StandardAgent(BaseAgent):
         return False
 
     def set_from(self, json_string):
+        """
+        Sets the source identifiers given to use by the Instana Host agent.
+        @param json_string: source identifiers
+        @return: None
+        """
         if type(json_string) is bytes:
             raw_json = json_string.decode("UTF-8")
         else:
@@ -147,17 +165,22 @@ class StandardAgent(BaseAgent):
         self.announce_data = AnnounceData(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 
     def get_from_structure(self):
+        """
+        Retrieves the From data that is reported alongside monitoring data.
+        @return: dict()
+        """
         if os.environ.get("INSTANA_TEST", False):
-            fs = {'e': os.getpid(), 'h': 'fake'}
+            from_data = {'e': os.getpid(), 'h': 'fake'}
         else:
-            fs = {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
-        return fs
+            from_data = {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+        return from_data
 
     def is_agent_listening(self, host, port):
         """
         Check if the Instana Agent is listening on <host> and <port>.
+        @return: Boolean
         """
-        rv = False
+        result = False
         try:
             url = "http://%s:%s/" % (host, port)
             response = self.client.get(url, timeout=0.8)
@@ -165,15 +188,14 @@ class StandardAgent(BaseAgent):
             server_header = response.headers["Server"]
             if server_header == self.AGENT_HEADER:
                 logger.debug("Instana host agent found on %s:%d", host, port)
-                rv = True
+                result = True
             else:
                 logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s",
                              host, port, server_header)
         except:
             logger.debug("Instana Host Agent not found on %s:%d", host, port)
-            rv = False
         finally:
-            return rv
+            return result
 
     def announce(self, discovery):
         """
@@ -190,8 +212,8 @@ class StandardAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("announce", exc_info=True)
+        except:
+            logger.debug("announce: ", exc_info=True)
         finally:
             return response
 
@@ -199,14 +221,16 @@ class StandardAgent(BaseAgent):
         """
         Used after making a successful announce to test when the agent is ready to accept data.
         """
+        ready = False
         try:
             response = self.client.head(self.__data_url(), timeout=0.8)
 
             if response.status_code == 200:
-                return True
-            return False
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("is_agent_ready: Instana host agent connection error")
+                ready = True
+        except:
+            logger.debug("is_agent_ready: ", exc_info=True)
+        finally:
+            return ready
 
     def report_data_payload(self, entity_data):
         """
@@ -219,12 +243,12 @@ class StandardAgent(BaseAgent):
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
 
-            # logger.warn("report_data: response.status_code is %s" % response.status_code)
+            # logger.warning("report_data: response.status_code is %s" % response.status_code)
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_data: Instana host agent connection error")
+        except:
+            logger.debug("report_data: Instana host agent connection error", exc_info=True)
         finally:
             return response
 
@@ -244,12 +268,12 @@ class StandardAgent(BaseAgent):
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
 
-            # logger.warn("report_traces: response.status_code is %s" % response.status_code)
+            # logger.debug("report_traces: response.status_code is %s" % response.status_code)
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_traces: Instana host agent connection error")
+        except:
+            logger.debug("report_traces: ", exc_info=True)
         finally:
             return response
 
@@ -286,10 +310,8 @@ class StandardAgent(BaseAgent):
                                         data=payload,
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("task_response", exc_info=True)
-        except Exception:
-            logger.debug("task_response Exception", exc_info=True)
+        except:
+            logger.debug("task_response: ", exc_info=True)
         finally:
             return response
 
@@ -322,6 +344,7 @@ class StandardAgent(BaseAgent):
 
 
 class AWSLambdaAgent(BaseAgent):
+    """ In-process agent for AWS Lambda """
     def __init__(self):
         super(AWSLambdaAgent, self).__init__()
 
@@ -340,13 +363,21 @@ class AWSLambdaAgent(BaseAgent):
             self.collector = Collector(self)
             self.collector.start()
         else:
-            logger.warn("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
-                        "We will not be able monitor this function.")
+            logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
+                           "We will not be able monitor this function.")
 
     def can_send(self):
+        """
+        Are we in a state where we can send data?
+        @return: Boolean
+        """
         return self._can_send
 
     def get_from_structure(self):
+        """
+        Retrieves the From data that is reported alongside monitoring data.
+        @return: dict()
+        """
         return {'hl': True, 'cp': 'aws', 'e': self.collector.context.invoked_function_arn}
 
     def report_data_payload(self, payload):
@@ -363,7 +394,7 @@ class AWSLambdaAgent(BaseAgent):
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
                 self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
-            logger.debug("using these headers: %s" % self.report_headers)
+            logger.debug("using these headers: %s", self.report_headers)
 
             if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
                 ssl_verify = False
@@ -376,9 +407,7 @@ class AWSLambdaAgent(BaseAgent):
                                         timeout=self.options.timeout,
                                         verify=ssl_verify)
 
-            logger.debug("report_data_payload: response.status_code is %s" % response.status_code)
-        except (requests.ConnectTimeout, requests.ConnectionError):
-            logger.debug("report_data_payload: ", exc_info=True)
+            logger.debug("report_data_payload: response.status_code is %s", response.status_code)
         except:
             logger.debug("report_data_payload: ", exc_info=True)
         finally:

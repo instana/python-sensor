@@ -120,7 +120,7 @@ class TheMachine(object):
         return False
 
     def announce_sensor(self, e):
-        logger.debug("Announcing sensor to the agent")
+        logger.debug("Attempting to make an announcement to the agent on %s:%d", self.agent.host, self.agent.port)
         pid = os.getpid()
 
         try:

@@ -27,7 +27,7 @@ def check_setuptools():
              '  and then try the install again.\n'
              'Also:\n'
              '  `pip show setuptools` - shows the current version\n'
-             '  To see the setuptool releases: \n'
+             '  To see the setuptools releases: \n'
              '    https://setuptools.readthedocs.io/en/latest/history.html')
 
 

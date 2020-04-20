@@ -169,7 +169,7 @@ class StandardAgent(BaseAgent):
             else:
                 logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s",
                              host, port, server_header)
-        except (requests.ConnectTimeout, requests.ConnectionError):
+        except:
             logger.debug("Instana Host Agent not found on %s:%d", host, port)
             rv = False
         finally:

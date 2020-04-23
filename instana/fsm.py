@@ -148,11 +148,17 @@ class TheMachine(object):
 
         # If we're on a system with a procfs
         if os.path.exists("/proc/"):
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.agent.options.agent_host, self.agent.options.agent_port))
-            path = "/proc/%d/fd/%d" % (pid, sock.fileno())
-            d.fd = sock.fileno()
-            d.inode = os.readlink(path)
+            try:
+                # In CentOS 7, some odd things can happen such as:
+                # PermissionError: [Errno 13] Permission denied: '/proc/6/fd/8'
+                # Use a try/except as a safety
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect((self.agent.options.agent_host, self.agent.options.agent_port))
+                path = "/proc/%d/fd/%d" % (pid, sock.fileno())
+                d.fd = sock.fileno()
+                d.inode = os.readlink(path)
+            except:
+                logger.debug("Error generating file descriptor: ", exc_info=True)
 
         response = self.agent.announce(d)
 

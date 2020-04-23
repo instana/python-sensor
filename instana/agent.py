@@ -212,8 +212,8 @@ class StandardAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except:
-            logger.debug("announce: ", exc_info=True)
+        except Exception as e:
+            logger.debug("announce: connection error (%s)", type(e))
         finally:
             return response
 
@@ -227,8 +227,8 @@ class StandardAgent(BaseAgent):
 
             if response.status_code == 200:
                 ready = True
-        except:
-            logger.debug("is_agent_ready: ", exc_info=True)
+        except Exception as e:
+            logger.debug("is_agent_ready: connection error (%s)", type(e))
         finally:
             return ready
 
@@ -247,8 +247,8 @@ class StandardAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except:
-            logger.debug("report_data: Instana host agent connection error", exc_info=True)
+        except Exception as e:
+            logger.debug("report_data_payload: Instana host agent connection error (%s)", type(e))
         finally:
             return response
 
@@ -272,8 +272,8 @@ class StandardAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except:
-            logger.debug("report_traces: ", exc_info=True)
+        except Exception as e:
+            logger.debug("report_traces: Instana host agent connection error (%s)", type(e))
         finally:
             return response
 
@@ -310,8 +310,8 @@ class StandardAgent(BaseAgent):
                                         data=payload,
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
-        except:
-            logger.debug("task_response: ", exc_info=True)
+        except Exception as e:
+            logger.debug("__task_response: Instana host agent connection error (%s)", type(e))
         finally:
             return response
 
@@ -408,8 +408,8 @@ class AWSLambdaAgent(BaseAgent):
                                         verify=ssl_verify)
 
             logger.debug("report_data_payload: response.status_code is %s", response.status_code)
-        except:
-            logger.debug("report_data_payload: ", exc_info=True)
+        except Exception as e:
+            logger.debug("report_data_payload: connection error (%s)", type(e))
         finally:
             return response
 

@@ -141,6 +141,8 @@ def boot_agent():
 
 if "INSTANA_MAGIC" in os.environ:
     pkg_resources.working_set.add_entry("/tmp/.instana/python")
+    # The following path is deprecated: To be removed at a future date
+    pkg_resources.working_set.add_entry("/tmp/instana/python")
 
     if "INSTANA_DEBUG" in os.environ:
         print("Instana: activated via AutoTrace")

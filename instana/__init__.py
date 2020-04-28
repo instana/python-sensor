@@ -140,7 +140,7 @@ def boot_agent():
 
 
 if "INSTANA_MAGIC" in os.environ:
-    pkg_resources.working_set.add_entry("/tmp/instana/python")
+    pkg_resources.working_set.add_entry("/tmp/.instana/python")
 
     if "INSTANA_DEBUG" in os.environ:
         print("Instana: activated via AutoTrace")

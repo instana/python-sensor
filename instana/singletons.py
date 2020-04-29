@@ -3,6 +3,7 @@ import sys
 import opentracing
 
 from .agent import StandardAgent, AWSLambdaAgent
+from .log import logger
 from .tracer import InstanaTracer
 from .recorder import StandardRecorder, AWSLambdaRecorder
 
@@ -18,15 +19,23 @@ else:
     span_recorder = StandardRecorder()
 
 
-# Retrieve the globally configured agent
 def get_agent():
+    """
+    Retrieve the globally configured agent
+    @return: The Instana Agent singleton
+    """
     global agent
     return agent
 
 
-# Set the global agent for the Instana package.  This is used for the
-# test suite only currently.
 def set_agent(new_agent):
+    """
+    Set the global agent for the Instana package.  This is used for the
+    test suite only currently.
+
+    @param new_agent: agent to replace current singleton
+    @return: None
+    """
     global agent
     agent = new_agent
 
@@ -36,8 +45,11 @@ def set_agent(new_agent):
 tracer = InstanaTracer(recorder=span_recorder)
 
 if sys.version_info >= (3, 4):
-    from opentracing.scope_managers.asyncio import AsyncioScopeManager
-    async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
+    try:
+        from opentracing.scope_managers.asyncio import AsyncioScopeManager
+        async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
+    except Exception:
+        logger.debug("Error setting up async_tracer:", exc_info=True)
 
 
 # Mock the tornado tracer until tornado is detected and instrumented first
@@ -54,14 +66,21 @@ def setup_tornado_tracer():
 opentracing.tracer = tracer
 
 
-# Retrieve the globally configured tracer
 def get_tracer():
+    """
+    Retrieve the globally configured tracer
+    @return: Tracer
+    """
     global tracer
     return tracer
 
 
-# Set the global tracer for the Instana package.  This is used for the
-# test suite only currently.
 def set_tracer(new_tracer):
+    """
+    Set the global tracer for the Instana package.  This is used for the
+    test suite only currently.
+    @param new_tracer: The new tracer to replace the singleton
+    @return: None
+    """
     global tracer
     tracer = new_tracer

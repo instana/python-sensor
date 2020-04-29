@@ -3,6 +3,7 @@ import sys
 import opentracing
 
 from .agent import StandardAgent, AWSLambdaAgent
+from .log import logger
 from .tracer import InstanaTracer
 from .recorder import StandardRecorder, AWSLambdaRecorder
 
@@ -36,8 +37,11 @@ def set_agent(new_agent):
 tracer = InstanaTracer(recorder=span_recorder)
 
 if sys.version_info >= (3, 4):
-    from opentracing.scope_managers.asyncio import AsyncioScopeManager
-    async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
+    try:
+        from opentracing.scope_managers.asyncio import AsyncioScopeManager
+        async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
+    except Exception as e:
+        logger.debug("Error setting up async_tracer:", exc_info=True)
 
 
 # Mock the tornado tracer until tornado is detected and instrumented first

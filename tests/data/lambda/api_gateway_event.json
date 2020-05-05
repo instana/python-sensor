@@ -39,7 +39,8 @@
     "X-Forwarded-Proto": "https",
     "X-Instana-T": "d5cb361b256413a9",
     "X-Instana-S": "0901d8ae4fbf1529",
-    "X-Instana-L": "1"
+    "X-Instana-L": "1",
+    "X-Instana-Synthetic": "1"
   },
   "multiValueHeaders": {
     "Accept": [

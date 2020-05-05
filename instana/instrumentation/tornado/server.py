@@ -44,6 +44,9 @@ try:
                             if custom_header in instance.request.headers:
                                 scope.span.set_tag("http.%s" % custom_header, instance.request.headers[custom_header])
 
+                    if instance.request.headers['X-INSTANA-SYNTHETIC'] == '1':
+                        scope.span.set_tag('sy', True)
+
                     setattr(instance.request, "_instana", scope)
 
                     # Set the context response headers now because tornado doesn't give us a better option to do so

@@ -34,7 +34,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/")
+                    return await self.fetch(session, testenv["wsgi_server"] + "/", headers={'X-INSTANA-SYNTHETIC': '1'})
 
         response = self.loop.run_until_complete(test())
 
@@ -65,6 +65,7 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
         self.assertEqual(testenv["wsgi_server"] + "/", aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
+        self.assertEqual(True, aiohttp_span.data["sy"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)

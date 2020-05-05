@@ -37,6 +37,10 @@ try:
                     if custom_header in request.headers:
                         scope.span.set_tag("http.%s" % custom_header, request.headers[custom_header])
 
+            if 'X-INSTANA-SYNTHETIC' in request.headers:
+                if request.headers['X-INSTANA-SYNTHETIC'] == '1':
+                    scope.span.set_tag('sy', True)
+
             response = await handler(request)
 
             if response is not None:

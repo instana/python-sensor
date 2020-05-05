@@ -29,7 +29,7 @@ class TestFlask(unittest.TestCase):
 
     def test_get_request(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/')
+            response = self.http.request('GET', testenv["wsgi_server"] + '/', headers={'X-INSTANA-SYNTHETIC': '1'})
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -78,6 +78,7 @@ class TestFlask(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
+        self.assertEqual(True, wsgi_span.data["sy"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 

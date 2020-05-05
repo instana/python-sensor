@@ -25,7 +25,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def test_basic_request(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', self.live_server_url + '/')
+            response = self.http.request('GET', self.live_server_url + '/', headers={'X-INSTANA-SYNTHETIC': '1'})
 
         assert response
         assert_equals(200, response.status)
@@ -67,6 +67,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert_equals('/', django_span.data["http"]["url"])
         assert_equals('GET', django_span.data["http"]["method"])
         assert_equals(200, django_span.data["http"]["status"])
+        assert_equals(True, django_span.data["sy"])
         assert django_span.stack
         assert_equals(2, len(django_span.stack))
 

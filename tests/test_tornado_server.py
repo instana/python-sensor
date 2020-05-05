@@ -47,7 +47,7 @@ class TestTornadoServer(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["tornado_server"] + "/")
+                    return await self.fetch(session, testenv["tornado_server"] + "/", headers={'X-INSTANA-SYNTHETIC': '1'})
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
@@ -82,6 +82,7 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(testenv["tornado_server"] + "/", tornado_span.data["http"]["url"])
         self.assertIsNone(tornado_span.data["http"]["params"])
         self.assertEqual("GET", tornado_span.data["http"]["method"])
+        self.assertEqual(True, tornado_span.data["sy"])
         self.assertIsNotNone(tornado_span.stack)
         self.assertTrue(type(tornado_span.stack) is list)
         self.assertTrue(len(tornado_span.stack) > 1)

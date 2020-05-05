@@ -93,6 +93,19 @@ def capture_extra_headers(event, span, extra_headers):
                 span.set_tag("http.%s" % custom_header, event["headers"][key])
 
 
+def capture_synthetic_header(event, span):
+    """
+    Marks the span as synthetic if the request contains the
+    `X-INSTANA-SYNTHETIC` header with value `1`
+
+    @param event: the lambda event
+    @param span: the lambda entry span
+    @return: None
+    """
+    if event["headers"]["X-INSTANA-SYNTHETIC"] == '1':
+        span.set_tag('sy', True)
+
+
 def enrich_lambda_span(agent, span, event, context):
     """
     Extract the required information about this Lambda run (and the trigger) and store the data
@@ -116,6 +129,8 @@ def enrich_lambda_span(agent, span, event, context):
             span.set_tag('http.path_tpl', event["resource"])
             span.set_tag('http.params', read_http_query_params(event))
 
+            capture_synthetic_header(event, span)
+
             if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
                 capture_extra_headers(event, span, agent.extra_headers)
 
@@ -124,6 +139,8 @@ def enrich_lambda_span(agent, span, event, context):
             span.set_tag('http.method', event["httpMethod"])
             span.set_tag('http.url', event["path"])
             span.set_tag('http.params', read_http_query_params(event))
+
+            capture_synthetic_header(event, span)
 
             if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
                 capture_extra_headers(event, span, agent.extra_headers)

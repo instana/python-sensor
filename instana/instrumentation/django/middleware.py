@@ -39,6 +39,8 @@ class InstanaMiddleware(MiddlewareMixin):
                         request.iscope.span.set_tag("http.%s" % custom_header, env[django_header])
 
             request.iscope.span.set_tag(ext.HTTP_METHOD, request.method)
+            if env('HTTP_X_INSTANA_SYNTHETIC') == '1':
+                request.iscope.span.set_tag('sy', True)
             if 'PATH_INFO' in env:
                 request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
             if 'QUERY_STRING' in env and len(env['QUERY_STRING']):

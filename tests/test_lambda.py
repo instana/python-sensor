@@ -150,6 +150,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
+        self.assertEqual(True, span.data['sy'])
         if sys.version[:3] == '2.7':
             self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
         else:

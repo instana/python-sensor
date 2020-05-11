@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import unittest
 
 from instana.singletons import tracer
-from .helpers import testenv, get_first_span_by_name, get_span_by_filter
+from .helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 from couchbase.admin import Admin
 from couchbase.cluster import Cluster
@@ -698,11 +698,11 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "lock"
-        cb_lock_span = get_span_by_filter(spans, filter)
+        cb_lock_span = get_first_span_by_filter(spans, filter)
         self.assertIsNotNone(cb_lock_span)
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "upsert"
-        cb_upsert_span = get_span_by_filter(spans, filter)
+        cb_upsert_span = get_first_span_by_filter(spans, filter)
         self.assertIsNotNone(cb_upsert_span)
 
         # Same traceId and parent relationship
@@ -746,11 +746,11 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "lock"
-        cb_lock_span = get_span_by_filter(spans, filter)
+        cb_lock_span = get_first_span_by_filter(spans, filter)
         self.assertIsNotNone(cb_lock_span)
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "unlock"
-        cb_unlock_span = get_span_by_filter(spans, filter)
+        cb_unlock_span = get_first_span_by_filter(spans, filter)
         self.assertIsNotNone(cb_unlock_span)
 
         # Same traceId and parent relationship
@@ -796,11 +796,11 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "lock_multi"
-        cb_lock_span = get_span_by_filter(spans, filter)
+        cb_lock_span = get_first_span_by_filter(spans, filter)
         self.assertIsNotNone(cb_lock_span)
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "unlock_multi"
-        cb_unlock_span = get_span_by_filter(spans, filter)
+        cb_unlock_span = get_first_span_by_filter(spans, filter)
         self.assertIsNotNone(cb_unlock_span)
 
         # Same traceId and parent relationship

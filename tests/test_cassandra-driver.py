@@ -5,7 +5,7 @@ import random
 import unittest
 
 from instana.singletons import tracer
-from .helpers import testenv, get_first_span_by_name, get_span_by_filter
+from .helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 from cassandra.cluster import Cluster
 from cassandra import ConsistencyLevel

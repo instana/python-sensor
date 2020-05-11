@@ -122,6 +122,7 @@ def boot_agent():
         from .instrumentation import cassandra_inst
         from .instrumentation import couchbase_inst
         from .instrumentation import flask
+        from .instrumentation import gevent_inst
         from .instrumentation import grpcio
         from .instrumentation.tornado import client
         from .instrumentation.tornado import server

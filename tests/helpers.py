@@ -64,8 +64,38 @@ def get_first_span_by_name(spans, name):
     return None
 
 
-def get_span_by_filter(spans, filter):
+def get_first_span_by_filter(spans, filter):
+    """
+    Get the first span in <spans> that matches <filter>
+
+    Example:
+    filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 301
+    tornado_301_span = get_first_span_by_filter(spans, filter)
+
+    @param spans: the list of spans to search
+    @param filter: the filter to search by
+    @return: Span or None if nothing matched
+    """
     for span in spans:
         if filter(span) is True:
             return span
     return None
+
+
+def get_spans_by_filter(spans, filter):
+    """
+    Get all spans in <spans> that matches <filter>
+
+    Example:
+    filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 301
+    tornado_301_spans = get_spans_by_filter(spans, filter)
+
+    @param spans: the list of spans to search
+    @param filter: the filter to search by
+    @return: list of spans
+    """
+    results = []
+    for span in spans:
+        if filter(span) is True:
+            results.append(span)
+    return results

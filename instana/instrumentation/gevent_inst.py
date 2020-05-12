@@ -2,8 +2,7 @@ from __future__ import absolute_import
 
 import sys
 from ..log import logger
-from opentracing.scope_managers.gevent import _GeventScope
-from ..singletons import agent, tracer
+from ..singletons import tracer
 
 try:
     if 'gevent' in sys.modules:
@@ -11,6 +10,7 @@ try:
 
         import gevent
         from opentracing.scope_managers.gevent import GeventScopeManager
+        from opentracing.scope_managers.gevent import _GeventScope
 
         def spawn_callback(gr):
             parent_scope = tracer.scope_manager.active

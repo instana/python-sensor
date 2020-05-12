@@ -112,9 +112,9 @@ jobs:
             . venv/bin/activate
             python runtests.py
 
-  python36:
+  python38:
     docker:
-      - image: circleci/python:3.6.8
+      - image: circleci/python:3.8.2
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -263,7 +263,7 @@ jobs:
 
   gevent:
     docker:
-      - image: circleci/python:3.6.8
+      - image: circleci/python:3.8.2
 
     working_directory: ~/repo
 
@@ -304,7 +304,7 @@ workflows:
   build:
     jobs:
       - python27
-      - python35
-      - python36
+      - python38
       - py27cassandra
       - py36cassandra
+      - gevent

@@ -11,20 +11,20 @@ import sys
 import time
 import threading
 
-from .apps.flaskalino import flask_server
+if 'CASSANDRA_TEST' not in os.environ:
+    from .apps.flaskalino import flask_server
 
+    # Background Flask application
+    #
+    # Spawn our background Flask app that the tests will throw
+    # requests at.
+    flask = threading.Thread(target=flask_server.serve_forever)
+    flask.daemon = True
+    flask.name = "Background Flask app"
+    print("Starting background Flask app...")
+    flask.start()
 
-# Background Flask application
-#
-# Spawn our background Flask app that the tests will throw
-# requests at.
-flask = threading.Thread(target=flask_server.serve_forever)
-flask.daemon = True
-flask.name = "Background Flask app"
-print("Starting background Flask app...")
-flask.start()
-
-if 'GEVENT_TEST' not in os.environ:
+if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
 
     if sys.version_info >= (3, 5, 3):
         # Background RPC application

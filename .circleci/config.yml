@@ -96,7 +96,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            nosetests -v tests/test_cassandra-driver.py:TestCassandra
+            CASSANDRA_TEST=1 nosetests -v tests/test_cassandra-driver.py:TestCassandra
 
   py36cassandra:
     docker:
@@ -120,7 +120,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            nosetests -v tests/test_cassandra-driver.py:TestCassandra
+            CASSANDRA_TEST=1 nosetests -v tests/test_cassandra-driver.py:TestCassandra
 
   gevent38:
     docker:
@@ -140,7 +140,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            GEVENT=1 nosetests -v tests/test_gevent
+            GEVENT_TEST=1 nosetests -v tests/test_gevent.py
 workflows:
   version: 2
   build:

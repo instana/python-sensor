@@ -95,6 +95,16 @@ def lambda_handler(event, context):
             print("Couldn't determine and locate default function handler: %s.%s", module_name, function_name)
 
 
+def boot_agent_later():
+    """ Executes <boot_agent> in the future! """
+    if 'gevent' in sys.modules:
+        import gevent
+        gevent.spawn_later(2.0, boot_agent)
+    else:
+        t = Timer(2.0, boot_agent)
+        t.start()
+
+
 def boot_agent():
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
     # Disable all the unused-import violations in this function
@@ -174,7 +184,6 @@ if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0])
 else:
     if "INSTANA_MAGIC" in os.environ:
         # If we're being loaded into an already running process, then delay agent initialization
-        t = Timer(2.0, boot_agent)
-        t.start()
+        boot_agent_later()
     else:
         boot_agent()

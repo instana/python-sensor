@@ -13,8 +13,8 @@ try:
 
     def collect(instance, args, kwargs):
         """ Build and return a fully qualified URL for this request """
+        kvs = dict()
         try:
-            kvs = dict()
             kvs['host'] = instance.host
             kvs['port'] = instance.port
 
@@ -57,7 +57,6 @@ try:
                 scope.span.mark_as_errored()
         except Exception:
             logger.debug("collect_response", exc_info=True)
-
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):

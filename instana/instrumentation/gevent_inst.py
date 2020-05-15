@@ -22,8 +22,9 @@ def instrument_gevent():
             parent_scope = tracer.scope_manager.active
             if parent_scope is not None:
                 # New greenlet, new clean slate.  Clone and make active in this new greenlet
-                # the currently active scope (but don't close this span on close - it's a
-                # clone/not the original)
+                # the currently active scope (but don't finish() the span on close - it's a
+                # clone/not the original and we don't want to close it prematurely)
+                # TODO: Change to our own ScopeManagers
                 parent_scope_clone = _GeventScope(parent_scope.manager, parent_scope.span, finish_on_close=False)
                 tracer._scope_manager._set_greenlet_scope(parent_scope_clone, new_greenlet)
 
@@ -36,6 +37,8 @@ def instrument_gevent():
 
 if 'gevent' in sys.modules:
     if sys.modules['gevent'].version_info < (1, 4):
-        logger.debug("gevent < 1.4 detected.  The Instana package supports versions 1.4 and greater.")
+        logger.debug("gevent < 1.4 detected.  The Instana package supports gevent versions 1.4 and greater.")
     else:
         instrument_gevent()
+else:
+    logger.debug("Instrumenting gevent: gevent not detected or loaded.  Nothing done.")

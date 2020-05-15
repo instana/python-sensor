@@ -141,4 +141,5 @@ def handle_invalid_usage(error):
 
 
 if __name__ == '__main__':
+    flask_server.request_queue_size = 20
     flask_server.serve_forever()

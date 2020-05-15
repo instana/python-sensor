@@ -133,7 +133,7 @@ class Meter(object):
         """
         This function can be called at first boot or after a fork.  In either case, it will
         assure that the Meter is in a proper state (via reset()) and spawn a new background
-        thread to periodically report queued spans
+        thread to periodically report the metrics payload.
 
         Note that this will abandon any previous thread object that (in the case of an `os.fork()`)
         should no longer exist in the forked process.

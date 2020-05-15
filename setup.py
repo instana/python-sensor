@@ -66,11 +66,23 @@ setup(name='instana',
                     'django19': ['string = instana:load'],  # deprecated: use same as 'instana'
                     },
       extras_require={
+          'test-gevent': [
+              'flask>=0.12.2',
+              'gevent>=1.4.0'
+              'mock>=2.0.0',
+              'nose>=1.0',
+              'urllib3[secure]>=1.15'
+          ],
+          'test-cassandra': [
+              'cassandra-driver==3.20.2',
+              'mock>=2.0.0',
+              'nose>=1.0',
+              'urllib3[secure]>=1.15'
+          ],
           'test': [
               'aiohttp>=3.5.4;python_version>="3.5"',
               'asynqp>=0.4;python_version>="3.5"',
               'couchbase==2.5.9',
-              'cassandra-driver==3.20.2',
               'django>=1.11,<2.2',
               'nose>=1.0',
               'flask>=0.12.2',

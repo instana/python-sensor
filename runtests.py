@@ -1,12 +1,13 @@
+import os
 import sys
 import nose
 from distutils.version import LooseVersion
 
 command_line = [__file__, '--verbose']
 
-# Cassandra tests are run in dedicated jobs on CircleCI and will
+# Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # be run explicitly.  (So always exclude them here)
-command_line.extend(['-e', 'cassandra'])
+command_line.extend(['-e', 'cassandra', '-e', 'gevent'])
 
 if LooseVersion(sys.version) < LooseVersion('3.5.3'):
     command_line.extend(['-e', 'asynqp', '-e', 'aiohttp',

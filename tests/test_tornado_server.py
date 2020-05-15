@@ -10,7 +10,7 @@ from tornado.httpclient import AsyncHTTPClient
 
 from instana.singletons import async_tracer, agent
 
-from .helpers import testenv, get_first_span_by_name, get_span_by_filter
+from .helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 
 class TestTornadoServer(unittest.TestCase):
@@ -178,9 +178,9 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(4, len(spans))
 
         filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 301
-        tornado_301_span = get_span_by_filter(spans, filter)
+        tornado_301_span = get_first_span_by_filter(spans, filter)
         filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 200
-        tornado_span = get_span_by_filter(spans, filter)
+        tornado_span = get_first_span_by_filter(spans, filter)
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
 

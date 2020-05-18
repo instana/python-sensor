@@ -13,16 +13,22 @@ import threading
 
 if 'CASSANDRA_TEST' not in os.environ:
     from .apps.flaskalino import flask_server
+    from .apps.app_pyramid import pyramid_server
 
-    # Background Flask application
-    #
-    # Spawn our background Flask app that the tests will throw
+    # Background applications
+    servers = {
+        'Flask': flask_server,
+        'Pyramid': pyramid_server,
+    }
+
+    # Spawn background apps that the tests will throw
     # requests at.
-    flask = threading.Thread(target=flask_server.serve_forever)
-    flask.daemon = True
-    flask.name = "Background Flask app"
-    print("Starting background Flask app...")
-    flask.start()
+    for (name, server) in servers.items():
+        p = threading.Thread(target=server.serve_forever)
+        p.daemon = True
+        p.name = "Background %s app" % name
+        print("Starting background %s app..." % name)
+        p.start()
 
 if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
 

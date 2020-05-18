@@ -71,6 +71,7 @@ setup(name='instana',
               'gevent>=1.4.0'
               'mock>=2.0.0',
               'nose>=1.0',
+              'pyramid>=1.2',
               'urllib3[secure]>=1.15'
           ],
           'test-cassandra': [

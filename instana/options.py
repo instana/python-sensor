@@ -2,6 +2,7 @@
 import logging
 import os
 
+from .util import determine_service_name
 
 class StandardOptions(object):
     """ Configurable option bits for this package """
@@ -20,7 +21,7 @@ class StandardOptions(object):
             self.log_level = logging.DEBUG
             self.debug = True
 
-        self.service_name = os.environ.get("INSTANA_SERVICE_NAME", None)
+        self.service_name = determine_service_name()
         self.agent_host = os.environ.get("INSTANA_AGENT_HOST", self.AGENT_DEFAULT_HOST)
         self.agent_port = os.environ.get("INSTANA_AGENT_PORT", self.AGENT_DEFAULT_PORT)
 

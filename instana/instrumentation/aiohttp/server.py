@@ -49,6 +49,14 @@ try:
                 response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             return response
+
+        except aiohttp.web_exceptions.HTTPClientError as e:
+            logger.debug("aiohttp stan_middleware", exc_info=True)
+            if scope is not None:
+                scope.span.set_tag("http.status_code", e.status_code)
+                scope.span.log_exception(e)
+            raise
+            
         except Exception as e:
             logger.debug("aiohttp stan_middleware", exc_info=True)
             if scope is not None:

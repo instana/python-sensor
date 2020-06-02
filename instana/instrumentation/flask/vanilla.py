@@ -83,13 +83,13 @@ def teardown_request_with_instana(*argv, **kwargs):
     In the case of exceptions, after_request_with_instana isn't called
     so we capture those cases here.
     """
-    if hasattr(flask.g, 'scope'):
-        if flask.g.scope is not None:
-            if len(argv) > 0 and argv[0] is not None:
-                scope = flask.g.scope
-                scope.span.log_exception(argv[0])
+    if hasattr(flask.g, 'scope') and flask.g.scope is not None:
+        if len(argv) > 0 and argv[0] is not None:
+            scope = flask.g.scope
+            scope.span.log_exception(argv[0])
+            if ext.HTTP_STATUS_CODE not in scope.span.tags:
                 scope.span.set_tag(ext.HTTP_STATUS_CODE, 500)
-            scope.close()
+        flask.g.scope.close()
         flask.g.scope = None
 
 

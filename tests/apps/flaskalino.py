@@ -39,6 +39,22 @@ class InvalidUsage(Exception):
         return rv
 
 
+class NotFound(Exception):
+    status_code = 404
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
+
 @app.route("/")
 def hello():
     return "<center><h1>🐍 Hello Stan! 🦄</h1></center>"
@@ -84,6 +100,11 @@ def threehundredtwo():
 @app.route("/400")
 def fourhundred():
     return "Simulated Bad Request", 400
+
+
+@app.route("/custom-404")
+def custom404():
+    raise NotFound("My custom 404 message")
 
 
 @app.route("/405")
@@ -132,12 +153,19 @@ def response_headers():
     resp.headers['X-Capture-This'] = 'Ok'
     return resp
 
+
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     logger.error("InvalidUsage error handler invoked")
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
+
+@app.errorhandler(404)
+@app.errorhandler(NotFound)
+def handle_not_found(e):
+    return "blah: %s" % str(e), 404
 
 
 if __name__ == '__main__':

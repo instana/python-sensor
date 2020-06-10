@@ -129,7 +129,7 @@ class BaseSpan(object):
     def __repr__(self):
         return self.__dict__.__str__()
 
-    def __init__(self, span, source, **kwargs):
+    def __init__(self, span, source, service_name, **kwargs):
         self.t = span.context.trace_id
         self.p = span.parent_id
         self.s = span.context.span_id
@@ -137,6 +137,9 @@ class BaseSpan(object):
         self.d = int(round(span.duration * 1000))
         self.f = source
         self.ec = span.tags.pop('ec', None)
+
+        self.data = DictionaryOfStan()
+        self.data["service"] = service_name
 
         if span.stack:
             self.stack = span.stack
@@ -149,11 +152,10 @@ class SDKSpan(BaseSpan):
     EXIT_KIND = ["exit", "client", "producer"]
 
     def __init__(self, span, source, service_name, **kwargs):
-        super(SDKSpan, self).__init__(span, source, **kwargs)
+        super(SDKSpan, self).__init__(span, source, service_name, **kwargs)
         self.n = "sdk"
         self.k = self.get_span_kind_as_int(span)
 
-        self.data = DictionaryOfStan()
         self.data["sdk"]["name"] = span.operation_name
         self.data["sdk"]["type"] = self.get_span_kind_as_string(span)
         self.data["sdk"]["custom"]["tags"] = span.tags
@@ -223,10 +225,9 @@ class RegisteredSpan(BaseSpan):
 
     LOCAL_SPANS = ("render")
 
-    def __init__(self, span, source, **kwargs):
-        super(RegisteredSpan, self).__init__(span, source, **kwargs)
+    def __init__(self, span, source, service_name, **kwargs):
+        super(RegisteredSpan, self).__init__(span, source, service_name, **kwargs)
         self.n = span.operation_name
-        self.data = DictionaryOfStan()
 
         self.k = 1
         if span.operation_name in self.ENTRY_SPANS:

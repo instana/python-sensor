@@ -39,13 +39,15 @@ class AWSLambdaFrom(object):
 
 class BaseAgent(object):
     """ Base class for all agent flavors """
-    client = requests.Session()
+    client = None
     sensor = None
     secrets_matcher = 'contains-ignore-case'
-    secrets_list = ['key', 'password', 'secret']
+    secrets_list = ['key', 'pass', 'secret']
     extra_headers = None
+    options = None
 
     def __init__(self):
+        self.client = requests.Session()
         pass
 
 
@@ -353,9 +355,7 @@ class AWSLambdaAgent(BaseAgent):
         self.options = AWSLambdaOptions()
         self.report_headers = None
         self._can_send = False
-
-        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
-            self.extra_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
+        self.extra_headers = self.options.extra_http_headers
 
         if self._validate_options():
             self._can_send = True

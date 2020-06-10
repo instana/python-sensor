@@ -122,11 +122,11 @@ class AWSLambdaRecorder(StandardRecorder):
         Convert the passed BasicSpan and add it to the span queue
         """
         source = self.agent.get_from_structure()
+        service_name = self.agent.options.service_name
 
         if span.operation_name in self.REGISTERED_SPANS:
-            json_span = RegisteredSpan(span, source)
+            json_span = RegisteredSpan(span, source, service_name)
         else:
-            service_name = self.agent.options.service_name
             json_span = SDKSpan(span, source, service_name)
 
         # logger.debug("Recorded span: %s", json_span)

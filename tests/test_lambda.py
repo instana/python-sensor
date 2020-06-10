@@ -9,6 +9,7 @@ import unittest
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.tracer import InstanaTracer
 from instana.agent import AWSLambdaAgent
+from instana.options import AWSLambdaOptions
 from instana.recorder import AWSLambdaRecorder
 from instana import lambda_handler
 from instana import get_lambda_handler_or_default
@@ -88,6 +89,22 @@ class TestLambda(unittest.TestCase):
         agent = AWSLambdaAgent()
         self.assertFalse(agent._can_send)
         self.assertIsNone(agent.collector)
+
+    def test_secrets(self):
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent, 'secrets_matcher'))
+        self.assertEqual(self.agent.secrets_matcher, 'contains-ignore-case')
+        self.assertTrue(hasattr(self.agent, 'secrets_list'))
+        self.assertEqual(self.agent.secrets_list, ['key', 'pass', 'secret'])
+
+    def test_has_extra_headers(self):
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent, 'extra_headers'))
+
+    def test_has_options(self):
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent, 'options'))
+        self.assertTrue(type(self.agent.options) is AWSLambdaOptions)
 
     def test_get_handler(self):
         os.environ["LAMBDA_HANDLER"] = "tests.lambda_handler"

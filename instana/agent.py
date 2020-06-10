@@ -41,6 +41,9 @@ class BaseAgent(object):
     """ Base class for all agent flavors """
     client = requests.Session()
     sensor = None
+    secrets_matcher = 'contains-ignore-case'
+    secrets_list = ['key', 'password', 'secret']
+    extra_headers = None
 
     def __init__(self):
         pass
@@ -68,9 +71,6 @@ class StandardAgent(BaseAgent):
     last_seen = None
     last_fork_check = None
     _boot_pid = os.getpid()
-    extra_headers = None
-    secrets_matcher = 'contains-ignore-case'
-    secrets_list = ['key', 'password', 'secret']
     should_threads_shutdown = threading.Event()
 
     def __init__(self):
@@ -353,7 +353,6 @@ class AWSLambdaAgent(BaseAgent):
         self.options = AWSLambdaOptions()
         self.report_headers = None
         self._can_send = False
-        self.extra_headers = None
 
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
             self.extra_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')

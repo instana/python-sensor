@@ -85,8 +85,10 @@ class Collector(object):
         self.event = event
 
         try:
-            self.snapshot_data["plugins"]["name"] = "com.instana.plugin.aws.lambda"
-            self.snapshot_data["plugins"]["entityId"] = self.context.invoked_function_arn
+            plugin_data = dict()
+            plugin_data["name"] = "com.instana.plugin.aws.lambda"
+            plugin_data["entityId"] = self.context.invoked_function_arn
+            self.snapshot_data["plugins"] = [plugin_data]
         except:
             logger.debug("collect_snapshot error", exc_info=True)
         finally:

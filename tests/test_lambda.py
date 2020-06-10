@@ -137,9 +137,13 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
-                         payload['metrics']['plugins']['entityId'])
+
+        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -189,9 +193,13 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
-                         payload['metrics']['plugins']['entityId'])
+
+        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -240,9 +248,13 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
-                         payload['metrics']['plugins']['entityId'])
+
+        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -291,9 +303,13 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
-                         payload['metrics']['plugins']['entityId'])
+
+        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -344,9 +360,13 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
-                         payload['metrics']['plugins']['entityId'])
+
+        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -396,9 +416,13 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
-                         payload['metrics']['plugins']['entityId'])
+
+        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 

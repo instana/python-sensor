@@ -104,7 +104,7 @@ class StandardRecorder(object):
             source = instana.singletons.agent.get_from_structure()
 
             if span.operation_name in self.REGISTERED_SPANS:
-                json_span = RegisteredSpan(span, source)
+                json_span = RegisteredSpan(span, source, None)
             else:
                 service_name = instana.singletons.agent.options.service_name
                 json_span = SDKSpan(span, source, service_name)

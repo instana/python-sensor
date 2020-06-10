@@ -139,7 +139,8 @@ class BaseSpan(object):
         self.ec = span.tags.pop('ec', None)
 
         self.data = DictionaryOfStan()
-        self.data["service"] = service_name
+        if service_name is not None:
+            self.data["service"] = service_name
 
         if span.stack:
             self.stack = span.stack

@@ -393,7 +393,7 @@ class AWSLambdaAgent(BaseAgent):
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
                 self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
-            logger.debug("using these headers: %s", self.report_headers)
+            # logger.debug("using these headers: %s", self.report_headers)
 
             if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
                 ssl_verify = False
@@ -406,7 +406,10 @@ class AWSLambdaAgent(BaseAgent):
                                         timeout=self.options.timeout,
                                         verify=ssl_verify)
 
-            logger.debug("report_data_payload: response.status_code is %s", response.status_code)
+            if 200 <= response.status_code < 300:
+                logger.debug("report_data_payload: Instana responded with status code %s", response.status_code)
+            else:
+                logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
         except Exception as e:
             logger.debug("report_data_payload: connection error (%s)", type(e))
         finally:

@@ -8,9 +8,8 @@ import unittest
 
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.tracer import InstanaTracer
-from instana.agent import AWSLambdaAgent
-from instana.options import AWSLambdaOptions
-from instana.recorder import AWSLambdaRecorder
+from instana.agent.aws_fargatefargate  import AWSFargateAgent
+from instana.recorder import AWSFargateRecorder
 from instana import lambda_handler
 from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
@@ -37,9 +36,9 @@ module_name, function_name = get_lambda_handler_or_default()
 wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 
 
-class TestLambda(unittest.TestCase):
+class TestFargate(unittest.TestCase):
     def __init__(self, methodName='runTest'):
-        super(TestLambda, self).__init__(methodName)
+        super(TestFargate, self).__init__(methodName)
         self.agent = None
         self.span_recorder = None
         self.tracer = None
@@ -69,8 +68,8 @@ class TestLambda(unittest.TestCase):
         set_tracer(self.original_tracer)
 
     def create_agent_and_setup_tracer(self):
-        self.agent = AWSLambdaAgent()
-        self.span_recorder = AWSLambdaRecorder(self.agent)
+        self.agent = AWSFargateAgent()
+        self.span_recorder = AWSFargateRecorder(self.agent)
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
         set_tracer(self.tracer)
@@ -86,25 +85,9 @@ class TestLambda(unittest.TestCase):
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
 
-        agent = AWSLambdaAgent()
+        agent = AWSFargateAgent()
         self.assertFalse(agent._can_send)
         self.assertIsNone(agent.collector)
-
-    def test_secrets(self):
-        self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'secrets_matcher'))
-        self.assertEqual(self.agent.secrets_matcher, 'contains-ignore-case')
-        self.assertTrue(hasattr(self.agent, 'secrets_list'))
-        self.assertEqual(self.agent.secrets_list, ['key', 'pass', 'secret'])
-
-    def test_has_extra_headers(self):
-        self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'extra_headers'))
-
-    def test_has_options(self):
-        self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'options'))
-        self.assertTrue(type(self.agent.options) is AWSLambdaOptions)
 
     def test_get_handler(self):
         os.environ["LAMBDA_HANDLER"] = "tests.lambda_handler"
@@ -120,75 +103,15 @@ class TestLambda(unittest.TestCase):
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
         self.assertEqual(should_headers, self.agent.extra_headers)
 
-    def test_custom_service_name(self):
-        os.environ['INSTANA_SERVICE_NAME'] = "Legion"
-        with open(self.pwd + '/data/lambda/api_gateway_event.json', 'r') as json_file:
-            event = json.load(json_file)
-
-        self.create_agent_and_setup_tracer()
-
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
-        result = lambda_handler(event, self.context)
-        os.environ.pop('INSTANA_SERVICE_NAME')
-
-        self.assertEqual('All Ok', result)
-        payload = self.agent.collector.prepare_payload()
-
-        self.assertTrue("metrics" in payload)
-        self.assertTrue("spans" in payload)
-        self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
-
-        self.assertEqual(1, len(payload['spans']))
-
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
-        self.assertIsNotNone(span.t)
-        self.assertIsNotNone(span.s)
-        self.assertIsNone(span.p)
-        self.assertIsNotNone(span.ts)
-        self.assertIsNotNone(span.d)
-
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
-
-        self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
-
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-
-        self.assertEqual('Legion', span.data['service'])
-
-        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
-        self.assertEqual('POST', span.data['http']['method'])
-        self.assertEqual('/path/to/resource', span.data['http']['url'])
-        self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
-        if sys.version[:3] == '2.7':
-            self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
-        else:
-            self.assertEqual("foo=['bar']", span.data['http']['params'])
-
     def test_api_gateway_trigger_tracing(self):
         with open(self.pwd + '/data/lambda/api_gateway_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
 
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        # Call the Instana Fargate Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Fargate Handler and execute it.
+        # The original Fargate handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
         self.assertEqual('All Ok', result)
@@ -197,13 +120,9 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -226,7 +145,6 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
@@ -243,9 +161,9 @@ class TestLambda(unittest.TestCase):
 
         self.create_agent_and_setup_tracer()
 
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        # Call the Instana Fargate Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Fargate Handler and execute it.
+        # The original Fargate handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
         self.assertEqual('All Ok', result)
@@ -254,13 +172,9 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -283,7 +197,6 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
@@ -299,9 +212,9 @@ class TestLambda(unittest.TestCase):
 
         self.create_agent_and_setup_tracer()
 
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        # Call the Instana Fargate Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Fargate Handler and execute it.
+        # The original Fargate handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
         self.assertEqual('All Ok', result)
@@ -310,13 +223,9 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -339,7 +248,6 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:cloudwatch.events', span.data['lambda']['trigger'])
         self.assertEqual('cdc73f9d-aea9-11e3-9d5a-835b769c0d9c', span.data["lambda"]["cw"]["events"]["id"])
@@ -355,9 +263,9 @@ class TestLambda(unittest.TestCase):
 
         self.create_agent_and_setup_tracer()
 
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        # Call the Instana Fargate Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Fargate Handler and execute it.
+        # The original Fargate handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
         self.assertEqual('All Ok', result)
@@ -366,13 +274,9 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -395,7 +299,6 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:cloudwatch.logs', span.data['lambda']['trigger'])
         self.assertFalse("decodingError" in span.data['lambda']['cw']['logs'])
@@ -413,9 +316,9 @@ class TestLambda(unittest.TestCase):
 
         self.create_agent_and_setup_tracer()
 
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        # Call the Instana Fargate Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Fargate Handler and execute it.
+        # The original Fargate handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
         self.assertEqual('All Ok', result)
@@ -424,13 +327,9 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -453,7 +352,6 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:s3', span.data['lambda']['trigger'])
         self.assertTrue(type(span.data["lambda"]["s3"]["events"]) is list)
@@ -470,9 +368,9 @@ class TestLambda(unittest.TestCase):
 
         self.create_agent_and_setup_tracer()
 
-        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
-        # figure out the original (the users') Lambda Handler and execute it.
-        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        # Call the Instana Fargate Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Fargate Handler and execute it.
+        # The original Fargate handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
         self.assertEqual('All Ok', result)
@@ -481,13 +379,9 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
-
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
-        plugin_data = payload['metrics']['plugins'][0]
-
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual('com.instana.plugin.aws.lambda', payload['metrics']['plugins']['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1',
+                         payload['metrics']['plugins']['entityId'])
 
         self.assertEqual(1, len(payload['spans']))
 
@@ -510,7 +404,6 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('python', span.data['lambda']['runtime'])
         self.assertEqual('TestPython', span.data['lambda']['functionName'])
         self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:sqs', span.data['lambda']['trigger'])
         self.assertTrue(type(span.data["lambda"]["sqs"]["messages"]) is list)

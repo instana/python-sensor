@@ -137,10 +137,7 @@ class BaseSpan(object):
         self.d = int(round(span.duration * 1000))
         self.f = source
         self.ec = span.tags.pop('ec', None)
-
         self.data = DictionaryOfStan()
-        if service_name is not None:
-            self.data["service"] = service_name
 
         if span.stack:
             self.stack = span.stack
@@ -154,19 +151,19 @@ class SDKSpan(BaseSpan):
 
     def __init__(self, span, source, service_name, **kwargs):
         super(SDKSpan, self).__init__(span, source, service_name, **kwargs)
+
+        span_kind = self.get_span_kind(span)
+
         self.n = "sdk"
-        self.k = self.get_span_kind_as_int(span)
+        self.k = span_kind[1]
+
+        if self.k == 1 and service_name is not None:
+            self.data["service"] = service_name
 
         self.data["sdk"]["name"] = span.operation_name
-        self.data["sdk"]["type"] = self.get_span_kind_as_string(span)
+        self.data["sdk"]["type"] = span_kind[0]
         self.data["sdk"]["custom"]["tags"] = span.tags
         self.data["sdk"]["custom"]["logs"] = span.logs
-        self.data["service"] = service_name
-
-        # self.data = Data()
-        # self.data.sdk = SDKData(name=span.operation_name, Type=self.get_span_kind_as_string(span))
-        # self.data.sdk.custom = CustomData(tags=span.tags, logs=span.collect_logs())
-        # self.data.service = service_name
 
         if "arguments" in span.tags:
             self.data.sdk.arguments = span.tags["arguments"]
@@ -177,40 +174,20 @@ class SDKSpan(BaseSpan):
         if len(span.context.baggage) > 0:
             self.data["baggage"] = span.context.baggage
 
-    def get_span_kind_as_string(self, span):
+    def get_span_kind(self, span):
         """
-            Will retrieve the `span.kind` tag and return the appropriate string value for the Instana backend or
-            None if the tag is set to something we don't recognize.
+            Will retrieve the `span.kind` tag and return a tuple containing the appropriate string and integer
+            values for the Instana backend
 
         :param span: The span to search for the `span.kind` tag
-        :return: String
+        :return: Tuple (String, Int)
         """
-        kind = None
+        kind = ("intermediate", 3)
         if "span.kind" in span.tags:
             if span.tags["span.kind"] in self.ENTRY_KIND:
-                kind = "entry"
+                kind = ("entry", 1)
             elif span.tags["span.kind"] in self.EXIT_KIND:
-                kind = "exit"
-            else:
-                kind = "intermediate"
-        return kind
-
-    def get_span_kind_as_int(self, span):
-        """
-            Will retrieve the `span.kind` tag and return the appropriate integer value for the Instana backend or
-            None if the tag is set to something we don't recognize.
-
-        :param span: The span to search for the `span.kind` tag
-        :return: Integer
-        """
-        kind = None
-        if "span.kind" in span.tags:
-            if span.tags["span.kind"] in self.ENTRY_KIND:
-                kind = 1
-            elif span.tags["span.kind"] in self.EXIT_KIND:
-                kind = 2
-            else:
-                kind = 3
+                kind = ("exit", 2)
         return kind
 
 
@@ -234,6 +211,7 @@ class RegisteredSpan(BaseSpan):
         if span.operation_name in self.ENTRY_SPANS:
             # entry
             self._populate_entry_span_data(span)
+            self.data["service"] = service_name
         elif span.operation_name in self.EXIT_SPANS:
             self.k = 2 # exit
             self._populate_exit_span_data(span)

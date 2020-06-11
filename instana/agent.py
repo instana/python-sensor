@@ -48,7 +48,6 @@ class BaseAgent(object):
 
     def __init__(self):
         self.client = requests.Session()
-        pass
 
 
 class StandardAgent(BaseAgent):
@@ -149,7 +148,7 @@ class StandardAgent(BaseAgent):
         @param json_string: source identifiers
         @return: None
         """
-        if type(json_string) is bytes:
+        if isinstance(json_string, bytes):
             raw_json = json_string.decode("UTF-8")
         else:
             raw_json = json_string

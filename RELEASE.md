@@ -22,3 +22,5 @@ To release a new AWS Lambda layer, see `bin/lambda_build_publish_layer.py`.
 ./bin/lambda_build_publish_layer.py [-dev|-prod]
 
 This script assumes you have the AWS CLI tools installed and credentials already configured.
+
+Post release, remember to update documentation and the Instana UI.

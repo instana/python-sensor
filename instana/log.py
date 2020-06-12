@@ -10,7 +10,7 @@ def get_standard_logger():
     """
     Retrieves and configures a standard logger for the Instana package
 
-    :return: Logger
+    @return: Logger
     """
     standard_logger = logging.getLogger("instana")
 
@@ -26,12 +26,28 @@ def get_standard_logger():
     return standard_logger
 
 
+def get_aws_lambda_logger():
+    """
+    Retrieves the preferred logger for AWS Lambda
+
+    @return: Logger
+    """
+    aws_lambda_logger = logging.getLogger()
+
+    if "INSTANA_DEBUG" in os.environ:
+        aws_lambda_logger.setLevel(logging.DEBUG)
+    else:
+        aws_lambda_logger.setLevel(logging.WARN)
+
+    return aws_lambda_logger
+
+
 def running_in_gunicorn():
     """
     Determines if we are running inside of a gunicorn process and that the gunicorn logging package
     is available.
 
-    :return:  Boolean
+    @return:  Boolean
     """
     process_check = False
     package_check = False
@@ -70,5 +86,7 @@ def running_in_gunicorn():
 
 if running_in_gunicorn():
     logger = logging.getLogger("gunicorn.error")
+elif os.environ.get("INSTANA_ENDPOINT_URL", False):
+    logger = get_aws_lambda_logger()
 else:
     logger = get_standard_logger()

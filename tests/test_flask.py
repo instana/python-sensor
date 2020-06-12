@@ -80,6 +80,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -159,6 +160,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -238,6 +240,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -306,6 +309,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -374,6 +378,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -442,6 +447,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -510,6 +516,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -587,6 +594,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -655,6 +663,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -730,6 +739,7 @@ class TestFlask(unittest.TestCase):
         self.assertEqual('Simulated custom exception', wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -797,6 +807,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.data['service'])
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])

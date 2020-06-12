@@ -1,5 +1,7 @@
 # Release Steps
 
+## PyPI
+
 _Note: To release a new Instana package, you must be a project member of the [Instana package project on Pypi](https://pypi.org/project/instana/).
 Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 
@@ -12,3 +14,11 @@ Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 7. Validate the new release on https://pypi.org/project/instana/
 8. Update Python documentation with latest changes: https://docs.instana.io/ecosystem/python/
 9. Publish the draft release on [Github](https://github.com/instana/python-sensor/releases)
+
+## AWS Lambda Layer
+
+To release a new AWS Lambda layer, see `bin/lambda_build_publish_layer.py`.
+
+./bin/lambda_build_publish_layer.py [-dev|-prod]
+
+This script assumes you have the AWS CLI tools installed and credentials already configured.

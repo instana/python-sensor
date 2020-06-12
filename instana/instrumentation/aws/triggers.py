@@ -35,9 +35,10 @@ def is_cloudwatch_trigger(event):
 
 
 def is_cloudwatch_logs_trigger(event):
-    if "awslogs" in event and event["awslogs"] != None:
+    if hasattr(event, 'get') and event.get("awslogs", False) is not False:
         return True
-    return False
+    else:
+        return False
 
 
 def is_s3_trigger(event):
@@ -61,19 +62,26 @@ def read_http_query_params(event):
     @param event: lambda event dict
     @return: String in the form of "a=b&c=d"
     """
-    if event is None or type(event) is not dict:
-        return ""
-
     params = []
-    if 'multiValueQueryStringParameters' in event and event['multiValueQueryStringParameters'] is not None:
-        for key in event['multiValueQueryStringParameters']:
-            params.append("%s=%s" % (key, event['multiValueQueryStringParameters'][key]))
-        return "&".join(params)
-    elif 'queryStringParameters' in event and event['queryStringParameters'] is not None:
-        for key in event['queryStringParameters']:
-            params.append("%s=%s" % (key, event['queryStringParameters'][key]))
-        return "&".join(params)
-    else:
+    try:
+        if event is None or type(event) is not dict:
+            return ""
+
+        mvqsp = event.get('multiValueQueryStringParameters', None)
+        qsp = event.get('queryStringParameters', None)
+
+        if mvqsp is not None and type(mvqsp) is dict:
+            for key in mvqsp:
+                params.append("%s=%s" % (key, mvqsp[key]))
+            return "&".join(params)
+        elif qsp is not None and type(qsp) is dict:
+            for key in qsp:
+                params.append("%s=%s" % (key, qsp[key]))
+            return "&".join(params)
+        else:
+            return ""
+    except:
+        logger.debug("read_http_query_params: ", exc_info=True)
         return ""
 
 
@@ -87,10 +95,16 @@ def capture_extra_headers(event, span, extra_headers):
     @param extra_headers: a list of http headers to capture
     @return: None
     """
-    for custom_header in extra_headers:
-        for key in event["headers"]:
-            if key.lower() == custom_header.lower():
-                span.set_tag("http.%s" % custom_header, event["headers"][key])
+    try:
+        event_headers = event.get("headers", None)
+
+        if event_headers is not None:
+            for custom_header in extra_headers:
+                for key in event_headers:
+                    if key.lower() == custom_header.lower():
+                        span.set_tag("http.%s" % custom_header, event_headers[key])
+    except:
+        logger.debug("capture_extra_headers: ", exc_info=True)
 
 
 def enrich_lambda_span(agent, span, event, context):
@@ -108,6 +122,10 @@ def enrich_lambda_span(agent, span, event, context):
         span.set_tag('lambda.arn', context.invoked_function_arn)
         span.set_tag('lambda.name', context.function_name)
         span.set_tag('lambda.version', context.function_version)
+
+        if event is None or type(event) is not dict:
+            logger.debug("enrich_lambda_span: bad event %s", type(event))
+            return
 
         if is_api_gateway_proxy_trigger(event):
             span.set_tag('lambda.trigger', 'aws:api.gateway')
@@ -204,6 +222,5 @@ def enrich_lambda_span(agent, span, event, context):
                 for item in event["Records"][:3]:
                     events.append({'queue': item['eventSourceARN']})
                 span.set_tag('lambda.sqs.messages', events)
-
     except:
         logger.debug("enrich_lambda_span: ", exc_info=True)

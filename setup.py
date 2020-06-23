@@ -83,6 +83,7 @@ setup(name='instana',
           'test': [
               'aiohttp>=3.5.4;python_version>="3.5"',
               'asynqp>=0.4;python_version>="3.5"',
+              'celery>=4.1.1',
               'couchbase==2.5.9',
               'django>=1.11,<2.2',
               'nose>=1.0',

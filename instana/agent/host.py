@@ -1,21 +1,23 @@
-""" The in-process Instana agent that manages monitoring state and reporting that data. """
+"""
+The in-process Instana agent (for host based processes) that manages
+monitoring state and reporting that data.
+"""
 from __future__ import absolute_import
 
 import json
 import os
-import time
 from datetime import datetime
 import threading
-import requests
 
 import instana.singletons
-from instana.collector import Collector
 
-from .fsm import TheMachine
-from .log import logger
-from .sensor import Sensor
-from .util import to_json, get_py_source, package_version
-from .options import StandardOptions, AWSLambdaOptions
+from ..fsm import TheMachine
+from ..log import logger
+from ..sensor import Sensor
+from ..util import to_json, get_py_source, package_version
+from ..options import StandardOptions
+
+from .base import BaseAgent
 
 
 class AnnounceData(object):
@@ -27,30 +29,7 @@ class AnnounceData(object):
         self.__dict__.update(kwds)
 
 
-class AWSLambdaFrom(object):
-    """ The source identifier for AWSLambdaAgent """
-    hl = True
-    cp = "aws"
-    e = "qualifiedARN"
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
-class BaseAgent(object):
-    """ Base class for all agent flavors """
-    client = None
-    sensor = None
-    secrets_matcher = 'contains-ignore-case'
-    secrets_list = ['key', 'pass', 'secret']
-    extra_headers = None
-    options = None
-
-    def __init__(self):
-        self.client = requests.Session()
-
-
-class StandardAgent(BaseAgent):
+class HostAgent(BaseAgent):
     """
     The Agent class is the central controlling entity for the Instana Python language sensor.  The key
     parts it handles are the announce state and the collection and reporting of metrics and spans to the
@@ -75,7 +54,7 @@ class StandardAgent(BaseAgent):
     should_threads_shutdown = threading.Event()
 
     def __init__(self):
-        super(StandardAgent, self).__init__()
+        super(HostAgent, self).__init__()
         logger.debug("initializing agent")
         self.sensor = Sensor(self)
         self.machine = TheMachine(self)
@@ -170,11 +149,7 @@ class StandardAgent(BaseAgent):
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        if os.environ.get("INSTANA_TEST", False):
-            from_data = {'e': os.getpid(), 'h': 'fake'}
-        else:
-            from_data = {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
-        return from_data
+        return {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
 
     def is_agent_listening(self, host, port):
         """
@@ -342,86 +317,3 @@ class StandardAgent(BaseAgent):
         """
         path = "com.instana.plugin.python/response.%d?messageId=%s" % (int(self.announce_data.pid), message_id)
         return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
-
-
-class AWSLambdaAgent(BaseAgent):
-    """ In-process agent for AWS Lambda """
-    def __init__(self):
-        super(AWSLambdaAgent, self).__init__()
-
-        self.from_ = AWSLambdaFrom()
-        self.collector = None
-        self.options = AWSLambdaOptions()
-        self.report_headers = None
-        self._can_send = False
-        self.extra_headers = self.options.extra_http_headers
-
-        if self._validate_options():
-            self._can_send = True
-            self.collector = Collector(self)
-            self.collector.start()
-        else:
-            logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
-                           "We will not be able monitor this function.")
-
-    def can_send(self):
-        """
-        Are we in a state where we can send data?
-        @return: Boolean
-        """
-        return self._can_send
-
-    def get_from_structure(self):
-        """
-        Retrieves the From data that is reported alongside monitoring data.
-        @return: dict()
-        """
-        return {'hl': True, 'cp': 'aws', 'e': self.collector.context.invoked_function_arn}
-
-    def report_data_payload(self, payload):
-        """
-        Used to report metrics and span data to the endpoint URL in self.options.endpoint_url
-        """
-        response = None
-        try:
-            if self.report_headers is None:
-                # Prepare request headers
-                self.report_headers = dict()
-                self.report_headers["Content-Type"] = "application/json"
-                self.report_headers["X-Instana-Host"] = self.collector.context.invoked_function_arn
-                self.report_headers["X-Instana-Key"] = self.options.agent_key
-                self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
-
-            # logger.debug("using these headers: %s", self.report_headers)
-
-            if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
-                ssl_verify = False
-            else:
-                ssl_verify = True
-
-            response = self.client.post(self.__data_bundle_url(),
-                                        data=to_json(payload),
-                                        headers=self.report_headers,
-                                        timeout=self.options.timeout,
-                                        verify=ssl_verify)
-
-            if 200 <= response.status_code < 300:
-                logger.debug("report_data_payload: Instana responded with status code %s", response.status_code)
-            else:
-                logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
-        except Exception as e:
-            logger.debug("report_data_payload: connection error (%s)", type(e))
-        finally:
-            return response
-
-    def _validate_options(self):
-        """
-        Validate that the options used by this Agent are valid.  e.g. can we report data?
-        """
-        return self.options.endpoint_url is not None and self.options.agent_key is not None
-
-    def __data_bundle_url(self):
-        """
-        URL for posting metrics to the host agent.  Only valid when announced.
-        """
-        return "%s/bundle" % self.options.endpoint_url

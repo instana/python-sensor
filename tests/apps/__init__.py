@@ -3,24 +3,8 @@ import sys
 import time
 import threading
 
-if 'CASSANDRA_TEST' not in os.environ:
-    from .flaskalino import flask_server
-    from .app_pyramid import pyramid_server
-
-    # Background applications
-    servers = {
-        'Flask': flask_server,
-        'Pyramid': pyramid_server,
-    }
-
-    # Spawn background apps that the tests will throw
-    # requests at.
-    for (name, server) in servers.items():
-        p = threading.Thread(target=server.serve_forever)
-        p.daemon = True
-        p.name = "Background %s app" % name
-        print("Starting background %s app..." % name)
-        p.start()
+from . import flask
+from . import pyramid
 
 if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
 
@@ -73,5 +57,8 @@ if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
         tornado_server.name = "Background Tornado server"
         print("Starting background Tornado server...")
         tornado_server.start()
+
+    from .celery import start as start_celery
+    start_celery()
 
 time.sleep(1)

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import opentracing.ext.tags as ext
-from flask import Flask, redirect, render_template, render_template_string
-from wsgiref.simple_server import make_server
-from flask import jsonify, Response
-
-from instana.singletons import tracer
-from ..helpers import testenv
-
 import logging
+import opentracing.ext.tags as ext
+from flask import jsonify, Response
+from wsgiref.simple_server import make_server
+from flask import Flask, redirect, render_template, render_template_string
+
+from ...helpers import testenv
+from instana.singletons import tracer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

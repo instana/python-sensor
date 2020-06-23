@@ -5,7 +5,7 @@ import logging
 from pyramid.response import Response
 import pyramid.httpexceptions as exc
 
-from ..helpers import testenv
+from ...helpers import testenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

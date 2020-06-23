@@ -2,20 +2,31 @@ import os
 import sys
 import opentracing
 
-from .agent import StandardAgent, AWSLambdaAgent
 from .log import logger
 from .tracer import InstanaTracer
-from .recorder import StandardRecorder, AWSLambdaRecorder
 
 agent = None
 tracer = None
 span_recorder = None
 
-if os.environ.get("INSTANA_ENDPOINT_URL", False):
+if os.environ.get("INSTANA_TEST", False):
+    from .agent.test import TestAgent
+    from .recorder import StandardRecorder
+
+    agent = TestAgent()
+    span_recorder = StandardRecorder()
+
+elif os.environ.get("INSTANA_ENDPOINT_URL", False):
+    from .agent.aws_lambda import AWSLambdaAgent
+    from .recorder import AWSLambdaRecorder
+
     agent = AWSLambdaAgent()
     span_recorder = AWSLambdaRecorder(agent)
 else:
-    agent = StandardAgent()
+    from .agent.host import HostAgent
+    from .recorder import StandardRecorder
+
+    agent = HostAgent()
     span_recorder = StandardRecorder()
 
 

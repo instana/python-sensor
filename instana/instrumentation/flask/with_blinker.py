@@ -1,13 +1,13 @@
 from __future__ import absolute_import
 
 import re
+import wrapt
 import opentracing
 import opentracing.ext.tags as ext
-import wrapt
 
 from ...log import logger
-from ...singletons import agent, tracer
 from ...util import strip_secrets
+from ...singletons import agent, tracer
 
 import flask
 from flask import request_started, request_finished, got_request_exception
@@ -80,45 +80,6 @@ def log_exception_with_instana(sender, exception, **extra):
         if scope.span is not None:
             scope.span.log_exception(exception)
         scope.close()
-
-
-@wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
-def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
-
-    # Call original and then try to do post processing
-    response = wrapped(*argv, **kwargs)
-
-    try:
-        exc = argv[0]
-
-        if hasattr(flask.g, 'scope') and flask.g.scope is not None:
-            scope = flask.g.scope
-            span = scope.span
-
-            if response is not None:
-                if hasattr(response, 'code'):
-                    status_code = response.code
-                else:
-                    status_code = response.status_code
-
-                if 500 <= status_code <= 511:
-                    span.log_exception(exc)
-
-                span.set_tag(ext.HTTP_STATUS_CODE, int(status_code))
-
-                if hasattr(response, 'headers'):
-                    tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
-                    if hasattr(response.headers, 'add'):
-                        response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
-                    elif type(response.headers) is dict or hasattr(response.headers, "__dict__"):
-                        response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
-
-            scope.close()
-            flask.g.scope = None
-    except Exception as e:
-        logger.debug("handle_user_exception_with_instana:", exc_info=True)
-    finally:
-        return response
 
 
 def teardown_request_with_instana(*argv, **kwargs):

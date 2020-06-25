@@ -3,6 +3,7 @@ The in-process Instana agent (for testing & the test suite) that manages
 monitoring state and reporting that data.
 """
 import os
+from ..log import logger
 from .host import HostAgent
 
 
@@ -24,3 +25,8 @@ class TestAgent(HostAgent):
         @return: Boolean
         """
         return True
+
+    def report_traces(self, spans):
+        logger.warn("≧◔◡◔≦﻿Tried to report_traces with a TestAgent! ≧◔◡◔≦﻿")
+
+

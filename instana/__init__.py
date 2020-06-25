@@ -129,6 +129,8 @@ def boot_agent():
         else:
             from .instrumentation import mysqlclient
 
+        from .instrumentation.celery import hooks
+
         from .instrumentation import cassandra_inst
         from .instrumentation import couchbase_inst
         from .instrumentation import flask

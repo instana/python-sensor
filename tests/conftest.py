@@ -4,27 +4,25 @@ import pytest
 from distutils.version import LooseVersion
 
 
-collect_ignore = []
-collect_ignore.append("pkg/module_py2.py")
-
+collect_ignore_glob = []
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # be run explicitly.  (So always exclude them here)
 if "CASSANDRA_TEST" not in os.environ:
-    collect_ignore.append("tests/clients/test_cassandra.py")
+    collect_ignore_glob.append("*test_cassandra*")
 
 if "GEVENT_TEST" not in os.environ:
-    collect_ignore.append("tests/frameworks/test_gevent.py")
+    collect_ignore_glob.append("*test_gevent*")
 
 if LooseVersion(sys.version) < LooseVersion('3.5.3'):
-    collect_ignore.append("tests/clients/test_asynqp.py")
-    collect_ignore.append("tests/clients/test_aiohttp.py")
-    collect_ignore.append("tests/clients/test_async.py")
-    collect_ignore.append("tests/clients/test_tornado.py")
-    collect_ignore.append("tests/clients/test_grpc.py")
+    collect_ignore_glob.append("*test_asynqp*")
+    collect_ignore_glob.append("*test_aiohttp*")
+    collect_ignore_glob.append("*test_async*")
+    collect_ignore_glob.append("*test_tornado*")
+    collect_ignore_glob.append("*test_grpc*")
 
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
-    collect_ignore.append("tests/frameworks/test_sudsjurko.py")
+    collect_ignore_glob.append("*test_sudsjurko*")
 
 
 @pytest.fixture(scope='session')

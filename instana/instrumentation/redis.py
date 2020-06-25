@@ -8,7 +8,7 @@ from ..singletons import tracer
 try:
     import redis
 
-    EXCLUDED_PARENT_SPANS = ["redis", "celery-client"]
+    EXCLUDED_PARENT_SPANS = ["redis", "celery-client", "celery-worker"]
 
     def collect_tags(span, instance, args, kwargs):
         try:

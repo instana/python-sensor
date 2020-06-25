@@ -3,9 +3,8 @@ from __future__ import absolute_import
 import unittest
 
 import redis
+from ..helpers import testenv
 from redis.sentinel import Sentinel
-
-from .helpers import testenv
 from instana.singletons import tracer
 
 

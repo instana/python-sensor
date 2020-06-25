@@ -1,14 +1,17 @@
 from __future__ import absolute_import
 
 import os
+import sys
+import pytest
 import asynqp
 import asyncio
 import aiohttp
 import unittest
 import opentracing
+from distutils.version import LooseVersion
 
 import tests.apps.flask
-from .helpers import testenv
+from ..helpers import testenv
 from instana.singletons import async_tracer
 
 rabbitmq_host = ""
@@ -17,6 +20,7 @@ if "RABBITMQ_HOST" in os.environ:
 else:
     rabbitmq_host = "localhost"
 
+@pytest.mark.skipif(LooseVersion(sys.version) < LooseVersion('3.5.3'), reason="")
 class TestAsynqp(unittest.TestCase):
     @asyncio.coroutine
     def connect(self):

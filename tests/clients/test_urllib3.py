@@ -5,7 +5,7 @@ import unittest
 import requests
 
 import tests.apps.flask
-from .helpers import testenv
+from ..helpers import testenv
 from instana.singletons import agent, tracer
 
 

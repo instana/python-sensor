@@ -7,7 +7,7 @@ from nose.tools import assert_equals
 
 from instana.singletons import agent, tracer
 
-from .apps.app_django import INSTALLED_APPS
+from ..apps.app_django import INSTALLED_APPS
 
 apps.populate(INSTALLED_APPS)
 

@@ -4,7 +4,7 @@ import unittest
 import urllib3
 
 import tests.apps.pyramid
-from .helpers import testenv
+from ..helpers import testenv
 from instana.singletons import tracer
 
 class TestPyramid(unittest.TestCase):

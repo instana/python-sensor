@@ -5,7 +5,7 @@ from suds.client import Client
 
 from instana.singletons import tracer
 
-from .helpers import testenv
+from ..helpers import testenv
 
 
 class TestSudsJurko:

@@ -6,7 +6,7 @@ import unittest
 
 from instana.singletons import async_tracer, agent
 
-from .helpers import testenv
+from ..helpers import testenv
 
 
 class TestAiohttp(unittest.TestCase):

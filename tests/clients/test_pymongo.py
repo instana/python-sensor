@@ -6,7 +6,7 @@ import json
 from nose.tools import (assert_equals, assert_not_equals, assert_is_none, assert_is_not_none,
                         assert_false, assert_true, assert_is_instance, assert_greater, assert_list_equal)
 
-from .helpers import testenv
+from ..helpers import testenv
 from instana.singletons import tracer
 
 import pymongo

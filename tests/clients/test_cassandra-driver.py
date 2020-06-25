@@ -1,11 +1,13 @@
 from __future__ import absolute_import
 
+import os
 import time
+import pytest
 import random
 import unittest
 
 from instana.singletons import tracer
-from .helpers import testenv, get_first_span_by_name, get_first_span_by_filter
+from ..helpers import testenv, get_first_span_by_name
 
 from cassandra.cluster import Cluster
 from cassandra import ConsistencyLevel
@@ -25,6 +27,7 @@ session.execute("CREATE TABLE IF NOT EXISTS users("
                 ");")
 
 
+@pytest.mark.skipif("CASSANDRA_TEST" not in os.environ, reason="")
 class TestCassandra(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """

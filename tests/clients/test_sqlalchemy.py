@@ -2,13 +2,12 @@ from __future__ import absolute_import
 
 import unittest
 
-from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-from .helpers import testenv
-
+from ..helpers import testenv
 from instana.singletons import tracer
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, create_engine
+
 
 engine = create_engine("postgresql://%s:%s@%s/%s" % (testenv['postgresql_user'], testenv['postgresql_pw'],
                                                      testenv['postgresql_host'], testenv['postgresql_db']))

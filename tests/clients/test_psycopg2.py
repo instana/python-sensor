@@ -1,12 +1,9 @@
 from __future__ import absolute_import
 
 import logging
-
+from ..helpers import testenv
 from nose.tools import assert_equals
-
 from instana.singletons import tracer
-
-from .helpers import testenv
 
 import psycopg2
 import psycopg2.extras

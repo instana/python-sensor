@@ -3,17 +3,14 @@ from __future__ import absolute_import
 import logging
 import sys
 from unittest import SkipTest
-
-from nose.tools import assert_equals
-
 from instana.singletons import tracer
 
-from .helpers import testenv
+from ..helpers import testenv
 
-if sys.version_info[0] > 2:
+if sys.version_info < (3, 0):
     import MySQLdb
 else:
-    raise SkipTest("mysqlclient supported on Python 3 only")
+    raise SkipTest("MySQL-python supported on Python 2.7 only")
 
 
 logger = logging.getLogger(__name__)

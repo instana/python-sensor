@@ -10,7 +10,7 @@ import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 
 from instana.singletons import tracer
-from .helpers import testenv, get_first_span_by_name
+from ..helpers import testenv, get_first_span_by_name
 
 
 class TestGRPCIO(unittest.TestCase):

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import time
 from celery import shared_task
 from instana.singletons import tracer
-from .helpers import get_first_span_by_filter
+from ..helpers import get_first_span_by_filter
 
 
 @shared_task

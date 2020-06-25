@@ -7,7 +7,7 @@ from flask.signals import signals_available
 
 import tests.apps.flask
 from instana.singletons import tracer
-from .helpers import testenv
+from ..helpers import testenv
 
 
 class TestFlask(unittest.TestCase):

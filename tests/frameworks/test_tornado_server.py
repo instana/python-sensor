@@ -10,7 +10,7 @@ from tornado.httpclient import AsyncHTTPClient
 
 from instana.singletons import async_tracer, agent
 
-from .helpers import testenv, get_first_span_by_name, get_first_span_by_filter
+from ..helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 
 class TestTornadoServer(unittest.TestCase):

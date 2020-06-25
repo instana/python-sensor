@@ -8,7 +8,7 @@ from tornado.httpclient import AsyncHTTPClient
 
 from instana.singletons import async_tracer, tornado_tracer, agent
 
-from .helpers import testenv
+from ..helpers import testenv
 
 from nose.plugins.skip import SkipTest
 raise SkipTest("Non deterministic tests TBR")

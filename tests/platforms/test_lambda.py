@@ -6,7 +6,6 @@ import json
 import wrapt
 import unittest
 
-from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.tracer import InstanaTracer
 from instana.agent.aws_lambda import AWSLambdaAgent
 from instana.options import AWSLambdaOptions
@@ -15,6 +14,7 @@ from instana import lambda_handler
 from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
 from instana.instrumentation.aws.triggers import read_http_query_params
+from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 
 
 # Mock Context object
@@ -32,7 +32,7 @@ def my_lambda_handler(event, context):
     return "All Ok"
 
 # We only want to monkey patch the test handler once so do it here
-os.environ["LAMBDA_HANDLER"] = "tests.test_lambda.my_lambda_handler"
+os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
 module_name, function_name = get_lambda_handler_or_default()
 wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 

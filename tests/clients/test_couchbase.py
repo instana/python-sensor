@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import unittest
 
 from instana.singletons import tracer
-from .helpers import testenv, get_first_span_by_name, get_first_span_by_filter
+from ..helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 from couchbase.admin import Admin
 from couchbase.cluster import Cluster

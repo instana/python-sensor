@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
-import sys
 import unittest
 import urllib3
 
-from instana.singletons import tracer
+import tests.apps.pyramid
 from .helpers import testenv
+from instana.singletons import tracer
 
 class TestPyramid(unittest.TestCase):
     def setUp(self):

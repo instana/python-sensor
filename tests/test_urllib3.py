@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 
-import unittest
-
-import requests
 import urllib3
+import unittest
+import requests
 
-from instana.singletons import agent, tracer
+import tests.apps.flask
 from .helpers import testenv
+from instana.singletons import agent, tracer
 
 
 class TestUrllib3(unittest.TestCase):

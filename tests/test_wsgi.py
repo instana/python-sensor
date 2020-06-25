@@ -1,11 +1,12 @@
 from __future__ import absolute_import
 
 import time
+import urllib3
 import unittest
 
-import urllib3
-from instana.singletons import agent, tracer
+import tests.apps.flask
 from .helpers import testenv
+from instana.singletons import agent, tracer
 
 
 class TestWSGI(unittest.TestCase):

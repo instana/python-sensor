@@ -8,7 +8,7 @@ import unittest
 
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.tracer import InstanaTracer
-from instana.agent import AWSLambdaAgent
+from instana.agent.aws_lambda import AWSLambdaAgent
 from instana.options import AWSLambdaOptions
 from instana.recorder import AWSLambdaRecorder
 from instana import lambda_handler
@@ -141,7 +141,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
@@ -199,7 +199,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
@@ -256,7 +256,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
@@ -312,7 +312,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
@@ -368,7 +368,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
@@ -426,7 +426,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
@@ -483,7 +483,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(2, len(payload.keys()))
 
         self.assertTrue(type(payload['metrics']['plugins']) is list)
-        self.assertTrue(len(payload['metrics']['plugins']) is 1)
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
         self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])

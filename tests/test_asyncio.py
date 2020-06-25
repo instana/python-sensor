@@ -1,14 +1,13 @@
 from __future__ import absolute_import
 
 import asyncio
+import aiohttp
 import unittest
 
-import aiohttp
-
-from instana.singletons import async_tracer
-from instana.configurator import config
-
+import tests.apps.flask
 from .helpers import testenv
+from instana.configurator import config
+from instana.singletons import async_tracer
 
 
 class TestAsyncio(unittest.TestCase):

@@ -3,9 +3,6 @@ import sys
 import time
 import threading
 
-from . import flask
-from . import pyramid
-
 if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
 
     if sys.version_info >= (3, 5, 3):
@@ -58,7 +55,7 @@ if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
         print("Starting background Tornado server...")
         tornado_server.start()
 
-    from .celery import start as start_celery
-    start_celery()
+    # from .celery import start as start_celery
+    # start_celery()
 
 time.sleep(1)

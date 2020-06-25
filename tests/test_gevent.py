@@ -2,11 +2,12 @@ from __future__ import absolute_import
 
 import gevent
 from gevent.pool import Group
-import unittest
 import urllib3
+import unittest
 
-from instana.singletons import tracer
+import tests.apps.flask
 from instana.span import SDKSpan
+from instana.singletons import tracer
 from .helpers import testenv, get_spans_by_filter
 from opentracing.scope_managers.gevent import GeventScopeManager
 

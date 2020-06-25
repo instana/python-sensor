@@ -1,17 +1,15 @@
 from __future__ import absolute_import
 
-import asyncio
 import os
-import unittest
-
 import asynqp
+import asyncio
 import aiohttp
+import unittest
 import opentracing
 
-from instana.singletons import async_tracer
-
+import tests.apps.flask
 from .helpers import testenv
-
+from instana.singletons import async_tracer
 
 rabbitmq_host = ""
 if "RABBITMQ_HOST" in os.environ:

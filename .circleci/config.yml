@@ -37,7 +37,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python runtests.py
+            pytest -v
 
   python38:
     docker:
@@ -69,7 +69,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python runtests.py
+            pytest -v
 
   py27cassandra:
     docker:
@@ -96,7 +96,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            CASSANDRA_TEST=1 nosetests -v tests/test_cassandra-driver.py:TestCassandra
+            CASSANDRA_TEST=1 pytest -v tests/clients/test_cassandra-driver.py
 
   py36cassandra:
     docker:
@@ -120,7 +120,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            CASSANDRA_TEST=1 nosetests -v tests/test_cassandra-driver.py:TestCassandra
+            CASSANDRA_TEST=1 pytest -v tests/clients/test_cassandra-driver.py
 
   gevent38:
     docker:
@@ -140,7 +140,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            GEVENT_TEST=1 nosetests -v tests/test_gevent.py
+            GEVENT_TEST=1 pytest -v tests/frameworks/test_gevent.py
 workflows:
   version: 2
   build:

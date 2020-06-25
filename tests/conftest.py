@@ -3,6 +3,7 @@ import sys
 import pytest
 from distutils.version import LooseVersion
 
+
 collect_ignore = []
 collect_ignore.append("pkg/module_py2.py")
 

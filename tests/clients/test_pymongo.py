@@ -4,7 +4,7 @@ import json
 import unittest
 import logging
 
-from nose.tools import (assert_equals, assert_is_none, assert_is_not_none,
+from nose.tools import (assert_is_none, assert_is_not_none,
                         assert_false, assert_true, assert_list_equal)
 
 from ..helpers import testenv
@@ -38,22 +38,22 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 2)
+        self.assertEqual(len(spans), 2)
 
         db_span = spans[0]
         test_span = spans[1]
 
-        assert_equals(test_span.t, db_span.t)
-        assert_equals(db_span.p, test_span.s)
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
 
         assert_is_none(db_span.ec)
 
-        assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        assert_equals(db_span.data["mongo"]["namespace"], "test.records")
-        assert_equals(db_span.data["mongo"]["command"], "find")
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"], "find")
 
-        assert_equals(db_span.data["mongo"]["filter"], '{"type": "string"}')
+        self.assertEqual(db_span.data["mongo"]["filter"], '{"type": "string"}')
         assert_is_none(db_span.data["mongo"]["json"])
 
     def test_successful_insert_query(self):
@@ -63,20 +63,20 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 2)
+        self.assertEqual(len(spans), 2)
 
         db_span = spans[0]
         test_span = spans[1]
 
-        assert_equals(test_span.t, db_span.t)
-        assert_equals(db_span.p, test_span.s)
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
 
         assert_is_none(db_span.ec)
 
-        assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        assert_equals(db_span.data["mongo"]["namespace"], "test.records")
-        assert_equals(db_span.data["mongo"]["command"], "insert")
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"], "insert")
 
         assert_is_none(db_span.data["mongo"]["filter"])
 
@@ -87,20 +87,20 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 2)
+        self.assertEqual(len(spans), 2)
 
         db_span = spans[0]
         test_span = spans[1]
 
-        assert_equals(test_span.t, db_span.t)
-        assert_equals(db_span.p, test_span.s)
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
 
         assert_is_none(db_span.ec)
 
-        assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        assert_equals(db_span.data["mongo"]["namespace"], "test.records")
-        assert_equals(db_span.data["mongo"]["command"], "update")
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"], "update")
 
         assert_is_none(db_span.data["mongo"]["filter"])
         assert_is_not_none(db_span.data["mongo"]["json"])
@@ -120,20 +120,20 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 2)
+        self.assertEqual(len(spans), 2)
 
         db_span = spans[0]
         test_span = spans[1]
 
-        assert_equals(test_span.t, db_span.t)
-        assert_equals(db_span.p, test_span.s)
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
 
         assert_is_none(db_span.ec)
 
-        assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        assert_equals(db_span.data["mongo"]["namespace"], "test.records")
-        assert_equals(db_span.data["mongo"]["command"], "delete")
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"], "delete")
 
         assert_is_none(db_span.data["mongo"]["filter"])
         assert_is_not_none(db_span.data["mongo"]["json"])
@@ -148,20 +148,20 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 2)
+        self.assertEqual(len(spans), 2)
 
         db_span = spans[0]
         test_span = spans[1]
 
-        assert_equals(test_span.t, db_span.t)
-        assert_equals(db_span.p, test_span.s)
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
 
         assert_is_none(db_span.ec)
 
-        assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        assert_equals(db_span.data["mongo"]["namespace"], "test.records")
-        assert_equals(db_span.data["mongo"]["command"], "aggregate")
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"], "aggregate")
 
         assert_is_none(db_span.data["mongo"]["filter"])
         assert_is_not_none(db_span.data["mongo"]["json"])
@@ -179,27 +179,27 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 2)
+        self.assertEqual(len(spans), 2)
 
         db_span = spans[0]
         test_span = spans[1]
 
-        assert_equals(test_span.t, db_span.t)
-        assert_equals(db_span.p, test_span.s)
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
 
         assert_is_none(db_span.ec)
 
-        assert_equals(db_span.n, "mongo")
-        assert_equals(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        assert_equals(db_span.data["mongo"]["namespace"], "test.records")
-        assert_equals(db_span.data["mongo"]["command"].lower(), "mapreduce") # mapreduce command was renamed to mapReduce in pymongo 3.9.0
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"].lower(), "mapreduce") # mapreduce command was renamed to mapReduce in pymongo 3.9.0
 
-        assert_equals(db_span.data["mongo"]["filter"], '{"x": {"$lt": 2}}')
+        self.assertEqual(db_span.data["mongo"]["filter"], '{"x": {"$lt": 2}}')
         assert_is_not_none(db_span.data["mongo"]["json"])
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        assert_equals(payload["map"], {"$code": mapper}, db_span.data["mongo"]["json"])
-        assert_equals(payload["reduce"], {"$code": reducer}, db_span.data["mongo"]["json"])
+        self.assertEqual(payload["map"], {"$code": mapper}, db_span.data["mongo"]["json"])
+        self.assertEqual(payload["reduce"], {"$code": reducer}, db_span.data["mongo"]["json"])
 
     def test_successful_mutiple_queries(self):
         with tracer.start_active_span("test"):
@@ -210,15 +210,15 @@ class TestPyMongo(unittest.TestCase):
         assert_is_none(tracer.active_span)
 
         spans = self.recorder.queued_spans()
-        assert_equals(len(spans), 4)
+        self.assertEqual(len(spans), 4)
 
         test_span = spans.pop()
 
         seen_span_ids = set()
         commands = []
         for span in spans:
-            assert_equals(test_span.t, span.t)
-            assert_equals(span.p, test_span.s)
+            self.assertEqual(test_span.t, span.t)
+            self.assertEqual(span.p, test_span.s)
 
             # check if all spans got a unique id
             assert_false(span.s in seen_span_ids)

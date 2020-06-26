@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import urllib3
 from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from nose.tools import assert_equals
 
 from instana.singletons import agent, tracer
 
@@ -28,10 +27,10 @@ class TestDjango(StaticLiveServerTestCase):
             response = self.http.request('GET', self.live_server_url + '/')
 
         assert response
-        assert_equals(200, response.status)
+        self.assertEqual(200, response.status)
 
         spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
+        self.assertEqual(3, len(spans))
 
         test_span = spans[2]
         urllib3_span = spans[1]
@@ -46,39 +45,39 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.s, response.headers['X-Instana-S'])
 
         assert ('X-Instana-L' in response.headers)
-        assert_equals('1', response.headers['X-Instana-L'])
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
-        assert_equals("test", test_span.data["sdk"]["name"])
-        assert_equals("urllib3", urllib3_span.n)
-        assert_equals("django", django_span.n)
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual("django", django_span.n)
 
-        assert_equals(test_span.t, urllib3_span.t)
-        assert_equals(urllib3_span.t, django_span.t)
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, django_span.t)
 
-        assert_equals(urllib3_span.p, test_span.s)
-        assert_equals(django_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(django_span.p, urllib3_span.s)
 
-        assert_equals(None, django_span.ec)
+        self.assertEqual(None, django_span.ec)
 
-        assert_equals('/', django_span.data["http"]["url"])
-        assert_equals('GET', django_span.data["http"]["method"])
-        assert_equals(200, django_span.data["http"]["status"])
+        self.assertEqual('/', django_span.data["http"]["url"])
+        self.assertEqual('GET', django_span.data["http"]["method"])
+        self.assertEqual(200, django_span.data["http"]["status"])
         assert django_span.stack
-        assert_equals(2, len(django_span.stack))
+        self.assertEqual(2, len(django_span.stack))
 
     def test_request_with_error(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/cause_error')
 
         assert response
-        assert_equals(500, response.status)
+        self.assertEqual(500, response.status)
 
         spans = self.recorder.queued_spans()
-        assert_equals(4, len(spans))
+        self.assertEqual(4, len(spans))
 
         test_span = spans[3]
         urllib3_span = spans[2]
@@ -94,42 +93,42 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.s, response.headers['X-Instana-S'])
 
         assert ('X-Instana-L' in response.headers)
-        assert_equals('1', response.headers['X-Instana-L'])
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
-        assert_equals("test", test_span.data["sdk"]["name"])
-        assert_equals("urllib3", urllib3_span.n)
-        assert_equals("django", django_span.n)
-        assert_equals("log", log_span.n)
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual("django", django_span.n)
+        self.assertEqual("log", log_span.n)
 
-        assert_equals(test_span.t, urllib3_span.t)
-        assert_equals(urllib3_span.t, django_span.t)
-        assert_equals(django_span.t, log_span.t)
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, django_span.t)
+        self.assertEqual(django_span.t, log_span.t)
 
-        assert_equals(urllib3_span.p, test_span.s)
-        assert_equals(django_span.p, urllib3_span.s)
-        assert_equals(log_span.p, django_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(django_span.p, urllib3_span.s)
+        self.assertEqual(log_span.p, django_span.s)
 
-        assert_equals(1, django_span.ec)
+        self.assertEqual(1, django_span.ec)
 
-        assert_equals('/cause_error', django_span.data["http"]["url"])
-        assert_equals('GET', django_span.data["http"]["method"])
-        assert_equals(500, django_span.data["http"]["status"])
-        assert_equals('This is a fake error: /cause-error', django_span.data["http"]["error"])
+        self.assertEqual('/cause_error', django_span.data["http"]["url"])
+        self.assertEqual('GET', django_span.data["http"]["method"])
+        self.assertEqual(500, django_span.data["http"]["status"])
+        self.assertEqual('This is a fake error: /cause-error', django_span.data["http"]["error"])
         assert(django_span.stack)
-        assert_equals(2, len(django_span.stack))
+        self.assertEqual(2, len(django_span.stack))
 
     def test_complex_request(self):
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/complex')
 
         assert response
-        assert_equals(200, response.status)
+        self.assertEqual(200, response.status)
         spans = self.recorder.queued_spans()
-        assert_equals(5, len(spans))
+        self.assertEqual(5, len(spans))
 
         test_span = spans[4]
         urllib3_span = spans[3]
@@ -146,35 +145,35 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.s, response.headers['X-Instana-S'])
 
         assert ('X-Instana-L' in response.headers)
-        assert_equals('1', response.headers['X-Instana-L'])
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
-        assert_equals("test", test_span.data["sdk"]["name"])
-        assert_equals("urllib3", urllib3_span.n)
-        assert_equals("django", django_span.n)
-        assert_equals("sdk", ot_span1.n)
-        assert_equals("sdk", ot_span2.n)
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual("django", django_span.n)
+        self.assertEqual("sdk", ot_span1.n)
+        self.assertEqual("sdk", ot_span2.n)
 
-        assert_equals(test_span.t, urllib3_span.t)
-        assert_equals(urllib3_span.t, django_span.t)
-        assert_equals(django_span.t, ot_span1.t)
-        assert_equals(ot_span1.t, ot_span2.t)
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, django_span.t)
+        self.assertEqual(django_span.t, ot_span1.t)
+        self.assertEqual(ot_span1.t, ot_span2.t)
 
-        assert_equals(urllib3_span.p, test_span.s)
-        assert_equals(django_span.p, urllib3_span.s)
-        assert_equals(ot_span1.p, django_span.s)
-        assert_equals(ot_span2.p, ot_span1.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(django_span.p, urllib3_span.s)
+        self.assertEqual(ot_span1.p, django_span.s)
+        self.assertEqual(ot_span2.p, ot_span1.s)
 
-        assert_equals(None, django_span.ec)
+        self.assertEqual(None, django_span.ec)
         assert(django_span.stack)
-        assert_equals(2, len(django_span.stack))
+        self.assertEqual(2, len(django_span.stack))
 
-        assert_equals('/complex', django_span.data["http"]["url"])
-        assert_equals('GET', django_span.data["http"]["method"])
-        assert_equals(200, django_span.data["http"]["status"])
+        self.assertEqual('/complex', django_span.data["http"]["url"])
+        self.assertEqual('GET', django_span.data["http"]["method"])
+        self.assertEqual(200, django_span.data["http"]["status"])
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -189,37 +188,37 @@ class TestDjango(StaticLiveServerTestCase):
             # response = self.client.get('/')
 
         assert response
-        assert_equals(200, response.status)
+        self.assertEqual(200, response.status)
 
         spans = self.recorder.queued_spans()
-        assert_equals(3, len(spans))
+        self.assertEqual(3, len(spans))
 
         test_span = spans[2]
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        assert_equals("test", test_span.data["sdk"]["name"])
-        assert_equals("urllib3", urllib3_span.n)
-        assert_equals("django", django_span.n)
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual("django", django_span.n)
 
-        assert_equals(test_span.t, urllib3_span.t)
-        assert_equals(urllib3_span.t, django_span.t)
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, django_span.t)
 
-        assert_equals(urllib3_span.p, test_span.s)
-        assert_equals(django_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(django_span.p, urllib3_span.s)
 
-        assert_equals(None, django_span.ec)
+        self.assertEqual(None, django_span.ec)
         assert(django_span.stack)
-        assert_equals(2, len(django_span.stack))
+        self.assertEqual(2, len(django_span.stack))
 
-        assert_equals('/', django_span.data["http"]["url"])
-        assert_equals('GET', django_span.data["http"]["method"])
-        assert_equals(200, django_span.data["http"]["status"])
+        self.assertEqual('/', django_span.data["http"]["url"])
+        self.assertEqual('GET', django_span.data["http"]["method"])
+        self.assertEqual(200, django_span.data["http"]["status"])
 
-        assert_equals(True, "http.X-Capture-This" in django_span.data["custom"]['tags'])
-        assert_equals("this", django_span.data["custom"]['tags']["http.X-Capture-This"])
-        assert_equals(True, "http.X-Capture-That" in django_span.data["custom"]['tags'])
-        assert_equals("that", django_span.data["custom"]['tags']["http.X-Capture-That"])
+        self.assertEqual(True, "http.X-Capture-This" in django_span.data["custom"]['tags'])
+        self.assertEqual("this", django_span.data["custom"]['tags']["http.X-Capture-This"])
+        self.assertEqual(True, "http.X-Capture-That" in django_span.data["custom"]['tags'])
+        self.assertEqual("that", django_span.data["custom"]['tags']["http.X-Capture-That"])
 
     def test_with_incoming_context(self):
         request_headers = dict()
@@ -229,15 +228,15 @@ class TestDjango(StaticLiveServerTestCase):
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
 
         assert response
-        assert_equals(200, response.status)
+        self.assertEqual(200, response.status)
 
         spans = self.recorder.queued_spans()
-        assert_equals(1, len(spans))
+        self.assertEqual(1, len(spans))
 
         django_span = spans[0]
 
-        assert_equals(django_span.t, '0000000000000001')
-        assert_equals(django_span.p, '0000000000000001')
+        self.assertEqual(django_span.t, '0000000000000001')
+        self.assertEqual(django_span.p, '0000000000000001')
 
         assert ('X-Instana-T' in response.headers)
         assert (int(response.headers['X-Instana-T'], 16))
@@ -248,7 +247,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.s, response.headers['X-Instana-S'])
 
         assert ('X-Instana-L' in response.headers)
-        assert_equals('1', response.headers['X-Instana-L'])
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -262,15 +261,15 @@ class TestDjango(StaticLiveServerTestCase):
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
 
         assert response
-        assert_equals(200, response.status)
+        self.assertEqual(200, response.status)
 
         spans = self.recorder.queued_spans()
-        assert_equals(1, len(spans))
+        self.assertEqual(1, len(spans))
 
         django_span = spans[0]
 
-        assert_equals(django_span.t, '0000000000000001')
-        assert_equals(django_span.p, '0000000000000001')
+        self.assertEqual(django_span.t, '0000000000000001')
+        self.assertEqual(django_span.p, '0000000000000001')
 
         assert ('X-Instana-T' in response.headers)
         assert (int(response.headers['X-Instana-T'], 16))
@@ -281,7 +280,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.s, response.headers['X-Instana-S'])
 
         assert ('X-Instana-L' in response.headers)
-        assert_equals('1', response.headers['X-Instana-L'])
+        self.assertEqual('1', response.headers['X-Instana-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)

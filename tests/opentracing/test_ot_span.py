@@ -3,7 +3,6 @@ import time
 import unittest
 import opentracing
 from instana.singletons import tracer
-from nose.tools import assert_equals
 
 
 class TestOTSpan(unittest.TestCase):
@@ -39,14 +38,14 @@ class TestOTSpan(unittest.TestCase):
 
     def test_span_fields(self):
         span = opentracing.tracer.start_span("mycustom")
-        assert_equals("mycustom", span.operation_name)
+        self.assertEqual("mycustom", span.operation_name)
         assert span.context
 
         span.set_tag("tagone", "string")
         span.set_tag("tagtwo", 150)
 
-        assert_equals("string", span.tags['tagone'])
-        assert_equals(150, span.tags['tagtwo'])
+        self.assertEqual("string", span.tags['tagone'])
+        self.assertEqual(150, span.tags['tagtwo'])
 
     def test_span_queueing(self):
         recorder = opentracing.tracer.recorder
@@ -59,7 +58,7 @@ class TestOTSpan(unittest.TestCase):
             span.set_tag("tagtwo", 150)
             span.finish()
 
-        assert_equals(20, recorder.queue_size())
+        self.assertEqual(20, recorder.queue_size())
 
     def test_sdk_spans(self):
         recorder = opentracing.tracer.recorder
@@ -75,9 +74,9 @@ class TestOTSpan(unittest.TestCase):
         assert 1, len(spans)
 
         sdk_span = spans[0]
-        assert_equals('sdk', sdk_span.n)
-        assert_equals(None, sdk_span.p)
-        assert_equals(sdk_span.s, sdk_span.t)
+        self.assertEqual('sdk', sdk_span.n)
+        self.assertEqual(None, sdk_span.p)
+        self.assertEqual(sdk_span.s, sdk_span.t)
         assert sdk_span.ts
         assert sdk_span.ts > 0
         assert sdk_span.d
@@ -85,8 +84,8 @@ class TestOTSpan(unittest.TestCase):
 
         assert sdk_span.data
         assert sdk_span.data["sdk"]
-        assert_equals('entry', sdk_span.data["sdk"]["type"])
-        assert_equals('custom_sdk_span', sdk_span.data["sdk"]["name"])
+        self.assertEqual('entry', sdk_span.data["sdk"]["type"])
+        self.assertEqual('custom_sdk_span', sdk_span.data["sdk"]["name"])
         assert sdk_span.data["sdk"]["custom"]
         assert sdk_span.data["sdk"]["custom"]["tags"]
 
@@ -117,31 +116,31 @@ class TestOTSpan(unittest.TestCase):
         assert 5, len(spans)
 
         span = spans[0]
-        assert_equals('entry', span.data["sdk"]["type"])
+        self.assertEqual('entry', span.data["sdk"]["type"])
 
         span = spans[1]
-        assert_equals('entry', span.data["sdk"]["type"])
+        self.assertEqual('entry', span.data["sdk"]["type"])
 
         span = spans[2]
-        assert_equals('exit', span.data["sdk"]["type"])
+        self.assertEqual('exit', span.data["sdk"]["type"])
 
         span = spans[3]
-        assert_equals('exit', span.data["sdk"]["type"])
+        self.assertEqual('exit', span.data["sdk"]["type"])
 
         span = spans[4]
-        assert_equals('intermediate', span.data["sdk"]["type"])
+        self.assertEqual('intermediate', span.data["sdk"]["type"])
 
         span = spans[0]
-        assert_equals(1, span.k)
+        self.assertEqual(1, span.k)
 
         span = spans[1]
-        assert_equals(1, span.k)
+        self.assertEqual(1, span.k)
 
         span = spans[2]
-        assert_equals(2, span.k)
+        self.assertEqual(2, span.k)
 
         span = spans[3]
-        assert_equals(2, span.k)
+        self.assertEqual(2, span.k)
 
         span = spans[4]
-        assert_equals(3, span.k)
+        self.assertEqual(3, span.k)

@@ -85,14 +85,14 @@ def lambda_handler(event, context):
         # Import the module specified in module_name
         handler_module = importlib.import_module(module_name)
     except ImportError:
-        print("Couldn't determine and locate default module handler: %s.%s", module_name, function_name)
+        print("Couldn't determine and locate default module handler: %s.%s" % (module_name, function_name))
     else:
         # Now get the function and execute it
         if hasattr(handler_module, function_name):
             handler_function = getattr(handler_module, function_name)
             return handler_function(event, context)
         else:
-            print("Couldn't determine and locate default function handler: %s.%s", module_name, function_name)
+            print("Couldn't determine and locate default function handler: %s.%s" % (module_name, function_name))
 
 
 def boot_agent_later():

@@ -1,12 +1,15 @@
 import time
 
+import unittest
 import opentracing
+from instana.singletons import tracer
 from nose.tools import assert_equals
 
 
-class TestOTSpan:
+class TestOTSpan(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """
+        opentracing.tracer = tracer
         recorder = opentracing.tracer.recorder
         recorder.clear_spans()
 

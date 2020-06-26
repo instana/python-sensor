@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 
-import logging
 import json
+import unittest
+import logging
 
-from nose.tools import (assert_equals, assert_not_equals, assert_is_none, assert_is_not_none,
-                        assert_false, assert_true, assert_is_instance, assert_greater, assert_list_equal)
+from nose.tools import (assert_equals, assert_is_none, assert_is_not_none,
+                        assert_false, assert_true, assert_list_equal)
 
 from ..helpers import testenv
 from instana.singletons import tracer
@@ -15,7 +16,7 @@ import bson
 logger = logging.getLogger(__name__)
 
 
-class TestPyMongo:
+class TestPyMongo(unittest.TestCase):
     def setUp(self):
         logger.warn("Connecting to MongoDB mongo://%s:<pass>@%s:%s",
                     testenv['mongodb_user'], testenv['mongodb_host'], testenv['mongodb_port'])

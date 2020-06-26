@@ -19,18 +19,6 @@ if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ:
         print("Starting background RPC app...")
         rpc_server_thread.start()
 
-    if sys.version_info < (3, 7, 0):
-        # Background Soap Server
-        from .soapserver4132 import soapserver
-
-        # Spawn our background Soap server that the tests will throw
-        # requests at.
-        soap = threading.Thread(target=soapserver.serve_forever)
-        soap.daemon = True
-        soap.name = "Background Soap server"
-        print("Starting background Soap server...")
-        soap.start()
-
     if sys.version_info >= (3, 5, 3):
         # Background aiohttp application
         from .app_aiohttp import run_server

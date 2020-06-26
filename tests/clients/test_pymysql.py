@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import sys
 import logging
+import unittest
 import pymysql
 from ..helpers import testenv
 from nose.tools import assert_equals
@@ -43,7 +44,7 @@ cursor.close()
 db.close()
 
 
-class TestPyMySQL:
+class TestPyMySQL(unittest.TestCase):
     def setUp(self):
         logger.warn("MySQL connecting: %s:<pass>@%s:3306/%s", testenv['mysql_user'], testenv['mysql_host'], testenv['mysql_db'])
         self.db = pymysql.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],

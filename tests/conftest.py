@@ -41,6 +41,6 @@ def celery_enable_logging():
 @pytest.fixture(scope='session')
 def celery_includes():
     return {
-        'tests.test_celery'
+        'tests.frameworks.test_celery'
     }
 

@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
-import logging
 import sys
+import logging
+import unittest
 from unittest import SkipTest
-from instana.singletons import tracer
-
 from ..helpers import testenv
+from instana.singletons import tracer
 
 if sys.version_info < (3, 0):
     import MySQLdb
@@ -49,7 +49,7 @@ cursor.close()
 db.close()
 
 
-class TestMySQLPython:
+class TestMySQLPython(unittest.TestCase):
     def setUp(self):
         logger.warn("MySQL connecting: %s:<pass>@%s:3306/%s", testenv['mysql_user'], testenv['mysql_host'], testenv['mysql_db'])
         self.db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],

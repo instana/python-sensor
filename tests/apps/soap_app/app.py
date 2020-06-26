@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
-from wsgiref.simple_server import make_server
 
-from spyne import (Application, Fault, Integer, Iterable, ServiceBase, Unicode, rpc)
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
+from wsgiref.simple_server import make_server
+from spyne import (Application, Fault, Integer, Iterable, ServiceBase, Unicode, rpc)
 
+from ...helpers import testenv
 from instana.wsgi import iWSGIMiddleware
-from ..helpers import testenv
 
 
 testenv["soap_port"] = 10812

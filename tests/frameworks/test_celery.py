@@ -43,11 +43,11 @@ def test_apply_async(celery_app, celery_worker):
     assert(client_span.t == worker_span.t)
     assert(client_span.p == test_span.s)
 
-    assert("tests.test_celery.add" == client_span.data["celery"]["task"])
+    assert("tests.frameworks.test_celery.add" == client_span.data["celery"]["task"])
     assert("redis://localhost:6379" == client_span.data["celery"]["broker"])
     assert(client_span.data["celery"]["task_id"])
 
-    assert("tests.test_celery.add" == worker_span.data["celery"]["task"])
+    assert("tests.frameworks.test_celery.add" == worker_span.data["celery"]["task"])
     assert("redis://localhost:6379" == worker_span.data["celery"]["broker"])
     assert(worker_span.data["celery"]["task_id"])
 
@@ -55,7 +55,7 @@ def test_apply_async(celery_app, celery_worker):
 def test_send_task(celery_app, celery_worker):
     result = None
     with tracer.start_active_span('test'):
-        result = celery_app.send_task('tests.test_celery.add', (1, 2))
+        result = celery_app.send_task('tests.frameworks.test_celery.add', (1, 2))
 
     # Wait for jobs to finish
     time.sleep(0.5)
@@ -79,11 +79,11 @@ def test_send_task(celery_app, celery_worker):
     assert(client_span.t == worker_span.t)
     assert(client_span.p == test_span.s)
 
-    assert("tests.test_celery.add" == client_span.data["celery"]["task"])
+    assert("tests.frameworks.test_celery.add" == client_span.data["celery"]["task"])
     assert("redis://localhost:6379" == client_span.data["celery"]["broker"])
     assert(client_span.data["celery"]["task_id"])
 
-    assert("tests.test_celery.add" == worker_span.data["celery"]["task"])
+    assert("tests.frameworks.test_celery.add" == worker_span.data["celery"]["task"])
     assert("redis://localhost:6379" == worker_span.data["celery"]["broker"])
     assert(worker_span.data["celery"]["task_id"])
 

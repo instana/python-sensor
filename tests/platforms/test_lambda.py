@@ -49,7 +49,7 @@ class TestLambda(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
-        os.environ["LAMBDA_HANDLER"] = "tests.test_lambda.my_lambda_handler"
+        os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
         self.context = TestContext()
@@ -122,7 +122,7 @@ class TestLambda(unittest.TestCase):
 
     def test_custom_service_name(self):
         os.environ['INSTANA_SERVICE_NAME'] = "Legion"
-        with open(self.pwd + '/data/lambda/api_gateway_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -181,7 +181,7 @@ class TestLambda(unittest.TestCase):
             self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_api_gateway_trigger_tracing(self):
-        with open(self.pwd + '/data/lambda/api_gateway_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -238,7 +238,7 @@ class TestLambda(unittest.TestCase):
             self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_application_lb_trigger_tracing(self):
-        with open(self.pwd + '/data/lambda/api_gateway_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -294,7 +294,7 @@ class TestLambda(unittest.TestCase):
             self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_cloudwatch_trigger_tracing(self):
-        with open(self.pwd + '/data/lambda/cloudwatch_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/cloudwatch_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -350,7 +350,7 @@ class TestLambda(unittest.TestCase):
                          span.data["lambda"]["cw"]["events"]["resources"][0])
 
     def test_cloudwatch_logs_trigger_tracing(self):
-        with open(self.pwd + '/data/lambda/cloudwatch_logs_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/cloudwatch_logs_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -408,7 +408,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('[ERROR] Second test message', span.data['lambda']['cw']['logs']['events'][1])
 
     def test_s3_trigger_tracing(self):
-        with open(self.pwd + '/data/lambda/s3_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/s3_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -465,7 +465,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('test/key', event['object'])
 
     def test_sqs_trigger_tracing(self):
-        with open(self.pwd + '/data/lambda/sqs_event.json', 'r') as json_file:
+        with open(self.pwd + '/../data/lambda/sqs_event.json', 'r') as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()

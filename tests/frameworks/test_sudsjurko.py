@@ -1,24 +1,22 @@
 from __future__ import absolute_import
 
-from nose.tools import assert_equals
+import tests.apps.soap_app
+from ..helpers import testenv
 from suds.client import Client
-
+from nose.tools import assert_equals
 from instana.singletons import tracer
 
-from ..helpers import testenv
 
 
 class TestSudsJurko:
-    def setUp(self):
+    def setup_class(self):
         """ Clear all spans before a test run """
         self.client = Client(testenv["soap_server"] + '/?wsdl', cache=None)
         self.recorder = tracer.recorder
+
+    def setup_method(self):
         self.recorder.clear_spans()
         tracer.cur_ctx = None
-
-    def tearDown(self):
-        """ Do nothing for now """
-        return None
 
     def test_vanilla_request(self):
         response = self.client.service.ask_question(u'Why u like dat?', 5)

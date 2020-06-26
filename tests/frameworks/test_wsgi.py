@@ -4,7 +4,7 @@ import time
 import urllib3
 import unittest
 
-import tests.apps.flask
+import tests.apps.flask_app
 from ..helpers import testenv
 from instana.singletons import agent, tracer
 

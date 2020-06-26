@@ -4,7 +4,7 @@ import asyncio
 import aiohttp
 import unittest
 
-import tests.apps.flask
+import tests.apps.flask_app
 from ..helpers import testenv
 from instana.configurator import config
 from instana.singletons import async_tracer

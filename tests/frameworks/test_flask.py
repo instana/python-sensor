@@ -5,7 +5,7 @@ import unittest
 import urllib3
 from flask.signals import signals_available
 
-import tests.apps.flask
+import tests.apps.flask_app
 from instana.singletons import tracer
 from ..helpers import testenv
 
@@ -729,7 +729,7 @@ class TestFlask(unittest.TestCase):
         # error log
         self.assertEqual("log", log_span.n)
         self.assertEqual('InvalidUsage error handler invoked', log_span.data["log"]['message'])
-        self.assertEqual("<class 'tests.apps.flask.app.InvalidUsage'> ", log_span.data["log"]['parameters'])
+        self.assertEqual("<class 'tests.apps.flask_app.app.InvalidUsage'> ", log_span.data["log"]['parameters'])
 
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)

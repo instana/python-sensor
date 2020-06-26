@@ -10,7 +10,7 @@ import unittest
 import opentracing
 from distutils.version import LooseVersion
 
-import tests.apps.flask
+import tests.apps.flask_app
 from ..helpers import testenv
 from instana.singletons import async_tracer
 

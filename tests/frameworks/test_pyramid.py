@@ -3,9 +3,10 @@ from __future__ import absolute_import
 import unittest
 import urllib3
 
-import tests.apps.pyramid
+import tests.apps.pyramid_app
 from ..helpers import testenv
 from instana.singletons import tracer
+
 
 class TestPyramid(unittest.TestCase):
     def setUp(self):

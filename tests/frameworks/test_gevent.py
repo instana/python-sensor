@@ -7,7 +7,7 @@ from gevent.pool import Group
 import urllib3
 import unittest
 
-import tests.apps.flask
+import tests.apps.flask_app
 from instana.span import SDKSpan
 from instana.singletons import tracer
 from ..helpers import testenv, get_spans_by_filter

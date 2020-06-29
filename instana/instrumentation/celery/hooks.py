@@ -7,7 +7,7 @@ from ...singletons import tracer
 try:
     import celery
     from celery import registry, signals
-    from .catalog import task_catalog_pop, task_catalog_push, get_task_id
+    from .catalog import task_catalog_get, task_catalog_pop, task_catalog_push, get_task_id
     from celery.contrib import rdb
 
     @signals.task_prerun.connect
@@ -17,13 +17,8 @@ try:
             task_id = kwargs.get('task_id', None)
             task = registry.tasks.get(task.name)
 
-            #print("task_prerun: %s" % task.name)
             headers = task.request.get('headers', {})
             ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
-
-            #if task.name == 'tests.test_celery.add':
-                #print("task.request: %s" % task.request)
-                #print("ctx: %s", ctx)
 
             if ctx is not None:
                 scope = tracer.start_active_span("celery-worker", child_of=ctx)
@@ -39,7 +34,6 @@ try:
     @signals.task_postrun.connect
     def task_postrun(*args, **kwargs):
         try:
-            #print("task_postrun")
             task = kwargs.get('sender', None)
             task_id = kwargs.get('task_id', None)
             scope = task_catalog_pop(task, task_id, True)
@@ -48,11 +42,40 @@ try:
         except:
             logger.debug("after_task_publish: ", exc_info=True)
 
+    @signals.task_failure.connect
+    def task_failure(*args, **kwargs):
+        try:
+            task_id = kwargs.get('task_id', None)
+            task = kwargs['sender']
+            scope = task_catalog_get(task, task_id, True)
+
+            if scope is not None:
+                scope.span.set_tag("success", False)
+                exc = kwargs.get('exception', None)
+                if exc is None:
+                    scope.span.mark_as_errored()
+                else:
+                    scope.span.log_exception(kwargs['exception'])
+        except:
+            logger.debug("task_failure: ", exc_info=True)
+
+    @signals.task_retry.connect
+    def task_retry(*args, **kwargs):
+        try:
+            task_id = kwargs.get('task_id', None)
+            task = kwargs['sender']
+            scope = task_catalog_get(task, task_id, True)
+
+            if scope is not None:
+                reason = kwargs.get('reason', None)
+                if reason is not None:
+                    scope.span.set_tag('retry-reason', reason)
+        except:
+            logger.debug("task_failure: ", exc_info=True)
+
     @signals.before_task_publish.connect
     def before_task_publish(*args, **kwargs):
         try:
-            #print("before_task_publish %s" % kwargs['sender'])
-
             parent_span = tracer.active_span
             if parent_span is not None:
                 body = kwargs['body']
@@ -85,8 +108,6 @@ try:
     @signals.after_task_publish.connect
     def after_task_publish(*args, **kwargs):
         try:
-            #print("after_task_publish %s" % kwargs['sender'])
-
             task_id = get_task_id(kwargs['headers'], kwargs['body'])
             task = registry.tasks.get(kwargs['sender'])
             scope = task_catalog_pop(task, task_id, False)

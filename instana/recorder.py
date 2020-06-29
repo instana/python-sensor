@@ -19,10 +19,11 @@ else:
 class StandardRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
-    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra", "couchbase",
-                        "django", "log", "memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis",
-                        "render", "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client", "tornado-server",
-                        "urllib3", "wsgi")
+    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra",
+                        "celery-client", "celery-worker", "couchbase", "django", "log",
+                        "memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis",
+                        "render", "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client",
+                        "tornado-server", "urllib3", "wsgi")
 
     # Recorder thread for collection/reporting of spans
     thread = None

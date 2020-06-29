@@ -8,6 +8,8 @@ from ..singletons import tracer
 try:
     import redis
 
+    EXCLUDED_PARENT_SPANS = ["redis", "celery-client", "celery-worker"]
+
     def collect_tags(span, instance, args, kwargs):
         try:
             ckw = instance.connection_pool.connection_kwargs
@@ -34,7 +36,7 @@ try:
         parent_span = tracer.active_span
 
         # If we're not tracing, just return
-        if parent_span is None or parent_span.operation_name == "redis":
+        if parent_span is None or parent_span.operation_name in EXCLUDED_PARENT_SPANS:
             return wrapped(*args, **kwargs)
 
         with tracer.start_active_span("redis", child_of=parent_span) as scope:
@@ -55,7 +57,7 @@ try:
         parent_span = tracer.active_span
 
         # If we're not tracing, just return
-        if parent_span is None or parent_span.operation_name == "redis":
+        if parent_span is None or parent_span.operation_name in EXCLUDED_PARENT_SPANS:
             return wrapped(*args, **kwargs)
 
         with tracer.start_active_span("redis", child_of=parent_span) as scope:

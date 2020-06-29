@@ -93,6 +93,8 @@ class InstanaSpan(BasicSpan):
                 self.set_tag('pg.error', message)
             elif self.operation_name in RegisteredSpan.HTTP_SPANS:
                 self.set_tag('http.error', message)
+            elif self.operation_name in ["celery-client", "celery-worker"]:
+                self.set_tag('error', message)
             else:
                 self.log_kv({'message': message})
         except Exception:
@@ -195,11 +197,12 @@ class RegisteredSpan(BaseSpan):
     HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    EXIT_SPANS = ("aiohttp-client", "cassandra", "couchbase", "log", "memcache", "mongo", "mysql", "postgres",
-                  "rabbitmq", "redis", "rpc-client", "sqlalchemy", "soap", "tornado-client", "urllib3",
-                  "pymongo")
+    EXIT_SPANS = ("aiohttp-client", "cassandra", "celery-client", "couchbase", "log", "memcache",
+                  "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
+                  "soap", "tornado-client", "urllib3", "pymongo")
 
-    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "django", "wsgi", "rabbitmq", "rpc-server", "tornado-server")
+    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
+                   "rpc-server", "tornado-server")
 
     LOCAL_SPANS = ("render")
 
@@ -259,6 +262,13 @@ class RegisteredSpan(BaseSpan):
             elif trigger_type == 'aws:sqs':
                 self.data["lambda"]["sqs"]["messages"] = span.tags.pop('lambda.sqs.messages', None)
 
+        elif span.operation_name == "celery-worker":
+            self.data["celery"]["task"] = span.tags.pop('task', None)
+            self.data["celery"]["task_id"] = span.tags.pop('task_id', None)
+            self.data["celery"]["broker"] = span.tags.pop('broker', None)
+            self.data["celery"]["retry-reason"] = span.tags.pop('retry-reason', None)
+            self.data["celery"]["error"] = span.tags.pop('error', None)
+
         elif span.operation_name == "rabbitmq":
             self.data["rabbitmq"]["exchange"] = span.tags.pop('exchange', None)
             self.data["rabbitmq"]["queue"] = span.tags.pop('queue', None)
@@ -290,12 +300,6 @@ class RegisteredSpan(BaseSpan):
     def _populate_exit_span_data(self, span):
         if span.operation_name in self.HTTP_SPANS:
             self._collect_http_tags(span)
-        elif span.operation_name == "rabbitmq":
-            self.data["rabbitmq"]["exchange"] = span.tags.pop('exchange', None)
-            self.data["rabbitmq"]["queue"] = span.tags.pop('queue', None)
-            self.data["rabbitmq"]["sort"] = span.tags.pop('sort', None)
-            self.data["rabbitmq"]["address"] = span.tags.pop('address', None)
-            self.data["rabbitmq"]["key"] = span.tags.pop('key', None)
 
         elif span.operation_name == "cassandra":
             self.data["cassandra"]["cluster"] = span.tags.pop('cassandra.cluster', None)
@@ -307,6 +311,12 @@ class RegisteredSpan(BaseSpan):
             self.data["cassandra"]["fullyFetched"] = span.tags.pop('cassandra.fullyFetched', None)
             self.data["cassandra"]["error"] = span.tags.pop('cassandra.error', None)
 
+        elif span.operation_name == "celery-client":
+            self.data["celery"]["task"] = span.tags.pop('task', None)
+            self.data["celery"]["task_id"] = span.tags.pop('task_id', None)
+            self.data["celery"]["broker"] = span.tags.pop('broker', None)
+            self.data["celery"]["error"] = span.tags.pop('error', None)
+
         elif span.operation_name == "couchbase":
             self.data["couchbase"]["hostname"] = span.tags.pop('couchbase.hostname', None)
             self.data["couchbase"]["bucket"] = span.tags.pop('couchbase.bucket', None)
@@ -314,6 +324,13 @@ class RegisteredSpan(BaseSpan):
             self.data["couchbase"]["error"] = span.tags.pop('couchbase.error', None)
             self.data["couchbase"]["error_type"] = span.tags.pop('couchbase.error_type', None)
             self.data["couchbase"]["sql"] = span.tags.pop('couchbase.sql', None)
+
+        elif span.operation_name == "rabbitmq":
+            self.data["rabbitmq"]["exchange"] = span.tags.pop('exchange', None)
+            self.data["rabbitmq"]["queue"] = span.tags.pop('queue', None)
+            self.data["rabbitmq"]["sort"] = span.tags.pop('sort', None)
+            self.data["rabbitmq"]["address"] = span.tags.pop('address', None)
+            self.data["rabbitmq"]["key"] = span.tags.pop('key', None)
 
         elif span.operation_name == "redis":
             self.data["redis"]["connection"] = span.tags.pop('connection', None)

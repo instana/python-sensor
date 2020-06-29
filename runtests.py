@@ -3,6 +3,7 @@ import sys
 import nose
 from distutils.version import LooseVersion
 
+os.environ['INSTANA_TEST'] = "true"
 command_line = [__file__, '--verbose']
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

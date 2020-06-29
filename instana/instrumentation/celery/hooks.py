@@ -116,6 +116,6 @@ try:
         except:
             logger.debug("after_task_publish: ", exc_info=True)
 
-    logger.debug("Instrumenting celery client")
+    logger.debug("Instrumenting celery")
 except ImportError:
     pass

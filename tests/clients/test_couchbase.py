@@ -1080,6 +1080,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.data["couchbase"]["bucket"], 'travel-sample')
         self.assertEqual(cb_span.data["couchbase"]["type"], 'ping')
 
+    @pytest.mark.skip
     def test_diagnostics(self):
         res = None
 

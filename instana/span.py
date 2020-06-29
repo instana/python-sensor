@@ -93,6 +93,8 @@ class InstanaSpan(BasicSpan):
                 self.set_tag('pg.error', message)
             elif self.operation_name in RegisteredSpan.HTTP_SPANS:
                 self.set_tag('http.error', message)
+            elif self.operation_name in ["celery-client", "celery-worker"]:
+                self.set_tag('error', message)
             else:
                 self.log_kv({'message': message})
         except Exception:
@@ -264,6 +266,8 @@ class RegisteredSpan(BaseSpan):
             self.data["celery"]["task"] = span.tags.pop('task', None)
             self.data["celery"]["task_id"] = span.tags.pop('task_id', None)
             self.data["celery"]["broker"] = span.tags.pop('broker', None)
+            self.data["celery"]["retry-reason"] = span.tags.pop('retry-reason', None)
+            self.data["celery"]["error"] = span.tags.pop('error', None)
 
         elif span.operation_name == "rabbitmq":
             self.data["rabbitmq"]["exchange"] = span.tags.pop('exchange', None)
@@ -311,6 +315,7 @@ class RegisteredSpan(BaseSpan):
             self.data["celery"]["task"] = span.tags.pop('task', None)
             self.data["celery"]["task_id"] = span.tags.pop('task_id', None)
             self.data["celery"]["broker"] = span.tags.pop('broker', None)
+            self.data["celery"]["error"] = span.tags.pop('error', None)
 
         elif span.operation_name == "couchbase":
             self.data["couchbase"]["hostname"] = span.tags.pop('couchbase.hostname', None)

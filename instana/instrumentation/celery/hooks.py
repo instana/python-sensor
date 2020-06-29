@@ -10,6 +10,21 @@ try:
     from .catalog import task_catalog_get, task_catalog_pop, task_catalog_push, get_task_id
     from celery.contrib import rdb
 
+    try:
+        from urllib import parse
+    except ImportError:
+        import urlparse as parse
+        import urllib
+
+    def add_broker_tags(span, broker_url):
+        try:
+            url = parse.urlparse(broker_url)
+            span.set_tag("scheme", url.scheme)
+            span.set_tag("host", url.hostname)
+            span.set_tag("port", url.port)
+        except:
+            logger.debug("Error parsing broker URL: %s" % broker_url, exc_info=True)
+
     @signals.task_prerun.connect
     def task_prerun(*args, **kwargs):
         try:
@@ -24,7 +39,7 @@ try:
                 scope = tracer.start_active_span("celery-worker", child_of=ctx)
                 scope.span.set_tag("task", task.name)
                 scope.span.set_tag("task_id", task_id)
-                scope.span.set_tag("broker", task.app.conf['broker_url'])
+                add_broker_tags(scope.span, task.app.conf['broker_url'])
 
                 # Store the scope on the task to eventually close it out on the "after" signal
                 task_catalog_push(task, task_id, scope, True)
@@ -86,8 +101,8 @@ try:
 
                 scope = tracer.start_active_span("celery-client", child_of=parent_span)
                 scope.span.set_tag("task", task_name)
-                scope.span.set_tag("broker", task.app.conf['broker_url'])
                 scope.span.set_tag("task_id", task_id)
+                add_broker_tags(scope.span, task.app.conf['broker_url'])
 
                 # Context propagation
                 context_headers = {}

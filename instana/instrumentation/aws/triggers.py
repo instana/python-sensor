@@ -119,7 +119,7 @@ def enrich_lambda_span(agent, span, event, context):
     @return: None
     """
     try:
-        span.set_tag('lambda.arn', context.invoked_function_arn)
+        span.set_tag('lambda.arn', agent.collector.get_fq_arn())
         span.set_tag('lambda.name', context.function_name)
         span.set_tag('lambda.version', context.function_version)
 

@@ -20,7 +20,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
     def test_equals(self):
         matcher = 'equals'
@@ -30,7 +30,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
     def test_equals_no_match(self):
         matcher = 'equals'
@@ -40,7 +40,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
     def test_contains_ignore_case(self):
         matcher = 'contains-ignore-case'
@@ -50,7 +50,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five=<redacted>")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five=<redacted>")
 
     def test_contains_ignore_case_no_match(self):
         matcher = 'contains-ignore-case'
@@ -60,7 +60,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
     def test_contains(self):
         matcher = 'contains'
@@ -70,7 +70,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five=<redacted>")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five=<redacted>")
 
     def test_contains_no_match(self):
         matcher = 'contains'
@@ -80,7 +80,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
     def test_regex(self):
         matcher = 'regex'
@@ -90,7 +90,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4=<redacted>&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4=<redacted>&five='okyeah'")
 
     def test_regex_no_match(self):
         matcher = 'regex'
@@ -100,7 +100,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
     def test_equals_with_path_component(self):
         matcher = 'equals'
@@ -110,7 +110,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
     def test_equals_with_full_url(self):
         matcher = 'equals'
@@ -120,7 +120,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "http://www.x.org/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "http://www.x.org/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
     def test_equals_with_none(self):
         matcher = 'equals'
@@ -140,7 +140,7 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
     def test_bad_kwlist(self):
         matcher = 'equals'
@@ -150,4 +150,4 @@ class TestSecrets(unittest.TestCase):
 
         stripped = strip_secrets(query_params, matcher, kwlist)
 
-        self.assertEquals(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
+        self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")

@@ -8,7 +8,6 @@ try:
     import celery
     from celery import registry, signals
     from .catalog import task_catalog_get, task_catalog_pop, task_catalog_push, get_task_id
-    from celery.contrib import rdb
 
     try:
         from urllib import parse

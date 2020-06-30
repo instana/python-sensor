@@ -31,7 +31,7 @@ class Collector(object):
             t.setDaemon(True)
             t.start()
         else:
-            logger.warn("Collector started but the agent tells us we can't send anything out.")
+            logger.warning("Collector started but the agent tells us we can't send anything out.")
 
     def shutdown(self):
         logger.debug("Collector.shutdown: Reporting final data.")

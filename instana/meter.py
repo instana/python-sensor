@@ -177,7 +177,7 @@ class Meter(object):
             self.process()
 
             if self.agent.is_timed_out():
-                logger.warn("Instana host agent unreachable for >1 min.  Going to sit in a corner...")
+                logger.warning("Instana host agent unreachable for >1 min.  Going to sit in a corner...")
                 self.agent.reset()
                 return False
             return True

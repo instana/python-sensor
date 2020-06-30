@@ -1,7 +1,6 @@
 import inspect
 
 import opentracing as ot
-from nose.tools import assert_equals
 
 import instana.http_propagator as ihp
 import instana.text_propagator as itp
@@ -29,11 +28,11 @@ def test_http_inject_with_dict():
     ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
 
     assert 'X-Instana-T' in carrier
-    assert_equals(carrier['X-Instana-T'], span.context.trace_id)
+    assert(carrier['X-Instana-T'] == span.context.trace_id)
     assert 'X-Instana-S' in carrier
-    assert_equals(carrier['X-Instana-S'], span.context.span_id)
+    assert(carrier['X-Instana-S'] == span.context.span_id)
     assert 'X-Instana-L' in carrier
-    assert_equals(carrier['X-Instana-L'], "1")
+    assert(carrier['X-Instana-L'] == "1")
 
 
 def test_http_inject_with_list():
@@ -55,8 +54,8 @@ def test_http_basic_extract():
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, span.SpanContext)
-    assert_equals('0000000000000001', ctx.trace_id)
-    assert_equals('0000000000000001', ctx.span_id)
+    assert('0000000000000001' == ctx.trace_id)
+    assert('0000000000000001' == ctx.span_id)
 
 
 def test_http_mixed_case_extract():
@@ -66,8 +65,8 @@ def test_http_mixed_case_extract():
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, span.SpanContext)
-    assert_equals('0000000000000001', ctx.trace_id)
-    assert_equals('0000000000000001', ctx.span_id)
+    assert('0000000000000001' == ctx.trace_id)
+    assert('0000000000000001' == ctx.span_id)
 
 
 def test_http_no_context_extract():
@@ -87,8 +86,8 @@ def test_http_128bit_headers():
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, span.SpanContext)
-    assert_equals('b0789916ff8f319f', ctx.trace_id)
-    assert_equals('b0789916ff8f319f', ctx.span_id)
+    assert('b0789916ff8f319f' == ctx.trace_id)
+    assert('b0789916ff8f319f' == ctx.span_id)
 
 
 def test_text_basics():
@@ -111,11 +110,11 @@ def test_text_inject_with_dict():
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
     assert 'X-INSTANA-T' in carrier
-    assert_equals(carrier['X-INSTANA-T'], span.context.trace_id)
+    assert(carrier['X-INSTANA-T'] == span.context.trace_id)
     assert 'X-INSTANA-S' in carrier
-    assert_equals(carrier['X-INSTANA-S'], span.context.span_id)
+    assert(carrier['X-INSTANA-S'] == span.context.span_id)
     assert 'X-INSTANA-L' in carrier
-    assert_equals(carrier['X-INSTANA-L'], "1")
+    assert(carrier['X-INSTANA-L'] == "1")
 
 
 def test_text_inject_with_list():
@@ -137,8 +136,8 @@ def test_text_basic_extract():
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
     assert isinstance(ctx, span.SpanContext)
-    assert_equals('0000000000000001', ctx.trace_id)
-    assert_equals('0000000000000001', ctx.span_id)
+    assert('0000000000000001' == ctx.trace_id)
+    assert('0000000000000001' == ctx.span_id)
 
 
 def test_text_mixed_case_extract():
@@ -167,5 +166,5 @@ def test_text_128bit_headers():
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
     assert isinstance(ctx, span.SpanContext)
-    assert_equals('b0789916ff8f319f', ctx.trace_id)
-    assert_equals('b0789916ff8f319f', ctx.span_id)
+    assert('b0789916ff8f319f' == ctx.trace_id)
+    assert('b0789916ff8f319f' == ctx.span_id)

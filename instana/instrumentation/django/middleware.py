@@ -90,7 +90,7 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             elif type(settings.MIDDLEWARE) is list:
                 settings.MIDDLEWARE = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE
             else:
-                logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
+                logger.warning("Instana: Couldn't add InstanaMiddleware to Django")
 
         elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
@@ -104,14 +104,14 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             elif type(settings.MIDDLEWARE_CLASSES) is list:
                 settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE_CLASSES
             else:
-                logger.warn("Instana: Couldn't add InstanaMiddleware to Django")
+                logger.warning("Instana: Couldn't add InstanaMiddleware to Django")
 
         else:
-            logger.warn("Instana: Couldn't find middleware settings")
+            logger.warning("Instana: Couldn't find middleware settings")
 
         return wrapped(*args, **kwargs)
     except Exception:
-        logger.warn("Instana: Couldn't add InstanaMiddleware to Django: ", exc_info=True)
+        logger.warning("Instana: Couldn't add InstanaMiddleware to Django: ", exc_info=True)
 
 
 try:

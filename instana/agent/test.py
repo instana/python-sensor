@@ -27,6 +27,6 @@ class TestAgent(HostAgent):
         return True
 
     def report_traces(self, spans):
-        logger.warn("Tried to report_traces with a TestAgent!")
+        logger.warning("Tried to report_traces with a TestAgent!")
 
 

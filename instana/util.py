@@ -255,7 +255,7 @@ def get_default_gateway():
             return "%i.%i.%i.%i" % (int(hip[6:8], 16), int(hip[4:6], 16), int(hip[2:4], 16), int(hip[0:2], 16))
 
     except Exception:
-        logger.warn("get_default_gateway: ", exc_info=True)
+        logger.warning("get_default_gateway: ", exc_info=True)
 
 
 def get_py_source(file):

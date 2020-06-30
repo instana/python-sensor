@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-import pytest
+import time
 import unittest
 
 from instana.singletons import tracer
@@ -28,16 +28,15 @@ class TestStandardCouchDB(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
-        self.recorder.clear_spans()
         self.cluster = Cluster('couchbase://%s' % testenv['couchdb_host'])
         self.bucket = Bucket('couchbase://%s/travel-sample' % testenv['couchdb_host'],
                              username=testenv['couchdb_username'], password=testenv['couchdb_password'])
         # self.bucket = self.cluster.open_bucket('travel-sample')
         self.bucket.upsert('test-key', 1)
+        self.recorder.clear_spans()
 
     def tearDown(self):
-        """ Do nothing for now """
-        return None
+        time.sleep(0.5)
 
     def test_vanilla_get(self):
         res = self.bucket.get("test-key")
@@ -474,7 +473,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.data["couchbase"]["bucket"], 'travel-sample')
         self.assertEqual(cb_span.data["couchbase"]["type"], 'prepend_multi')
 
-    @pytest.mark.skip(reason="Failing test for unchanged instrumentation; todo")
     def test_get(self):
         res = None
 
@@ -1080,7 +1078,6 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_span.data["couchbase"]["bucket"], 'travel-sample')
         self.assertEqual(cb_span.data["couchbase"]["type"], 'ping')
 
-    @pytest.mark.skip
     def test_diagnostics(self):
         res = None
 

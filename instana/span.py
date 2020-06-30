@@ -265,7 +265,9 @@ class RegisteredSpan(BaseSpan):
         elif span.operation_name == "celery-worker":
             self.data["celery"]["task"] = span.tags.pop('task', None)
             self.data["celery"]["task_id"] = span.tags.pop('task_id', None)
-            self.data["celery"]["broker"] = span.tags.pop('broker', None)
+            self.data["celery"]["scheme"] = span.tags.pop('scheme', None)
+            self.data["celery"]["host"] = span.tags.pop('host', None)
+            self.data["celery"]["port"] = span.tags.pop('port', None)
             self.data["celery"]["retry-reason"] = span.tags.pop('retry-reason', None)
             self.data["celery"]["error"] = span.tags.pop('error', None)
 
@@ -314,7 +316,9 @@ class RegisteredSpan(BaseSpan):
         elif span.operation_name == "celery-client":
             self.data["celery"]["task"] = span.tags.pop('task', None)
             self.data["celery"]["task_id"] = span.tags.pop('task_id', None)
-            self.data["celery"]["broker"] = span.tags.pop('broker', None)
+            self.data["celery"]["scheme"] = span.tags.pop('scheme', None)
+            self.data["celery"]["host"] = span.tags.pop('host', None)
+            self.data["celery"]["port"] = span.tags.pop('port', None)
             self.data["celery"]["error"] = span.tags.pop('error', None)
 
         elif span.operation_name == "couchbase":

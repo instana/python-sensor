@@ -16,7 +16,7 @@ try:
     opt_lazy_apps = uwsgi.opt.get('lazy-apps', False)
 
     if uwsgi.opt.get('enable-threads', False) is False and uwsgi.opt.get('gevent', False) is False:
-        logger.warn("Required: Neither uWSGI threads or gevent is enabled. " +
+        logger.warning("Required: Neither uWSGI threads or gevent is enabled. " +
                     "Please enable by using the uWSGI --enable-threads or --gevent option.")
 
     if opt_master and opt_lazy_apps is False:

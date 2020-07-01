@@ -19,29 +19,44 @@ try:
         try:
             url = parse.urlparse(broker_url)
             span.set_tag("scheme", url.scheme)
-            span.set_tag("host", url.hostname)
-            span.set_tag("port", url.port)
+
+            if url.hostname is None:
+                span.set_tag("host", 'localhost')
+            else:
+                span.set_tag("host", url.hostname)
+
+            if url.port is None:
+                # Set default port if not specified
+                if url.scheme == 'redis':
+                    span.set_tag("port", "6379")
+                elif 'amqp' in url.scheme:
+                    span.set_tag("port", "5672")
+                elif 'sqs' in url.scheme:
+                    span.set_tag("port", "443")
+            else:
+                span.set_tag("port", str(url.port))
         except:
             logger.debug("Error parsing broker URL: %s" % broker_url, exc_info=True)
 
     @signals.task_prerun.connect
     def task_prerun(*args, **kwargs):
         try:
+            ctx = None
             task = kwargs.get('sender', None)
             task_id = kwargs.get('task_id', None)
             task = registry.tasks.get(task.name)
 
             headers = task.request.get('headers', {})
-            ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
+            if headers is not None:
+                ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
 
-            if ctx is not None:
-                scope = tracer.start_active_span("celery-worker", child_of=ctx)
-                scope.span.set_tag("task", task.name)
-                scope.span.set_tag("task_id", task_id)
-                add_broker_tags(scope.span, task.app.conf['broker_url'])
+            scope = tracer.start_active_span("celery-worker", child_of=ctx)
+            scope.span.set_tag("task", task.name)
+            scope.span.set_tag("task_id", task_id)
+            add_broker_tags(scope.span, task.app.conf['broker_url'])
 
-                # Store the scope on the task to eventually close it out on the "after" signal
-                task_catalog_push(task, task_id, scope, True)
+            # Store the scope on the task to eventually close it out on the "after" signal
+            task_catalog_push(task, task_id, scope, True)
         except:
             logger.debug("task_prerun: ", exc_info=True)
 

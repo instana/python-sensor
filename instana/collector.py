@@ -3,7 +3,7 @@ import sys
 import threading
 
 from .log import logger
-from .util import every, DictionaryOfStan
+from .util import every, DictionaryOfStan, normalize_aws_lambda_arn
 
 
 if sys.version_info.major == 2:
@@ -24,6 +24,7 @@ class Collector(object):
         self.snapshot_data = None
         self.snapshot_data_sent = False
         self.lock = threading.Lock()
+        self._fq_arn = None
 
     def start(self):
         if self.agent.can_send():
@@ -87,12 +88,23 @@ class Collector(object):
         try:
             plugin_data = dict()
             plugin_data["name"] = "com.instana.plugin.aws.lambda"
-            plugin_data["entityId"] = self.context.invoked_function_arn
+            plugin_data["entityId"] = self.get_fq_arn()
             self.snapshot_data["plugins"] = [plugin_data]
         except:
             logger.debug("collect_snapshot error", exc_info=True)
         finally:
             return self.snapshot_data
+
+    def get_fq_arn(self):
+        if self._fq_arn is not None:
+            return self._fq_arn
+
+        if self.context is None:
+            logger.debug("Attempt to get qualified ARN before the context object is available")
+            return ''
+
+        self._fq_arn = normalize_aws_lambda_arn(self.context)
+        return self._fq_arn
 
     def __queued_spans(self):
         """ Get all of the spans in the queue """

@@ -15,12 +15,13 @@ from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
 from instana.instrumentation.aws.triggers import read_http_query_params
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
+from instana.util import normalize_aws_lambda_arn
 
 
 # Mock Context object
-class TestContext(dict):
+class MockContext(dict):
     def __init__(self, **kwargs):
-        super(TestContext, self).__init__(**kwargs)
+        super(MockContext, self).__init__(**kwargs)
         self.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:1"
         self.function_name = "TestPython"
         self.function_version = "1"
@@ -52,7 +53,7 @@ class TestLambda(unittest.TestCase):
         os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
-        self.context = TestContext()
+        self.context = MockContext()
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
@@ -535,3 +536,16 @@ class TestLambda(unittest.TestCase):
         event = None
         params = read_http_query_params(event)
         self.assertEqual("", params)
+
+    def test_arn_parsing(self):
+        ctx = MockContext()
+
+        assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
+
+        # Without version should return a fully qualified ARN (with version)
+        ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython"
+        assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
+
+        # Fully qualified already with the '$LATEST' special tag
+        ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST"
+        assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST")

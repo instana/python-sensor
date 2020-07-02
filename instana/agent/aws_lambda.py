@@ -53,7 +53,7 @@ class AWSLambdaAgent(BaseAgent):
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        return {'hl': True, 'cp': 'aws', 'e': self.collector.context.invoked_function_arn}
+        return {'hl': True, 'cp': 'aws', 'e': self.collector.get_fq_arn()}
 
     def report_data_payload(self, payload):
         """
@@ -65,7 +65,7 @@ class AWSLambdaAgent(BaseAgent):
                 # Prepare request headers
                 self.report_headers = dict()
                 self.report_headers["Content-Type"] = "application/json"
-                self.report_headers["X-Instana-Host"] = self.collector.context.invoked_function_arn
+                self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
                 self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 

@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
+import sys
 import wrapt
 import logging
-import sys
+import collections
 
 from ..log import logger
 from ..singletons import tracer
@@ -18,10 +19,14 @@ def log_with_instana(wrapped, instance, argv, kwargs):
 
         # Only needed if we're tracing and serious log
         if parent_span and argv[0] >= logging.WARN:
+
+            msg = str(argv[1])
+            args = argv[2]
+            if args and len(args) == 1 and isinstance(args[0], collections.Mapping) and args[0]:
+                args = args[0]
+
             # get the formatted log message
-            # clients such as suds-jurko log things such as: Fault(Server: 'Server side fault example.')
-            # So make sure we're working with a string
-            msg = str(argv[1]) % argv[2]
+            msg = msg % args
 
             # get additional information if an exception is being handled
             parameters = None
@@ -37,8 +42,8 @@ def log_with_instana(wrapped, instance, argv, kwargs):
                 # extra tags for an error
                 if argv[0] >= logging.ERROR:
                     scope.span.mark_as_errored()
-    except Exception as e:
-        logger.debug('Exception: %s', e, exc_info=True)
+    except Exception:
+        logger.debug('log_with_instana:', exc_info=True)
     finally:
         return wrapped(*argv, **kwargs)
 

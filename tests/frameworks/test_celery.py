@@ -16,6 +16,15 @@ def will_raise_error():
     raise Exception('This is a simulated error')
 
 
+def filter_out_ping_tasks(spans):
+    filtered_spans = []
+    for span in spans:
+        is_ping_task = (span.n == 'celery-worker' and span.data['celery']['task'] == 'celery.ping')
+        if not is_ping_task:
+            filtered_spans.append(span)
+    return filtered_spans
+
+
 def setup_method():
     """ Clear all spans before a test run """
     tracer.recorder.clear_spans()
@@ -29,7 +38,7 @@ def test_apply_async(celery_app, celery_worker):
     # Wait for jobs to finish
     time.sleep(0.5)
 
-    spans = tracer.recorder.queued_spans()
+    spans = filter_out_ping_tasks(tracer.recorder.queued_spans())
     assert len(spans) == 3
 
     filter = lambda span: span.n == "sdk"
@@ -74,7 +83,7 @@ def test_delay(celery_app, celery_worker):
     # Wait for jobs to finish
     time.sleep(0.5)
 
-    spans = tracer.recorder.queued_spans()
+    spans = filter_out_ping_tasks(tracer.recorder.queued_spans())
     assert len(spans) == 3
 
     filter = lambda span: span.n == "sdk"
@@ -119,7 +128,7 @@ def test_send_task(celery_app, celery_worker):
     # Wait for jobs to finish
     time.sleep(0.5)
 
-    spans = tracer.recorder.queued_spans()
+    spans = filter_out_ping_tasks(tracer.recorder.queued_spans())
     assert len(spans) == 3
 
     filter = lambda span: span.n == "sdk"
@@ -164,8 +173,8 @@ def test_error_reporting(celery_app, celery_worker):
     # Wait for jobs to finish
     time.sleep(0.5)
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 3
+    spans = filter_out_ping_tasks(tracer.recorder.queued_spans())
+    assert len(spans) == 4
 
     filter = lambda span: span.n == "sdk"
     test_span = get_first_span_by_filter(spans, filter)
@@ -175,13 +184,21 @@ def test_error_reporting(celery_app, celery_worker):
     client_span = get_first_span_by_filter(spans, filter)
     assert(client_span)
 
+    filter = lambda span: span.n == "log"
+    log_span = get_first_span_by_filter(spans, filter)
+    assert(log_span)
+
     filter = lambda span: span.n == "celery-worker"
     worker_span = get_first_span_by_filter(spans, filter)
     assert(worker_span)
 
     assert(client_span.t == test_span.t)
     assert(client_span.t == worker_span.t)
+    assert(client_span.t == log_span.t)
+
     assert(client_span.p == test_span.s)
+    assert(worker_span.p == client_span.s)
+    assert(log_span.p == worker_span.s)
 
     assert("tests.frameworks.test_celery.will_raise_error" == client_span.data["celery"]["task"])
     assert("redis" == client_span.data["celery"]["scheme"])

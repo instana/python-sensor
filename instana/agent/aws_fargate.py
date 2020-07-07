@@ -1,5 +1,5 @@
 """
-The Instana agent (for AWS Fargate functions) that manages
+The Instana agent (for AWS Fargate) that manages
 monitoring state and reporting that data.
 """
 import os
@@ -7,7 +7,7 @@ import time
 from ..log import logger
 from ..util import to_json
 from .base import BaseAgent
-from instana.collector import Collector
+from instana.collector.aws_fargate import AWSFargateCollector
 from instana.options import AWSFargateOptions
 
 
@@ -35,7 +35,7 @@ class AWSFargateAgent(BaseAgent):
 
         if self._validate_options():
             self._can_send = True
-            self.collector = Collector(self)
+            self.collector = AWSFargateCollector(self)
             self.collector.start()
         else:
             logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "

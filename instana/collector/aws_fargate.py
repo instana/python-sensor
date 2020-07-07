@@ -1,9 +1,10 @@
 
 from ..log import logger
+from .base import BaseCollector
 from ..util import DictionaryOfStan
 
 
-class AWSFargateCollector(object):
+class AWSFargateCollector(BaseCollector):
     def __init__(self, agent):
         super(AWSFargateCollector, self).__init__(agent)
         logger.debug("Loading AWS Fargate Collector")

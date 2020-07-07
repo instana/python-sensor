@@ -134,6 +134,27 @@ class AWSLambdaRecorder(StandardRecorder):
         self.agent.collector.span_queue.put(json_span)
 
 
+class AWSFargateRecorder(StandardRecorder):
+    def __init__(self, agent):
+        self.agent = agent
+        super(AWSFargateRecorder, self).__init__()
+
+    def record_span(self, span):
+        """
+        Convert the passed BasicSpan and add it to the span queue
+        """
+        source = self.agent.get_from_structure()
+        service_name = self.agent.options.service_name
+
+        if span.operation_name in self.REGISTERED_SPANS:
+            json_span = RegisteredSpan(span, source, service_name)
+        else:
+            json_span = SDKSpan(span, source, service_name)
+
+        # logger.debug("Recorded span: %s", json_span)
+        self.agent.collector.span_queue.put(json_span)
+
+
 class InstanaSampler(Sampler):
     def sampled(self, _):
         return False

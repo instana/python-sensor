@@ -16,12 +16,19 @@ if os.environ.get("INSTANA_TEST", False):
     agent = TestAgent()
     span_recorder = StandardRecorder()
 
-elif os.environ.get("INSTANA_ENDPOINT_URL", False):
+elif os.environ.get("LAMBDA_HANDLER", False):
     from .agent.aws_lambda import AWSLambdaAgent
     from .recorder import AWSLambdaRecorder
 
     agent = AWSLambdaAgent()
     span_recorder = AWSLambdaRecorder(agent)
+
+elif os.environ.get("FARGATE", False):
+    from .agent.aws_fargate import AWSFargateAgent
+    from .recorder import AWSFargateRecorder
+
+    agent = AWSFargateAgent()
+    span_recorder = AWSFargateRecorder(agent)
 else:
     from .agent.host import HostAgent
     from .recorder import StandardRecorder

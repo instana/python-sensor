@@ -47,18 +47,7 @@ class BaseCollector(object):
         return self.prepare_and_report_data()
 
     def prepare_payload(self):
-        payload = DictionaryOfStan()
-        payload["spans"] = None
-        payload["metrics"] = None
-
-        if not self.span_queue.empty():
-            payload["spans"] = self.__queued_spans()
-
-        if self.snapshot_data and self.snapshot_data_sent is False:
-            payload["metrics"] = self.snapshot_data
-            self.snapshot_data_sent = True
-
-        return payload
+        logger.debug("BaseCollector: prepare_payload needs to be overridden")
 
     def prepare_and_report_data(self):
         if "INSTANA_TEST" in os.environ:
@@ -77,7 +66,7 @@ class BaseCollector(object):
             logger.debug("prepare_and_report_data: Couldn't acquire lock")
         return True
 
-    def collect_snapshot(self, event, context):
+    def collect_snapshot(self, *argv, **kwargs):
         logger.debug("BaseCollector: collect_snapshot needs to be overridden")
 
     def __queued_spans(self):

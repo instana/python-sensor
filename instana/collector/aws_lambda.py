@@ -25,6 +25,20 @@ class AWSLambdaCollector(BaseCollector):
         finally:
             return self.snapshot_data
 
+    def prepare_payload(self):
+        payload = DictionaryOfStan()
+        payload["spans"] = None
+        payload["metrics"] = None
+
+        if not self.span_queue.empty():
+            payload["spans"] = self.__queued_spans()
+
+        if self.snapshot_data and self.snapshot_data_sent is False:
+            payload["metrics"] = self.snapshot_data
+            self.snapshot_data_sent = True
+
+        return payload
+
     def get_fq_arn(self):
         if self._fq_arn is not None:
             return self._fq_arn

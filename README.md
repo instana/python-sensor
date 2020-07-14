@@ -43,7 +43,7 @@ Alternatively, if you prefer the really manual method, simply import the `instan
 
     import instana
 
-See also our detailed [Installation document](https://docs.instana.io/ecosystem/python/installation) for additional information covering Django, Flask, End-user Monitoring (EUM) and more.
+See also our detailed [Installation document](https://www.instana.com/docs/ecosystem/python/#installing) for additional information covering Django, Flask, End-user Monitoring (EUM) and more.
 
 ## Documentation
 

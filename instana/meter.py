@@ -247,7 +247,10 @@ class Meter(object):
     def jsonable(self, value):
         try:
             if callable(value):
-                result = value()
+                try:
+                    result = value()
+                except:
+                    result = 'Unknown'
             elif type(value) is ModuleType:
                 result = value
             else:

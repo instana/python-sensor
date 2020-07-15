@@ -55,11 +55,11 @@ class InstanaSpan(BasicSpan):
 
         final_value = value
         value_type = type(value)
-        if value_type not in [bool, float, int, str]:
+        if value_type not in [bool, float, int, list, str]:
             try:
                 final_value = str(value)
             except:
-                final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int or str. tag discarded"
+                final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int, list or str. tag discarded"
                 logger.debug(final_value, exc_info=True)
 
         return super(InstanaSpan, self).set_tag(key, final_value)

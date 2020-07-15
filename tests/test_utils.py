@@ -18,6 +18,7 @@ def test_to_json_bad_tag_values():
         # Arbitrarily setting an instance of some class
         scope.span.set_tag('tracer', tracer)
         scope.span.set_tag('none', None)
+        scope.span.set_tag('mylist', [1, 2, 3])
 
 
     spans = tracer.recorder.queued_spans()
@@ -25,16 +26,17 @@ def test_to_json_bad_tag_values():
 
     test_span = spans[0]
     assert(test_span)
-    assert(len(test_span.data['sdk']['custom']['tags']) == 3)
+    assert(len(test_span.data['sdk']['custom']['tags']) == 4)
     assert(test_span.data['sdk']['custom']['tags']['uuid'] == '12345678-1234-5678-1234-567812345678')
     assert(test_span.data['sdk']['custom']['tags']['tracer'])
     assert(test_span.data['sdk']['custom']['tags']['none'] == 'None')
+    assert(test_span.data['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
 
     json_data = to_json(test_span)
     assert(json_data)
 
 
-def test_to_json_bad_key_values():
+def test_to_json_bad_tag_names():
     with tracer.start_active_span('test') as scope:
         # Tag names (keys) must be strings
         scope.span.set_tag(1234567890, 'This should not get set')

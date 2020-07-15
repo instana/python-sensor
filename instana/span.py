@@ -39,6 +39,7 @@ class SpanContext():
 
 class InstanaSpan(BasicSpan):
     stack = None
+    synthetic = False
 
     def finish(self, finish_time=None):
         super(InstanaSpan, self).finish(finish_time)
@@ -171,6 +172,9 @@ class BaseSpan(object):
         self.f = source
         self.ec = span.tags.pop('ec', None)
         self.data = DictionaryOfStan()
+
+        if span.synthetic:
+            self.sy = True
 
         if span.stack:
             self.stack = span.stack

@@ -99,7 +99,8 @@ class InstanaTracer(BasicTracer):
                            context=ctx,
                            parent_id=(None if parent_ctx is None else parent_ctx.span_id),
                            tags=tags,
-                           start_time=start_time)
+                           start_time=start_time,
+                           synthetic=(False if parent_ctx is None else parent_ctx.synthetic))
 
         if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span)

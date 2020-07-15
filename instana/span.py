@@ -1,7 +1,16 @@
+import sys
 from .log import logger
 from .util import DictionaryOfStan
 from basictracer.span import BasicSpan
 import opentracing.ext.tags as ot_tags
+
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    string_type = str
+else:
+    string_type = basestring
 
 
 class SpanContext():
@@ -38,6 +47,23 @@ class InstanaSpan(BasicSpan):
 
     def finish(self, finish_time=None):
         super(InstanaSpan, self).finish(finish_time)
+
+    def set_tag(self, key, value):
+        if not isinstance(key, string_type):
+            logger.debug("(non-fatal) span.set_tag: tag names must be strings. tag discarded for %s", type(key))
+            return self
+
+        final_value = value
+        value_type = type(value)
+        if value_type not in [bool, float, int, str]:
+            try:
+                final_value = str(value)
+            except:
+                final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int or str. tag discarded"
+                logger.debug(final_value, exc_info=True)
+
+        return super(InstanaSpan, self).set_tag(key, final_value)
+
 
     def mark_as_errored(self, tags = None):
         """

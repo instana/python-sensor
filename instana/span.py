@@ -13,12 +13,14 @@ class SpanContext():
             span_id=None,
             baggage=None,
             sampled=True,
-            level=1):
+            level=1,
+            synthetic=False):
 
         self.level = level
         self.trace_id = trace_id
         self.span_id = span_id
         self.sampled = sampled
+        self.synthetic = synthetic
         self._baggage = baggage or {}
 
     @property

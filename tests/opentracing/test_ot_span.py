@@ -1,3 +1,5 @@
+import sys
+import json
 import time
 import unittest
 import opentracing
@@ -5,6 +7,8 @@ from uuid import UUID
 from instana.util import to_json
 from instana.singletons import tracer
 
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
 
 class TestOTSpan(unittest.TestCase):
     def setUp(self):
@@ -146,7 +150,7 @@ class TestOTSpan(unittest.TestCase):
         span = spans[4]
         self.assertEqual(3, span.k)
 
-    def test_bad_tag_values(self):
+    def test_tag_values(self):
         with tracer.start_active_span('test') as scope:
             # Set a UUID class as a tag
             # If unchecked, this causes a json.dumps error: "ValueError: Circular reference detected"
@@ -155,23 +159,40 @@ class TestOTSpan(unittest.TestCase):
             scope.span.set_tag('tracer', tracer)
             scope.span.set_tag('none', None)
             scope.span.set_tag('mylist', [1, 2, 3])
-
+            scope.span.set_tag('myset', {"one", "two", "three"})
 
         spans = tracer.recorder.queued_spans()
         assert len(spans) == 1
 
         test_span = spans[0]
         assert(test_span)
-        assert(len(test_span.data['sdk']['custom']['tags']) == 4)
-        assert(test_span.data['sdk']['custom']['tags']['uuid'] == '12345678-1234-5678-1234-567812345678')
+        assert(len(test_span.data['sdk']['custom']['tags']) == 5)
+        assert(test_span.data['sdk']['custom']['tags']['uuid'] == "UUID('12345678-1234-5678-1234-567812345678')")
         assert(test_span.data['sdk']['custom']['tags']['tracer'])
         assert(test_span.data['sdk']['custom']['tags']['none'] == 'None')
-        assert(test_span.data['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
+        assert(test_span.data['sdk']['custom']['tags']['mylist'] == '[1, 2, 3]')
+        if PY2:
+            assert(test_span.data['sdk']['custom']['tags']['myset'] == "set(['three', 'two', 'one'])")
+        else:
+            assert(test_span.data['sdk']['custom']['tags']['myset'] == "{'two', 'one', 'three'}")
 
+        # Convert to JSON
         json_data = to_json(test_span)
         assert(json_data)
 
-    def test_bad_tag_names(self):
+        # And back
+        span_dict = json.loads(json_data)
+        assert(len(span_dict['data']['sdk']['custom']['tags']) == 5)
+        assert(span_dict['data']['sdk']['custom']['tags']['uuid'] == "UUID('12345678-1234-5678-1234-567812345678')")
+        assert(span_dict['data']['sdk']['custom']['tags']['tracer'])
+        assert(span_dict['data']['sdk']['custom']['tags']['none'] == 'None')
+        assert(span_dict['data']['sdk']['custom']['tags']['mylist'] == '[1, 2, 3]')
+        if PY2:
+            assert(span_dict['data']['sdk']['custom']['tags']['myset'] == "set(['three', 'two', 'one'])")
+        else:
+            assert(span_dict['data']['sdk']['custom']['tags']['myset'] == "{'three', 'two', 'one'}")
+
+    def test_tag_names(self):
         with tracer.start_active_span('test') as scope:
             # Tag names (keys) must be strings
             scope.span.set_tag(1234567890, 'This should not get set')

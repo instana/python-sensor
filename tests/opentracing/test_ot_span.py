@@ -1,3 +1,4 @@
+import re
 import sys
 import json
 import time
@@ -159,7 +160,7 @@ class TestOTSpan(unittest.TestCase):
             scope.span.set_tag('tracer', tracer)
             scope.span.set_tag('none', None)
             scope.span.set_tag('mylist', [1, 2, 3])
-            scope.span.set_tag('myset', {"one", "two", "three"})
+            scope.span.set_tag('myset', {"one", 2})
 
         spans = tracer.recorder.queued_spans()
         assert len(spans) == 1
@@ -172,9 +173,11 @@ class TestOTSpan(unittest.TestCase):
         assert(test_span.data['sdk']['custom']['tags']['none'] == 'None')
         assert(test_span.data['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
         if PY2:
-            assert(test_span.data['sdk']['custom']['tags']['myset'] == "set(['three', 'two', 'one'])")
+            set_regexp = re.compile(r"set\(\[.*,.*\]\)")
+            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
         else:
-            assert(test_span.data['sdk']['custom']['tags']['myset'] == "{'two', 'one', 'three'}")
+            set_regexp = re.compile(r"\{.*,.*\}")
+            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
 
         # Convert to JSON
         json_data = to_json(test_span)
@@ -188,9 +191,11 @@ class TestOTSpan(unittest.TestCase):
         assert(span_dict['data']['sdk']['custom']['tags']['none'] == 'None')
         assert(span_dict['data']['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
         if PY2:
-            assert(span_dict['data']['sdk']['custom']['tags']['myset'] == "set(['three', 'two', 'one'])")
+            set_regexp = re.compile(r"set\(\[.*,.*\]\)")
+            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
         else:
-            assert(span_dict['data']['sdk']['custom']['tags']['myset'] == "{'three', 'two', 'one'}")
+            set_regexp = re.compile(r"\{.*,.*\}")
+            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
 
     def test_tag_names(self):
         with tracer.start_active_span('test') as scope:

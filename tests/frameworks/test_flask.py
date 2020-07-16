@@ -67,6 +67,11 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(urllib3_span.p, test_span.s)
         self.assertEqual(wsgi_span.p, urllib3_span.s)
 
+        # Synthetic
+        self.assertIsNone(wsgi_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
+
         # Error logging
         self.assertIsNone(test_span.ec)
         self.assertIsNone(urllib3_span.ec)
@@ -95,6 +100,25 @@ class TestFlask(unittest.TestCase):
 
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
+
+    def test_synthetic_request(self):
+        headers = {
+            'X-Instana-Synthetic': '1'
+        }
+
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=headers)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        self.assertTrue(wsgi_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
 
     def test_render_template(self):
         with tracer.start_active_span('test'):

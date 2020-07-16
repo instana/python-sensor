@@ -157,6 +157,8 @@ class InstanaSpan(BasicSpan):
 
 
 class BaseSpan(object):
+    sy = None
+    
     def __str__(self):
         return "BaseSpan(%s)" % self.__dict__.__str__()
 

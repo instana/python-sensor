@@ -73,6 +73,11 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(aiohttp_span.p, test_span.s)
         self.assertEqual(tornado_span.p, aiohttp_span.s)
 
+        # Synthetic
+        self.assertIsNone(tornado_span.sy)
+        self.assertIsNone(aiohttp_span.sy)
+        self.assertIsNone(test_span.sy)
+
         # Error logging
         self.assertIsNone(test_span.ec)
         self.assertIsNone(aiohttp_span.ec)
@@ -165,6 +170,29 @@ class TestTornadoServer(unittest.TestCase):
         self.assertEqual(response.headers["X-Instana-L"], '1')
         self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_synthetic_request(self):
+        async def test():
+            headers = {
+                'X-Instana-Synthetic': '1'
+            }
+            
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["tornado_server"] + "/", headers=headers)
+
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        tornado_span = get_first_span_by_name(spans, "tornado-server")
+        aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
+        test_span = get_first_span_by_name(spans, "sdk")
+
+        self.assertTrue(tornado_span.sy)
+        self.assertIsNone(aiohttp_span.sy)
+        self.assertIsNone(test_span.sy)
 
     def test_get_301(self):
         async def test():

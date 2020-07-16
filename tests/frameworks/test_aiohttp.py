@@ -448,6 +448,11 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(aioclient_span.p, test_span.s)
         self.assertEqual(aioserver_span.p, aioclient_span.s)
 
+        # Synthetic
+        self.assertIsNone(test_span.sy)
+        self.assertIsNone(aioclient_span.sy)
+        self.assertIsNone(aioserver_span.sy)
+
         # Error logging
         self.assertIsNone(test_span.ec)
         self.assertIsNone(aioclient_span.ec)
@@ -477,6 +482,29 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["X-Instana-L"], '1')
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_server_synthetic_request(self):
+        async def test():
+            headers = {
+                'X-Instana-Synthetic': '1'
+            } 
+            
+            with async_tracer.start_active_span('test'):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(session, testenv["aiohttp_server"] + "/", headers=headers)
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        self.assertTrue(aioserver_span.sy)
+        self.assertIsNone(aioclient_span.sy)
+        self.assertIsNone(test_span.sy)
 
     def test_server_get_with_params_to_scrub(self):
         async def test():

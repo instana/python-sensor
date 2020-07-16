@@ -65,6 +65,11 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual(urllib3_span.p, test_span.s)
         self.assertEqual(pyramid_span.p, urllib3_span.s)
 
+        # Synthetic
+        self.assertIsNone(pyramid_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
+
         # Error logging
         self.assertIsNone(test_span.ec)
         self.assertIsNone(urllib3_span.ec)
@@ -94,6 +99,28 @@ class TestPyramid(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+    def test_synthetic_request(self):
+        headers = {
+            'X-Instana-Synthetic': '1'
+        }
+        
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', testenv["pyramid_server"] + '/', headers=headers)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        pyramid_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        self.assertTrue(pyramid_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
 
     def test_500(self):
         with tracer.start_active_span('test'):

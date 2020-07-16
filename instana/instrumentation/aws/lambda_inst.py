@@ -14,7 +14,6 @@ from ... import get_lambda_handler_or_default
 
 def lambda_handler_with_instana(wrapped, instance, args, kwargs):
     event = args[0]
-    context = args[1]
     agent = get_agent()
     tracer = get_tracer()
 

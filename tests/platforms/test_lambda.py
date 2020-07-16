@@ -161,6 +161,8 @@ class TestLambda(unittest.TestCase):
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
 
+        self.assertTrue(span.sy)
+
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])
 
@@ -219,6 +221,8 @@ class TestLambda(unittest.TestCase):
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
 
+        self.assertTrue(span.sy)
+
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])
 
@@ -276,6 +280,8 @@ class TestLambda(unittest.TestCase):
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
 
+        self.assertTrue(span.sy)
+
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])
 
@@ -332,6 +338,8 @@ class TestLambda(unittest.TestCase):
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
 
+        self.assertIsNone(span.sy)
+
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])
 
@@ -387,6 +395,8 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
+
+        self.assertIsNone(span.sy)
 
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])
@@ -446,6 +456,8 @@ class TestLambda(unittest.TestCase):
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
 
+        self.assertIsNone(span.sy)
+
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])
 
@@ -502,6 +514,8 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
+
+        self.assertIsNone(span.sy)
 
         self.assertIsNone(span.ec)
         self.assertIsNone(span.data['lambda']['error'])

@@ -84,7 +84,7 @@ class InstanaTracer(BasicTracer):
         # Assemble the child ctx
         gid = generate_id()
         ctx = SpanContext(span_id=gid)
-        if parent_ctx is not None:
+        if parent_ctx is not None and parent_ctx.trace_id is not None:
             if parent_ctx._baggage is not None:
                 ctx._baggage = parent_ctx._baggage.copy()
             ctx.trace_id = parent_ctx.trace_id
@@ -100,6 +100,9 @@ class InstanaTracer(BasicTracer):
                            parent_id=(None if parent_ctx is None else parent_ctx.span_id),
                            tags=tags,
                            start_time=start_time)
+
+        if parent_ctx is not None:
+            span.synthetic = parent_ctx.synthetic
 
         if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span)

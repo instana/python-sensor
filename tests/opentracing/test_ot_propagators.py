@@ -50,12 +50,13 @@ def test_http_inject_with_list():
 def test_http_basic_extract():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1'}
+    carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1', 'X-Instana-Synthetic': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, span.SpanContext)
     assert('0000000000000001' == ctx.trace_id)
     assert('0000000000000001' == ctx.span_id)
+    assert ctx.synthetic
 
 
 def test_http_mixed_case_extract():
@@ -67,6 +68,19 @@ def test_http_mixed_case_extract():
     assert isinstance(ctx, span.SpanContext)
     assert('0000000000000001' == ctx.trace_id)
     assert('0000000000000001' == ctx.span_id)
+    assert not ctx.synthetic
+
+
+def test_http_extract_synthetic_only():
+    ot.tracer = InstanaTracer()
+
+    carrier = {'X-Instana-Synthetic': '1'}
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert isinstance(ctx, span.SpanContext)
+    assert ctx.trace_id is None
+    assert ctx.span_id is None
+    assert ctx.synthetic
 
 
 def test_http_no_context_extract():

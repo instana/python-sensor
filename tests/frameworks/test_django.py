@@ -61,6 +61,10 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(urllib3_span.p, test_span.s)
         self.assertEqual(django_span.p, urllib3_span.s)
 
+        self.assertIsNone(django_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
+
         self.assertEqual(None, django_span.ec)
 
         self.assertEqual('/', django_span.data["http"]["url"])
@@ -68,6 +72,28 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(200, django_span.data["http"]["status"])
         assert django_span.stack
         self.assertEqual(2, len(django_span.stack))
+
+    def test_synthetic_request(self):
+        headers = {
+            'X-Instana-Synthetic': '1'
+        }
+        
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', self.live_server_url + '/', headers=headers)
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        test_span = spans[2]
+        urllib3_span = spans[1]
+        django_span = spans[0]
+
+        self.assertTrue(django_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
 
     def test_request_with_error(self):
         with tracer.start_active_span('test'):

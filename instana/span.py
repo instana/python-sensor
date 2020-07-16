@@ -13,12 +13,14 @@ class SpanContext():
             span_id=None,
             baggage=None,
             sampled=True,
-            level=1):
+            level=1,
+            synthetic=False):
 
         self.level = level
         self.trace_id = trace_id
         self.span_id = span_id
         self.sampled = sampled
+        self.synthetic = synthetic
         self._baggage = baggage or {}
 
     @property
@@ -37,6 +39,7 @@ class SpanContext():
 
 class InstanaSpan(BasicSpan):
     stack = None
+    synthetic = False
 
     def finish(self, finish_time=None):
         super(InstanaSpan, self).finish(finish_time)
@@ -154,6 +157,8 @@ class InstanaSpan(BasicSpan):
 
 
 class BaseSpan(object):
+    sy = None
+    
     def __str__(self):
         return "BaseSpan(%s)" % self.__dict__.__str__()
 
@@ -169,6 +174,9 @@ class BaseSpan(object):
         self.f = source
         self.ec = span.tags.pop('ec', None)
         self.data = DictionaryOfStan()
+
+        if span.synthetic:
+            self.sy = True
 
         if span.stack:
             self.stack = span.stack

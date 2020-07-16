@@ -28,6 +28,7 @@ class HTTPPropagator():
     LC_HEADER_KEY_T = 'x-instana-t'
     LC_HEADER_KEY_S = 'x-instana-s'
     LC_HEADER_KEY_L = 'x-instana-l'
+    LC_HEADER_KEY_SYNTHETIC = 'x-instana-synthetic'
 
     ALT_HEADER_KEY_T = 'HTTP_X_INSTANA_T'
     ALT_HEADER_KEY_S = 'HTTP_X_INSTANA_S'
@@ -35,6 +36,7 @@ class HTTPPropagator():
     ALT_LC_HEADER_KEY_T = 'http_x_instana_t'
     ALT_LC_HEADER_KEY_S = 'http_x_instana_s'
     ALT_LC_HEADER_KEY_L = 'http_x_instana_l'
+    ALT_LC_HEADER_KEY_SYNTHETIC = 'http_x_instana_synthetic'
 
     def inject(self, span_context, carrier):
         try:
@@ -63,6 +65,7 @@ class HTTPPropagator():
         trace_id = None
         span_id = None
         level = 1
+        synthetic = False
 
         try:
             if type(carrier) is dict or hasattr(carrier, "__getitem__"):
@@ -85,6 +88,8 @@ class HTTPPropagator():
                     span_id = header_to_id(dc[key])
                 elif self.LC_HEADER_KEY_L == lc_key:
                     level = dc[key]
+                elif self.LC_HEADER_KEY_SYNTHETIC == lc_key:
+                    synthetic = dc[key] == "1"
 
                 elif self.ALT_LC_HEADER_KEY_T == lc_key:
                     trace_id = header_to_id(dc[key])
@@ -92,14 +97,20 @@ class HTTPPropagator():
                     span_id = header_to_id(dc[key])
                 elif self.ALT_LC_HEADER_KEY_L == lc_key:
                     level = dc[key]
+                elif self.ALT_LC_HEADER_KEY_SYNTHETIC == lc_key:
+                    synthetic = dc[key] == "1"
 
             ctx = None
             if trace_id is not None and span_id is not None:
                 ctx = SpanContext(span_id=span_id,
-                                         trace_id=trace_id,
-                                         level=level,
-                                         baggage={},
-                                         sampled=True)
+                                  trace_id=trace_id,
+                                  level=level,
+                                  baggage={},
+                                  sampled=True,
+                                  synthetic=synthetic)
+            elif synthetic:
+                ctx = SpanContext(synthetic=synthetic)
+
             return ctx
 
         except Exception:

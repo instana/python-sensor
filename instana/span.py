@@ -1,16 +1,9 @@
+import six
 import sys
 from .log import logger
 from .util import DictionaryOfStan
 from basictracer.span import BasicSpan
 import opentracing.ext.tags as ot_tags
-
-
-PY3 = sys.version_info[0] == 3
-
-if PY3:
-    string_type = str
-else:
-    string_type = basestring
 
 
 class SpanContext():
@@ -49,13 +42,22 @@ class InstanaSpan(BasicSpan):
         super(InstanaSpan, self).finish(finish_time)
 
     def set_tag(self, key, value):
-        if not isinstance(key, string_type):
+        # Key validation
+        if not isinstance(key, six.text_type) and not isinstance(key, six.string_types) :
             logger.debug("(non-fatal) span.set_tag: tag names must be strings. tag discarded for %s", type(key))
             return self
 
         final_value = value
         value_type = type(value)
-        if value_type not in [bool, float, int, str]:
+
+        # Value validation
+        if value_type in [bool, float, int, list, str]:
+            return super(InstanaSpan, self).set_tag(key, final_value)
+
+        elif isinstance(value, six.text_type):
+            final_value = str(value)
+
+        else:
             try:
                 final_value = repr(value)
             except:

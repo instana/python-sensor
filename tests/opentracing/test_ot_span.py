@@ -170,7 +170,7 @@ class TestOTSpan(unittest.TestCase):
         assert(test_span.data['sdk']['custom']['tags']['uuid'] == "UUID('12345678-1234-5678-1234-567812345678')")
         assert(test_span.data['sdk']['custom']['tags']['tracer'])
         assert(test_span.data['sdk']['custom']['tags']['none'] == 'None')
-        assert(test_span.data['sdk']['custom']['tags']['mylist'] == '[1, 2, 3]')
+        assert(test_span.data['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
         if PY2:
             assert(test_span.data['sdk']['custom']['tags']['myset'] == "set(['three', 'two', 'one'])")
         else:
@@ -186,7 +186,7 @@ class TestOTSpan(unittest.TestCase):
         assert(span_dict['data']['sdk']['custom']['tags']['uuid'] == "UUID('12345678-1234-5678-1234-567812345678')")
         assert(span_dict['data']['sdk']['custom']['tags']['tracer'])
         assert(span_dict['data']['sdk']['custom']['tags']['none'] == 'None')
-        assert(span_dict['data']['sdk']['custom']['tags']['mylist'] == '[1, 2, 3]')
+        assert(span_dict['data']['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
         if PY2:
             assert(span_dict['data']['sdk']['custom']['tags']['myset'] == "set(['three', 'two', 'one'])")
         else:
@@ -196,13 +196,16 @@ class TestOTSpan(unittest.TestCase):
         with tracer.start_active_span('test') as scope:
             # Tag names (keys) must be strings
             scope.span.set_tag(1234567890, 'This should not get set')
+            # Unicode key name
+            scope.span.set_tag(u'asdf', 'This should be ok')
 
         spans = tracer.recorder.queued_spans()
         assert len(spans) == 1
 
         test_span = spans[0]
         assert(test_span)
-        assert(len(test_span.data['sdk']['custom']['tags']) == 0)
+        assert(len(test_span.data['sdk']['custom']['tags']) == 1)
+        assert(test_span.data['sdk']['custom']['tags']['asdf'] == 'This should be ok')
 
         json_data = to_json(test_span)
         assert(json_data)

@@ -57,6 +57,7 @@ setup(name='instana',
                         'fysom>=2.1.2',
                         'opentracing>=2.0.0',
                         'requests>=2.8.0',
+                        'six>=1.12.0',
                         'urllib3>=1.18.1'],
       entry_points={
                     'instana':  ['string = instana:load'],

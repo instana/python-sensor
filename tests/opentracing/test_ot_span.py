@@ -194,7 +194,7 @@ class TestOTSpan(unittest.TestCase):
             set_regexp = re.compile(r"set\(\[.*,.*\]\)")
             assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
         else:
-            set_regexp = re.compile(r"\{.*,.*\}")
+            set_regexp = re.compile(r"{.*,.*}")
             assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
 
     def test_tag_names(self):

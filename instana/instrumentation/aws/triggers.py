@@ -11,6 +11,9 @@ from ...log import logger
 
 def get_context(tracer, event):
     # TODO: Search for more types of trigger context
+    if is_api_gateway_proxy_trigger(event) or is_application_load_balancer_trigger(event):
+        return tracer.extract('http_headers', event['headers'])
+
     return tracer.extract('http_headers', event)
 
 

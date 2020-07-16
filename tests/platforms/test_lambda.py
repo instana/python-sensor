@@ -152,9 +152,9 @@ class TestLambda(unittest.TestCase):
 
         span = payload['spans'][0]
         self.assertEqual('aws.lambda.entry', span.n)
-        self.assertIsNotNone(span.t)
+        self.assertEqual('d5cb361b256413a9', span.t)
         self.assertIsNotNone(span.s)
-        self.assertIsNone(span.p)
+        self.assertEqual('0901d8ae4fbf1529', span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
@@ -210,9 +210,9 @@ class TestLambda(unittest.TestCase):
 
         span = payload['spans'][0]
         self.assertEqual('aws.lambda.entry', span.n)
-        self.assertIsNotNone(span.t)
+        self.assertEqual('d5cb361b256413a9', span.t)
         self.assertIsNotNone(span.s)
-        self.assertIsNone(span.p)
+        self.assertEqual('0901d8ae4fbf1529', span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
@@ -267,9 +267,9 @@ class TestLambda(unittest.TestCase):
 
         span = payload['spans'][0]
         self.assertEqual('aws.lambda.entry', span.n)
-        self.assertIsNotNone(span.t)
+        self.assertEqual('d5cb361b256413a9', span.t)
         self.assertIsNotNone(span.s)
-        self.assertIsNone(span.p)
+        self.assertEqual('0901d8ae4fbf1529', span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 

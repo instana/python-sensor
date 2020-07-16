@@ -509,6 +509,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual(1, urllib3_span.ec)
 
     def test_requestspkg_get(self):
+        self.recorder.clear_spans()
+        
         with tracer.start_active_span('test'):
             r = requests.get(testenv["wsgi_server"] + '/', timeout=2)
 

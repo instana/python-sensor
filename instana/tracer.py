@@ -84,7 +84,7 @@ class InstanaTracer(BasicTracer):
         # Assemble the child ctx
         gid = generate_id()
         ctx = SpanContext(span_id=gid)
-        if parent_ctx is not None:
+        if parent_ctx is not None and parent_ctx.trace_id is not None:
             if parent_ctx._baggage is not None:
                 ctx._baggage = parent_ctx._baggage.copy()
             ctx.trace_id = parent_ctx.trace_id

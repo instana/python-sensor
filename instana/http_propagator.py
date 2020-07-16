@@ -108,6 +108,9 @@ class HTTPPropagator():
                                   baggage={},
                                   sampled=True,
                                   synthetic=synthetic)
+            elif synthetic:
+                ctx = SpanContext(synthetic=synthetic)
+
             return ctx
 
         except Exception:

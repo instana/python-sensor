@@ -2,8 +2,6 @@ import os
 import sys
 import logging
 
-from .singletons import env_is_aws_lambda
-
 logger = None
 
 
@@ -84,6 +82,9 @@ def running_in_gunicorn():
         print("Instana.log.running_in_gunicorn: %s", e, file=sys.stderr)
         return False
 
+
+aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
+env_is_aws_lambda = "AWS_Lambda_" in aws_env
 
 if running_in_gunicorn():
     logger = logging.getLogger("gunicorn.error")

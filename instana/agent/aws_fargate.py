@@ -44,7 +44,7 @@ class AWSFargateAgent(BaseAgent):
             self.collector.start()
         else:
             logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
-                           "We will not be able monitor this function.")
+                           "We will not be able monitor this AWS Fargate cluster.")
 
     def can_send(self):
         """

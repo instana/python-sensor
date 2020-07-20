@@ -25,11 +25,14 @@ class TestFargate(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
+        os.environ["AWS_EXECUTION_ENV"] = "AWS_ECS_FARGATE"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
+        if "AWS_EXECUTION_ENV" in os.environ:
+            os.environ.pop("AWS_EXECUTION_ENV")
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
             os.environ.pop("INSTANA_EXTRA_HTTP_HEADERS")
         if "INSTANA_ENDPOINT_URL" in os.environ:

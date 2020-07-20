@@ -1,7 +1,8 @@
-from __future__ import print_function
-import logging
 import os
 import sys
+import logging
+
+from .singletons import env_is_aws_lambda
 
 logger = None
 
@@ -86,7 +87,7 @@ def running_in_gunicorn():
 
 if running_in_gunicorn():
     logger = logging.getLogger("gunicorn.error")
-elif os.environ.get("INSTANA_ENDPOINT_URL", False):
+elif env_is_aws_lambda is True:
     logger = get_aws_lambda_logger()
 else:
     logger = get_standard_logger()

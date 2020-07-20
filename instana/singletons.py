@@ -9,26 +9,33 @@ agent = None
 tracer = None
 span_recorder = None
 
-if os.environ.get("INSTANA_TEST", False):
+# Detect the environment where we are running ahead of time
+aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
+env_is_test = os.environ.get("INSTANA_TEST", False)
+env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
+env_is_aws_lambda = "AWS_Lambda_" in aws_env
+
+if env_is_test:
     from .agent.test import TestAgent
     from .recorder import StandardRecorder
 
     agent = TestAgent()
     span_recorder = StandardRecorder()
 
-elif os.environ.get("LAMBDA_HANDLER", False):
+elif env_is_aws_lambda:
     from .agent.aws_lambda import AWSLambdaAgent
     from .recorder import AWSLambdaRecorder
 
     agent = AWSLambdaAgent()
     span_recorder = AWSLambdaRecorder(agent)
 
-elif os.environ.get("FARGATE", False):
+elif env_is_aws_fargate:
     from .agent.aws_fargate import AWSFargateAgent
     from .recorder import AWSFargateRecorder
 
     agent = AWSFargateAgent()
     span_recorder = AWSFargateRecorder(agent)
+
 else:
     from .agent.host import HostAgent
     from .recorder import StandardRecorder

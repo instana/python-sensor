@@ -50,6 +50,7 @@ class TestLambda(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
+        os.environ["AWS_EXECUTION_ENV"] = "AWS_Lambda_python_3.8"
         os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
@@ -57,6 +58,8 @@ class TestLambda(unittest.TestCase):
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
+        if "AWS_EXECUTION_ENV" in os.environ:
+            os.environ.pop("AWS_EXECUTION_ENV")
         if "LAMBDA_HANDLER" in os.environ:
             os.environ.pop("LAMBDA_HANDLER")
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:

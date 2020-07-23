@@ -1,18 +1,18 @@
 from __future__ import absolute_import
 
+import time
 import asyncio
 import unittest
 
 import tornado
 from tornado.httpclient import AsyncHTTPClient
+from instana.singletons import tornado_tracer
 
-from instana.singletons import async_tracer, tornado_tracer, agent
-
+import tests.apps.tornado_server
 from ..helpers import testenv
 
 from nose.plugins.skip import SkipTest
 raise SkipTest("Non deterministic tests TBR")
-
 
 class TestTornadoClient(unittest.TestCase):
 
@@ -39,6 +39,7 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
 
         self.assertEqual(3, len(spans))
@@ -97,6 +98,7 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -154,8 +156,8 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
-
         self.assertEqual(4, len(spans))
 
         server301_span = spans[0]
@@ -227,6 +229,7 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -287,6 +290,7 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -347,6 +351,7 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -404,6 +409,7 @@ class TestTornadoClient(unittest.TestCase):
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         assert isinstance(response, tornado.httpclient.HTTPResponse)
 
+        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 

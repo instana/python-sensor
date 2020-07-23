@@ -6,14 +6,17 @@ import unittest
 import opentracing
 from uuid import UUID
 from instana.util import to_json
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
+from ..helpers import get_first_span_by_filter
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
+
 class TestOTSpan(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """
+        agent.options.service_name = None
         opentracing.tracer = tracer
         recorder = opentracing.tracer.recorder
         recorder.clear_spans()
@@ -214,4 +217,53 @@ class TestOTSpan(unittest.TestCase):
 
         json_data = to_json(test_span)
         assert(json_data)
+
+    def test_custom_service_name(self):
+        # Set a custom service name
+        agent.options.service_name = "custom_service_name"
+
+        with tracer.start_active_span('entry_span') as scope:
+            scope.span.set_tag('span.kind', 'server')
+            scope.span.set_tag(u'type', 'entry_span')
+
+            with tracer.start_active_span('intermediate_span', child_of=scope.span) as exit_scope:
+                exit_scope.span.set_tag(u'type', 'intermediate_span')
+
+            with tracer.start_active_span('exit_span', child_of=scope.span) as exit_scope:
+                exit_scope.span.set_tag('span.kind', 'client')
+                exit_scope.span.set_tag(u'type', 'exit_span')
+
+        spans = tracer.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == "entry_span"
+        entry_span = get_first_span_by_filter(spans, filter)
+        assert (entry_span)
+
+        filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == "intermediate_span"
+        intermediate_span = get_first_span_by_filter(spans, filter)
+        assert (intermediate_span)
+
+        filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == "exit_span"
+        exit_span = get_first_span_by_filter(spans, filter)
+        assert (exit_span)
+
+        # Custom service name should be set on ENTRY spans and none other
+        assert(entry_span)
+        assert(len(entry_span.data['sdk']['custom']['tags']) == 2)
+        assert(entry_span.data['sdk']['custom']['tags']['type'] == 'entry_span')
+        assert(entry_span.data['service'] == 'custom_service_name')
+        assert(entry_span.k == 1)
+
+        assert(intermediate_span)
+        assert(len(intermediate_span.data['sdk']['custom']['tags']) == 1)
+        assert(intermediate_span.data['sdk']['custom']['tags']['type'] == 'intermediate_span')
+        assert("service" not in intermediate_span.data)
+        assert(intermediate_span.k == 3)
+
+        assert(exit_span)
+        assert(len(exit_span.data['sdk']['custom']['tags']) == 2)
+        assert(exit_span.data['sdk']['custom']['tags']['type'] == 'exit_span')
+        assert("service" not in intermediate_span.data)
+        assert(exit_span.k == 2)
 

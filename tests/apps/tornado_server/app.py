@@ -10,11 +10,7 @@ import tornado.web
 
 import asyncio
 
-from ..helpers import testenv
-
-
-testenv["tornado_port"] = 10813
-testenv["tornado_server"] = ("http://127.0.0.1:" + str(testenv["tornado_port"]))
+from ...helpers import testenv
 
 
 class Application(tornado.web.Application):

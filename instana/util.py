@@ -401,3 +401,21 @@ def normalize_aws_lambda_arn(context):
     except:
         logger.debug("normalize_arn: ", exc_info=True)
 
+
+def validate_url(url):
+    """
+    Validate if <url> is a valid url
+
+    Examples:
+    - "http://localhost:5000" - valid
+    - "http://localhost:5000/path" - valid
+    - "sandwich" - invalid
+
+    @param url: string
+    @return: Boolean
+    """
+    try:
+        result = parse.urlparse(url)
+        return all([result.scheme, result.netloc])
+    except:
+        return False

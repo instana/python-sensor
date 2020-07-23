@@ -33,11 +33,6 @@ class AWSFargateAgent(BaseAgent):
         self._can_send = False
         self.extra_headers = self.options.extra_http_headers
 
-        if "ECS_CONTAINER_METADATA_URI" not in os.environ:
-            logger.debug("AWSFargateAgent: ECS_CONTAINER_METADATA_URI not in environment.  This won't work.")
-
-        self.ecmu = os.environ.get("ECS_CONTAINER_METADATA_URI", None)
-
         if self._validate_options():
             self._can_send = True
             self.collector = AWSFargateCollector(self)

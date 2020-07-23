@@ -7,6 +7,8 @@ class AWSLambdaCollector(BaseCollector):
     def __init__(self, agent):
         super(AWSLambdaCollector, self).__init__(agent)
         logger.debug("Loading AWS Lambda Collector")
+        self.context = None
+        self.event = None
         self._fq_arn = None
 
     def collect_snapshot(self, event, context):
@@ -25,6 +27,9 @@ class AWSLambdaCollector(BaseCollector):
         finally:
             return self.snapshot_data
 
+    def should_send_snapshot_data(self):
+        return self.snapshot_data and self.snapshot_data_sent is False
+
     def prepare_payload(self):
         payload = DictionaryOfStan()
         payload["spans"] = None
@@ -33,7 +38,7 @@ class AWSLambdaCollector(BaseCollector):
         if not self.span_queue.empty():
             payload["spans"] = self.__queued_spans()
 
-        if self.snapshot_data and self.snapshot_data_sent is False:
+        if self.should_send_snapshot_data():
             payload["metrics"] = self.snapshot_data
             self.snapshot_data_sent = True
 

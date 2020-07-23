@@ -1,14 +1,47 @@
 import os
 import getpass
+import requests
+import threading
+from time import time
 from ..log import logger
 from .base import BaseCollector
-from ..util import DictionaryOfStan, get_proc_cmdline
+from ..util import DictionaryOfStan, get_proc_cmdline, every, validate_url
 
 
 class AWSFargateCollector(BaseCollector):
     def __init__(self, agent):
         super(AWSFargateCollector, self).__init__(agent)
         logger.debug("Loading AWS Fargate Collector")
+
+        # Indicates if this Collector has all requirements to run successfully
+        self.ready_to_start = True
+
+        # Prepare the URLS that we will collect data from
+        self.ecmu = os.environ.get("ECS_CONTAINER_METADATA_URI", "")
+
+        if self.ecmu == "" or validate_url(self.ecmu) is False:
+            logger.warn("AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
+                        "Instana will not be able to monitor this environment")
+            self.ready_to_start = False
+
+        self.ecmu_url_root = self.ecmu + '/'
+        self.ecmu_url_task = self.ecmu + '/task'
+        self.ecmu_url_stats = self.ecmu + '/stats'
+        self.ecmu_url_task_stats = self.ecmu + '/task/stats'
+
+        # Lock used synchronize data collection
+        self.ecmu_lock = threading.Lock()
+
+        # How often to report data
+        self.report_interval = 1
+        self.http_client = requests.Session()
+
+        # Saved snapshot data
+        self.snapshot_data = None
+        # Timestamp in seconds of the last time we sent snapshot data
+        self.snapshot_data_last_sent = 0
+        # How often to report snapshot data (in seconds)
+        self.snapshot_data_interval = 600
 
         # Response from the last call to
         # ${ECS_CONTAINER_METADATA_URI}/
@@ -26,8 +59,80 @@ class AWSFargateCollector(BaseCollector):
         # ${ECS_CONTAINER_METADATA_URI}/task/stats
         self.task_stats_metadata = None
 
+    def start(self):
+        if self.ready_to_start is False:
+            logger.warn("AWS Fargate Collector is missing requirements and cannot monitor this environment.")
+            return
+
+        # Launch a thread here to periodically collect data from the ECS Metadata Container API
+        if self.agent.can_send():
+            logger.debug("AWSFargateCollector.start: launching ecs metadata collection thread")
+            self.ecs_metadata_thread = threading.Thread(target=self.metadata_thread_loop, args=())
+            self.ecs_metadata_thread.setDaemon(True)
+            self.ecs_metadata_thread.start()
+        else:
+            logger.warning("Collector started but the agent tells us we can't send anything out.")
+
+        super(AWSFargateCollector, self).start()
+
+    def metadata_thread_loop(self):
+        """
+        Just a loop that is run in the background thread.
+        @return: None
+        """
+        every(self.report_interval, self.get_ecs_metadata, "AWSFargateCollector: metadata_thread_loop")
+
+    def get_ecs_metadata(self):
+        """
+        Get the latest data from the ECS metadata container API and store on the class
+        @return: Boolean
+        """
+        lock_acquired = self.ecmu_lock.acquire(False)
+        if lock_acquired:
+            try:
+                # Response from the last call to
+                # ${ECS_CONTAINER_METADATA_URI}/
+                self.root_metadata = self.http_client.get(self.ecmu_url_root, timeout=3).content
+
+                # Response from the last call to
+                # ${ECS_CONTAINER_METADATA_URI}/task
+                self.task_metadata = self.http_client.get(self.ecmu_url_task, timeout=3).content
+
+                # Response from the last call to
+                # ${ECS_CONTAINER_METADATA_URI}/stats
+                self.stats_metadata = self.http_client.get(self.ecmu_url_stats, timeout=3).content
+
+                # Response from the last call to
+                # ${ECS_CONTAINER_METADATA_URI}/task/stats
+                self.task_stats_metadata = self.http_client.get(self.ecmu_url_task_stats, timeout=3).content
+            except Exception:
+                logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
+            finally:
+                self.ecmu_lock.release()
+        else:
+            logger.debug("AWSFargateCollector.get_ecs_metadata: skipping because data collection already in progress")
+
+    def should_send_snapshot_data(self):
+        delta = int(time()) - self.snapshot_data_last_sent
+        if delta > self.snapshot_data_interval:
+            return True
+        return False
+
     def prepare_payload(self):
-        pass
+        payload = DictionaryOfStan()
+        payload["spans"] = None
+        payload["metrics"] = None
+
+        if not self.span_queue.empty():
+            payload["spans"] = self.__queued_spans()
+
+        if self.should_send_snapshot_data():
+            if self.snapshot_data is None:
+                self.snapshot_data = self.collect_snapshot()
+            payload["metrics"] = self.snapshot_data
+            self.snapshot_data_last_sent = int(time())
+
+        return payload
 
     def collect_snapshot(self, *argv, **kwargs):
         plugins = []

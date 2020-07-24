@@ -124,7 +124,7 @@ class BaseCollector(object):
     def collect_snapshot(self, *argv, **kwargs):
         logger.debug("BaseCollector: collect_snapshot needs to be overridden")
 
-    def __queued_spans(self):
+    def queued_spans(self):
         """
         Get all of the queued spans
         @return: list

@@ -124,7 +124,7 @@ class AWSFargateCollector(BaseCollector):
         payload["metrics"] = None
 
         if not self.span_queue.empty():
-            payload["spans"] = self.__queued_spans()
+            payload["spans"] = self.queued_spans()
 
         if self.should_send_snapshot_data():
             if self.snapshot_data is None:

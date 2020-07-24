@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import pytest
 import urllib3
 from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -103,6 +104,18 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(500, response.status)
 
         spans = self.recorder.queued_spans()
+
+        span_count = len(spans)
+        if span_count != 4:
+            msg = "Expected 4 spans but got %d: " % span_count
+            span_list = ""
+            if span_count > 0:
+                for span in spans:
+                    if span.n == 'sdk':
+                        span_list += "%s, " % span.data['sdk']['name']
+                    else:
+                        span_list += "%s, " % span.n
+            pytest.fail(msg + span_list)
         self.assertEqual(4, len(spans))
 
         test_span = spans[3]

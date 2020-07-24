@@ -25,7 +25,7 @@ def is_api_gateway_proxy_trigger(event):
 
 
 def is_application_load_balancer_trigger(event):
-    if 'requestContext' in event and event['requestContext']['elb']:
+    if 'requestContext' in event and 'elb' in event['requestContext']:
         return True
     return False
 

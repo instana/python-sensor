@@ -105,16 +105,17 @@ class TestDjango(StaticLiveServerTestCase):
 
         spans = self.recorder.queued_spans()
 
+        import ipdb
+        ipdb.set_trace()
+
         span_count = len(spans)
         if span_count != 4:
-            msg = "Expected 4 spans but got %d: " % span_count
+            msg = "Expected 4 spans but got %d\n: " % span_count
             span_list = ""
             if span_count > 0:
                 for span in spans:
-                    if span.n == 'sdk':
-                        span_list += "%s, " % span.data['sdk']['name']
-                    else:
-                        span_list += "%s, " % span.n
+                    span.stack = '<snipped>'
+                    span_list += repr(span) + '\n'
             pytest.fail(msg + span_list)
         self.assertEqual(4, len(spans))
 

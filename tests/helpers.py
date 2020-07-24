@@ -59,6 +59,20 @@ testenv['mongodb_user'] = os.environ.get('MONGO_USER', None)
 testenv['mongodb_pw'] = os.environ.get('MONGO_PW', None)
 
 
+def drop_log_spans_from_list(spans):
+    """
+    Log spans may occur randomly in test runs because of various intentional errors (for testing). This
+    helper method will remove all of the log spans from <spans> and return the remaining list.  Helpful
+    for those tests where we are not testing log spans - where log spans are just noise.
+    @param spans: the list of spans to filter
+    @return: a filtered list of spans
+    """
+    for span in spans:
+        if span.n == 'log':
+            spans.remove(span)
+    return spans
+
+
 def fail_with_message_and_span_dump(msg, spans):
     """
     Helper method to fail a test when the number of spans isn't what was expected.  This helper
@@ -78,6 +92,12 @@ def fail_with_message_and_span_dump(msg, spans):
 
 
 def get_first_span_by_name(spans, name):
+    """
+    Get the first span in <spans> that has a span.n value of <name>
+    @param spans: the list of spans to search
+    @param name: the name to search for
+    @return: Span or None if nothing found
+    """
     for span in spans:
         if span.n == name:
             return span

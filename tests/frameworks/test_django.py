@@ -7,6 +7,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 from instana.singletons import agent, tracer
 
+from ..helpers import fail_with_message_and_span_dump
 from ..apps.app_django import INSTALLED_APPS
 
 apps.populate(INSTALLED_APPS)
@@ -107,14 +108,8 @@ class TestDjango(StaticLiveServerTestCase):
 
         span_count = len(spans)
         if span_count != 4:
-            msg = "Expected 4 spans but got %d\n: " % span_count
-            span_list = ""
-            if span_count > 0:
-                for span in spans:
-                    span.stack = '<snipped>'
-                    span_list += repr(span) + '\n'
-            pytest.fail(msg + span_list)
-        self.assertEqual(4, len(spans))
+            msg = "Expected 4 spans but got %d" % span_count
+            fail_with_message_and_span_dump(msg, spans)
 
         test_span = spans[3]
         urllib3_span = spans[2]

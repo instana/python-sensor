@@ -1,4 +1,5 @@
 import os
+import pytest
 
 testenv = {}
 
@@ -56,6 +57,24 @@ testenv['mongodb_host'] = os.environ.get('MONGO_HOST', '127.0.0.1')
 testenv['mongodb_port'] = os.environ.get('MONGO_PORT', '27017')
 testenv['mongodb_user'] = os.environ.get('MONGO_USER', None)
 testenv['mongodb_pw'] = os.environ.get('MONGO_PW', None)
+
+
+def fail_with_message_and_span_dump(msg, spans):
+    """
+    Helper method to fail a test when the number of spans isn't what was expected.  This helper
+    will print <msg> and dump the list of spans in <spans>.
+
+    @param msg: Descriptive message to print with the failure
+    @param spans: the list of spans to dump
+    @return: None
+    """
+    span_count = len(spans)
+    span_dump = "\nDumping all collected spans (%d) -->\n" % span_count
+    if span_count > 0:
+        for span in spans:
+            span.stack = '<snipped>'
+            span_dump += repr(span) + '\n'
+    pytest.fail(msg + span_dump, True)
 
 
 def get_first_span_by_name(spans, name):

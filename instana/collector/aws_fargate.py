@@ -288,7 +288,7 @@ class AWSFargateCollector(BaseCollector):
             plugin_data["data"]["start"] = 1 # FIXME
             plugin_data["data"]["containerType"] = "docker"
             plugin_data["data"]["container"] = self.root_metadata.get("DockerId")
-            plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # ¯\_(ツ)_/¯ FIXME
+            plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME
             plugin_data["data"]["com.instana.plugin.host.name"] = self.task_metadata.get("TaskArn")
 
 

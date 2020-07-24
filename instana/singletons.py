@@ -15,6 +15,10 @@ env_is_test = os.environ.get("INSTANA_TEST", False)
 env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 
+print("test: %s" % env_is_test)
+print("fargate: %s" % env_is_aws_fargate)
+print("lambda: %s" % env_is_aws_lambda)
+
 if env_is_test:
     from .agent.test import TestAgent
     from .recorder import StandardRecorder

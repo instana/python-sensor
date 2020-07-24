@@ -33,7 +33,7 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
     return result
 
 
-if env_is_aws_lambda:
+if env_is_aws_lambda is True:
     handler_module, handler_function = get_lambda_handler_or_default()
 
     if handler_module is not None and handler_function is not None:

@@ -105,9 +105,6 @@ class TestDjango(StaticLiveServerTestCase):
 
         spans = self.recorder.queued_spans()
 
-        import ipdb
-        ipdb.set_trace()
-
         span_count = len(spans)
         if span_count != 4:
             msg = "Expected 4 spans but got %d\n: " % span_count

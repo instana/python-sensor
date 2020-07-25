@@ -67,10 +67,11 @@ def drop_log_spans_from_list(spans):
     @param spans: the list of spans to filter
     @return: a filtered list of spans
     """
+    new_list = []
     for span in spans:
-        if span.n == 'log':
-            spans.remove(span)
-    return spans
+        if span.n != 'log':
+            new_list.append(span)
+    return new_list
 
 
 def fail_with_message_and_span_dump(msg, spans):

@@ -103,7 +103,8 @@ class TestDjango(StaticLiveServerTestCase):
         assert response
         self.assertEqual(500, response.status)
 
-        spans = drop_log_spans_from_list(self.recorder.queued_spans())
+        spans = self.recorder.queued_spans()
+        spans = drop_log_spans_from_list(spans)
 
         span_count = len(spans)
         if span_count != 3:

@@ -143,16 +143,18 @@ class AWSFargateRecorder(StandardRecorder):
         """
         Convert the passed BasicSpan and add it to the span queue
         """
-        source = self.agent.get_from_structure()
-        service_name = self.agent.options.service_name
+        if self.agent.can_send():
+            logger.debug("AWSFargateAgent not ready.  Not tracing.")
+            source = self.agent.get_from_structure()
+            service_name = self.agent.options.service_name
 
-        if span.operation_name in self.REGISTERED_SPANS:
-            json_span = RegisteredSpan(span, source, service_name)
-        else:
-            json_span = SDKSpan(span, source, service_name)
+            if span.operation_name in self.REGISTERED_SPANS:
+                json_span = RegisteredSpan(span, source, service_name)
+            else:
+                json_span = SDKSpan(span, source, service_name)
 
-        # logger.debug("Recorded span: %s", json_span)
-        self.agent.collector.span_queue.put(json_span)
+            # logger.debug("Recorded span: %s", json_span)
+            self.agent.collector.span_queue.put(json_span)
 
 
 class InstanaSampler(Sampler):

@@ -36,6 +36,9 @@ class AWSFargateCollector(BaseCollector):
         self.report_interval = 1
         self.http_client = requests.Session()
 
+        # The fully qualified ARN for this process
+        self._fq_arn = None
+
         # Saved snapshot data
         self.snapshot_data = None
         # Timestamp in seconds of the last time we sent snapshot data
@@ -309,3 +312,19 @@ class AWSFargateCollector(BaseCollector):
             finally:
                 self.process_metadata_mutex.release()
         return plugin_data
+
+    def get_fq_arn(self):
+        if self._fq_arn is not None:
+            return self._fq_arn
+
+        if self.root_metadata is not None:
+            labels = self.root_metadata.get("Labels", None)
+            if labels is not None:
+                taskArn = labels.get("com.amazonaws.ecs.task-arn", "")
+
+            container_name = self.root_metadata.get("Name", "")
+
+            self._fq_arn = taskArn + "::" + container_name
+            return self._fq_arn
+        else:
+            return "Missing ECMU metadata"

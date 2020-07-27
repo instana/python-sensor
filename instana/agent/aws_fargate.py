@@ -61,13 +61,12 @@ class AWSFargateAgent(BaseAgent):
         """
         response = None
         try:
-            if self.report_headers is None:
-                # Prepare request headers
-                self.report_headers = dict()
-                self.report_headers["Content-Type"] = "application/json"
-                self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
-                self.report_headers["X-Instana-Key"] = self.options.agent_key
-                self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
+            # Prepare request headers
+            self.report_headers = dict()
+            self.report_headers["Content-Type"] = "application/json"
+            self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
+            self.report_headers["X-Instana-Key"] = self.options.agent_key
+            self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
             # logger.debug("using these headers: %s", self.report_headers)
 

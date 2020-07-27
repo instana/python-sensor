@@ -293,11 +293,11 @@ class AWSFargateCollector(BaseCollector):
 
             plugin_data["data"]["start"] = 1 # FIXME
             plugin_data["data"]["containerType"] = "docker"
-            plugin_data["data"]["container"] = self.root_metadata.get("DockerId")
+            if self.root_metadata is not None:
+                plugin_data["data"]["container"] = self.root_metadata.get("DockerId")
             plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME
-            plugin_data["data"]["com.instana.plugin.host.name"] = self.task_metadata.get("TaskArn")
-
-
+            if self.task_metadata is not None:
+                plugin_data["data"]["com.instana.plugin.host.name"] = self.task_metadata.get("TaskArn")
         except:
             logger.debug("_collect_process_snapshot: ", exc_info=True)
         return plugin_data

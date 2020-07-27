@@ -82,9 +82,7 @@ class AWSFargateAgent(BaseAgent):
                                         timeout=self.options.timeout,
                                         verify=ssl_verify)
 
-            if 200 <= response.status_code < 300:
-                logger.debug("report_data_payload: Instana responded with status code %s", response.status_code)
-            else:
+            if not 200 <= response.status_code < 300:
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
         except Exception as e:
             logger.debug("report_data_payload: connection error (%s)", type(e))

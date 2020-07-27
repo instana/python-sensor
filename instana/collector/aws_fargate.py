@@ -1,5 +1,6 @@
 import os
-import getpass
+import pwd
+import grp
 import requests
 import threading
 from time import time
@@ -282,11 +283,13 @@ class AWSFargateCollector(BaseCollector):
                 # drop the exe
                 cmdline.pop(0)
             plugin_data["data"]["args"] = cmdline
-            plugin_data["data"]["user"] = getpass.getuser()
             try:
-                plugin_data["data"]["group"] = getpass.getuser(os.getegid()).gr_name
+                euid = os.geteuid()
+                egid = os.getegid()
+                plugin_data["data"]["user"] = pwd.getpwuid(euid)
+                plugin_data["data"]["group"] = grp.getgrgid(egid).gr_name
             except:
-                logger.debug("getpass.getuser: ", exc_info=True)
+                logger.debug("euid/egid detection: ", exc_info=True)
 
             plugin_data["data"]["start"] = 1 # FIXME
             plugin_data["data"]["containerType"] = "docker"
@@ -301,16 +304,12 @@ class AWSFargateCollector(BaseCollector):
 
     def _collect_runtime_snapshot(self):
         plugin_data = dict()
-        lock_acquired = self.process_metadata_mutex.acquire(False)
-        if lock_acquired:
-            try:
-                plugin_data["name"] = "com.instana.plugin.python"
-                plugin_data["entityId"] = str(os.getpid())
-                plugin_data["data"] = DictionaryOfStan()
-            except:
-                logger.debug("_collect_runtime_snapshot: ", exc_info=True)
-            finally:
-                self.process_metadata_mutex.release()
+        try:
+            plugin_data["name"] = "com.instana.plugin.python"
+            plugin_data["entityId"] = str(os.getpid())
+            plugin_data["data"] = DictionaryOfStan()
+        except:
+            logger.debug("_collect_runtime_snapshot: ", exc_info=True)
         return plugin_data
 
     def get_fq_arn(self):

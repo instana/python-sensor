@@ -1,6 +1,7 @@
 import os
 import pwd
 import grp
+import json
 import requests
 import threading
 from time import time
@@ -100,19 +101,23 @@ class AWSFargateCollector(BaseCollector):
             try:
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/
-                self.root_metadata = self.http_client.get(self.ecmu_url_root, timeout=3).content
+                json_body = self.http_client.get(self.ecmu_url_root, timeout=3).content
+                self.root_metadata = json.loads(json_body)
 
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/task
-                self.task_metadata = self.http_client.get(self.ecmu_url_task, timeout=3).content
+                json_body = self.http_client.get(self.ecmu_url_task, timeout=3).content
+                self.task_metadata = json.loads(json_body)
 
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/stats
-                self.stats_metadata = self.http_client.get(self.ecmu_url_stats, timeout=3).content
+                json_body = self.http_client.get(self.ecmu_url_stats, timeout=3).content
+                self.stats_metadata = json.loads(json_body)
 
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/task/stats
-                self.task_stats_metadata = self.http_client.get(self.ecmu_url_task_stats, timeout=3).content
+                json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=3).content
+                self.task_stats_metadata = json.loads(json_body)
             except Exception:
                 logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
             finally:

@@ -25,7 +25,7 @@ class AWSFargateCollector(BaseCollector):
                         "Instana will not be able to monitor this environment")
             self.ready_to_start = False
 
-        self.ecmu_url_root = self.ecmu + '/'
+        self.ecmu_url_root = self.ecmu
         self.ecmu_url_task = self.ecmu + '/task'
         self.ecmu_url_stats = self.ecmu + '/stats'
         self.ecmu_url_task_stats = self.ecmu + '/task/stats'

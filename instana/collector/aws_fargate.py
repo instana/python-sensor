@@ -37,6 +37,9 @@ class AWSFargateCollector(BaseCollector):
         self.report_interval = 1
         self.http_client = requests.Session()
 
+        # This is the collecter thread querying the metadata url
+        self.ecs_metadata_thread = None
+
         # The fully qualified ARN for this process
         self._fq_arn = None
 
@@ -46,6 +49,7 @@ class AWSFargateCollector(BaseCollector):
         self.snapshot_data_last_sent = 0
         # How often to report snapshot data (in seconds)
         self.snapshot_data_interval = 600
+        self.last_payload = None
 
         # Response from the last call to
         # ${ECS_CONTAINER_METADATA_URI}/
@@ -124,7 +128,7 @@ class AWSFargateCollector(BaseCollector):
 
     def prepare_payload(self):
         payload = DictionaryOfStan()
-        payload["spans"] = None
+        payload["spans"] = []
         payload["metrics"] = None
 
         if not self.span_queue.empty():
@@ -135,6 +139,8 @@ class AWSFargateCollector(BaseCollector):
                 self.snapshot_data = self.collect_snapshot()
             payload["metrics"] = self.snapshot_data
             self.snapshot_data_last_sent = int(time())
+
+        self.last_payload = payload
 
         return payload
 
@@ -300,7 +306,7 @@ class AWSFargateCollector(BaseCollector):
                 plugin_data["data"]["com.instana.plugin.host.name"] = self.task_metadata.get("TaskArn")
         except:
             logger.debug("_collect_process_snapshot: ", exc_info=True)
-        return plugin_data
+        return [plugin_data]
 
     def _collect_runtime_snapshot(self):
         plugin_data = dict()
@@ -310,7 +316,7 @@ class AWSFargateCollector(BaseCollector):
             plugin_data["data"] = DictionaryOfStan()
         except:
             logger.debug("_collect_runtime_snapshot: ", exc_info=True)
-        return plugin_data
+        return [plugin_data]
 
     def get_fq_arn(self):
         if self._fq_arn is not None:

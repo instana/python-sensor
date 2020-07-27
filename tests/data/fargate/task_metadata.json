@@ -1,0 +1,78 @@
+{
+  "Cluster": "arn:aws:ecs:us-east-2:410797082306:cluster/lombardo-ssh-cluster",
+  "TaskARN": "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82",
+  "Family": "docker-ssh-aws-fargate",
+  "Revision": "1",
+  "DesiredStatus": "RUNNING",
+  "KnownStatus": "RUNNING",
+  "Containers": [
+    {
+      "DockerId": "bfb22a5acd6c9695fba80ae542d12f047baa6a63521cad975001ed25c3ce19c2",
+      "Name": "~internal~ecs~pause",
+      "DockerName": "ecs-docker-ssh-aws-fargate-1-internalecspause-82bdec9beeffb9907c00",
+      "Image": "fg-proxy:tinyproxy",
+      "ImageID": "",
+      "Labels": {
+        "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-east-2:410797082306:cluster/lombardo-ssh-cluster",
+        "com.amazonaws.ecs.container-name": "~internal~ecs~pause",
+        "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82",
+        "com.amazonaws.ecs.task-definition-family": "docker-ssh-aws-fargate",
+        "com.amazonaws.ecs.task-definition-version": "1"
+      },
+      "DesiredStatus": "RESOURCES_PROVISIONED",
+      "KnownStatus": "RESOURCES_PROVISIONED",
+      "Limits": {
+        "CPU": 0,
+        "Memory": 0
+      },
+      "CreatedAt": "2020-07-27T12:13:51.454846803Z",
+      "StartedAt": "2020-07-27T12:13:52.449238716Z",
+      "Type": "CNI_PAUSE",
+      "Networks": [
+        {
+          "NetworkMode": "awsvpc",
+          "IPv4Addresses": [
+            "10.0.10.96"
+          ]
+        }
+      ]
+    },
+    {
+      "DockerId": "63dc7ac9f3130bba35c785ed90ff12aad82087b5c5a0a45a922c45a64128eb45",
+      "Name": "docker-ssh-aws-fargate",
+      "DockerName": "ecs-docker-ssh-aws-fargate-1-docker-ssh-aws-fargate-9ef9a8edfefcaac95100",
+      "Image": "410797082306.dkr.ecr.us-east-2.amazonaws.com/fargate-docker-ssh:latest",
+      "ImageID": "sha256:c67110b16eb3ea771ff00d536023b9f07ffb4bcd07f6b535b525318d5033a368",
+      "Labels": {
+        "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-east-2:410797082306:cluster/lombardo-ssh-cluster",
+        "com.amazonaws.ecs.container-name": "docker-ssh-aws-fargate",
+        "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82",
+        "com.amazonaws.ecs.task-definition-family": "docker-ssh-aws-fargate",
+        "com.amazonaws.ecs.task-definition-version": "1"
+      },
+      "DesiredStatus": "RUNNING",
+      "KnownStatus": "RUNNING",
+      "Limits": {
+        "CPU": 256,
+        "Memory": 512
+      },
+      "CreatedAt": "2020-07-27T12:14:12.583114444Z",
+      "StartedAt": "2020-07-27T12:14:13.545410186Z",
+      "Type": "NORMAL",
+      "Networks": [
+        {
+          "NetworkMode": "awsvpc",
+          "IPv4Addresses": [
+            "10.0.10.96"
+          ]
+        }
+      ]
+    }
+  ],
+  "Limits": {
+    "CPU": 0.25,
+    "Memory": 512
+  },
+  "PullStartedAt": "2020-07-27T12:13:52.586240564Z",
+  "PullStoppedAt": "2020-07-27T12:14:12.577606317Z"
+}

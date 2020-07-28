@@ -35,6 +35,8 @@ jobs:
             pip install -e '.[test]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
           command: |
             . venv/bin/activate
             pytest -v
@@ -67,6 +69,8 @@ jobs:
             pip install -e '.[test]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
           command: |
             . venv/bin/activate
             pytest -v
@@ -94,9 +98,12 @@ jobs:
             pip install -e '.[test-cassandra]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
+            CASSANDRA_TEST: true
           command: |
             . venv/bin/activate
-            CASSANDRA_TEST=1 pytest -v tests/clients/test_cassandra-driver.py
+            pytest -v tests/clients/test_cassandra-driver.py
 
   py36cassandra:
     docker:
@@ -118,9 +125,12 @@ jobs:
             pip install -e '.[test-cassandra]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
+            CASSANDRA_TEST: true
           command: |
             . venv/bin/activate
-            CASSANDRA_TEST=1 pytest -v tests/clients/test_cassandra-driver.py
+            pytest -v tests/clients/test_cassandra-driver.py
 
   gevent38:
     docker:
@@ -138,9 +148,12 @@ jobs:
             pip install -e '.[test-gevent]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
+            GEVENT_TEST: true
           command: |
             . venv/bin/activate
-            GEVENT_TEST=1 pytest -v tests/frameworks/test_gevent.py
+            pytest -v tests/frameworks/test_gevent.py
 workflows:
   version: 2
   build:

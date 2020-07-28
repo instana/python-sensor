@@ -21,7 +21,7 @@ if env_is_test:
 
     logger.debug("TEST environment detected.")
     agent = TestAgent()
-    span_recorder = StandardRecorder()
+    span_recorder = StandardRecorder(agent)
 
 elif env_is_aws_lambda:
     from .agent.aws_lambda import AWSLambdaAgent
@@ -45,7 +45,7 @@ else:
 
     logger.debug("Standard Host environment detected.")
     agent = HostAgent()
-    span_recorder = StandardRecorder()
+    span_recorder = StandardRecorder(agent)
 
 
 def get_agent():

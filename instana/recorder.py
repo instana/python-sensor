@@ -28,7 +28,8 @@ class StandardRecorder(object):
     # Recorder thread for collection/reporting of spans
     thread = None
 
-    def __init__(self):
+    def __init__(self, agent):
+        self.agent = agent
         self.queue = queue.Queue()
 
     def start(self):
@@ -102,10 +103,13 @@ class StandardRecorder(object):
         Convert the passed BasicSpan into and add it to the span queue
         """
         if instana.singletons.agent.can_send() or "INSTANA_TEST" in os.environ:
+            service_name = None
             source = instana.singletons.agent.get_from_structure()
+            if "INSTANA_SERVICE_NAME" in os.environ:
+                service_name = self.agent.options.service_name
 
             if span.operation_name in self.REGISTERED_SPANS:
-                json_span = RegisteredSpan(span, source, None)
+                json_span = RegisteredSpan(span, source, service_name)
             else:
                 service_name = instana.singletons.agent.options.service_name
                 json_span = SDKSpan(span, source, service_name)
@@ -114,16 +118,14 @@ class StandardRecorder(object):
 
 
 class AWSLambdaRecorder(StandardRecorder):
-    def __init__(self, agent):
-        self.agent = agent
-        super(AWSLambdaRecorder, self).__init__()
-
     def record_span(self, span):
         """
         Convert the passed BasicSpan and add it to the span queue
         """
+        service_name = None
         source = self.agent.get_from_structure()
-        service_name = self.agent.options.service_name
+        if "INSTANA_SERVICE_NAME" in os.environ:
+            service_name = self.agent.options.service_name
 
         if span.operation_name in self.REGISTERED_SPANS:
             json_span = RegisteredSpan(span, source, service_name)
@@ -135,18 +137,15 @@ class AWSLambdaRecorder(StandardRecorder):
 
 
 class AWSFargateRecorder(StandardRecorder):
-    def __init__(self, agent):
-        self.agent = agent
-        super(AWSFargateRecorder, self).__init__()
-
     def record_span(self, span):
         """
         Convert the passed BasicSpan and add it to the span queue
         """
         if self.agent.can_send():
-            logger.debug("AWSFargateAgent not ready.  Not tracing.")
+            service_name = None
             source = self.agent.get_from_structure()
-            service_name = self.agent.options.service_name
+            if "INSTANA_SERVICE_NAME" in os.environ:
+                service_name = self.agent.options.service_name
 
             if span.operation_name in self.REGISTERED_SPANS:
                 json_span = RegisteredSpan(span, source, service_name)

@@ -7,6 +7,7 @@ import sys
 import threading
 
 from ..log import logger
+from ..singletons import env_is_test
 from ..util import every, DictionaryOfStan
 
 
@@ -105,7 +106,7 @@ class BaseCollector(object):
         Prepare and report the data payload.
         @return: Boolean
         """
-        if "INSTANA_TEST" in os.environ:
+        if env_is_test is True:
             return True
 
         lock_acquired = self.lock.acquire(False)

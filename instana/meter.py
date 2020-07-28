@@ -1,13 +1,12 @@
 import copy
 import gc as gc_
 import json
+import sys
 import platform
 import resource
-import sys
 import threading
-from types import ModuleType
 from fysom import FysomError
-
+from types import ModuleType
 from pkg_resources import DistributionNotFound, get_distribution
 
 from .log import logger

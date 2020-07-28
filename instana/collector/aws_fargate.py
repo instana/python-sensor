@@ -6,12 +6,14 @@ from time import time
 from ..log import logger
 from .base import BaseCollector
 from ..util import DictionaryOfStan, every, validate_url
+from ..singletons import env_is_test
 
 from .helpers.process.helper import ProcessHelper
 from .helpers.runtime.helper import RuntimeHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
 from .helpers.fargate.container import ContainerHelper
+
 
 class AWSFargateCollector(BaseCollector):
     def __init__(self, agent):
@@ -109,6 +111,11 @@ class AWSFargateCollector(BaseCollector):
         Get the latest data from the ECS metadata container API and store on the class
         @return: Boolean
         """
+
+        if env_is_test is True:
+            # For test, we are using mock ECS metadata
+            return
+
         lock_acquired = self.ecmu_lock.acquire(False)
         if lock_acquired:
             try:

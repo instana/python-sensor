@@ -11,7 +11,7 @@ span_recorder = None
 
 # Detect the environment where we are running ahead of time
 aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
-env_is_test = os.environ.get("INSTANA_TEST", False)
+env_is_test = "INSTANA_TEST" in os.environ
 env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 

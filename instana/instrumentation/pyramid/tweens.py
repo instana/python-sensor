@@ -9,6 +9,7 @@ from ...log import logger
 from ...singletons import tracer, agent
 from ...util import strip_secrets
 
+
 class InstanaTweenFactory(object):
     """A factory that provides Instana instrumentation tween for Pyramid apps"""
     
@@ -27,8 +28,8 @@ class InstanaTweenFactory(object):
         if request.matched_route is not None:
             scope.span.set_tag("http.path_tpl", request.matched_route.pattern)
 
-        if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-            for custom_header in agent.extra_headers:
+        if agent.options.extra_http_headers is not None:
+            for custom_header in agent.options.extra_http_headers:
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 h = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if h in request.headers:
@@ -73,6 +74,7 @@ class InstanaTweenFactory(object):
             scope.close()
 
         return response
+
 
 def includeme(config):
     logger.debug("Instrumenting pyramid")

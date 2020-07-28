@@ -7,19 +7,18 @@ from .util import determine_service_name
 
 class BaseOptions(object):
     def __init__(self, **kwds):
-        try:
-            self.debug = False
-            self.log_level = logging.WARN
-            self.service_name = determine_service_name()
+        self.debug = False
+        self.log_level = logging.WARN
+        self.service_name = determine_service_name()
+        self.extra_http_headers = None
 
-            if "INSTANA_DEBUG" in os.environ:
-                self.log_level = logging.DEBUG
-                self.debug = True
-            if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
-                self.extra_http_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
-        except:
-            pass
+        if "INSTANA_DEBUG" in os.environ:
+            self.log_level = logging.DEBUG
+            self.debug = True
+        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
+            self.extra_http_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
 
+        self.secrets = os.environ.get("INSTANA_SECRETS", None)
         self.__dict__.update(kwds)
 
 
@@ -40,10 +39,6 @@ class StandardOptions(BaseOptions):
 
 class AWSLambdaOptions(BaseOptions):
     """ Configurable option bits for AWS Lambda """
-    endpoint_url = None
-    agent_key = None
-    timeout = None
-
     def __init__(self, **kwds):
         super(AWSLambdaOptions, self).__init__()
 

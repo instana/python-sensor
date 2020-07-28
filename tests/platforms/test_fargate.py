@@ -75,16 +75,17 @@ class TestFargate(unittest.TestCase):
         self.assertTrue(hasattr(self.agent, 'options'))
         self.assertTrue(type(self.agent.options) is AWSFargateOptions)
 
-    def test_has_extra_headers(self):
+    def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'extra_headers'))
+        self.assertTrue(hasattr(self.agent, 'options'))
+        self.assertTrue(hasattr(self.agent.options, 'extra_http_headers'))
 
-    def test_agent_extra_headers(self):
+    def test_agent_extra_http_headers(self):
         os.environ['INSTANA_EXTRA_HTTP_HEADERS'] = "X-Test-Header;X-Another-Header;X-And-Another-Header"
         self.create_agent_and_setup_tracer()
-        self.assertIsNotNone(self.agent.extra_headers)
+        self.assertIsNotNone(self.agent.options.extra_http_headers)
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
-        self.assertEqual(should_headers, self.agent.extra_headers)
+        self.assertEqual(should_headers, self.agent.options.extra_http_headers)
 
     @pytest.mark.skip("todo")
     def test_custom_service_name(self):

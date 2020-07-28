@@ -19,8 +19,9 @@ class TestAgent(unittest.TestCase):
         self.assertTrue(hasattr(agent, 'secrets_list'))
         self.assertEqual(agent.secrets_list, ['key', 'pass', 'secret'])
 
-    def test_has_extra_headers(self):
-        self.assertTrue(hasattr(agent, 'extra_headers'))
+    def test_options_have_extra_http_headers(self):
+        self.assertTrue(hasattr(agent, 'options'))
+        self.assertTrue(hasattr(agent.options, 'extra_http_headers'))
 
     def test_has_options(self):
         self.assertTrue(hasattr(agent, 'options'))

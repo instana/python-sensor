@@ -213,7 +213,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
-        agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
+        agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
         request_headers = dict()
         request_headers['X-Capture-This'] = 'this'

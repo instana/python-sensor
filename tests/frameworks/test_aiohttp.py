@@ -326,8 +326,8 @@ class TestAiohttp(unittest.TestCase):
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_response_header_capture(self):
-        original_extra_headers = agent.extra_headers
-        agent.extra_headers = ['X-Capture-This']
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Capture-This']
 
         async def test():
             with async_tracer.start_active_span('test'):
@@ -377,7 +377,7 @@ class TestAiohttp(unittest.TestCase):
         assert("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-        agent.extra_headers = original_extra_headers
+        agent.options.extra_http_headers = original_extra_http_headers
 
     def test_client_error(self):
         async def test():
@@ -569,7 +569,7 @@ class TestAiohttp(unittest.TestCase):
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
                     # Hack together a manual custom headers list
-                    agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
+                    agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
                     headers = dict()
                     headers['X-Capture-This'] = 'this'

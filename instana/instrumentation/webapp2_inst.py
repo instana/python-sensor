@@ -41,8 +41,8 @@ try:
         ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
         scope = env['stan_scope'] = tracer.start_active_span("wsgi", child_of=ctx)
 
-        if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-            for custom_header in agent.extra_headers:
+        if agent.options.extra_http_headers is not None:
+            for custom_header in agent.options.extra_http_headers:
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 wsgi_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if wsgi_header in env:

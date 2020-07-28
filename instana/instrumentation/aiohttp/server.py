@@ -32,8 +32,8 @@ try:
             scope.span.set_tag("http.method", request.method)
 
             # Custom header tracking support
-            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-                for custom_header in agent.extra_headers:
+            if agent.options.extra_http_headers is not None:
+                for custom_header in agent.options.extra_http_headers:
                     if custom_header in request.headers:
                         scope.span.set_tag("http.%s" % custom_header, request.headers[custom_header])
 

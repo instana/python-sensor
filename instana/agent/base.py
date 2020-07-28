@@ -7,7 +7,6 @@ class BaseAgent(object):
     sensor = None
     secrets_matcher = 'contains-ignore-case'
     secrets_list = ['key', 'pass', 'secret']
-    extra_headers = None
     options = None
 
     def __init__(self):

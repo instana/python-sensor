@@ -31,7 +31,6 @@ class AWSFargateAgent(BaseAgent):
         self.options = AWSFargateOptions()
         self.report_headers = None
         self._can_send = False
-        self.extra_headers = self.options.extra_http_headers
 
         if self._validate_options():
             self._can_send = True

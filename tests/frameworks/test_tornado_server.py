@@ -540,7 +540,7 @@ class TestTornadoServer(unittest.TestCase):
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
                     # Hack together a manual custom headers list
-                    agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
+                    agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
                     headers = dict()
                     headers['X-Capture-This'] = 'this'

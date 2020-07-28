@@ -139,8 +139,12 @@ class HostAgent(BaseAgent):
             self.secrets_list = res_data['secrets']['list']
 
         if "extraHeaders" in res_data:
-            self.extra_headers = res_data['extraHeaders']
-            logger.info("Will also capture these custom headers: %s", self.extra_headers)
+            # FIXME: add tests
+            if self.options.extra_http_headers is None:
+                self.options.extra_http_headers = res_data['extraHeaders']
+            else:
+                self.options.extra_http_headers.extend(res_data['extraHeaders'])
+            logger.info("Will also capture these custom headers: %s", self.options.extra_http_headers)
 
         self.announce_data = AnnounceData(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
 

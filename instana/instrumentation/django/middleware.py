@@ -22,6 +22,7 @@ except ImportError:
 class InstanaMiddleware(MiddlewareMixin):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response=None):
+        super(InstanaMiddleware, self).__init__(get_response)
         self.get_response = get_response
 
     def process_request(self, request):
@@ -31,8 +32,8 @@ class InstanaMiddleware(MiddlewareMixin):
             ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
-            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-                for custom_header in agent.extra_headers:
+            if agent.options.extra_http_headers is not None:
+                for custom_header in agent.options.extra_http_headers:
                     # Headers are available in this format: HTTP_X_CAPTURE_THIS
                     django_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                     if django_header in env:

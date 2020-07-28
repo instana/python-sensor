@@ -13,7 +13,7 @@ class TaskHelper(BaseHelper):
         try:
             if self.collector.task_metadata is not None:
                 plugin_data["name"] = "com.instana.plugin.aws.ecs.task"
-                plugin_data["entityId"] = "metadata.TaskARN"  # FIXME
+                plugin_data["entityId"] = self.collector.task_metadata.get("TaskARN", None)
                 plugin_data["data"] = DictionaryOfStan()
                 plugin_data["data"]["taskArn"] = self.collector.task_metadata.get("TaskARN", None)
                 plugin_data["data"]["clusterArn"] = self.collector.task_metadata.get("Cluster", None)

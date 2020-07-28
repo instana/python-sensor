@@ -37,7 +37,7 @@ class ProcessHelper(BaseHelper):
             plugin_data["data"]["containerType"] = "docker"
             if self.collector.root_metadata is not None:
                 plugin_data["data"]["container"] = self.collector.root_metadata.get("DockerId")
-            plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME
+            # plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME: the pid in the root namespace (very optional)
             if self.collector.task_metadata is not None:
                 plugin_data["data"]["com.instana.plugin.host.name"] = self.collector.task_metadata.get("TaskArn")
         except:

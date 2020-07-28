@@ -15,14 +15,11 @@ env_is_test = os.environ.get("INSTANA_TEST", False)
 env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 
-logger.warn("test: %s" % env_is_test)
-logger.warn("fargate: %s" % env_is_aws_fargate)
-logger.warn("lambda: %s" % env_is_aws_lambda)
-
 if env_is_test:
     from .agent.test import TestAgent
     from .recorder import StandardRecorder
 
+    logger.debug("TEST environment detected.")
     agent = TestAgent()
     span_recorder = StandardRecorder()
 
@@ -30,6 +27,7 @@ elif env_is_aws_lambda:
     from .agent.aws_lambda import AWSLambdaAgent
     from .recorder import AWSLambdaRecorder
 
+    logger.debug("AWS Lambda environment detected.")
     agent = AWSLambdaAgent()
     span_recorder = AWSLambdaRecorder(agent)
 
@@ -37,6 +35,7 @@ elif env_is_aws_fargate:
     from .agent.aws_fargate import AWSFargateAgent
     from .recorder import AWSFargateRecorder
 
+    logger.debug("AWS Fargate environment detected.")
     agent = AWSFargateAgent()
     span_recorder = AWSFargateRecorder(agent)
 
@@ -44,6 +43,7 @@ else:
     from .agent.host import HostAgent
     from .recorder import StandardRecorder
 
+    logger.debug("Standard Host environment detected.")
     agent = HostAgent()
     span_recorder = StandardRecorder()
 

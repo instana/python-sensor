@@ -115,7 +115,7 @@ def boot_agent():
     # Instrumentation
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
-        # from .instrumentation.aws import lambda_inst
+        from .instrumentation.aws import lambda_inst
 
         if sys.version_info >= (3, 5, 3):
             from .instrumentation import asyncio

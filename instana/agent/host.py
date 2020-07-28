@@ -214,6 +214,7 @@ class HostAgent(BaseAgent):
         """
         response = None
         try:
+            logger.debug(to_json(entity_data))
             response = self.client.post(self.__data_url(),
                                         data=to_json(entity_data),
                                         headers={"Content-Type": "application/json"},

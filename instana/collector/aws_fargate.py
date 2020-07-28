@@ -1,14 +1,17 @@
 import os
-import pwd
-import grp
 import json
 import requests
 import threading
 from time import time
 from ..log import logger
 from .base import BaseCollector
-from ..util import DictionaryOfStan, get_proc_cmdline, every, validate_url
+from ..util import DictionaryOfStan, every, validate_url
 
+from .helpers.process.helper import ProcessHelper
+from .helpers.runtime.helper import RuntimeHelper
+from .helpers.fargate.task import TaskHelper
+from .helpers.fargate.docker import DockerHelper
+from .helpers.fargate.container import ContainerHelper
 
 class AWSFargateCollector(BaseCollector):
     def __init__(self, agent):
@@ -22,7 +25,7 @@ class AWSFargateCollector(BaseCollector):
         self.ecmu = os.environ.get("ECS_CONTAINER_METADATA_URI", "")
 
         if self.ecmu == "" or validate_url(self.ecmu) is False:
-            logger.warn("AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
+            logger.warning("AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
                         "Instana will not be able to monitor this environment")
             self.ready_to_start = False
 
@@ -68,9 +71,19 @@ class AWSFargateCollector(BaseCollector):
         # ${ECS_CONTAINER_METADATA_URI}/task/stats
         self.task_stats_metadata = None
 
+        # List of helpers that help out in data collection
+        self.helpers = []
+
+        # Populate the collection helpers
+        self.helpers.append(TaskHelper(self))
+        self.helpers.append(DockerHelper(self))
+        self.helpers.append(ProcessHelper(self))
+        self.helpers.append(RuntimeHelper(self))
+        self.helpers.append(ContainerHelper(self))
+
     def start(self):
         if self.ready_to_start is False:
-            logger.warn("AWS Fargate Collector is missing requirements and cannot monitor this environment.")
+            logger.warning("AWS Fargate Collector is missing requirements and cannot monitor this environment.")
             return
 
         # Launch a thread here to periodically collect data from the ECS Metadata Container API
@@ -134,194 +147,24 @@ class AWSFargateCollector(BaseCollector):
     def prepare_payload(self):
         payload = DictionaryOfStan()
         payload["spans"] = []
-        payload["metrics"] = None
+        payload["metrics"]["plugins"] = []
 
         if not self.span_queue.empty():
             payload["spans"] = self.queued_spans()
 
-        if self.should_send_snapshot_data():
-            if self.snapshot_data is None:
-                self.snapshot_data = self.collect_snapshot()
-            payload["metrics"] = self.snapshot_data
-            self.snapshot_data_last_sent = int(time())
-
-        self.last_payload = payload
-
-        return payload
-
-    def collect_snapshot(self, *argv, **kwargs):
         plugins = []
-        self.snapshot_data = DictionaryOfStan()
-
+        with_snapshot = self.should_send_snapshot_data()
         try:
-            plugins.extend(self._collect_task_snapshot())
-            plugins.extend(self._collect_container_snapshots())
-            plugins.extend(self._collect_docker_snapshot())
-            plugins.extend(self._collect_process_snapshot())
-            plugins.extend(self._collect_runtime_snapshot())
-            self.snapshot_data["plugins"] = plugins
+            for helper in self.helpers:
+                plugins.extend(helper.collect_metrics(with_snapshot))
+
+            payload["metrics"]["plugins"] = plugins
+
+            if with_snapshot is True:
+                self.snapshot_data_last_sent = int(time())
         except:
             logger.debug("collect_snapshot error", exc_info=True)
-        finally:
-            return self.snapshot_data
-
-    def _collect_task_snapshot(self):
-        """
-        Collect and return snapshot data for the task
-        @return: list - with one plugin entity
-        """
-        plugin_data = dict()
-        try:
-            if self.task_metadata is not None:
-                plugin_data["name"] = "com.instana.plugin.aws.ecs.task"
-                plugin_data["entityId"] = "metadata.TaskARN" # FIXME
-                plugin_data["data"] = DictionaryOfStan()
-                plugin_data["data"]["taskArn"] = self.task_metadata.get("TaskARN", None)
-                plugin_data["data"]["clusterArn"] = self.task_metadata.get("Cluster", None)
-                plugin_data["data"]["taskDefinition"] = self.task_metadata.get("Family", None)
-                plugin_data["data"]["taskDefinitionVersion"] = self.task_metadata.get("Revision", None)
-                plugin_data["data"]["availabilityZone"] = self.task_metadata.get("AvailabilityZone", None)
-                plugin_data["data"]["desiredStatus"] = self.task_metadata.get("DesiredStatus", None)
-                plugin_data["data"]["knownStatus"] = self.task_metadata.get("KnownStatus", None)
-                plugin_data["data"]["pullStartedAt"] = self.task_metadata.get("PullStartedAt", None)
-                plugin_data["data"]["pullStoppedAt"] = self.task_metadata.get("PullStoppeddAt", None)
-                limits = self.task_metadata.get("Limits", {})
-                plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
-                plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
-        except:
-            logger.debug("_collect_task_snapshot: ", exc_info=True)
-        return [plugin_data]
-
-    def _collect_container_snapshots(self):
-        """
-        Collect and return snapshot data for every container in this task
-        @return: list - with one or more plugin entities
-        """
-        plugins = []
-        try:
-            if self.task_metadata is not None:
-                containers = self.task_metadata.get("Containers", [])
-                for container in containers:
-                    plugin_data = dict()
-                    try:
-                        labels = container.get("Labels", {})
-                        name = container.get("Name", "")
-                        taskArn = labels.get("com.amazonaws.ecs.container-name", "")
-
-                        plugin_data["name"] = "com.instana.plugin.aws.ecs.container"
-                        # "entityId": $taskARN + "::" + $containerName
-                        plugin_data["entityId"] = "%s::%s" % (taskArn, name)
-
-                        plugin_data["data"] = DictionaryOfStan()
-                        if self.root_metadata["Name"] == name:
-                            plugin_data["data"]["instrumented"] = True
-                        plugin_data["data"]["runtime"] = "python"
-                        plugin_data["data"]["dockerId"] = container.get("DockerId", None)
-                        plugin_data["data"]["dockerName"] = container.get("DockerName", None)
-                        plugin_data["data"]["containerName"] = container.get("Name", None)
-                        plugin_data["data"]["image"] = container.get("Image", None)
-                        plugin_data["data"]["imageId"] = container.get("ImageID", None)
-                        plugin_data["data"]["taskArn"] = labels.get("com.amazonaws.ecs.task-arn", None)
-                        plugin_data["data"]["taskDefinition"] = labels.get("com.amazonaws.ecs.task-definition-family", None)
-                        plugin_data["data"]["taskDefinitionVersion"] = labels.get("com.amazonaws.ecs.task-definition-version", None)
-                        plugin_data["data"]["clusterArn"] = labels.get("com.amazonaws.ecs.cluster", None)
-                        plugin_data["data"]["desiredStatus"] = container.get("DesiredStatus", None)
-                        plugin_data["data"]["knownStatus"] = container.get("KnownStatus", None)
-                        plugin_data["data"]["ports"] = container.get("Ports", None)
-                        plugin_data["data"]["createdAt"] = container.get("CreatedAt", None)
-                        plugin_data["data"]["startedAt"] = container.get("StartedAt", None)
-                        plugin_data["data"]["type"] = container.get("Type", None)
-                        limits = container.get("Limits", {})
-                        plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
-                        plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
-                    except:
-                        logger.debug("_collect_container_snapshots: ", exc_info=True)
-                    finally:
-                        plugins.append(plugin_data)
-        except:
-            logger.debug("_collect_container_snapshots: ", exc_info=True)
-        return plugins
-
-    def _collect_docker_snapshot(self):
-        plugins = []
-        try:
-            if self.task_metadata is not None:
-                containers = self.task_metadata.get("Containers", [])
-                for container in containers:
-                    plugin_data = dict()
-                    try:
-                        labels = container.get("Labels", {})
-                        name = container.get("Name", "")
-                        taskArn = labels.get("com.amazonaws.ecs.container-name", "")
-
-                        plugin_data["name"] = "com.instana.plugin.docker"
-                        # "entityId": $taskARN + "::" + $containerName
-                        plugin_data["entityId"] = "%s::%s" % (taskArn, name)
-                        plugin_data["data"] = DictionaryOfStan()
-                        plugin_data["data"]["Id"] = container.get("DockerId", None)
-                        plugin_data["data"]["Created"] = container.get("CreatedAt", None)
-                        plugin_data["data"]["Started"] = container.get("StartedAt", None)
-                        plugin_data["data"]["Image"] = container.get("Image", None)
-                        plugin_data["data"]["Labels"] = container.get("Labels", None)
-                        plugin_data["data"]["Ports"] = container.get("Ports", None)
-
-                        networks = container.get("Networks", [])
-                        if len(networks) >= 1:
-                            plugin_data["data"]["NetworkMode"] = networks[0].get("NetworkMode", None)
-                    except:
-                        logger.debug("_collect_container_snapshots: ", exc_info=True)
-                    finally:
-                        plugins.append(plugin_data)
-        except:
-            logger.debug("_collect_container_snapshots: ", exc_info=True)
-        return plugins
-
-    def _collect_process_snapshot(self):
-        plugin_data = dict()
-        try:
-            plugin_data["name"] = "com.instana.plugin.process"
-            plugin_data["entityId"] = str(os.getpid())
-            plugin_data["data"] = DictionaryOfStan()
-            plugin_data["data"]["pid"] = int(os.getpid())
-            env = dict()
-            for key in os.environ:
-                env[key] = os.environ[key]
-            plugin_data["data"]["env"] = env
-            plugin_data["data"]["exec"] = os.readlink("/proc/self/exe")
-
-            cmdline = get_proc_cmdline()
-            if len(cmdline) > 1:
-                # drop the exe
-                cmdline.pop(0)
-            plugin_data["data"]["args"] = cmdline
-            try:
-                euid = os.geteuid()
-                egid = os.getegid()
-                plugin_data["data"]["user"] = pwd.getpwuid(euid)
-                plugin_data["data"]["group"] = grp.getgrgid(egid).gr_name
-            except:
-                logger.debug("euid/egid detection: ", exc_info=True)
-
-            plugin_data["data"]["start"] = 1 # FIXME
-            plugin_data["data"]["containerType"] = "docker"
-            if self.root_metadata is not None:
-                plugin_data["data"]["container"] = self.root_metadata.get("DockerId")
-            plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME
-            if self.task_metadata is not None:
-                plugin_data["data"]["com.instana.plugin.host.name"] = self.task_metadata.get("TaskArn")
-        except:
-            logger.debug("_collect_process_snapshot: ", exc_info=True)
-        return [plugin_data]
-
-    def _collect_runtime_snapshot(self):
-        plugin_data = dict()
-        try:
-            plugin_data["name"] = "com.instana.plugin.python"
-            plugin_data["entityId"] = str(os.getpid())
-            plugin_data["data"] = DictionaryOfStan()
-        except:
-            logger.debug("_collect_runtime_snapshot: ", exc_info=True)
-        return [plugin_data]
+        return payload
 
     def get_fq_arn(self):
         if self._fq_arn is not None:

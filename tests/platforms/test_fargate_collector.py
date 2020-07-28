@@ -65,6 +65,8 @@ class TestFargate(unittest.TestCase):
 
         payload = self.agent.collector.prepare_payload()
         assert(payload)
+
+        assert(len(payload.keys()) == 2)
         assert('spans' in payload)
         assert(type(payload['spans']) is list)
         assert(len(payload['spans']) == 0)
@@ -73,4 +75,10 @@ class TestFargate(unittest.TestCase):
         assert('plugins' in payload['metrics'])
         assert(type(payload['metrics']['plugins']) is list)
         assert(len(payload['metrics']['plugins']) == 7)
+
+        plugins = payload['metrics']['plugins']
+        for plugin in plugins:
+            assert('name' in plugin)
+            assert('entityId' in plugin)
+            assert('data' in plugin)
 

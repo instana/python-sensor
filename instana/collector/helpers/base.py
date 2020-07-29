@@ -1,7 +1,7 @@
 from ...log import logger
 
 
-class BaseHelper:
+class BaseHelper(object):
     def __init__(self, collector):
         self.collector = collector
 

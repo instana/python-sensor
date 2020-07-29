@@ -163,4 +163,5 @@ class AWSFargateRecorder(StandardRecorder):
 
 class InstanaSampler(Sampler):
     def sampled(self, _):
+        # We never sample
         return False

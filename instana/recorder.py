@@ -6,7 +6,7 @@ import threading
 
 from .log import logger
 from .util import every
-import instana.singletons
+from .singletons import get_agent
 from basictracer import Sampler
 from .span import (RegisteredSpan, SDKSpan)
 
@@ -28,8 +28,12 @@ class StandardRecorder(object):
     # Recorder thread for collection/reporting of spans
     thread = None
 
-    def __init__(self, agent):
-        self.agent = agent
+    def __init__(self, agent = None):
+        if agent is None:
+            self.agent = get_agent()
+        else:
+            self.agent = agent
+
         self.queue = queue.Queue()
 
     def start(self):
@@ -63,13 +67,13 @@ class StandardRecorder(object):
         logger.debug(" -> Span reporting thread is now alive")
 
         def span_work():
-            if instana.singletons.agent.should_threads_shutdown.is_set():
+            if self.agent.should_threads_shutdown.is_set():
                 logger.debug("Thread shutdown signal from agent is active: Shutting down span reporting thread")
                 return False
 
             queue_size = self.queue.qsize()
-            if queue_size > 0 and instana.singletons.agent.can_send():
-                response = instana.singletons.agent.report_traces(self.queued_spans())
+            if queue_size > 0 and self.agent.can_send():
+                response = self.agent.report_traces(self.queued_spans())
                 if response:
                     logger.debug("reported %d spans", queue_size)
             return True
@@ -102,16 +106,16 @@ class StandardRecorder(object):
         """
         Convert the passed BasicSpan into and add it to the span queue
         """
-        if instana.singletons.agent.can_send() or "INSTANA_TEST" in os.environ:
+        if self.agent.can_send() or "INSTANA_TEST" in os.environ:
             service_name = None
-            source = instana.singletons.agent.get_from_structure()
+            source = self.agent.get_from_structure()
             if "INSTANA_SERVICE_NAME" in os.environ:
                 service_name = self.agent.options.service_name
 
             if span.operation_name in self.REGISTERED_SPANS:
                 json_span = RegisteredSpan(span, source, service_name)
             else:
-                service_name = instana.singletons.agent.options.service_name
+                service_name = self.agent.options.service_name
                 json_span = SDKSpan(span, source, service_name)
 
             self.queue.put(json_span)

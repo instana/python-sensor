@@ -6,7 +6,6 @@ import threading
 
 from .log import logger
 from .util import every
-from .singletons import get_agent
 from basictracer import Sampler
 from .span import (RegisteredSpan, SDKSpan)
 
@@ -30,6 +29,8 @@ class StandardRecorder(object):
 
     def __init__(self, agent = None):
         if agent is None:
+            # Late import to avoid circular import
+            from .singletons import get_agent
             self.agent = get_agent()
         else:
             self.agent = agent

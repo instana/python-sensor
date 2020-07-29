@@ -48,7 +48,6 @@ db.close()
 
 class TestPsycoPG2(unittest.TestCase):
     def setUp(self):
-        logger.warning("Postgresql connecting: %s:<pass>@%s:5432/%s", testenv['postgresql_user'], testenv['postgresql_host'], testenv['postgresql_db'])
         self.db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
                                    user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
                                    database=testenv['postgresql_db'])

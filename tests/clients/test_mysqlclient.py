@@ -51,7 +51,6 @@ db.close()
 
 class TestMySQLPython(unittest.TestCase):
     def setUp(self):
-        logger.info("MySQL connecting: %s:<pass>@%s:3306/%s", testenv['mysql_user'], testenv['mysql_host'], testenv['mysql_db'])
         self.db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
                                   user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
                                   db=testenv['mysql_db'])

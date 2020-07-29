@@ -8,10 +8,11 @@ from .base import BaseCollector
 from ..util import DictionaryOfStan, every, validate_url
 from ..singletons import env_is_test
 
-from .helpers.process.helper import ProcessHelper
-from .helpers.runtime.helper import RuntimeHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
+from .helpers.process.helper import ProcessHelper
+from .helpers.runtime.helper import RuntimeHelper
+from .helpers.fargate.hardware import HardwareHelper
 from .helpers.fargate.container import ContainerHelper
 
 
@@ -81,6 +82,7 @@ class AWSFargateCollector(BaseCollector):
         self.helpers.append(DockerHelper(self))
         self.helpers.append(ProcessHelper(self))
         self.helpers.append(RuntimeHelper(self))
+        self.helpers.append(HardwareHelper(self))
         self.helpers.append(ContainerHelper(self))
 
     def start(self):

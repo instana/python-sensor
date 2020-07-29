@@ -24,6 +24,8 @@ class DockerHelper(BaseHelper):
                         # "entityId": $taskARN + "::" + $containerName
                         plugin_data["entityId"] = "%s::%s" % (taskArn, name)
                         plugin_data["data"] = DictionaryOfStan()
+
+                        # Snapshot Data
                         plugin_data["data"]["Id"] = container.get("DockerId", None)
                         plugin_data["data"]["Created"] = container.get("CreatedAt", None)
                         plugin_data["data"]["Started"] = container.get("StartedAt", None)

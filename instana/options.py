@@ -1,7 +1,8 @@
 """ Options for the in-process Instana agent """
-import logging
 import os
+import logging
 
+from .log import logger
 from .util import determine_service_name
 
 
@@ -18,7 +19,21 @@ class BaseOptions(object):
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
             self.extra_http_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
 
+        # Defaults
+        self.secrets_matcher = 'contains-ignore-case'
+        self.secrets_list = ['key', 'pass', 'secret']
+
+        # Env var format: <matcher>:<secret>[,<secret>]
         self.secrets = os.environ.get("INSTANA_SECRETS", None)
+
+        if self.secrets is not None:
+            parts = self.secrets.split(':')
+            if len(parts) == 2:
+                self.secrets_matcher = parts[0]
+                self.secrets_list = parts[1].split(',')
+            else:
+                logger.warning("Couldn't parse INSTANA_SECRETS env var: %s", self.secrets)
+
         self.__dict__.update(kwds)
 
 

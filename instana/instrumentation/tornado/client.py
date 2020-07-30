@@ -49,7 +49,7 @@ try:
                 # Query param scrubbing
                 parts = request.url.split('?')
                 if len(parts) > 1:
-                    cleaned_qp = strip_secrets(parts[1], agent.secrets_matcher, agent.secrets_list)
+                    cleaned_qp = strip_secrets(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
                     scope.span.set_tag("http.params", cleaned_qp)
 
                 scope.span.set_tag("http.url", parts[0])

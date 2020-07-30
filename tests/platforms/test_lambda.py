@@ -97,9 +97,9 @@ class TestLambda(unittest.TestCase):
     def test_secrets(self):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'secrets_matcher'))
-        self.assertEqual(self.agent.secrets_matcher, 'contains-ignore-case')
+        self.assertEqual(self.agent.options.secrets_matcher, 'contains-ignore-case')
         self.assertTrue(hasattr(self.agent, 'secrets_list'))
-        self.assertEqual(self.agent.secrets_list, ['key', 'pass', 'secret'])
+        self.assertEqual(self.agent.options.secrets_list, ['key', 'pass', 'secret'])
 
     def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()

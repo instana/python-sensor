@@ -51,7 +51,7 @@ try:
         if 'PATH_INFO' in env:
             scope.span.set_tag('http.path', env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-            scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
+            scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
             scope.span.set_tag("http.params", scrubbed_params)
         if 'REQUEST_METHOD' in env:
             scope.span.set_tag(tags.HTTP_METHOD, env['REQUEST_METHOD'])

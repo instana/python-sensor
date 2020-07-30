@@ -39,6 +39,8 @@ class TestFargate(unittest.TestCase):
             os.environ.pop("INSTANA_ENDPOINT_URL")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
+        if "INSTANA_SECRETS" in os.environ:
+            os.environ.pop("INSTANA_SECRETS")
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
@@ -49,6 +51,11 @@ class TestFargate(unittest.TestCase):
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
         set_tracer(self.tracer)
+
+    def test_has_options(self):
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent, 'options'))
+        self.assertTrue(type(self.agent.options) is AWSFargateOptions)
 
     def test_invalid_options(self):
         # None of the required env vars are available...
@@ -63,17 +70,22 @@ class TestFargate(unittest.TestCase):
         self.assertFalse(agent._can_send)
         self.assertIsNone(agent.collector)
 
-    def test_secrets(self):
+    def test_default_secrets(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'secrets_matcher'))
-        self.assertEqual(self.agent.secrets_matcher, 'contains-ignore-case')
-        self.assertTrue(hasattr(self.agent, 'secrets_list'))
-        self.assertEqual(self.agent.secrets_list, ['key', 'pass', 'secret'])
+        self.assertIsNone(self.agent.options.secrets)
+        self.assertTrue(hasattr(self.agent.options, 'secrets_matcher'))
+        self.assertEqual(self.agent.options.secrets_matcher, 'contains-ignore-case')
+        self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
+        self.assertEqual(self.agent.options.secrets_list, ['key', 'pass', 'secret'])
 
-    def test_has_options(self):
+    def test_custom_secrets(self):
+        os.environ["INSTANA_SECRETS"] = "equals:love,war,games"
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'options'))
-        self.assertTrue(type(self.agent.options) is AWSFargateOptions)
+
+        self.assertTrue(hasattr(self.agent.options, 'secrets_matcher'))
+        self.assertEqual(self.agent.options.secrets_matcher, 'equals')
+        self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
+        self.assertEqual(self.agent.options.secrets_list, ['love', 'war', 'games'])
 
     def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()

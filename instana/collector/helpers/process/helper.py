@@ -3,7 +3,7 @@ import pwd
 import grp
 from ..base import BaseHelper
 from instana.log import logger
-from instana.util import DictionaryOfStan, get_proc_cmdline, every, validate_url
+from instana.util import DictionaryOfStan, get_proc_cmdline, strip_secrets
 
 
 class ProcessHelper(BaseHelper):

@@ -37,7 +37,7 @@ def request_started_with_instana(sender, **extra):
         if 'PATH_INFO' in env:
             span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-            scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
+            scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
             span.set_tag("http.params", scrubbed_params)
         if 'HTTP_HOST' in env:
             span.set_tag("http.host", env['HTTP_HOST'])

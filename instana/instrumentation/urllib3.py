@@ -32,7 +32,7 @@ try:
                 parts = kvs['path'].split('?')
                 kvs['path'] = parts[0]
                 if len(parts) == 2:
-                    kvs['query'] = strip_secrets(parts[1], agent.secrets_matcher, agent.secrets_list)
+                    kvs['query'] = strip_secrets(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
                 kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])

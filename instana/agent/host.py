@@ -135,8 +135,8 @@ class HostAgent(BaseAgent):
         res_data = json.loads(raw_json)
 
         if "secrets" in res_data:
-            self.secrets_matcher = res_data['secrets']['matcher']
-            self.secrets_list = res_data['secrets']['list']
+            self.options.secrets_matcher = res_data['secrets']['matcher']
+            self.options.secrets_list = res_data['secrets']['list']
 
         if "extraHeaders" in res_data:
             # FIXME: add tests

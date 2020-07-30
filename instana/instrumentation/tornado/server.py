@@ -29,7 +29,7 @@ try:
 
                     # Query param scrubbing
                     if instance.request.query is not None and len(instance.request.query) > 0:
-                        cleaned_qp = strip_secrets(instance.request.query, agent.secrets_matcher, agent.secrets_list)
+                        cleaned_qp = strip_secrets(instance.request.query, agent.options.secrets_matcher, agent.options.secrets_list)
                         scope.span.set_tag("http.params", cleaned_qp)
 
                     url = "%s://%s%s" % (instance.request.protocol, instance.request.host, instance.request.path)

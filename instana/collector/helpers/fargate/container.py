@@ -15,12 +15,12 @@ class ContainerHelper(BaseHelper):
                 containers = self.collector.task_metadata.get("Containers", [])
                 for container in containers:
                     plugin_data = dict()
+                    plugin_data["name"] = "com.instana.plugin.aws.ecs.container"
                     try:
                         labels = container.get("Labels", {})
                         name = container.get("Name", "")
                         taskArn = labels.get("com.amazonaws.ecs.container-name", "")
 
-                        plugin_data["name"] = "com.instana.plugin.aws.ecs.container"
                         # "entityId": $taskARN + "::" + $containerName
                         plugin_data["entityId"] = "%s::%s" % (taskArn, name)
 

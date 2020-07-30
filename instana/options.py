@@ -81,8 +81,12 @@ class AWSFargateOptions(BaseOptions):
         if self.endpoint_url is not None and self.endpoint_url[-1] == "/":
             self.endpoint_url = self.endpoint_url[:-1]
 
+        self.tags = None
+        tag_list = os.environ.get("INSTANA_TAGS", None)
+        if tag_list is not None:
+            self.tags = tag_list.split(',')
+
         self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
-        self.tags = os.environ.get("INSTANA_TAGS", None)
         self.timeout = os.environ.get("INSTANA_TIMEOUT", 0.5)
         self.zone = os.environ.get("INSTANA_ZONE", None)
 

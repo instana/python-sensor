@@ -41,6 +41,8 @@ class TestFargate(unittest.TestCase):
             os.environ.pop("INSTANA_AGENT_KEY")
         if "INSTANA_SECRETS" in os.environ:
             os.environ.pop("INSTANA_SECRETS")
+        if "INSTANA_TAGS" in os.environ:
+            os.environ.pop("INSTANA_TAGS")
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
@@ -86,6 +88,29 @@ class TestFargate(unittest.TestCase):
         self.assertEqual(self.agent.options.secrets_matcher, 'equals')
         self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
         self.assertEqual(self.agent.options.secrets_list, ['love', 'war', 'games'])
+
+    def test_default_tags(self):
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent.options, 'tags'))
+        self.assertIsNone(self.agent.options.tags)
+
+    def test_custom_tags(self):
+        os.environ["INSTANA_TAGS"] = "love,war,games"
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent.options, 'tags'))
+        self.assertEqual(self.agent.options.tags, ["love", "war", "games"])
+
+        payload = self.agent.collector.prepare_payload()
+
+        assert(payload)
+        host_plugin = None
+        plugins = payload['metrics']['plugins']
+        for plugin in plugins:
+            if plugin["name"] == "com.instana.plugin.host":
+                host_plugin = plugin
+        assert(host_plugin)
+        assert(host_plugin["entityId"] == "h")
+        assert(host_plugin["data"]["tags"] == ['love', 'war', 'games'])
 
     def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()

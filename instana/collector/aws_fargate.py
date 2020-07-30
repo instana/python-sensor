@@ -8,6 +8,7 @@ from .base import BaseCollector
 from ..util import DictionaryOfStan, every, validate_url
 from ..singletons import env_is_test
 
+from .helpers.fargate.host import HostHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
 from .helpers.process.helper import ProcessHelper
@@ -78,6 +79,7 @@ class AWSFargateCollector(BaseCollector):
         self.helpers = []
 
         # Populate the collection helpers
+        self.helpers.append(HostHelper(self))
         self.helpers.append(TaskHelper(self))
         self.helpers.append(DockerHelper(self))
         self.helpers.append(ProcessHelper(self))

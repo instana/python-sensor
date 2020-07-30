@@ -17,10 +17,14 @@ class HardwareHelper(BaseHelper):
             if self.collector.task_metadata is not None:
                 plugin_data = dict()
                 plugin_data["name"] = "com.instana.plugin.generic.hardware"
-                plugin_data["entityId"] = self.collector.task_metadata.get("TaskARN", None)
-                plugin_data["data"] = DictionaryOfStan()
-                plugin_data["data"]["availability-zone"] = self.collector.agent.options.zone
-                plugins.append(plugin_data)
+                try:
+                    plugin_data["entityId"] = self.collector.task_metadata.get("TaskARN", None)
+                    plugin_data["data"] = DictionaryOfStan()
+                    plugin_data["data"]["availability-zone"] = self.collector.agent.options.zone
+                except:
+                    logger.debug("HardwareHelper.collect_metrics: ", exc_info=True)
+                finally:
+                    plugins.append(plugin_data)
         except:
             logger.debug("HardwareHelper.collect_metrics: ", exc_info=True)
         return plugins

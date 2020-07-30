@@ -3,7 +3,7 @@ import pwd
 import grp
 from ..base import BaseHelper
 from instana.log import logger
-from instana.util import DictionaryOfStan, get_proc_cmdline, strip_secrets
+from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret
 
 
 class ProcessHelper(BaseHelper):
@@ -16,7 +16,12 @@ class ProcessHelper(BaseHelper):
             plugin_data["data"]["pid"] = int(os.getpid())
             env = dict()
             for key in os.environ:
-                env[key] = os.environ[key]
+                if contains_secret(key,
+                                   self.collector.agent.options.secrets_matcher,
+                                   self.collector.agent.options.secrets_list):
+                    env[key] = "<ignored>"
+                else:
+                    env[key] = os.environ[key]
             plugin_data["data"]["env"] = env
             plugin_data["data"]["exec"] = os.readlink("/proc/self/exe")
 

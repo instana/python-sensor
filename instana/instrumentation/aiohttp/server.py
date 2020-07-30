@@ -5,7 +5,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, async_tracer
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 
 try:
@@ -25,7 +25,7 @@ try:
             url = str(request.url)
             parts = url.split('?')
             if len(parts) > 1:
-                cleaned_qp = strip_secrets(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
+                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
                 scope.span.set_tag("http.params", cleaned_qp)
 
             scope.span.set_tag("http.url", parts[0])

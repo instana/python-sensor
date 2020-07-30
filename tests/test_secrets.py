@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import unittest
 
-from instana.util import strip_secrets
+from instana.util import strip_secrets_from_query
 
 
 class TestSecrets(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
@@ -28,7 +28,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
@@ -38,7 +38,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
@@ -48,7 +48,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five=<redacted>")
 
@@ -58,7 +58,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
@@ -68,7 +68,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five=<redacted>")
 
@@ -78,7 +78,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
@@ -88,7 +88,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4=<redacted>&five='okyeah'")
 
@@ -98,7 +98,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
@@ -108,7 +108,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "/signup?one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
@@ -118,7 +118,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "http://www.x.org/signup?one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "http://www.x.org/signup?one=1&Two=<redacted>&THREE=&4='+'&five='okyeah'")
 
@@ -128,7 +128,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = None
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual('', stripped)
 
@@ -138,7 +138,7 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")
 
@@ -148,6 +148,6 @@ class TestSecrets(unittest.TestCase):
 
         query_params = "one=1&Two=two&THREE=&4='+'&five='okyeah'"
 
-        stripped = strip_secrets(query_params, matcher, kwlist)
+        stripped = strip_secrets_from_query(query_params, matcher, kwlist)
 
         self.assertEqual(stripped, "one=1&Two=two&THREE=&4='+'&five='okyeah'")

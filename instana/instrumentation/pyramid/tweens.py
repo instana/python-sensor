@@ -7,7 +7,7 @@ import opentracing.ext.tags as ext
 
 from ...log import logger
 from ...singletons import tracer, agent
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 
 class InstanaTweenFactory(object):
@@ -36,7 +36,7 @@ class InstanaTweenFactory(object):
                     scope.span.set_tag("http.%s" % custom_header, request.headers[h])
 
         if len(request.query_string):
-            scrubbed_params = strip_secrets(request.query_string, agent.options.secrets_matcher, agent.options.secrets_list)
+            scrubbed_params = strip_secrets_from_query(request.query_string, agent.options.secrets_matcher, agent.options.secrets_list)
             scope.span.set_tag("http.params", scrubbed_params)
 
         response = None

@@ -5,7 +5,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, setup_tornado_tracer, tornado_tracer
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 from distutils.version import LooseVersion
 
@@ -29,7 +29,7 @@ try:
 
                     # Query param scrubbing
                     if instance.request.query is not None and len(instance.request.query) > 0:
-                        cleaned_qp = strip_secrets(instance.request.query, agent.options.secrets_matcher, agent.options.secrets_list)
+                        cleaned_qp = strip_secrets_from_query(instance.request.query, agent.options.secrets_matcher, agent.options.secrets_list)
                         scope.span.set_tag("http.params", cleaned_qp)
 
                     url = "%s://%s%s" % (instance.request.protocol, instance.request.host, instance.request.path)

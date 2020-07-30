@@ -9,7 +9,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, tracer
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 
@@ -43,7 +43,7 @@ class InstanaMiddleware(MiddlewareMixin):
             if 'PATH_INFO' in env:
                 request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
             if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-                scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
+                scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
                 request.iscope.span.set_tag("http.params", scrubbed_params)
             if 'HTTP_HOST' in env:
                 request.iscope.span.set_tag("http.host", env['HTTP_HOST'])

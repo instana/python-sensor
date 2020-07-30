@@ -57,13 +57,18 @@ class AWSLambdaOptions(BaseOptions):
     def __init__(self, **kwds):
         super(AWSLambdaOptions, self).__init__()
 
+        self.agent_key = os.environ.get("INSTANA_AGENT_KEY", None)
         self.endpoint_url = os.environ.get("INSTANA_ENDPOINT_URL", None)
-
         # Remove any trailing slash (if any)
         if self.endpoint_url is not None and self.endpoint_url[-1] == "/":
             self.endpoint_url = self.endpoint_url[:-1]
 
-        self.agent_key = os.environ.get("INSTANA_AGENT_KEY", None)
+        proxy = os.environ.get("INSTANA_ENDPOINT_PROXY", None)
+        if proxy is None:
+            self.endpoint_proxy = { }
+        else:
+            self.endpoint_proxy = {'https': proxy }
+
         self.timeout = os.environ.get("INSTANA_TIMEOUT", 0.5)
         self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
 
@@ -74,19 +79,23 @@ class AWSFargateOptions(BaseOptions):
         super(AWSFargateOptions, self).__init__()
 
         self.agent_key = os.environ.get("INSTANA_AGENT_KEY", None)
-        self.endpoint_proxy = os.environ.get("INSTANA_ENDPOINT_PROXY", None)
-
         self.endpoint_url = os.environ.get("INSTANA_ENDPOINT_URL", None)
         # Remove any trailing slash (if any)
         if self.endpoint_url is not None and self.endpoint_url[-1] == "/":
             self.endpoint_url = self.endpoint_url[:-1]
+
+        proxy = os.environ.get("INSTANA_ENDPOINT_PROXY", None)
+        if proxy is None:
+            self.endpoint_proxy = { }
+        else:
+            self.endpoint_proxy = {'https': proxy }
 
         self.tags = None
         tag_list = os.environ.get("INSTANA_TAGS", None)
         if tag_list is not None:
             self.tags = tag_list.split(',')
 
-        self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
         self.timeout = os.environ.get("INSTANA_TIMEOUT", 0.5)
+        self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
         self.zone = os.environ.get("INSTANA_ZONE", None)
 

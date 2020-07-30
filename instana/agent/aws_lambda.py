@@ -79,7 +79,8 @@ class AWSLambdaAgent(BaseAgent):
                                         data=to_json(payload),
                                         headers=self.report_headers,
                                         timeout=self.options.timeout,
-                                        verify=ssl_verify)
+                                        verify=ssl_verify,
+                                        proxies = self.options.endpoint_proxy)
 
             if 200 <= response.status_code < 300:
                 logger.debug("report_data_payload: Instana responded with status code %s", response.status_code)

@@ -26,9 +26,9 @@ class AWSFargateAgent(BaseAgent):
     def __init__(self):
         super(AWSFargateAgent, self).__init__()
 
+        self.options = AWSFargateOptions()
         self.from_ = AWSFargateFrom()
         self.collector = None
-        self.options = AWSFargateOptions()
         self.report_headers = None
         self._can_send = False
 
@@ -78,7 +78,8 @@ class AWSFargateAgent(BaseAgent):
                                         data=to_json(payload),
                                         headers=self.report_headers,
                                         timeout=self.options.timeout,
-                                        verify=ssl_verify)
+                                        verify=ssl_verify,
+                                        proxies=self.options.endpoint_proxy)
 
             if not 200 <= response.status_code < 300:
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)

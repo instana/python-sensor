@@ -66,6 +66,8 @@ class TestLambda(unittest.TestCase):
             os.environ.pop("INSTANA_EXTRA_HTTP_HEADERS")
         if "INSTANA_ENDPOINT_URL" in os.environ:
             os.environ.pop("INSTANA_ENDPOINT_URL")
+        if "INSTANA_ENDPOINT_PROXY" in os.environ:
+            os.environ.pop("INSTANA_ENDPOINT_PROXY")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
 

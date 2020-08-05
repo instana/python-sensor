@@ -37,6 +37,8 @@ class TestFargate(unittest.TestCase):
             os.environ.pop("INSTANA_EXTRA_HTTP_HEADERS")
         if "INSTANA_ENDPOINT_URL" in os.environ:
             os.environ.pop("INSTANA_ENDPOINT_URL")
+        if "INSTANA_ENDPOINT_PROXY" in os.environ:
+            os.environ.pop("INSTANA_ENDPOINT_PROXY")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
         if "INSTANA_SECRETS" in os.environ:
@@ -123,6 +125,11 @@ class TestFargate(unittest.TestCase):
         self.assertIsNotNone(self.agent.options.extra_http_headers)
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
         self.assertEqual(should_headers, self.agent.options.extra_http_headers)
+
+    def test_custom_proxy(self):
+        os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
+        self.create_agent_and_setup_tracer()
+        assert(self.agent.options.endpoint_proxy == { 'https': "http://myproxy.123" })
 
     @pytest.mark.skip("todo")
     def test_custom_service_name(self):

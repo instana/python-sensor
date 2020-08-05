@@ -110,6 +110,7 @@ class TestLambda(unittest.TestCase):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'options'))
         self.assertTrue(type(self.agent.options) is AWSLambdaOptions)
+        assert(self.agent.options.endpoint_proxy == { })
 
     def test_get_handler(self):
         os.environ["LAMBDA_HANDLER"] = "tests.lambda_handler"
@@ -124,6 +125,11 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(self.agent.options.extra_http_headers)
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
         self.assertEqual(should_headers, self.agent.options.extra_http_headers)
+
+    def test_custom_proxy(self):
+        os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
+        self.create_agent_and_setup_tracer()
+        assert(self.agent.options.endpoint_proxy == { 'https': "http://myproxy.123" })
 
     def test_custom_service_name(self):
         os.environ['INSTANA_SERVICE_NAME'] = "Legion"

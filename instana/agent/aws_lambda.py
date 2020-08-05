@@ -4,6 +4,7 @@ monitoring state and reporting that data.
 """
 import os
 import time
+import pkg_resources
 from ..log import logger
 from ..util import to_json
 from .base import BaseAgent
@@ -31,6 +32,13 @@ class AWSLambdaAgent(BaseAgent):
         self.options = AWSLambdaOptions()
         self.report_headers = None
         self._can_send = False
+
+        package_version = 'unknown'
+        try:
+            package_version = pkg_resources.get_distribution('instana').version
+        except pkg_resources.DistributionNotFound:
+            pass
+        logger.info("Stan is on the AWS Lambda scene.  Starting Instana instrumentation version: %s", package_version)
 
         if self._validate_options():
             self._can_send = True

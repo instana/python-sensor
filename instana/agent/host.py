@@ -172,10 +172,9 @@ class HostAgent(BaseAgent):
             else:
                 logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s",
                              host, port, server_header)
-        except:
+        except Exception:
             logger.debug("Instana Host Agent not found on %s:%d", host, port)
-        finally:
-            return result
+        return result
 
     def announce(self, discovery):
         """
@@ -192,10 +191,9 @@ class HostAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except Exception as e:
-            logger.debug("announce: connection error (%s)", type(e))
-        finally:
-            return response
+        except Exception as exc:
+            logger.debug("announce: connection error (%s)", type(exc))
+        return response
 
     def is_agent_ready(self):
         """
@@ -207,10 +205,9 @@ class HostAgent(BaseAgent):
 
             if response.status_code == 200:
                 ready = True
-        except Exception as e:
-            logger.debug("is_agent_ready: connection error (%s)", type(e))
-        finally:
-            return ready
+        except Exception as exc:
+            logger.debug("is_agent_ready: connection error (%s)", type(exc))
+        return ready
 
     def report_data_payload(self, entity_data):
         """
@@ -228,10 +225,9 @@ class HostAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except Exception as e:
-            logger.debug("report_data_payload: Instana host agent connection error (%s)", type(e))
-        finally:
-            return response
+        except Exception as exc:
+            logger.debug("report_data_payload: Instana host agent connection error (%s)", type(exc))
+        return response
 
     def report_traces(self, spans):
         """
@@ -253,10 +249,9 @@ class HostAgent(BaseAgent):
 
             if response.status_code == 200:
                 self.last_seen = datetime.now()
-        except Exception as e:
-            logger.debug("report_traces: Instana host agent connection error (%s)", type(e))
-        finally:
-            return response
+        except Exception as exc:
+            logger.debug("report_traces: Instana host agent connection error (%s)", type(exc))
+        return response
 
     def handle_agent_tasks(self, task):
         """
@@ -291,10 +286,9 @@ class HostAgent(BaseAgent):
                                         data=payload,
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
-        except Exception as e:
-            logger.debug("__task_response: Instana host agent connection error (%s)", type(e))
-        finally:
-            return response
+        except Exception as exc:
+            logger.debug("__task_response: Instana host agent connection error (%s)", type(exc))
+        return response
 
     def __discovery_url(self):
         """

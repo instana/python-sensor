@@ -106,15 +106,14 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['a'] = platform.architecture()[0] # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
             snapshot_payload['djmw'] = None # FIXME
-        except Exception as e:
+        except Exception:
             logger.debug("collect_snapshot: ", exc_info=True)
-        finally:
-            return snapshot_payload
+        return snapshot_payload
 
     def gather_python_packages(self):
         """ Collect up the list of modules in use """
+        res = {}
         try:
-            res = {}
             m = sys.modules.copy()
 
             for k in m:
@@ -138,8 +137,7 @@ class RuntimeHelper(BaseHelper):
 
         except Exception:
             logger.debug("gather_python_packages", exc_info=True)
-        else:
-            return res
+        return res
 
     def jsonable(self, value):
         try:

@@ -2,7 +2,6 @@
 A Collector launches a background thread and continually collects & reports data.  The data
 can be any combination of metrics, snapshot data and spans.
 """
-import os
 import sys
 import threading
 

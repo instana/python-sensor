@@ -5,11 +5,11 @@ monitoring state and reporting that data.
 import os
 import time
 import pkg_resources
+from instana.options import AWSFargateOptions
+from instana.collector.aws_fargate import AWSFargateCollector
 from ..log import logger
 from ..util import to_json
 from .base import BaseAgent
-from instana.collector.aws_fargate import AWSFargateCollector
-from instana.options import AWSFargateOptions
 
 
 class AWSFargateFrom(object):
@@ -91,10 +91,9 @@ class AWSFargateAgent(BaseAgent):
 
             if not 200 <= response.status_code < 300:
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
-        except Exception as e:
-            logger.debug("report_data_payload: connection error (%s)", type(e))
-        finally:
-            return response
+        except Exception as exc:
+            logger.debug("report_data_payload: connection error (%s)", type(exc))
+        return response
 
     def _validate_options(self):
         """

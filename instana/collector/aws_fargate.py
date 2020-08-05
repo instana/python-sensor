@@ -1,8 +1,9 @@
 import os
 import json
-import requests
 import threading
 from time import time
+import requests
+
 from ..log import logger
 from .base import BaseCollector
 from ..util import DictionaryOfStan, every, validate_url
@@ -30,7 +31,7 @@ class AWSFargateCollector(BaseCollector):
 
         if self.ecmu == "" or validate_url(self.ecmu) is False:
             logger.warning("AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
-                        "Instana will not be able to monitor this environment")
+                           "Instana will not be able to monitor this environment")
             self.ready_to_start = False
 
         self.ecmu_url_root = self.ecmu
@@ -173,7 +174,7 @@ class AWSFargateCollector(BaseCollector):
 
             if with_snapshot is True:
                 self.snapshot_data_last_sent = int(time())
-        except:
+        except Exception:
             logger.debug("collect_snapshot error", exc_info=True)
         return payload
 
@@ -184,11 +185,11 @@ class AWSFargateCollector(BaseCollector):
         if self.root_metadata is not None:
             labels = self.root_metadata.get("Labels", None)
             if labels is not None:
-                taskArn = labels.get("com.amazonaws.ecs.task-arn", "")
+                task_arn = labels.get("com.amazonaws.ecs.task-arn", "")
 
             container_name = self.root_metadata.get("Name", "")
 
-            self._fq_arn = taskArn + "::" + container_name
+            self._fq_arn = task_arn + "::" + container_name
             return self._fq_arn
         else:
             return "Missing ECMU metadata"

@@ -1,9 +1,6 @@
 from __future__ import absolute_import
 
 import os
-import sys
-import json
-import pytest
 import unittest
 
 from instana.tracer import InstanaTracer
@@ -59,7 +56,7 @@ class TestFargate(unittest.TestCase):
     def test_has_options(self):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'options'))
-        self.assertTrue(type(self.agent.options) is AWSFargateOptions)
+        self.assertTrue(isinstance(self.agent.options, AWSFargateOptions))
 
     def test_invalid_options(self):
         # None of the required env vars are available...
@@ -71,7 +68,7 @@ class TestFargate(unittest.TestCase):
             os.environ.pop("INSTANA_AGENT_KEY")
 
         agent = AWSFargateAgent()
-        self.assertFalse(agent._can_send)
+        self.assertFalse(agent.can_send())
         self.assertIsNone(agent.collector)
 
     def test_default_secrets(self):
@@ -104,15 +101,15 @@ class TestFargate(unittest.TestCase):
 
         payload = self.agent.collector.prepare_payload()
 
-        assert(payload)
+        assert payload
         host_plugin = None
         plugins = payload['metrics']['plugins']
         for plugin in plugins:
             if plugin["name"] == "com.instana.plugin.host":
                 host_plugin = plugin
-        assert(host_plugin)
-        assert(host_plugin["entityId"] == "h")
-        assert(host_plugin["data"]["tags"] == ['love', 'war', 'games'])
+        assert host_plugin
+        assert host_plugin["entityId"] == "h"
+        assert host_plugin["data"]["tags"] == ['love', 'war', 'games']
 
     def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()
@@ -129,4 +126,4 @@ class TestFargate(unittest.TestCase):
     def test_custom_proxy(self):
         os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
         self.create_agent_and_setup_tracer()
-        assert(self.agent.options.endpoint_proxy == { 'https': "http://myproxy.123" })
+        assert self.agent.options.endpoint_proxy == {'https': "http://myproxy.123"}

@@ -1,13 +1,10 @@
 from __future__ import absolute_import
 
 import os
-import sys
 import json
-import pytest
 import unittest
 
 from instana.tracer import InstanaTracer
-from instana.options import AWSFargateOptions
 from instana.recorder import AWSFargateRecorder
 from instana.agent.aws_fargate import AWSFargateAgent
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
@@ -73,12 +70,12 @@ class TestFargate(unittest.TestCase):
 
         assert(len(payload.keys()) == 2)
         assert('spans' in payload)
-        assert(type(payload['spans']) is list)
+        assert(isinstance(payload['spans'], list))
         assert(len(payload['spans']) == 0)
         assert('metrics' in payload)
         assert(len(payload['metrics'].keys()) == 1)
         assert('plugins' in payload['metrics'])
-        assert(type(payload['metrics']['plugins']) is list)
+        assert(isinstance(payload['metrics']['plugins'], list))
         assert(len(payload['metrics']['plugins']) == 7)
 
         plugins = payload['metrics']['plugins']
@@ -101,7 +98,7 @@ class TestFargate(unittest.TestCase):
         assert(payload)
 
         plugins = payload['metrics']['plugins']
-        assert(type(plugins) is list)
+        assert(isinstance(plugins, list))
 
         hardware_plugin = None
         for plugin in plugins:

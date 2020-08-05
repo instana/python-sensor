@@ -22,10 +22,9 @@ class AWSLambdaCollector(BaseCollector):
             plugin_data["name"] = "com.instana.plugin.aws.lambda"
             plugin_data["entityId"] = self.get_fq_arn()
             self.snapshot_data["plugins"] = [plugin_data]
-        except:
+        except Exception:
             logger.debug("collect_snapshot error", exc_info=True)
-        finally:
-            return self.snapshot_data
+        return self.snapshot_data
 
     def should_send_snapshot_data(self):
         return self.snapshot_data and self.snapshot_data_sent is False

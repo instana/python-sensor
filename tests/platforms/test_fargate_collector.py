@@ -56,13 +56,13 @@ class TestFargate(unittest.TestCase):
         set_tracer(self.tracer)
 
         # Manually set the ECS Metadata API results on the collector
-        with open(self.pwd + '/../data/fargate/root_metadata.json', 'r') as json_file:
+        with open(self.pwd + '/../data/fargate/1.3.0/root_metadata.json', 'r') as json_file:
             self.agent.collector.root_metadata = json.load(json_file)
-        with open(self.pwd + '/../data/fargate/task_metadata.json', 'r') as json_file:
+        with open(self.pwd + '/../data/fargate/1.3.0/task_metadata.json', 'r') as json_file:
             self.agent.collector.task_metadata = json.load(json_file)
-        with open(self.pwd + '/../data/fargate/stats_metadata.json', 'r') as json_file:
+        with open(self.pwd + '/../data/fargate/1.3.0/stats_metadata.json', 'r') as json_file:
             self.agent.collector.stats_metadata = json.load(json_file)
-        with open(self.pwd + '/../data/fargate/task_stats_metadata.json', 'r') as json_file:
+        with open(self.pwd + '/../data/fargate/1.3.0/task_stats_metadata.json', 'r') as json_file:
             self.agent.collector.task_stats_metadata = json.load(json_file)
 
     def test_prepare_payload(self):

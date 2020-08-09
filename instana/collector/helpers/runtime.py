@@ -11,10 +11,11 @@ from pkg_resources import DistributionNotFound, get_distribution
 from instana.log import logger
 from instana.util import DictionaryOfStan, determine_service_name
 
-from ..base import BaseHelper
+from .base import BaseHelper
 
 
 class RuntimeHelper(BaseHelper):
+    """ Helper class to collect snapshot and metrics for this Python runtime """
     def __init__(self, collector):
         super(RuntimeHelper, self).__init__(collector)
         self.last_collect = None

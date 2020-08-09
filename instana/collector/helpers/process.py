@@ -3,7 +3,7 @@ import pwd
 import grp
 from instana.log import logger
 from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret
-from ..base import BaseHelper
+from .base import BaseHelper
 
 
 class ProcessHelper(BaseHelper):

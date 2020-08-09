@@ -12,11 +12,11 @@ from .base import BaseCollector
 from ..util import DictionaryOfStan, every, validate_url
 from ..singletons import env_is_test
 
+from .helpers.process import ProcessHelper
+from .helpers.runtime import RuntimeHelper
 from .helpers.fargate.host import HostHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
-from .helpers.process.helper import ProcessHelper
-from .helpers.runtime.helper import RuntimeHelper
 from .helpers.fargate.hardware import HardwareHelper
 from .helpers.fargate.container import ContainerHelper
 

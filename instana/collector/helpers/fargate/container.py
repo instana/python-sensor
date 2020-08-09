@@ -1,10 +1,12 @@
+""" Module to handle the collection of container metrics in AWS Fargate """
 from ....log import logger
 from ....util import DictionaryOfStan
 from ..base import BaseHelper
 
 
 class ContainerHelper(BaseHelper):
-    def collect_metrics(self, with_snapshot = False):
+    """ This class acts as a helper to collect container snapshot and metric information """
+    def collect_metrics(self, with_snapshot=False):
         """
         Collect and return metrics (and optionally snapshot data) for every container in this task
         @return: list - with one or more plugin entities
@@ -19,10 +21,8 @@ class ContainerHelper(BaseHelper):
                     try:
                         labels = container.get("Labels", {})
                         name = container.get("Name", "")
-                        taskArn = labels.get("com.amazonaws.ecs.task-arn", "")
-
-                        # "entityId": $taskARN + "::" + $containerName
-                        plugin_data["entityId"] = "%s::%s" % (taskArn, name)
+                        task_arn = labels.get("com.amazonaws.ecs.task-arn", "")
+                        plugin_data["entityId"] = "%s::%s" % (task_arn, name)
 
                         plugin_data["data"] = DictionaryOfStan()
                         if self.collector.root_metadata["Name"] == name:
@@ -46,7 +46,7 @@ class ContainerHelper(BaseHelper):
                         limits = container.get("Limits", {})
                         plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
                         plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
-                    except:
+                    except Exception:
                         logger.debug("_collect_container_snapshots: ", exc_info=True)
                     finally:
                         plugins.append(plugin_data)

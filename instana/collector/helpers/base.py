@@ -1,7 +1,15 @@
+""" 
+Base class for the various helpers that can be used by Collectors.  Helpers assist
+in the data collection for various entities such as host, hardware, AWS Task, ec2,
+memory, cpu, docker etc etc..
+"""
 from ...log import logger
 
 
 class BaseHelper(object):
+    """
+    Base class for all helpers.  Descendants must override and implement `self.collect_metrics`.
+    """
     def __init__(self, collector):
         self.collector = collector
 

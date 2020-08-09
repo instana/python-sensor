@@ -1,10 +1,12 @@
+""" Module to help in collecting data for the host plugin in AWS Fargate """
 from ....log import logger
 from ..base import BaseHelper
 from ....util import DictionaryOfStan
 
 
 class HostHelper(BaseHelper):
-    def collect_metrics(self, with_snapshot = False):
+    """ This class acts as a helper to collect data for the host plugin """
+    def collect_metrics(self, with_snapshot=False):
         """
         # This helper only sends snapshot data related to the INSTANA_TAGS environment variable
         @return: list
@@ -20,7 +22,7 @@ class HostHelper(BaseHelper):
             plugin_data["data"] = DictionaryOfStan()
             plugin_data["data"]["tags"] = self.collector.agent.options.tags
             plugins.append(plugin_data)
-        except:
+        except Exception:
             logger.debug("HostHelper.collect_metrics: ", exc_info=True)
         finally:
             plugins.append(plugin_data)

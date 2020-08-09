@@ -8,9 +8,10 @@ import threading
 from types import ModuleType
 from pkg_resources import DistributionNotFound, get_distribution
 
-from ..base import BaseHelper
 from instana.log import logger
 from instana.util import DictionaryOfStan, determine_service_name
+
+from ..base import BaseHelper
 
 
 class RuntimeHelper(BaseHelper):
@@ -20,7 +21,7 @@ class RuntimeHelper(BaseHelper):
         self.last_usage = None
         self.last_metrics = None
 
-    def collect_metrics(self, with_snapshot = False):
+    def collect_metrics(self, with_snapshot=False):
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.python"
@@ -41,7 +42,7 @@ class RuntimeHelper(BaseHelper):
             plugin_data["data"]["snapshot"] = snapshot_payload
 
             self.last_metrics = metrics_payload
-        except:
+        except Exception:
             logger.debug("_collect_runtime_snapshot: ", exc_info=True)
         return [plugin_data]
 
@@ -54,10 +55,8 @@ class RuntimeHelper(BaseHelper):
                 c = list(gc_.get_count())
                 th = list(gc_.get_threshold())
                 g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
-                       collect1=c[1] if not self.last_collect else c[
-                                                                       1] - self.last_collect[1],
-                       collect2=c[2] if not self.last_collect else c[
-                                                                       2] - self.last_collect[2],
+                       collect1=c[1] if not self.last_collect else c[1] - self.last_collect[1],
+                       collect2=c[2] if not self.last_collect else c[2] - self.last_collect[2],
                        threshold0=th[0],
                        threshold1=th[1],
                        threshold2=th[2])
@@ -65,7 +64,7 @@ class RuntimeHelper(BaseHelper):
             thr = threading.enumerate()
             daemon_threads = [tr.daemon is True for tr in thr].count(True)
             alive_threads = [tr.daemon is False for tr in thr].count(True)
-            dummy_threads = [type(tr) is threading._DummyThread for tr in thr].count(True)
+            dummy_threads = [isinstance(tr, threading._DummyThread) for tr in thr].count(True)
 
             m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
                         ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
@@ -146,7 +145,7 @@ class RuntimeHelper(BaseHelper):
                     result = value()
                 except:
                     result = 'Unknown'
-            elif type(value) is ModuleType:
+            elif isinstance(value, ModuleType):
                 result = value
             else:
                 result = value
@@ -207,18 +206,3 @@ class Metrics(object):
 
     def to_dict(self):
         return self.__dict__
-
-
-class EntityData(object):
-    pid = 0
-    snapshot = None
-    metrics = None
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-    def to_dict(self):
-        return self.__dict__
-
-
-

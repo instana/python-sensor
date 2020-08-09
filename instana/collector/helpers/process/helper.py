@@ -1,13 +1,13 @@
 import os
 import pwd
 import grp
-from ..base import BaseHelper
 from instana.log import logger
 from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret
+from ..base import BaseHelper
 
 
 class ProcessHelper(BaseHelper):
-    def collect_metrics(self, with_snapshot = False):
+    def collect_metrics(self, with_snapshot=False):
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.process"
@@ -35,7 +35,7 @@ class ProcessHelper(BaseHelper):
                 egid = os.getegid()
                 plugin_data["data"]["user"] = pwd.getpwuid(euid)
                 plugin_data["data"]["group"] = grp.getgrgid(egid).gr_name
-            except:
+            except Exception:
                 logger.debug("euid/egid detection: ", exc_info=True)
 
             plugin_data["data"]["start"] = 1 # FIXME
@@ -45,6 +45,6 @@ class ProcessHelper(BaseHelper):
             # plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME: the pid in the root namespace (very optional)
             if self.collector.task_metadata is not None:
                 plugin_data["data"]["com.instana.plugin.host.name"] = self.collector.task_metadata.get("TaskArn")
-        except:
+        except Exception:
             logger.debug("_collect_process_snapshot: ", exc_info=True)
         return [plugin_data]

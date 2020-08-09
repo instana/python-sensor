@@ -1,10 +1,12 @@
+""" Module to assist in the data collection about the AWS Fargate task that is running this process """
 from ....log import logger
 from ..base import BaseHelper
 from ....util import DictionaryOfStan
 
 
 class TaskHelper(BaseHelper):
-    def collect_metrics(self, with_snapshot = False):
+    """ This class helps in collecting data about the AWS Fargate task that is running """
+    def collect_metrics(self, with_snapshot=False):
         """
         Collect and return metrics data (and optionally snapshot data) for this task
         @return: list - with one plugin entity
@@ -29,10 +31,10 @@ class TaskHelper(BaseHelper):
                     limits = self.collector.task_metadata.get("Limits", {})
                     plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
                     plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
-                except:
+                except Exception:
                     logger.debug("collect_task_metrics: ", exc_info=True)
                 finally:
                     plugins.append(plugin_data)
-        except:
+        except Exception:
             logger.debug("collect_task_metrics: ", exc_info=True)
         return plugins

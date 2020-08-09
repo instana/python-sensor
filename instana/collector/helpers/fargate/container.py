@@ -19,7 +19,7 @@ class ContainerHelper(BaseHelper):
                     try:
                         labels = container.get("Labels", {})
                         name = container.get("Name", "")
-                        taskArn = labels.get("com.amazonaws.ecs.container-name", "")
+                        taskArn = labels.get("com.amazonaws.ecs.task-arn", "")
 
                         # "entityId": $taskARN + "::" + $containerName
                         plugin_data["entityId"] = "%s::%s" % (taskArn, name)
@@ -50,6 +50,6 @@ class ContainerHelper(BaseHelper):
                         logger.debug("_collect_container_snapshots: ", exc_info=True)
                     finally:
                         plugins.append(plugin_data)
-        except:
+        except Exception:
             logger.debug("collect_container_metrics: ", exc_info=True)
         return plugins

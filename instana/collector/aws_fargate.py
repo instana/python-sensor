@@ -1,3 +1,6 @@
+"""
+Snapshot & metrics collection for AWS Fargate
+"""
 import os
 import json
 import threading
@@ -19,6 +22,7 @@ from .helpers.fargate.container import ContainerHelper
 
 
 class AWSFargateCollector(BaseCollector):
+    """ Collector for AWS Fargate """
     def __init__(self, agent):
         super(AWSFargateCollector, self).__init__(agent)
         logger.debug("Loading AWS Fargate Collector")
@@ -124,11 +128,13 @@ class AWSFargateCollector(BaseCollector):
         lock_acquired = self.ecmu_lock.acquire(False)
         if lock_acquired:
             try:
+                # FIXME: Only get once? or every 5 mins?
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/
                 json_body = self.http_client.get(self.ecmu_url_root, timeout=3).content
                 self.root_metadata = json.loads(json_body)
 
+                # FIXME: Only get once? or every 5 mins?
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/task
                 json_body = self.http_client.get(self.ecmu_url_task, timeout=3).content

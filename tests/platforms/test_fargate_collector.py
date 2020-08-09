@@ -10,6 +10,17 @@ from instana.agent.aws_fargate import AWSFargateAgent
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 
 
+def get_docker_plugin(plugins):
+    """
+    Given a list of plugins, find and return the docker plugin that we're interested in from the mock data
+    """
+    docker_plugin = None
+    for plugin in plugins:
+        if plugin["name"] == "com.instana.plugin.docker" and plugin["entityId"] == "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82::docker-ssh-aws-fargate":
+            docker_plugin = plugin
+    return docker_plugin
+
+
 class TestFargate(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         super(TestFargate, self).__init__(methodName)
@@ -62,7 +73,7 @@ class TestFargate(unittest.TestCase):
         with open(self.pwd + '/../data/fargate/1.3.0/task_stats_metadata.json', 'r') as json_file:
             self.agent.collector.task_stats_metadata = json.load(json_file)
 
-    def test_prepare_payload(self):
+    def test_prepare_payload_basics(self):
         self.create_agent_and_setup_tracer()
 
         payload = self.agent.collector.prepare_payload()
@@ -80,9 +91,106 @@ class TestFargate(unittest.TestCase):
 
         plugins = payload['metrics']['plugins']
         for plugin in plugins:
+            # print("%s - %s" % (plugin["name"], plugin["entityId"]))
             assert('name' in plugin)
             assert('entityId' in plugin)
             assert('data' in plugin)
+
+    def test_docker_plugin_snapshot_data(self):
+        self.create_agent_and_setup_tracer()
+
+        first_payload = self.agent.collector.prepare_payload()
+        second_payload = self.agent.collector.prepare_payload()
+
+        assert(first_payload)
+        assert(second_payload)
+
+        plugin_first_report = get_docker_plugin(first_payload['metrics']['plugins'])
+        plugin_second_report = get_docker_plugin(second_payload['metrics']['plugins'])
+
+        assert(plugin_first_report)
+        assert("data" in plugin_first_report)
+
+        # First report should have snapshot data
+        data = plugin_first_report["data"]
+        assert(data["Id"] == "63dc7ac9f3130bba35c785ed90ff12aad82087b5c5a0a45a922c45a64128eb45")
+        assert(data["Created"] == "2020-07-27T12:14:12.583114444Z")
+        assert(data["Started"] == "2020-07-27T12:14:13.545410186Z")
+        assert(data["Image"] == "410797082306.dkr.ecr.us-east-2.amazonaws.com/fargate-docker-ssh:latest")
+        assert(data["Labels"] == {'com.amazonaws.ecs.cluster': 'arn:aws:ecs:us-east-2:410797082306:cluster/lombardo-ssh-cluster', 'com.amazonaws.ecs.container-name': 'docker-ssh-aws-fargate', 'com.amazonaws.ecs.task-arn': 'arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82', 'com.amazonaws.ecs.task-definition-family': 'docker-ssh-aws-fargate', 'com.amazonaws.ecs.task-definition-version': '1'})
+        assert(data["Ports"] is None)
+
+        # Second report should have no snapshot data
+        assert(plugin_second_report)
+        assert("data" in plugin_second_report)
+        data = plugin_second_report["data"]
+        assert("Id" not in data)
+        assert("Created" not in data)
+        assert("Started" not in data)
+        assert("Image" not in data)
+        assert("Labels" not in data)
+        assert("Ports" not in data)
+
+    def test_docker_plugin_metrics(self):
+        self.create_agent_and_setup_tracer()
+
+        first_payload = self.agent.collector.prepare_payload()
+        second_payload = self.agent.collector.prepare_payload()
+
+        assert(first_payload)
+        assert(second_payload)
+
+        plugin_first_report = get_docker_plugin(first_payload['metrics']['plugins'])
+        assert(plugin_first_report)
+        assert("data" in plugin_first_report)
+
+        plugin_second_report = get_docker_plugin(second_payload['metrics']['plugins'])
+        assert(plugin_second_report)
+        assert("data" in plugin_second_report)
+
+        # First report should report all metrics
+        data = plugin_first_report.get("data", None)
+        assert(data)
+
+        # FIXME
+        # network = data.get("network", None)
+        # assert(network)
+        # assert("rx" in network)
+        # assert("tx" in network)
+
+        cpu = data.get("cpu", None)
+        assert(cpu)
+        assert(cpu["total_usage"] == 0.011033210004283327)
+        assert(cpu["user_usage"] == 0.009917614829497682)
+        assert(cpu["system_usage"] == 0.0008900637656376939)
+        assert(cpu["throttling_count"] == 0)
+        assert(cpu["throttling_time"] == 0)
+
+        memory = data.get("memory", None)
+        assert(memory)
+        assert(memory["active_anon"] == 78721024)
+        assert(memory["active_file"] == 18501632)
+        assert(memory["inactive_anon"] == 0)
+        assert(memory["inactive_file"] == 71684096)
+        assert(memory["total_cache"] == 90185728)
+        assert(memory["total_rss"] == 78721024)
+        assert(memory["usage"] == 193769472)
+        assert(memory["max_usage"] == 195305472)
+        assert(memory["limit"] == 536870912)
+
+        blkio = data.get("blkio", None)
+        assert(blkio)
+        assert(blkio["blk_read"] == 0)
+        assert(blkio["blk_write"] == 128352256)
+
+        # Second report should report the delta (in the test case, nothing)
+        data = plugin_second_report["data"]
+        assert("cpu" in data)
+        assert(len(data["cpu"]) == 0)
+        assert("memory" in data)
+        assert(len(data["memory"]) == 0)
+        assert("blkio" in data)
+        assert(len(data["blkio"]) == 0)
 
     def test_no_instana_zone(self):
         self.create_agent_and_setup_tracer()

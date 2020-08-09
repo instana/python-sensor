@@ -7,11 +7,23 @@ from ..base import BaseHelper
 
 
 class ProcessHelper(BaseHelper):
+    """ Helper class to collect metrics for this process """
     def collect_metrics(self, with_snapshot=False):
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.process"
             plugin_data["entityId"] = str(os.getpid())
+
+            # Snapshot
+            if with_snapshot:
+                self._collect_process_snapshot(plugin_data)
+
+        except Exception:
+            logger.debug("ProcessHelper.collect_metrics: ", exc_info=True)
+        return [plugin_data]
+
+    def _collect_process_snapshot(self, plugin_data):
+        try:
             plugin_data["data"] = DictionaryOfStan()
             plugin_data["data"]["pid"] = int(os.getpid())
             env = dict()
@@ -46,5 +58,4 @@ class ProcessHelper(BaseHelper):
             if self.collector.task_metadata is not None:
                 plugin_data["data"]["com.instana.plugin.host.name"] = self.collector.task_metadata.get("TaskArn")
         except Exception:
-            logger.debug("_collect_process_snapshot: ", exc_info=True)
-        return [plugin_data]
+            logger.debug("ProcessHelper._collect_process_snapshot: ", exc_info=True)

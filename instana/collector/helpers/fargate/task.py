@@ -12,6 +12,10 @@ class TaskHelper(BaseHelper):
         @return: list - with one plugin entity
         """
         plugins = []
+
+        if with_snapshot is False:
+            return plugins
+
         try:
             if self.collector.task_metadata is not None:
                 try:

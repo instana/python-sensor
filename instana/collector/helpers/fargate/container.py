@@ -12,6 +12,10 @@ class ContainerHelper(BaseHelper):
         @return: list - with one or more plugin entities
         """
         plugins = []
+
+        if with_snapshot is False:
+            return plugins
+
         try:
             if self.collector.task_metadata is not None:
                 containers = self.collector.task_metadata.get("Containers", [])

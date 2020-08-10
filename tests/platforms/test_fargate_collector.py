@@ -21,9 +21,9 @@ def get_docker_plugin(plugins):
     return docker_plugin
 
 
-class TestFargate(unittest.TestCase):
+class TestFargateCollector(unittest.TestCase):
     def __init__(self, methodName='runTest'):
-        super(TestFargate, self).__init__(methodName)
+        super(TestFargateCollector, self).__init__(methodName)
         self.agent = None
         self.span_recorder = None
         self.tracer = None

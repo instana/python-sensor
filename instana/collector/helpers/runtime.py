@@ -28,6 +28,7 @@ class RuntimeHelper(BaseHelper):
             plugin_data["name"] = "com.instana.plugin.python"
             plugin_data["entityId"] = str(os.getpid())
             plugin_data["data"] = DictionaryOfStan()
+            plugin_data["data"]["pid"] = str(os.getpid())
 
             snapshot_payload = None
             metrics_payload = self.gather_metrics()
@@ -35,12 +36,11 @@ class RuntimeHelper(BaseHelper):
             if with_snapshot is True:
                 snapshot_payload = self.gather_snapshot()
                 metrics_payload = copy.deepcopy(metrics_payload).delta_data(None)
+                plugin_data["data"]["snapshot"] = snapshot_payload
             else:
                 metrics_payload = copy.deepcopy(metrics_payload).delta_data(self.last_metrics)
 
-            plugin_data["data"]["pid"] = str(os.getpid())
             plugin_data["data"]["metrics"] = metrics_payload
-            plugin_data["data"]["snapshot"] = snapshot_payload
 
             self.last_metrics = metrics_payload
         except Exception:
@@ -105,7 +105,7 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['f'] = platform.python_implementation() # flavor
             snapshot_payload['a'] = platform.architecture()[0] # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
-            snapshot_payload['djmw'] = None # FIXME
+            #snapshot_payload['djmw'] = None # FIXME
         except Exception:
             logger.debug("collect_snapshot: ", exc_info=True)
         return snapshot_payload

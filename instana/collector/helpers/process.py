@@ -35,7 +35,10 @@ class ProcessHelper(BaseHelper):
                 else:
                     env[key] = os.environ[key]
             plugin_data["data"]["env"] = env
-            plugin_data["data"]["exec"] = os.readlink("/proc/self/exe")
+            if os.path.isfile("/proc/self/exe"):
+                plugin_data["data"]["exec"] = os.readlink("/proc/self/exe")
+            else:
+                logger.debug("Can't access /proc/self/exe...")
 
             cmdline = get_proc_cmdline()
             if len(cmdline) > 1:

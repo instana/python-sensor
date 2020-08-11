@@ -69,7 +69,7 @@ setup(name='instana',
       extras_require={
           'test-gevent': [
               'flask>=0.12.2',
-              'gevent>=1.4.0'
+              'gevent>=1.4.0',
               'mock>=2.0.0',
               'nose>=1.0',
               'pyramid>=1.2',

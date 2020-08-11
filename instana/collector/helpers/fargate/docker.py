@@ -120,17 +120,17 @@ class DockerHelper(BaseHelper):
                 system_cpu_usage = cpu_stats.get("system_cpu_usage", 0)
 
                 metric_value = (cpu_usage["total_usage"] / system_cpu_usage) * online_cpus
-                self.apply_delta(metric_value,
+                self.apply_delta(round(metric_value, 6),
                                  self.previous[docker_id]["cpu"],
                                  plugin_data["data"]["cpu"], "total_usage")
 
                 metric_value = (cpu_usage["usage_in_usermode"] / system_cpu_usage) * online_cpus
-                self.apply_delta(metric_value,
+                self.apply_delta(round(metric_value, 6),
                                  self.previous[docker_id]["cpu"],
                                  plugin_data["data"]["cpu"], "user_usage")
 
                 metric_value = (cpu_usage["usage_in_kernelmode"] / system_cpu_usage) * online_cpus
-                self.apply_delta(metric_value,
+                self.apply_delta(round(metric_value, 6),
                                  self.previous[docker_id]["cpu"],
                                  plugin_data["data"]["cpu"], "system_usage")
 

@@ -164,9 +164,9 @@ class TestFargateCollector(unittest.TestCase):
 
         cpu = data.get("cpu", None)
         assert(cpu)
-        assert(cpu["total_usage"] == 0.011033210004283327)
-        assert(cpu["user_usage"] == 0.009917614829497682)
-        assert(cpu["system_usage"] == 0.0008900637656376939)
+        assert(cpu["total_usage"] == 0.011033)
+        assert(cpu["user_usage"] == 0.009918)
+        assert(cpu["system_usage"] == 0.00089)
         assert(cpu["throttling_count"] == 0)
         assert(cpu["throttling_time"] == 0)
 

@@ -43,6 +43,10 @@ class AWSFargateCollector(BaseCollector):
 
         # Lock used synchronize data collection
         self.ecmu_lock = threading.Lock()
+        # Timestamp in seconds of the last time we fetched all ECMU data
+        self.last_ecmu_full_fetch = 0
+        # How often to do a full fetch of ECMU data
+        self.ecmu_full_fetch_interval = 605
 
         # How often to report data
         self.report_interval = 1
@@ -121,29 +125,32 @@ class AWSFargateCollector(BaseCollector):
             # For test, we are using mock ECS metadata
             return
 
-        lock_acquired = self.ecmu_lock.acquire(False)
-        if lock_acquired:
+        self.ecmu_lock.acquire(False)
+        if self.ecmu_lock.locked():
             try:
-                # FIXME: Only get once? or every 5 mins?
-                # Response from the last call to
-                # ${ECS_CONTAINER_METADATA_URI}/
-                json_body = self.http_client.get(self.ecmu_url_root, timeout=3).content
-                self.root_metadata = json.loads(json_body)
+                delta = int(time()) - self.last_ecmu_full_fetch
+                if delta > self.ecmu_full_fetch_interval:
+                    # Refetch the ECMU snapshot data
+                    self.last_ecmu_full_fetch = int(time())
 
-                # FIXME: Only get once? or every 5 mins?
-                # Response from the last call to
-                # ${ECS_CONTAINER_METADATA_URI}/task
-                json_body = self.http_client.get(self.ecmu_url_task, timeout=3).content
-                self.task_metadata = json.loads(json_body)
+                    # Response from the last call to
+                    # ${ECS_CONTAINER_METADATA_URI}/
+                    json_body = self.http_client.get(self.ecmu_url_root, timeout=1).content
+                    self.root_metadata = json.loads(json_body)
+
+                    # Response from the last call to
+                    # ${ECS_CONTAINER_METADATA_URI}/task
+                    json_body = self.http_client.get(self.ecmu_url_task, timeout=1).content
+                    self.task_metadata = json.loads(json_body)
 
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/stats
-                json_body = self.http_client.get(self.ecmu_url_stats, timeout=3).content
+                json_body = self.http_client.get(self.ecmu_url_stats, timeout=2).content
                 self.stats_metadata = json.loads(json_body)
 
                 # Response from the last call to
                 # ${ECS_CONTAINER_METADATA_URI}/task/stats
-                json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=3).content
+                json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=1).content
                 self.task_stats_metadata = json.loads(json_body)
             except Exception:
                 logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)

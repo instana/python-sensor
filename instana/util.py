@@ -110,7 +110,7 @@ def to_pretty_json(obj):
             else:
                 return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
 
-        return json.dumps(obj, default=extractor, sort_keys=True, indent=4, separators=(',', ':')).encode()
+        return json.dumps(obj, default=extractor, sort_keys=True, indent=4, separators=(',', ':'))
     except Exception:
         logger.debug("to_pretty_json non-fatal encoding issue: ", exc_info=True)
 

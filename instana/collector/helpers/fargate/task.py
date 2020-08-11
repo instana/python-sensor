@@ -1,7 +1,7 @@
 """ Module to assist in the data collection about the AWS Fargate task that is running this process """
 from ....log import logger
 from ..base import BaseHelper
-from ....util import DictionaryOfStan
+from ....util import DictionaryOfStan, to_pretty_json
 
 
 class TaskHelper(BaseHelper):
@@ -41,6 +41,8 @@ class TaskHelper(BaseHelper):
 
                     if self.collector.agent.options.tags is not None:
                         plugin_data["data"]["tags"] = self.collector.agent.options.tags
+
+                    #logger.debug(to_pretty_json(plugin_data))
                 except Exception:
                     logger.debug("collect_task_metrics: ", exc_info=True)
                 finally:

@@ -9,7 +9,7 @@ from types import ModuleType
 from pkg_resources import DistributionNotFound, get_distribution
 
 from instana.log import logger
-from instana.util import DictionaryOfStan, determine_service_name
+from instana.util import DictionaryOfStan, determine_service_name, to_pretty_json
 
 from .base import BaseHelper
 
@@ -43,6 +43,7 @@ class RuntimeHelper(BaseHelper):
             plugin_data["data"]["metrics"] = metrics_payload
 
             self.last_metrics = metrics_payload
+            #logger.debug(to_pretty_json(plugin_data))
         except Exception:
             logger.debug("_collect_runtime_snapshot: ", exc_info=True)
         return [plugin_data]

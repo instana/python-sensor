@@ -1,7 +1,7 @@
 """ Module to handle the collection of Docker metrics in AWS Fargate """
 from ....log import logger
 from ..base import BaseHelper
-from ....util import DictionaryOfStan
+from ....util import DictionaryOfStan, to_pretty_json
 
 
 class DockerHelper(BaseHelper):
@@ -41,6 +41,7 @@ class DockerHelper(BaseHelper):
                         self._collect_container_snapshot(plugin_data, container)
 
                     plugins.append(plugin_data)
+                    #logger.debug(to_pretty_json(plugin_data))
         except Exception:
             logger.debug("DockerHelper.collect_metrics: ", exc_info=True)
         return plugins

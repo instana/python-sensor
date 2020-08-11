@@ -1,6 +1,6 @@
 """ Module to handle the collection of container metrics in AWS Fargate """
 from ....log import logger
-from ....util import DictionaryOfStan
+from ....util import DictionaryOfStan, to_pretty_json
 from ..base import BaseHelper
 
 
@@ -50,6 +50,7 @@ class ContainerHelper(BaseHelper):
                         limits = container.get("Limits", {})
                         plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
                         plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
+                        #logger.debug(to_pretty_json(plugin_data))
                     except Exception:
                         logger.debug("_collect_container_snapshots: ", exc_info=True)
                     finally:

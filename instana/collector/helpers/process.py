@@ -2,7 +2,7 @@ import os
 import pwd
 import grp
 from instana.log import logger
-from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret
+from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret, to_pretty_json
 from .base import BaseHelper
 
 
@@ -18,6 +18,7 @@ class ProcessHelper(BaseHelper):
             if with_snapshot:
                 self._collect_process_snapshot(plugin_data)
 
+            #logger.debug(to_pretty_json(plugin_data))
         except Exception:
             logger.debug("ProcessHelper.collect_metrics: ", exc_info=True)
         return [plugin_data]

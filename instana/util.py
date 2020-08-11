@@ -95,6 +95,25 @@ def to_json(obj):
     except Exception:
         logger.debug("to_json non-fatal encoding issue: ", exc_info=True)
 
+def to_pretty_json(obj):
+    """
+    Convert obj to pretty json.  Used mostly in logging/debugging.
+
+    :param obj: the object to serialize to json
+    :return:  json string
+    """
+    try:
+        def extractor(o):
+            if not hasattr(o, '__dict__'):
+                logger.debug("Couldn't serialize non dict type: %s", type(o))
+                return {}
+            else:
+                return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
+
+        return json.dumps(obj, default=extractor, sort_keys=True, indent=4, separators=(',', ':')).encode()
+    except Exception:
+        logger.debug("to_pretty_json non-fatal encoding issue: ", exc_info=True)
+
 
 def get_proc_cmdline(as_string=False):
     """

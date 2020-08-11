@@ -39,6 +39,8 @@ class TestFargateCollector(unittest.TestCase):
 
         if "INSTANA_ZONE" in os.environ:
             os.environ.pop("INSTANA_ZONE")
+        if "INSTANA_TAGS" in os.environ:
+            os.environ.pop("INSTANA_TAGS")
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
@@ -52,6 +54,8 @@ class TestFargateCollector(unittest.TestCase):
             os.environ.pop("INSTANA_AGENT_KEY")
         if "INSTANA_ZONE" in os.environ:
             os.environ.pop("INSTANA_ZONE")
+        if "INSTANA_TAGS" in os.environ:
+            os.environ.pop("INSTANA_TAGS")
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
@@ -208,12 +212,33 @@ class TestFargateCollector(unittest.TestCase):
         plugins = payload['metrics']['plugins']
         assert(isinstance(plugins, list))
 
-        hardware_plugin = None
+        task_plugin = None
         for plugin in plugins:
-            if plugin["name"] == "com.instana.plugin.generic.hardware":
-                hardware_plugin = plugin
+            if plugin["name"] == "com.instana.plugin.aws.ecs.task":
+                task_plugin = plugin
 
-        assert(hardware_plugin)
-        assert("data" in hardware_plugin)
-        assert("availability-zone" in hardware_plugin["data"])
-        assert(hardware_plugin["data"]["availability-zone"] == "YellowDog")
+        assert(task_plugin)
+        assert("data" in task_plugin)
+        assert("instanaZone" in task_plugin["data"])
+        assert(task_plugin["data"]["instanaZone"] == "YellowDog")
+
+    def test_custom_tags(self):
+        os.environ["INSTANA_TAGS"] = "love,war=1,games"
+        self.create_agent_and_setup_tracer()
+        self.assertTrue(hasattr(self.agent.options, 'tags'))
+        self.assertEqual(self.agent.options.tags, {"love": None, "war": "1", "games": None})
+
+        payload = self.agent.collector.prepare_payload()
+
+        assert payload
+        task_plugin = None
+        plugins = payload['metrics']['plugins']
+        for plugin in plugins:
+            if plugin["name"] == "com.instana.plugin.aws.ecs.task":
+                task_plugin = plugin
+        assert task_plugin
+        assert "tags" in task_plugin["data"]
+        tags = task_plugin["data"]["tags"]
+        assert tags["war"] == "1"
+        assert tags["love"] is None
+        assert tags["games"] is None

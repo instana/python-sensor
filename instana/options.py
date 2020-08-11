@@ -93,7 +93,18 @@ class AWSFargateOptions(BaseOptions):
         self.tags = None
         tag_list = os.environ.get("INSTANA_TAGS", None)
         if tag_list is not None:
-            self.tags = tag_list.split(',')
+            try:
+                self.tags = dict()
+                tags = tag_list.split(',')
+                for tag_and_value in tags:
+                    parts = tag_and_value.split('=')
+                    length = len(parts)
+                    if length == 1:
+                        self.tags[parts[0]] = None
+                    elif length == 2:
+                        self.tags[parts[0]] = parts[1]
+            except Exception:
+                logger.debug("Error parsing INSTANA_TAGS env var: %s", tag_list)
 
         self.timeout = os.environ.get("INSTANA_TIMEOUT", 0.5)
         self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)

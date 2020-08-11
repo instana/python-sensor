@@ -14,10 +14,8 @@ from ..singletons import env_is_test
 
 from .helpers.process import ProcessHelper
 from .helpers.runtime import RuntimeHelper
-from .helpers.fargate.host import HostHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
-from .helpers.fargate.hardware import HardwareHelper
 from .helpers.fargate.container import ContainerHelper
 
 
@@ -84,12 +82,10 @@ class AWSFargateCollector(BaseCollector):
         self.helpers = []
 
         # Populate the collection helpers
-        self.helpers.append(HostHelper(self))
         self.helpers.append(TaskHelper(self))
         self.helpers.append(DockerHelper(self))
         self.helpers.append(ProcessHelper(self))
         self.helpers.append(RuntimeHelper(self))
-        self.helpers.append(HardwareHelper(self))
         self.helpers.append(ContainerHelper(self))
 
     def start(self):
@@ -174,6 +170,7 @@ class AWSFargateCollector(BaseCollector):
         with_snapshot = self.should_send_snapshot_data()
         try:
             for helper in self.helpers:
+                # logger.debug("FargateCollector calling %s" % helper)
                 plugins.extend(helper.collect_metrics(with_snapshot))
 
             payload["metrics"]["plugins"] = plugins

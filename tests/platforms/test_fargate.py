@@ -93,24 +93,6 @@ class TestFargate(unittest.TestCase):
         self.assertTrue(hasattr(self.agent.options, 'tags'))
         self.assertIsNone(self.agent.options.tags)
 
-    def test_custom_tags(self):
-        os.environ["INSTANA_TAGS"] = "love,war,games"
-        self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent.options, 'tags'))
-        self.assertEqual(self.agent.options.tags, ["love", "war", "games"])
-
-        payload = self.agent.collector.prepare_payload()
-
-        assert payload
-        host_plugin = None
-        plugins = payload['metrics']['plugins']
-        for plugin in plugins:
-            if plugin["name"] == "com.instana.plugin.host":
-                host_plugin = plugin
-        assert host_plugin
-        assert host_plugin["entityId"] == "h"
-        assert host_plugin["data"]["tags"] == ['love', 'war', 'games']
-
     def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'options'))

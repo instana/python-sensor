@@ -35,6 +35,12 @@ class TaskHelper(BaseHelper):
                     limits = self.collector.task_metadata.get("Limits", {})
                     plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
                     plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
+
+                    if self.collector.agent.options.zone is not None:
+                        plugin_data["data"]["instanaZone"] = self.collector.agent.options.zone
+
+                    if self.collector.agent.options.tags is not None:
+                        plugin_data["data"]["tags"] = self.collector.agent.options.tags
                 except Exception:
                     logger.debug("collect_task_metrics: ", exc_info=True)
                 finally:

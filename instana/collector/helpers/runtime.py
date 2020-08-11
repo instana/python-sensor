@@ -112,39 +112,43 @@ class RuntimeHelper(BaseHelper):
 
     def gather_python_packages(self):
         """ Collect up the list of modules in use """
-        res = {}
+        versions = dict()
         try:
-            m = sys.modules.copy()
+            sys_packages = sys.modules.copy()
 
-            for k in m:
+            for pkg_name in sys_packages:
                 # Don't report submodules (e.g. django.x, django.y, django.z)
                 # Skip modules that begin with underscore
-                if ('.' in k) or k[0] == '_':
+                if ('.' in pkg_name) or pkg_name[0] == '_':
                     continue
-                if m[k]:
+                if sys_packages[pkg_name]:
                     try:
-                        d = m[k].__dict__
-                        if "version" in d and d["version"]:
-                            res[k] = self.jsonable(d["version"])
-                        elif "__version__" in d and d["__version__"]:
-                            res[k] = self.jsonable(d["__version__"])
+                        pkg_info = sys_packages[pkg_name].__dict__
+                        if "version" in pkg_info:
+                            versions[pkg_name] = self.jsonable(pkg_info["version"])
+                        elif "__version__" in pkg_info:
+                            if isinstance(pkg_info["__version__"], str):
+                                versions[pkg_name] = pkg_info["__version__"]
+                            else:
+                                versions[pkg_name] = self.jsonable(pkg_info["__version__"])
                         else:
-                            res[k] = get_distribution(k).version
+                            versions[pkg_name] = get_distribution(pkg_name).version
                     except DistributionNotFound:
                         pass
                     except Exception:
-                        logger.debug("gather_python_packages: could not process module: %s", k)
+                        logger.debug("gather_python_packages: could not process module: %s", pkg_name)
 
         except Exception:
             logger.debug("gather_python_packages", exc_info=True)
-        return res
+        finally:
+            return versions
 
     def jsonable(self, value):
         try:
             if callable(value):
                 try:
                     result = value()
-                except:
+                except Exception:
                     result = 'Unknown'
             elif isinstance(value, ModuleType):
                 result = value

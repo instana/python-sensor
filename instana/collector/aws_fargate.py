@@ -170,7 +170,6 @@ class AWSFargateCollector(BaseCollector):
         with_snapshot = self.should_send_snapshot_data()
         try:
             for helper in self.helpers:
-                # logger.debug("FargateCollector calling %s" % helper)
                 plugins.extend(helper.collect_metrics(with_snapshot))
 
             payload["metrics"]["plugins"] = plugins

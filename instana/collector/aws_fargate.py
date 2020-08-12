@@ -41,8 +41,12 @@ class AWSFargateCollector(BaseCollector):
         self.ecmu_url_stats = self.ecmu + '/stats'
         self.ecmu_url_task_stats = self.ecmu + '/task/stats'
 
-        # Lock used synchronize data collection
+        # In AWS Fargate, there are two threads:
+        # 1. ECS Container Metadata data collection
+        # 2. Payload preparation and data reporting
+        # This lock makes sure that only one is executing at a time.
         self.ecmu_lock = threading.Lock()
+
         # Timestamp in seconds of the last time we fetched all ECMU data
         self.last_ecmu_full_fetch = 0
         # How often to do a full fetch of ECMU data
@@ -173,18 +177,24 @@ class AWSFargateCollector(BaseCollector):
         if not self.span_queue.empty():
             payload["spans"] = self.queued_spans()
 
-        plugins = []
         with_snapshot = self.should_send_snapshot_data()
-        try:
-            for helper in self.helpers:
-                plugins.extend(helper.collect_metrics(with_snapshot))
 
-            payload["metrics"]["plugins"] = plugins
+        self.ecmu_lock.acquire(False)
+        if self.ecmu_lock.locked():
+            try:
+                plugins = []
+                for helper in self.helpers:
+                    plugins.extend(helper.collect_metrics(with_snapshot))
 
-            if with_snapshot is True:
-                self.snapshot_data_last_sent = int(time())
-        except Exception:
-            logger.debug("collect_snapshot error", exc_info=True)
+                payload["metrics"]["plugins"] = plugins
+
+                if with_snapshot is True:
+                    self.snapshot_data_last_sent = int(time())
+            except Exception:
+                logger.debug("collect_snapshot error", exc_info=True)
+            finally:
+                self.ecmu_lock.release()
+
         return payload
 
     def get_fq_arn(self):

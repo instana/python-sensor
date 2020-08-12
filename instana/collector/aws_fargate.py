@@ -67,7 +67,7 @@ class AWSFargateCollector(BaseCollector):
         # Timestamp in seconds of the last time we sent snapshot data
         self.snapshot_data_last_sent = 0
         # How often to report snapshot data (in seconds)
-        self.snapshot_data_interval = 600
+        self.snapshot_data_interval = 300
         self.last_payload = None
 
         # Response from the last call to

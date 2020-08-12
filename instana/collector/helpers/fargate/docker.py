@@ -1,7 +1,7 @@
 """ Module to handle the collection of Docker metrics in AWS Fargate """
 from ....log import logger
 from ..base import BaseHelper
-from ....util import DictionaryOfStan, to_pretty_json
+from ....util import DictionaryOfStan
 
 
 class DockerHelper(BaseHelper):
@@ -34,7 +34,7 @@ class DockerHelper(BaseHelper):
                     plugin_data["data"] = DictionaryOfStan()
 
                     # Metrics
-                    self._collect_container_metrics(plugin_data, docker_id)
+                    self._collect_container_metrics(plugin_data, docker_id, with_snapshot)
 
                     # Snapshot
                     if with_snapshot:
@@ -62,15 +62,15 @@ class DockerHelper(BaseHelper):
         except Exception:
             logger.debug("_collect_container_snapshot: ", exc_info=True)
 
-    def _collect_container_metrics(self, plugin_data, docker_id):
+    def _collect_container_metrics(self, plugin_data, docker_id, with_snapshot):
         container = self.collector.task_stats_metadata.get(docker_id, None)
         if container is not None:
-            self._collect_network_metrics(container, plugin_data, docker_id)
-            self._collect_cpu_metrics(container, plugin_data, docker_id)
-            self._collect_memory_metrics(container, plugin_data, docker_id)
-            self._collect_blkio_metrics(container, plugin_data, docker_id)
+            self._collect_network_metrics(container, plugin_data, docker_id, with_snapshot)
+            self._collect_cpu_metrics(container, plugin_data, docker_id, with_snapshot)
+            self._collect_memory_metrics(container, plugin_data, docker_id, with_snapshot)
+            self._collect_blkio_metrics(container, plugin_data, docker_id, with_snapshot)
 
-    def _collect_network_metrics(self, container, plugin_data, docker_id):
+    def _collect_network_metrics(self, container, plugin_data, docker_id, with_snapshot):
         try:
             networks = container.get("networks", None)
             tx_bytes_total = tx_dropped_total = tx_errors_total = tx_packets_total = 0
@@ -90,26 +90,26 @@ class DockerHelper(BaseHelper):
                         rx_packets_total += networks[key].get("rx_packets", 0)
 
                 self.apply_delta(tx_bytes_total, self.previous[docker_id]["network"]["tx"],
-                                 plugin_data["data"]["tx"], "bytes")
+                                 plugin_data["data"]["tx"], "bytes", with_snapshot)
                 self.apply_delta(tx_dropped_total, self.previous[docker_id]["network"]["tx"],
-                                 plugin_data["data"]["tx"], "dropped")
+                                 plugin_data["data"]["tx"], "dropped", with_snapshot)
                 self.apply_delta(tx_errors_total, self.previous[docker_id]["network"]["tx"],
-                                 plugin_data["data"]["tx"], "errors")
+                                 plugin_data["data"]["tx"], "errors", with_snapshot)
                 self.apply_delta(tx_packets_total, self.previous[docker_id]["network"]["tx"],
-                                 plugin_data["data"]["tx"], "packets")
+                                 plugin_data["data"]["tx"], "packets", with_snapshot)
 
                 self.apply_delta(rx_bytes_total, self.previous[docker_id]["network"]["rx"],
-                                 plugin_data["data"]["rx"], "bytes")
+                                 plugin_data["data"]["rx"], "bytes", with_snapshot)
                 self.apply_delta(rx_dropped_total, self.previous[docker_id]["network"]["rx"],
-                                 plugin_data["data"]["rx"], "dropped")
+                                 plugin_data["data"]["rx"], "dropped", with_snapshot)
                 self.apply_delta(rx_errors_total, self.previous[docker_id]["network"]["rx"],
-                                 plugin_data["data"]["rx"], "errors")
+                                 plugin_data["data"]["rx"], "errors", with_snapshot)
                 self.apply_delta(rx_packets_total, self.previous[docker_id]["network"]["rx"],
-                                 plugin_data["data"]["rx"], "packets")
+                                 plugin_data["data"]["rx"], "packets", with_snapshot)
         except Exception:
             logger.debug("_collect_network_metrics: ", exc_info=True)
 
-    def _collect_cpu_metrics(self, container, plugin_data, docker_id):
+    def _collect_cpu_metrics(self, container, plugin_data, docker_id, with_snapshot):
         try:
             cpu_stats = container.get("cpu_stats", {})
             cpu_usage = cpu_stats.get("cpu_usage", None)
@@ -122,54 +122,57 @@ class DockerHelper(BaseHelper):
                 metric_value = (cpu_usage["total_usage"] / system_cpu_usage) * online_cpus
                 self.apply_delta(round(metric_value, 6),
                                  self.previous[docker_id]["cpu"],
-                                 plugin_data["data"]["cpu"], "total_usage")
+                                 plugin_data["data"]["cpu"], "total_usage", with_snapshot)
 
                 metric_value = (cpu_usage["usage_in_usermode"] / system_cpu_usage) * online_cpus
                 self.apply_delta(round(metric_value, 6),
                                  self.previous[docker_id]["cpu"],
-                                 plugin_data["data"]["cpu"], "user_usage")
+                                 plugin_data["data"]["cpu"], "user_usage", with_snapshot)
 
                 metric_value = (cpu_usage["usage_in_kernelmode"] / system_cpu_usage) * online_cpus
                 self.apply_delta(round(metric_value, 6),
                                  self.previous[docker_id]["cpu"],
-                                 plugin_data["data"]["cpu"], "system_usage")
+                                 plugin_data["data"]["cpu"], "system_usage", with_snapshot)
 
             if throttling_data is not None:
                 self.apply_delta(throttling_data,
                                  self.previous[docker_id]["cpu"],
-                                 plugin_data["data"]["cpu"], ("periods", "throttling_count"))
+                                 plugin_data["data"]["cpu"], ("periods", "throttling_count"), with_snapshot)
                 self.apply_delta(throttling_data,
                                  self.previous[docker_id]["cpu"],
-                                 plugin_data["data"]["cpu"], ("throttled_time", "throttling_time"))
+                                 plugin_data["data"]["cpu"], ("throttled_time", "throttling_time"), with_snapshot)
         except Exception:
             logger.debug("_collect_cpu_metrics: ", exc_info=True)
 
-    def _collect_memory_metrics(self, container, plugin_data, docker_id):
+    def _collect_memory_metrics(self, container, plugin_data, docker_id, with_snapshot):
         try:
             memory = container.get("memory_stats", {})
             memory_stats = memory.get("stats", None)
 
-            self.apply_delta(memory, self.previous[docker_id]["memory"], plugin_data["data"]["memory"], "usage")
-            self.apply_delta(memory, self.previous[docker_id]["memory"], plugin_data["data"]["memory"], "max_usage")
-            self.apply_delta(memory, self.previous[docker_id]["memory"], plugin_data["data"]["memory"], "limit")
+            self.apply_delta(memory, self.previous[docker_id]["memory"],
+                             plugin_data["data"]["memory"], "usage", with_snapshot)
+            self.apply_delta(memory, self.previous[docker_id]["memory"],
+                             plugin_data["data"]["memory"], "max_usage", with_snapshot)
+            self.apply_delta(memory, self.previous[docker_id]["memory"],
+                             plugin_data["data"]["memory"], "limit", with_snapshot)
 
             if memory_stats is not None:
                 self.apply_delta(memory_stats, self.previous[docker_id]["memory"],
-                                 plugin_data["data"]["memory"], "active_anon")
+                                 plugin_data["data"]["memory"], "active_anon", with_snapshot)
                 self.apply_delta(memory_stats, self.previous[docker_id]["memory"],
-                                 plugin_data["data"]["memory"], "active_file")
+                                 plugin_data["data"]["memory"], "active_file", with_snapshot)
                 self.apply_delta(memory_stats, self.previous[docker_id]["memory"],
-                                 plugin_data["data"]["memory"], "inactive_anon")
+                                 plugin_data["data"]["memory"], "inactive_anon", with_snapshot)
                 self.apply_delta(memory_stats, self.previous[docker_id]["memory"],
-                                 plugin_data["data"]["memory"], "inactive_file")
+                                 plugin_data["data"]["memory"], "inactive_file", with_snapshot)
                 self.apply_delta(memory_stats, self.previous[docker_id]["memory"],
-                                 plugin_data["data"]["memory"], "total_cache")
+                                 plugin_data["data"]["memory"], "total_cache", with_snapshot)
                 self.apply_delta(memory_stats, self.previous[docker_id]["memory"],
-                                 plugin_data["data"]["memory"], "total_rss")
+                                 plugin_data["data"]["memory"], "total_rss", with_snapshot)
         except Exception:
             logger.debug("_collect_memory_metrics: ", exc_info=True)
 
-    def _collect_blkio_metrics(self, container, plugin_data, docker_id):
+    def _collect_blkio_metrics(self, container, plugin_data, docker_id, with_snapshot):
         try:
             blkio_stats = container.get("blkio_stats", None)
             if blkio_stats is not None:
@@ -178,9 +181,9 @@ class DockerHelper(BaseHelper):
                     for entry in service_bytes:
                         if entry["op"] == "Read":
                             self.apply_delta(entry, self.previous[docker_id]["blkio"],
-                                             plugin_data["data"]["blkio"], ("value", "blk_read"))
+                                             plugin_data["data"]["blkio"], ("value", "blk_read"), with_snapshot)
                         elif entry["op"] == "Write":
                             self.apply_delta(entry, self.previous[docker_id]["blkio"],
-                                             plugin_data["data"]["blkio"], ("value", "blk_write"))
+                                             plugin_data["data"]["blkio"], ("value", "blk_write"), with_snapshot)
         except Exception:
             logger.debug("_collect_blkio_metrics: ", exc_info=True)

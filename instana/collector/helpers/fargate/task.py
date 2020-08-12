@@ -1,7 +1,7 @@
 """ Module to assist in the data collection about the AWS Fargate task that is running this process """
 from ....log import logger
 from ..base import BaseHelper
-from ....util import DictionaryOfStan, to_pretty_json
+from ....util import DictionaryOfStan
 
 
 class TaskHelper(BaseHelper):

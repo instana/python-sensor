@@ -1,4 +1,4 @@
-""" 
+"""
 Base class for the various helpers that can be used by Collectors.  Helpers assist
 in the data collection for various entities such as host, hardware, AWS Task, ec2,
 memory, cpu, docker etc etc..
@@ -41,7 +41,7 @@ class BaseHelper(object):
         else:
             return None
 
-    def apply_delta(self, source, previous, new, metric):
+    def apply_delta(self, source, previous, new, metric, with_snapshot):
         """
         Helper method to assist in delta reporting of metrics.
 
@@ -51,6 +51,7 @@ class BaseHelper(object):
         @param new [dict]: the new value of the metric that will be sent new (as new[metric])
         @param metric [String or Tuple]: the name of the metric in question.  If the keys for source[metric],
           previous[metric] and new[metric] vary, you can pass a tuple in the form of (src, dst)
+        @param with_snapshot [Bool]: if this metric is being sent with snapshot data
         @return: None
         """
         if isinstance(metric, tuple):
@@ -65,7 +66,7 @@ class BaseHelper(object):
         else:
             new_value = source
 
-        if previous[dst_metric] != new_value:
+        if previous[dst_metric] != new_value or with_snapshot is True:
             previous[dst_metric] = new[dst_metric] = new_value
 
     def collect_metrics(self, with_snapshot=False):

@@ -128,6 +128,26 @@ class TestLambda(unittest.TestCase):
         self.assertEqual("tests", handler_module)
         self.assertEqual("lambda_handler", handler_function)
 
+    def test_get_handler_with_multi_subpackages(self):
+        os.environ["LAMBDA_HANDLER"] = "tests.one.two.three.lambda_handler"
+        handler_module, handler_function = get_lambda_handler_or_default()
+
+        self.assertEqual("tests.one.two.three", handler_module)
+        self.assertEqual("lambda_handler", handler_function)
+
+    def test_get_handler_with_space_in_it(self):
+        os.environ["LAMBDA_HANDLER"] = " tests.another_module.lambda_handler"
+        handler_module, handler_function = get_lambda_handler_or_default()
+
+        self.assertEqual("tests.another_module", handler_module)
+        self.assertEqual("lambda_handler", handler_function)
+
+        os.environ["LAMBDA_HANDLER"] = "tests.another_module.lambda_handler    "
+        handler_module, handler_function = get_lambda_handler_or_default()
+
+        self.assertEqual("tests.another_module", handler_module)
+        self.assertEqual("lambda_handler", handler_function)
+
     def test_agent_extra_http_headers(self):
         os.environ['INSTANA_EXTRA_HTTP_HEADERS'] = "X-Test-Header;X-Another-Header;X-And-Another-Header"
         self.create_agent_and_setup_tracer()

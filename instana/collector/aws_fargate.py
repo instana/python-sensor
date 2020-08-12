@@ -129,7 +129,7 @@ class AWSFargateCollector(BaseCollector):
             # For test, we are using mock ECS metadata
             return
 
-        lock_acquired = self.ecmu_lock.acquire(False)
+        lock_acquired = self.ecmu_lock.acquire(True, timeout=1)
         if lock_acquired is True:
             try:
                 delta = int(time()) - self.last_ecmu_full_fetch
@@ -160,8 +160,6 @@ class AWSFargateCollector(BaseCollector):
                 logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
             finally:
                 self.ecmu_lock.release()
-        else:
-            logger.debug("AWSFargateCollector.get_ecs_metadata: skipping because data collection in progress")
 
     def should_send_snapshot_data(self):
         delta = int(time()) - self.snapshot_data_last_sent
@@ -179,7 +177,7 @@ class AWSFargateCollector(BaseCollector):
 
         with_snapshot = self.should_send_snapshot_data()
 
-        lock_acquired = self.ecmu_lock.acquire(False)
+        lock_acquired = self.ecmu_lock.acquire(True, timeout=1)
         if lock_acquired is True:
             try:
                 plugins = []
@@ -194,8 +192,6 @@ class AWSFargateCollector(BaseCollector):
                 logger.debug("collect_snapshot error", exc_info=True)
             finally:
                 self.ecmu_lock.release()
-        else:
-            logger.debug("prepare_payload: Could not acquire lock - skipping")
 
         return payload
 

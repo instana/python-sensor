@@ -40,7 +40,9 @@ class BaseCollector(object):
         self.snapshot_data_sent = False
 
         # Lock used syncronize reporting - no updates when sending
-        self.lock = threading.Lock()
+        # Used by the background reporting thread.  Used to syncronize report attempts and so
+        # that we never have two in progress at once.
+        self.background_report_lock = threading.Lock()
 
         # Reporting interval for the background thread(s)
         self.report_interval = 5
@@ -108,15 +110,15 @@ class BaseCollector(object):
         if env_is_test is True:
             return True
 
-        lock_acquired = self.lock.acquire(False)
+        lock_acquired = self.background_report_lock.acquire(False)
         if lock_acquired:
-            payload = self.prepare_payload()
+            try:
+                payload = self.prepare_payload()
 
-            if len(payload) > 0:
-                self.agent.report_data_payload(payload)
-            else:
-                logger.debug("prepare_and_report_data: No data to report")
-            self.lock.release()
+                if len(payload) > 0:
+                    self.agent.report_data_payload(payload)
+            finally:
+                self.background_report_lock.release()
         else:
             logger.debug("prepare_and_report_data: Couldn't acquire lock")
         return True

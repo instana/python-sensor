@@ -1,4 +1,5 @@
 """ Module to handle the collection of Docker metrics in AWS Fargate """
+from __future__ import division
 from ....log import logger
 from ..base import BaseHelper
 from ....util import DictionaryOfStan

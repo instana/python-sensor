@@ -41,19 +41,16 @@ class AWSFargateCollector(BaseCollector):
         self.ecmu_url_stats = self.ecmu + '/stats'
         self.ecmu_url_task_stats = self.ecmu + '/task/stats'
 
-        # In AWS Fargate, there are two threads:
-        # 1. ECS Container Metadata data collection
-        # 2. Payload preparation and data reporting
-        # This lock makes sure that only one is executing at a time.
-        self.ecmu_lock = threading.Lock()
-
         # Timestamp in seconds of the last time we fetched all ECMU data
         self.last_ecmu_full_fetch = 0
+
         # How often to do a full fetch of ECMU data
-        self.ecmu_full_fetch_interval = 605
+        self.ecmu_full_fetch_interval = 304
 
         # How often to report data
         self.report_interval = 1
+
+        # HTTP client with keep-alive
         self.http_client = requests.Session()
 
         # This is the collecter thread querying the metadata url
@@ -101,65 +98,44 @@ class AWSFargateCollector(BaseCollector):
             logger.warning("AWS Fargate Collector is missing requirements and cannot monitor this environment.")
             return
 
-        # Launch a thread here to periodically collect data from the ECS Metadata Container API
-        if self.agent.can_send():
-            logger.debug("AWSFargateCollector.start: launching ecs metadata collection thread")
-            self.ecs_metadata_thread = threading.Thread(target=self.metadata_thread_loop, args=())
-            self.ecs_metadata_thread.setDaemon(True)
-            self.ecs_metadata_thread.start()
-        else:
-            logger.warning("Collector started but the agent tells us we can't send anything out.")
-
         super(AWSFargateCollector, self).start()
-
-    def metadata_thread_loop(self):
-        """
-        Just a loop that is run in the background thread.
-        @return: None
-        """
-        every(self.report_interval, self.get_ecs_metadata, "AWSFargateCollector: metadata_thread_loop")
 
     def get_ecs_metadata(self):
         """
         Get the latest data from the ECS metadata container API and store on the class
         @return: Boolean
         """
-
         if env_is_test is True:
             # For test, we are using mock ECS metadata
             return
 
-        lock_acquired = self.ecmu_lock.acquire(True, timeout=1)
-        if lock_acquired is True:
-            try:
-                delta = int(time()) - self.last_ecmu_full_fetch
-                if delta > self.ecmu_full_fetch_interval:
-                    # Refetch the ECMU snapshot data
-                    self.last_ecmu_full_fetch = int(time())
-
-                    # Response from the last call to
-                    # ${ECS_CONTAINER_METADATA_URI}/
-                    json_body = self.http_client.get(self.ecmu_url_root, timeout=1).content
-                    self.root_metadata = json.loads(json_body)
-
-                    # Response from the last call to
-                    # ${ECS_CONTAINER_METADATA_URI}/task
-                    json_body = self.http_client.get(self.ecmu_url_task, timeout=1).content
-                    self.task_metadata = json.loads(json_body)
+        try:
+            delta = int(time()) - self.last_ecmu_full_fetch
+            if delta > self.ecmu_full_fetch_interval:
+                # Refetch the ECMU snapshot data
+                self.last_ecmu_full_fetch = int(time())
 
                 # Response from the last call to
-                # ${ECS_CONTAINER_METADATA_URI}/stats
-                json_body = self.http_client.get(self.ecmu_url_stats, timeout=2).content
-                self.stats_metadata = json.loads(json_body)
+                # ${ECS_CONTAINER_METADATA_URI}/
+                json_body = self.http_client.get(self.ecmu_url_root, timeout=1).content
+                self.root_metadata = json.loads(json_body)
 
                 # Response from the last call to
-                # ${ECS_CONTAINER_METADATA_URI}/task/stats
-                json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=1).content
-                self.task_stats_metadata = json.loads(json_body)
-            except Exception:
-                logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
-            finally:
-                self.ecmu_lock.release()
+                # ${ECS_CONTAINER_METADATA_URI}/task
+                json_body = self.http_client.get(self.ecmu_url_task, timeout=1).content
+                self.task_metadata = json.loads(json_body)
+
+            # Response from the last call to
+            # ${ECS_CONTAINER_METADATA_URI}/stats
+            json_body = self.http_client.get(self.ecmu_url_stats, timeout=2).content
+            self.stats_metadata = json.loads(json_body)
+
+            # Response from the last call to
+            # ${ECS_CONTAINER_METADATA_URI}/task/stats
+            json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=1).content
+            self.task_stats_metadata = json.loads(json_body)
+        except Exception:
+            logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
 
     def should_send_snapshot_data(self):
         delta = int(time()) - self.snapshot_data_last_sent
@@ -177,21 +153,20 @@ class AWSFargateCollector(BaseCollector):
 
         with_snapshot = self.should_send_snapshot_data()
 
-        lock_acquired = self.ecmu_lock.acquire(True, timeout=1)
-        if lock_acquired is True:
-            try:
-                plugins = []
-                for helper in self.helpers:
-                    plugins.extend(helper.collect_metrics(with_snapshot))
+        # Fetch the latest metrics
+        self.get_ecs_metadata()
 
-                payload["metrics"]["plugins"] = plugins
+        try:
+            plugins = []
+            for helper in self.helpers:
+                plugins.extend(helper.collect_metrics(with_snapshot))
 
-                if with_snapshot is True:
-                    self.snapshot_data_last_sent = int(time())
-            except Exception:
-                logger.debug("collect_snapshot error", exc_info=True)
-            finally:
-                self.ecmu_lock.release()
+            payload["metrics"]["plugins"] = plugins
+
+            if with_snapshot is True:
+                self.snapshot_data_last_sent = int(time())
+        except Exception:
+            logger.debug("collect_snapshot error", exc_info=True)
 
         return payload
 

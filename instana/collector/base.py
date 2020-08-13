@@ -28,7 +28,7 @@ class BaseCollector(object):
         # The Queue where we store finished spans before they are sent
         self.span_queue = queue.Queue()
 
-        # The background thread that reports data in a loop every self.REPORT_INTERVAL seconds
+        # The background thread that reports data in a loop every self.report_interval seconds
         self.reporting_thread = None
 
         # Signal for background thread(s) to shutdown

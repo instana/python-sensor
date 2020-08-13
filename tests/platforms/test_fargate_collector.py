@@ -128,7 +128,7 @@ class TestFargateCollector(unittest.TestCase):
         assert(plugin_second_report)
         assert("data" in plugin_second_report)
         data = plugin_second_report["data"]
-        assert("Id" not in data)
+        assert("Id" in data)
         assert("Created" not in data)
         assert("Started" not in data)
         assert("Image" not in data)
@@ -155,12 +155,7 @@ class TestFargateCollector(unittest.TestCase):
         # First report should report all metrics
         data = plugin_first_report.get("data", None)
         assert(data)
-
-        # FIXME
-        # network = data.get("network", None)
-        # assert(network)
-        # assert("rx" in network)
-        # assert("tx" in network)
+        assert "network" not in data
 
         cpu = data.get("cpu", None)
         assert(cpu)

@@ -13,6 +13,7 @@ class ProcessHelper(BaseHelper):
         try:
             plugin_data["name"] = "com.instana.plugin.process"
             plugin_data["entityId"] = str(os.getpid())
+            plugin_data["data"] = DictionaryOfStan()
             plugin_data["data"]["pid"] = int(os.getpid())
             plugin_data["data"]["containerType"] = "docker"
             if self.collector.root_metadata is not None:
@@ -26,7 +27,6 @@ class ProcessHelper(BaseHelper):
 
     def _collect_process_snapshot(self, plugin_data):
         try:
-            plugin_data["data"] = DictionaryOfStan()
             env = dict()
             for key in os.environ:
                 if contains_secret(key,

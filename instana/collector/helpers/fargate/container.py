@@ -1,6 +1,6 @@
 """ Module to handle the collection of container metrics in AWS Fargate """
 from ....log import logger
-from ....util import DictionaryOfStan, to_pretty_json
+from ....util import DictionaryOfStan
 from ..base import BaseHelper
 
 

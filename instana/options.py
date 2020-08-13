@@ -7,6 +7,7 @@ from .util import determine_service_name
 
 
 class BaseOptions(object):
+    """ Base class for all option classes.  Holds items common to all """
     def __init__(self, **kwds):
         self.debug = False
         self.log_level = logging.WARN
@@ -48,7 +49,7 @@ class StandardOptions(BaseOptions):
         self.agent_host = os.environ.get("INSTANA_AGENT_HOST", self.AGENT_DEFAULT_HOST)
         self.agent_port = os.environ.get("INSTANA_AGENT_PORT", self.AGENT_DEFAULT_PORT)
 
-        if type(self.agent_port) is str:
+        if not isinstance(self.agent_port, int):
             self.agent_port = int(self.agent_port)
 
 
@@ -65,9 +66,9 @@ class AWSLambdaOptions(BaseOptions):
 
         proxy = os.environ.get("INSTANA_ENDPOINT_PROXY", None)
         if proxy is None:
-            self.endpoint_proxy = { }
+            self.endpoint_proxy = {}
         else:
-            self.endpoint_proxy = {'https': proxy }
+            self.endpoint_proxy = {'https': proxy}
 
         self.timeout = os.environ.get("INSTANA_TIMEOUT", 0.5)
         self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
@@ -86,9 +87,9 @@ class AWSFargateOptions(BaseOptions):
 
         proxy = os.environ.get("INSTANA_ENDPOINT_PROXY", None)
         if proxy is None:
-            self.endpoint_proxy = { }
+            self.endpoint_proxy = {}
         else:
-            self.endpoint_proxy = {'https': proxy }
+            self.endpoint_proxy = {'https': proxy}
 
         self.tags = None
         tag_list = os.environ.get("INSTANA_TAGS", None)
@@ -109,4 +110,3 @@ class AWSFargateOptions(BaseOptions):
         self.timeout = os.environ.get("INSTANA_TIMEOUT", 0.5)
         self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
         self.zone = os.environ.get("INSTANA_ZONE", None)
-

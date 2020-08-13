@@ -1,8 +1,9 @@
+""" Collection helper for the process """
 import os
 import pwd
 import grp
 from instana.log import logger
-from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret, to_pretty_json
+from instana.util import DictionaryOfStan, get_proc_cmdline, contains_secret
 from .base import BaseHelper
 
 
@@ -54,8 +55,7 @@ class ProcessHelper(BaseHelper):
             except Exception:
                 logger.debug("euid/egid detection: ", exc_info=True)
 
-            plugin_data["data"]["start"] = 1 # FIXME
-            # plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME: the pid in the root namespace (very optional)
+            plugin_data["data"]["start"] = 1 # FIXME: process start time reporting
             if self.collector.task_metadata is not None:
                 plugin_data["data"]["com.instana.plugin.host.name"] = self.collector.task_metadata.get("TaskArn")
         except Exception:

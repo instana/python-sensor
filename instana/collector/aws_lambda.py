@@ -1,9 +1,13 @@
+"""
+Snapshot & metrics collection for AWS Lambda
+"""
 from ..log import logger
 from .base import BaseCollector
 from ..util import DictionaryOfStan, normalize_aws_lambda_arn
 
 
 class AWSLambdaCollector(BaseCollector):
+    """ Collector for AWS Lambda """
     def __init__(self, agent):
         super(AWSLambdaCollector, self).__init__(agent)
         logger.debug("Loading AWS Lambda Collector")
@@ -53,4 +57,3 @@ class AWSLambdaCollector(BaseCollector):
 
         self._fq_arn = normalize_aws_lambda_arn(self.context)
         return self._fq_arn
-

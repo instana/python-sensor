@@ -139,7 +139,6 @@ class HostAgent(BaseAgent):
             self.options.secrets_list = res_data['secrets']['list']
 
         if "extraHeaders" in res_data:
-            # FIXME: add tests
             if self.options.extra_http_headers is None:
                 self.options.extra_http_headers = res_data['extraHeaders']
             else:

@@ -8,8 +8,8 @@ import pkg_resources
 from ..log import logger
 from ..util import to_json
 from .base import BaseAgent
-from instana.collector.aws_lambda import AWSLambdaCollector
-from instana.options import AWSLambdaOptions
+from ..collector.aws_lambda import AWSLambdaCollector
+from ..options import AWSLambdaOptions
 
 
 class AWSLambdaFrom(object):
@@ -88,7 +88,7 @@ class AWSLambdaAgent(BaseAgent):
                                         headers=self.report_headers,
                                         timeout=self.options.timeout,
                                         verify=ssl_verify,
-                                        proxies = self.options.endpoint_proxy)
+                                        proxies=self.options.endpoint_proxy)
 
             if 200 <= response.status_code < 300:
                 logger.debug("report_data_payload: Instana responded with status code %s", response.status_code)
@@ -96,8 +96,8 @@ class AWSLambdaAgent(BaseAgent):
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
         except Exception as e:
             logger.debug("report_data_payload: connection error (%s)", type(e))
-        finally:
-            return response
+
+        return response
 
     def _validate_options(self):
         """

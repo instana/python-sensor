@@ -5,8 +5,8 @@ import re
 import sys
 import time
 
-import pkg_resources
 from collections import defaultdict
+import pkg_resources
 
 try:
     from urllib import parse
@@ -154,8 +154,8 @@ def package_version():
         version = pkg_resources.get_distribution('instana').version
     except pkg_resources.DistributionNotFound:
         version = 'unknown'
-    finally:
-        return version
+
+    return version
 
 
 def contains_secret(candidate, matcher, kwlist):
@@ -172,7 +172,7 @@ def contains_secret(candidate, matcher, kwlist):
         if candidate is None or candidate == "INSTANA_AGENT_KEY":
             return False
 
-        if type(kwlist) is not list:
+        if not isinstance(kwlist, list):
             logger.debug("contains_secret: bad keyword list")
             return False
 
@@ -225,7 +225,7 @@ def strip_secrets_from_query(qp, matcher, kwlist):
         if qp is None:
             return ''
 
-        if type(kwlist) is not list:
+        if not isinstance(kwlist, list):
             logger.debug("strip_secrets_from_query: bad keyword list")
             return qp
 
@@ -312,7 +312,7 @@ def get_default_gateway():
         with open("/proc/self/net/route") as routes:
             for line in routes:
                 parts = line.split('\t')
-                if '00000000' == parts[1]:
+                if parts[1] == '00000000':
                     hip = parts[2]
 
         if hip is not None and len(hip) == 8:
@@ -323,28 +323,28 @@ def get_default_gateway():
         logger.warning("get_default_gateway: ", exc_info=True)
 
 
-def get_py_source(file):
+def get_py_source(filename):
     """
     Retrieves and returns the source code for any Python
     files requested by the UI via the host agent
 
-    @param file [String] The fully qualified path to a file
+    @param filename [String] The fully qualified path to a file
     """
     response = None
     try:
-        if regexp_py.search(file) is None:
+        if regexp_py.search(filename) is None:
             response = {"error": "Only Python source files are allowed. (*.py)"}
         else:
             pysource = ""
-            with open(file, 'r') as pyfile:
+            with open(filename, 'r') as pyfile:
                 pysource = pyfile.read()
 
             response = {"data": pysource}
 
-    except Exception as e:
-        response = {"error": str(e)}
-    finally:
-        return response
+    except Exception as exc:
+        response = {"error": str(exc)}
+
+    return response
 
 
 # Used by get_py_source
@@ -354,7 +354,7 @@ regexp_py = re.compile(r"\.py$")
 def every(delay, task, name):
     """
     Executes a task every `delay` seconds
-    
+
     :param delay: the delay in seconds
     :param task: the method to run.  The method should return False if you want the loop to stop.
     :return: None
@@ -436,7 +436,7 @@ def determine_service_name():
             except ImportError:
                 pass
         return app_name
-    except Exception as e:
+    except Exception:
         logger.debug("get_application_name: ", exc_info=True)
         return app_name
 

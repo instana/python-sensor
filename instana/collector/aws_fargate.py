@@ -3,13 +3,12 @@ Snapshot & metrics collection for AWS Fargate
 """
 import os
 import json
-import threading
 from time import time
 import requests
 
 from ..log import logger
 from .base import BaseCollector
-from ..util import DictionaryOfStan, every, validate_url
+from ..util import DictionaryOfStan, validate_url
 from ..singletons import env_is_test
 
 from .helpers.process import ProcessHelper
@@ -148,15 +147,15 @@ class AWSFargateCollector(BaseCollector):
         payload["spans"] = []
         payload["metrics"]["plugins"] = []
 
-        if not self.span_queue.empty():
-            payload["spans"] = self.queued_spans()
-
-        with_snapshot = self.should_send_snapshot_data()
-
-        # Fetch the latest metrics
-        self.get_ecs_metadata()
-
         try:
+            if not self.span_queue.empty():
+                payload["spans"] = self.queued_spans()
+
+            with_snapshot = self.should_send_snapshot_data()
+
+            # Fetch the latest metrics
+            self.get_ecs_metadata()
+
             plugins = []
             for helper in self.helpers:
                 plugins.extend(helper.collect_metrics(with_snapshot))

@@ -1,3 +1,6 @@
+"""
+Base class for all the agent flavors
+"""
 import requests
 
 

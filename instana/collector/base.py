@@ -13,7 +13,7 @@ from ..util import every, DictionaryOfStan
 if sys.version_info.major == 2:
     import Queue as queue
 else:
-    import queue
+    import queue # pylint: disable=import-error
 
 
 class BaseCollector(object):
@@ -114,9 +114,7 @@ class BaseCollector(object):
         if lock_acquired:
             try:
                 payload = self.prepare_payload()
-
-                if len(payload) > 0:
-                    self.agent.report_data_payload(payload)
+                self.agent.report_data_payload(payload)
             finally:
                 self.background_report_lock.release()
         else:

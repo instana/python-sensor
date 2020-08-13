@@ -1,3 +1,4 @@
+""" Collection helper for the Python runtime """
 import os
 import copy
 import gc as gc_
@@ -9,7 +10,7 @@ from types import ModuleType
 from pkg_resources import DistributionNotFound, get_distribution
 
 from instana.log import logger
-from instana.util import DictionaryOfStan, determine_service_name, to_pretty_json
+from instana.util import DictionaryOfStan, determine_service_name
 
 from .base import BaseHelper
 
@@ -66,7 +67,7 @@ class RuntimeHelper(BaseHelper):
             thr = threading.enumerate()
             daemon_threads = [tr.daemon is True for tr in thr].count(True)
             alive_threads = [tr.daemon is False for tr in thr].count(True)
-            dummy_threads = [isinstance(tr, threading._DummyThread) for tr in thr].count(True)
+            dummy_threads = [isinstance(tr, threading._DummyThread) for tr in thr].count(True) # pylint: disable=protected-access
 
             m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
                         ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
@@ -106,7 +107,7 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['f'] = platform.python_implementation() # flavor
             snapshot_payload['a'] = platform.architecture()[0] # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
-            #snapshot_payload['djmw'] = None # FIXME
+            #snapshot_payload['djmw'] = None # FIXME: django middleware reporting
         except Exception:
             logger.debug("collect_snapshot: ", exc_info=True)
         return snapshot_payload
@@ -141,8 +142,8 @@ class RuntimeHelper(BaseHelper):
 
         except Exception:
             logger.debug("gather_python_packages", exc_info=True)
-        finally:
-            return versions
+
+        return versions
 
     def jsonable(self, value):
         try:

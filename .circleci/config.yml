@@ -77,7 +77,7 @@ jobs:
 
   py27cassandra:
     docker:
-      - image: circleci/python:2.7.18
+      - image: circleci/python:2.7.16-stretch
       - image: circleci/cassandra:3.10
         environment:
           MAX_HEAP_SIZE: 2048m

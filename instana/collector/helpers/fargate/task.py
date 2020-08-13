@@ -13,9 +13,6 @@ class TaskHelper(BaseHelper):
         """
         plugins = []
 
-        if with_snapshot is False:
-            return plugins
-
         try:
             if self.collector.task_metadata is not None:
                 try:
@@ -28,21 +25,21 @@ class TaskHelper(BaseHelper):
                     plugin_data["data"]["taskDefinition"] = self.collector.task_metadata.get("Family", None)
                     plugin_data["data"]["taskDefinitionVersion"] = self.collector.task_metadata.get("Revision", None)
                     plugin_data["data"]["availabilityZone"] = self.collector.task_metadata.get("AvailabilityZone", None)
-                    plugin_data["data"]["desiredStatus"] = self.collector.task_metadata.get("DesiredStatus", None)
-                    plugin_data["data"]["knownStatus"] = self.collector.task_metadata.get("KnownStatus", None)
-                    plugin_data["data"]["pullStartedAt"] = self.collector.task_metadata.get("PullStartedAt", None)
-                    plugin_data["data"]["pullStoppedAt"] = self.collector.task_metadata.get("PullStoppeddAt", None)
-                    limits = self.collector.task_metadata.get("Limits", {})
-                    plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
-                    plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
 
-                    if self.collector.agent.options.zone is not None:
-                        plugin_data["data"]["instanaZone"] = self.collector.agent.options.zone
+                    if with_snapshot is True:
+                        plugin_data["data"]["desiredStatus"] = self.collector.task_metadata.get("DesiredStatus", None)
+                        plugin_data["data"]["knownStatus"] = self.collector.task_metadata.get("KnownStatus", None)
+                        plugin_data["data"]["pullStartedAt"] = self.collector.task_metadata.get("PullStartedAt", None)
+                        plugin_data["data"]["pullStoppedAt"] = self.collector.task_metadata.get("PullStoppeddAt", None)
+                        limits = self.collector.task_metadata.get("Limits", {})
+                        plugin_data["data"]["limits"]["cpu"] = limits.get("CPU", None)
+                        plugin_data["data"]["limits"]["memory"] = limits.get("Memory", None)
 
-                    if self.collector.agent.options.tags is not None:
-                        plugin_data["data"]["tags"] = self.collector.agent.options.tags
+                        if self.collector.agent.options.zone is not None:
+                            plugin_data["data"]["instanaZone"] = self.collector.agent.options.zone
 
-                    #logger.debug(to_pretty_json(plugin_data))
+                        if self.collector.agent.options.tags is not None:
+                            plugin_data["data"]["tags"] = self.collector.agent.options.tags
                 except Exception:
                     logger.debug("collect_task_metrics: ", exc_info=True)
                 finally:

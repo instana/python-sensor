@@ -13,12 +13,13 @@ class ProcessHelper(BaseHelper):
         try:
             plugin_data["name"] = "com.instana.plugin.process"
             plugin_data["entityId"] = str(os.getpid())
+            plugin_data["data"]["pid"] = int(os.getpid())
+            plugin_data["data"]["containerType"] = "docker"
+            if self.collector.root_metadata is not None:
+                plugin_data["data"]["container"] = self.collector.root_metadata.get("DockerId")
 
-            # Snapshot
             if with_snapshot:
                 self._collect_process_snapshot(plugin_data)
-
-            #logger.debug(to_pretty_json(plugin_data))
         except Exception:
             logger.debug("ProcessHelper.collect_metrics: ", exc_info=True)
         return [plugin_data]
@@ -26,7 +27,6 @@ class ProcessHelper(BaseHelper):
     def _collect_process_snapshot(self, plugin_data):
         try:
             plugin_data["data"] = DictionaryOfStan()
-            plugin_data["data"]["pid"] = int(os.getpid())
             env = dict()
             for key in os.environ:
                 if contains_secret(key,
@@ -55,9 +55,6 @@ class ProcessHelper(BaseHelper):
                 logger.debug("euid/egid detection: ", exc_info=True)
 
             plugin_data["data"]["start"] = 1 # FIXME
-            plugin_data["data"]["containerType"] = "docker"
-            if self.collector.root_metadata is not None:
-                plugin_data["data"]["container"] = self.collector.root_metadata.get("DockerId")
             # plugin_data["data"]["com.instana.plugin.host.pid"] = 1 # FIXME: the pid in the root namespace (very optional)
             if self.collector.task_metadata is not None:
                 plugin_data["data"]["com.instana.plugin.host.name"] = self.collector.task_metadata.get("TaskArn")

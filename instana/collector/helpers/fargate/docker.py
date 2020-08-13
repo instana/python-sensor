@@ -32,6 +32,7 @@ class DockerHelper(BaseHelper):
 
                     plugin_data["entityId"] = "%s::%s" % (task_arn, name)
                     plugin_data["data"] = DictionaryOfStan()
+                    plugin_data["data"]["Id"] = container.get("DockerId", None)
 
                     # Metrics
                     self._collect_container_metrics(plugin_data, docker_id, with_snapshot)
@@ -49,7 +50,6 @@ class DockerHelper(BaseHelper):
     def _collect_container_snapshot(self, plugin_data, container):
         try:
             # Snapshot Data
-            plugin_data["data"]["Id"] = container.get("DockerId", None)
             plugin_data["data"]["Created"] = container.get("CreatedAt", None)
             plugin_data["data"]["Started"] = container.get("StartedAt", None)
             plugin_data["data"]["Image"] = container.get("Image", None)

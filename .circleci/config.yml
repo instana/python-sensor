@@ -6,7 +6,7 @@ version: 2
 jobs:
   python27:
     docker:
-      - image: circleci/python:2.7.18
+      - image: circleci/python:2.7.16-stretch
       - image: circleci/postgres:9.6.5-alpine-ram
       - image: circleci/mariadb:10.1-ram
       - image: circleci/redis:5.0.4

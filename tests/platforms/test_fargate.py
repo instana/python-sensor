@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import logging
 import unittest
 
 from instana.tracer import InstanaTracer
@@ -16,7 +17,6 @@ class TestFargate(unittest.TestCase):
         self.agent = None
         self.span_recorder = None
         self.tracer = None
-        self.pwd = os.path.dirname(os.path.realpath(__file__))
 
         self.original_agent = get_agent()
         self.original_tracer = get_tracer()
@@ -38,6 +38,8 @@ class TestFargate(unittest.TestCase):
             os.environ.pop("INSTANA_ENDPOINT_PROXY")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
+        if "INSTANA_LOG_LEVEL" in os.environ:
+            os.environ.pop("INSTANA_LOG_LEVEL")
         if "INSTANA_SECRETS" in os.environ:
             os.environ.pop("INSTANA_SECRETS")
         if "INSTANA_TAGS" in os.environ:
@@ -104,6 +106,15 @@ class TestFargate(unittest.TestCase):
         self.assertIsNotNone(self.agent.options.extra_http_headers)
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
         self.assertEqual(should_headers, self.agent.options.extra_http_headers)
+
+    def test_agent_default_log_level(self):
+        self.create_agent_and_setup_tracer()
+        assert self.agent.options.log_level == logging.WARNING
+
+    def test_agent_custom_log_level(self):
+        os.environ['INSTANA_LOG_LEVEL'] = "eRror"
+        self.create_agent_and_setup_tracer()
+        assert self.agent.options.log_level == logging.ERROR
 
     def test_custom_proxy(self):
         os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"

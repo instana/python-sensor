@@ -44,17 +44,20 @@ class HostAgent(BaseAgent):
     AGENT_DATA_PATH = "com.instana.plugin.python.%d"
     AGENT_HEADER = "Instana Agent"
 
-    announce_data = None
-    options = StandardOptions()
-
-    machine = None
-    last_seen = None
-    last_fork_check = None
-    _boot_pid = os.getpid()
-    should_threads_shutdown = threading.Event()
-
     def __init__(self):
         super(HostAgent, self).__init__()
+
+        self.announce_data = None
+        self.machine = None
+        self.last_seen = None
+        self.last_fork_check = None
+        self._boot_pid = os.getpid()
+        self.should_threads_shutdown = threading.Event()
+        self.options = StandardOptions()
+
+        # Update log level from what Options detected
+        self.update_log_level()
+
         logger.debug("initializing agent")
         self.sensor = Sensor(self)
         self.machine = TheMachine(self)

@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import wrapt
+import logging
 import unittest
 
 from instana.tracer import InstanaTracer
@@ -70,6 +71,8 @@ class TestLambda(unittest.TestCase):
             os.environ.pop("INSTANA_ENDPOINT_PROXY")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
+        if "INSTANA_LOG_LEVEL" in os.environ:
+            os.environ.pop("INSTANA_LOG_LEVEL")
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
@@ -575,3 +578,12 @@ class TestLambda(unittest.TestCase):
         # Fully qualified already with the '$LATEST' special tag
         ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST"
         assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST")
+
+    def test_agent_default_log_level(self):
+        self.create_agent_and_setup_tracer()
+        assert self.agent.options.log_level == logging.WARNING
+
+    def test_agent_custom_log_level(self):
+        os.environ['INSTANA_LOG_LEVEL'] = "eRror"
+        self.create_agent_and_setup_tracer()
+        assert self.agent.options.log_level == logging.ERROR

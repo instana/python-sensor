@@ -2,7 +2,6 @@
 The Instana agent (for AWS Fargate) that manages
 monitoring state and reporting that data.
 """
-import os
 import time
 import pkg_resources
 from instana.options import AWSFargateOptions
@@ -32,6 +31,9 @@ class AWSFargateAgent(BaseAgent):
         self.collector = None
         self.report_headers = None
         self._can_send = False
+
+        # Update log level (if INSTANA_LOG_LEVEL was set)
+        self.update_log_level()
 
         package_version = 'unknown'
         try:

@@ -27,6 +27,7 @@ class BaseOptions(object):
         if "INSTANA_DEBUG" in os.environ:
             self.log_level = logging.DEBUG
             self.debug = True
+
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
             self.extra_http_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
 
@@ -70,11 +71,11 @@ class ServerlessOptions(BaseOptions):
 
         self.agent_key = os.environ.get("INSTANA_AGENT_KEY", None)
         self.endpoint_url = os.environ.get("INSTANA_ENDPOINT_URL", None)
-        
+
         # Remove any trailing slash (if any)
         if self.endpoint_url is not None and self.endpoint_url[-1] == "/":
             self.endpoint_url = self.endpoint_url[:-1]
-            
+
         if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
             self.ssl_verify = False
         else:
@@ -99,8 +100,22 @@ class ServerlessOptions(BaseOptions):
                                "https://www.instana.com/docs/reference/environment_variables/#serverless-monitoring")
                 self.timeout = 0.8
 
-        self.log_level = os.environ.get("INSTANA_LOG_LEVEL", None)
-
+        value = os.environ.get("INSTANA_LOG_LEVEL", None)
+        if value is not None:
+            try:
+                value = value.lower()
+                if value == "debug":
+                    self.log_level = logging.DEBUG
+                elif value == "info":
+                    self.log_level = logging.INFO
+                elif value == "warn" or value == "warning":
+                    self.log_level = logging.WARNING
+                elif value == "error":
+                    self.log_level = logging.ERROR
+                else:
+                    logger.warning("Unknown INSTANA_LOG_LEVEL specified: %s", value)
+            except Exception:
+                logger.debug("BaseAgent.update_log_level: ", exc_info=True)
 
 class AWSLambdaOptions(ServerlessOptions):
     """ Options class for AWS Lambda.  Holds settings specific to AWS Lambda. """

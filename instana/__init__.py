@@ -22,8 +22,8 @@ from __future__ import absolute_import
 import os
 import sys
 import importlib
-import pkg_resources
 from threading import Timer
+import pkg_resources
 
 __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2020 Instana Inc.'
@@ -66,7 +66,7 @@ def get_lambda_handler_or_default():
             parts = handler.split(".")
             handler_function = parts.pop()
             handler_module = ".".join(parts)
-    except:
+    except Exception:
         pass
 
     return handler_module, handler_function
@@ -101,8 +101,7 @@ def boot_agent_later():
         import gevent
         gevent.spawn_later(2.0, boot_agent)
     else:
-        t = Timer(2.0, boot_agent)
-        t.start()
+        Timer(2.0, boot_agent).start()
 
 
 def boot_agent():
@@ -182,7 +181,8 @@ do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_ins
 # and some Pipenv installs.  If this is the case, it's best effort.
 if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0]) in do_not_load_list):
     if "INSTANA_DEBUG" in os.environ:
-        print("Instana: No use in monitoring this process type (%s).  Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
+        print("Instana: No use in monitoring this process type (%s).  "
+              "Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
 else:
     if "INSTANA_MAGIC" in os.environ:
         # If we're being loaded into an already running process, then delay agent initialization

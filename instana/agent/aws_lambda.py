@@ -2,7 +2,6 @@
 The Instana agent (for AWS Lambda functions) that manages
 monitoring state and reporting that data.
 """
-import os
 import time
 import pkg_resources
 from ..log import logger
@@ -32,6 +31,9 @@ class AWSLambdaAgent(BaseAgent):
         self.options = AWSLambdaOptions()
         self.report_headers = None
         self._can_send = False
+
+        # Update log level from what Options detected
+        self.update_log_level()
 
         package_version = 'unknown'
         try:

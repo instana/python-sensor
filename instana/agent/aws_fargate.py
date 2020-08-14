@@ -68,25 +68,22 @@ class AWSFargateAgent(BaseAgent):
         """
         response = None
         try:
-            # Prepare request headers
-            self.report_headers = dict()
-            self.report_headers["Content-Type"] = "application/json"
-            self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
-            self.report_headers["X-Instana-Key"] = self.options.agent_key
+            if self.report_headers is None:
+                # Prepare request headers
+                self.report_headers = dict()
+                self.report_headers["Content-Type"] = "application/json"
+                self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
+                self.report_headers["X-Instana-Key"] = self.options.agent_key
+
             self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
             # logger.debug("using these headers: %s", self.report_headers)
-
-            if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
-                ssl_verify = False
-            else:
-                ssl_verify = True
 
             response = self.client.post(self.__data_bundle_url(),
                                         data=to_json(payload),
                                         headers=self.report_headers,
                                         timeout=self.options.timeout,
-                                        verify=ssl_verify,
+                                        verify=self.options.ssl_verify,
                                         proxies=self.options.endpoint_proxy)
 
             if not 200 <= response.status_code < 300:

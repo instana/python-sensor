@@ -83,12 +83,9 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE:
                 return wrapped(*args, **kwargs)
 
-            # Save the list of middleware for Snapshot reporting
-            agent.sensor.meter.djmw = settings.MIDDLEWARE
-
-            if type(settings.MIDDLEWARE) is tuple:
+            if isinstance(settings.MIDDLEWARE, tuple):
                 settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
-            elif type(settings.MIDDLEWARE) is list:
+            elif isinstance(settings.MIDDLEWARE, list):
                 settings.MIDDLEWARE = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE
             else:
                 logger.warning("Instana: Couldn't add InstanaMiddleware to Django")
@@ -97,12 +94,9 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
                 return wrapped(*args, **kwargs)
 
-            # Save the list of middleware for Snapshot reporting
-            agent.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
-
-            if type(settings.MIDDLEWARE_CLASSES) is tuple:
+            if isinstance(settings.MIDDLEWARE_CLASSES, tuple):
                 settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES
-            elif type(settings.MIDDLEWARE_CLASSES) is list:
+            elif isinstance(settings.MIDDLEWARE_CLASSES, list):
                 settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE_CLASSES
             else:
                 logger.warning("Instana: Couldn't add InstanaMiddleware to Django")

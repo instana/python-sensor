@@ -3,9 +3,8 @@ The Instana agent (for AWS Lambda functions) that manages
 monitoring state and reporting that data.
 """
 import time
-import pkg_resources
 from ..log import logger
-from ..util import to_json
+from ..util import to_json, package_version
 from .base import BaseAgent
 from ..collector.aws_lambda import AWSLambdaCollector
 from ..options import AWSLambdaOptions
@@ -35,11 +34,6 @@ class AWSLambdaAgent(BaseAgent):
         # Update log level from what Options detected
         self.update_log_level()
 
-        package_version = 'unknown'
-        try:
-            package_version = pkg_resources.get_distribution('instana').version
-        except pkg_resources.DistributionNotFound:
-            pass
         logger.info("Stan is on the AWS Lambda scene.  Starting Instana instrumentation version: %s", package_version)
 
         if self._validate_options():
@@ -78,8 +72,6 @@ class AWSLambdaAgent(BaseAgent):
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
 
             self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
-
-            # logger.debug("using these headers: %s", self.report_headers)
 
             response = self.client.post(self.__data_bundle_url(),
                                         data=to_json(payload),

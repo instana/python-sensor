@@ -17,35 +17,35 @@ env_is_aws_lambda = "AWS_Lambda_" in aws_env
 
 if env_is_test:
     from .agent.test import TestAgent
-    from .recorder import StandardRecorder
+    from .recorder import StanRecorder
 
     logger.debug("TEST environment detected.")
     agent = TestAgent()
-    span_recorder = StandardRecorder(agent)
+    span_recorder = StanRecorder(agent)
 
 elif env_is_aws_lambda:
     from .agent.aws_lambda import AWSLambdaAgent
-    from .recorder import AWSLambdaRecorder
+    from .recorder import StanRecorder
 
     logger.debug("AWS Lambda environment detected.")
     agent = AWSLambdaAgent()
-    span_recorder = AWSLambdaRecorder(agent)
+    span_recorder = StanRecorder(agent)
 
 elif env_is_aws_fargate:
     from .agent.aws_fargate import AWSFargateAgent
-    from .recorder import AWSFargateRecorder
+    from .recorder import StanRecorder
 
     logger.debug("AWS Fargate environment detected.")
     agent = AWSFargateAgent()
-    span_recorder = AWSFargateRecorder(agent)
+    span_recorder = StanRecorder(agent)
 
 else:
     from .agent.host import HostAgent
-    from .recorder import StandardRecorder
+    from .recorder import StanRecorder
 
     logger.debug("Standard Host environment detected.")
     agent = HostAgent()
-    span_recorder = StandardRecorder(agent)
+    span_recorder = StanRecorder(agent)
 
 
 def get_agent():

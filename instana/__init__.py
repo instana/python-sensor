@@ -1,20 +1,17 @@
+# coding=utf-8
 """
-The Instana package has two core components: the agent and the tracer.
+▀████▀███▄   ▀███▀▄█▀▀▀█▄███▀▀██▀▀███     ██     ▀███▄   ▀███▀     ██
+  ██   ███▄    █ ▄██    ▀█▀   ██   ▀█    ▄██▄      ███▄    █      ▄██▄
+  ██   █ ███   █ ▀███▄        ██        ▄█▀██▄     █ ███   █     ▄█▀██▄
+  ██   █  ▀██▄ █   ▀█████▄    ██       ▄█  ▀██     █  ▀██▄ █    ▄█  ▀██
+  ██   █   ▀██▄█ ▄     ▀██    ██       ████████    █   ▀██▄█    ████████
+  ██   █     ███ ██     ██    ██      █▀      ██   █     ███   █▀      ██
+▄████▄███▄    ██ █▀█████▀   ▄████▄  ▄███▄   ▄████▄███▄    ██ ▄███▄   ▄████▄
 
-The agent is individual to each python process and handles process metric
-collection and reporting.
+https://www.instana.com/
 
-The tracer upholds the OpenTracing API and is responsible for reporting
-span data to Instana.
-
-The following outlines the hierarchy of classes for these two components.
-
-Agent
-  Sensor
-    Meter
-
-Tracer
-  Recorder
+Documentation: https://www.instana.com/docs/
+Source Code: https://github.com/instana/python-sensor
 """
 
 from __future__ import absolute_import
@@ -108,6 +105,7 @@ def boot_agent():
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
     # Disable all the unused-import violations in this function
     # pylint: disable=unused-import
+    # pylint: disable=import-outside-toplevel
 
     import instana.singletons
 

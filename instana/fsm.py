@@ -5,10 +5,9 @@ import re
 import socket
 import subprocess
 import sys
-import threading as t
+import threading
 
 from fysom import Fysom
-import pkg_resources
 
 from .log import logger
 from .util import get_default_gateway
@@ -45,14 +44,7 @@ class TheMachine(object):
     warnedPeriodic = False
 
     def __init__(self, agent):
-        package_version = 'unknown'
-        try:
-            package_version = pkg_resources.get_distribution('instana').version
-        except pkg_resources.DistributionNotFound:
-            pass
-
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version)
-        logger.debug("initializing fsm")
+        logger.debug("Initializing host agent state machine")
 
         self.agent = agent
         self.fsm = Fysom({
@@ -66,10 +58,9 @@ class TheMachine(object):
                 # "onchangestate":  self.print_state_change,
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
-                "onpending":      self.agent.start,
-                "onready":        self.on_ready}})
+                "onpending":      self.on_ready}})
 
-        self.timer = t.Timer(1, self.fsm.lookup)
+        self.timer = threading.Timer(1, self.fsm.lookup)
         self.timer.daemon = True
         self.timer.name = self.THREAD_NAME
 
@@ -80,7 +71,7 @@ class TheMachine(object):
     @staticmethod
     def print_state_change(e):
         logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========',
-                     os.getpid(), t.current_thread().name, e.event, e.src, e.dst)
+                     os.getpid(), threading.current_thread().name, e.event, e.src, e.dst)
 
     def reset(self):
         """
@@ -96,8 +87,6 @@ class TheMachine(object):
         self.fsm.lookup()
 
     def lookup_agent_host(self, e):
-        self.agent.should_threads_shutdown.clear()
-
         host = self.agent.options.agent_host
         port = self.agent.options.agent_port
 
@@ -177,12 +166,13 @@ class TheMachine(object):
         return False
 
     def schedule_retry(self, fun, e, name):
-        self.timer = t.Timer(self.RETRY_PERIOD, fun, [e])
+        self.timer = threading.Timer(self.RETRY_PERIOD, fun, [e])
         self.timer.daemon = True
         self.timer.name = name
         self.timer.start()
 
     def on_ready(self, _):
+        self.agent.start()
         logger.info("Instana host agent available. We're in business. Announced pid: %s (true pid: %s)",
                     str(os.getpid()), str(self.agent.announce_data.pid))
 

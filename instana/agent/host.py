@@ -7,17 +7,13 @@ from __future__ import absolute_import
 import json
 import os
 from datetime import datetime
-import threading
 
-import instana.singletons
-
-from ..fsm import TheMachine
 from ..log import logger
-from ..sensor import Sensor
-from ..util import to_json, get_py_source, package_version
-from ..options import StandardOptions
-
 from .base import BaseAgent
+from ..fsm import TheMachine
+from ..options import StandardOptions
+from ..collector.host import HostCollector
+from ..util import to_json, get_py_source, package_version
 
 
 class AnnounceData(object):
@@ -34,11 +30,6 @@ class HostAgent(BaseAgent):
     The Agent class is the central controlling entity for the Instana Python language sensor.  The key
     parts it handles are the announce state and the collection and reporting of metrics and spans to the
     Instana Host agent.
-
-    To do this, there are 3 major components to this class:
-      1. TheMachine - finite state machine related to announce state
-      2. Sensor -> Meter - metric collection and reporting
-      3. Tracer -> Recorder - span queueing and reporting
     """
     AGENT_DISCOVERY_PATH = "com.instana.plugin.python.discovery"
     AGENT_DATA_PATH = "com.instana.plugin.python.%d"
@@ -52,30 +43,28 @@ class HostAgent(BaseAgent):
         self.last_seen = None
         self.last_fork_check = None
         self._boot_pid = os.getpid()
-        self.should_threads_shutdown = threading.Event()
         self.options = StandardOptions()
 
         # Update log level from what Options detected
         self.update_log_level()
+        
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version)
 
-        logger.debug("initializing agent")
-        self.sensor = Sensor(self)
+        self.collector = HostCollector(self)
         self.machine = TheMachine(self)
 
-    def start(self, _):
+    def start(self):
         """
         Starts the agent and required threads
 
         This method is called after a successful announce.  See fsm.py
         """
-        logger.debug("Spawning metric & span reporting threads")
-        self.should_threads_shutdown.clear()
-        self.sensor.start()
-        instana.singletons.tracer.recorder.start()
+        logger.debug("Starting Host Collector")
+        self.collector.start()
 
     def handle_fork(self):
         """
-        Forks happen.  Here we handle them.  Affected components are the singletons: Agent, Sensor & Tracers
+        Forks happen.  Here we handle them.
         """
         # Reset the Agent
         self.reset()
@@ -85,11 +74,9 @@ class HostAgent(BaseAgent):
         This will reset the agent to a fresh unannounced state.
         :return: None
         """
-        # Will signal to any running background threads to shutdown.
-        self.should_threads_shutdown.set()
-
         self.last_seen = None
         self.announce_data = None
+        self.collector.shutdown(report_final=False)
 
         # Will schedule a restart of the announce cycle in the future
         self.machine.reset()
@@ -119,7 +106,7 @@ class HostAgent(BaseAgent):
             self.handle_fork()
             return False
 
-        if self.machine.fsm.current == "good2go":
+        if self.machine.fsm.current in ["wait4init", "good2go"]:
             return True
 
         return False
@@ -185,13 +172,12 @@ class HostAgent(BaseAgent):
         response = None
         try:
             url = self.__discovery_url()
-            # logger.debug("making announce request to %s", url)
             response = self.client.put(url,
                                        data=to_json(discovery),
                                        headers={"Content-Type": "application/json"},
                                        timeout=0.8)
 
-            if response.status_code == 200:
+            if 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
         except Exception as exc:
             logger.debug("announce: connection error (%s)", type(exc))
@@ -211,48 +197,41 @@ class HostAgent(BaseAgent):
             logger.debug("is_agent_ready: connection error (%s)", type(exc))
         return ready
 
-    def report_data_payload(self, entity_data):
+    def report_data_payload(self, payload):
         """
-        Used to report entity data (metrics & snapshot) to the host agent.
+        Used to report collection payload to the host agent.  This can be metrics, spans and snapshot data.
         """
         response = None
         try:
-            logger.debug(to_json(entity_data))
+            # Report spans (if any)
+            span_count = len(payload['spans'])
+            if span_count > 0:
+                logger.debug("Reporting %d spans", span_count)
+                response = self.client.post(self.__traces_url(),
+                                            data=to_json(payload['spans']),
+                                            headers={"Content-Type": "application/json"},
+                                            timeout=0.8)
+            
+            if response is not None and 200 <= response.status_code <= 204:
+                self.last_seen = datetime.now()
+
+            # Report metrics
+            metric_bundle = payload["metrics"]["plugins"][0]["data"]
+            # logger.debug(to_json(metric_bundle))
             response = self.client.post(self.__data_url(),
-                                        data=to_json(entity_data),
+                                        data=to_json(metric_bundle),
                                         headers={"Content-Type": "application/json"},
                                         timeout=0.8)
 
-            # logger.warning("report_data: response.status_code is %s" % response.status_code)
-
-            if response.status_code == 200:
+            if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
+
+                if response.status_code == 200 and len(response.content) > 2:
+                    # The host agent returned something indicating that is has a request for us that we
+                    # need to process.
+                    self.handle_agent_tasks(json.loads(response.content)[0])
         except Exception as exc:
-            logger.debug("report_data_payload: Instana host agent connection error (%s)", type(exc))
-        return response
-
-    def report_traces(self, spans):
-        """
-        Used to report entity data (metrics & snapshot) to the host agent.
-        """
-        response = None
-        try:
-            # Concurrency double check:  Don't report if we don't have
-            # any spans
-            if len(spans) == 0:
-                return 0
-
-            response = self.client.post(self.__traces_url(),
-                                        data=to_json(spans),
-                                        headers={"Content-Type": "application/json"},
-                                        timeout=0.8)
-
-            # logger.debug("report_traces: response.status_code is %s" % response.status_code)
-
-            if response.status_code == 200:
-                self.last_seen = datetime.now()
-        except Exception as exc:
-            logger.debug("report_traces: Instana host agent connection error (%s)", type(exc))
+            logger.debug("report_data_payload: Instana host agent connection error (%s)", type(exc), exc_info=True)
         return response
 
     def handle_agent_tasks(self, task):

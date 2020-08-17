@@ -33,11 +33,14 @@ class BaseCollector(object):
 
         # Signal for background thread(s) to shutdown
         self.thread_shutdown = threading.Event()
-        self.thread_shutdown.clear()
 
-        # The collected Snapshot Data and info about when it was sent
-        self.snapshot_data = None
-        self.snapshot_data_sent = False
+        # Timestamp in seconds of the last time we sent snapshot data
+        self.snapshot_data_last_sent = 0
+        # How often to report snapshot data (in seconds)
+        self.snapshot_data_interval = 300
+
+        # List of helpers that help out in data collection
+        self.helpers = []
 
         # Lock used syncronize reporting - no updates when sending
         # Used by the background reporting thread.  Used to syncronize report attempts and so
@@ -45,7 +48,7 @@ class BaseCollector(object):
         self.background_report_lock = threading.Lock()
 
         # Reporting interval for the background thread(s)
-        self.report_interval = 5
+        self.report_interval = 1
 
     def start(self):
         """
@@ -54,20 +57,23 @@ class BaseCollector(object):
         """
         if self.agent.can_send():
             logger.debug("BaseCollector.start: launching collection thread")
+            self.thread_shutdown.clear()
             self.reporting_thread = threading.Thread(target=self.thread_loop, args=())
             self.reporting_thread.setDaemon(True)
             self.reporting_thread.start()
         else:
-            logger.warning("Collector started but the agent tells us we can't send anything out.")
+            logger.warning("BaseCollector.start: the agent tells us we can't send anything out.")
 
-    def shutdown(self):
+    def shutdown(self, report_final=True):
         """
         Shuts down the collector and reports any final data.
         @return: None
         """
         logger.debug("Collector.shutdown: Reporting final data.")
         self.thread_shutdown.set()
-        self.prepare_and_report_data()
+
+        if report_final is True:
+            self.prepare_and_report_data()
 
     def thread_loop(self):
         """

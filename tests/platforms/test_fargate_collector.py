@@ -5,7 +5,7 @@ import json
 import unittest
 
 from instana.tracer import InstanaTracer
-from instana.recorder import AWSFargateRecorder
+from instana.recorder import StanRecorder
 from instana.agent.aws_fargate import AWSFargateAgent
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 
@@ -62,7 +62,7 @@ class TestFargateCollector(unittest.TestCase):
 
     def create_agent_and_setup_tracer(self):
         self.agent = AWSFargateAgent()
-        self.span_recorder = AWSFargateRecorder(self.agent)
+        self.span_recorder = StanRecorder(self.agent)
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
         set_tracer(self.tracer)

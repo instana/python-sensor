@@ -10,7 +10,7 @@ import unittest
 from instana.tracer import InstanaTracer
 from instana.agent.aws_lambda import AWSLambdaAgent
 from instana.options import AWSLambdaOptions
-from instana.recorder import AWSLambdaRecorder
+from instana.recorder import StanRecorder
 from instana import lambda_handler
 from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
@@ -71,6 +71,10 @@ class TestLambda(unittest.TestCase):
             os.environ.pop("INSTANA_ENDPOINT_PROXY")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
+        if "INSTANA_SERVICE_NAME" in os.environ:
+            os.environ.pop("INSTANA_SERVICE_NAME")
+        if "INSTANA_DEBUG" in os.environ:
+            os.environ.pop("INSTANA_DEBUG")
         if "INSTANA_LOG_LEVEL" in os.environ:
             os.environ.pop("INSTANA_LOG_LEVEL")
 
@@ -79,7 +83,7 @@ class TestLambda(unittest.TestCase):
 
     def create_agent_and_setup_tracer(self):
         self.agent = AWSLambdaAgent()
-        self.span_recorder = AWSLambdaRecorder(self.agent)
+        self.span_recorder = StanRecorder(self.agent)
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
         set_tracer(self.tracer)

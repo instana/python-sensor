@@ -6,7 +6,7 @@ import unittest
 
 from instana.tracer import InstanaTracer
 from instana.options import AWSFargateOptions
-from instana.recorder import AWSFargateRecorder
+from instana.recorder import StanRecorder
 from instana.agent.aws_fargate import AWSFargateAgent
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 
@@ -42,6 +42,8 @@ class TestFargate(unittest.TestCase):
             os.environ.pop("INSTANA_LOG_LEVEL")
         if "INSTANA_SECRETS" in os.environ:
             os.environ.pop("INSTANA_SECRETS")
+        if "INSTANA_DEBUG" in os.environ:
+            os.environ.pop("INSTANA_DEBUG")
         if "INSTANA_TAGS" in os.environ:
             os.environ.pop("INSTANA_TAGS")
 
@@ -50,7 +52,7 @@ class TestFargate(unittest.TestCase):
 
     def create_agent_and_setup_tracer(self):
         self.agent = AWSFargateAgent()
-        self.span_recorder = AWSFargateRecorder(self.agent)
+        self.span_recorder = StanRecorder(self.agent)
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
         set_tracer(self.tracer)

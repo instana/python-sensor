@@ -1,7 +1,6 @@
 """ Collection helper for the Python runtime """
 import os
-import copy
-import gc as gc_
+import gc
 import sys
 import platform
 import resource
@@ -19,10 +18,14 @@ class RuntimeHelper(BaseHelper):
     """ Helper class to collect snapshot and metrics for this Python runtime """
     def __init__(self, collector):
         super(RuntimeHelper, self).__init__(collector)
-        self.last_collect = None
-        self.last_usage = None
-        self.last_metrics = None
+        self.previous = DictionaryOfStan() 
+        self.previous_rusage = resource.getrusage(resource.RUSAGE_SELF)
 
+        if gc.isenabled():
+            self.previous_gc_count = gc.get_count()
+        else:
+            self.previous_gc_count = None
+        
     def collect_metrics(self, with_snapshot=False):
         plugin_data = dict()
         try:
@@ -31,74 +34,123 @@ class RuntimeHelper(BaseHelper):
             plugin_data["data"] = DictionaryOfStan()
             plugin_data["data"]["pid"] = str(os.getpid())
 
-            snapshot_payload = None
-            metrics_payload = self.gather_metrics()
+            self._collect_runtime_metrics(plugin_data, with_snapshot)
 
             if with_snapshot is True:
-                snapshot_payload = self.gather_snapshot()
-                metrics_payload = copy.deepcopy(metrics_payload).delta_data(None)
-                plugin_data["data"]["snapshot"] = snapshot_payload
-            else:
-                metrics_payload = copy.deepcopy(metrics_payload).delta_data(self.last_metrics)
-
-            plugin_data["data"]["metrics"] = metrics_payload
-
-            self.last_metrics = metrics_payload
-            #logger.debug(to_pretty_json(plugin_data))
+                self._collect_runtime_snapshot(plugin_data)
         except Exception:
-            logger.debug("_collect_runtime_snapshot: ", exc_info=True)
+            logger.debug("_collect_metrics: ", exc_info=True)
         return [plugin_data]
 
-    def gather_metrics(self):
-        """ Collect up and return various metrics """
+    def _collect_runtime_metrics(self, plugin_data, with_snapshot):
+        """ Collect up and return the runtime metrics """
         try:
-            g = None
-            u = resource.getrusage(resource.RUSAGE_SELF)
-            if gc_.isenabled():
-                c = list(gc_.get_count())
-                th = list(gc_.get_threshold())
-                g = GC(collect0=c[0] if not self.last_collect else c[0] - self.last_collect[0],
-                       collect1=c[1] if not self.last_collect else c[1] - self.last_collect[1],
-                       collect2=c[2] if not self.last_collect else c[2] - self.last_collect[2],
-                       threshold0=th[0],
-                       threshold1=th[1],
-                       threshold2=th[2])
+            rusage = resource.getrusage(resource.RUSAGE_SELF)
+            if gc.isenabled():
+                self._collect_gc_metrics(plugin_data, with_snapshot)
 
-            thr = threading.enumerate()
-            daemon_threads = [tr.daemon is True for tr in thr].count(True)
-            alive_threads = [tr.daemon is False for tr in thr].count(True)
-            dummy_threads = [isinstance(tr, threading._DummyThread) for tr in thr].count(True) # pylint: disable=protected-access
+            self._collect_thread_metrics(plugin_data, with_snapshot)
 
-            m = Metrics(ru_utime=u[0] if not self.last_usage else u[0] - self.last_usage[0],
-                        ru_stime=u[1] if not self.last_usage else u[1] - self.last_usage[1],
-                        ru_maxrss=u[2],
-                        ru_ixrss=u[3],
-                        ru_idrss=u[4],
-                        ru_isrss=u[5],
-                        ru_minflt=u[6] if not self.last_usage else u[6] - self.last_usage[6],
-                        ru_majflt=u[7] if not self.last_usage else u[7] - self.last_usage[7],
-                        ru_nswap=u[8] if not self.last_usage else u[8] - self.last_usage[8],
-                        ru_inblock=u[9] if not self.last_usage else u[9] - self.last_usage[9],
-                        ru_oublock=u[10] if not self.last_usage else u[10] - self.last_usage[10],
-                        ru_msgsnd=u[11] if not self.last_usage else u[11] - self.last_usage[11],
-                        ru_msgrcv=u[12] if not self.last_usage else u[12] - self.last_usage[12],
-                        ru_nsignals=u[13] if not self.last_usage else u[13] - self.last_usage[13],
-                        ru_nvcs=u[14] if not self.last_usage else u[14] - self.last_usage[14],
-                        ru_nivcsw=u[15] if not self.last_usage else u[15] - self.last_usage[15],
-                        alive_threads=alive_threads,
-                        dummy_threads=dummy_threads,
-                        daemon_threads=daemon_threads,
-                        gc=g)
+            value_diff = rusage.ru_utime - self.previous_rusage.ru_utime
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_utime", with_snapshot)
 
-            self.last_usage = u
-            if gc_.isenabled():
-                self.last_collect = c
+            value_diff = rusage.ru_stime - self.previous_rusage.ru_stime
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_stime", with_snapshot)
+            
+            self.apply_delta(rusage.ru_maxrss, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_maxrss", with_snapshot)
+            self.apply_delta(rusage.ru_ixrss, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_ixrss", with_snapshot)
+            self.apply_delta(rusage.ru_idrss, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_idrss", with_snapshot)
+            self.apply_delta(rusage.ru_isrss, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_isrss", with_snapshot)
+           
+            value_diff = rusage.ru_minflt - self.previous_rusage.ru_minflt
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_minflt", with_snapshot)
 
-            return m
+            value_diff = rusage.ru_majflt - self.previous_rusage.ru_majflt
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_majflt", with_snapshot)
+            
+            value_diff = rusage.ru_nswap - self.previous_rusage.ru_nswap
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_nswap", with_snapshot)
+            
+            value_diff = rusage.ru_inblock - self.previous_rusage.ru_inblock
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_inblock", with_snapshot)
+            
+            value_diff = rusage.ru_oublock - self.previous_rusage.ru_oublock
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_oublock", with_snapshot)
+            
+            value_diff = rusage.ru_msgsnd - self.previous_rusage.ru_msgsnd
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_msgsnd", with_snapshot)
+            
+            value_diff = rusage.ru_msgrcv - self.previous_rusage.ru_msgrcv
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_msgrcv", with_snapshot)
+                        
+            value_diff = rusage.ru_nsignals - self.previous_rusage.ru_nsignals
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_nsignals", with_snapshot)
+                        
+            value_diff = rusage.ru_nvcsw - self.previous_rusage.ru_nvcsw
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_nvcsw", with_snapshot)
+
+            value_diff = rusage.ru_nivcsw - self.previous_rusage.ru_nivcsw
+            self.apply_delta(value_diff, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "ru_nivcsw", with_snapshot)
         except Exception:
-            logger.debug("collect_metrics", exc_info=True)
+            logger.debug("_collect_runtime_metrics", exc_info=True)
+        finally:
+            self.previous_rusage = rusage
+    
+    def _collect_gc_metrics(self, plugin_data, with_snapshot):
+        try:
+            gc_count = gc.get_count()
+            gc_threshold = gc.get_threshold()
 
-    def gather_snapshot(self):
+            self.apply_delta(gc_count[0], self.previous['data']['metrics']['gc'],
+                                plugin_data['data']['metrics']['gc'], "collect0", with_snapshot)
+            self.apply_delta(gc_count[1], self.previous['data']['metrics']['gc'],
+                                plugin_data['data']['metrics']['gc'], "collect1", with_snapshot)
+            self.apply_delta(gc_count[2], self.previous['data']['metrics']['gc'],
+                                plugin_data['data']['metrics']['gc'], "collect2", with_snapshot)
+
+            self.apply_delta(gc_threshold[0], self.previous['data']['metrics']['gc'],
+                                plugin_data['data']['metrics']['gc'], "threshold0", with_snapshot)
+            self.apply_delta(gc_threshold[1], self.previous['data']['metrics']['gc'],
+                                plugin_data['data']['metrics']['gc'], "threshold1", with_snapshot)
+            self.apply_delta(gc_threshold[2], self.previous['data']['metrics']['gc'],
+                                plugin_data['data']['metrics']['gc'], "threshold2", with_snapshot)
+        except Exception:
+            logger.debug("_collect_gc_metrics", exc_info=True)
+
+    def _collect_thread_metrics(self, plugin_data, with_snapshot):
+        try:
+            threads = threading.enumerate()
+            daemon_threads = [thread.daemon is True for thread in threads].count(True)
+            self.apply_delta(daemon_threads, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "daemon_threads", with_snapshot)
+
+            alive_threads = [thread.daemon is False for thread in threads].count(True)
+            self.apply_delta(alive_threads, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "alive_threads", with_snapshot)
+
+            dummy_threads = [isinstance(thread, threading._DummyThread) for thread in threads].count(True) # pylint: disable=protected-access
+            self.apply_delta(dummy_threads, self.previous['data']['metrics'],
+                             plugin_data['data']['metrics'], "dummy_threads", with_snapshot)
+        except Exception:
+            logger.debug("_collect_thread_metrics", exc_info=True)
+
+    def _collect_runtime_snapshot(self,plugin_data):
         """ Gathers Python specific Snapshot information for this process """
         snapshot_payload = {}
         try:
@@ -107,10 +159,19 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['f'] = platform.python_implementation() # flavor
             snapshot_payload['a'] = platform.architecture()[0] # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
-            #snapshot_payload['djmw'] = None # FIXME: django middleware reporting
+    
+            try:
+                from django.conf import settings
+                if hasattr(settings, 'MIDDLEWARE') and settings.MIDDLEWARE is not None:
+                    snapshot_payload['djmw'] = settings.MIDDLEWARE
+                elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
+                    snapshot_payload['djmw'] = settings.MIDDLEWARE_CLASSES
+            except ImportError:
+                pass
         except Exception:
             logger.debug("collect_snapshot: ", exc_info=True)
-        return snapshot_payload
+
+        plugin_data['data']['snapshot'] = snapshot_payload
 
     def gather_python_packages(self):
         """ Collect up the list of modules in use """
@@ -159,57 +220,3 @@ class RuntimeHelper(BaseHelper):
             return str(result)
         except Exception:
             logger.debug("jsonable: ", exc_info=True)
-
-class GC(object):
-    collect0 = 0
-    collect1 = 0
-    collect2 = 0
-    threshold0 = 0
-    threshold1 = 0
-    threshold2 = 0
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-    def to_dict(self):
-        return self.__dict__
-
-
-class Metrics(object):
-    ru_utime = .0
-    ru_stime = .0
-    ru_maxrss = 0
-    ru_ixrss = 0
-    ru_idrss = 0
-    ru_isrss = 0
-    ru_minflt = 0
-    ru_majflt = 0
-    ru_nswap = 0
-    ru_inblock = 0
-    ru_oublock = 0
-    ru_msgsnd = 0
-    ru_msgrcv = 0
-    ru_nsignals = 0
-    ru_nvcs = 0
-    ru_nivcsw = 0
-    dummy_threads = 0
-    alive_threads = 0
-    daemon_threads = 0
-    gc = None
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-    def delta_data(self, delta):
-        data = self.__dict__
-        if delta is None:
-            return data
-
-        unchanged_items = set(data.items()) & set(delta.items())
-        for x in unchanged_items:
-            data.pop(x[0])
-
-        return data
-
-    def to_dict(self):
-        return self.__dict__

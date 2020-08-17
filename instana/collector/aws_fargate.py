@@ -46,9 +46,6 @@ class AWSFargateCollector(BaseCollector):
         # How often to do a full fetch of ECMU data
         self.ecmu_full_fetch_interval = 304
 
-        # How often to report data
-        self.report_interval = 1
-
         # HTTP client with keep-alive
         self.http_client = requests.Session()
 
@@ -57,14 +54,6 @@ class AWSFargateCollector(BaseCollector):
 
         # The fully qualified ARN for this process
         self._fq_arn = None
-
-        # Saved snapshot data
-        self.snapshot_data = None
-        # Timestamp in seconds of the last time we sent snapshot data
-        self.snapshot_data_last_sent = 0
-        # How often to report snapshot data (in seconds)
-        self.snapshot_data_interval = 300
-        self.last_payload = None
 
         # Response from the last call to
         # ${ECS_CONTAINER_METADATA_URI}/
@@ -81,9 +70,6 @@ class AWSFargateCollector(BaseCollector):
         # Response from the last call to
         # ${ECS_CONTAINER_METADATA_URI}/task/stats
         self.task_stats_metadata = None
-
-        # List of helpers that help out in data collection
-        self.helpers = []
 
         # Populate the collection helpers
         self.helpers.append(TaskHelper(self))

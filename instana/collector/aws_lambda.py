@@ -15,9 +15,13 @@ class AWSLambdaCollector(BaseCollector):
         self.event = None
         self._fq_arn = None
 
-    def collect_snapshot(self, event, context):
-        self.snapshot_data = DictionaryOfStan()
+        # How often to report data
+        self.report_interval = 5
 
+        self.snapshot_data = DictionaryOfStan()
+        self.snapshot_data_sent = True
+
+    def collect_snapshot(self, event, context):
         self.context = context
         self.event = event
 

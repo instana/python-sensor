@@ -13,6 +13,10 @@ class DockerHelper(BaseHelper):
         # The metrics from the previous report cycle
         self.previous = DictionaryOfStan()
 
+        # For metrics that are accumalative, store their previous values here
+        # Indexed by docker_id:  self.previous_blkio[docker_id][metric]
+        self.previous_blkio = DictionaryOfStan()
+
     def collect_metrics(self, with_snapshot=False):
         """
         Collect and return docker metrics (and optionally snapshot data) for this task
@@ -181,10 +185,16 @@ class DockerHelper(BaseHelper):
                 if service_bytes is not None:
                     for entry in service_bytes:
                         if entry["op"] == "Read":
-                            self.apply_delta(entry, self.previous[docker_id]["blkio"],
-                                             plugin_data["data"]["blkio"], ("value", "blk_read"), with_snapshot)
+                            previous_value = self.previous_blkio[docker_id].get("blk_read", 0)
+                            value_diff = entry["value"] - previous_value
+                            self.apply_delta(value_diff, self.previous[docker_id]["blkio"],
+                                             plugin_data["data"]["blkio"], "blk_read", with_snapshot)
+                            self.previous_blkio[docker_id]["blk_read"] = entry["value"]
                         elif entry["op"] == "Write":
-                            self.apply_delta(entry, self.previous[docker_id]["blkio"],
-                                             plugin_data["data"]["blkio"], ("value", "blk_write"), with_snapshot)
+                            previous_value = self.previous_blkio[docker_id].get("blk_write", 0)
+                            value_diff = entry["value"] - previous_value
+                            self.apply_delta(value_diff, self.previous[docker_id]["blkio"],
+                                             plugin_data["data"]["blkio"], "blk_write", with_snapshot)
+                            self.previous_blkio[docker_id]["blk_write"] = entry["value"]
         except Exception:
             logger.debug("_collect_blkio_metrics: ", exc_info=True)

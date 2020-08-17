@@ -18,14 +18,14 @@ class RuntimeHelper(BaseHelper):
     """ Helper class to collect snapshot and metrics for this Python runtime """
     def __init__(self, collector):
         super(RuntimeHelper, self).__init__(collector)
-        self.previous = DictionaryOfStan() 
+        self.previous = DictionaryOfStan()
         self.previous_rusage = resource.getrusage(resource.RUSAGE_SELF)
 
         if gc.isenabled():
             self.previous_gc_count = gc.get_count()
         else:
             self.previous_gc_count = None
-        
+
     def collect_metrics(self, with_snapshot=False):
         plugin_data = dict()
         try:
@@ -58,7 +58,7 @@ class RuntimeHelper(BaseHelper):
             value_diff = rusage.ru_stime - self.previous_rusage.ru_stime
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_stime", with_snapshot)
-            
+
             self.apply_delta(rusage.ru_maxrss, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_maxrss", with_snapshot)
             self.apply_delta(rusage.ru_ixrss, self.previous['data']['metrics'],
@@ -67,7 +67,7 @@ class RuntimeHelper(BaseHelper):
                              plugin_data['data']['metrics'], "ru_idrss", with_snapshot)
             self.apply_delta(rusage.ru_isrss, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_isrss", with_snapshot)
-           
+
             value_diff = rusage.ru_minflt - self.previous_rusage.ru_minflt
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_minflt", with_snapshot)
@@ -75,31 +75,31 @@ class RuntimeHelper(BaseHelper):
             value_diff = rusage.ru_majflt - self.previous_rusage.ru_majflt
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_majflt", with_snapshot)
-            
+
             value_diff = rusage.ru_nswap - self.previous_rusage.ru_nswap
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_nswap", with_snapshot)
-            
+
             value_diff = rusage.ru_inblock - self.previous_rusage.ru_inblock
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_inblock", with_snapshot)
-            
+
             value_diff = rusage.ru_oublock - self.previous_rusage.ru_oublock
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_oublock", with_snapshot)
-            
+
             value_diff = rusage.ru_msgsnd - self.previous_rusage.ru_msgsnd
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_msgsnd", with_snapshot)
-            
+
             value_diff = rusage.ru_msgrcv - self.previous_rusage.ru_msgrcv
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_msgrcv", with_snapshot)
-                        
+
             value_diff = rusage.ru_nsignals - self.previous_rusage.ru_nsignals
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_nsignals", with_snapshot)
-                        
+
             value_diff = rusage.ru_nvcsw - self.previous_rusage.ru_nvcsw
             self.apply_delta(value_diff, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "ru_nvcsw", with_snapshot)
@@ -111,25 +111,25 @@ class RuntimeHelper(BaseHelper):
             logger.debug("_collect_runtime_metrics", exc_info=True)
         finally:
             self.previous_rusage = rusage
-    
+
     def _collect_gc_metrics(self, plugin_data, with_snapshot):
         try:
             gc_count = gc.get_count()
             gc_threshold = gc.get_threshold()
 
             self.apply_delta(gc_count[0], self.previous['data']['metrics']['gc'],
-                                plugin_data['data']['metrics']['gc'], "collect0", with_snapshot)
+                             plugin_data['data']['metrics']['gc'], "collect0", with_snapshot)
             self.apply_delta(gc_count[1], self.previous['data']['metrics']['gc'],
-                                plugin_data['data']['metrics']['gc'], "collect1", with_snapshot)
+                             plugin_data['data']['metrics']['gc'], "collect1", with_snapshot)
             self.apply_delta(gc_count[2], self.previous['data']['metrics']['gc'],
-                                plugin_data['data']['metrics']['gc'], "collect2", with_snapshot)
+                             plugin_data['data']['metrics']['gc'], "collect2", with_snapshot)
 
             self.apply_delta(gc_threshold[0], self.previous['data']['metrics']['gc'],
-                                plugin_data['data']['metrics']['gc'], "threshold0", with_snapshot)
+                             plugin_data['data']['metrics']['gc'], "threshold0", with_snapshot)
             self.apply_delta(gc_threshold[1], self.previous['data']['metrics']['gc'],
-                                plugin_data['data']['metrics']['gc'], "threshold1", with_snapshot)
+                             plugin_data['data']['metrics']['gc'], "threshold1", with_snapshot)
             self.apply_delta(gc_threshold[2], self.previous['data']['metrics']['gc'],
-                                plugin_data['data']['metrics']['gc'], "threshold2", with_snapshot)
+                             plugin_data['data']['metrics']['gc'], "threshold2", with_snapshot)
         except Exception:
             logger.debug("_collect_gc_metrics", exc_info=True)
 
@@ -159,7 +159,7 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['f'] = platform.python_implementation() # flavor
             snapshot_payload['a'] = platform.architecture()[0] # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
-    
+
             try:
                 from django.conf import settings # pylint: disable=import-outside-toplevel
                 if hasattr(settings, 'MIDDLEWARE') and settings.MIDDLEWARE is not None:

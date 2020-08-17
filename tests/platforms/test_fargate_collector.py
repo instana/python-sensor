@@ -189,7 +189,9 @@ class TestFargateCollector(unittest.TestCase):
         assert("memory" in data)
         assert(len(data["memory"]) == 0)
         assert("blkio" in data)
-        assert(len(data["blkio"]) == 0)
+        assert(len(data["blkio"]) == 1)
+        assert(data["blkio"]['blk_write'] == 0)
+        assert('blk_read' not in data["blkio"])
 
     def test_no_instana_zone(self):
         self.create_agent_and_setup_tracer()

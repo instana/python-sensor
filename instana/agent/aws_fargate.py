@@ -34,7 +34,7 @@ class AWSFargateAgent(BaseAgent):
         # Update log level (if INSTANA_LOG_LEVEL was set)
         self.update_log_level()
 
-        logger.info("Stan is on the AWS Fargate scene.  Starting Instana instrumentation version: %s", package_version)
+        logger.info("Stan is on the AWS Fargate scene.  Starting Instana instrumentation version: %s", package_version())
 
         if self._validate_options():
             self._can_send = True

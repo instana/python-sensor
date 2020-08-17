@@ -19,7 +19,7 @@ class AWSLambdaCollector(BaseCollector):
         self.report_interval = 5
 
         self.snapshot_data = DictionaryOfStan()
-        self.snapshot_data_sent = True
+        self.snapshot_data_sent = False
 
     def collect_snapshot(self, event, context):
         self.context = context

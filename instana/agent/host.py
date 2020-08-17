@@ -48,7 +48,7 @@ class HostAgent(BaseAgent):
         # Update log level from what Options detected
         self.update_log_level()
         
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version)
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version())
 
         self.collector = HostCollector(self)
         self.machine = TheMachine(self)

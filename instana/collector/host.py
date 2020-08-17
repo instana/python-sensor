@@ -71,8 +71,6 @@ class HostCollector(BaseCollector):
             payload["metrics"]["plugins"] = plugins
 
             if with_snapshot is True:
-                logger.debug("Sending snapshot")
-                logger.debug(payload)
                 self.snapshot_data_last_sent = int(time())
         except Exception:
             logger.debug("collect_snapshot error", exc_info=True)

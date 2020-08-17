@@ -34,7 +34,7 @@ class AWSLambdaAgent(BaseAgent):
         # Update log level from what Options detected
         self.update_log_level()
 
-        logger.info("Stan is on the AWS Lambda scene.  Starting Instana instrumentation version: %s", package_version)
+        logger.info("Stan is on the AWS Lambda scene.  Starting Instana instrumentation version: %s", package_version())
 
         if self._validate_options():
             self._can_send = True

@@ -24,7 +24,7 @@ try:
                 self._collect_command_tags(scope.span, event)
 
                 # include collection name into the namespace if provided
-                if event.command.has_key(event.command_name):
+                if event.command_name in event.command:
                     scope.span.set_tag("collection", event.command.get(event.command_name))
 
                 self.__active_commands[event.request_id] = scope
@@ -61,7 +61,7 @@ try:
             span.set_tag("command", cmd)
 
             for key in ["filter", "query"]:
-                if event.command.has_key(key):
+                if key in event.command:
                     span.set_tag("filter", json_util.dumps(event.command.get(key)))
                     break
 

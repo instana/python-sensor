@@ -2,11 +2,12 @@ from __future__ import absolute_import
 
 import urllib3
 from django.apps import apps
+from ..apps.app_django import INSTALLED_APPS
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 from instana.singletons import agent, tracer
 
-from ..apps.app_django import INSTALLED_APPS
+from ..helpers import fail_with_message_and_span_dump, get_first_span_by_filter, drop_log_spans_from_list
 
 apps.populate(INSTALLED_APPS)
 
@@ -103,12 +104,24 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(500, response.status)
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(4, len(spans))
+        spans = drop_log_spans_from_list(spans)
 
-        test_span = spans[3]
-        urllib3_span = spans[2]
-        django_span = spans[1]
-        log_span = spans[0]
+        span_count = len(spans)
+        if span_count != 3:
+            msg = "Expected 3 spans but got %d" % span_count
+            fail_with_message_and_span_dump(msg, spans)
+
+        filter = lambda span: span.n == 'sdk' and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, filter)
+        assert(test_span)
+
+        filter = lambda span: span.n == 'urllib3'
+        urllib3_span = get_first_span_by_filter(spans, filter)
+        assert(urllib3_span)
+
+        filter = lambda span: span.n == 'django'
+        django_span = get_first_span_by_filter(spans, filter)
+        assert(django_span)
 
         assert ('X-Instana-T' in response.headers)
         assert (int(response.headers['X-Instana-T'], 16))
@@ -128,15 +141,12 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual("urllib3", urllib3_span.n)
         self.assertEqual("django", django_span.n)
-        self.assertEqual("log", log_span.n)
 
         self.assertEqual(test_span.t, urllib3_span.t)
         self.assertEqual(urllib3_span.t, django_span.t)
-        self.assertEqual(django_span.t, log_span.t)
 
         self.assertEqual(urllib3_span.p, test_span.s)
         self.assertEqual(django_span.p, urllib3_span.s)
-        self.assertEqual(log_span.p, django_span.s)
 
         self.assertEqual(1, django_span.ec)
 
@@ -203,7 +213,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
-        agent.extra_headers = [u'X-Capture-This', u'X-Capture-That']
+        agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
         request_headers = dict()
         request_headers['X-Capture-This'] = 'this'

@@ -6,7 +6,7 @@ version: 2
 jobs:
   python27:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:2.7.16-stretch
       - image: circleci/postgres:9.6.5-alpine-ram
       - image: circleci/mariadb:10.1-ram
       - image: circleci/redis:5.0.4
@@ -35,13 +35,15 @@ jobs:
             pip install -e '.[test]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
           command: |
             . venv/bin/activate
             pytest -v
 
   python38:
     docker:
-      - image: circleci/python:3.7.7-stretch
+      - image: circleci/python:3.7.8-stretch
       - image: circleci/postgres:9.6.5-alpine-ram
       - image: circleci/mariadb:10-ram
       - image: circleci/redis:5.0.4
@@ -67,13 +69,15 @@ jobs:
             pip install -e '.[test]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
           command: |
             . venv/bin/activate
             pytest -v
 
   py27cassandra:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:2.7.16-stretch
       - image: circleci/cassandra:3.10
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -94,13 +98,16 @@ jobs:
             pip install -e '.[test-cassandra]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
+            CASSANDRA_TEST: true
           command: |
             . venv/bin/activate
-            CASSANDRA_TEST=1 pytest -v tests/clients/test_cassandra-driver.py
+            pytest -v tests/clients/test_cassandra-driver.py
 
   py36cassandra:
     docker:
-      - image: circleci/python:3.6.8
+      - image: circleci/python:3.6.11
       - image: circleci/cassandra:3.10
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -118,13 +125,16 @@ jobs:
             pip install -e '.[test-cassandra]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
+            CASSANDRA_TEST: true
           command: |
             . venv/bin/activate
-            CASSANDRA_TEST=1 pytest -v tests/clients/test_cassandra-driver.py
+            pytest -v tests/clients/test_cassandra-driver.py
 
   gevent38:
     docker:
-      - image: circleci/python:3.8.2
+      - image: circleci/python:3.8.5
     working_directory: ~/repo
     steps:
       - checkout
@@ -138,9 +148,12 @@ jobs:
             pip install -e '.[test-gevent]'
       - run:
           name: run tests
+          environment:
+            INSTANA_TEST: true
+            GEVENT_TEST: true
           command: |
             . venv/bin/activate
-            GEVENT_TEST=1 pytest -v tests/frameworks/test_gevent.py
+            pytest -v tests/frameworks/test_gevent.py
 workflows:
   version: 2
   build:

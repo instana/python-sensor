@@ -5,7 +5,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, async_tracer
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 
 try:
@@ -25,15 +25,15 @@ try:
             url = str(request.url)
             parts = url.split('?')
             if len(parts) > 1:
-                cleaned_qp = strip_secrets(parts[1], agent.secrets_matcher, agent.secrets_list)
+                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
                 scope.span.set_tag("http.params", cleaned_qp)
 
             scope.span.set_tag("http.url", parts[0])
             scope.span.set_tag("http.method", request.method)
 
             # Custom header tracking support
-            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-                for custom_header in agent.extra_headers:
+            if agent.options.extra_http_headers is not None:
+                for custom_header in agent.options.extra_http_headers:
                     if custom_header in request.headers:
                         scope.span.set_tag("http.%s" % custom_header, request.headers[custom_header])
 

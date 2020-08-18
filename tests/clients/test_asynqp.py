@@ -20,7 +20,8 @@ if "RABBITMQ_HOST" in os.environ:
 else:
     rabbitmq_host = "localhost"
 
-@pytest.mark.skipif(LooseVersion(sys.version) < LooseVersion('3.5.3'), reason="")
+#@pytest.mark.skipif(LooseVersion(sys.version) < LooseVersion('3.5.3'), reason="")
+@pytest.mark.skip("FIXME: Abandoned asynqp is now causing issues in later Python versions.")
 class TestAsynqp(unittest.TestCase):
     @asyncio.coroutine
     def connect(self):

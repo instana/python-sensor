@@ -1,7 +1,7 @@
 from __future__ import print_function
-import logging
 import os
 import sys
+import logging
 
 logger = None
 
@@ -18,11 +18,7 @@ def get_standard_logger():
     f = logging.Formatter('%(asctime)s: %(process)d %(levelname)s %(name)s: %(message)s')
     ch.setFormatter(f)
     standard_logger.addHandler(ch)
-    if "INSTANA_DEBUG" in os.environ:
-        standard_logger.setLevel(logging.DEBUG)
-    else:
-        standard_logger.setLevel(logging.WARN)
-
+    standard_logger.setLevel(logging.DEBUG)
     return standard_logger
 
 
@@ -33,12 +29,7 @@ def get_aws_lambda_logger():
     @return: Logger
     """
     aws_lambda_logger = logging.getLogger()
-
-    if "INSTANA_DEBUG" in os.environ:
-        aws_lambda_logger.setLevel(logging.DEBUG)
-    else:
-        aws_lambda_logger.setLevel(logging.WARN)
-
+    aws_lambda_logger.setLevel(logging.INFO)
     return aws_lambda_logger
 
 
@@ -84,9 +75,12 @@ def running_in_gunicorn():
         return False
 
 
+aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
+env_is_aws_lambda = "AWS_Lambda_" in aws_env
+
 if running_in_gunicorn():
     logger = logging.getLogger("gunicorn.error")
-elif os.environ.get("INSTANA_ENDPOINT_URL", False):
+elif env_is_aws_lambda is True:
     logger = get_aws_lambda_logger()
 else:
     logger = get_standard_logger()

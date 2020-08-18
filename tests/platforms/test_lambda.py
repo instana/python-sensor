@@ -4,12 +4,13 @@ import os
 import sys
 import json
 import wrapt
+import logging
 import unittest
 
 from instana.tracer import InstanaTracer
 from instana.agent.aws_lambda import AWSLambdaAgent
 from instana.options import AWSLambdaOptions
-from instana.recorder import AWSLambdaRecorder
+from instana.recorder import StanRecorder
 from instana import lambda_handler
 from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
@@ -50,6 +51,7 @@ class TestLambda(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
+        os.environ["AWS_EXECUTION_ENV"] = "AWS_Lambda_python_3.8"
         os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
@@ -57,21 +59,31 @@ class TestLambda(unittest.TestCase):
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
+        if "AWS_EXECUTION_ENV" in os.environ:
+            os.environ.pop("AWS_EXECUTION_ENV")
         if "LAMBDA_HANDLER" in os.environ:
             os.environ.pop("LAMBDA_HANDLER")
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
             os.environ.pop("INSTANA_EXTRA_HTTP_HEADERS")
         if "INSTANA_ENDPOINT_URL" in os.environ:
             os.environ.pop("INSTANA_ENDPOINT_URL")
+        if "INSTANA_ENDPOINT_PROXY" in os.environ:
+            os.environ.pop("INSTANA_ENDPOINT_PROXY")
         if "INSTANA_AGENT_KEY" in os.environ:
             os.environ.pop("INSTANA_AGENT_KEY")
+        if "INSTANA_SERVICE_NAME" in os.environ:
+            os.environ.pop("INSTANA_SERVICE_NAME")
+        if "INSTANA_DEBUG" in os.environ:
+            os.environ.pop("INSTANA_DEBUG")
+        if "INSTANA_LOG_LEVEL" in os.environ:
+            os.environ.pop("INSTANA_LOG_LEVEL")
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
 
     def create_agent_and_setup_tracer(self):
         self.agent = AWSLambdaAgent()
-        self.span_recorder = AWSLambdaRecorder(self.agent)
+        self.span_recorder = StanRecorder(self.agent)
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
         set_tracer(self.tracer)
@@ -93,19 +105,21 @@ class TestLambda(unittest.TestCase):
 
     def test_secrets(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'secrets_matcher'))
-        self.assertEqual(self.agent.secrets_matcher, 'contains-ignore-case')
-        self.assertTrue(hasattr(self.agent, 'secrets_list'))
-        self.assertEqual(self.agent.secrets_list, ['key', 'pass', 'secret'])
+        self.assertTrue(hasattr(self.agent.options, 'secrets_matcher'))
+        self.assertEqual(self.agent.options.secrets_matcher, 'contains-ignore-case')
+        self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
+        self.assertEqual(self.agent.options.secrets_list, ['key', 'pass', 'secret'])
 
-    def test_has_extra_headers(self):
+    def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'extra_headers'))
+        self.assertTrue(hasattr(self.agent, 'options'))
+        self.assertTrue(hasattr(self.agent.options, 'extra_http_headers'))
 
     def test_has_options(self):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'options'))
         self.assertTrue(type(self.agent.options) is AWSLambdaOptions)
+        assert(self.agent.options.endpoint_proxy == { })
 
     def test_get_handler(self):
         os.environ["LAMBDA_HANDLER"] = "tests.lambda_handler"
@@ -114,12 +128,17 @@ class TestLambda(unittest.TestCase):
         self.assertEqual("tests", handler_module)
         self.assertEqual("lambda_handler", handler_function)
 
-    def test_agent_extra_headers(self):
+    def test_agent_extra_http_headers(self):
         os.environ['INSTANA_EXTRA_HTTP_HEADERS'] = "X-Test-Header;X-Another-Header;X-And-Another-Header"
         self.create_agent_and_setup_tracer()
-        self.assertIsNotNone(self.agent.extra_headers)
+        self.assertIsNotNone(self.agent.options.extra_http_headers)
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
-        self.assertEqual(should_headers, self.agent.extra_headers)
+        self.assertEqual(should_headers, self.agent.options.extra_http_headers)
+
+    def test_custom_proxy(self):
+        os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
+        self.create_agent_and_setup_tracer()
+        assert(self.agent.options.endpoint_proxy == { 'https': "http://myproxy.123" })
 
     def test_custom_service_name(self):
         os.environ['INSTANA_SERVICE_NAME'] = "Legion"
@@ -563,3 +582,12 @@ class TestLambda(unittest.TestCase):
         # Fully qualified already with the '$LATEST' special tag
         ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST"
         assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST")
+
+    def test_agent_default_log_level(self):
+        self.create_agent_and_setup_tracer()
+        assert self.agent.options.log_level == logging.WARNING
+
+    def test_agent_custom_log_level(self):
+        os.environ['INSTANA_LOG_LEVEL'] = "eRror"
+        self.create_agent_and_setup_tracer()
+        assert self.agent.options.log_level == logging.ERROR

@@ -137,8 +137,8 @@ def enrich_lambda_span(agent, span, event, context):
             span.set_tag('http.path_tpl', event["resource"])
             span.set_tag('http.params', read_http_query_params(event))
 
-            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-                capture_extra_headers(event, span, agent.extra_headers)
+            if agent.options.extra_http_headers is not None:
+                capture_extra_headers(event, span, agent.options.extra_http_headers)
 
         elif is_application_load_balancer_trigger(event):
             span.set_tag('lambda.trigger', 'aws:application.load.balancer')
@@ -146,8 +146,8 @@ def enrich_lambda_span(agent, span, event, context):
             span.set_tag('http.url', event["path"])
             span.set_tag('http.params', read_http_query_params(event))
 
-            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-                capture_extra_headers(event, span, agent.extra_headers)
+            if agent.options.extra_http_headers is not None:
+                capture_extra_headers(event, span, agent.options.extra_http_headers)
 
         elif is_cloudwatch_trigger(event):
             span.set_tag('lambda.trigger', 'aws:cloudwatch.events')

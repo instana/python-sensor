@@ -39,7 +39,8 @@ Helpful Links
 ============================================================================
 
 Monitoring Python Documentation:
-https://docs.instana.io/ecosystem/python
+https://www.instana.com/docs/ecosystem/python/
+
 
 Help & Support:
 https://support.instana.com/
@@ -74,7 +75,7 @@ Helpful Links
 ============================================================================
 
 Monitoring Python Documentation:
-https://docs.instana.io/ecosystem/python
+https://www.instana.com/docs/ecosystem/python/
 
 Help & Support:
 https://support.instana.com/

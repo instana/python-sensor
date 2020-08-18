@@ -2,13 +2,12 @@
 The Instana agent (for AWS Lambda functions) that manages
 monitoring state and reporting that data.
 """
-import os
 import time
 from ..log import logger
-from ..util import to_json
+from ..util import to_json, package_version
 from .base import BaseAgent
-from instana.collector import Collector
-from instana.options import AWSLambdaOptions
+from ..collector.aws_lambda import AWSLambdaCollector
+from ..options import AWSLambdaOptions
 
 
 class AWSLambdaFrom(object):
@@ -31,11 +30,15 @@ class AWSLambdaAgent(BaseAgent):
         self.options = AWSLambdaOptions()
         self.report_headers = None
         self._can_send = False
-        self.extra_headers = self.options.extra_http_headers
+
+        # Update log level from what Options detected
+        self.update_log_level()
+
+        logger.info("Stan is on the AWS Lambda scene.  Starting Instana instrumentation version: %s", package_version())
 
         if self._validate_options():
             self._can_send = True
-            self.collector = Collector(self)
+            self.collector = AWSLambdaCollector(self)
             self.collector.start()
         else:
             logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
@@ -67,29 +70,24 @@ class AWSLambdaAgent(BaseAgent):
                 self.report_headers["Content-Type"] = "application/json"
                 self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
-                self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
-            # logger.debug("using these headers: %s", self.report_headers)
-
-            if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
-                ssl_verify = False
-            else:
-                ssl_verify = True
+            self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
             response = self.client.post(self.__data_bundle_url(),
                                         data=to_json(payload),
                                         headers=self.report_headers,
                                         timeout=self.options.timeout,
-                                        verify=ssl_verify)
+                                        verify=self.options.ssl_verify,
+                                        proxies=self.options.endpoint_proxy)
 
             if 200 <= response.status_code < 300:
                 logger.debug("report_data_payload: Instana responded with status code %s", response.status_code)
             else:
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
-        except Exception as e:
-            logger.debug("report_data_payload: connection error (%s)", type(e))
-        finally:
-            return response
+        except Exception as exc:
+            logger.debug("report_data_payload: connection error (%s)", type(exc))
+
+        return response
 
     def _validate_options(self):
         """

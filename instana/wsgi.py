@@ -4,7 +4,7 @@ import opentracing as ot
 import opentracing.ext.tags as tags
 
 from .singletons import agent, tracer
-from .util import strip_secrets
+from .util import strip_secrets_from_query
 
 
 class iWSGIMiddleware(object):
@@ -35,8 +35,8 @@ class iWSGIMiddleware(object):
         ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
         self.scope = tracer.start_active_span("wsgi", child_of=ctx)
 
-        if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-            for custom_header in agent.extra_headers:
+        if agent.options.extra_http_headers is not None:
+            for custom_header in agent.options.extra_http_headers:
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 wsgi_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if wsgi_header in env:
@@ -45,7 +45,7 @@ class iWSGIMiddleware(object):
         if 'PATH_INFO' in env:
             self.scope.span.set_tag('http.path', env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-            scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
+            scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
             self.scope.span.set_tag("http.params", scrubbed_params)
         if 'REQUEST_METHOD' in env:
             self.scope.span.set_tag(tags.HTTP_METHOD, env['REQUEST_METHOD'])

@@ -1,15 +1,14 @@
 """
 Instrumentation for AWS Lambda functions
 """
-import os
 import sys
 import wrapt
 
-from .triggers import enrich_lambda_span, get_context
-
 from ...log import logger
-from ...singletons import get_agent, get_tracer
+from ...singletons import env_is_aws_lambda
 from ... import get_lambda_handler_or_default
+from ...singletons import get_agent, get_tracer
+from .triggers import enrich_lambda_span, get_context
 
 
 def lambda_handler_with_instana(wrapped, instance, args, kwargs):
@@ -34,7 +33,7 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
     return result
 
 
-if os.environ.get("INSTANA_ENDPOINT_URL", False):
+if env_is_aws_lambda is True:
     handler_module, handler_function = get_lambda_handler_or_default()
 
     if handler_module is not None and handler_function is not None:

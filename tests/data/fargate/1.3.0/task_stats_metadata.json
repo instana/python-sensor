@@ -1,0 +1,370 @@
+{
+  "63dc7ac9f3130bba35c785ed90ff12aad82087b5c5a0a45a922c45a64128eb45": {
+    "read": "2020-07-27T13:52:40.859305224Z",
+    "preread": "2020-07-27T13:52:39.855550726Z",
+    "pids_stats": {
+      "current": 10
+    },
+    "blkio_stats": {
+      "io_service_bytes_recursive": [
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Read",
+          "value": 0
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Write",
+          "value": 128352256
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Sync",
+          "value": 8966144
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Async",
+          "value": 119386112
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Total",
+          "value": 128352256
+        }
+      ],
+      "io_serviced_recursive": [
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Read",
+          "value": 0
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Write",
+          "value": 2542
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Sync",
+          "value": 571
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Async",
+          "value": 1971
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Total",
+          "value": 2542
+        }
+      ],
+      "io_queue_recursive": [],
+      "io_service_time_recursive": [],
+      "io_wait_time_recursive": [],
+      "io_merged_recursive": [],
+      "io_time_recursive": [],
+      "sectors_recursive": []
+    },
+    "num_procs": 0,
+    "storage_stats": {},
+    "cpu_stats": {
+      "cpu_usage": {
+        "total_usage": 66070557631,
+        "percpu_usage": [
+          34054097656,
+          32016459975,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "usage_in_kernelmode": 5330000000,
+        "usage_in_usermode": 59390000000
+      },
+      "system_cpu_usage": 11976670000000,
+      "online_cpus": 2,
+      "throttling_data": {
+        "periods": 0,
+        "throttled_periods": 0,
+        "throttled_time": 0
+      }
+    },
+    "precpu_stats": {
+      "cpu_usage": {
+        "total_usage": 66050861012,
+        "percpu_usage": [
+          34040562270,
+          32010298742,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "usage_in_kernelmode": 5330000000,
+        "usage_in_usermode": 59370000000
+      },
+      "system_cpu_usage": 11974670000000,
+      "online_cpus": 2,
+      "throttling_data": {
+        "periods": 0,
+        "throttled_periods": 0,
+        "throttled_time": 0
+      }
+    },
+    "memory_stats": {
+      "usage": 193769472,
+      "max_usage": 195305472,
+      "stats": {
+        "active_anon": 78721024,
+        "active_file": 18501632,
+        "cache": 90185728,
+        "dirty": 0,
+        "hierarchical_memory_limit": 536870912,
+        "hierarchical_memsw_limit": 1073741824,
+        "inactive_anon": 0,
+        "inactive_file": 71684096,
+        "mapped_file": 32768,
+        "pgfault": 1088223,
+        "pgmajfault": 0,
+        "pgpgin": 690034,
+        "pgpgout": 648797,
+        "rss": 78721024,
+        "rss_huge": 0,
+        "total_active_anon": 78721024,
+        "total_active_file": 18501632,
+        "total_cache": 90185728,
+        "total_dirty": 0,
+        "total_inactive_anon": 0,
+        "total_inactive_file": 71684096,
+        "total_mapped_file": 32768,
+        "total_pgfault": 1088223,
+        "total_pgmajfault": 0,
+        "total_pgpgin": 690034,
+        "total_pgpgout": 648797,
+        "total_rss": 78721024,
+        "total_rss_huge": 0,
+        "total_unevictable": 0,
+        "total_writeback": 0,
+        "unevictable": 0,
+        "writeback": 0
+      },
+      "limit": 536870912
+    },
+    "name": "/ecs-docker-ssh-aws-fargate-1-docker-ssh-aws-fargate-9ef9a8edfefcaac95100",
+    "id": "63dc7ac9f3130bba35c785ed90ff12aad82087b5c5a0a45a922c45a64128eb45"
+  },
+  "bfb22a5acd6c9695fba80ae542d12f047baa6a63521cad975001ed25c3ce19c2": {
+    "read": "2020-07-27T13:52:40.858238762Z",
+    "preread": "2020-07-27T13:52:39.856756864Z",
+    "pids_stats": {
+      "current": 7
+    },
+    "blkio_stats": {
+      "io_service_bytes_recursive": [
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Read",
+          "value": 5926912
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Write",
+          "value": 8192
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Sync",
+          "value": 5935104
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Async",
+          "value": 0
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Total",
+          "value": 5935104
+        }
+      ],
+      "io_serviced_recursive": [
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Read",
+          "value": 344
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Write",
+          "value": 2
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Sync",
+          "value": 346
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Async",
+          "value": 0
+        },
+        {
+          "major": 202,
+          "minor": 26368,
+          "op": "Total",
+          "value": 346
+        }
+      ],
+      "io_queue_recursive": [],
+      "io_service_time_recursive": [],
+      "io_wait_time_recursive": [],
+      "io_merged_recursive": [],
+      "io_time_recursive": [],
+      "sectors_recursive": []
+    },
+    "num_procs": 0,
+    "storage_stats": {},
+    "cpu_stats": {
+      "cpu_usage": {
+        "total_usage": 1764671369,
+        "percpu_usage": [
+          788582076,
+          976089293,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "usage_in_kernelmode": 1120000000,
+        "usage_in_usermode": 380000000
+      },
+      "system_cpu_usage": 11976660000000,
+      "online_cpus": 2,
+      "throttling_data": {
+        "periods": 0,
+        "throttled_periods": 0,
+        "throttled_time": 0
+      }
+    },
+    "precpu_stats": {
+      "cpu_usage": {
+        "total_usage": 1764637941,
+        "percpu_usage": [
+          788548648,
+          976089293,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "usage_in_kernelmode": 1120000000,
+        "usage_in_usermode": 380000000
+      },
+      "system_cpu_usage": 11974670000000,
+      "online_cpus": 2,
+      "throttling_data": {
+        "periods": 0,
+        "throttled_periods": 0,
+        "throttled_time": 0
+      }
+    },
+    "memory_stats": {
+      "usage": 11923456,
+      "max_usage": 14852096,
+      "stats": {
+        "active_anon": 3878912,
+        "active_file": 4464640,
+        "cache": 6004736,
+        "dirty": 0,
+        "hierarchical_memory_limit": 536870912,
+        "hierarchical_memsw_limit": 9223372036854772000,
+        "inactive_anon": 0,
+        "inactive_file": 1540096,
+        "mapped_file": 2039808,
+        "pgfault": 6185,
+        "pgmajfault": 52,
+        "pgpgin": 7526,
+        "pgpgout": 5113,
+        "rss": 3878912,
+        "rss_huge": 0,
+        "total_active_anon": 3878912,
+        "total_active_file": 4464640,
+        "total_cache": 6004736,
+        "total_dirty": 0,
+        "total_inactive_anon": 0,
+        "total_inactive_file": 1540096,
+        "total_mapped_file": 2039808,
+        "total_pgfault": 6185,
+        "total_pgmajfault": 52,
+        "total_pgpgin": 7526,
+        "total_pgpgout": 5113,
+        "total_rss": 3878912,
+        "total_rss_huge": 0,
+        "total_unevictable": 0,
+        "total_writeback": 0,
+        "unevictable": 0,
+        "writeback": 0
+      },
+      "limit": 4134510592
+    },
+    "name": "/ecs-docker-ssh-aws-fargate-1-internalecspause-82bdec9beeffb9907c00",
+    "id": "bfb22a5acd6c9695fba80ae542d12f047baa6a63521cad975001ed25c3ce19c2"
+  }
+}

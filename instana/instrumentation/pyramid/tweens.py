@@ -7,7 +7,8 @@ import opentracing.ext.tags as ext
 
 from ...log import logger
 from ...singletons import tracer, agent
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
+
 
 class InstanaTweenFactory(object):
     """A factory that provides Instana instrumentation tween for Pyramid apps"""
@@ -27,15 +28,15 @@ class InstanaTweenFactory(object):
         if request.matched_route is not None:
             scope.span.set_tag("http.path_tpl", request.matched_route.pattern)
 
-        if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-            for custom_header in agent.extra_headers:
+        if agent.options.extra_http_headers is not None:
+            for custom_header in agent.options.extra_http_headers:
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 h = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if h in request.headers:
                     scope.span.set_tag("http.%s" % custom_header, request.headers[h])
 
         if len(request.query_string):
-            scrubbed_params = strip_secrets(request.query_string, agent.secrets_matcher, agent.secrets_list)
+            scrubbed_params = strip_secrets_from_query(request.query_string, agent.options.secrets_matcher, agent.options.secrets_list)
             scope.span.set_tag("http.params", scrubbed_params)
 
         response = None
@@ -73,6 +74,7 @@ class InstanaTweenFactory(object):
             scope.close()
 
         return response
+
 
 def includeme(config):
     logger.debug("Instrumenting pyramid")

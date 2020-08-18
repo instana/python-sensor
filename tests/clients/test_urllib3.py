@@ -657,8 +657,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_response_header_capture(self):
-        original_extra_headers = agent.extra_headers
-        agent.extra_headers = ['X-Capture-This']
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Capture-This']
 
         with tracer.start_active_span('test'):
             r = self.http.request('GET', testenv["wsgi_server"] + '/response_headers')
@@ -708,5 +708,5 @@ class TestUrllib3(unittest.TestCase):
         self.assertTrue(len(urllib3_span.stack) > 1)
         self.assertTrue('http.X-Capture-This' in urllib3_span.data["custom"]["tags"])
 
-        agent.extra_headers = original_extra_headers
+        agent.options.extra_http_headers = original_extra_http_headers
 

@@ -9,7 +9,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, tracer
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 
@@ -22,6 +22,7 @@ except ImportError:
 class InstanaMiddleware(MiddlewareMixin):
     """ Django Middleware to provide request tracing for Instana """
     def __init__(self, get_response=None):
+        super(InstanaMiddleware, self).__init__(get_response)
         self.get_response = get_response
 
     def process_request(self, request):
@@ -31,8 +32,8 @@ class InstanaMiddleware(MiddlewareMixin):
             ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
-            if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-                for custom_header in agent.extra_headers:
+            if agent.options.extra_http_headers is not None:
+                for custom_header in agent.options.extra_http_headers:
                     # Headers are available in this format: HTTP_X_CAPTURE_THIS
                     django_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                     if django_header in env:
@@ -42,7 +43,7 @@ class InstanaMiddleware(MiddlewareMixin):
             if 'PATH_INFO' in env:
                 request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
             if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-                scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
+                scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
                 request.iscope.span.set_tag("http.params", scrubbed_params)
             if 'HTTP_HOST' in env:
                 request.iscope.span.set_tag("http.host", env['HTTP_HOST'])
@@ -82,12 +83,9 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE:
                 return wrapped(*args, **kwargs)
 
-            # Save the list of middleware for Snapshot reporting
-            agent.sensor.meter.djmw = settings.MIDDLEWARE
-
-            if type(settings.MIDDLEWARE) is tuple:
+            if isinstance(settings.MIDDLEWARE, tuple):
                 settings.MIDDLEWARE = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE
-            elif type(settings.MIDDLEWARE) is list:
+            elif isinstance(settings.MIDDLEWARE, list):
                 settings.MIDDLEWARE = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE
             else:
                 logger.warning("Instana: Couldn't add InstanaMiddleware to Django")
@@ -96,12 +94,9 @@ def load_middleware_wrapper(wrapped, instance, args, kwargs):
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
                 return wrapped(*args, **kwargs)
 
-            # Save the list of middleware for Snapshot reporting
-            agent.sensor.meter.djmw = settings.MIDDLEWARE_CLASSES
-
-            if type(settings.MIDDLEWARE_CLASSES) is tuple:
+            if isinstance(settings.MIDDLEWARE_CLASSES, tuple):
                 settings.MIDDLEWARE_CLASSES = (DJ_INSTANA_MIDDLEWARE,) + settings.MIDDLEWARE_CLASSES
-            elif type(settings.MIDDLEWARE_CLASSES) is list:
+            elif isinstance(settings.MIDDLEWARE_CLASSES, list):
                 settings.MIDDLEWARE_CLASSES = [DJ_INSTANA_MIDDLEWARE] + settings.MIDDLEWARE_CLASSES
             else:
                 logger.warning("Instana: Couldn't add InstanaMiddleware to Django")

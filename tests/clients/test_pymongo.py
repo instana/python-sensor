@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 class TestPyMongo(unittest.TestCase):
     def setUp(self):
-        logger.warning("Connecting to MongoDB mongo://%s:<pass>@%s:%s",
-                    testenv['mongodb_user'], testenv['mongodb_host'], testenv['mongodb_port'])
-
         self.conn = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),
                                         username=testenv['mongodb_user'], password=testenv['mongodb_pw'])
         self.conn.test.records.delete_many(filter={})

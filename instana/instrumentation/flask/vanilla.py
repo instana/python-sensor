@@ -9,7 +9,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, tracer
-from ...util import strip_secrets
+from ...util import strip_secrets_from_query
 
 path_tpl_re = re.compile('<.*>')
 
@@ -25,8 +25,8 @@ def before_request_with_instana(*argv, **kwargs):
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
 
-        if hasattr(agent, 'extra_headers') and agent.extra_headers is not None:
-            for custom_header in agent.extra_headers:
+        if agent.options.extra_http_headers is not None:
+            for custom_header in agent.options.extra_http_headers:
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if header in env:
@@ -36,7 +36,7 @@ def before_request_with_instana(*argv, **kwargs):
         if 'PATH_INFO' in env:
             span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-            scrubbed_params = strip_secrets(env['QUERY_STRING'], agent.secrets_matcher, agent.secrets_list)
+            scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
             span.set_tag("http.params", scrubbed_params)
         if 'HTTP_HOST' in env:
             span.set_tag("http.host", env['HTTP_HOST'])

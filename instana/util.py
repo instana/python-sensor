@@ -204,7 +204,7 @@ def contains_secret(candidate, matcher, kwlist):
         logger.debug("contains_secret", exc_info=True)
 
 
-def strip_secrets_from_query(qp, matcher, kwlist):
+def strip_secrets_from_query(qp, matcher=None, kwlist=None):
     """
     This function will scrub the secrets from a query param string based on the passed in matcher and kwlist.
 
@@ -224,6 +224,15 @@ def strip_secrets_from_query(qp, matcher, kwlist):
     try:
         if qp is None:
             return ''
+
+        # If matcher & kwlist are not specified, default to the agent options
+        if matcher is None or kwlist is None:
+            from .singletons import get_agent # pylint: disable=import-outside-toplevel
+            agent = get_agent()
+            if matcher is None:
+                matcher = agent.options.secrets_matcher
+            if kwlist is None:
+                kwlist = agent.options.secrets_list
 
         if not isinstance(kwlist, list):
             logger.debug("strip_secrets_from_query: bad keyword list")

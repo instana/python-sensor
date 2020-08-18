@@ -61,8 +61,8 @@ def get_lambda_handler_or_default():
 
         if handler:
             parts = handler.split(".")
-            handler_function = parts.pop()
-            handler_module = ".".join(parts)
+            handler_function = parts.pop().strip()
+            handler_module = ".".join(parts).strip()
     except Exception:
         pass
 

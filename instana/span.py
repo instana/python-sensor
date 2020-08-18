@@ -166,6 +166,7 @@ class BaseSpan(object):
         return self.__dict__.__str__()
 
     def __init__(self, span, source, service_name, **kwargs):
+        # pylint: disable=invalid-name 
         self.t = span.context.trace_id
         self.p = span.parent_id
         self.s = span.context.span_id

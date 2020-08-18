@@ -5,7 +5,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
-from ..singletons import agent, tracer
+from ..singletons import get_agent, get_tracer
 from ..util import strip_secrets_from_query
 
 try:
@@ -32,7 +32,7 @@ try:
                 parts = kvs['path'].split('?')
                 kvs['path'] = parts[0]
                 if len(parts) == 2:
-                    kvs['query'] = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
+                    kvs['query'] = strip_secrets_from_query(parts[1])
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
                 kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
@@ -48,6 +48,7 @@ try:
         try:
             scope.span.set_tag(ext.HTTP_STATUS_CODE, response.status)
 
+            agent = get_agent()
             if agent.options.extra_http_headers is not None:
                 for custom_header in agent.options.extra_http_headers:
                     if custom_header in response.headers:
@@ -60,6 +61,7 @@ try:
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
+        tracer = get_tracer()
         parent_span = tracer.active_span
 
         # If we're not tracing, just return
@@ -84,8 +86,8 @@ try:
                 collect_response(scope, response)
 
                 return response
-            except Exception as e:
-                scope.span.mark_as_errored({'message': e})
+            except Exception as exc:
+                scope.span.mark_as_errored({'message': exc})
                 raise
 
     logger.debug("Instrumenting urllib3")

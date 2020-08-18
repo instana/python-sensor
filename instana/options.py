@@ -87,6 +87,7 @@ class ServerlessOptions(BaseOptions):
         else:
             self.endpoint_proxy = {'https': proxy}
 
+        # INSTANA_TIMEOUT is specified in milliseconds but our HTTP client uses seconds
         timeout_in_ms = os.environ.get("INSTANA_TIMEOUT", None)
         if timeout_in_ms is None:
             self.timeout = 0.8

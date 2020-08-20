@@ -4,8 +4,10 @@ monitoring state and reporting that data.
 """
 from __future__ import absolute_import
 
-import json
 import os
+import json
+import urllib3
+import requests
 from datetime import datetime
 
 from ..log import logger
@@ -230,6 +232,10 @@ class HostAgent(BaseAgent):
                     # The host agent returned something indicating that is has a request for us that we
                     # need to process.
                     self.handle_agent_tasks(json.loads(response.content)[0])
+        except requests.exceptions.ConnectionError:
+            pass
+        except urllib3.exceptions.MaxRetryError:
+            pass
         except Exception as exc:
             logger.debug("report_data_payload: Instana host agent connection error (%s)", type(exc), exc_info=True)
         return response

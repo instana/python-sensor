@@ -37,7 +37,13 @@ try:
                     if custom_header in request.headers:
                         scope.span.set_tag("http.%s" % custom_header, request.headers[custom_header])
 
-            response = await handler(request)
+            response = None
+            try:
+                response = await handler(request)
+            except aiohttp.web.HTTPException as e:
+                # AIOHTTP uses exceptions for specific responses
+                # see https://docs.aiohttp.org/en/latest/web_exceptions.html#web-server-exceptions
+                response = e
 
             if response is not None:
                 # Mark 500 responses as errored

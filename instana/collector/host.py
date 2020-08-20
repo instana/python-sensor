@@ -42,6 +42,10 @@ class HostCollector(BaseCollector):
                         self.agent.machine.fsm.ready()
                 else:
                     return
+
+            if self.agent.machine.fsm.current == "good2go" and self.agent.is_timed_out():
+                logger.info("The Instana host agent has gone offline or is no longer reachable for > 1 min.  Will retry periodically.")
+                self.agent.reset()
         except Exception:
             logger.debug('Harmless state machine thread disagreement.  Will self-correct on next timer cycle.')
 

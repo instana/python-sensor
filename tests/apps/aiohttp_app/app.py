@@ -3,7 +3,7 @@
 import asyncio
 from aiohttp import web
 
-from ..helpers import testenv
+from ...helpers import testenv
 
 
 testenv["aiohttp_port"] = 10810
@@ -14,8 +14,12 @@ def say_hello(request):
     return web.Response(text='Hello, world')
 
 
+def two_hundred_four(request):
+    raise web.HTTPNoContent()
+
+
 def four_hundred_one(request):
-    return web.HTTPUnauthorized(reason="I must simulate errors.", text="Simulated server error.")
+    raise web.HTTPUnauthorized(reason="I must simulate errors.", text="Simulated server error.")
 
 
 def five_hundred(request):
@@ -26,12 +30,13 @@ def raise_exception(request):
     raise Exception("Simulated exception")
 
 
-def run_server():
+def aiohttp_server():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     app = web.Application(debug=False)
     app.add_routes([web.get('/', say_hello)])
+    app.add_routes([web.get('/204', two_hundred_four)])
     app.add_routes([web.get('/401', four_hundred_one)])
     app.add_routes([web.get('/500', five_hundred)])
     app.add_routes([web.get('/exception', raise_exception)])

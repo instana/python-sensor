@@ -45,18 +45,18 @@ class TestWSGI(unittest.TestCase):
         assert response
         self.assertEqual(200, response.status)
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -124,18 +124,18 @@ class TestWSGI(unittest.TestCase):
         assert response
         self.assertEqual(200, response.status)
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -192,18 +192,18 @@ class TestWSGI(unittest.TestCase):
         assert response
         self.assertEqual(200, response.status)
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -251,18 +251,18 @@ class TestWSGI(unittest.TestCase):
         assert response
         self.assertEqual(200, response.status)
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -308,18 +308,18 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(wsgi_span.t, '0000000000000001')
         self.assertEqual(wsgi_span.p, '0000000000000001')
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -341,18 +341,18 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(wsgi_span.t, '0000000000000001')
         self.assertEqual(wsgi_span.p, '0000000000000001')
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -372,18 +372,18 @@ class TestWSGI(unittest.TestCase):
         assert response
         self.assertEqual(200, response.status)
 
-        assert('X-Instana-T' in response.headers)
+        assert 'X-Instana-T' in response.headers
         assert(int(response.headers['X-Instana-T'], 16))
         self.assertEqual(response.headers['X-Instana-T'], wsgi_span.t)
 
-        assert('X-Instana-S' in response.headers)
+        assert 'X-Instana-S' in response.headers
         assert(int(response.headers['X-Instana-S'], 16))
         self.assertEqual(response.headers['X-Instana-S'], wsgi_span.s)
 
-        assert('X-Instana-L' in response.headers)
+        assert 'X-Instana-L' in response.headers
         self.assertEqual(response.headers['X-Instana-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 

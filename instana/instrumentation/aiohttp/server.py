@@ -25,7 +25,9 @@ try:
             url = str(request.url)
             parts = url.split('?')
             if len(parts) > 1:
-                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
+                cleaned_qp = strip_secrets_from_query(parts[1],
+                                                      agent.options.secrets_matcher,
+                                                      agent.options.secrets_list)
                 scope.span.set_tag("http.params", cleaned_qp)
 
             scope.span.set_tag("http.url", parts[0])
@@ -40,10 +42,10 @@ try:
             response = None
             try:
                 response = await handler(request)
-            except aiohttp.web.HTTPException as e:
+            except aiohttp.web.HTTPException as exc:
                 # AIOHTTP uses exceptions for specific responses
                 # see https://docs.aiohttp.org/en/latest/web_exceptions.html#web-server-exceptions
-                response = e
+                response = exc
 
             if response is not None:
                 # Mark 500 responses as errored
@@ -55,18 +57,18 @@ try:
                 response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             return response
-        except Exception as e:
+        except Exception as exc:
             logger.debug("aiohttp stan_middleware", exc_info=True)
             if scope is not None:
                 scope.span.set_tag("http.status_code", 500)
-                scope.span.log_exception(e)
+                scope.span.log_exception(exc)
             raise
         finally:
             if scope is not None:
                 scope.close()
 
 
-    @wrapt.patch_function_wrapper('aiohttp.web','Application.__init__')
+    @wrapt.patch_function_wrapper('aiohttp.web', 'Application.__init__')
     def init_with_instana(wrapped, instance, argv, kwargs):
         if "middlewares" in kwargs:
             kwargs["middlewares"].insert(0, stan_middleware)
@@ -78,4 +80,3 @@ try:
     logger.debug("Instrumenting aiohttp server")
 except ImportError:
     pass
-

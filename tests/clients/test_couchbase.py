@@ -25,7 +25,7 @@ except HTTPError:
     pass
 
 
-@pytest.mark.skip(reason='Unstable tests')
+@pytest.mark.skipif("COUCHBASE_TEST" not in os.environ, reason="")
 class TestStandardCouchDB(unittest.TestCase):
     def setup_class(self):
         """ Clear all spans before a test run """

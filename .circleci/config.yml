@@ -86,6 +86,7 @@ jobs:
           name: run tests
           environment:
             INSTANA_TEST: "true"
+            COUCHBASE_TEST: "true"
           command: |
             . venv/bin/activate
             pytest -v tests/clients/test_couchbase.py
@@ -115,6 +116,7 @@ jobs:
           name: run tests
           environment:
             INSTANA_TEST: "true"
+            COUCHBASE_TEST: "true"
           command: |
             . venv/bin/activate
             pytest -v tests/clients/test_couchbase.py

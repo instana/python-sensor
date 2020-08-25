@@ -31,7 +31,11 @@ class MockContext(dict):
 # This is the target handler that will be instrumented for these tests
 def my_lambda_handler(event, context):
     # print("target_handler called")
-    return "All Ok"
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({'site': 'pwpush.com', 'response': 204})
+    }
 
 # We only want to monkey patch the test handler once so do it here
 os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
@@ -118,7 +122,7 @@ class TestLambda(unittest.TestCase):
     def test_has_options(self):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'options'))
-        self.assertTrue(type(self.agent.options) is AWSLambdaOptions)
+        self.assertTrue(isinstance(self.agent.options, AWSLambdaOptions))
         assert(self.agent.options.endpoint_proxy == { })
 
     def test_get_handler(self):
@@ -173,14 +177,17 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
         os.environ.pop('INSTANA_SERVICE_NAME')
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -196,6 +203,9 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('0901d8ae4fbf1529', span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -233,14 +243,17 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -256,6 +269,9 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('0901d8ae4fbf1529', span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -292,14 +308,17 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -315,6 +334,9 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('0901d8ae4fbf1529', span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -350,14 +372,17 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -373,6 +398,9 @@ class TestLambda(unittest.TestCase):
         self.assertIsNone(span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -392,7 +420,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('aws:cloudwatch.events', span.data['lambda']['trigger'])
         self.assertEqual('cdc73f9d-aea9-11e3-9d5a-835b769c0d9c', span.data["lambda"]["cw"]["events"]["id"])
         self.assertEqual(False, span.data["lambda"]["cw"]["events"]["more"])
-        self.assertTrue(type(span.data["lambda"]["cw"]["events"]["resources"]) is list)
+        self.assertTrue(isinstance(span.data["lambda"]["cw"]["events"]["resources"], list))
         self.assertEqual(1, len(span.data["lambda"]["cw"]["events"]["resources"]))
         self.assertEqual('arn:aws:events:eu-west-1:123456789012:rule/ExampleRule',
                          span.data["lambda"]["cw"]["events"]["resources"][0])
@@ -408,14 +436,17 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -431,6 +462,9 @@ class TestLambda(unittest.TestCase):
         self.assertIsNone(span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -452,7 +486,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('testLogGroup', span.data['lambda']['cw']['logs']['group'])
         self.assertEqual('testLogStream', span.data['lambda']['cw']['logs']['stream'])
         self.assertEqual(None, span.data['lambda']['cw']['logs']['more'])
-        self.assertTrue(type(span.data['lambda']['cw']['logs']['events']) is list)
+        self.assertTrue(isinstance(span.data['lambda']['cw']['logs']['events'], list))
         self.assertEqual(2, len(span.data['lambda']['cw']['logs']['events']))
         self.assertEqual('[ERROR] First test message', span.data['lambda']['cw']['logs']['events'][0])
         self.assertEqual('[ERROR] Second test message', span.data['lambda']['cw']['logs']['events'][1])
@@ -468,14 +502,17 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -491,6 +528,9 @@ class TestLambda(unittest.TestCase):
         self.assertIsNone(span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -508,7 +548,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:s3', span.data['lambda']['trigger'])
-        self.assertTrue(type(span.data["lambda"]["s3"]["events"]) is list)
+        self.assertTrue(isinstance(span.data["lambda"]["s3"]["events"], list))
         events = span.data["lambda"]["s3"]["events"]
         self.assertEqual(1, len(events))
         event = events[0]
@@ -527,14 +567,17 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        self.assertEqual('All Ok', result)
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(type(payload['metrics']['plugins']) is list)
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
         self.assertTrue(len(payload['metrics']['plugins']) == 1)
         plugin_data = payload['metrics']['plugins'][0]
 
@@ -550,6 +593,9 @@ class TestLambda(unittest.TestCase):
         self.assertIsNone(span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -567,7 +613,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNone(span.data['service'])
 
         self.assertEqual('aws:sqs', span.data['lambda']['trigger'])
-        self.assertTrue(type(span.data["lambda"]["sqs"]["messages"]) is list)
+        self.assertTrue(isinstance(span.data["lambda"]["sqs"]["messages"], list))
         messages = span.data["lambda"]["sqs"]["messages"]
         self.assertEqual(1, len(messages))
         message = messages[0]

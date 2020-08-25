@@ -11,6 +11,9 @@ collect_ignore_glob = []
 if "CASSANDRA_TEST" not in os.environ:
     collect_ignore_glob.append("*test_cassandra*")
 
+if "COUCHBASE_TEST" not in os.environ:
+    collect_ignore_glob.append("*test_couchbase*")
+
 if "GEVENT_TEST" not in os.environ:
     collect_ignore_glob.append("*test_gevent*")
 

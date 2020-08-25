@@ -208,6 +208,4 @@ workflows:
       - python38
       - py27cassandra
       - py36cassandra
-      - py27couchbase
-      - py38couchbase
       - gevent38

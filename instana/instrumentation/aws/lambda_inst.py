@@ -24,6 +24,18 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
         enrich_lambda_span(agent, scope.span, *args)
         try:
             result = wrapped(*args, **kwargs)
+
+            if isinstance(result, dict):
+                server_timing_value = "intid;desc=%s" % scope.span.context.trace_id
+                if 'headers' in result:
+                    result['headers']['Server-Timing'] = server_timing_value
+                elif 'multiValueHeaders' in result:
+                    result['multiValueHeaders']['Server-Timing'] = [server_timing_value]
+                else:
+                    # If both 'headers' and 'multiValueHeaders' aren't in result,
+                    # then default to setting single value 'headers'
+                    result['headers'] = dict()
+                    result['headers']['Server-Timing'] = server_timing_value
         except Exception as exc:
             if scope.span:
                 scope.span.log_exception(exc)

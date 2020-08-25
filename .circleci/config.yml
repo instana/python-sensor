@@ -81,7 +81,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test]'
+            pip install -e '.[test-couchbase]'
       - run:
           name: run tests
           environment:
@@ -110,7 +110,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test]'
+            pip install -e '.[test-couchbase]'
       - run:
           name: run tests
           environment:

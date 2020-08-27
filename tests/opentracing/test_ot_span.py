@@ -278,8 +278,6 @@ class TestOTSpan(unittest.TestCase):
         my_log_span = spans[0]
         assert my_log_span.n == 'sdk'
 
-        import ipdb
-        ipdb.set_trace()
         log_data = my_log_span.data['sdk']['custom']['logs']
         assert len(log_data) == 2
 

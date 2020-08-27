@@ -8,12 +8,13 @@ import traceback
 import opentracing as ot
 from basictracer import BasicTracer
 
-from .binary_propagator import BinaryPropagator
+from .util import generate_id
+from .span_context import SpanContext
 from .http_propagator import HTTPPropagator
 from .text_propagator import TextPropagator
+from .span import InstanaSpan, RegisteredSpan
+from .binary_propagator import BinaryPropagator
 from .recorder import StanRecorder, InstanaSampler
-from .span import InstanaSpan, RegisteredSpan, SpanContext
-from .util import generate_id
 
 
 class InstanaTracer(BasicTracer):
@@ -112,14 +113,14 @@ class InstanaTracer(BasicTracer):
     def inject(self, span_context, format, carrier):
         if format in self._propagators:
             return self._propagators[format].inject(span_context, carrier)
-        else:
-            raise ot.UnsupportedFormatException()
+
+        raise ot.UnsupportedFormatException()
 
     def extract(self, format, carrier):
         if format in self._propagators:
             return self._propagators[format].extract(carrier)
-        else:
-            raise ot.UnsupportedFormatException()
+
+        raise ot.UnsupportedFormatException()
 
     def __add_stack(self, span, limit=None):
         """ Adds a backtrace to this span """

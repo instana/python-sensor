@@ -55,8 +55,7 @@ class InstanaSpan(BasicSpan):
             if isinstance(key, (six.text_type, six.string_types)):
                 validated_key = key[0:1024] # Max key length of 1024 characters
 
-                value_type = type(value)
-                if value_type in [bool, float, int, list, dict, six.text_type, six.string_types]:
+                if isinstance(value, (bool, float, int, list, dict, six.text_type, six.string_types)):
                     validated_value = value
                 else:
                     validated_value = self._convert_tag_value(value)

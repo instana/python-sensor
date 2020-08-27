@@ -86,6 +86,18 @@ class InstanaSpan(BasicSpan):
 
         return self
 
+    def log_kv(self, key_values, timestamp=None):
+        validated_key = None
+        validated_value = None
+
+        for key in key_values.keys():
+            validated_key, validated_value = self._validate_tag(key, key_values[key])
+
+        if validated_key is not None and validated_value is not None:
+            return super(InstanaSpan, self).log_kv({validated_key: validated_value}, timestamp)
+
+        return self
+
     def mark_as_errored(self, tags = None):
         """
         Mark this span as errored.
@@ -148,28 +160,6 @@ class InstanaSpan(BasicSpan):
             logger.debug("span.log_exception", exc_info=True)
             raise
 
-    def collect_logs(self):
-        """
-        Collect up log data and feed it to the Instana brain.
-
-        :param span: The span to search for logs in
-        :return: Logs ready for consumption by the Instana brain.
-        """
-        logs = {}
-        for log in self.logs:
-            ts = int(round(log.timestamp * 1000))
-            if ts not in logs:
-                logs[ts] = {}
-
-            if 'message' in log.key_values:
-                logs[ts]['message'] = log.key_values['message']
-            if 'event' in log.key_values:
-                logs[ts]['event'] = log.key_values['event']
-            if 'parameters' in log.key_values:
-                logs[ts]['parameters'] = log.key_values['parameters']
-
-        return logs
-
 
 class BaseSpan(object):
     sy = None
@@ -181,6 +171,7 @@ class BaseSpan(object):
         return self.__dict__.__str__()
 
     def __init__(self, span, source, service_name, **kwargs):
+        # pylint: disable=invalid-name
         self.t = span.context.trace_id
         self.p = span.parent_id
         self.s = span.context.span_id
@@ -204,6 +195,7 @@ class SDKSpan(BaseSpan):
     EXIT_KIND = ["exit", "client", "producer"]
 
     def __init__(self, span, source, service_name, **kwargs):
+        # pylint: disable=invalid-name
         super(SDKSpan, self).__init__(span, source, service_name, **kwargs)
 
         span_kind = self.get_span_kind(span)
@@ -217,13 +209,18 @@ class SDKSpan(BaseSpan):
         self.data["sdk"]["name"] = span.operation_name
         self.data["sdk"]["type"] = span_kind[0]
         self.data["sdk"]["custom"]["tags"] = span.tags
-        self.data["sdk"]["custom"]["logs"] = span.logs
+
+        if span.logs is not None and len(span.logs) > 0:
+            logs = DictionaryOfStan()
+            for log in span.logs:
+                logs[repr(log.timestamp)] = log.key_values
+            self.data["sdk"]["custom"]["logs"] = logs
 
         if "arguments" in span.tags:
-            self.data.sdk.arguments = span.tags["arguments"]
+            self.data['sdk']['arguments'] = span.tags["arguments"]
 
         if "return" in span.tags:
-            self.data.sdk.Return = span.tags["return"]
+            self.data['sdk']['return'] = span.tags["return"]
 
         if len(span.context.baggage) > 0:
             self.data["baggage"] = span.context.baggage
@@ -259,6 +256,7 @@ class RegisteredSpan(BaseSpan):
     LOCAL_SPANS = ("render")
 
     def __init__(self, span, source, service_name, **kwargs):
+        # pylint: disable=invalid-name
         super(RegisteredSpan, self).__init__(span, source, service_name, **kwargs)
         self.n = span.operation_name
 
@@ -278,7 +276,7 @@ class RegisteredSpan(BaseSpan):
             self.k = 1  # entry
 
         # Store any leftover tags in the custom section
-        if len(span.tags):
+        if len(span.tags) > 0:
             self.data["custom"]["tags"] = span.tags
 
     def _populate_entry_span_data(self, span):

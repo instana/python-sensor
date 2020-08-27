@@ -1,75 +1,91 @@
+"""
+This module contains the classes that represents spans.
+
+InstanaSpan - the OpenTracing based span used during tracing
+
+When an InstanaSpan is finished, it is converted into either an SDKSpan
+or RegisteredSpan depending on type.
+
+BaseSpan: Base class containing the commonalities for the two descendants
+  - SDKSpan: Class that represents an SDK type span
+  - RegisteredSpan: Class that represents a Registered type span
+"""
 import six
-import sys
-from .log import logger
-from .util import DictionaryOfStan
+
 from basictracer.span import BasicSpan
 import opentracing.ext.tags as ot_tags
 
-
-class SpanContext():
-    def __init__(
-            self,
-            trace_id=None,
-            span_id=None,
-            baggage=None,
-            sampled=True,
-            level=1,
-            synthetic=False):
-
-        self.level = level
-        self.trace_id = trace_id
-        self.span_id = span_id
-        self.sampled = sampled
-        self.synthetic = synthetic
-        self._baggage = baggage or {}
-
-    @property
-    def baggage(self):
-        return self._baggage
-
-    def with_baggage_item(self, key, value):
-        new_baggage = self._baggage.copy()
-        new_baggage[key] = value
-        return SpanContext(
-            trace_id=self.trace_id,
-            span_id=self.span_id,
-            sampled=self.sampled,
-            baggage=new_baggage)
+from .log import logger
+from .util import DictionaryOfStan
 
 
 class InstanaSpan(BasicSpan):
     stack = None
     synthetic = False
 
-    def finish(self, finish_time=None):
-        super(InstanaSpan, self).finish(finish_time)
+    def __init__(self, tracer, operation_name=None, context=None, parent_id=None, tags=None, start_time=None):
+        # Tag validation
+        filtered_tags = {}
+        if tags is not None:
+            for key in tags.keys():
+                validated_key, validated_value = self._validate_tag(key, tags[key])
+                if validated_key is not None:
+                    filtered_tags[validated_key] = validated_value
+
+        super(InstanaSpan, self).__init__(tracer, operation_name, context, parent_id, filtered_tags, start_time)
+
+    def _validate_tag(self, key, value):
+        """
+        This method will assure that <key> and <value> are valid to set as a tag.
+        If <value> fails the check, an attempt will be made to convert it into
+        something useful.
+
+        On check failure, this method will return None values indicating that the tag is
+        not valid and could not be converted into something useful
+
+        :param key: The tag key
+        :param value: The tag value
+        :return: Tuple (key, value)
+        """
+        validated_key = None
+        validated_value = None
+
+        try:
+            # Tag keys must be some type of text or string type
+            if isinstance(key, (six.text_type, six.string_types)):
+                validated_key = key[0:1024] # Max key length of 1024 characters
+
+                value_type = type(value)
+                if value_type in [bool, float, int, list, dict, six.text_type, six.string_types]:
+                    validated_value = value
+                else:
+                    validated_value = self._convert_tag_value(value)
+            else:
+                logger.debug("(non-fatal) tag names must be strings. tag discarded for %s", type(key))
+        except Exception:
+            logger.debug("instana.span._validate_tag: ", exc_info=True)
+
+        return (validated_key, validated_value)
+
+    def _convert_tag_value(self, value):
+        final_value = None
+
+        try:
+            final_value = repr(value)
+        except Exception:
+            final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int, list, " \
+                            "set, str or alternatively support 'repr'. tag discarded"
+            logger.debug(final_value, exc_info=True)
+            return None
+        return final_value
 
     def set_tag(self, key, value):
-        # Key validation
-        if not isinstance(key, six.text_type) and not isinstance(key, six.string_types) :
-            logger.debug("(non-fatal) span.set_tag: tag names must be strings. tag discarded for %s", type(key))
-            return self
+        validated_key, validated_value = self._validate_tag(key, value)
 
-        final_value = value
-        value_type = type(value)
+        if validated_key is not None and validated_value is not None:
+            return super(InstanaSpan, self).set_tag(validated_key, validated_value)
 
-        # Value validation
-        if value_type in [bool, float, int, list, str]:
-            return super(InstanaSpan, self).set_tag(key, final_value)
-
-        elif isinstance(value, six.text_type):
-            final_value = str(value)
-
-        else:
-            try:
-                final_value = repr(value)
-            except:
-                final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int, list, " \
-                              "set, str or alternatively support 'repr'. tag discarded"
-                logger.debug(final_value, exc_info=True)
-                return self
-
-        return super(InstanaSpan, self).set_tag(key, final_value)
+        return self
 
     def mark_as_errored(self, tags = None):
         """
@@ -81,7 +97,7 @@ class InstanaSpan(BasicSpan):
             ec = self.tags.get('ec', 0)
             self.set_tag('ec', ec + 1)
 
-            if tags is not None and type(tags) is dict:
+            if tags is not None and isinstance(tags, dict):
                 for key in tags:
                     self.set_tag(key, tags[key])
         except Exception:
@@ -99,7 +115,7 @@ class InstanaSpan(BasicSpan):
         except Exception:
             logger.debug('span.assure_errored', exc_info=True)
 
-    def log_exception(self, e):
+    def log_exception(self, exc):
         """
         Log an exception onto this span.  This will log pertinent info from the exception and
         assure that this span is marked as errored.
@@ -110,12 +126,12 @@ class InstanaSpan(BasicSpan):
             message = ""
             self.mark_as_errored()
 
-            if hasattr(e, '__str__') and len(str(e)) > 0:
-                message = str(e)
-            elif hasattr(e, 'message') and e.message is not None:
-                message = e.message
+            if hasattr(exc, '__str__') and len(str(exc)) > 0:
+                message = str(exc)
+            elif hasattr(exc, 'message') and exc.message is not None:
+                message = exc.message
             else:
-                message = repr(e)
+                message = repr(exc)
 
             if self.operation_name in ['rpc-server', 'rpc-client']:
                 self.set_tag('rpc.error', message)
@@ -158,7 +174,7 @@ class InstanaSpan(BasicSpan):
 
 class BaseSpan(object):
     sy = None
-    
+
     def __str__(self):
         return "BaseSpan(%s)" % self.__dict__.__str__()
 

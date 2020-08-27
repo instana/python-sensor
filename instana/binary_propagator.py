@@ -4,7 +4,7 @@ import opentracing as ot
 
 from .log import logger
 from .util import header_to_id
-from .span import SpanContext
+from .span_context import SpanContext
 
 
 class BinaryPropagator():

@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import opentracing as ot
 
 from .log import logger
-from .span import SpanContext
 from .util import header_to_id
+from .span_context import SpanContext
 
 # The carrier can be a dict or a list.
 # Using the trace header as an example, it can be in the following forms

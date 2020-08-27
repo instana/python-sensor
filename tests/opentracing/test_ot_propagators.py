@@ -5,6 +5,7 @@ import opentracing as ot
 import instana.http_propagator as ihp
 import instana.text_propagator as itp
 from instana import span
+from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer
 
 
@@ -53,7 +54,7 @@ def test_http_basic_extract():
     carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1', 'X-Instana-Synthetic': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert isinstance(ctx, span.SpanContext)
+    assert isinstance(ctx, SpanContext)
     assert('0000000000000001' == ctx.trace_id)
     assert('0000000000000001' == ctx.span_id)
     assert ctx.synthetic
@@ -65,7 +66,7 @@ def test_http_mixed_case_extract():
     carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert isinstance(ctx, span.SpanContext)
+    assert isinstance(ctx, SpanContext)
     assert('0000000000000001' == ctx.trace_id)
     assert('0000000000000001' == ctx.span_id)
     assert not ctx.synthetic
@@ -77,7 +78,7 @@ def test_http_extract_synthetic_only():
     carrier = {'X-Instana-Synthetic': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert isinstance(ctx, span.SpanContext)
+    assert isinstance(ctx, SpanContext)
     assert ctx.trace_id is None
     assert ctx.span_id is None
     assert ctx.synthetic
@@ -99,7 +100,7 @@ def test_http_128bit_headers():
                'X-Instana-S': '0000000000000000b0789916ff8f319f', 'X-Instana-L': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert isinstance(ctx, span.SpanContext)
+    assert isinstance(ctx, SpanContext)
     assert('b0789916ff8f319f' == ctx.trace_id)
     assert('b0789916ff8f319f' == ctx.span_id)
 
@@ -149,7 +150,7 @@ def test_text_basic_extract():
     carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
-    assert isinstance(ctx, span.SpanContext)
+    assert isinstance(ctx, SpanContext)
     assert('0000000000000001' == ctx.trace_id)
     assert('0000000000000001' == ctx.span_id)
 
@@ -179,6 +180,6 @@ def test_text_128bit_headers():
                'X-INSTANA-S': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
-    assert isinstance(ctx, span.SpanContext)
+    assert isinstance(ctx, SpanContext)
     assert('b0789916ff8f319f' == ctx.trace_id)
     assert('b0789916ff8f319f' == ctx.span_id)

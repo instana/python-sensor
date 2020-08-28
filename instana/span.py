@@ -23,81 +23,6 @@ class InstanaSpan(BasicSpan):
     stack = None
     synthetic = False
 
-    def __init__(self, tracer, operation_name=None, context=None, parent_id=None, tags=None, start_time=None):
-        # Tag validation
-        filtered_tags = {}
-        if tags is not None:
-            for key in tags.keys():
-                validated_key, validated_value = self._validate_tag(key, tags[key])
-                if validated_key is not None:
-                    filtered_tags[validated_key] = validated_value
-
-        super(InstanaSpan, self).__init__(tracer, operation_name, context, parent_id, filtered_tags, start_time)
-
-    def _validate_tag(self, key, value):
-        """
-        This method will assure that <key> and <value> are valid to set as a tag.
-        If <value> fails the check, an attempt will be made to convert it into
-        something useful.
-
-        On check failure, this method will return None values indicating that the tag is
-        not valid and could not be converted into something useful
-
-        :param key: The tag key
-        :param value: The tag value
-        :return: Tuple (key, value)
-        """
-        validated_key = None
-        validated_value = None
-
-        try:
-            # Tag keys must be some type of text or string type
-            if isinstance(key, (six.text_type, six.string_types)):
-                validated_key = key[0:1024] # Max key length of 1024 characters
-
-                if isinstance(value, (bool, float, int, list, dict, six.text_type, six.string_types)):
-                    validated_value = value
-                else:
-                    validated_value = self._convert_tag_value(value)
-            else:
-                logger.debug("(non-fatal) tag names must be strings. tag discarded for %s", type(key))
-        except Exception:
-            logger.debug("instana.span._validate_tag: ", exc_info=True)
-
-        return (validated_key, validated_value)
-
-    def _convert_tag_value(self, value):
-        final_value = None
-
-        try:
-            final_value = repr(value)
-        except Exception:
-            final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int, list, " \
-                            "set, str or alternatively support 'repr'. tag discarded"
-            logger.debug(final_value, exc_info=True)
-            return None
-        return final_value
-
-    def set_tag(self, key, value):
-        validated_key, validated_value = self._validate_tag(key, value)
-
-        if validated_key is not None and validated_value is not None:
-            return super(InstanaSpan, self).set_tag(validated_key, validated_value)
-
-        return self
-
-    def log_kv(self, key_values, timestamp=None):
-        validated_key = None
-        validated_value = None
-
-        for key in key_values.keys():
-            validated_key, validated_value = self._validate_tag(key, key_values[key])
-
-        if validated_key is not None and validated_value is not None:
-            return super(InstanaSpan, self).log_kv({validated_key: validated_value}, timestamp)
-
-        return self
-
     def mark_as_errored(self, tags = None):
         """
         Mark this span as errored.
@@ -160,7 +85,6 @@ class InstanaSpan(BasicSpan):
             logger.debug("span.log_exception", exc_info=True)
             raise
 
-
 class BaseSpan(object):
     sy = None
 
@@ -188,6 +112,64 @@ class BaseSpan(object):
             self.stack = span.stack
 
         self.__dict__.update(kwargs)
+    
+    def _validate_tags(self, tags):
+        """
+        This method will loop through a set of tags to validate each key and value.
+
+        :param tags: dict of tags
+        :return: dict - a filtered set of tags
+        """
+        filtered_tags = {}
+        for key in tags.keys():
+            validated_key, validated_value = self._validate_tag(key, tags[key])
+            if validated_key is not None and validated_value is not None:
+                filtered_tags[validated_key] = validated_value
+        return filtered_tags
+
+    def _validate_tag(self, key, value):
+        """
+        This method will assure that <key> and <value> are valid to set as a tag.
+        If <value> fails the check, an attempt will be made to convert it into
+        something useful.
+
+        On check failure, this method will return None values indicating that the tag is
+        not valid and could not be converted into something useful
+
+        :param key: The tag key
+        :param value: The tag value
+        :return: Tuple (key, value)
+        """
+        validated_key = None
+        validated_value = None
+
+        try:
+            # Tag keys must be some type of text or string type
+            if isinstance(key, (six.text_type, six.string_types)):
+                validated_key = key[0:1024] # Max key length of 1024 characters
+
+                if isinstance(value, (bool, float, int, list, dict, six.text_type, six.string_types)):
+                    validated_value = value
+                else:
+                    validated_value = self._convert_tag_value(value)
+            else:
+                logger.debug("(non-fatal) tag names must be strings. tag discarded for %s", type(key))
+        except Exception:
+            logger.debug("instana.span._validate_tag: ", exc_info=True)
+
+        return (validated_key, validated_value)
+
+    def _convert_tag_value(self, value):
+        final_value = None
+
+        try:
+            final_value = repr(value)
+        except Exception:
+            final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int, list, " \
+                            "set, str or alternatively support 'repr'. tag discarded"
+            logger.debug(final_value, exc_info=True)
+            return None
+        return final_value
 
 
 class SDKSpan(BaseSpan):
@@ -208,12 +190,14 @@ class SDKSpan(BaseSpan):
 
         self.data["sdk"]["name"] = span.operation_name
         self.data["sdk"]["type"] = span_kind[0]
-        self.data["sdk"]["custom"]["tags"] = span.tags
+        self.data["sdk"]["custom"]["tags"] = self._validate_tags(span.tags)
 
         if span.logs is not None and len(span.logs) > 0:
             logs = DictionaryOfStan()
             for log in span.logs:
-                logs[repr(log.timestamp)] = log.key_values
+                filtered_key_values = self._validate_tags(log.key_values)
+                if len(filtered_key_values.keys()) > 0:
+                    logs[repr(log.timestamp)] = filtered_key_values
             self.data["sdk"]["custom"]["logs"] = logs
 
         if "arguments" in span.tags:
@@ -227,8 +211,8 @@ class SDKSpan(BaseSpan):
 
     def get_span_kind(self, span):
         """
-            Will retrieve the `span.kind` tag and return a tuple containing the appropriate string and integer
-            values for the Instana backend
+        Will retrieve the `span.kind` tag and return a tuple containing the appropriate string and integer
+        values for the Instana backend
 
         :param span: The span to search for the `span.kind` tag
         :return: Tuple (String, Int)
@@ -277,7 +261,7 @@ class RegisteredSpan(BaseSpan):
 
         # Store any leftover tags in the custom section
         if len(span.tags) > 0:
-            self.data["custom"]["tags"] = span.tags
+            self.data["custom"]["tags"] = self._validate_tags(span.tags)
 
     def _populate_entry_span_data(self, span):
         if span.operation_name in self.HTTP_SPANS:

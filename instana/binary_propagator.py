@@ -4,7 +4,7 @@ import opentracing as ot
 
 from .log import logger
 from .util import header_to_id
-from .span import SpanContext
+from .span_context import SpanContext
 
 
 class BinaryPropagator():
@@ -21,15 +21,15 @@ class BinaryPropagator():
             span_id = str.encode(span_context.span_id)
             level = str.encode("1")
 
-            if type(carrier) is dict or hasattr(carrier, "__dict__"):
+            if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
                 carrier[self.HEADER_KEY_T] = trace_id
                 carrier[self.HEADER_KEY_S] = span_id
                 carrier[self.HEADER_KEY_L] = level
-            elif type(carrier) is list:
+            elif isinstance(carrier, list):
                 carrier.append((self.HEADER_KEY_T, trace_id))
                 carrier.append((self.HEADER_KEY_S, span_id))
                 carrier.append((self.HEADER_KEY_L, level))
-            elif type(carrier) is tuple:
+            elif isinstance(carrier, tuple):
                 carrier = carrier.__add__(((self.HEADER_KEY_T, trace_id),))
                 carrier = carrier.__add__(((self.HEADER_KEY_S, span_id),))
                 carrier = carrier.__add__(((self.HEADER_KEY_L, level),))
@@ -50,17 +50,17 @@ class BinaryPropagator():
         level = None
 
         try:
-            if type(carrier) is dict or hasattr(carrier, "__getitem__"):
+            if isinstance(carrier, dict) or hasattr(carrier, "__getitem__"):
                 dc = carrier
             elif hasattr(carrier, "__dict__"):
                 dc = carrier.__dict__
-            elif type(carrier) is list:
+            elif isinstance(carrier, list):
                 dc = dict(carrier)
             else:
                 raise ot.SpanContextCorruptedException()
 
             for key, value in dc.items():
-                if type(key) is str:
+                if isinstance(key, str):
                     key = str.encode(key)
 
                 if self.HEADER_KEY_T == key:

@@ -267,3 +267,20 @@ class TestOTSpan(unittest.TestCase):
         assert("service" not in intermediate_span.data)
         assert(exit_span.k == 2)
 
+    def test_span_log(self):
+        with tracer.start_active_span('mylogspan') as scope:
+            scope.span.log_kv({'Don McLean': 'American Pie'})
+            scope.span.log_kv({'Elton John': 'Your Song'})
+
+        spans = tracer.recorder.queued_spans()
+        assert len(spans) == 1
+
+        my_log_span = spans[0]
+        assert my_log_span.n == 'sdk'
+
+        log_data = my_log_span.data['sdk']['custom']['logs']
+        assert len(log_data) == 2
+
+
+
+

@@ -18,7 +18,10 @@ try:
     def add_broker_tags(span, broker_url):
         try:
             url = parse.urlparse(broker_url)
-            span.set_tag("scheme", url.scheme)
+
+            # Add safety for edge case where scheme may not be a string
+            url_scheme = str(url.scheme)
+            span.set_tag("scheme", url_scheme)
 
             if url.hostname is None:
                 span.set_tag("host", 'localhost')
@@ -27,15 +30,15 @@ try:
 
             if url.port is None:
                 # Set default port if not specified
-                if url.scheme == 'redis':
+                if url_scheme == 'redis':
                     span.set_tag("port", "6379")
-                elif 'amqp' in url.scheme:
+                elif 'amqp' in url_scheme:
                     span.set_tag("port", "5672")
-                elif 'sqs' in url.scheme:
+                elif 'sqs' in url_scheme:
                     span.set_tag("port", "443")
             else:
                 span.set_tag("port", str(url.port))
-        except:
+        except Exception:
             logger.debug("Error parsing broker URL: %s" % broker_url, exc_info=True)
 
     @signals.task_prerun.connect

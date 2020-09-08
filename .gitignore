@@ -96,3 +96,6 @@ ENV/
 
 # IntelliJ Idea files
 .idea
+
+# Visual Studio Code
+*.code-workspace

@@ -32,7 +32,14 @@ class RuntimeHelper(BaseHelper):
             plugin_data["name"] = "com.instana.plugin.python"
             plugin_data["entityId"] = str(os.getpid())
             plugin_data["data"] = DictionaryOfStan()
-            plugin_data["data"]["pid"] = str(os.getpid())
+
+            if hasattr(self.collector.agent, "announce_data"):
+                try:
+                    plugin_data["data"]["pid"] = self.collector.agent.announce_data.pid
+                except Exception:
+                    plugin_data["data"]["pid"] = str(os.getpid())
+            else:
+                plugin_data["data"]["pid"] = str(os.getpid())
 
             self._collect_runtime_metrics(plugin_data, with_snapshot)
 

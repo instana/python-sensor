@@ -6,9 +6,10 @@ from __future__ import absolute_import
 
 import os
 import json
+from datetime import datetime
+
 import urllib3
 import requests
-from datetime import datetime
 
 from ..log import logger
 from .base import BaseAgent
@@ -219,7 +220,6 @@ class HostAgent(BaseAgent):
 
             # Report metrics
             metric_bundle = payload["metrics"]["plugins"][0]["data"]
-            # logger.debug(to_json(metric_bundle))
             response = self.client.post(self.__data_url(),
                                         data=to_json(metric_bundle),
                                         headers={"Content-Type": "application/json"},

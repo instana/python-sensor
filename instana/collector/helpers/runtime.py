@@ -9,6 +9,7 @@ from types import ModuleType
 from pkg_resources import DistributionNotFound, get_distribution
 
 from instana.log import logger
+from instana.version import VERSION
 from instana.util import DictionaryOfStan, determine_service_name
 from instana.version import VERSION
 
@@ -167,6 +168,14 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['f'] = platform.python_implementation() # flavor
             snapshot_payload['a'] = platform.architecture()[0] # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
+            snapshot_payload['iv'] = VERSION
+
+            if 'AUTOWRAPT_BOOTSTRAP' in os.environ:
+                snapshot_payload['m'] = 'Autowrapt'
+            elif 'INSTANA_MAGIC' in os.environ:
+                snapshot_payload['m'] = 'AutoTrace'
+            else:
+                snapshot_payload['m'] = 'Manual'
 
             try:
                 from django.conf import settings # pylint: disable=import-outside-toplevel
@@ -192,16 +201,21 @@ class RuntimeHelper(BaseHelper):
                 # Skip modules that begin with underscore
                 if ('.' in pkg_name) or pkg_name[0] == '_':
                     continue
+
+                # Skip builtins
+                if pkg_name in ["sys", "curses"]:
+                    continue
+
                 if sys_packages[pkg_name]:
                     try:
                         pkg_info = sys_packages[pkg_name].__dict__
-                        if "version" in pkg_info:
-                            versions[pkg_name] = self.jsonable(pkg_info["version"])
-                        elif "__version__" in pkg_info:
+                        if "__version__" in pkg_info:
                             if isinstance(pkg_info["__version__"], str):
                                 versions[pkg_name] = pkg_info["__version__"]
                             else:
                                 versions[pkg_name] = self.jsonable(pkg_info["__version__"])
+                        elif "version" in pkg_info:
+                            versions[pkg_name] = self.jsonable(pkg_info["version"])
                         else:
                             versions[pkg_name] = get_distribution(pkg_name).version
                     except DistributionNotFound:

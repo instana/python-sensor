@@ -10,6 +10,7 @@ from pkg_resources import DistributionNotFound, get_distribution
 
 from instana.log import logger
 from instana.util import DictionaryOfStan, determine_service_name
+from instana.version import VERSION
 
 from .base import BaseHelper
 
@@ -207,7 +208,9 @@ class RuntimeHelper(BaseHelper):
                         pass
                     except Exception:
                         logger.debug("gather_python_packages: could not process module: %s", pkg_name)
-
+            
+            # Manually set our package version
+            versions['instana'] = VERSION
         except Exception:
             logger.debug("gather_python_packages", exc_info=True)
 

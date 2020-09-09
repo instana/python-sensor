@@ -14,9 +14,10 @@ import requests
 from ..log import logger
 from .base import BaseAgent
 from ..fsm import TheMachine
+from ..version import VERSION
 from ..options import StandardOptions
 from ..collector.host import HostCollector
-from ..util import to_json, get_py_source, package_version
+from ..util import to_json, get_py_source
 
 
 class AnnounceData(object):
@@ -51,7 +52,7 @@ class HostAgent(BaseAgent):
         # Update log level from what Options detected
         self.update_log_level()
         
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version())
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", VERSION)
 
         self.collector = HostCollector(self)
         self.machine = TheMachine(self)
@@ -251,7 +252,7 @@ class HostAgent(BaseAgent):
                 payload = get_py_source(task["args"]["file"])
             else:
                 message = "Unrecognized action: %s. An newer Instana package may be required " \
-                          "for this. Current version: %s" % (task["action"], package_version())
+                          "for this. Current version: %s" % (task["action"], VERSION)
                 payload = {"error": message}
         else:
             payload = {"error": "Instana Python: No action specified in request."}

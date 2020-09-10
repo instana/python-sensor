@@ -1,9 +1,13 @@
 # coding: utf-8
+import os
 import sys
 from os import path
 from distutils.version import LooseVersion
 from setuptools import find_packages, setup
 
+os.environ["INSTANA_DISABLE"] = "true"
+
+# pylint: disable=wrong-import-position
 from instana.version import VERSION
 
 # Import README.md into long_description

@@ -14,9 +14,10 @@ import requests
 from ..log import logger
 from .base import BaseAgent
 from ..fsm import TheMachine
+from ..version import VERSION
 from ..options import StandardOptions
 from ..collector.host import HostCollector
-from ..util import to_json, get_py_source, package_version
+from ..util import to_json, get_py_source
 
 
 class AnnounceData(object):
@@ -50,8 +51,8 @@ class HostAgent(BaseAgent):
 
         # Update log level from what Options detected
         self.update_log_level()
-        
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", package_version())
+
+        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", VERSION)
 
         self.collector = HostCollector(self)
         self.machine = TheMachine(self)
@@ -186,6 +187,27 @@ class HostAgent(BaseAgent):
             logger.debug("announce: connection error (%s)", type(exc))
         return response
 
+    def log_message_to_host_agent(self, message):
+        """
+        Log a message to the discovered host agent
+        """
+        response = None
+        try:
+            payload = dict()
+            payload["m"] = message
+
+            url = self.__agent_logger_url()
+            response = self.client.post(url,
+                                       data=to_json(payload),
+                                       headers={"Content-Type": "application/json",
+                                                "X-Log-Level": "INFO"},
+                                       timeout=0.8)
+
+            if 200 <= response.status_code <= 204:
+                self.last_seen = datetime.now()
+        except Exception as exc:
+            logger.debug("agent logging: connection error (%s)", type(exc))
+
     def is_agent_ready(self):
         """
         Used after making a successful announce to test when the agent is ready to accept data.
@@ -214,7 +236,7 @@ class HostAgent(BaseAgent):
                                             data=to_json(payload['spans']),
                                             headers={"Content-Type": "application/json"},
                                             timeout=0.8)
-            
+
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
 
@@ -251,7 +273,7 @@ class HostAgent(BaseAgent):
                 payload = get_py_source(task["args"]["file"])
             else:
                 message = "Unrecognized action: %s. An newer Instana package may be required " \
-                          "for this. Current version: %s" % (task["action"], package_version())
+                          "for this. Current version: %s" % (task["action"], VERSION)
                 payload = {"error": message}
         else:
             payload = {"error": "Instana Python: No action specified in request."}
@@ -303,3 +325,9 @@ class HostAgent(BaseAgent):
         """
         path = "com.instana.plugin.python/response.%d?messageId=%s" % (int(self.announce_data.pid), message_id)
         return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
+
+    def __agent_logger_url(self):
+        """
+        URL for logging messages to the discovered host agent.
+        """
+        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, "com.instana.agent.logger")

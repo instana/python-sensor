@@ -11,6 +11,7 @@ from fysom import Fysom
 
 from .log import logger
 from .util import get_default_gateway
+from .version import VERSION
 
 
 class Discovery(object):
@@ -58,7 +59,8 @@ class TheMachine(object):
                 # "onchangestate":  self.print_state_change,
                 "onlookup":       self.lookup_agent_host,
                 "onannounce":     self.announce_sensor,
-                "onpending":      self.on_ready}})
+                "onpending":      self.on_ready,
+                "ongood2go":      self.on_good2go}})
 
         self.timer = threading.Timer(1, self.fsm.lookup)
         self.timer.daemon = True
@@ -173,8 +175,17 @@ class TheMachine(object):
 
     def on_ready(self, _):
         self.agent.start()
-        logger.info("Instana host agent available. We're in business. Announced pid: %s (true pid: %s)",
-                    str(os.getpid()), str(self.agent.announce_data.pid))
+
+        ns_pid = str(os.getpid())
+        true_pid = str(self.agent.announce_data.pid)
+
+        logger.info("Instana host agent available. We're in business. Announced PID: %s (true pid: %s)", ns_pid, true_pid)
+
+    def on_good2go(self, _):
+        ns_pid = str(os.getpid())
+        true_pid = str(self.agent.announce_data.pid)
+
+        self.agent.log_message_to_host_agent("Instana Python Package %s: PID %s (true pid: %s) is now online and reporting" % (VERSION, ns_pid, true_pid))
 
     def __get_real_pid(self):
         """

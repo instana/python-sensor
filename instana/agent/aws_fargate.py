@@ -6,8 +6,9 @@ import time
 from instana.options import AWSFargateOptions
 from instana.collector.aws_fargate import AWSFargateCollector
 from ..log import logger
-from ..util import to_json, package_version
+from ..util import to_json
 from .base import BaseAgent
+from ..version import VERSION
 
 
 class AWSFargateFrom(object):
@@ -34,7 +35,7 @@ class AWSFargateAgent(BaseAgent):
         # Update log level (if INSTANA_LOG_LEVEL was set)
         self.update_log_level()
 
-        logger.info("Stan is on the AWS Fargate scene.  Starting Instana instrumentation version: %s", package_version())
+        logger.info("Stan is on the AWS Fargate scene.  Starting Instana instrumentation version: %s", VERSION)
 
         if self._validate_options():
             self._can_send = True

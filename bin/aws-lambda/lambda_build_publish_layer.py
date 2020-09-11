@@ -27,7 +27,7 @@ for cmd in ["pip", "zip"]:
 this_file_path = os.path.dirname(os.path.realpath(__file__))
 
 # Change directory to the base of the Python sensor repository
-os.chdir(this_file_path + "/../")
+os.chdir(this_file_path + "/../../")
 
 cwd = os.getcwd()
 print("===> Working directory is: %s" % cwd)

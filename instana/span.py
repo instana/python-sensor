@@ -230,7 +230,7 @@ class RegisteredSpan(BaseSpan):
     HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
-    EXIT_SPANS = ("aiohttp-client", "cassandra", "celery-client", "couchbase", "log", "memcache",
+    EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
                   "soap", "tornado-client", "urllib3", "pymongo", "gcs")
 
@@ -336,6 +336,16 @@ class RegisteredSpan(BaseSpan):
     def _populate_exit_span_data(self, span):
         if span.operation_name in self.HTTP_SPANS:
             self._collect_http_tags(span)
+
+        elif span.operation_name == "boto3":
+            for tag in ['op', 'ep', 'reg', 'payload']:
+                value = span.tags.pop(tag, None)
+
+                if value is not None:
+                    if tag == 'payload':
+                        self.data["boto3"][tag] = self._validate_tags(value)
+                    else:
+                        self.data["boto3"][tag] = value
 
         elif span.operation_name == "cassandra":
             self.data["cassandra"]["cluster"] = span.tags.pop('cassandra.cluster', None)

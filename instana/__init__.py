@@ -142,6 +142,7 @@ def boot_agent():
 
         from .instrumentation.celery import hooks
 
+        from .instrumentation import boto3_inst
         from .instrumentation import cassandra_inst
         from .instrumentation import couchbase_inst
         from .instrumentation import flask

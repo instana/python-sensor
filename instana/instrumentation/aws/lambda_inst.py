@@ -49,9 +49,12 @@ if env_is_aws_lambda is True:
     handler_module, handler_function = get_lambda_handler_or_default()
 
     if handler_module is not None and handler_function is not None:
-        logger.debug("Instrumenting AWS Lambda handler (%s.%s)" % (handler_module, handler_function))
-        sys.path.insert(0, '/var/runtime')
-        sys.path.insert(0, '/var/task')
-        wrapt.wrap_function_wrapper(handler_module, handler_function, lambda_handler_with_instana)
+        try:
+            logger.debug("Instrumenting AWS Lambda handler (%s.%s)" % (handler_module, handler_function))
+            sys.path.insert(0, '/var/runtime')
+            sys.path.insert(0, '/var/task')
+            wrapt.wrap_function_wrapper(handler_module, handler_function, lambda_handler_with_instana)
+        except (ModuleNotFoundError, ImportError) as exc:
+            logger.warning("Instana: Couldn't instrument AWS Lambda handler. Not monitoring.")
     else:
-        logger.debug("Couldn't determine AWS Lambda Handler.  Not monitoring.")
+        logger.warning("Instana: Couldn't determine AWS Lambda Handler.  Not monitoring.")

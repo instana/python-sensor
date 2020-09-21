@@ -7,7 +7,7 @@ Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 
 1. Before releasing, assure that [tests have passed](https://circleci.com/gh/instana/workflows/python-sensor) and that the package has also been manually validated in various stacks.
 2. `git checkout master && git pull --rebase && pip install -U twine`
-3. Bump the package version in `setup.py`. `git` commit & push the version change to the master branch
+3. Bump the package version in `instana/version.py`. `git` commit & push the version change to the master branch
 4. Create a [draft Release on Github](https://github.com/instana/python-sensor/releases)
 5. `python setup.py sdist` to create the `instana-<version>.tar.gz` file in `./dist/` 
 6. Upload the package to Pypi with twine: `twine upload dist/instana-<version>*`
@@ -17,10 +17,11 @@ Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 
 ## AWS Lambda Layer
 
-To release a new AWS Lambda layer, see `bin/lambda_build_publish_layer.py`.
+To release a new AWS Lambda layer, see `bin/aws-lambda/lambda_build_publish_layer.py`.
 
-./bin/lambda_build_publish_layer.py [-dev|-prod]
+./bin/aws-lambda/lambda_build_publish_layer.py [-dev|-prod]
+./bin/aws-lambda/create_lambda_release.py <version>
 
-This script assumes you have the AWS CLI tools installed and credentials already configured.
+These scripts assumes that you have the AWS CLI and Github CLI installed and credentials already configured.
 
 Post release, remember to update documentation and the Instana UI.

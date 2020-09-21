@@ -22,7 +22,7 @@ regions = ['ap-northeast-1', 'ap-northeast-2', 'ap-south-1', 'ap-southeast-1', '
 
 version = sys.argv[1]
 semantic_version = 'v' + version
-title = "AWS Lambda Version %s" % semantic_version
+title = "AWS Lambda Layer %s" % semantic_version
 
 body = '| AWS Region | ARN |\n'
 body += '| :-- | :-- |\n'

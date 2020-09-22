@@ -64,4 +64,4 @@ def test_verify_email(ses):
     assert boto_span.data['boto3']['op'] == 'VerifyEmailIdentity'
     assert boto_span.data['boto3']['ep'] == 'email(https://email.us-east-1.amazonaws.com)'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {'EmailAddress': 'pglombardo+instana299@tuta.io'}
+    assert boto_span.data['boto3']['payload'] == repr({'EmailAddress': 'pglombardo+instana299@tuta.io'})

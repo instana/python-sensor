@@ -91,7 +91,7 @@ def test_s3_create_bucket(s3):
     assert boto_span.data['boto3']['op'] == 'CreateBucket'
     assert boto_span.data['boto3']['ep'] == 's3(https://s3.amazonaws.com)'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
+    assert boto_span.data['boto3']['payload'] == repr({'Bucket': 'aws_bucket_name'})
 
 
 def test_s3_list_buckets(s3):
@@ -123,7 +123,7 @@ def test_s3_list_buckets(s3):
     assert boto_span.data['boto3']['op'] == 'ListBuckets'
     assert boto_span.data['boto3']['ep'] == 's3(https://s3.amazonaws.com)'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {}
+    assert boto_span.data['boto3']['payload'] == repr({})
 
 def test_s3_vanilla_upload_file(s3):
     object_name = 'aws_key_name'
@@ -164,7 +164,7 @@ def test_s3_upload_file(s3):
     assert boto_span.data['boto3']['ep'] == 's3(https://s3.amazonaws.com)'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
     payload = {'Filename': upload_filename, 'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
-    assert boto_span.data['boto3']['payload'] == payload
+    assert boto_span.data['boto3']['payload'] == repr(payload)
 
 def test_s3_upload_file_obj(s3):
     object_name = 'aws_key_name'
@@ -198,7 +198,7 @@ def test_s3_upload_file_obj(s3):
     assert(boto_span.data['boto3']['ep'] == 's3(https://s3.amazonaws.com)')
     assert(boto_span.data['boto3']['reg'] == 'us-east-1')
     payload = {'Fileobj': "<_io.BufferedReader name='%s'>" % upload_filename, 'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
-    assert boto_span.data['boto3']['payload'] == payload
+    assert boto_span.data['boto3']['payload'] == repr(payload)
 
 def test_s3_download_file(s3):
     object_name = 'aws_key_name'
@@ -232,7 +232,7 @@ def test_s3_download_file(s3):
     assert(boto_span.data['boto3']['ep'] == 's3(https://s3.amazonaws.com)')
     assert(boto_span.data['boto3']['reg'] == 'us-east-1')
     payload = {'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name', 'Filename': '%s' % download_target_filename}
-    assert boto_span.data['boto3']['payload'] == payload
+    assert boto_span.data['boto3']['payload'] == repr(payload)
 
 def test_s3_download_file_obj(s3):
     object_name = 'aws_key_name'

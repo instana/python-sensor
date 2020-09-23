@@ -86,6 +86,11 @@ try:
                 'gcs.destinationObject': unquote(match.group('destObject')),
                 'gcs.sourceBucket': unquote(match.group('srcBucket')),
                 'gcs.sourceObject': unquote(match.group('srcObject')),
+            },
+            # Channel operations
+            '/channels/stop': lambda params, data: {
+                'gcs.op': 'channels.stop',
+                'gcs.entity': data.get('id', None)
             }
         },
         'PATCH': {

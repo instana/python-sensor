@@ -236,6 +236,17 @@ class TestGoogleCloudStorage(unittest.TestCase):
                     'gcs.bucket': 'test bucket',
                     'gcs.object': 'test object'
                 }
+            ),
+            'channels.stop': (
+                {
+                    'method': 'POST',
+                    'path': '/channels/stop',
+                    'data': {'id': 'test channel'}
+                },
+                {
+                    'gcs.op': 'channels.stop',
+                    'gcs.entity': 'test channel'
+                }
             )
         }
 

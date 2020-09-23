@@ -37,6 +37,16 @@ try:
                 'gcs.op': 'buckets.testIamPermissions',
                 'gcs.bucket': unquote(match.group('bucket')),
             },
+            # Object/blob operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': params.get('alt', 'json') == 'media' and 'objects.get' or 'objects.attrs',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+            },
+            re.compile('^/b/(?P<bucket>[^/]+)/o$'): lambda params, data, match: {
+                'gcs.op': 'objects.list',
+                'gcs.bucket': unquote(match.group('bucket'))
+            }
         },
         'POST': {
             # Bucket operations
@@ -49,6 +59,34 @@ try:
                 'gcs.op': 'buckets.lockRetentionPolicy',
                 'gcs.bucket': unquote(match.group('bucket')),
             },
+            # Object/blob operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/compose$'): lambda params, data, match: {
+                'gcs.op': 'objects.compose',
+                'gcs.destinationBucket': unquote(match.group('bucket')),
+                'gcs.destinationObject': unquote(match.group('object')),
+                'gcs.sourceObjects': ','.join(
+                    ['%s/%s' % (unquote(match.group('bucket')), o.name) for o in data.get('sourceObjects', [])]
+                )
+            },
+            re.compile('^/b/(?P<srcBucket>[^/]+)/o/(?P<srcObject>[^/]+)/copyTo/b/(?P<destBucket>[^/]+)/o/(?P<destObject>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objects.copy',
+                'gcs.destinationBucket': unquote(match.group('destBucket')),
+                'gcs.destinationObject': unquote(match.group('destObject')),
+                'gcs.sourceBucket': unquote(match.group('srcBucket')),
+                'gcs.sourceObject': unquote(match.group('srcObject')),
+            },
+            re.compile('^/b/(?P<bucket>[^/]+)/o$'): lambda params, data, match: {
+                'gcs.op': 'objects.insert',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': params.get('name', data.get('name', None)),
+            },
+            re.compile('^/b/(?P<srcBucket>[^/]+)/o/(?P<srcObject>[^/]+)/rewriteTo/b/(?P<destBucket>[^/]+)/o/(?P<destObject>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objects.rewrite',
+                'gcs.destinationBucket': unquote(match.group('destBucket')),
+                'gcs.destinationObject': unquote(match.group('destObject')),
+                'gcs.sourceBucket': unquote(match.group('srcBucket')),
+                'gcs.sourceObject': unquote(match.group('srcObject')),
+            }
         },
         'PATCH': {
             # Bucket operations
@@ -56,6 +94,12 @@ try:
                 'gcs.op': 'buckets.patch',
                 'gcs.bucket': unquote(match.group('bucket')),
             },
+            # Object/blob operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objects.patch',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+            }
         },
         'PUT': {
             # Bucket operations
@@ -67,6 +111,12 @@ try:
                 'gcs.op': 'buckets.setIamPolicy',
                 'gcs.bucket': unquote(match.group('bucket')),
             },
+            # Object/blob operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objects.update',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+            }
         },
         'DELETE': {
             # Bucket operations
@@ -74,6 +124,12 @@ try:
                 'gcs.op': 'buckets.delete',
                 'gcs.bucket': unquote(match.group('bucket')),
             },
+            # Object/blob operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objects.delete',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+            }
         }
     }
 
@@ -134,6 +190,59 @@ try:
             else:
                 return kv
 
+    def download_with_instana(wrapped, instance, args, kwargs):
+        parent_span = tracer.active_span
+
+        # return early if we're not tracing
+        if parent_span is None:
+            return wrapped(*args, **kwargs)
+
+        with tracer.start_active_span('gcs', child_of=parent_span) as scope:
+            scope.span.set_tag('gcs.op', 'objects.get')
+            scope.span.set_tag('gcs.bucket', instance.bucket.name)
+            scope.span.set_tag('gcs.object', instance.name)
+
+            start = len(args) > 4 and args[4] or kwargs.get('start', None)
+            if start is None:
+                start = ''
+
+            end = len(args) > 5 and args[5] or kwargs.get('end', None)
+            if end is None:
+                end = ''
+
+            if start != '' or end != '':
+                scope.span.set_tag('gcs.range', '-'.join((start, end)))
+
+            try:
+                kv = wrapped(*args, **kwargs)
+            except Exception as e:
+                scope.span.log_exception(e)
+                raise
+            else:
+                return kv
+
+    def upload_with_instana(wrapped, instance, args, kwargs):
+        parent_span = tracer.active_span
+
+        # return early if we're not tracing
+        if parent_span is None:
+            return wrapped(*args, **kwargs)
+
+        with tracer.start_active_span('gcs', child_of=parent_span) as scope:
+            scope.span.set_tag('gcs.op', 'objects.insert')
+            scope.span.set_tag('gcs.bucket', instance.bucket.name)
+            scope.span.set_tag('gcs.object', instance.name)
+
+            try:
+                kv = wrapped(*args, **kwargs)
+            except Exception as e:
+                scope.span.log_exception(e)
+                raise
+            else:
+                return kv
+
     wrapt.wrap_function_wrapper('google.cloud.storage._http', 'Connection.api_request', execute_with_instana)
+    wrapt.wrap_function_wrapper('google.cloud.storage.blob', 'Blob._do_download', download_with_instana)
+    wrapt.wrap_function_wrapper('google.cloud.storage.blob', 'Blob._do_upload', upload_with_instana)
 except ImportError:
     pass

@@ -5,6 +5,10 @@ import unittest
 from instana.instrumentation.google.cloud.storage import collect_tags
 
 class TestGoogleCloudStorage(unittest.TestCase):
+    class Blob:
+        def __init__(self, name):
+            self.name = name
+
     def test_collect_tags(self):
         test_cases = {
             'buckets.list': (
@@ -109,6 +113,128 @@ class TestGoogleCloudStorage(unittest.TestCase):
                 {
                     'gcs.op': 'buckets.update',
                     'gcs.bucket': 'test bucket'
+                }
+            ),
+            'objects.compose': (
+                {
+                    'method': 'POST',
+                    'path': '/b/test%20bucket/o/dest%20object/compose',
+                    'data': {
+                        'sourceObjects': [
+                            TestGoogleCloudStorage.Blob('object1'),
+                            TestGoogleCloudStorage.Blob('object2'),
+                        ]
+                    }
+                },
+                {
+                    'gcs.op': 'objects.compose',
+                    'gcs.destinationBucket': 'test bucket',
+                    'gcs.destinationObject': 'dest object',
+                    'gcs.sourceObjects': 'test bucket/object1,test bucket/object2'
+                }
+            ),
+            'objects.copy': (
+                {
+                    'method': 'POST',
+                    'path': '/b/src%20bucket/o/src%20object/copyTo/b/dest%20bucket/o/dest%20object'
+                },
+                {
+                    'gcs.op': 'objects.copy',
+                    'gcs.destinationBucket': 'dest bucket',
+                    'gcs.destinationObject': 'dest object',
+                    'gcs.sourceBucket': 'src bucket',
+                    'gcs.sourceObject': 'src object'
+                }
+            ),
+            'objects.delete': (
+                {
+                    'method': 'DELETE',
+                    'path': '/b/test%20bucket/o/test%20object'
+                },
+                {
+                    'gcs.op': 'objects.delete',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
+                }
+            ),
+            'objects.attrs': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/o/test%20object'
+                },
+                {
+                    'gcs.op': 'objects.attrs',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
+                }
+            ),
+            'objects.get': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/o/test%20object',
+                    'query_params': {'alt': 'media'}
+                },
+                {
+                    'gcs.op': 'objects.get',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
+                }
+            ),
+            'objects.insert': (
+                {
+                    'method': 'POST',
+                    'path': '/b/test%20bucket/o',
+                    'query_params': {'name': 'test object'}
+                },
+                {
+                    'gcs.op': 'objects.insert',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
+                }
+            ),
+            'objects.list': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/o'
+                },
+                {
+                    'gcs.op': 'objects.list',
+                    'gcs.bucket': 'test bucket'
+                }
+            ),
+            'objects.patch': (
+                {
+                    'method': 'PATCH',
+                    'path': '/b/test%20bucket/o/test%20object'
+                },
+                {
+                    'gcs.op': 'objects.patch',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
+                }
+            ),
+            'objects.rewrite': (
+                {
+                    'method': 'POST',
+                    'path': '/b/src%20bucket/o/src%20object/rewriteTo/b/dest%20bucket/o/dest%20object'
+                },
+                {
+                    'gcs.op': 'objects.rewrite',
+                    'gcs.destinationBucket': 'dest bucket',
+                    'gcs.destinationObject': 'dest object',
+                    'gcs.sourceBucket': 'src bucket',
+                    'gcs.sourceObject': 'src object'
+                }
+            ),
+            'objects.update': (
+                {
+                    'method': 'PUT',
+                    'path': '/b/test%20bucket/o/test%20object'
+                },
+                {
+                    'gcs.op': 'objects.update',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
                 }
             )
         }

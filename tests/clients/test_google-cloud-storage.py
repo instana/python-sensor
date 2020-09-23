@@ -247,6 +247,72 @@ class TestGoogleCloudStorage(unittest.TestCase):
                     'gcs.op': 'channels.stop',
                     'gcs.entity': 'test channel'
                 }
+            ),
+            'defaultAcls.delete': (
+                {
+                    'method': 'DELETE',
+                    'path': '/b/test%20bucket/defaultObjectAcl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'defaultAcls.delete',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'defaultAcls.get': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/defaultObjectAcl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'defaultAcls.get',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'defaultAcls.insert': (
+                {
+                    'method': 'POST',
+                    'path': '/b/test%20bucket/defaultObjectAcl',
+                    'data': {'entity': 'user-test@example.com'}
+                },
+                {
+                    'gcs.op': 'defaultAcls.insert',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'defaultAcls.list': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/defaultObjectAcl'
+                },
+                {
+                    'gcs.op': 'defaultAcls.list',
+                    'gcs.bucket': 'test bucket'
+                }
+            ),
+            'defaultAcls.patch': (
+                {
+                    'method': 'PATCH',
+                    'path': '/b/test%20bucket/defaultObjectAcl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'defaultAcls.patch',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'defaultAcls.update': (
+                {
+                    'method': 'PUT',
+                    'path': '/b/test%20bucket/defaultObjectAcl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'defaultAcls.update',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.entity': 'user-test@example.com'
+                }
             )
         }
 

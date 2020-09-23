@@ -10,6 +10,8 @@ from .collectors import _storage_api
 try:
     from google.cloud import storage
 
+    logger.debug('Instrumenting google-cloud-storage')
+
     def _collect_tags(api_request):
         """
         Extract span tags from Google Cloud Storage API request. Returns None if the request is not

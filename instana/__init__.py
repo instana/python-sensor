@@ -155,6 +155,7 @@ def boot_agent():
         from .instrumentation import urllib3
         from .instrumentation.django import middleware
         from .instrumentation import pymongo
+        from .instrumentation.google.cloud import storage
 
     # Hooks
     from .hooks import hook_uwsgi

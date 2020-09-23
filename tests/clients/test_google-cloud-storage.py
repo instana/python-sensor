@@ -313,6 +313,78 @@ class TestGoogleCloudStorage(unittest.TestCase):
                     'gcs.bucket': 'test bucket',
                     'gcs.entity': 'user-test@example.com'
                 }
+            ),
+            'objectAcls.delete': (
+                {
+                    'method': 'DELETE',
+                    'path': '/b/test%20bucket/o/test%20object/acl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'objectAcls.delete',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'objectAcls.get': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/o/test%20object/acl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'objectAcls.get',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'objectAcls.insert': (
+                {
+                    'method': 'POST',
+                    'path': '/b/test%20bucket/o/test%20object/acl',
+                    'data': {'entity': 'user-test@example.com'}
+                },
+                {
+                    'gcs.op': 'objectAcls.insert',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'objectAcls.list': (
+                {
+                    'method': 'GET',
+                    'path': '/b/test%20bucket/o/test%20object/acl'
+                },
+                {
+                    'gcs.op': 'objectAcls.list',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object'
+                }
+            ),
+            'objectAcls.patch': (
+                {
+                    'method': 'PATCH',
+                    'path': '/b/test%20bucket/o/test%20object/acl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'objectAcls.patch',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object',
+                    'gcs.entity': 'user-test@example.com'
+                }
+            ),
+            'objectAcls.update': (
+                {
+                    'method': 'PUT',
+                    'path': '/b/test%20bucket/o/test%20object/acl/user-test%40example.com'
+                },
+                {
+                    'gcs.op': 'objectAcls.update',
+                    'gcs.bucket': 'test bucket',
+                    'gcs.object': 'test object',
+                    'gcs.entity': 'user-test@example.com'
+                }
             )
         }
 

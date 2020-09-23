@@ -56,6 +56,18 @@ try:
             re.compile('^/b/(?P<bucket>[^/]+)/defaultObjectAcl$'): lambda params, data, match: {
                 'gcs.op': 'defaultAcls.list',
                 'gcs.bucket': unquote(match.group('bucket')),
+            },
+            # Object ACL operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/acl/(?P<entity>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objectAcls.get',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+                'gcs.entity': unquote(match.group('entity'))
+            },
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/acl$'): lambda params, data, match: {
+                'gcs.op': 'objectAcls.list',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object'))
             }
         },
         'POST': {
@@ -107,6 +119,13 @@ try:
                 'gcs.op': 'defaultAcls.insert',
                 'gcs.bucket': unquote(match.group('bucket')),
                 'gcs.entity': data.get('entity', None)
+            },
+            # Object ACL operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/acl$'): lambda params, data, match: {
+                'gcs.op': 'objectAcls.insert',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+                'gcs.entity': data.get('entity', None)
             }
         },
         'PATCH': {
@@ -125,6 +144,13 @@ try:
             re.compile('^/b/(?P<bucket>[^/]+)/defaultObjectAcl/(?P<entity>[^/]+)$'): lambda params, data, match: {
                 'gcs.op': 'defaultAcls.patch',
                 'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.entity': unquote(match.group('entity'))
+            },
+            # Object ACL operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/acl/(?P<entity>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objectAcls.patch',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
                 'gcs.entity': unquote(match.group('entity'))
             }
         },
@@ -149,6 +175,13 @@ try:
                 'gcs.op': 'defaultAcls.update',
                 'gcs.bucket': unquote(match.group('bucket')),
                 'gcs.entity': unquote(match.group('entity'))
+            },
+            # Object ACL operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/acl/(?P<entity>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objectAcls.update',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
+                'gcs.entity': unquote(match.group('entity'))
             }
         },
         'DELETE': {
@@ -167,6 +200,13 @@ try:
             re.compile('^/b/(?P<bucket>[^/]+)/defaultObjectAcl/(?P<entity>[^/]+)$'): lambda params, data, match: {
                 'gcs.op': 'defaultAcls.delete',
                 'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.entity': unquote(match.group('entity'))
+            },
+            # Object ACL operations
+            re.compile('^/b/(?P<bucket>[^/]+)/o/(?P<object>[^/]+)/acl/(?P<entity>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'objectAcls.delete',
+                'gcs.bucket': unquote(match.group('bucket')),
+                'gcs.object': unquote(match.group('object')),
                 'gcs.entity': unquote(match.group('entity'))
             }
         }

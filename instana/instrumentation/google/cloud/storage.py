@@ -78,6 +78,11 @@ try:
                 'gcs.op': 'hmacKeys.get',
                 'gcs.projectId': unquote(match.group('project')),
                 'gcs.accessId': unquote(match.group('accessId'))
+            },
+            # Service account operations
+            re.compile('^/projects/(?P<project>[^/]+)/serviceAccount$'): lambda params, data, match: {
+                'gcs.op': 'serviceAccount.get',
+                'gcs.projectId': unquote(match.group('project'))
             }
         },
         'POST': {

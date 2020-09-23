@@ -438,6 +438,16 @@ class TestGoogleCloudStorage(unittest.TestCase):
                     'gcs.projectId': 'test project',
                     'gcs.accessId': 'test key'
                 }
+            ),
+            'serviceAccount.get': (
+                {
+                    'method': 'GET',
+                    'path': '/projects/test%20project/serviceAccount'
+                },
+                {
+                    'gcs.op': 'serviceAccount.get',
+                    'gcs.projectId': 'test project'
+                }
             )
         }
 

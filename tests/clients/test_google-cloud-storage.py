@@ -385,6 +385,59 @@ class TestGoogleCloudStorage(unittest.TestCase):
                     'gcs.object': 'test object',
                     'gcs.entity': 'user-test@example.com'
                 }
+            ),
+            'hmacKeys.create': (
+                {
+                    'method': 'POST',
+                    'path': '/projects/test%20project/hmacKeys'
+                },
+                {
+                    'gcs.op': 'hmacKeys.create',
+                    'gcs.projectId': 'test project'
+                }
+            ),
+            'hmacKeys.delete': (
+                {
+                    'method': 'DELETE',
+                    'path': '/projects/test%20project/hmacKeys/test%20key'
+                },
+                {
+                    'gcs.op': 'hmacKeys.delete',
+                    'gcs.projectId': 'test project',
+                    'gcs.accessId': 'test key'
+                }
+            ),
+            'hmacKeys.get': (
+                {
+                    'method': 'GET',
+                    'path': '/projects/test%20project/hmacKeys/test%20key'
+                },
+                {
+                    'gcs.op': 'hmacKeys.get',
+                    'gcs.projectId': 'test project',
+                    'gcs.accessId': 'test key'
+                }
+            ),
+            'hmacKeys.list': (
+                {
+                    'method': 'GET',
+                    'path': '/projects/test%20project/hmacKeys'
+                },
+                {
+                    'gcs.op': 'hmacKeys.list',
+                    'gcs.projectId': 'test project'
+                }
+            ),
+            'hmacKeys.update': (
+                {
+                    'method': 'PUT',
+                    'path': '/projects/test%20project/hmacKeys/test%20key'
+                },
+                {
+                    'gcs.op': 'hmacKeys.update',
+                    'gcs.projectId': 'test project',
+                    'gcs.accessId': 'test key'
+                }
             )
         }
 

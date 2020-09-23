@@ -68,6 +68,16 @@ try:
                 'gcs.op': 'objectAcls.list',
                 'gcs.bucket': unquote(match.group('bucket')),
                 'gcs.object': unquote(match.group('object'))
+            },
+            # HMAC keys operations
+            re.compile('^/projects/(?P<project>[^/]+)/hmacKeys$'): lambda params, data, match: {
+                'gcs.op': 'hmacKeys.list',
+                'gcs.projectId': unquote(match.group('project'))
+            },
+            re.compile('^/projects/(?P<project>[^/]+)/hmacKeys/(?P<accessId>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'hmacKeys.get',
+                'gcs.projectId': unquote(match.group('project')),
+                'gcs.accessId': unquote(match.group('accessId'))
             }
         },
         'POST': {
@@ -126,6 +136,11 @@ try:
                 'gcs.bucket': unquote(match.group('bucket')),
                 'gcs.object': unquote(match.group('object')),
                 'gcs.entity': data.get('entity', None)
+            },
+            # HMAC keys operations
+            re.compile('^/projects/(?P<project>[^/]+)/hmacKeys$'): lambda params, data, match: {
+                'gcs.op': 'hmacKeys.create',
+                'gcs.projectId': unquote(match.group('project'))
             }
         },
         'PATCH': {
@@ -182,6 +197,12 @@ try:
                 'gcs.bucket': unquote(match.group('bucket')),
                 'gcs.object': unquote(match.group('object')),
                 'gcs.entity': unquote(match.group('entity'))
+            },
+            # HMAC keys operations
+            re.compile('^/projects/(?P<project>[^/]+)/hmacKeys/(?P<accessId>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'hmacKeys.update',
+                'gcs.projectId': unquote(match.group('project')),
+                'gcs.accessId': unquote(match.group('accessId'))
             }
         },
         'DELETE': {
@@ -208,6 +229,12 @@ try:
                 'gcs.bucket': unquote(match.group('bucket')),
                 'gcs.object': unquote(match.group('object')),
                 'gcs.entity': unquote(match.group('entity'))
+            },
+            # HMAC keys operations
+            re.compile('^/projects/(?P<project>[^/]+)/hmacKeys/(?P<accessId>[^/]+)$'): lambda params, data, match: {
+                'gcs.op': 'hmacKeys.delete',
+                'gcs.projectId': unquote(match.group('project')),
+                'gcs.accessId': unquote(match.group('accessId'))
             }
         }
     }

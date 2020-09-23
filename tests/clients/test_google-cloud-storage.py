@@ -1,9 +1,13 @@
 from __future__ import absolute_import
 
+import sys
 import unittest
+import pytest
 
-from instana.instrumentation.google.cloud.storage import collect_tags
+if sys.version_info[0] >= 3:
+    from instana.instrumentation.google.cloud.storage import collect_tags
 
+@pytest.mark.skipif(sys.version_info[0] < 3, reason="google-cloud-storage has dropped support for Python 2")
 class TestGoogleCloudStorage(unittest.TestCase):
     class Blob:
         def __init__(self, name):

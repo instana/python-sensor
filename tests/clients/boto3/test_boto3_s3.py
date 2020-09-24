@@ -4,7 +4,7 @@ import os
 import boto3
 import pytest
 
-from moto import mock_s3, mock_sts, mock_cloudwatch
+from moto import mock_s3
 
 from instana.singletons import tracer
 from ...helpers import get_first_span_by_filter
@@ -29,27 +29,9 @@ def aws_credentials():
 
 
 @pytest.fixture(scope='function')
-def cloudwatch(aws_credentials):
-    with mock_cloudwatch():
-        yield boto3.client('cloudwatch', region_name='us-east-1')
-
-
-@pytest.fixture(scope='function')
 def s3(aws_credentials):
     with mock_s3():
         yield boto3.client('s3', region_name='us-east-1')
-
-
-@pytest.fixture(scope='function')
-def sts(aws_credentials):
-    with mock_sts():
-        yield boto3.client('sts', region_name='us-east-1')
-
-
-@pytest.fixture(scope='function')
-def secretsmanager(aws_credentials):
-    with mock_secretsmanager():
-        yield boto3.client('secretsmanager', region_name='us-east-1')
 
 
 def test_vanilla_create_bucket(s3):

@@ -276,6 +276,10 @@ try:
                 return collect(params, data, m)
 
     def execute_with_instana(wrapped, instance, args, kwargs):
+        # batch requests are traced with finish_batch_with_instana()
+        if isinstance(instance, storage.Batch):
+            return wrapped(*args, **kwargs)
+
         parent_span = tracer.active_span
 
         # return early if we're not tracing
@@ -352,8 +356,29 @@ try:
             else:
                 return kv
 
+    def finish_batch_with_instana(wrapped, instance, args, kwargs):
+        parent_span = tracer.active_span
+
+        # return early if we're not tracing
+        if parent_span is None:
+            return wrapped(*args, **kwargs)
+
+        with tracer.start_active_span('gcs', child_of=parent_span) as scope:
+            scope.span.set_tag('gcs.op', 'batch')
+            scope.span.set_tag('gcs.projectId', instance._client.project)
+            scope.span.set_tag('gcs.numberOfOperations', len(instance._requests))
+
+            try:
+                kv = wrapped(*args, **kwargs)
+            except Exception as e:
+                scope.span.log_exception(e)
+                raise
+            else:
+                return kv
+
     wrapt.wrap_function_wrapper('google.cloud.storage._http', 'Connection.api_request', execute_with_instana)
     wrapt.wrap_function_wrapper('google.cloud.storage.blob', 'Blob._do_download', download_with_instana)
     wrapt.wrap_function_wrapper('google.cloud.storage.blob', 'Blob._do_upload', upload_with_instana)
+    wrapt.wrap_function_wrapper('google.cloud.storage.batch', 'Batch.finish', finish_batch_with_instana)
 except ImportError:
     pass

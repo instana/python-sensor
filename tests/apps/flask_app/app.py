@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 import logging
 import opentracing.ext.tags as ext
 from flask import jsonify, Response
 from wsgiref.simple_server import make_server
 from flask import Flask, redirect, render_template, render_template_string
+
+import boto3
+from moto import mock_sqs
 
 from ...helpers import testenv
 from instana.singletons import tracer
@@ -152,6 +156,38 @@ def response_headers():
     resp.headers['X-Capture-This'] = 'Ok'
     return resp
 
+
+@mock_sqs
+@app.route("/boto3/sqs")
+def boto3_sqs():
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+
+    boto3_client = boto3.client('sqs', region_name='us-east-1')
+    response = boto3_client.create_queue(
+        QueueName='SQS_QUEUE_NAME',
+        Attributes={
+            'DelaySeconds': '60',
+            'MessageRetentionPeriod': '600'
+        }
+    )
+
+    queue_url = response['QueueUrl']
+    response = boto3_client.send_message(
+            QueueUrl=queue_url,
+            DelaySeconds=10,
+            MessageAttributes={
+                'Website': {
+                    'DataType': 'String',
+                    'StringValue': 'https://www.instana.com'
+                },
+            },
+            MessageBody=('Monitor any application, service, or request '
+                         'with Instana Application Performance Monitoring')
+        )
+    return Response(response)
 
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):

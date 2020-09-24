@@ -32,7 +32,7 @@ def ses(aws_credentials):
 
 
 def test_vanilla_verify_email(ses):
-    result = ses.verify_email_identity( EmailAddress = 'pglombardo+instana299@tuta.io')
+    result = ses.verify_email_identity(EmailAddress='pglombardo+instana299@tuta.io')
     assert result['ResponseMetadata']['HTTPStatusCode'] == 200
 
 
@@ -40,7 +40,7 @@ def test_verify_email(ses):
     result = None
 
     with tracer.start_active_span('test'):
-        result = ses.verify_email_identity( EmailAddress = 'pglombardo+instana299@tuta.io')
+        result = ses.verify_email_identity(EmailAddress='pglombardo+instana299@tuta.io')
 
     assert result['ResponseMetadata']['HTTPStatusCode'] == 200
 
@@ -62,6 +62,6 @@ def test_verify_email(ses):
     assert(boto_span.ec is None)
 
     assert boto_span.data['boto3']['op'] == 'VerifyEmailIdentity'
-    assert boto_span.data['boto3']['ep'] == 'email(https://email.us-east-1.amazonaws.com)'
+    assert boto_span.data['boto3']['ep'] == 'https://email.us-east-1.amazonaws.com'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == repr({'EmailAddress': 'pglombardo+instana299@tuta.io'})
+    assert boto_span.data['boto3']['payload'] == {'EmailAddress': 'pglombardo+instana299@tuta.io'}

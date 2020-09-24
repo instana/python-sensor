@@ -71,6 +71,6 @@ def test_get_secret_value(secretsmanager):
     assert(boto_span.ec is None)
 
     assert boto_span.data['boto3']['op'] == 'GetSecretValue'
-    assert boto_span.data['boto3']['ep'] == 'secretsmanager(https://secretsmanager.us-east-1.amazonaws.com)'
+    assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
     assert 'payload' not in boto_span.data['boto3']

@@ -23,13 +23,16 @@ try:
         with tracer.start_active_span("boto3", child_of=parent_span) as scope:
             try:
                 scope.span.set_tag('op', arg_list[0])
-                scope.span.set_tag('ep', repr(instance._endpoint))
+                scope.span.set_tag('ep', instance._endpoint.host)
                 scope.span.set_tag('reg', instance._client_config.region_name)
 
                 # Don't collect payload for SecretsManager
                 if not hasattr(instance, 'get_secret_value'):
                     scope.span.set_tag('payload', arg_list[1])
+            except Exception as exc:
+                logger.debug("make_api_call_with_instana: collect error", exc_info=True)
 
+            try:
                 return wrapped(*arg_list, **kwargs)
             except Exception as exc:
                 scope.span.mark_as_errored({'message': exc})
@@ -50,6 +53,8 @@ try:
         with tracer.start_active_span("boto3", child_of=parent_span) as scope:
             try:
                 scope.span.set_tag('op', wrapped.__name__)
+                scope.span.set_tag('ep', instance._endpoint.host)
+                scope.span.set_tag('reg', instance._client_config.region_name)
 
                 index = 1
                 payload = {}
@@ -61,12 +66,10 @@ try:
                     index += 1
                     if index > arg_length:
                         break
+
                 scope.span.set_tag('payload', payload)
-                scope.span.set_tag('ep', repr(instance._endpoint))
-                scope.span.set_tag('reg', instance._client_config.region_name)
             except Exception as exc:
                 logger.debug("s3_inject_method_with_instana: collect error", exc_info=True)
-                raise
 
             try:
                 return wrapped(*arg_list, **kwargs)

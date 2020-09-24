@@ -343,10 +343,7 @@ class RegisteredSpan(BaseSpan):
 
                 if value is not None:
                     if tag == 'payload':
-                        payload_tags = repr(self._validate_tags(value))
-                        if len(payload_tags) > 4096:
-                            payload_tags = payload_tags[:4096] + '..snip'
-                        self.data["boto3"][tag] = payload_tags
+                        self.data["boto3"][tag] = self._validate_tags(value)
                     else:
                         self.data["boto3"][tag] = value
 

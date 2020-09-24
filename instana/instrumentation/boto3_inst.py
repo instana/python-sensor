@@ -26,6 +26,9 @@ try:
                 scope.span.set_tag('ep', instance._endpoint.host)
                 scope.span.set_tag('reg', instance._client_config.region_name)
 
+                scope.span.set_tag('url', instance._endpoint.host + '/')
+                scope.span.set_tag('method', 'POST')
+
                 # Don't collect payload for SecretsManager
                 if not hasattr(instance, 'get_secret_value'):
                     scope.span.set_tag('payload', arg_list[1])
@@ -33,7 +36,16 @@ try:
                 logger.debug("make_api_call_with_instana: collect error", exc_info=True)
 
             try:
-                return wrapped(*arg_list, **kwargs)
+                result = wrapped(*arg_list, **kwargs)
+
+                if isinstance(result, dict):
+                    http_dict = result.get('ResponseMetadata')
+                    if isinstance(http_dict, dict):
+                        status = http_dict.get('HTTPStatusCode')
+                        if status is not None:
+                            scope.span.set_tag('status', status)
+
+                return result
             except Exception as exc:
                 scope.span.mark_as_errored({'message': exc})
                 raise
@@ -55,6 +67,9 @@ try:
                 scope.span.set_tag('op', wrapped.__name__)
                 scope.span.set_tag('ep', instance._endpoint.host)
                 scope.span.set_tag('reg', instance._client_config.region_name)
+
+                scope.span.set_tag('url', instance._endpoint.host + '/')
+                scope.span.set_tag('method', 'POST')
 
                 index = 1
                 payload = {}

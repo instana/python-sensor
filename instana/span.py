@@ -232,7 +232,7 @@ class RegisteredSpan(BaseSpan):
 
     EXIT_SPANS = ("aiohttp-client", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
-                  "soap", "tornado-client", "urllib3", "pymongo")
+                  "soap", "tornado-client", "urllib3", "pymongo", "gcs")
 
     ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
                    "rpc-server", "tornado-server")
@@ -419,6 +419,21 @@ class RegisteredSpan(BaseSpan):
             self.data["mongo"]["filter"] = span.tags.pop('filter', None)
             self.data["mongo"]["json"] = span.tags.pop('json', None)
             self.data["mongo"]["error"] = span.tags.pop('error', None)
+
+        elif span.operation_name == "gcs":
+            self.data["gcs"]["op"] = span.tags.pop('gcs.op')
+            self.data["gcs"]["bucket"] = span.tags.pop('gcs.bucket', None)
+            self.data["gcs"]["object"] = span.tags.pop('gcs.object', None)
+            self.data["gcs"]["entity"] = span.tags.pop('gcs.entity', None)
+            self.data["gcs"]["range"] = span.tags.pop('gcs.range', None)
+            self.data["gcs"]["sourceBucket"] = span.tags.pop('gcs.sourceBucket', None)
+            self.data["gcs"]["sourceObject"] = span.tags.pop('gcs.sourceObject', None)
+            self.data["gcs"]["sourceObjects"] = span.tags.pop('gcs.sourceObjects', None)
+            self.data["gcs"]["destinationBucket"] = span.tags.pop('gcs.destinationBucket', None)
+            self.data["gcs"]["destinationObject"] = span.tags.pop('gcs.destinationObject', None)
+            self.data["gcs"]["numberOfOperations"] = span.tags.pop('gcs.numberOfOperations', None)
+            self.data["gcs"]["projectId"] = span.tags.pop('gcs.projectId', None)
+            self.data["gcs"]["accessId"] = span.tags.pop('gcs.accessId', None)
 
         elif span.operation_name == "log":
             # use last special key values

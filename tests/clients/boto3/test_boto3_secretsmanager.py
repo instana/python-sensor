@@ -74,3 +74,7 @@ def test_get_secret_value(secretsmanager):
     assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
     assert 'payload' not in boto_span.data['boto3']
+    
+    assert boto_span.data['http']['status'] == 200
+    assert boto_span.data['http']['method'] == 'POST'
+    assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'

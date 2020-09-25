@@ -26,8 +26,8 @@ try:
                 scope.span.set_tag('ep', instance._endpoint.host)
                 scope.span.set_tag('reg', instance._client_config.region_name)
 
-                scope.span.set_tag('url', instance._endpoint.host + '/')
-                scope.span.set_tag('method', 'POST')
+                scope.span.set_tag('http.url', instance._endpoint.host + ':443/' + arg_list[0])
+                scope.span.set_tag('http.method', 'POST')
 
                 # Don't collect payload for SecretsManager
                 if not hasattr(instance, 'get_secret_value'):
@@ -43,7 +43,7 @@ try:
                     if isinstance(http_dict, dict):
                         status = http_dict.get('HTTPStatusCode')
                         if status is not None:
-                            scope.span.set_tag('status', status)
+                            scope.span.set_tag('http.status_code', status)
 
                 return result
             except Exception as exc:
@@ -64,12 +64,13 @@ try:
 
         with tracer.start_active_span("boto3", child_of=parent_span) as scope:
             try:
-                scope.span.set_tag('op', wrapped.__name__)
+                operation = wrapped.__name__
+                scope.span.set_tag('op', operation)
                 scope.span.set_tag('ep', instance._endpoint.host)
                 scope.span.set_tag('reg', instance._client_config.region_name)
 
-                scope.span.set_tag('url', instance._endpoint.host + '/')
-                scope.span.set_tag('method', 'POST')
+                scope.span.set_tag('http.url', instance._endpoint.host + ':443/' + operation)
+                scope.span.set_tag('http.method', 'POST')
 
                 index = 1
                 payload = {}

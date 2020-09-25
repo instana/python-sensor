@@ -100,6 +100,10 @@ def test_send_message(sqs):
 
     payload = {'QueueUrl': 'https://queue.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10, 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}}, 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
     assert boto_span.data['boto3']['payload'] == payload
+    
+    assert boto_span.data['http']['status'] == 200
+    assert boto_span.data['http']['method'] == 'POST'
+    assert boto_span.data['http']['url'] == 'https://queue.amazonaws.com:443/SendMessage'
 
 @mock_sqs
 def test_app_boto3_sqs(http_client):

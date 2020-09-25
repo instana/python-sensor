@@ -338,10 +338,8 @@ class RegisteredSpan(BaseSpan):
             self._collect_http_tags(span)
 
         elif span.operation_name == "boto3":
-            for tag in ['method', 'status', 'url']:
-                value = span.tags.pop(tag, None)
-                if value is not None:
-                    self.data["http"][tag] = value
+            # boto3 also sends http tags
+            self._collect_http_tags(span)
 
             for tag in ['op', 'ep', 'reg', 'payload', 'error']:
                 value = span.tags.pop(tag, None)

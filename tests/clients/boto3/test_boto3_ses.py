@@ -65,3 +65,7 @@ def test_verify_email(ses):
     assert boto_span.data['boto3']['ep'] == 'https://email.us-east-1.amazonaws.com'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
     assert boto_span.data['boto3']['payload'] == {'EmailAddress': 'pglombardo+instana299@tuta.io'}
+   
+    assert boto_span.data['http']['status'] == 200
+    assert boto_span.data['http']['method'] == 'POST'
+    assert boto_span.data['http']['url'] == 'https://email.us-east-1.amazonaws.com:443/VerifyEmailIdentity'

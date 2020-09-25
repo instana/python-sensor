@@ -343,7 +343,7 @@ class RegisteredSpan(BaseSpan):
                 if value is not None:
                     self.data["http"][tag] = value
 
-            for tag in ['op', 'ep', 'reg', 'payload']:
+            for tag in ['op', 'ep', 'reg', 'payload', 'error']:
                 value = span.tags.pop(tag, None)
                 if value is not None:
                     if tag == 'payload':

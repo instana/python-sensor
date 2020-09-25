@@ -47,7 +47,7 @@ try:
 
                 return result
             except Exception as exc:
-                scope.span.mark_as_errored({'message': exc})
+                scope.span.mark_as_errored({'error': exc})
                 raise
 
     def s3_inject_method_with_instana(wrapped, instance, arg_list, kwargs):
@@ -89,7 +89,7 @@ try:
             try:
                 return wrapped(*arg_list, **kwargs)
             except Exception as exc:
-                scope.span.mark_as_errored({'message': exc})
+                scope.span.mark_as_errored({'error': exc})
                 raise
 
     for method in ['upload_file', 'upload_fileobj', 'download_file', 'download_fileobj']:

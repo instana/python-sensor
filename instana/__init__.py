@@ -130,6 +130,7 @@ def boot_agent():
             from .instrumentation.aiohttp import client
             from .instrumentation.aiohttp import server
             from .instrumentation import asynqp
+            from .instrumentation import boto3_inst
 
         if sys.version_info[0] < 3:
             from .instrumentation import mysqlpython
@@ -142,7 +143,6 @@ def boot_agent():
 
         from .instrumentation.celery import hooks
 
-        from .instrumentation import boto3_inst
         from .instrumentation import cassandra_inst
         from .instrumentation import couchbase_inst
         from .instrumentation import flask

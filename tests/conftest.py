@@ -23,6 +23,7 @@ if LooseVersion(sys.version) < LooseVersion('3.5.3'):
     collect_ignore_glob.append("*test_async*")
     collect_ignore_glob.append("*test_tornado*")
     collect_ignore_glob.append("*test_grpc*")
+    collect_ignore_glob.append("*test_boto3*")
 
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
     collect_ignore_glob.append("*test_sudsjurko*")

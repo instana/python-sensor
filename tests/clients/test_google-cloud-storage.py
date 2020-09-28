@@ -5,6 +5,7 @@ import unittest
 import pytest
 import json
 import requests
+import io
 
 from instana.singletons import tracer
 from ..test_utils import _TraceContextMixin
@@ -457,7 +458,8 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
         client = self._client(project='test-project')
 
         with tracer.start_active_span('test'):
-            client.bucket('test bucket').blob('test object').download_as_bytes(
+            client.bucket('test bucket').blob('test object').download_to_file(
+                io.BytesIO(),
                 raw_download=True
             )
 

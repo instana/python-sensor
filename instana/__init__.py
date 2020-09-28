@@ -137,6 +137,9 @@ def boot_agent():
         else:
             from .instrumentation import mysqlclient
 
+        if sys.version_info[0] >= 3:
+            from .instrumentation.google.cloud import storage
+
         from .instrumentation.celery import hooks
 
         from .instrumentation import cassandra_inst

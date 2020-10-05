@@ -380,16 +380,29 @@ def determine_service_name():
     if "INSTANA_SERVICE_NAME" in os.environ:
         return os.environ["INSTANA_SERVICE_NAME"]
 
-    try:
-        # Now best effort in naming this process.  No nice package.json like in Node.js
-        # so we do best effort detection here.
-        app_name = "python"  # the default name
+    # Now best effort in naming this process.  No nice package.json like in Node.js
+    # so we do best effort detection here.
+    app_name = "python"  # the default name
+    basename = None
 
+    try:
         if not hasattr(sys, 'argv'):
             proc_cmdline = get_proc_cmdline(as_string=False)
             return os.path.basename(proc_cmdline[0])
 
-        basename = os.path.basename(sys.argv[0])
+        # Get first argument that is not an CLI option
+        for candidate in sys.argv:
+            if candidate[0] != '-':
+                basename = candidate
+                break
+
+        # If nothing found, fall back to executable
+        if basename is None:
+            basename = os.path.basename(sys.executable)
+        else:
+            # Assure leading paths are stripped
+            basename = os.path.basename(basename)
+
         if basename == "gunicorn":
             if 'setproctitle' in sys.modules:
                 # With the setproctitle package, gunicorn renames their processes
@@ -435,9 +448,9 @@ def determine_service_name():
                 app_name = uwsgi_type % app_name
             except ImportError:
                 pass
-        return app_name
     except Exception:
         logger.debug("get_application_name: ", exc_info=True)
+    finally:
         return app_name
 
 

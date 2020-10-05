@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import json
 import wrapt
 import inspect
 
@@ -10,6 +11,24 @@ from ..singletons import tracer
 try:
     import boto3
     from boto3.s3 import inject
+
+    def lambda_inject_context(payload, scope):
+        """
+        When boto3 lambda client 'Invoke' is called, we want to inject the tracing context.
+        boto3/botocore has specific requirements:
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.invoke
+        """
+        try:
+            invoke_payload = payload.get('Payload', {})
+
+            if not isinstance(invoke_payload, dict):
+                invoke_payload = json.loads(invoke_payload)
+
+            tracer.inject(scope.span.context, 'http_headers', invoke_payload)
+            payload['Payload'] = json.dumps(invoke_payload)
+        except Exception:
+            logger.debug("non-fatal lambda_inject_context: ", exc_info=True)
+
 
     @wrapt.patch_function_wrapper('botocore.client', 'BaseClient._make_api_call')
     def make_api_call_with_instana(wrapped, instance, arg_list, kwargs):
@@ -22,7 +41,10 @@ try:
 
         with tracer.start_active_span("boto3", child_of=parent_span) as scope:
             try:
-                scope.span.set_tag('op', arg_list[0])
+                operation = arg_list[0]
+                payload = arg_list[1]
+
+                scope.span.set_tag('op', operation)
                 scope.span.set_tag('ep', instance._endpoint.host)
                 scope.span.set_tag('reg', instance._client_config.region_name)
 
@@ -31,7 +53,13 @@ try:
 
                 # Don't collect payload for SecretsManager
                 if not hasattr(instance, 'get_secret_value'):
-                    scope.span.set_tag('payload', arg_list[1])
+                    scope.span.set_tag('payload', payload)
+
+                # Inject context when invoking lambdas
+                if 'lambda' in instance._endpoint.host and operation == 'Invoke':
+                    lambda_inject_context(payload, scope)
+
+
             except Exception as exc:
                 logger.debug("make_api_call_with_instana: collect error", exc_info=True)
 

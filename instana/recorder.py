@@ -1,3 +1,4 @@
+# Accept, process and queue spans for eventual reporting.
 from __future__ import absolute_import
 
 import os
@@ -5,7 +6,6 @@ import sys
 
 from basictracer import Sampler
 
-from .log import logger
 from .span import (RegisteredSpan, SDKSpan)
 
 if sys.version_info.major == 2:
@@ -17,7 +17,7 @@ else:
 class StanRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
-    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "cassandra",
+    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "boto3", "cassandra",
                         "celery-client", "celery-worker", "couchbase", "django", "gcs", "log",
                         "memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis",
                         "render", "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client",

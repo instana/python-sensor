@@ -9,6 +9,7 @@ from moto import mock_lambda
 from instana.singletons import tracer
 from ...helpers import get_first_span_by_filter
 
+
 @pytest.fixture(scope='function')
 def aws_credentials():
     """Mocked AWS Credentials for moto."""
@@ -27,13 +28,14 @@ def setup_method():
     """ Clear all spans before a test run """
     tracer.recorder.clear_spans()
 
-
+@pytest.mark.skip("Lambda mocking requires docker")
 def test_lambda_invoke(aws_lambda):
     result = None
 
     with tracer.start_active_span('test'):
         result = aws_lambda.invoke(FunctionName='arn:aws:lambda:us-west-1:410797082306:function:CanaryInACoalMine')
 
+    assert result
     assert len(result['Buckets']) == 1
     assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
 

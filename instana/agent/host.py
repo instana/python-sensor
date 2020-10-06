@@ -241,6 +241,18 @@ class HostAgent(BaseAgent):
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
 
+            # Report profiles (if any)
+            profile_count = len(payload['profiles'])
+            if profile_count > 0:
+                logger.debug("Reporting %d profiles", profile_count)
+                response = self.client.post(self.__profiles_url(),
+                                            data=to_json(payload['profiles']),
+                                            headers={"Content-Type": "application/json"},
+                                            timeout=0.8)
+            
+            if response is not None and 200 <= response.status_code <= 204:
+                self.last_seen = datetime.now()
+
             # Report metrics
             metric_bundle = payload["metrics"]["plugins"][0]["data"]
             response = self.client.post(self.__data_url(),
@@ -363,6 +375,13 @@ class HostAgent(BaseAgent):
         URL for posting traces to the host agent.  Only valid when announced.
         """
         path = "com.instana.plugin.python/traces.%d" % self.announce_data.pid
+        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
+
+    def __profiles_url(self):
+        """
+        URL for posting profiles to the host agent.  Only valid when announced.
+        """
+        path = "com.instana.plugin.python/profiles.%d" % self.announce_data.pid
         return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
 
     def __response_url(self, message_id):

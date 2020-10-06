@@ -60,11 +60,15 @@ class HostCollector(BaseCollector):
     def prepare_payload(self):
         payload = DictionaryOfStan()
         payload["spans"] = []
+        payload["profiles"] = []
         payload["metrics"]["plugins"] = []
 
         try:
             if not self.span_queue.empty():
                 payload["spans"] = self.queued_spans()
+
+            if not self.profile_queue.empty():
+                payload["profiles"] = self.queued_profiles()
 
             with_snapshot = self.should_send_snapshot_data()
 

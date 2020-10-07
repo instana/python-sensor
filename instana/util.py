@@ -392,7 +392,7 @@ def determine_service_name():
 
         # Get first argument that is not an CLI option
         for candidate in sys.argv:
-            if candidate[0] != '-':
+            if len(candidate) > 0 and candidate[0] != '-':
                 basename = candidate
                 break
 

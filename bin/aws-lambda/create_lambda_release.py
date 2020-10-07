@@ -2,13 +2,23 @@
 # Script to make a new AWS Lambda Layer release on Github
 # Requires the Github CLI to be installed and configured: https://github.com/cli/cli
 
+import os
 import sys
 import json
 import distutils.spawn
 from subprocess import check_output
 
 if len(sys.argv) != 2:
-    raise ValueError('Please specify the layer version to release. e.g. "11"')
+    raise ValueError('Please specify the layer version to release. e.g. "14"')
+
+if sys.argv[1] in ['-h', '--help']:
+    filename = os.path.basename(__file__)
+    print("Usage: %s <version number>" % filename)
+    print("Exampe: %s 14" % filename)
+    print("")
+    print("This will create a AWS Lambda release on Github such as:")
+    print("https://github.com/instana/python-sensor/releases/tag/v14")
+
 
 # Check requirements first
 for cmd in ["gh"]:

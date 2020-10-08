@@ -77,6 +77,6 @@ class HostCollector(BaseCollector):
             if with_snapshot is True:
                 self.snapshot_data_last_sent = int(time())
         except Exception:
-            logger.debug("collect_snapshot error", exc_info=True)
+            logger.debug("non-fatal prepare_payload:", exc_info=True)
 
         return payload

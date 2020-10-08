@@ -449,7 +449,7 @@ def determine_service_name():
             except ImportError:
                 pass
     except Exception:
-        logger.debug("get_application_name: ", exc_info=True)
+        logger.debug("non-fatal get_application_name: ", exc_info=True)
     finally:
         return app_name
 

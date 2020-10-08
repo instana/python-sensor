@@ -53,6 +53,9 @@ class BaseCollector(object):
         # Reporting interval for the background thread(s)
         self.report_interval = 1
 
+        # Flag to indicate if start/shutdown state
+        self.started = False
+
     def is_reporting_thread_running(self):
         """
         Indicates if there is a thread running with the name self.THREAD_NAME
@@ -67,13 +70,25 @@ class BaseCollector(object):
         Starts the collector and starts reporting as long as the agent is in a ready state.
         @return: None
         """
-        if self.agent.can_send() and not self.is_reporting_thread_running():
+        if self.is_reporting_thread_running():
+            if self.thread_shutdown.is_set():
+                # Shutdown still in progress; Reschedule this start in 5 seconds from now
+                timer = threading.Timer(5, self.start)
+                timer.daemon = True
+                timer.name = "Collector Timed Start"
+                timer.start()
+                return
+            logger.debug("Collecter.start non-fatal: call but thread already running (started: %s)", self.started)
+            return
+
+        if self.agent.can_send():
             logger.debug("BaseCollector.start: launching collection thread")
             self.thread_shutdown.clear()
             self.reporting_thread = threading.Thread(target=self.thread_loop, args=())
             self.reporting_thread.setDaemon(True)
             self.reporting_thread.setName(self.THREAD_NAME)
             self.reporting_thread.start()
+            self.started = True
         else:
             logger.warning("BaseCollector.start: the agent can't send or thread already active")
 
@@ -85,9 +100,9 @@ class BaseCollector(object):
         """
         logger.debug("Collector.shutdown: Reporting final data.")
         self.thread_shutdown.set()
-
         if report_final is True:
             self.prepare_and_report_data()
+        self.started = False
 
     def thread_loop(self):
         """
@@ -104,7 +119,14 @@ class BaseCollector(object):
         if self.thread_shutdown.is_set():
             logger.debug("Thread shutdown signal is active: Shutting down reporting thread")
             return False
-        return self.prepare_and_report_data()
+
+        self.prepare_and_report_data()
+
+        if self.thread_shutdown.is_set():
+            logger.debug("Thread shutdown signal is active: Shutting down reporting thread")
+            return False
+
+        return True
 
     def prepare_and_report_data(self):
         """

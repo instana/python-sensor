@@ -1,3 +1,3 @@
 # Module version file.  Used by setup.py and snapshot reporting.
 
-VERSION = '1.27.0'
+VERSION = '1.27.1'

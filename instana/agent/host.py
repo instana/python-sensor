@@ -103,6 +103,7 @@ class HostAgent(BaseAgent):
         @return: Boolean
         """
         # Watch for pid change (fork)
+        self.last_fork_check = datetime.now()
         current_pid = os.getpid()
         if self._boot_pid != current_pid:
             self._boot_pid = current_pid
@@ -279,6 +280,51 @@ class HostAgent(BaseAgent):
             payload = {"error": "Instana Python: No action specified in request."}
 
         self.__task_response(task["messageId"], payload)
+
+
+    def diagnostics(self):
+        """
+        Helper function to dump out state.
+        """
+        try:
+            import threading
+            dt_format = "%Y-%m-%d %H:%M:%S"
+
+            logger.warning("====> Instana Python Language Agent Diagnostics <====")
+
+            logger.warning("----> Agent <----")
+            logger.warning("is_agent_ready: %s", self.is_agent_ready())
+            logger.warning("is_timed_out: %s", self.is_timed_out())
+            if self.last_seen is None:
+                logger.warning("last_seen: None")
+            else:
+                logger.warning("last_seen: %s", self.last_seen.strftime(dt_format))
+
+            if self.announce_data is not None:
+                logger.warning("announce_data: %s", self.announce_data.__dict__)
+            else:
+                logger.warning("announce_data: None")
+
+            logger.warning("Options: %s", self.options.__dict__)
+
+            logger.warning("----> StateMachine <----")
+            logger.warning("State: %s", self.machine.fsm.current)
+
+            logger.warning("----> Collector <----")
+            logger.warning("Collector: %s", self.collector)
+            logger.warning("is_collector_thread_running?: %s", self.collector.is_reporting_thread_running())
+            logger.warning("background_report_lock.locked?: %s", self.collector.background_report_lock.locked())
+            logger.warning("ready_to_start: %s", self.collector.ready_to_start)
+            logger.warning("reporting_thread: %s", self.collector.reporting_thread)
+            logger.warning("report_interval: %s", self.collector.report_interval)
+            logger.warning("should_send_snapshot_data: %s", self.collector.should_send_snapshot_data())
+            logger.warning("spans in queue: %s", self.collector.span_queue.qsize())
+            logger.warning("thread_shutdown is_set: %s", self.collector.thread_shutdown.is_set())
+
+            logger.warning("----> Threads <----")
+            logger.warning("Threads: %s", threading.enumerate())
+        except Exception:
+            logger.warning("Non-fatal diagnostics exception: ", exc_info=True)
 
     def __task_response(self, message_id, data):
         """

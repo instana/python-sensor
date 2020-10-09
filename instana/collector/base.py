@@ -90,7 +90,7 @@ class BaseCollector(object):
             self.reporting_thread.start()
             self.started = True
         else:
-            logger.warning("BaseCollector.start: the agent can't send or thread already active")
+            logger.warning("BaseCollector.start: the agent tells us we can't send anything out")
 
     def shutdown(self, report_final=True):
         """

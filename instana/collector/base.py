@@ -31,6 +31,9 @@ class BaseCollector(object):
         # The Queue where we store finished spans before they are sent
         self.span_queue = queue.Queue()
 
+        # The Queue where we store finished profiles before they are sent
+        self.profile_queue = queue.Queue()
+
         # The background thread that reports data in a loop every self.report_interval seconds
         self.reporting_thread = None
 
@@ -178,3 +181,19 @@ class BaseCollector(object):
             else:
                 spans.append(span)
         return spans
+
+
+    def queued_profiles(self):
+        """
+        Get all of the queued profiles
+        @return: list
+        """
+        profiles = []
+        while True:
+            try:
+                profile = self.profile_queue.get(False)
+            except queue.Empty:
+                break
+            else:
+                profiles.append(profile)
+        return profiles

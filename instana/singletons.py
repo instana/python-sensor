@@ -4,9 +4,11 @@ import opentracing
 
 from .log import logger
 from .tracer import InstanaTracer
+from .autoprofile.profiler import Profiler
 
 agent = None
 tracer = None
+profiler = None
 span_recorder = None
 
 # Detect the environment where we are running ahead of time
@@ -21,6 +23,7 @@ if env_is_test:
 
     agent = TestAgent()
     span_recorder = StanRecorder(agent)
+    profiler = Profiler(agent)
 
 elif env_is_aws_lambda:
     from .agent.aws_lambda import AWSLambdaAgent
@@ -42,6 +45,7 @@ else:
 
     agent = HostAgent()
     span_recorder = StanRecorder(agent)
+    profiler = Profiler(agent)
 
 
 def get_agent():
@@ -109,3 +113,22 @@ def set_tracer(new_tracer):
     """
     global tracer
     tracer = new_tracer
+
+def get_profiler():
+    """
+    Retrieve the globally configured profiler
+    @return: Profiler
+    """
+    global profiler
+    return profiler
+
+
+def set_profiler(new_profiler):
+    """
+    Set the global profiler for the Instana package.  This is used for the
+    test suite only currently.
+    @param new_profiler: The new profiler to replace the singleton
+    @return: None
+    """
+    global profiler
+    profiler = new_profiler

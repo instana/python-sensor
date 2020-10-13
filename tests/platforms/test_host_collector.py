@@ -54,7 +54,7 @@ class TestHostCollector(unittest.TestCase):
         payload = self.agent.collector.prepare_payload()
         assert(payload)
 
-        assert(len(payload.keys()) == 2)
+        assert(len(payload.keys()) == 3)
         assert('spans' in payload)
         assert(isinstance(payload['spans'], list))
         assert(len(payload['spans']) == 0)

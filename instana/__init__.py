@@ -171,6 +171,13 @@ if 'INSTANA_DISABLE' not in os.environ:
             print("Instana: No use in monitoring this process type (%s).  "
                   "Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
     else:
+        # AutoProfile
+        if "INSTANA_AUTOPROFILE" in os.environ:
+            from .singletons import get_profiler
+            profiler = get_profiler()
+            if profiler:
+                profiler.start()
+
         if "INSTANA_MAGIC" in os.environ:
             pkg_resources.working_set.add_entry("/tmp/.instana/python")
             # The following path is deprecated: To be removed at a future date

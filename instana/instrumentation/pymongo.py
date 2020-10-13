@@ -48,7 +48,6 @@ try:
         def _collect_connection_tags(self, span, event):
             (host, port) = event.connection_id
 
-            span.set_tag("driver", "pymongo")
             span.set_tag("host", host)
             span.set_tag("port", str(port))
             span.set_tag("db", event.database_name)

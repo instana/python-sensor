@@ -100,18 +100,13 @@ try:
                 scope.span.set_tag('http.url', instance._endpoint.host + ':443/' + operation)
                 scope.span.set_tag('http.method', 'POST')
 
-                index = 1
-                payload = {}
                 arg_length = len(arg_list)
-
-                for arg_name in fas_args:
-                    payload[arg_name] = arg_list[index-1]
-
-                    index += 1
-                    if index > arg_length:
-                        break
-
-                scope.span.set_tag('payload', payload)
+                if arg_length > 0:
+                    payload = {}
+                    for index in range(arg_length):
+                        if fas_args[index] in ['Filename', 'Bucket', 'Key']:
+                            payload[fas_args[index]] = arg_list[index]
+                    scope.span.set_tag('payload', payload)
             except Exception as exc:
                 logger.debug("s3_inject_method_with_instana: collect error", exc_info=True)
 

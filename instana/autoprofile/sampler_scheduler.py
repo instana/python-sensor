@@ -155,10 +155,8 @@ class SamplerScheduler:
             self.profiler.agent.collector.profile_queue.put(profile_dict)
 
             logger.debug(self.config.log_prefix + ': reporting profile:')
-            logger.debug(profile_dict)
         else:
             logger.debug(self.config.log_prefix + ': not reporting profile, agent not ready')
-
 
         self.reset()
 

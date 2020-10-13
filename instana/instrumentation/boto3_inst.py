@@ -104,7 +104,8 @@ try:
                 if arg_length > 0:
                     payload = {}
                     for index in range(arg_length):
-                        payload[fas_args[index]] = arg_list[index]
+                        if fas_args[index] in ['Filename', 'Bucket', 'Key']:
+                            payload[fas_args[index]] = arg_list[index]
                     scope.span.set_tag('payload', payload)
             except Exception as exc:
                 logger.debug("s3_inject_method_with_instana: collect error", exc_info=True)

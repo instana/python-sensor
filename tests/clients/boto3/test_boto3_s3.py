@@ -187,7 +187,7 @@ def test_s3_upload_file_obj(s3):
     assert(boto_span.data['boto3']['op'] == 'upload_fileobj')
     assert(boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com')
     assert(boto_span.data['boto3']['reg'] == 'us-east-1')
-    payload = {'Fileobj': "<_io.BufferedReader name='%s'>" % upload_filename, 'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
+    payload = {'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
     assert boto_span.data['boto3']['payload'] == payload
     assert boto_span.data['http']['method'] == 'POST'
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/upload_fileobj'

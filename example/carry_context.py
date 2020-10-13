@@ -35,6 +35,9 @@ async def launch_async_calls(parent_span):
 with tracer.start_active_span("launch_uvloop") as sync_scope:
     sync_scope.span.set_tag('span.kind', 'entry')
 
+    # You can also retrieve the currently active span with:
+    # tracer.active_span
+
     # Launch our requests asynchronously
     # Enter the event loop and pass in the parent tracing context (sync_scope) manually
     asyncio.run(launch_async_calls(sync_scope.span))

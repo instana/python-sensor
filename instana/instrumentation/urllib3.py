@@ -62,8 +62,8 @@ try:
     def urlopen_with_instana(wrapped, instance, args, kwargs):
         parent_span = tracer.active_span
 
-        # If we're not tracing, just return
-        if parent_span is None:
+        # If we're not tracing, just return; boto3 has it's own visibility
+        if parent_span is None or parent_span.operation_name == 'boto3':
             return wrapped(*args, **kwargs)
 
         with tracer.start_active_span("urllib3", child_of=parent_span) as scope:

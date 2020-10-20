@@ -8,6 +8,8 @@ from io import BytesIO
 
 from ...log import logger
 
+STR_LAMBDA_TRIGGER = 'lambda.trigger'
+
 
 def get_context(tracer, event):
     # TODO: Search for more types of trigger context
@@ -83,7 +85,7 @@ def read_http_query_params(event):
             return "&".join(params)
         else:
             return ""
-    except:
+    except Exception:
         logger.debug("read_http_query_params: ", exc_info=True)
         return ""
 
@@ -106,7 +108,7 @@ def capture_extra_headers(event, span, extra_headers):
                 for key in event_headers:
                     if key.lower() == custom_header.lower():
                         span.set_tag("http.%s" % custom_header, event_headers[key])
-    except:
+    except Exception:
         logger.debug("capture_extra_headers: ", exc_info=True)
 
 
@@ -131,7 +133,8 @@ def enrich_lambda_span(agent, span, event, context):
             return
 
         if is_api_gateway_proxy_trigger(event):
-            span.set_tag('lambda.trigger', 'aws:api.gateway')
+            logger.debug("Detected as API Gateway Proxy Trigger")
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:api.gateway')
             span.set_tag('http.method', event["httpMethod"])
             span.set_tag('http.url', event["path"])
             span.set_tag('http.path_tpl', event["resource"])
@@ -141,7 +144,8 @@ def enrich_lambda_span(agent, span, event, context):
                 capture_extra_headers(event, span, agent.options.extra_http_headers)
 
         elif is_application_load_balancer_trigger(event):
-            span.set_tag('lambda.trigger', 'aws:application.load.balancer')
+            logger.debug("Detected as Application Load Balancer Trigger")
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:application.load.balancer')
             span.set_tag('http.method', event["httpMethod"])
             span.set_tag('http.url', event["path"])
             span.set_tag('http.params', read_http_query_params(event))
@@ -150,7 +154,8 @@ def enrich_lambda_span(agent, span, event, context):
                 capture_extra_headers(event, span, agent.options.extra_http_headers)
 
         elif is_cloudwatch_trigger(event):
-            span.set_tag('lambda.trigger', 'aws:cloudwatch.events')
+            logger.debug("Detected as Cloudwatch Trigger")
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:cloudwatch.events')
             span.set_tag('data.lambda.cw.events.id', event['id'])
 
             resources = event['resources']
@@ -169,7 +174,8 @@ def enrich_lambda_span(agent, span, event, context):
             span.set_tag('lambda.cw.events.resources', report)
 
         elif is_cloudwatch_logs_trigger(event):
-            span.set_tag('lambda.trigger', 'aws:cloudwatch.logs')
+            logger.debug("Detected as Cloudwatch Logs Trigger")
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:cloudwatch.logs')
 
             try:
                 if 'awslogs' in event and 'data' in event['awslogs']:
@@ -196,7 +202,8 @@ def enrich_lambda_span(agent, span, event, context):
             except Exception as e:
                 span.set_tag('lambda.cw.logs.decodingError', repr(e))
         elif is_s3_trigger(event):
-            span.set_tag('lambda.trigger', 'aws:s3')
+            logger.debug("Detected as S3 Trigger")
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:s3')
 
             if "Records" in event:
                 events = []
@@ -218,12 +225,17 @@ def enrich_lambda_span(agent, span, event, context):
                 span.set_tag('lambda.s3.events', events)
 
         elif is_sqs_trigger(event):
-            span.set_tag('lambda.trigger', 'aws:sqs')
+            logger.debug("Detected as SQS Trigger")
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:sqs')
 
             if "Records" in event:
                 events = []
                 for item in event["Records"][:3]:
                     events.append({'queue': item['eventSourceARN']})
                 span.set_tag('lambda.sqs.messages', events)
-    except:
+        else:
+            logger.debug("Detected as Unknown Trigger: %s" % event)
+            span.set_tag(STR_LAMBDA_TRIGGER, 'unknown')
+
+    except Exception:
         logger.debug("enrich_lambda_span: ", exc_info=True)

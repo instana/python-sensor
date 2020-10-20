@@ -149,10 +149,12 @@ class SamplerScheduler:
         profile = self.sampler.build_profile(
             to_millis(self.profile_duration), 
             to_millis(time.time() - self.profile_start_ts))
-        profile_dict = profile.to_dict()
 
         if self.profiler.agent.can_send():
-            self.profiler.agent.collector.profile_queue.put(profile_dict)
+            if self.profiler.agent.announce_data.pid:
+                profile.process_id = str(self.profiler.agent.announce_data.pid)
+
+            self.profiler.agent.collector.profile_queue.put(profile.to_dict())
 
             logger.debug(self.config.log_prefix + ': reporting profile:')
         else:

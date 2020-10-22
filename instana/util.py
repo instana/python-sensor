@@ -26,8 +26,11 @@ _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
 
+def nested_dictionary():
+    return defaultdict(DictionaryOfStan)
+
 # Simple implementation of a nested dictionary.
-DictionaryOfStan = lambda: defaultdict(DictionaryOfStan)
+DictionaryOfStan = nested_dictionary
 
 
 def generate_id():

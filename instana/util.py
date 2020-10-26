@@ -52,12 +52,15 @@ def generate_id():
 def header_to_id(header):
     """
     We can receive headers in the following formats:
-      1. unsigned base 16 hex string of variable length
+      1. unsigned base 16 hex string (or bytes) of variable length
       2. [eventual]
 
     :param header: the header to analyze, validate and convert (if needed)
     :return: a valid ID to be used internal to the tracer
     """
+    if isinstance(header, bytes):
+        header = header.decode('utf-8')
+
     if not isinstance(header, string_types):
         return BAD_ID
 
@@ -453,8 +456,8 @@ def determine_service_name():
                 pass
     except Exception:
         logger.debug("non-fatal get_application_name: ", exc_info=True)
-    finally:
-        return app_name
+
+    return app_name
 
 
 def normalize_aws_lambda_arn(context):
@@ -479,7 +482,7 @@ def normalize_aws_lambda_arn(context):
             logger.debug("Unexpected ARN parse issue: %s", arn)
 
         return arn
-    except:
+    except Exception:
         logger.debug("normalize_arn: ", exc_info=True)
 
 
@@ -498,5 +501,7 @@ def validate_url(url):
     try:
         result = parse.urlparse(url)
         return all([result.scheme, result.netloc])
-    except:
-        return False
+    except Exception:
+        pass
+
+    return False

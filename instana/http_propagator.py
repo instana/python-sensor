@@ -68,7 +68,7 @@ class HTTPPropagator():
         synthetic = False
 
         try:
-            if isinstance(carrier, dict) or hasattr(carrier, "__getitem__"):
+            if isinstance(carrier, dict):
                 dc = carrier
             elif hasattr(carrier, "__dict__"):
                 dc = carrier.__dict__

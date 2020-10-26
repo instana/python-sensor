@@ -59,6 +59,7 @@ def test_http_basic_extract():
     assert('0000000000000001' == ctx.span_id)
     assert ctx.synthetic
 
+
 def test_http_extract_with_byte_keys():
     ot.tracer = InstanaTracer()
 
@@ -69,6 +70,21 @@ def test_http_extract_with_byte_keys():
     assert('0000000000000001' == ctx.trace_id)
     assert('0000000000000001' == ctx.span_id)
     assert ctx.synthetic
+
+
+def test_http_extract_from_list_of_tuples():
+    ot.tracer = InstanaTracer()
+
+    carrier = [(b'user-agent', b'python-requests/2.23.0'), (b'accept-encoding', b'gzip, deflate'),
+               (b'accept', b'*/*'), (b'connection', b'keep-alive'),
+               (b'x-instana-t', b'1'), (b'x-instana-s', b'1'), (b'x-instana-l', b'1'), (b'X-Instana-Synthetic', '1')]
+    ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
+
+    assert isinstance(ctx, SpanContext)
+    assert('0000000000000001' == ctx.trace_id)
+    assert('0000000000000001' == ctx.span_id)
+    assert ctx.synthetic
+
 
 def test_http_mixed_case_extract():
     ot.tracer = InstanaTracer()

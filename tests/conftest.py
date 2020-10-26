@@ -28,6 +28,9 @@ if LooseVersion(sys.version) < LooseVersion('3.5.3'):
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
     collect_ignore_glob.append("*test_sudsjurko*")
 
+# Set our testing flags
+os.environ["INSTANA_TEST"] = "true"
+os.environ["INSTANA_DEBUG"] = "true"
 
 @pytest.fixture(scope='session')
 def celery_config():

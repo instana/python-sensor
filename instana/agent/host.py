@@ -102,6 +102,9 @@ class HostAgent(BaseAgent):
         Are we in a state where we can send data?
         @return: Boolean
         """
+        if "INSTANA_TEST" in os.environ:
+            return True
+
         # Watch for pid change (fork)
         self.last_fork_check = datetime.now()
         current_pid = os.getpid()

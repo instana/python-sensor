@@ -43,6 +43,10 @@ class StanRecorder(object):
         """ Get all of the spans in the queue """
         span = None
         spans = []
+
+        if self.agent.collector.span_queue.empty() is True:
+            return spans
+
         while True:
             try:
                 span = self.agent.collector.span_queue.get(False)
@@ -54,7 +58,8 @@ class StanRecorder(object):
 
     def clear_spans(self):
         """ Clear the queue of spans """
-        self.queued_spans()
+        if self.agent.collector.span_queue.empty() == False:
+            self.queued_spans()
 
     def record_span(self, span):
         """
@@ -74,6 +79,9 @@ class StanRecorder(object):
 
             # logger.debug("Recorded span: %s", json_span)
             self.agent.collector.span_queue.put(json_span)
+        else:
+            from .log import logger
+            logger.warning("235555555555555555555555555555555555555555555555555")
 
 
 class InstanaSampler(Sampler):

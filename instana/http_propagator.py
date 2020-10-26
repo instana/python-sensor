@@ -80,7 +80,12 @@ class HTTPPropagator():
             # Headers can exist in the standard X-Instana-T/S format or the alternate HTTP_X_INSTANA_T/S style
             # We do a case insensitive search to cover all possible variations of incoming headers.
             for key in dc.keys():
-                lc_key = key.lower()
+                lc_key = None
+
+                if isinstance(key, bytes):
+                    lc_key = key.decode("utf-8").lower()
+                else:
+                    lc_key = key.lower()
 
                 if self.LC_HEADER_KEY_T == lc_key:
                     trace_id = header_to_id(dc[key])

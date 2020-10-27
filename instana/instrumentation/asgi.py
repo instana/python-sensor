@@ -27,7 +27,6 @@ class InstanaASGIMiddleware:
 
     async def __call__(self, scope, receive, send):
         request_context = None
-
         logger.warn("scope: %s", scope)
 
         if scope["type"] not in ("http", "websocket"):
@@ -45,15 +44,24 @@ class InstanaASGIMiddleware:
                 if 500 <= int(sc) <= 511:
                     span.mark_as_errored()
                 span.set_tag('http.status_code', sc)
+
+            # {'type': 'http.response.start', 'status': 200, 'headers': [(b'content-length', b'25'), (b'content-type', b'application/json')]}
+            # {'type': 'http.response.body', 'body': b'{"message":"Hello World"}'}
+
+            if 'headers' in response:
+                async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response['headers'])
+                response['headers'].append(('Server-Timing', "intid;desc=%s" % span.context.trace_id))
+
+            logger.debug("response is: %s" % response)
             return send(response)
 
         with async_tracer.start_active_span("asgi", child_of=request_context) as tracing_scope:
             if 'headers' in scope and agent.options.extra_http_headers is not None:
                 for custom_header in agent.options.extra_http_headers:
-                    # Headers are in the following format: b'x-instana-t'
-                    custom_header_in_bytes = bytes(custom_header.lower(), 'utf-8')
-                    if custom_header_in_bytes in scope['headers']:
-                        self.scope.span.set_tag("http.%s" % custom_header, scope['headers'][custom_header_in_bytes])
+                    # Headers are in the following format: b'x-header-1'
+                    for header_pair in scope['headers']:
+                        if header_pair[0].decode('utf-8').lower() == custom_header.lower():
+                            tracing_scope.span.set_tag("http.%s" % custom_header, header_pair[1].decode('utf-8'))
 
             self.collect_kvs(scope, tracing_scope.span)
 

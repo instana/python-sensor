@@ -94,7 +94,7 @@ class HTTPPropagator():
                 elif self.LC_HEADER_KEY_L == lc_key:
                     level = dc[key]
                 elif self.LC_HEADER_KEY_SYNTHETIC == lc_key:
-                    synthetic = dc[key] == "1"
+                    synthetic = dc[key] in ['1', b'1']
 
                 elif self.ALT_LC_HEADER_KEY_T == lc_key:
                     trace_id = header_to_id(dc[key])
@@ -103,7 +103,7 @@ class HTTPPropagator():
                 elif self.ALT_LC_HEADER_KEY_L == lc_key:
                     level = dc[key]
                 elif self.ALT_LC_HEADER_KEY_SYNTHETIC == lc_key:
-                    synthetic = dc[key] == "1"
+                    synthetic = dc[key] in ['1', b'1']
 
             ctx = None
             if trace_id is not None and span_id is not None:

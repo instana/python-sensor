@@ -3,6 +3,7 @@ import opentracing
 from ..log import logger
 from ..singletons import async_tracer, agent
 from ..util import strip_secrets_from_query
+from starlette.routing import Match
 
 class InstanaASGIMiddleware:
     def __init__(self, app):
@@ -18,7 +19,7 @@ class InstanaASGIMiddleware:
             span.set_tag('http.host', server[0])
             # span.set_tag('http.port', server[1])
 
-        query = scope.get('query_string') 
+        query = scope.get('query_string')
         if isinstance(query, (str, bytes)) and len(query):
             if isinstance(query, bytes):
                 query = query.decode('utf-8')
@@ -27,7 +28,6 @@ class InstanaASGIMiddleware:
 
     async def __call__(self, scope, receive, send):
         request_context = None
-        logger.warn("scope: %s", scope)
 
         if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
@@ -38,6 +38,7 @@ class InstanaASGIMiddleware:
             request_context = async_tracer.extract(opentracing.Format.HTTP_HEADERS, request_headers)
 
         def send_wrapper(response):
+            logger.warn("response: %s", response)
             span = async_tracer.active_span
             sc = response.get('status')
             if sc is not None:
@@ -56,12 +57,18 @@ class InstanaASGIMiddleware:
             return send(response)
 
         with async_tracer.start_active_span("asgi", child_of=request_context) as tracing_scope:
+            # Custom Header collection
             if 'headers' in scope and agent.options.extra_http_headers is not None:
                 for custom_header in agent.options.extra_http_headers:
                     # Headers are in the following format: b'x-header-1'
                     for header_pair in scope['headers']:
                         if header_pair[0].decode('utf-8').lower() == custom_header.lower():
                             tracing_scope.span.set_tag("http.%s" % custom_header, header_pair[1].decode('utf-8'))
+
+            # Path Templates
+            for route in scope['app'].routes:
+                if route.matches(scope)[0] == Match.FULL:
+                    tracing_scope.span.set_tag("http.path_tpl", route.path)
 
             self.collect_kvs(scope, tracing_scope.span)
 

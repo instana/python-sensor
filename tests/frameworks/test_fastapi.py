@@ -87,6 +87,52 @@ def test_basic_get(server):
     assert(asgi_span.data['http']['status'] == 200)
     assert(asgi_span.data['http']['error'] == None)
 
+def test_path_templates(server):
+    result = None
+    with tracer.start_active_span('test'):
+        result = requests.get(testenv["fastapi_server"] + '/users/1')
+
+    assert(result)
+
+    time.sleep(3)
+    spans = tracer.recorder.queued_spans()
+    assert len(spans) == 3
+
+    span_filter = lambda span: span.n == "sdk"
+    test_span = get_first_span_by_filter(spans, span_filter)
+    assert(test_span)
+
+    span_filter = lambda span: span.n == "urllib3"
+    urllib3_span = get_first_span_by_filter(spans, span_filter)
+    assert(urllib3_span)
+
+    span_filter = lambda span: span.n == "asgi"
+    asgi_span = get_first_span_by_filter(spans, span_filter)
+    assert(asgi_span)
+
+    assert(test_span.t == urllib3_span.t == asgi_span.t)
+    assert(asgi_span.p == urllib3_span.s)
+    assert(urllib3_span.p == test_span.s)
+
+    assert "X-Instana-T" in result.headers
+    assert result.headers["X-Instana-T"] == asgi_span.t
+    assert "X-Instana-S" in result.headers
+    assert result.headers["X-Instana-S"] == asgi_span.s
+    assert "X-Instana-L" in result.headers
+    assert result.headers["X-Instana-L"] == '1'
+    assert "Server-Timing" in result.headers
+    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+
+    assert('http' in asgi_span.data)
+    assert(asgi_span.ec == None)
+    assert(isinstance(asgi_span.stack, list))
+    assert(asgi_span.data['http']['host'] == '127.0.0.1')
+    assert(asgi_span.data['http']['path'] == '/users/1')
+    assert(asgi_span.data['http']['path_tpl'] == '/users/{1}')
+    assert(asgi_span.data['http']['method'] == 'GET')
+    assert(asgi_span.data['http']['status'] == 200)
+    assert(asgi_span.data['http']['error'] == None)
+
 def test_secret_scrubbing(server):
     result = None
     with tracer.start_active_span('test'):

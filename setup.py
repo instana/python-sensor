@@ -119,7 +119,7 @@ setup(name='instana',
               'spyne>=2.9,<=2.12.14',
               'suds-jurko>=0.6',
               'tornado>=4.5.3,<6.0',
-              'uvicorn>=0.12.2',
+              'uvicorn>=0.12.2;python_version>="3.6"',
               'urllib3[secure]>=1.15'
           ],
       },

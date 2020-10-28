@@ -1,10 +1,14 @@
 from __future__ import absolute_import
 
-import opentracing as ot
+import sys
+import opentracing
 
 from .log import logger
 from .util import header_to_id
 from .span_context import SpanContext
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
 
 # The carrier can be a dict or a list.
 # Using the trace header as an example, it can be in the following forms
@@ -43,7 +47,7 @@ class HTTPPropagator():
             trace_id = span_context.trace_id
             span_id = span_context.span_id
 
-            if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
+            if isinstance(carrier, dict) or hasattr(carrier, "__dict__") or hasattr(carrier, "__setitem__"):
                 carrier[self.HEADER_KEY_T] = trace_id
                 carrier[self.HEADER_KEY_S] = span_id
                 carrier[self.HEADER_KEY_L] = "1"
@@ -72,17 +76,19 @@ class HTTPPropagator():
                 dc = carrier
             elif hasattr(carrier, "__dict__"):
                 dc = carrier.__dict__
+            elif hasattr(carrier, "__getitem__"):
+                dc = carrier
             elif isinstance(carrier, list):
                 dc = dict(carrier)
             else:
-                raise ot.SpanContextCorruptedException()
+                raise opentracing.SpanContextCorruptedException()
 
             # Headers can exist in the standard X-Instana-T/S format or the alternate HTTP_X_INSTANA_T/S style
             # We do a case insensitive search to cover all possible variations of incoming headers.
             for key in dc.keys():
                 lc_key = None
 
-                if isinstance(key, bytes):
+                if PY3 is True and isinstance(key, bytes):
                     lc_key = key.decode("utf-8").lower()
                 else:
                     lc_key = key.lower()

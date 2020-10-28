@@ -21,6 +21,9 @@ if sys.version_info.major == 2:
 else:
     string_types = str
 
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
 _rnd = random.Random()
 _current_pid = 0
 
@@ -58,7 +61,7 @@ def header_to_id(header):
     :param header: the header to analyze, validate and convert (if needed)
     :return: a valid ID to be used internal to the tracer
     """
-    if isinstance(header, bytes):
+    if PY3 is True and isinstance(header, bytes):
         header = header.decode('utf-8')
 
     if not isinstance(header, string_types):

@@ -1,13 +1,14 @@
 import os
 import uvicorn
 from ...helpers import testenv
-from .app import fastapi_server
 from ..utils import launch_background_thread
 from instana.log import logger
 
-APP_THREAD = None
+testenv["fastapi_port"] = 10816
+testenv["fastapi_server"] = ("http://127.0.0.1:" + str(testenv["fastapi_port"]))
 
 def launch_fastapi(mp_queue):
+    from .app import fastapi_server
     from instana.singletons import agent
 
     # Use the multiprocess queue

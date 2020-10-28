@@ -23,7 +23,7 @@ def server():
     logger.debug('Parent mp_queue: %s', mp_queue)
     proc = multiprocessing.Process(target=launch_fastapi, args=(mp_queue,), daemon=True)
     proc.start()
-    time.sleep(1)
+    time.sleep(2)
     yield
     proc.kill() # Kill server after tests
 

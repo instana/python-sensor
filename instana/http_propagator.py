@@ -47,7 +47,7 @@ class HTTPPropagator():
             trace_id = span_context.trace_id
             span_id = span_context.span_id
 
-            if isinstance(carrier, dict) or hasattr(carrier, "__dict__") or hasattr(carrier, "__setitem__"):
+            if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
                 carrier[self.HEADER_KEY_T] = trace_id
                 carrier[self.HEADER_KEY_S] = span_id
                 carrier[self.HEADER_KEY_L] = "1"
@@ -76,8 +76,6 @@ class HTTPPropagator():
                 dc = carrier
             elif hasattr(carrier, "__dict__"):
                 dc = carrier.__dict__
-            elif hasattr(carrier, "__getitem__"):
-                dc = carrier
             elif isinstance(carrier, list):
                 dc = dict(carrier)
             else:

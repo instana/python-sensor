@@ -24,7 +24,9 @@ try:
         def execute_with_instana(wrapped, instance, argv, kwargs):
             try:
                 with tracer_stack_context():
-                    ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS, instance.request.headers)
+                    ctx = None
+                    if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
+                        ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS, instance.request.headers.__dict__['_dict'])
                     scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
 
                     # Query param scrubbing

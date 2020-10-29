@@ -12,4 +12,4 @@ def launch_fastapi():
     # Hack together a manual custom headers list; We'll use this in tests
     agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
-    uvicorn.run(fastapi_server, host='127.0.0.1', port=testenv['fastapi_port'])
+    uvicorn.run(fastapi_server, host='127.0.0.1', port=testenv['fastapi_port'], log_level="critical")

@@ -12,4 +12,4 @@ def launch_starlette():
     # Hack together a manual custom headers list; We'll use this in tests
     agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
-    uvicorn.run(starlette_server, host='127.0.0.1', port=testenv['starlette_port'])
+    uvicorn.run(starlette_server, host='127.0.0.1', port=testenv['starlette_port'], log_level="critical")

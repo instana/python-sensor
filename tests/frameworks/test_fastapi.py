@@ -20,7 +20,6 @@ def server():
 def test_vanilla_get(server):
     result = requests.get(testenv["fastapi_server"] + '/')
     assert(result)
-    time.sleep(3)
     spans = tracer.recorder.queued_spans()
     # FastAPI instrumentation (like all instrumentation) _always_ traces unless told otherwise
     assert len(spans) == 1
@@ -39,7 +38,6 @@ def test_basic_get(server):
 
     assert(result)
 
-    time.sleep(3)
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 3
 
@@ -85,7 +83,6 @@ def test_path_templates(server):
 
     assert(result)
 
-    time.sleep(3)
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 3
 
@@ -132,7 +129,6 @@ def test_secret_scrubbing(server):
 
     assert(result)
 
-    time.sleep(3)
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 3
 
@@ -181,7 +177,6 @@ def test_synthetic_request(server):
 
     assert(result)
 
-    time.sleep(3)
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 3
 
@@ -238,7 +233,6 @@ def test_custom_header_capture(server):
 
     assert(result)
 
-    time.sleep(3)
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 3
 

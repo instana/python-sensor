@@ -70,16 +70,22 @@ class HTTPPropagator():
         span_id = None
         level = 1
         synthetic = False
+        dc = None
 
         try:
-            if isinstance(carrier, dict):
-                dc = carrier
-            elif hasattr(carrier, "__dict__"):
-                dc = carrier.__dict__
-            elif isinstance(carrier, list):
-                dc = dict(carrier)
-            else:
-                raise opentracing.SpanContextCorruptedException()
+            # Attempt to convert incoming <carrier> into a dict
+            try:
+                if isinstance(carrier, dict):
+                    dc = carrier
+                elif hasattr(carrier, "__dict__"):
+                    dc = carrier.__dict__
+                else:
+                    dc = dict(carrier)
+            except Exception:
+                logger.debug("extract: Couln't convert %s", carrier)
+
+            if dc is None:
+                return None
 
             # Headers can exist in the standard X-Instana-T/S format or the alternate HTTP_X_INSTANA_T/S style
             # We do a case insensitive search to cover all possible variations of incoming headers.

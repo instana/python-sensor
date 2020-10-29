@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import os
 import sys
 import json
+import time
 import wrapt
 import logging
 import unittest
@@ -181,6 +182,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
@@ -247,6 +249,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
@@ -312,6 +315,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
@@ -376,6 +380,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
@@ -440,6 +445,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
@@ -506,6 +512,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)
@@ -571,6 +578,7 @@ class TestLambda(unittest.TestCase):
         assert 'headers' in result
         assert 'Server-Timing' in result['headers']
 
+        time.sleep(1)
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue("metrics" in payload)

@@ -34,7 +34,10 @@ if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"
-os.environ["INSTANA_DEBUG"] = "true"
+# os.environ["INSTANA_DEBUG"] = "true"
+
+# Make sure the instana package is fully loaded
+import instana
 
 @pytest.fixture(scope='session')
 def celery_config():

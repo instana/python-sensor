@@ -1,5 +1,5 @@
 """
-Snapshot & metrics collection for AWS Fargate
+AWS Fargate Collector: Manages the periodic collection of metrics & snapshot data
 """
 import os
 import json

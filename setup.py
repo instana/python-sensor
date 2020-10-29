@@ -91,6 +91,7 @@ setup(name='instana',
               'couchbase==2.5.9',
           ],
           'test': [
+              'aiofiles>=0.5.0;python_version>="3.5"',
               'aiohttp>=3.5.4;python_version>="3.5"',
               'asynqp>=0.4;python_version>="3.5"',
               'boto3>=1.10.0',

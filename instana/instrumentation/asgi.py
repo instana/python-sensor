@@ -1,4 +1,3 @@
-from typing import Tuple
 import opentracing
 from ..log import logger
 from ..singletons import async_tracer, agent
@@ -10,12 +9,22 @@ class InstanaASGIMiddleware:
         logger.warn("asgi monkey lives")
         self.app = app
 
+    def extract_custom_headers(self, span, headers):
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                # Headers are in the following format: b'x-header-1'
+                for header_pair in headers:
+                    if header_pair[0].decode('utf-8').lower() == custom_header.lower():
+                        span.set_tag("http.%s" % custom_header, header_pair[1].decode('utf-8'))
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
+
     def collect_kvs(self, scope, span):
         span.set_tag('http.path', scope.get('path'))
         span.set_tag('http.method', scope.get('method'))
 
         server = scope.get('server')
-        if isinstance(server, Tuple):
+        if isinstance(server, tuple):
             span.set_tag('http.host', server[0])
             # span.set_tag('http.port', server[1])
 
@@ -35,41 +44,36 @@ class InstanaASGIMiddleware:
 
         request_headers = scope.get('headers')
         if isinstance(request_headers, list):
-            request_context = async_tracer.extract(opentracing.Format.HTTP_HEADERS, request_headers)
+            request_context = async_tracer.extract(opentracing.Format.BINARY, request_headers)
 
-        def send_wrapper(response):
-            logger.warn("response: %s", response)
-            span = async_tracer.active_span
-            sc = response.get('status')
-            if sc is not None:
-                if 500 <= int(sc) <= 511:
-                    span.mark_as_errored()
-                span.set_tag('http.status_code', sc)
+        async def send_wrapper(response):
+            try:
+                span = async_tracer.active_span
+                sc = response.get('status')
+                if sc is not None:
+                    if 500 <= int(sc) <= 511:
+                        span.mark_as_errored()
+                    span.set_tag('http.status_code', sc)
 
-            # {'type': 'http.response.start', 'status': 200, 'headers': [(b'content-length', b'25'), (b'content-type', b'application/json')]}
-            # {'type': 'http.response.body', 'body': b'{"message":"Hello World"}'}
+                if response['type'] == 'http.response.start' and 'headers' in response:
+                    async_tracer.inject(span.context, opentracing.Format.BINARY, response['headers'])
 
-            if 'headers' in response:
-                async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response['headers'])
-                response['headers'].append(('Server-Timing', "intid;desc=%s" % span.context.trace_id))
-
-            logger.debug("response is: %s" % response)
-            return send(response)
+                logger.debug("response is: %s", response)
+                await send(response)
+            except Exception:
+                logger.debug("send_wrapper: ", exc_info=True)
 
         with async_tracer.start_active_span("asgi", child_of=request_context) as tracing_scope:
-            # Custom Header collection
-            if 'headers' in scope and agent.options.extra_http_headers is not None:
-                for custom_header in agent.options.extra_http_headers:
-                    # Headers are in the following format: b'x-header-1'
-                    for header_pair in scope['headers']:
-                        if header_pair[0].decode('utf-8').lower() == custom_header.lower():
-                            tracing_scope.span.set_tag("http.%s" % custom_header, header_pair[1].decode('utf-8'))
+            try:
+                if 'headers' in scope and agent.options.extra_http_headers is not None:
+                    self.extract_custom_headers(tracing_scope.span, scope['headers'])
 
-            # Path Templates
-            for route in scope['app'].routes:
-                if route.matches(scope)[0] == Match.FULL:
-                    tracing_scope.span.set_tag("http.path_tpl", route.path)
+                for route in scope['app'].routes:
+                    if route.matches(scope)[0] == Match.FULL:
+                        tracing_scope.span.set_tag("http.path_tpl", route.path)
 
-            self.collect_kvs(scope, tracing_scope.span)
+                self.collect_kvs(scope, tracing_scope.span)
+            except Exception:
+                logger.debug("ASGI __call__: ", exc_info=True)
 
             await self.app(scope, receive, send_wrapper)

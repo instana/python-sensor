@@ -230,14 +230,14 @@ def test_binary_inject_with_dict():
 
     carrier = {}
     span = ot.tracer.start_span("nosetests")
-    ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
+    ot.tracer.inject(span.context, ot.Format.BINARY, carrier)
 
-    assert 'X-INSTANA-T' in carrier
-    assert carrier['X-INSTANA-T'] == span.context.trace_id
-    assert 'X-INSTANA-S' in carrier
-    assert carrier['X-INSTANA-S'] == span.context.span_id
-    assert 'X-INSTANA-L' in carrier
-    assert carrier['X-INSTANA-L'] == "1"
+    assert b'x-instana-t' in carrier
+    assert carrier[b'x-instana-t'] == str.encode(span.context.trace_id)
+    assert b'x-instana-s' in carrier
+    assert carrier[b'x-instana-s'] == str.encode(span.context.span_id)
+    assert b'x-instana-l' in carrier
+    assert carrier[b'x-instana-l'] == b'1' 
 
 
 def test_binary_inject_with_list():
@@ -245,40 +245,42 @@ def test_binary_inject_with_list():
 
     carrier = []
     span = ot.tracer.start_span("nosetests")
-    ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
+    ot.tracer.inject(span.context, ot.Format.BINARY, carrier)
 
-    assert ('X-INSTANA-T', span.context.trace_id) in carrier
-    assert ('X-INSTANA-S', span.context.span_id) in carrier
-    assert ('X-INSTANA-L', "1") in carrier
+    assert (b'x-instana-t', str.encode(span.context.trace_id)) in carrier
+    assert (b'x-instana-s', str.encode(span.context.span_id)) in carrier
+    assert (b'x-instana-l', b'1') in carrier
 
 
 def test_binary_basic_extract():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1'}
-    ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
+    carrier = {b'X-INSTANA-T': b'1', b'X-INSTANA-S': b'1', b'X-INSTANA-L': b'1', b'X-INSTANA-SYNTHETIC': b'1'}
+    ctx = ot.tracer.extract(ot.Format.BINARY, carrier)
 
     assert isinstance(ctx, SpanContext)
     assert ctx.trace_id == '0000000000000001'
     assert ctx.span_id == '0000000000000001'
+    assert ctx.synthetic
 
 
 def test_binary_mixed_case_extract():
     ot.tracer = InstanaTracer()
 
-    carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1'}
-    ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
+    carrier = {'x-insTana-T': '1', 'X-inSTANa-S': '1', 'X-INstana-l': '1', b'X-inStaNa-SYNtheTIC': b'1'}
+    ctx = ot.tracer.extract(ot.Format.BINARY, carrier)
 
     assert isinstance(ctx, SpanContext)
     assert ctx.trace_id == '0000000000000001'
     assert ctx.span_id == '0000000000000001'
+    assert ctx.synthetic
 
 
 def test_binary_no_context_extract():
     ot.tracer = InstanaTracer()
 
     carrier = {}
-    ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
+    ctx = ot.tracer.extract(ot.Format.BINARY, carrier)
 
     assert ctx is None
 
@@ -288,7 +290,7 @@ def test_binary_128bit_headers():
 
     carrier = {'X-INSTANA-T': '0000000000000000b0789916ff8f319f',
                'X-INSTANA-S': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
-    ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
+    ctx = ot.tracer.extract(ot.Format.BINARY, carrier)
 
     assert isinstance(ctx, SpanContext)
     assert ctx.trace_id == 'b0789916ff8f319f'

@@ -32,7 +32,6 @@ class InstanaASGIMiddleware:
         server = scope.get('server')
         if isinstance(server, tuple):
             span.set_tag('http.host', server[0])
-            # span.set_tag('http.port', server[1])
 
         query = scope.get('query_string')
         if isinstance(query, (str, bytes)) and len(query):
@@ -70,7 +69,7 @@ class InstanaASGIMiddleware:
                             async_tracer.inject(span.context, opentracing.Format.BINARY, headers)
                     except Exception:
                         logger.debug("send_wrapper: ", exc_info=True)
-                
+
                 try:
                     await send(response)
                 except Exception as exc:

@@ -1,12 +1,18 @@
+"""
+Instana ASGI Middleware
+"""
 import opentracing
+from starlette.routing import Match
+
 from ..log import logger
 from ..singletons import async_tracer, agent
 from ..util import strip_secrets_from_query
-from starlette.routing import Match
 
 class InstanaASGIMiddleware:
+    """
+    Instana ASGI Middleware
+    """
     def __init__(self, app):
-        logger.warn("asgi monkey lives")
         self.app = app
 
     def extract_custom_headers(self, span, headers):
@@ -47,21 +53,29 @@ class InstanaASGIMiddleware:
             request_context = async_tracer.extract(opentracing.Format.BINARY, request_headers)
 
         async def send_wrapper(response):
-            try:
-                span = async_tracer.active_span
-                sc = response.get('status')
-                if sc is not None:
-                    if 500 <= int(sc) <= 511:
-                        span.mark_as_errored()
-                    span.set_tag('http.status_code', sc)
-
-                if response['type'] == 'http.response.start' and 'headers' in response:
-                    async_tracer.inject(span.context, opentracing.Format.BINARY, response['headers'])
-
-                logger.debug("response is: %s", response)
+            span = async_tracer.active_span
+            if span is None:
                 await send(response)
-            except Exception:
-                logger.debug("send_wrapper: ", exc_info=True)
+            else:
+                if response['type'] == 'http.response.start':
+                    try:
+                        status_code = response.get('status')
+                        if status_code is not None:
+                            if 500 <= int(status_code) <= 511:
+                                span.mark_as_errored()
+                            span.set_tag('http.status_code', status_code)
+
+                        headers = response.get('headers')
+                        if headers is not None:
+                            async_tracer.inject(span.context, opentracing.Format.BINARY, headers)
+                    except Exception:
+                        logger.debug("send_wrapper: ", exc_info=True)
+                
+                try:
+                    await send(response)
+                except Exception as exc:
+                    span.log_exception(exc)
+                    raise
 
         with async_tracer.start_active_span("asgi", child_of=request_context) as tracing_scope:
             try:
@@ -76,4 +90,8 @@ class InstanaASGIMiddleware:
             except Exception:
                 logger.debug("ASGI __call__: ", exc_info=True)
 
-            await self.app(scope, receive, send_wrapper)
+            try:
+                await self.app(scope, receive, send_wrapper)
+            except Exception as exc:
+                tracing_scope.span.log_exception(exc)
+                raise exc

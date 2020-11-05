@@ -2,7 +2,6 @@
 Instana ASGI Middleware
 """
 import opentracing
-from starlette.routing import Match
 
 from ..log import logger
 from ..singletons import async_tracer, agent
@@ -15,7 +14,7 @@ class InstanaASGIMiddleware:
     def __init__(self, app):
         self.app = app
 
-    def extract_custom_headers(self, span, headers):
+    def _extract_custom_headers(self, span, headers):
         try:
             for custom_header in agent.options.extra_http_headers:
                 # Headers are in the following format: b'x-header-1'
@@ -25,20 +24,33 @@ class InstanaASGIMiddleware:
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
 
-    def collect_kvs(self, scope, span):
-        span.set_tag('http.path', scope.get('path'))
-        span.set_tag('http.method', scope.get('method'))
+    def _collect_kvs(self, scope, span):
+        try:
+            span.set_tag('http.path', scope.get('path'))
+            span.set_tag('http.method', scope.get('method'))
 
-        server = scope.get('server')
-        if isinstance(server, tuple):
-            span.set_tag('http.host', server[0])
+            server = scope.get('server')
+            if isinstance(server, tuple):
+                span.set_tag('http.host', server[0])
 
-        query = scope.get('query_string')
-        if isinstance(query, (str, bytes)) and len(query):
-            if isinstance(query, bytes):
-                query = query.decode('utf-8')
-            scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher, agent.options.secrets_list)
-            span.set_tag("http.params", scrubbed_params)
+            query = scope.get('query_string')
+            if isinstance(query, (str, bytes)) and len(query):
+                if isinstance(query, bytes):
+                    query = query.decode('utf-8')
+                scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher, agent.options.secrets_list)
+                span.set_tag("http.params", scrubbed_params)
+
+            app = scope.get('app')
+            if app is not None and hasattr(app, 'routes'):
+                # Attempt to detect the Starlette routes registered.
+                # If Starlette isn't present, we harmlessly dump out.
+                from starlette.routing import Match
+                for route in scope['app'].routes:
+                    if route.matches(scope)[0] == Match.FULL:
+                        span.set_tag("http.path_tpl", route.path)
+        except Exception:
+            logger.debug("ASGI collect_kvs: ", exc_info=True)
+
 
     async def __call__(self, scope, receive, send):
         request_context = None
@@ -77,17 +89,9 @@ class InstanaASGIMiddleware:
                     raise
 
         with async_tracer.start_active_span("asgi", child_of=request_context) as tracing_scope:
-            try:
-                if 'headers' in scope and agent.options.extra_http_headers is not None:
-                    self.extract_custom_headers(tracing_scope.span, scope['headers'])
-
-                for route in scope['app'].routes:
-                    if route.matches(scope)[0] == Match.FULL:
-                        tracing_scope.span.set_tag("http.path_tpl", route.path)
-
-                self.collect_kvs(scope, tracing_scope.span)
-            except Exception:
-                logger.debug("ASGI __call__: ", exc_info=True)
+            self._collect_kvs(scope, tracing_scope.span)
+            if 'headers' in scope and agent.options.extra_http_headers is not None:
+                self._extract_custom_headers(tracing_scope.span, scope['headers'])
 
             try:
                 await self.app(scope, receive, send_wrapper)

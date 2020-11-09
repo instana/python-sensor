@@ -5,7 +5,11 @@ https://fastapi.tiangolo.com/
 try:
     import fastapi
     import wrapt
+    import signal
+    import os
+
     from ..log import logger
+    from ..util import running_in_gunicorn
     from .asgi import InstanaASGIMiddleware
     from starlette.middleware import Middleware
 
@@ -20,5 +24,10 @@ try:
         return wrapped(*args, **kwargs)
 
     logger.debug("Instrumenting FastAPI")
+
+    # Reload GUnicorn when we are instrumenting an already running application
+    if "INSTANA_MAGIC" in os.environ and running_in_gunicorn():
+        os.kill(os.getpid(), signal.SIGHUP)
+
 except ImportError:
     pass

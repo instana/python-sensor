@@ -25,9 +25,19 @@ if LooseVersion(sys.version) < LooseVersion('3.5.3'):
     collect_ignore_glob.append("*test_grpc*")
     collect_ignore_glob.append("*test_boto3*")
 
+if LooseVersion(sys.version) < LooseVersion('3.6.0'):
+    collect_ignore_glob.append("*test_fastapi*")
+    collect_ignore_glob.append("*test_starlette*")
+
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
     collect_ignore_glob.append("*test_sudsjurko*")
 
+# Set our testing flags
+os.environ["INSTANA_TEST"] = "true"
+# os.environ["INSTANA_DEBUG"] = "true"
+
+# Make sure the instana package is fully loaded
+import instana
 
 @pytest.fixture(scope='session')
 def celery_config():

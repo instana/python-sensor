@@ -21,13 +21,19 @@ if sys.version_info.major == 2:
 else:
     string_types = str
 
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
 _rnd = random.Random()
 _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
 
+def nested_dictionary():
+    return defaultdict(DictionaryOfStan)
+
 # Simple implementation of a nested dictionary.
-DictionaryOfStan = lambda: defaultdict(DictionaryOfStan)
+DictionaryOfStan = nested_dictionary
 
 
 def generate_id():
@@ -49,12 +55,15 @@ def generate_id():
 def header_to_id(header):
     """
     We can receive headers in the following formats:
-      1. unsigned base 16 hex string of variable length
+      1. unsigned base 16 hex string (or bytes) of variable length
       2. [eventual]
 
     :param header: the header to analyze, validate and convert (if needed)
     :return: a valid ID to be used internal to the tracer
     """
+    if PY3 is True and isinstance(header, bytes):
+        header = header.decode('utf-8')
+
     if not isinstance(header, string_types):
         return BAD_ID
 
@@ -450,8 +459,8 @@ def determine_service_name():
                 pass
     except Exception:
         logger.debug("non-fatal get_application_name: ", exc_info=True)
-    finally:
-        return app_name
+
+    return app_name
 
 
 def normalize_aws_lambda_arn(context):
@@ -476,7 +485,7 @@ def normalize_aws_lambda_arn(context):
             logger.debug("Unexpected ARN parse issue: %s", arn)
 
         return arn
-    except:
+    except Exception:
         logger.debug("normalize_arn: ", exc_info=True)
 
 
@@ -495,5 +504,38 @@ def validate_url(url):
     try:
         result = parse.urlparse(url)
         return all([result.scheme, result.netloc])
-    except:
+    except Exception:
+        pass
+
+    return False
+
+
+def running_in_gunicorn():
+    """
+    Determines if we are running inside of a gunicorn process.
+
+    @return:  Boolean
+    """
+    process_check = False
+
+    try:
+        # Is this a gunicorn process?
+        if hasattr(sys, 'argv'):
+            for arg in sys.argv:
+                if arg.find('gunicorn') >= 0:
+                    process_check = True
+        elif os.path.isfile("/proc/self/cmdline"):
+            with open("/proc/self/cmdline") as cmd:
+                contents = cmd.read()
+
+            parts = contents.split('\0')
+            parts.pop()
+            cmdline = " ".join(parts)
+
+            if cmdline.find('gunicorn') >= 0:
+                process_check = True
+
+        return process_check
+    except Exception:
+        logger.debug("Instana.log.running_in_gunicorn: ", exc_info=True)
         return False

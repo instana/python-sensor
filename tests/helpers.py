@@ -140,3 +140,15 @@ def get_spans_by_filter(spans, filter):
         if filter(span) is True:
             results.append(span)
     return results
+
+def launch_traced_request(url):
+    import requests
+    from instana.log import logger
+    from instana.singletons import tracer
+
+    logger.warn("Launching request with a root SDK span name of 'launch_traced_request'")
+
+    with tracer.start_active_span('launch_traced_request'):
+        response = requests.get(url)
+
+    return response

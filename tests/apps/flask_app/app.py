@@ -18,7 +18,7 @@ except ImportError:
 from ...helpers import testenv
 from instana.singletons import tracer
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 testenv["wsgi_port"] = 10811

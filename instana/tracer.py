@@ -10,11 +10,11 @@ from basictracer import BasicTracer
 
 from .util import generate_id
 from .span_context import SpanContext
-from .http_propagator import HTTPPropagator
-from .text_propagator import TextPropagator
 from .span import InstanaSpan, RegisteredSpan
-from .binary_propagator import BinaryPropagator
 from .recorder import StanRecorder, InstanaSampler
+from .propagators.http_propagator import HTTPPropagator
+from .propagators.text_propagator import TextPropagator
+from .propagators.binary_propagator import BinaryPropagator
 
 
 class InstanaTracer(BasicTracer):

@@ -52,7 +52,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -116,8 +115,7 @@ class TestTornadoServer(unittest.TestCase):
                     return await self.post(session, testenv["tornado_server"] + "/")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-
-        time.sleep(0.5)
+        
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -185,7 +183,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -205,7 +202,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
 
@@ -284,7 +280,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -348,7 +343,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -413,7 +407,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -478,7 +471,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -550,7 +542,6 @@ class TestTornadoServer(unittest.TestCase):
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
-        time.sleep(0.5)
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 

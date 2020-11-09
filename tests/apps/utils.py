@@ -1,10 +1,12 @@
 import threading
 
 
-def launch_background_thread(app, name):
-    app_thread = threading.Thread(target=app)
+def launch_background_thread(app, app_name, fun_args=(), fun_kwargs={}):
+    print("Starting background %s app..." % app_name)
+    app_thread = threading.Thread(target=app,
+                                  name=app_name,
+                                  args=fun_args,
+                                  kwargs=fun_kwargs)
     app_thread.daemon = True
-    app_thread.name = "Background %s app" % name
-    print("Starting background %s app..." % name)
     app_thread.start()
     return app_thread

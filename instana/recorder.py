@@ -17,7 +17,7 @@ else:
 class StanRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
-    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "boto3", "cassandra",
+    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "asgi", "aws.lambda.entry", "boto3", "cassandra",
                         "celery-client", "celery-worker", "couchbase", "django", "gcs", "log",
                         "memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis",
                         "render", "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client",
@@ -43,6 +43,15 @@ class StanRecorder(object):
         """ Get all of the spans in the queue """
         span = None
         spans = []
+
+        import time
+        from .singletons import env_is_test
+        if env_is_test is True:
+            time.sleep(1)
+
+        if self.agent.collector.span_queue.empty() is True:
+            return spans
+
         while True:
             try:
                 span = self.agent.collector.span_queue.get(False)
@@ -54,7 +63,8 @@ class StanRecorder(object):
 
     def clear_spans(self):
         """ Clear the queue of spans """
-        self.queued_spans()
+        if self.agent.collector.span_queue.empty() == False:
+            self.queued_spans()
 
     def record_span(self, span):
         """

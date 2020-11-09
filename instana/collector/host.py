@@ -1,11 +1,10 @@
 """
-Snapshot & metrics collection for AWS Fargate
+Host Collector: Manages the periodic collection of metrics & snapshot data
 """
 from time import time
 from ..log import logger
 from .base import BaseCollector
 from ..util import DictionaryOfStan
-from ..singletons import env_is_test
 from .helpers.runtime import RuntimeHelper
 
 

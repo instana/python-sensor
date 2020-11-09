@@ -6,6 +6,7 @@ import random
 
 import grpc
 
+import tests.apps.grpc_server
 import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 

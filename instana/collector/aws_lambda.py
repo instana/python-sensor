@@ -1,5 +1,5 @@
 """
-Snapshot & metrics collection for AWS Lambda
+AWS Lambda Collector: Manages the periodic collection of metrics & snapshot data
 """
 from ..log import logger
 from .base import BaseCollector

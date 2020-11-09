@@ -125,6 +125,10 @@ def boot_agent():
         # Import & initialize instrumentation
         from .instrumentation.aws import lambda_inst
 
+        if sys.version_info >= (3, 6, 0):
+            from .instrumentation import fastapi_inst
+            from .instrumentation import starlette_inst
+
         if sys.version_info >= (3, 5, 3):
             from .instrumentation import asyncio
             from .instrumentation.aiohttp import client

@@ -32,6 +32,11 @@ def get_aws_lambda_logger():
     return aws_lambda_logger
 
 def glogging_available():
+    """
+    Determines if the gunicorn.glogging package is available
+
+    @return:  Boolean
+    """
     package_check = False
 
     # Is the glogging package available?
@@ -44,14 +49,41 @@ def glogging_available():
     
     return package_check
 
-def gunicorn_logging_available():
-    from .util import running_in_gunicorn
-    return running_in_gunicorn() and glogging_available()
+def running_in_gunicorn():
+    """
+    Determines if we are running inside of a gunicorn process.
+
+    @return:  Boolean
+    """
+    process_check = False
+
+    try:
+        # Is this a gunicorn process?
+        if hasattr(sys, 'argv'):
+            for arg in sys.argv:
+                if arg.find('gunicorn') >= 0:
+                    process_check = True
+        elif os.path.isfile("/proc/self/cmdline"):
+            with open("/proc/self/cmdline") as cmd:
+                contents = cmd.read()
+
+            parts = contents.split('\0')
+            parts.pop()
+            cmdline = " ".join(parts)
+
+            if cmdline.find('gunicorn') >= 0:
+                process_check = True
+
+        return process_check
+    except Exception:
+        logger.debug("Instana.log.running_in_gunicorn: ", exc_info=True)
+        return False
+
 
 aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 
-if gunicorn_logging_available():
+if running_in_gunicorn() and glogging_available():
     logger = logging.getLogger("gunicorn.error")
 elif env_is_aws_lambda is True:
     logger = get_aws_lambda_logger()

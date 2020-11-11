@@ -26,6 +26,7 @@ class InstanaASGIMiddleware:
 
     def _collect_kvs(self, scope, span):
         try:
+            span.set_tag('span.kind', 'entry')
             span.set_tag('http.path', scope.get('path'))
             span.set_tag('http.method', scope.get('method'))
 

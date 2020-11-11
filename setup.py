@@ -63,7 +63,7 @@ setup(name='instana',
                         'opentracing>=2.3.0',
                         'requests>=2.8.0',
                         'six>=1.12.0',
-                        'urllib3>=1.18.1'],
+                        'urllib3<1.26,>=1.21.1'],
       entry_points={
                     'instana':  ['string = instana:load'],
                     'flask':    ['string = instana:load'],  # deprecated: use same as 'instana'
@@ -79,14 +79,14 @@ setup(name='instana',
               'nose>=1.0',
               'pyramid>=1.2',
               'pytest>=4.6',
-              'urllib3[secure]>=1.15,<=1.25.11'
+              'urllib3[secure]!=1.25.0,!=1.25.1,<1.26,>=1.21.1'
           ],
           'test-cassandra': [
               'cassandra-driver==3.20.2',
               'mock>=2.0.0',
               'nose>=1.0',
               'pytest>=4.6',
-              'urllib3[secure]>=1.15<=1.25.11'
+              'urllib3[secure]!=1.25.0,!=1.25.1,<1.26,>=1.21.1'
           ],
           'test-couchbase': [
               'couchbase==2.5.9',
@@ -122,7 +122,7 @@ setup(name='instana',
               'suds-jurko>=0.6',
               'tornado>=4.5.3,<6.0',
               'uvicorn>=0.12.2;python_version>="3.6"',
-              'urllib3[secure]>=1.15,<=1.25.11'
+              'urllib3[secure]!=1.25.0,!=1.25.1,<1.26,>=1.21.1'
           ],
       },
       test_suite='nose.collector',

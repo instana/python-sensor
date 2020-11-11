@@ -120,7 +120,7 @@ class BaseSpan(object):
         :param tags: dict of tags
         :return: dict - a filtered set of tags
         """
-        filtered_tags = {}
+        filtered_tags = DictionaryOfStan()
         for key in tags.keys():
             validated_key, validated_value = self._validate_tag(key, tags[key])
             if validated_key is not None and validated_value is not None:
@@ -227,14 +227,14 @@ class SDKSpan(BaseSpan):
 
 
 class RegisteredSpan(BaseSpan):
-    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "asgi", "django", "http", "soap", "tornado-client",
+    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
                   "soap", "tornado-client", "urllib3", "pymongo", "gcs")
 
-    ENTRY_SPANS = ("aiohttp-server", "asgi", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
+    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
                    "rpc-server", "tornado-server")
 
     LOCAL_SPANS = ("render")

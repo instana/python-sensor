@@ -17,7 +17,7 @@ else:
 class StanRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
-    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "asgi", "aws.lambda.entry", "boto3", "cassandra",
+    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "boto3", "cassandra",
                         "celery-client", "celery-worker", "couchbase", "django", "gcs", "log",
                         "memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis",
                         "render", "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client",

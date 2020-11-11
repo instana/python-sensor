@@ -79,14 +79,14 @@ setup(name='instana',
               'nose>=1.0',
               'pyramid>=1.2',
               'pytest>=4.6',
-              'urllib3[secure]>=1.15'
+              'urllib3[secure]>=1.15,<=1.25.11'
           ],
           'test-cassandra': [
               'cassandra-driver==3.20.2',
               'mock>=2.0.0',
               'nose>=1.0',
               'pytest>=4.6',
-              'urllib3[secure]>=1.15'
+              'urllib3[secure]>=1.15<=1.25.11'
           ],
           'test-couchbase': [
               'couchbase==2.5.9',
@@ -122,7 +122,7 @@ setup(name='instana',
               'suds-jurko>=0.6',
               'tornado>=4.5.3,<6.0',
               'uvicorn>=0.12.2;python_version>="3.6"',
-              'urllib3[secure]>=1.15'
+              'urllib3[secure]>=1.15,<=1.25.11'
           ],
       },
       test_suite='nose.collector',

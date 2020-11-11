@@ -120,7 +120,7 @@ class BaseSpan(object):
         :param tags: dict of tags
         :return: dict - a filtered set of tags
         """
-        filtered_tags = {}
+        filtered_tags = DictionaryOfStan()
         for key in tags.keys():
             validated_key, validated_value = self._validate_tag(key, tags[key])
             if validated_key is not None and validated_value is not None:

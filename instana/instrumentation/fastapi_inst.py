@@ -30,7 +30,7 @@ try:
                 span = async_tracer.active_span
 
                 if span is not None:
-                    if hasattr(exc, 'detail'):
+                    if hasattr(exc, 'detail') and (500 <= exc.status_code <= 599):
                         span.set_tag('http.error', exc.detail)
                     span.set_tag('http.status_code', exc.status_code)
             except Exception:

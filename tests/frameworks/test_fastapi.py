@@ -162,7 +162,7 @@ def test_500(server):
     assert(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/500')
     assert(asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
     assert(asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 500)
-    assert('http.error' not in asgi_span.data['sdk']['custom']['tags'])
+    assert(asgi_span.data['sdk']['custom']['tags']['http.error'] == '500 response')
     assert('http.params' not in asgi_span.data['sdk']['custom']['tags'])
 
 def test_path_templates(server):

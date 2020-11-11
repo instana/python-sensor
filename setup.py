@@ -79,14 +79,14 @@ setup(name='instana',
               'nose>=1.0',
               'pyramid>=1.2',
               'pytest>=4.6',
-              'urllib3[secure]=1.25.0,!=1.25.1,<1.26,>=1.21.1'
+              'urllib3[secure]!=1.25.0,!=1.25.1,<1.26,>=1.21.1'
           ],
           'test-cassandra': [
               'cassandra-driver==3.20.2',
               'mock>=2.0.0',
               'nose>=1.0',
               'pytest>=4.6',
-              'urllib3[secure]=1.25.0,!=1.25.1,<1.26,>=1.21.1'
+              'urllib3[secure]!=1.25.0,!=1.25.1,<1.26,>=1.21.1'
           ],
           'test-couchbase': [
               'couchbase==2.5.9',

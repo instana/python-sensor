@@ -13,7 +13,11 @@ STR_LAMBDA_TRIGGER = 'lambda.trigger'
 
 def get_context(tracer, event):
     # TODO: Search for more types of trigger context
-    if is_api_gateway_proxy_trigger(event) or is_application_load_balancer_trigger(event):
+    is_proxy_event = is_api_gateway_proxy_trigger(event) or \
+        is_api_gateway_v2_proxy_trigger(event) or \
+        is_application_load_balancer_trigger(event)
+
+    if is_proxy_event:
         return tracer.extract('http_headers', event['headers'])
 
     return tracer.extract('http_headers', event)

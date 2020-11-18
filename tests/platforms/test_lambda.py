@@ -300,6 +300,73 @@ class TestLambda(unittest.TestCase):
         else:
             self.assertEqual("foo=['bar']", span.data['http']['params'])
 
+    def test_api_gateway_v2_trigger_tracing(self):
+        with open(self.pwd + '/../data/lambda/api_gateway_v2_event.json', 'r') as json_file:
+            event = json.load(json_file)
+
+        self.create_agent_and_setup_tracer()
+
+        # Call the Instana Lambda Handler as we do in the real world.  It will initiate tracing and then
+        # figure out the original (the users') Lambda Handler and execute it.
+        # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
+        result = lambda_handler(event, self.context)
+
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
+        time.sleep(1)
+        payload = self.agent.collector.prepare_payload()
+
+        self.assertTrue("metrics" in payload)
+        self.assertTrue("spans" in payload)
+        self.assertEqual(2, len(payload.keys()))
+
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+
+        self.assertEqual(1, len(payload['spans']))
+
+        span = payload['spans'][0]
+        self.assertEqual('aws.lambda.entry', span.n)
+        self.assertEqual('0000000000001234', span.t)
+        self.assertIsNotNone(span.s)
+        self.assertEqual('0000000000004567', span.p)
+        self.assertIsNotNone(span.ts)
+        self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
+
+        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
+                         span.f)
+
+        self.assertTrue(span.sy)
+
+        self.assertIsNone(span.ec)
+        self.assertIsNone(span.data['lambda']['error'])
+
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
+        self.assertEqual(None, span.data['lambda']['alias'])
+        self.assertEqual('python', span.data['lambda']['runtime'])
+        self.assertEqual('TestPython', span.data['lambda']['functionName'])
+        self.assertEqual('1', span.data['lambda']['functionVersion'])
+        self.assertIsNone(span.data['service'])
+
+        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
+        self.assertEqual('POST', span.data['http']['method'])
+        self.assertEqual('/my/path', span.data['http']['url'])
+        self.assertEqual('/my/{resource}', span.data['http']['path_tpl'])
+        if sys.version[:3] == '2.7':
+            self.assertEqual(u"q=term&secret=key", span.data['http']['params'])
+        else:
+            self.assertEqual("secret=key&q=term", span.data['http']['params'])
+
+
     def test_application_lb_trigger_tracing(self):
         with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
             event = json.load(json_file)

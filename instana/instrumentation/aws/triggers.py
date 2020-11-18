@@ -26,6 +26,20 @@ def is_api_gateway_proxy_trigger(event):
     return True
 
 
+def is_api_gateway_v2_proxy_trigger(event):
+    for key in ["version", "requestContext"]:
+        if key not in event:
+            return False
+
+    if event["version"] != "2.0":
+        return False
+
+    for key in ["apiId", "stage", "http"]:
+        if key not in event["requestContext"]:
+            return False
+
+    return True
+
 def is_application_load_balancer_trigger(event):
     if 'requestContext' in event and 'elb' in event['requestContext']:
         return True

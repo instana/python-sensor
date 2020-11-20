@@ -13,8 +13,12 @@ STR_LAMBDA_TRIGGER = 'lambda.trigger'
 
 def get_context(tracer, event):
     # TODO: Search for more types of trigger context
-    if is_api_gateway_proxy_trigger(event) or is_application_load_balancer_trigger(event):
-        return tracer.extract('http_headers', event['headers'])
+    is_proxy_event = is_api_gateway_proxy_trigger(event) or \
+        is_api_gateway_v2_proxy_trigger(event) or \
+        is_application_load_balancer_trigger(event)
+
+    if is_proxy_event:
+        return tracer.extract('http_headers', event.get('headers', {}))
 
     return tracer.extract('http_headers', event)
 
@@ -25,6 +29,20 @@ def is_api_gateway_proxy_trigger(event):
             return False
     return True
 
+
+def is_api_gateway_v2_proxy_trigger(event):
+    for key in ["version", "requestContext"]:
+        if key not in event:
+            return False
+
+    if event["version"] != "2.0":
+        return False
+
+    for key in ["apiId", "stage", "http"]:
+        if key not in event["requestContext"]:
+            return False
+
+    return True
 
 def is_application_load_balancer_trigger(event):
     if 'requestContext' in event and 'elb' in event['requestContext']:
@@ -138,6 +156,23 @@ def enrich_lambda_span(agent, span, event, context):
             span.set_tag('http.method', event["httpMethod"])
             span.set_tag('http.url', event["path"])
             span.set_tag('http.path_tpl', event["resource"])
+            span.set_tag('http.params', read_http_query_params(event))
+
+            if agent.options.extra_http_headers is not None:
+                capture_extra_headers(event, span, agent.options.extra_http_headers)
+
+        elif is_api_gateway_v2_proxy_trigger(event):
+            logger.debug("Detected as API Gateway v2.0 Proxy Trigger")
+
+            reqCtx = event["requestContext"]
+
+            # trim optional HTTP method prefix
+            route_path = event["routeKey"].split(" ", 2)[-1]
+
+            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:api.gateway')
+            span.set_tag('http.method', reqCtx["http"]["method"])
+            span.set_tag('http.url', reqCtx["http"]["path"])
+            span.set_tag('http.path_tpl', route_path)
             span.set_tag('http.params', read_http_query_params(event))
 
             if agent.options.extra_http_headers is not None:

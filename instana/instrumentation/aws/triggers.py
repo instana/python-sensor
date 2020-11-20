@@ -18,7 +18,7 @@ def get_context(tracer, event):
         is_application_load_balancer_trigger(event)
 
     if is_proxy_event:
-        return tracer.extract('http_headers', event['headers'])
+        return tracer.extract('http_headers', event.get('headers', {}))
 
     return tracer.extract('http_headers', event)
 

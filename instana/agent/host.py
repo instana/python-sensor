@@ -17,7 +17,8 @@ from ..fsm import TheMachine
 from ..version import VERSION
 from ..options import StandardOptions
 from ..collector.host import HostCollector
-from ..util import to_json, get_py_source
+from ..util import to_json
+from ..util.runtime import get_py_source
 
 
 class AnnounceData(object):

@@ -9,7 +9,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, tracer
-from ...util import strip_secrets_from_query
+from ...util.secrets import strip_secrets_from_query
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 

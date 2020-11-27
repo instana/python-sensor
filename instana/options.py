@@ -13,7 +13,7 @@ import os
 import logging
 
 from .log import logger
-from .util import determine_service_name
+from .util.runtime import determine_service_name
 
 
 class BaseOptions(object):

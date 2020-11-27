@@ -6,7 +6,7 @@ import opentracing
 import opentracing.ext.tags as ext
 
 from ...log import logger
-from ...util import strip_secrets_from_query
+from ...util.secrets import strip_secrets_from_query
 from ...singletons import agent, tracer
 
 import flask

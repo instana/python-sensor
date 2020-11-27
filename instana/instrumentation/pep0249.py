@@ -4,7 +4,7 @@ import wrapt
 
 from ..log import logger
 from ..singletons import tracer
-from ..util import sql_sanitizer
+from ..util.sql import sql_sanitizer
 
 
 class CursorWrapper(wrapt.ObjectProxy):

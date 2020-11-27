@@ -7,7 +7,7 @@ import opentracing.ext.tags as ext
 
 from ...log import logger
 from ...singletons import tracer, agent
-from ...util import strip_secrets_from_query
+from ...util.secrets import strip_secrets_from_query
 
 
 class InstanaTweenFactory(object):

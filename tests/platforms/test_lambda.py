@@ -17,7 +17,7 @@ from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
 from instana.instrumentation.aws.triggers import read_http_query_params
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
-from instana.util import normalize_aws_lambda_arn
+from instana.util.aws import normalize_aws_lambda_arn
 
 
 # Mock Context object

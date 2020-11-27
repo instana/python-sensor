@@ -6,7 +6,7 @@ try:
     from urllib import parse
 except ImportError:
     import urlparse as parse
-    import urrlib
+    import urllib
 
 from ..log import logger
 

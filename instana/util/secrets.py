@@ -8,6 +8,7 @@ except ImportError:
     import urlparse as parse
     import urllib
 
+from ..util import PY2, PY3
 from ..log import logger
 
 
@@ -123,7 +124,7 @@ def strip_secrets_from_query(qp, matcher, kwlist):
             logger.debug("strip_secrets_from_query: unknown matcher")
             return qp
 
-        if sys.version_info < (3, 0):
+        if PY2:
             result = urllib.urlencode(params, doseq=True)
         else:
             result = parse.urlencode(params, doseq=True)

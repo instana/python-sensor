@@ -40,19 +40,19 @@ def test_various_header_to_id_conversion():
 def test_header_to_id_conversion_with_bogus_header():
     # Bogus nil arg
     bogus_result = instana.util.ids.header_to_id(None)
-    assert(instana.util.BAD_ID == bogus_result)
+    assert(instana.util.ids.BAD_ID == bogus_result)
 
     # Bogus Integer arg
     bogus_result = instana.util.ids.header_to_id(1234)
-    assert(instana.util.BAD_ID == bogus_result)
+    assert(instana.util.ids.BAD_ID == bogus_result)
 
     # Bogus Array arg
     bogus_result = instana.util.ids.header_to_id([1234])
-    assert(instana.util.BAD_ID == bogus_result)
+    assert(instana.util.ids.BAD_ID == bogus_result)
 
     # Bogus Hex Values in String
     bogus_result = instana.util.ids.header_to_id('0xZZZZZZ')
-    assert(instana.util.BAD_ID == bogus_result)
+    assert(instana.util.ids.BAD_ID == bogus_result)
 
     bogus_result = instana.util.ids.header_to_id('ZZZZZZ')
-    assert(instana.util.BAD_ID == bogus_result)
+    assert(instana.util.ids.BAD_ID == bogus_result)

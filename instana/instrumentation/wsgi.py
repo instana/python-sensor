@@ -5,7 +5,7 @@ import opentracing as ot
 import opentracing.ext.tags as tags
 
 from ..singletons import agent, tracer
-from ..util import strip_secrets_from_query
+from ..util.secrets import strip_secrets_from_query
 
 
 class InstanaWSGIMiddleware(object):

@@ -10,7 +10,7 @@ try:
     from distutils.version import LooseVersion
 
     from ..log import logger
-    from ..util import running_in_gunicorn
+    from ..util.gunicorn import running_in_gunicorn
     from .asgi import InstanaASGIMiddleware
     from starlette.middleware import Middleware
     from fastapi import HTTPException

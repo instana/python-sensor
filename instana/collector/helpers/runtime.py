@@ -10,7 +10,8 @@ from pkg_resources import DistributionNotFound, get_distribution
 
 from instana.log import logger
 from instana.version import VERSION
-from instana.util import DictionaryOfStan, determine_service_name
+from instana.util import DictionaryOfStan
+from instana.util.runtime import determine_service_name
 
 from .base import BaseHelper
 

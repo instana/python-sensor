@@ -5,7 +5,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, async_tracer
-from ...util import strip_secrets_from_query
+from ...util.secrets import strip_secrets_from_query
 
 
 try:

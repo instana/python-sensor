@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import sys
 
 from ..log import logger
-from ..util import header_to_id
+from ..util.ids import header_to_id
 from ..span_context import SpanContext
 
 PY2 = sys.version_info[0] == 2

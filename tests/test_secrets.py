@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import unittest
 
-from instana.util import strip_secrets_from_query
+from instana.util.secrets import strip_secrets_from_query
 
 
 class TestSecrets(unittest.TestCase):

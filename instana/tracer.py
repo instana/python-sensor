@@ -8,7 +8,7 @@ import traceback
 import opentracing as ot
 from basictracer import BasicTracer
 
-from .util import generate_id
+from .util.ids import generate_id
 from .span_context import SpanContext
 from .span import InstanaSpan, RegisteredSpan
 from .recorder import StanRecorder, InstanaSampler

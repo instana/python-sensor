@@ -6,7 +6,7 @@ import functools
 
 from ...log import logger
 from ...singletons import agent, setup_tornado_tracer, tornado_tracer
-from ...util import strip_secrets_from_query
+from ...util.secrets import strip_secrets_from_query
 
 from distutils.version import LooseVersion
 

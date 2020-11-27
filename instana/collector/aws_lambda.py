@@ -3,7 +3,8 @@ AWS Lambda Collector: Manages the periodic collection of metrics & snapshot data
 """
 from ..log import logger
 from .base import BaseCollector
-from ..util import DictionaryOfStan, normalize_aws_lambda_arn
+from ..util import DictionaryOfStan
+from ..util.aws import normalize_aws_lambda_arn
 
 
 class AWSLambdaCollector(BaseCollector):

@@ -9,7 +9,7 @@ import wrapt
 
 from ...log import logger
 from ...singletons import agent, tracer
-from ...util import strip_secrets_from_query
+from ...util.secrets import strip_secrets_from_query
 
 path_tpl_re = re.compile('<.*>')
 

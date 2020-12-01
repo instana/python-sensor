@@ -316,12 +316,10 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-        assert("http.X-Capture-This" in aioserver_span.data["custom"]["tags"])
-        self.assertEqual(
-            'this', aioserver_span.data["custom"]["tags"]['http.X-Capture-This'])
-        assert("http.X-Capture-That" in aioserver_span.data["custom"]["tags"])
-        self.assertEqual(
-            'that', aioserver_span.data["custom"]["tags"]['http.X-Capture-That'])
+        assert "X-Capture-This" in aioserver_span.data["http"]["header"]
+        self.assertEqual("this", aioserver_span.data["http"]["header"]["X-Capture-This"])
+        assert "X-Capture-That" in aioserver_span.data["http"]["header"]
+        self.assertEqual("that", aioserver_span.data["http"]["header"]["X-Capture-That"])
 
     def test_server_get_401(self):
         async def test():

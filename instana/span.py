@@ -471,6 +471,11 @@ class RegisteredSpan(BaseSpan):
             if span.operation_name == "soap":
                 self.data["soap"]["action"] = span.tags.pop('soap.action', None)
 
+            custom_headers = []
             for key in span.tags:
-                if "http.header." in key:
-                    self.data["http"]["header"][key] = span.tags.pop(key)
+                if key[0:12] == "http.header.":
+                    custom_headers.append(key)
+
+            for key in custom_headers:
+                trimmed_key = key[12:]
+                self.data["http"]["header"][trimmed_key] = span.tags.pop(key)

@@ -251,10 +251,10 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
 
-        self.assertEqual(True, "http.X-Capture-This" in django_span.data["custom"]['tags'])
-        self.assertEqual("this", django_span.data["custom"]['tags']["http.X-Capture-This"])
-        self.assertEqual(True, "http.X-Capture-That" in django_span.data["custom"]['tags'])
-        self.assertEqual("that", django_span.data["custom"]['tags']["http.X-Capture-That"])
+        assert "X-Capture-This" in django_span.data["http"]["header"]
+        self.assertEqual("this", django_span.data["http"]["header"]["X-Capture-This"])
+        assert "X-Capture-That" in django_span.data["http"]["header"]
+        self.assertEqual("that", django_span.data["http"]["header"]["X-Capture-That"])
 
     def test_with_incoming_context(self):
         request_headers = dict()

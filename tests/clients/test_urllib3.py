@@ -510,7 +510,7 @@ class TestUrllib3(unittest.TestCase):
 
     def test_requestspkg_get(self):
         self.recorder.clear_spans()
-        
+
         with tracer.start_active_span('test'):
             r = requests.get(testenv["wsgi_server"] + '/', timeout=2)
 
@@ -706,7 +706,9 @@ class TestUrllib3(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
-        self.assertTrue('http.X-Capture-This' in urllib3_span.data["custom"]["tags"])
+
+        assert "X-Capture-This" in wsgi_span.data["http"]["header"]
+        self.assertEqual("this", wsgi_span.data["http"]["header"]["X-Capture-This"])
 
         agent.options.extra_http_headers = original_extra_http_headers
 

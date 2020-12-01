@@ -707,8 +707,8 @@ class TestUrllib3(unittest.TestCase):
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
 
-        assert "X-Capture-This" in wsgi_span.data["http"]["header"]
-        self.assertEqual("this", wsgi_span.data["http"]["header"]["X-Capture-This"])
+        assert "X-Capture-This" in urllib3_span.data["http"]["header"]
+        self.assertEqual("Ok", urllib3_span.data["http"]["header"]["X-Capture-This"])
 
         agent.options.extra_http_headers = original_extra_http_headers
 

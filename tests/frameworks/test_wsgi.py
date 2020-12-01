@@ -230,7 +230,6 @@ class TestWSGI(unittest.TestCase):
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 
-        import ipdb; ipdb.set_trace()
         assert "X-Capture-This" in wsgi_span.data["http"]["header"]
         self.assertEqual("this", wsgi_span.data["http"]["header"]["X-Capture-This"])
         assert "X-Capture-That" in wsgi_span.data["http"]["header"]

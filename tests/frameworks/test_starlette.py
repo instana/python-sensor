@@ -266,5 +266,5 @@ def test_custom_header_capture(server):
 
     assert("http.header.X-Capture-This" in asgi_span.data["sdk"]["custom"]['tags'])
     assert("this" == asgi_span.data["sdk"]["custom"]['tags']["http.header.X-Capture-This"])
-    assert("http.X-Capture-That" in asgi_span.data["sdk"]["custom"]['tags'])
-    assert("that" == asgi_span.data["sdk"]["custom"]['tags']["http.X-Capture-That"])
+    assert("http.header.X-Capture-That" in asgi_span.data["sdk"]["custom"]['tags'])
+    assert("that" == asgi_span.data["sdk"]["custom"]['tags']["http.header.X-Capture-That"])

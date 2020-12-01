@@ -384,7 +384,7 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
         assert "X-Capture-This" in aiohttp_span.data["http"]["header"]
-        self.assertEqual("this", aiohttp_span.data["http"]["header"]["X-Capture-This"])
+        self.assertEqual("Ok", aiohttp_span.data["http"]["header"]["X-Capture-This"])
 
         assert "X-Instana-T" in response.headers
         self.assertEqual(response.headers["X-Instana-T"], traceId)

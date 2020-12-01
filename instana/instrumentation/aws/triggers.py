@@ -125,7 +125,7 @@ def capture_extra_headers(event, span, extra_headers):
             for custom_header in extra_headers:
                 for key in event_headers:
                     if key.lower() == custom_header.lower():
-                        span.set_tag("http.%s" % custom_header, event_headers[key])
+                        span.set_tag("http.header.%s" % custom_header, event_headers[key])
     except Exception:
         logger.debug("capture_extra_headers: ", exc_info=True)
 

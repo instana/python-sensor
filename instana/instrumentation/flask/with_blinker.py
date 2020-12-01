@@ -31,7 +31,7 @@ def request_started_with_instana(sender, **extra):
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if header in env:
-                    span.set_tag("http.%s" % custom_header, env[header])
+                    span.set_tag("http.header.%s" % custom_header, env[header])
 
         span.set_tag(ext.HTTP_METHOD, flask.request.method)
         if 'PATH_INFO' in env:

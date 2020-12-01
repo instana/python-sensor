@@ -44,7 +44,7 @@ try:
                 if agent.options.extra_http_headers is not None:
                     for custom_header in agent.options.extra_http_headers:
                         if custom_header in params.response.headers:
-                            scope.span.set_tag("http.%s" % custom_header, params.response.headers[custom_header])
+                            scope.span.set_tag("http.header.%s" % custom_header, params.response.headers[custom_header])
 
                 if 500 <= params.response.status <= 599:
                     scope.span.mark_as_errored({"http.error": params.response.reason})

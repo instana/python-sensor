@@ -115,7 +115,7 @@ class TestTornadoServer(unittest.TestCase):
                     return await self.post(session, testenv["tornado_server"] + "/")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        
+
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
@@ -176,7 +176,7 @@ class TestTornadoServer(unittest.TestCase):
             headers = {
                 'X-Instana-Synthetic': '1'
             }
-            
+
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["tornado_server"] + "/", headers=headers)
@@ -598,7 +598,7 @@ class TestTornadoServer(unittest.TestCase):
         self.assertTrue("Server-Timing" in response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
-        self.assertTrue("http.X-Capture-This" in tornado_span.data["custom"]["tags"])
-        self.assertEqual('this', tornado_span.data["custom"]["tags"]['http.X-Capture-This'])
-        self.assertTrue("http.X-Capture-That" in tornado_span.data["custom"]["tags"])
-        self.assertEqual('that', tornado_span.data["custom"]["tags"]['http.X-Capture-That'])
+        assert "X-Capture-This" in tornado_span.data["http"]["header"]
+        self.assertEqual("this", tornado_span.data["http"]["header"]["X-Capture-This"])
+        assert "X-Capture-That" in tornado_span.data["http"]["header"]
+        self.assertEqual("that", tornado_span.data["http"]["header"]["X-Capture-That"])

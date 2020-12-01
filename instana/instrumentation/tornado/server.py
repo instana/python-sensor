@@ -44,7 +44,7 @@ try:
                     if agent.options.extra_http_headers is not None:
                         for custom_header in agent.options.extra_http_headers:
                             if custom_header in instance.request.headers:
-                                scope.span.set_tag("http.%s" % custom_header, instance.request.headers[custom_header])
+                                scope.span.set_tag("http.header.%s" % custom_header, instance.request.headers[custom_header])
 
                     setattr(instance.request, "_instana", scope)
 

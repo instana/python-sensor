@@ -230,10 +230,10 @@ class TestWSGI(unittest.TestCase):
         self.assertIsNotNone(wsgi_span.stack)
         self.assertEqual(2, len(wsgi_span.stack))
 
-        self.assertEqual(True, "http.X-Capture-This" in wsgi_span.data["custom"]['tags'])
-        self.assertEqual("this", wsgi_span.data["custom"]['tags']["http.X-Capture-This"])
-        self.assertEqual(True, "http.X-Capture-That" in wsgi_span.data["custom"]['tags'])
-        self.assertEqual("that", wsgi_span.data["custom"]['tags']["http.X-Capture-That"])
+        assert "X-Capture-This" in wsgi_span.data["http"]["header"]
+        self.assertEqual("this", wsgi_span.data["http"]["header"]["X-Capture-This"])
+        assert "X-Capture-That" in wsgi_span.data["http"]["header"]
+        self.assertEqual("that", wsgi_span.data["http"]["header"]["X-Capture-That"])
 
     def test_secret_scrubbing(self):
         with tracer.start_active_span('test'):

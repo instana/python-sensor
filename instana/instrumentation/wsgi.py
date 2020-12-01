@@ -40,7 +40,7 @@ class InstanaWSGIMiddleware(object):
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 wsgi_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if wsgi_header in env:
-                    self.scope.span.set_tag("http.%s" % custom_header, env[wsgi_header])
+                    self.scope.span.set_tag("http.header.%s" % custom_header, env[wsgi_header])
 
         if 'PATH_INFO' in env:
             self.scope.span.set_tag('http.path', env['PATH_INFO'])

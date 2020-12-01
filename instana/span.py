@@ -467,5 +467,10 @@ class RegisteredSpan(BaseSpan):
         self.data["http"]["path_tpl"] = span.tags.pop("http.path_tpl", None)
         self.data["http"]["error"] = span.tags.pop('http.error', None)
 
-        if span.operation_name == "soap":
-            self.data["soap"]["action"] = span.tags.pop('soap.action', None)
+        if len(span.tags) > 0:
+            if span.operation_name == "soap":
+                self.data["soap"]["action"] = span.tags.pop('soap.action', None)
+
+            for key in span.tags:
+                if "http.header." in key:
+                    self.data["http"]["header"][key] = span.tags.pop(key)

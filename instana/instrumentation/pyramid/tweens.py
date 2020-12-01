@@ -33,7 +33,7 @@ class InstanaTweenFactory(object):
                 # Headers are available in this format: HTTP_X_CAPTURE_THIS
                 h = ('HTTP_' + custom_header.upper()).replace('-', '_')
                 if h in request.headers:
-                    scope.span.set_tag("http.%s" % custom_header, request.headers[h])
+                    scope.span.set_tag("http.header.%s" % custom_header, request.headers[h])
 
         if len(request.query_string):
             scrubbed_params = strip_secrets_from_query(request.query_string, agent.options.secrets_matcher, agent.options.secrets_list)

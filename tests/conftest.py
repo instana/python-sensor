@@ -18,12 +18,14 @@ if "GEVENT_TEST" not in os.environ:
     collect_ignore_glob.append("*test_gevent*")
 
 if LooseVersion(sys.version) < LooseVersion('3.5.3'):
-    collect_ignore_glob.append("*test_asynqp*")
     collect_ignore_glob.append("*test_aiohttp*")
     collect_ignore_glob.append("*test_async*")
     collect_ignore_glob.append("*test_tornado*")
     collect_ignore_glob.append("*test_grpc*")
     collect_ignore_glob.append("*test_boto3*")
+
+if LooseVersion(sys.version) < LooseVersion('3.5.3') or LooseVersion(sys.version) >= LooseVersion('3.8.0'):
+    collect_ignore_glob.append("*test_asynqp*")
 
 if LooseVersion(sys.version) < LooseVersion('3.6.0'):
     collect_ignore_glob.append("*test_fastapi*")

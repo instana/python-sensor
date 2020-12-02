@@ -1,5 +1,61 @@
 version: 2.1
 
+# More about orbs: https://circleci.com/docs/2.0/using-orbs/
+# orbs:
+#   ruby: circleci/ruby@1.1.2
+
+commands:
+  setup-virtualenv-27:
+    steps:
+      - run:
+          name: Setup Python 2.7 VirtualEnv
+          command: |
+            rm -rf venv
+            export PATH=/home/circleci/.local/bin:$PATH
+            pip install --user -U pip setuptools virtualenv wheel
+            virtualenv --python=python2.7 --always-copy venv
+
+  pip-install-deps27:
+    parameters:
+      requirements:
+        default: "tests/requirements.txt"
+        type: string
+    steps:
+      - run:
+          name: Install Python 2.7 Dependencies
+          command: |
+            . venv/bin/activate
+            pip install 'wheel>=0.29.0'
+            pip install -r requirements.txt
+            pip install -r <<requirements>>
+
+  pip-install-deps:
+    parameters:
+      requirements:
+        default: "tests/requirements.txt"
+        type: string
+    steps:
+      - run:
+          name: Install Python Dependencies
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install 'wheel>=0.29.0'
+            pip install -r requirements.txt
+            pip install -r <<requirements>>
+      
+  install-couchbase-deps:
+    steps:
+      - run:
+          name: Install Couchbase Dependencies
+          command: |
+            sudo apt-get update
+            sudo apt install lsb-release -y
+            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
+            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
+            sudo apt-get update
+            sudo apt install libcouchbase-dev -y
+            
 jobs:
   python27:
     docker:
@@ -12,17 +68,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            rm -rf venv
-            export PATH=/home/circleci/.local/bin:$PATH
-            pip install --user -U pip setuptools virtualenv
-            virtualenv --python=python2.7 --always-copy venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements.txt
+      - setup-virtualenv27
+      - pip-install-deps27
       - run:
           name: run tests
           environment:
@@ -42,14 +89,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements.txt
+      - pip-install-deps 
       - run:
           name: run tests
           environment:
@@ -69,14 +109,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements.txt
+      - pip-install-deps 
       - run:
           name: run tests
           environment:
@@ -92,20 +125,9 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            sudo apt-get update
-            sudo apt install lsb-release -y
-            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
-            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
-            sudo apt-get update
-            sudo apt install libcouchbase-dev -y
-            python -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements-couchbase.txt
+      - install-couchbase-deps
+      - pip-install-deps:
+          requirements: "tests/requirements-couchbase.txt"
       - run:
           name: run tests
           environment:
@@ -122,20 +144,9 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            sudo apt-get update
-            sudo apt install lsb-release -y
-            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
-            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
-            sudo apt-get update
-            sudo apt install libcouchbase-dev -y
-            python -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements-couchbase.txt
+      - install-couchbase-deps
+      - pip-install-deps:
+          requirements: "tests/requirements-couchbase.txt"
       - run:
           name: run tests
           environment:
@@ -155,17 +166,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            rm -rf venv
-            export PATH=/home/circleci/.local/bin:$PATH
-            pip install --user -U pip setuptools virtualenv
-            virtualenv --python=python2.7 --always-copy venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements-cassandra.txt
+      - pip-install-deps27:
+          requirements: "tests/requirements-cassandra.txt"
       - run:
           name: run tests
           environment:
@@ -185,14 +187,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements-cassandra.txt
+      - pip-install-deps:
+          requirements: "tests/requirements-cassandra.txt"
       - run:
           name: run tests
           environment:
@@ -208,14 +204,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-            python setup.py install_egg_info
-            pip install -r tests/requirements-gevent.txt
+      - pip-install-deps:
+          requirements: "tests/requirements-gevent.txt"
       - run:
           name: run tests
           environment:
@@ -224,6 +214,7 @@ jobs:
           command: |
             . venv/bin/activate
             pytest -v tests/frameworks/test_gevent.py
+
 workflows:
   version: 2
   build:

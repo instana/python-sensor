@@ -5,16 +5,6 @@ version: 2.1
 #   ruby: circleci/ruby@1.1.2
 
 commands:
-  setup-virtualenv-27:
-    steps:
-      - run:
-          name: Setup Python 2.7 VirtualEnv
-          command: |
-            rm -rf venv
-            export PATH=/home/circleci/.local/bin:$PATH
-            pip install --user -U pip setuptools virtualenv wheel
-            virtualenv --python=python2.7 --always-copy venv
-
   pip-install-deps-27:
     parameters:
       requirements:
@@ -24,6 +14,10 @@ commands:
       - run:
           name: Install Python 2.7 Dependencies
           command: |
+            rm -rf venv
+            export PATH=/home/circleci/.local/bin:$PATH
+            pip install --user -U pip setuptools virtualenv wheel
+            virtualenv --python=python2.7 --always-copy venv
             . venv/bin/activate
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
@@ -68,7 +62,6 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - setup-virtualenv-27
       - pip-install-deps-27
       - run:
           name: run tests
@@ -166,6 +159,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - install-couchbase-deps
       - pip-install-deps-27:
           requirements: "tests/requirements-cassandra.txt"
       - run:

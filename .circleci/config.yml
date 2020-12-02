@@ -1,8 +1,5 @@
-# Python CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
-version: 2
+version: 2.1
+
 jobs:
   python27:
     docker:
@@ -25,7 +22,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test]'
+            pip install -r tests/requirements.txt
       - run:
           name: run tests
           environment:
@@ -52,7 +49,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test]'
+            pip install -r tests/requirements.txt
       - run:
           name: run tests
           environment:
@@ -79,7 +76,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test]'
+            pip install -r tests/requirements.txt
       - run:
           name: run tests
           environment:
@@ -108,7 +105,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test-couchbase]'
+            pip install -r tests/requirements-couchbase.txt
       - run:
           name: run tests
           environment:
@@ -138,7 +135,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test-couchbase]'
+            pip install -r tests/requirements-couchbase.txt
       - run:
           name: run tests
           environment:
@@ -168,7 +165,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test-cassandra]'
+            pip install -r tests/requirements-cassandra.txt
       - run:
           name: run tests
           environment:
@@ -195,7 +192,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test-cassandra]'
+            pip install -r tests/requirements-cassandra.txt
       - run:
           name: run tests
           environment:
@@ -218,7 +215,7 @@ jobs:
             . venv/bin/activate
             pip install -U pip
             python setup.py install_egg_info
-            pip install -e '.[test-gevent]'
+            pip install -r tests/requirements-gevent.txt
       - run:
           name: run tests
           environment:

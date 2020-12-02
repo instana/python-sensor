@@ -15,7 +15,7 @@ commands:
             pip install --user -U pip setuptools virtualenv wheel
             virtualenv --python=python2.7 --always-copy venv
 
-  pip-install-deps27:
+  pip-install-deps-27:
     parameters:
       requirements:
         default: "tests/requirements.txt"
@@ -27,7 +27,7 @@ commands:
             . venv/bin/activate
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
-            pip install -r <<requirements>>
+            pip install -r <<parameters.requirements>>
 
   pip-install-deps:
     parameters:
@@ -42,7 +42,7 @@ commands:
             . venv/bin/activate
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
-            pip install -r <<requirements>>
+            pip install -r <<parameters.requirements>>
       
   install-couchbase-deps:
     steps:
@@ -68,8 +68,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - setup-virtualenv27
-      - pip-install-deps27
+      - setup-virtualenv-27
+      - pip-install-deps-27
       - run:
           name: run tests
           environment:
@@ -145,7 +145,7 @@ jobs:
     steps:
       - checkout
       - install-couchbase-deps
-      - pip-install-deps:
+      - pip-install-deps-27:
           requirements: "tests/requirements-couchbase.txt"
       - run:
           name: run tests
@@ -166,7 +166,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - pip-install-deps27:
+      - pip-install-deps-27:
           requirements: "tests/requirements-cassandra.txt"
       - run:
           name: run tests

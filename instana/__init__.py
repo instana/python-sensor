@@ -133,8 +133,10 @@ def boot_agent():
             from .instrumentation import asyncio
             from .instrumentation.aiohttp import client
             from .instrumentation.aiohttp import server
-            from .instrumentation import asynqp
             from .instrumentation import boto3_inst
+
+        if sys.version_info >= (3, 5, 3) and sys.version_info < (3, 8, 0):
+            from .instrumentation import asynqp
 
         if sys.version_info[0] < 3:
             from .instrumentation import mysqlpython

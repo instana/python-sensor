@@ -110,7 +110,7 @@ class BaseSpan(object):
             self.sy = span.synthetic
 
         self.__dict__.update(kwargs)
-    
+
     def _validate_tags(self, tags):
         """
         This method will loop through a set of tags to validate each key and value.

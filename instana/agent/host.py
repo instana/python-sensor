@@ -253,7 +253,7 @@ class HostAgent(BaseAgent):
                                             data=to_json(payload['profiles']),
                                             headers={"Content-Type": "application/json"},
                                             timeout=0.8)
-            
+
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
 

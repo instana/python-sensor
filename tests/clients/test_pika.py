@@ -100,3 +100,78 @@ class TestPika(unittest.TestCase):
                     "X-Instana-S": rabbitmq_span.s,
                     "X-Instana-L": "1"
                 }), b"Hello!"))
+
+    @mock.patch('pika.spec.Basic.Get')
+    def test_Channel_basic_get(self, _unused):
+        self.obj._set_state(self.obj.OPEN)
+
+        body = "Hello!"
+        properties = pika.spec.BasicProperties()
+
+        method_frame = pika.frame.Method(1, pika.spec.Basic.GetOk)
+        header_frame = pika.frame.Header(1, len(body), properties)
+
+        cb = mock.Mock()
+
+        self.obj.basic_get("test.queue", cb)
+        self.obj._on_getok(method_frame, header_frame, body)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        rabbitmq_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+
+        # A new span has been started
+        self.assertIsNotNone(rabbitmq_span.t)
+        self.assertIsNone(rabbitmq_span.p)
+        self.assertIsNotNone(rabbitmq_span.s)
+
+        # Error logging
+        self.assertIsNone(rabbitmq_span.ec)
+
+        # Span tags
+        self.assertIsNone(rabbitmq_span.data["rabbitmq"]["exchange"])
+        self.assertEqual("consume", rabbitmq_span.data["rabbitmq"]["sort"])
+        self.assertIsNotNone(rabbitmq_span.data["rabbitmq"]["address"])
+        self.assertEqual("test.queue", rabbitmq_span.data["rabbitmq"]["key"])
+        self.assertIsNotNone(rabbitmq_span.stack)
+        self.assertTrue(type(rabbitmq_span.stack) is list)
+        self.assertGreater(len(rabbitmq_span.stack), 0)
+
+        cb.assert_called_once_with(self.obj, pika.spec.Basic.GetOk, properties, body)
+
+    @mock.patch('pika.spec.Basic.Get')
+    def test_Channel_basic_get_with_trace_context(self, _unused):
+        self.obj._set_state(self.obj.OPEN)
+
+        body = "Hello!"
+        properties = pika.spec.BasicProperties(headers={
+            "X-Instana-T": "0000000000000001",
+            "X-Instana-S": "0000000000000002",
+            "X-Instana-L": "1"
+        })
+
+        method_frame = pika.frame.Method(1, pika.spec.Basic.GetOk)
+        header_frame = pika.frame.Header(1, len(body), properties)
+
+        cb = mock.Mock()
+
+        self.obj.basic_get("test.queue", cb)
+        self.obj._on_getok(method_frame, header_frame, body)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        rabbitmq_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Trace context propagation
+        self.assertEqual("0000000000000001", rabbitmq_span.t)
+        self.assertEqual("0000000000000002", rabbitmq_span.p)
+
+        # A new span has been started
+        self.assertIsNotNone(rabbitmq_span.s)
+        self.assertNotEqual(rabbitmq_span.p, rabbitmq_span.s)

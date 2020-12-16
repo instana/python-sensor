@@ -102,7 +102,7 @@ class InstanaTracer(BasicTracer):
             span.synthetic = parent_ctx.synthetic
 
         if operation_name in RegisteredSpan.EXIT_SPANS:
-            self.__add_stack(span)
+            self.__add_stack(span, limit=30)
 
         elif operation_name in RegisteredSpan.ENTRY_SPANS:
             # For entry spans, add only a backtrace fingerprint

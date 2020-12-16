@@ -145,9 +145,12 @@ class InstanaTracer(BasicTracer):
                     "m": frame[2]
                 })
 
-            # (limit * -1) gives us negative form of <limit> used for
-            # slicing from the end of the list. e.g. stack[-30:]
-            span.stack = sanitized_stack[(limit*-1):]
+            if len(sanitized_stack) > limit:
+                # (limit * -1) gives us negative form of <limit> used for
+                # slicing from the end of the list. e.g. stack[-30:]
+                span.stack = sanitized_stack[(limit*-1):]
+            else:
+                span.stack = sanitized_stack
         except Exception:
             # No fail
             pass

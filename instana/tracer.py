@@ -104,10 +104,6 @@ class InstanaTracer(BasicTracer):
         if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span, limit=30)
 
-        elif operation_name in RegisteredSpan.ENTRY_SPANS:
-            # For entry spans, add only a backtrace fingerprint
-            self.__add_stack(span, limit=2)
-
         return span
 
     def inject(self, span_context, format, carrier):

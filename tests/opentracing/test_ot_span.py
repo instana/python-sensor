@@ -46,11 +46,11 @@ class TestOTSpan(unittest.TestCase):
             assert 0 <= int(context.trace_id, 16) <= 18446744073709551615
 
     def test_stacks(self):
-        # Entry spans only have a backtrace fingerprint
+        # Entry spans have no stack attached by default
         wsgi_span = opentracing.tracer.start_span("wsgi")
-        assert len(wsgi_span.stack) == 2
+        assert wsgi_span.stack is None
 
-        # SDK spans have not stack attached by default
+        # SDK spans have no stack attached by default
         sdk_span = opentracing.tracer.start_span("unregistered_span_type")
         assert sdk_span.stack is None
 

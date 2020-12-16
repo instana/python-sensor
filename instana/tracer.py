@@ -102,7 +102,7 @@ class InstanaTracer(BasicTracer):
             span.synthetic = parent_ctx.synthetic
 
         if operation_name in RegisteredSpan.EXIT_SPANS:
-            self.__add_stack(span, limit=30)
+            self.__add_stack(span)
 
         return span
 
@@ -118,33 +118,39 @@ class InstanaTracer(BasicTracer):
 
         raise ot.UnsupportedFormatException()
 
-    def __add_stack(self, span, limit=None):
-        """ Adds a backtrace to this span """
-        span.stack = []
-        frame_count = 0
+    def __add_stack(self, span, limit=30):
+        """
+        Adds a backtrace to <span>.  The default length limit for
+        stack traces is 30 frames.  A hard limit of 40 frames is enforced.
+        """
+        try:
+            sanitized_stack = []
+            if limit > 40:
+                limit = 40
 
-        tb = traceback.extract_stack()
-        tb.reverse()
-        for frame in tb:
-            if limit is not None and frame_count >= limit:
-                break
+            trace_back = traceback.extract_stack()
+            trace_back.reverse()
+            for frame in trace_back:
+                # Exclude Instana frames unless we're in dev mode
+                if "INSTANA_DEBUG" not in os.environ:
+                    if re_tracer_frame.search(frame[0]) is not None:
+                        continue
 
-            # Exclude Instana frames unless we're in dev mode
-            if "INSTANA_DEBUG" not in os.environ:
-                if re_tracer_frame.search(frame[0]) is not None:
-                    continue
+                    if re_with_stan_frame.search(frame[2]) is not None:
+                        continue
 
-                if re_with_stan_frame.search(frame[2]) is not None:
-                    continue
+                sanitized_stack.append({
+                    "c": frame[0],
+                    "n": frame[1],
+                    "m": frame[2]
+                })
 
-            span.stack.append({
-                "c": frame[0],
-                "n": frame[1],
-                "m": frame[2]
-            })
-
-            if limit is not None:
-                frame_count += 1
+            # (limit * -1) gives us negative form of <limit> used for
+            # slicing from the end of the list. e.g. stack[-30:]
+            span.stack = sanitized_stack[(limit*-1):]
+        except Exception:
+            # No fail
+            pass
 
 
 # Used by __add_stack

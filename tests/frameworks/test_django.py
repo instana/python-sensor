@@ -71,8 +71,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('/', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
-        assert django_span.stack
-        self.assertEqual(2, len(django_span.stack))
+        self.assertIsNone(django_span.stack)
 
     def test_synthetic_request(self):
         headers = {
@@ -154,8 +153,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(500, django_span.data["http"]["status"])
         self.assertEqual('This is a fake error: /cause-error', django_span.data["http"]["error"])
-        assert(django_span.stack)
-        self.assertEqual(2, len(django_span.stack))
+        self.assertIsNone(django_span.stack)
 
     def test_complex_request(self):
         with tracer.start_active_span('test'):
@@ -204,8 +202,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(ot_span2.p, ot_span1.s)
 
         self.assertEqual(None, django_span.ec)
-        assert(django_span.stack)
-        self.assertEqual(2, len(django_span.stack))
+        self.assertIsNone(django_span.stack)
 
         self.assertEqual('/complex', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
@@ -244,8 +241,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.p, urllib3_span.s)
 
         self.assertEqual(None, django_span.ec)
-        assert(django_span.stack)
-        self.assertEqual(2, len(django_span.stack))
+        self.assertIsNone(django_span.stack)
 
         self.assertEqual('/', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])

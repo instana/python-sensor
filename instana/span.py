@@ -104,13 +104,8 @@ class BaseSpan(object):
         self.f = source
         self.ec = span.tags.pop('ec', None)
         self.data = DictionaryOfStan()
-
-        if span.synthetic:
-            self.sy = True
-
-        if span.stack:
-            self.stack = span.stack
-
+        self.sy = span.synthetic
+        self.stack = span.stack
         self.__dict__.update(kwargs)
     
     def _validate_tags(self, tags):

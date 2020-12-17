@@ -85,8 +85,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -146,8 +145,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -210,8 +208,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionManyResponses')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -273,8 +270,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsManyReponses')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -332,8 +328,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -392,8 +387,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -456,8 +450,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -522,8 +515,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/ManyQuestionsOneResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])
@@ -585,8 +577,7 @@ class TestGRPCIO(unittest.TestCase):
         # rpc-server
         self.assertEqual(server_span.n, 'rpc-server')
         self.assertEqual(server_span.k, 1)
-        self.assertIsNotNone(server_span.stack)
-        self.assertEqual(2, len(server_span.stack))
+        self.assertIsNone(server_span.stack)
         self.assertEqual(server_span.data["rpc"]["flavor"], 'grpc')
         self.assertEqual(server_span.data["rpc"]["call"], '/stan.Stan/OneQuestionOneErrorResponse')
         self.assertEqual(server_span.data["rpc"]["host"], testenv["grpc_host"])

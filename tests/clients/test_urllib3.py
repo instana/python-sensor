@@ -62,8 +62,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -110,8 +109,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -159,8 +157,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -208,8 +205,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('PUT', wsgi_span.data["http"]["method"])
         self.assertEqual(404, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -265,8 +261,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span1.data["http"]["method"])
         self.assertEqual(200, wsgi_span1.data["http"]["status"])
         self.assertIsNone(wsgi_span1.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span1.stack)
-        self.assertEqual(2, len(wsgi_span1.stack))
+        self.assertIsNone(wsgi_span1.stack)
 
         self.assertEqual("wsgi", wsgi_span2.n)
         self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span2.data["http"]["host"])
@@ -274,8 +269,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span2.data["http"]["method"])
         self.assertEqual(301, wsgi_span2.data["http"]["status"])
         self.assertIsNone(wsgi_span2.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span2.stack)
-        self.assertEqual(2, len(wsgi_span2.stack))
+        self.assertIsNone(wsgi_span2.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -339,8 +333,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span1.data["http"]["method"])
         self.assertEqual(200, wsgi_span1.data["http"]["status"])
         self.assertIsNone(wsgi_span1.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span1.stack)
-        self.assertEqual(2, len(wsgi_span1.stack))
+        self.assertIsNone(wsgi_span1.stack)
 
         self.assertEqual("wsgi", wsgi_span2.n)
         self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span2.data["http"]["host"])
@@ -348,8 +341,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span2.data["http"]["method"])
         self.assertEqual(302, wsgi_span2.data["http"]["status"])
         self.assertIsNone(wsgi_span2.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span2.stack)
-        self.assertEqual(2, len(wsgi_span2.stack))
+        self.assertIsNone(wsgi_span2.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -405,8 +397,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(504, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -457,8 +448,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(500, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -545,8 +535,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -596,8 +585,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -643,8 +631,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('PUT', wsgi_span.data["http"]["method"])
         self.assertEqual(404, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -694,8 +681,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])

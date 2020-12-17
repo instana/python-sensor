@@ -84,8 +84,7 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
     def test_synthetic_request(self):
         headers = {
@@ -166,8 +165,7 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -227,8 +225,7 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
         assert "X-Capture-This" in wsgi_span.data["http"]["header"]
         self.assertEqual("this", wsgi_span.data["http"]["header"]["X-Capture-This"])
@@ -287,8 +284,7 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNotNone(wsgi_span.stack)
-        self.assertEqual(2, len(wsgi_span.stack))
+        self.assertIsNone(wsgi_span.stack)
 
     def test_with_incoming_context(self):
         request_headers = dict()

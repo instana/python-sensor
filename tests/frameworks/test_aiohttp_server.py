@@ -72,9 +72,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual(testenv["aiohttp_server"] +
                          "/", aioserver_span.data["http"]["url"])
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data["http"]["status"])
@@ -136,9 +134,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual(testenv["aiohttp_server"] +
                          "/204", aioserver_span.data["http"]["url"])
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(204, aioclient_span.data["http"]["status"])
@@ -220,9 +216,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
         self.assertEqual("secret=<redacted>",
                          aioserver_span.data["http"]["params"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data["http"]["status"])
@@ -291,9 +285,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
         self.assertEqual("secret=<redacted>",
                          aioserver_span.data["http"]["params"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(200, aioclient_span.data["http"]["status"])
@@ -357,9 +349,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual(testenv["aiohttp_server"] +
                          "/401", aioserver_span.data["http"]["url"])
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(401, aioclient_span.data["http"]["status"])
@@ -416,9 +406,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual(testenv["aiohttp_server"] +
                          "/500", aioserver_span.data["http"]["url"])
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(500, aioclient_span.data["http"]["status"])
@@ -477,9 +465,7 @@ class TestAiohttpServer(unittest.TestCase):
         self.assertEqual(testenv["aiohttp_server"] +
                          "/exception", aioserver_span.data["http"]["url"])
         self.assertEqual("GET", aioserver_span.data["http"]["method"])
-        self.assertIsNotNone(aioserver_span.stack)
-        self.assertTrue(isinstance(aioserver_span.stack, list))
-        self.assertTrue(len(aioserver_span.stack) > 1)
+        self.assertIsNone(aioserver_span.stack)
 
         self.assertEqual("aiohttp-client", aioclient_span.n)
         self.assertEqual(500, aioclient_span.data["http"]["status"])

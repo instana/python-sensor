@@ -17,7 +17,7 @@ nose>=1.0
 PyMySQL[rsa]>=0.9.1
 pyOpenSSL>=16.1.0;python_version<="2.7"
 psycopg2>=2.7.1
-pika>=1.1.0
+pika>=1.0.0
 pymongo>=3.7.0
 pyramid>=1.2
 pytest>=4.6

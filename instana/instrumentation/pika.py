@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import wrapt
 import opentracing
-import pdb
+import types
 
 from ..log import logger
 from ..singletons import tracer
@@ -12,16 +12,22 @@ from ..singletons import tracer
 try:
     import pika
 
-    def _extract_broker_tags(span, sort, conn, queue_or_routing_key, exchange=None):
-        try:
-            span.set_tag("address", "%s:%d" % (conn.params.host, conn.params.port))
-            span.set_tag("sort", sort)
-            span.set_tag("key", queue_or_routing_key)
+    def _extract_broker_tags(span, conn):
+        span.set_tag("address", "%s:%d" % (conn.params.host, conn.params.port))
 
-            if exchange is not None:
-                span.set_tag("exchange", exchange)
-        except:
-            logger.debug("_extract_consumer_tags: ", exc_info=True)
+    def _extract_publisher_tags(span, conn, exchange, routing_key):
+        _extract_broker_tags(span, conn)
+
+        span.set_tag("sort", "publish")
+        span.set_tag("key", routing_key)
+        span.set_tag("exchange", exchange)
+
+    def _extract_consumer_tags(span, conn, queue):
+        _extract_broker_tags(span, conn)
+
+        span.set_tag("address", "%s:%d" % (conn.params.host, conn.params.port))
+        span.set_tag("sort", "consume")
+        span.set_tag("queue", queue)
 
     def basic_publish_with_instana(wrapped, instance, args, kwargs):
         def _bind_args(exchange, routing_key, body, properties=None, *args, **kwargs):
@@ -35,7 +41,13 @@ try:
         (exchange, routing_key, body, properties, args, kwargs) = (_bind_args(*args, **kwargs))
 
         with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
-            _extract_broker_tags(scope.span, "publish", instance.connection, routing_key, exchange=exchange)
+            try:
+                _extract_publisher_tags(scope.span,
+                                        conn=instance.connection,
+                                        routing_key=routing_key,
+                                        exchange=exchange)
+            except:
+                logger.debug("publish_with_instana: ", exc_info=True)
 
             # context propagation
             properties = properties or pika.BasicProperties()
@@ -62,7 +74,12 @@ try:
             parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers)
 
             with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
-                _extract_broker_tags(scope.span, "consume", instance.connection, queue)
+                try:
+                    _extract_consumer_tags(scope.span,
+                                           conn=instance.connection,
+                                           queue=queue)
+                except:
+                    logger.debug("basic_get_with_instana: ", exc_info=True)
 
                 try:
                     callback(channel, method, properties, body)
@@ -83,7 +100,12 @@ try:
             parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers)
 
             with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
-                _extract_broker_tags(scope.span, "consume", instance.connection, queue)
+                try:
+                    _extract_consumer_tags(scope.span,
+                                           conn=instance.connection,
+                                           queue=queue)
+                except:
+                    logger.debug("basic_consume_with_instana: ", exc_info=True)
 
                 try:
                     callback(channel, method, properties, body)
@@ -94,9 +116,59 @@ try:
         args = (queue, _cb_wrapper) + args
         return wrapped(*args, **kwargs)
 
+    def consume_with_instana(wrapped, instance, args, kwargs):
+        def _bind_args(queue, *args, **kwargs):
+            return (queue, args, kwargs)
+
+        (queue, args, kwargs) = (_bind_args(*args, **kwargs))
+
+        def _consume(gen):
+            for yilded in gen:
+                # Bypass the delivery created due to inactivity timeout
+                if yilded is None or not any(yilded):
+                    yield yilded
+                    continue
+
+                (method_frame, properties, body) = yilded
+
+                parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers)
+                with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
+                    try:
+                        _extract_consumer_tags(scope.span,
+                                               conn=instance.connection._impl,
+                                               queue=queue)
+                    except:
+                        logger.debug("consume_with_instana: ", exc_info=True)
+
+                    try:
+                        yield yilded
+                    except Exception as e:
+                        scope.span.log_exception(e)
+                        raise
+
+        args = (queue,) + args
+        res = wrapped(*args, **kwargs)
+
+        if isinstance(res, types.GeneratorType):
+            return _consume(res)
+        else:
+            return res
+
+    @wrapt.patch_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.__init__')
+    def _BlockingChannel___init__(wrapped, instance, args, kwargs):
+        ret = wrapped(*args, **kwargs)
+        impl = getattr(instance, '_impl', None)
+
+        if impl and hasattr(impl.basic_consume, '__wrapped__'):
+            impl.basic_consume = impl.basic_consume.__wrapped__
+
+        return ret
+
     wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_publish', basic_publish_with_instana)
     wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_get', basic_get_with_instana)
     wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_consume', basic_get_with_instana)
+    wrapt.wrap_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.basic_consume', basic_get_with_instana)
+    wrapt.wrap_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.consume', consume_with_instana)
 
     logger.debug("Instrumenting pika")
 except ImportError:

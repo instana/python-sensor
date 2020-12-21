@@ -29,6 +29,7 @@ try:
         span.set_tag("sort", "consume")
         span.set_tag("queue", queue)
 
+    @wrapt.patch_function_wrapper('pika.channel', 'Channel.basic_publish')
     def basic_publish_with_instana(wrapped, instance, args, kwargs):
         def _bind_args(exchange, routing_key, body, properties=None, *args, **kwargs):
             return (exchange, routing_key, body, properties, args, kwargs)
@@ -90,6 +91,7 @@ try:
         args = (queue, _cb_wrapper) + args
         return wrapped(*args, **kwargs)
 
+    @wrapt.patch_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.basic_consume')
     def basic_consume_with_instana(wrapped, instance, args, kwargs):
         def _bind_args(queue, on_consume_callback, *args, **kwargs):
             return (queue, on_consume_callback, args, kwargs)
@@ -116,6 +118,7 @@ try:
         args = (queue, _cb_wrapper) + args
         return wrapped(*args, **kwargs)
 
+    @wrapt.patch_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.consume')
     def consume_with_instana(wrapped, instance, args, kwargs):
         def _bind_args(queue, *args, **kwargs):
             return (queue, args, kwargs)
@@ -164,11 +167,9 @@ try:
 
         return ret
 
-    wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_publish', basic_publish_with_instana)
     wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_get', basic_get_with_instana)
     wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_consume', basic_get_with_instana)
-    wrapt.wrap_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.basic_consume', basic_get_with_instana)
-    wrapt.wrap_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.consume', consume_with_instana)
+
 
     logger.debug("Instrumenting pika")
 except ImportError:

@@ -157,6 +157,7 @@ def boot_agent():
         from .instrumentation.tornado import client
         from .instrumentation.tornado import server
         from .instrumentation import logging
+        from .instrumentation import pika
         from .instrumentation import pymysql
         from .instrumentation import psycopg2
         from .instrumentation import redis

@@ -77,7 +77,7 @@ class TestDjango(StaticLiveServerTestCase):
         headers = {
             'X-Instana-Synthetic': '1'
         }
-        
+
         with tracer.start_active_span('test'):
             response = self.http.request('GET', self.live_server_url + '/', headers=headers)
 
@@ -154,6 +154,28 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(500, django_span.data["http"]["status"])
         self.assertEqual('This is a fake error: /cause-error', django_span.data["http"]["error"])
         self.assertIsNone(django_span.stack)
+
+    def test_request_with_not_found(self):
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', self.live_server_url + '/not_found')
+
+        assert response
+        self.assertEqual(404, response.status)
+
+        spans = self.recorder.queued_spans()
+        spans = drop_log_spans_from_list(spans)
+
+        span_count = len(spans)
+        if span_count != 3:
+            msg = "Expected 3 spans but got %d" % span_count
+            fail_with_message_and_span_dump(msg, spans)
+
+        filter = lambda span: span.n == 'django'
+        django_span = get_first_span_by_filter(spans, filter)
+        assert(django_span)
+
+        self.assertIsNone(django_span.ec)
+        self.assertEqual(404, django_span.data["http"]["status"])
 
     def test_complex_request(self):
         with tracer.start_active_span('test'):

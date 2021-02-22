@@ -7,7 +7,7 @@ import opentracing
 import opentracing.ext.tags as ext
 
 from django.conf.urls import url
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 
 filepath, extension = os.path.splitext(__file__)
 os.environ['DJANGO_SETTINGS_MODULE'] = os.path.basename(filepath)
@@ -91,6 +91,10 @@ def another(request):
     return HttpResponse('Stan wuz here!')
 
 
+def not_found(request):
+    raise Http404('Nothing here')
+
+
 def complex(request):
     with opentracing.tracer.start_active_span('asteroid') as pscope:
         pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
@@ -118,5 +122,6 @@ urlpatterns = [
     url(r'^$', index, name='index'),
     url(r'^cause_error$', cause_error, name='cause_error'),
     url(r'^another$', another),
+    url(r'^not_found$', not_found, name='not_found'),
     url(r'^complex$', complex, name='complex')
 ]

@@ -34,6 +34,7 @@ commands:
           command: |
             python -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
             pip install -r <<parameters.requirements>>

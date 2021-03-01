@@ -8,7 +8,7 @@ commands:
   pip-install-deps-27:
     parameters:
       requirements:
-        default: "tests/requirements.txt"
+        default: "tests/requirements-27.txt"
         type: string
     steps:
       - run:
@@ -34,10 +34,11 @@ commands:
           command: |
             python -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
             pip install -r <<parameters.requirements>>
-      
+
   install-couchbase-deps:
     steps:
       - run:
@@ -49,7 +50,7 @@ commands:
             sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
             sudo apt-get update
             sudo apt install libcouchbase-dev -y
-            
+
 jobs:
   python27:
     docker:
@@ -82,7 +83,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - pip-install-deps 
+      - pip-install-deps
       - run:
           name: run tests
           environment:
@@ -102,7 +103,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - pip-install-deps 
+      - pip-install-deps
       - run:
           name: run tests
           environment:

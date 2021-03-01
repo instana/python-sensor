@@ -898,6 +898,7 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
     def _client(self, *args, **kwargs):
         # override the HTTP client to bypass the authorization
         kwargs['_http'] = kwargs.get('_http', requests.Session())
+        kwargs['_http'].is_mtls = False
 
         return storage.Client(*args, **kwargs)
 

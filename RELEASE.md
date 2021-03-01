@@ -19,8 +19,10 @@ Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 
 To release a new AWS Lambda layer, see `bin/aws-lambda/lambda_build_publish_layer.py`.
 
+```bash
 ./bin/aws-lambda/build_and_publish_lambda_layer.py [-dev|-prod]
 ./bin/create_lambda_release.py <version>
+```
 
 These scripts assumes that you have the AWS CLI and Github CLI installed and credentials already configured.
 

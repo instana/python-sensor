@@ -150,12 +150,12 @@ def test_text_inject_with_dict():
     span = ot.tracer.start_span("nosetests")
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
-    assert 'X-INSTANA-T' in carrier
-    assert carrier['X-INSTANA-T'] == span.context.trace_id
-    assert 'X-INSTANA-S' in carrier
-    assert carrier['X-INSTANA-S'] == span.context.span_id
-    assert 'X-INSTANA-L' in carrier
-    assert carrier['X-INSTANA-L'] == "1"
+    assert 'x-instana-t' in carrier
+    assert carrier['x-instana-t'] == span.context.trace_id
+    assert 'x-instana-s' in carrier
+    assert carrier['x-instana-s'] == span.context.span_id
+    assert 'x-instana-l' in carrier
+    assert carrier['x-instana-l'] == "1"
 
 
 def test_text_inject_with_list():
@@ -165,15 +165,15 @@ def test_text_inject_with_list():
     span = ot.tracer.start_span("nosetests")
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
-    assert ('X-INSTANA-T', span.context.trace_id) in carrier
-    assert ('X-INSTANA-S', span.context.span_id) in carrier
-    assert ('X-INSTANA-L', "1") in carrier
+    assert ('x-instana-t', span.context.trace_id) in carrier
+    assert ('x-instana-s', span.context.span_id) in carrier
+    assert ('x-instana-l', "1") in carrier
 
 
 def test_text_basic_extract():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1'}
+    carrier = {'x-instana-t': '1', 'x-instana-s': '1', 'x-instana-l': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -204,8 +204,8 @@ def test_text_no_context_extract():
 def test_text_128bit_headers():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-INSTANA-T': '0000000000000000b0789916ff8f319f',
-               'X-INSTANA-S': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
+    carrier = {'x-instana-t': '0000000000000000b0789916ff8f319f',
+               'x-instana-s': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
     assert isinstance(ctx, SpanContext)

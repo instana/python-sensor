@@ -37,16 +37,16 @@ class TestDjango(StaticLiveServerTestCase):
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        assert ('X-Instana-T' in response.headers)
-        assert (int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(django_span.t, response.headers['X-Instana-T'])
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
 
-        assert ('X-Instana-S' in response.headers)
-        assert (int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(django_span.s, response.headers['X-Instana-S'])
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
 
-        assert ('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -75,7 +75,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def test_synthetic_request(self):
         headers = {
-            'X-Instana-Synthetic': '1'
+            'X-INSTANA-SYNTHETIC': '1'
         }
 
         with tracer.start_active_span('test'):
@@ -122,16 +122,16 @@ class TestDjango(StaticLiveServerTestCase):
         django_span = get_first_span_by_filter(spans, filter)
         assert(django_span)
 
-        assert ('X-Instana-T' in response.headers)
-        assert (int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(django_span.t, response.headers['X-Instana-T'])
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
 
-        assert ('X-Instana-S' in response.headers)
-        assert (int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(django_span.s, response.headers['X-Instana-S'])
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
 
-        assert ('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -192,16 +192,16 @@ class TestDjango(StaticLiveServerTestCase):
         ot_span1 = spans[1]
         ot_span2 = spans[0]
 
-        assert ('X-Instana-T' in response.headers)
-        assert (int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(django_span.t, response.headers['X-Instana-T'])
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
 
-        assert ('X-Instana-S' in response.headers)
-        assert (int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(django_span.s, response.headers['X-Instana-S'])
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
 
-        assert ('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -276,8 +276,8 @@ class TestDjango(StaticLiveServerTestCase):
 
     def test_with_incoming_context(self):
         request_headers = dict()
-        request_headers['X-Instana-T'] = '1'
-        request_headers['X-Instana-S'] = '1'
+        request_headers['X-INSTANA-T'] = '1'
+        request_headers['X-INSTANA-S'] = '1'
 
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
 
@@ -292,16 +292,16 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.t, '0000000000000001')
         self.assertEqual(django_span.p, '0000000000000001')
 
-        assert ('X-Instana-T' in response.headers)
-        assert (int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(django_span.t, response.headers['X-Instana-T'])
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
 
-        assert ('X-Instana-S' in response.headers)
-        assert (int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(django_span.s, response.headers['X-Instana-S'])
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
 
-        assert ('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -325,16 +325,16 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(django_span.t, '0000000000000001')
         self.assertEqual(django_span.p, '0000000000000001')
 
-        assert ('X-Instana-T' in response.headers)
-        assert (int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(django_span.t, response.headers['X-Instana-T'])
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
 
-        assert ('X-Instana-S' in response.headers)
-        assert (int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(django_span.s, response.headers['X-Instana-S'])
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
 
-        assert ('X-Instana-L' in response.headers)
-        self.assertEqual('1', response.headers['X-Instana-L'])
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)

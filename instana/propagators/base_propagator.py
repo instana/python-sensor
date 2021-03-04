@@ -28,10 +28,10 @@ class BasePropagator():
     UC_HEADER_KEY_L = 'X-INSTANA-L'
     UC_HEADER_KEY_SYNTHETIC = 'X-INSTANA-SYNTHETIC'
 
-    HEADER_KEY_T = 'X-Instana-T'
-    HEADER_KEY_S = 'X-Instana-S'
-    HEADER_KEY_L = 'X-Instana-L'
-    HEADER_KEY_SYNTHETIC = 'X-Instana-Synthetic'
+    HEADER_KEY_T = 'X-INSTANA-T'
+    HEADER_KEY_S = 'X-INSTANA-S'
+    HEADER_KEY_L = 'X-INSTANA-L'
+    HEADER_KEY_SYNTHETIC = 'X-INSTANA-SYNTHETIC'
 
     LC_HEADER_KEY_T = 'x-instana-t'
     LC_HEADER_KEY_S = 'x-instana-s'
@@ -49,7 +49,7 @@ class BasePropagator():
     def extract(self, carrier):
         """
         Search carrier for the *HEADER* keys and return a SpanContext or None
-        
+
         Note: Extract is on the base class since it never really varies in task regardless
         of the propagator in uses.
 

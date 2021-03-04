@@ -21,12 +21,12 @@ def test_vanilla_get(server):
     result = requests.get(testenv["fastapi_server"] + '/')
 
     assert result.status_code == 200
-    assert "X-Instana-T" in result.headers
-    assert "X-Instana-S" in result.headers
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert "X-INSTANA-S" in result.headers
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
-    
+
     spans = tracer.recorder.queued_spans()
     # FastAPI instrumentation (like all instrumentation) _always_ traces unless told otherwise
     assert len(spans) == 1
@@ -59,12 +59,12 @@ def test_basic_get(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
@@ -103,12 +103,12 @@ def test_400(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
@@ -147,12 +147,12 @@ def test_500(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
@@ -191,12 +191,12 @@ def test_path_templates(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
@@ -235,12 +235,12 @@ def test_secret_scrubbing(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
@@ -256,7 +256,7 @@ def test_secret_scrubbing(server):
 
 def test_synthetic_request(server):
     request_headers = {
-        'X-Instana-Synthetic': '1'
+        'X-INSTANA-SYNTHETIC': '1'
     }
     with tracer.start_active_span('test'):
         result = requests.get(testenv["fastapi_server"] + '/', headers=request_headers)
@@ -282,12 +282,12 @@ def test_synthetic_request(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
@@ -299,7 +299,7 @@ def test_synthetic_request(server):
     assert(asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 200)
     assert('http.error' not in asgi_span.data['sdk']['custom']['tags'])
     assert('http.params' not in asgi_span.data['sdk']['custom']['tags'])
-    
+
     assert(asgi_span.sy)
     assert(urllib3_span.sy is None)
     assert(test_span.sy is None)
@@ -337,12 +337,12 @@ def test_custom_header_capture(server):
     assert(asgi_span.p == urllib3_span.s)
     assert(urllib3_span.p == test_span.s)
 
-    assert "X-Instana-T" in result.headers
-    assert result.headers["X-Instana-T"] == asgi_span.t
-    assert "X-Instana-S" in result.headers
-    assert result.headers["X-Instana-S"] == asgi_span.s
-    assert "X-Instana-L" in result.headers
-    assert result.headers["X-Instana-L"] == '1'
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
     assert "Server-Timing" in result.headers
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 

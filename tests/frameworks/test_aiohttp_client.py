@@ -72,12 +72,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
@@ -126,12 +126,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span2.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span2.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
@@ -176,12 +176,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
@@ -228,12 +228,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
@@ -279,12 +279,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
@@ -331,12 +331,12 @@ class TestAiohttp(unittest.TestCase):
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(
             response.headers["Server-Timing"], "intid;desc=%s" % traceId)
@@ -386,12 +386,12 @@ class TestAiohttp(unittest.TestCase):
         assert "X-Capture-This" in aiohttp_span.data["http"]["header"]
         self.assertEqual("Ok", aiohttp_span.data["http"]["header"]["X-Capture-This"])
 
-        assert "X-Instana-T" in response.headers
-        self.assertEqual(response.headers["X-Instana-T"], traceId)
-        assert "X-Instana-S" in response.headers
-        self.assertEqual(response.headers["X-Instana-S"], wsgi_span.s)
-        assert "X-Instana-L" in response.headers
-        self.assertEqual(response.headers["X-Instana-L"], '1')
+        assert "X-INSTANA-T" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        assert "X-INSTANA-S" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
         assert "Server-Timing" in response.headers
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 

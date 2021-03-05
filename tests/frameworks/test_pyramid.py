@@ -40,16 +40,16 @@ class TestPyramid(unittest.TestCase):
         assert response
         self.assertEqual(200, response.status)
 
-        assert('X-Instana-T' in response.headers)
-        assert(int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(response.headers['X-Instana-T'], pyramid_span.t)
+        assert('X-INSTANA-T' in response.headers)
+        assert(int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(response.headers['X-INSTANA-T'], pyramid_span.t)
 
-        assert('X-Instana-S' in response.headers)
-        assert(int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(response.headers['X-Instana-S'], pyramid_span.s)
+        assert('X-INSTANA-S' in response.headers)
+        assert(int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(response.headers['X-INSTANA-S'], pyramid_span.s)
 
-        assert('X-Instana-L' in response.headers)
-        self.assertEqual(response.headers['X-Instana-L'], '1')
+        assert('X-INSTANA-L' in response.headers)
+        self.assertEqual(response.headers['X-INSTANA-L'], '1')
 
         assert('Server-Timing' in response.headers)
         server_timing_value = "intid;desc=%s" % pyramid_span.t
@@ -77,11 +77,11 @@ class TestPyramid(unittest.TestCase):
 
         # HTTP SDK span
         self.assertEqual("sdk", pyramid_span.n)
-        
+
         assert(pyramid_span.data["sdk"])
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
-        
+
         sdk_data = pyramid_span.data["sdk"]["custom"]
         self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["tags"]["http.host"])
         self.assertEqual('/', sdk_data["tags"]["http.url"])
@@ -102,9 +102,9 @@ class TestPyramid(unittest.TestCase):
 
     def test_synthetic_request(self):
         headers = {
-            'X-Instana-Synthetic': '1'
+            'X-INSTANA-SYNTHETIC': '1'
         }
-        
+
         with tracer.start_active_span('test'):
             response = self.http.request('GET', testenv["pyramid_server"] + '/', headers=headers)
 
@@ -137,16 +137,16 @@ class TestPyramid(unittest.TestCase):
         assert response
         self.assertEqual(500, response.status)
 
-        assert('X-Instana-T' in response.headers)
-        assert(int(response.headers['X-Instana-T'], 16))
-        self.assertEqual(response.headers['X-Instana-T'], pyramid_span.t)
+        assert('X-INSTANA-T' in response.headers)
+        assert(int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(response.headers['X-INSTANA-T'], pyramid_span.t)
 
-        assert('X-Instana-S' in response.headers)
-        assert(int(response.headers['X-Instana-S'], 16))
-        self.assertEqual(response.headers['X-Instana-S'], pyramid_span.s)
+        assert('X-INSTANA-S' in response.headers)
+        assert(int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(response.headers['X-INSTANA-S'], pyramid_span.s)
 
-        assert('X-Instana-L' in response.headers)
-        self.assertEqual(response.headers['X-Instana-L'], '1')
+        assert('X-INSTANA-L' in response.headers)
+        self.assertEqual(response.headers['X-INSTANA-L'], '1')
 
         assert('Server-Timing' in response.headers)
         server_timing_value = "intid;desc=%s" % pyramid_span.t

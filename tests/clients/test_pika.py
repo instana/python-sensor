@@ -75,9 +75,9 @@ class TestPikaChannel(_TestPika):
             pika.spec.Basic.Publish(
                 exchange="test.exchange",
                 routing_key="test.queue"), (pika.spec.BasicProperties(headers={
-                    "X-Instana-T": rabbitmq_span.t,
-                    "X-Instana-S": rabbitmq_span.s,
-                    "X-Instana-L": "1"
+                    "X-INSTANA-T": rabbitmq_span.t,
+                    "X-INSTANA-S": rabbitmq_span.s,
+                    "X-INSTANA-L": "1"
                 }), b"Hello!"))
 
     @mock.patch('pika.spec.Basic.Publish')
@@ -104,9 +104,9 @@ class TestPikaChannel(_TestPika):
                 exchange="test.exchange",
                 routing_key="test.queue"), (pika.spec.BasicProperties(headers={
                     "X-Custom-1": "test",
-                    "X-Instana-T": rabbitmq_span.t,
-                    "X-Instana-S": rabbitmq_span.s,
-                    "X-Instana-L": "1"
+                    "X-INSTANA-T": rabbitmq_span.t,
+                    "X-INSTANA-S": rabbitmq_span.s,
+                    "X-INSTANA-L": "1"
                 }), b"Hello!"))
 
     @mock.patch('pika.spec.Basic.Get')
@@ -156,9 +156,9 @@ class TestPikaChannel(_TestPika):
 
         body = "Hello!"
         properties = pika.BasicProperties(headers={
-            "X-Instana-T": "0000000000000001",
-            "X-Instana-S": "0000000000000002",
-            "X-Instana-L": "1"
+            "X-INSTANA-T": "0000000000000001",
+            "X-INSTANA-S": "0000000000000002",
+            "X-INSTANA-L": "1"
         })
 
         method_frame = pika.frame.Method(1, pika.spec.Basic.GetOk)
@@ -231,9 +231,9 @@ class TestPikaChannel(_TestPika):
 
         body = "Hello!"
         properties = pika.BasicProperties(headers={
-            "X-Instana-T": "0000000000000001",
-            "X-Instana-S": "0000000000000002",
-            "X-Instana-L": "1"
+            "X-INSTANA-T": "0000000000000001",
+            "X-INSTANA-S": "0000000000000002",
+            "X-INSTANA-L": "1"
         })
 
         method_frame = pika.frame.Method(1, pika.spec.Basic.Deliver(consumer_tag="test"))
@@ -346,9 +346,9 @@ class TestPikaBlockingChannel(_TestPika):
         t.start()
 
         self._generate_delivery(consumer_tag, pika.BasicProperties(headers={
-            "X-Instana-T": "0000000000000001",
-            "X-Instana-S": "0000000000000002",
-            "X-Instana-L": "1"
+            "X-INSTANA-T": "0000000000000001",
+            "X-INSTANA-S": "0000000000000002",
+            "X-INSTANA-L": "1"
         }), "Hello!")
 
         t.join(timeout=5.0)

@@ -28,12 +28,12 @@ def test_http_inject_with_dict():
     span = ot.tracer.start_span("nosetests")
     ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
 
-    assert 'X-Instana-T' in carrier
-    assert carrier['X-Instana-T'] == span.context.trace_id
-    assert 'X-Instana-S' in carrier
-    assert carrier['X-Instana-S'] == span.context.span_id
-    assert 'X-Instana-L' in carrier
-    assert carrier['X-Instana-L'] == "1"
+    assert 'X-INSTANA-T' in carrier
+    assert carrier['X-INSTANA-T'] == span.context.trace_id
+    assert 'X-INSTANA-S' in carrier
+    assert carrier['X-INSTANA-S'] == span.context.span_id
+    assert 'X-INSTANA-L' in carrier
+    assert carrier['X-INSTANA-L'] == "1"
 
 
 def test_http_inject_with_list():
@@ -43,15 +43,15 @@ def test_http_inject_with_list():
     span = ot.tracer.start_span("nosetests")
     ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
 
-    assert ('X-Instana-T', span.context.trace_id) in carrier
-    assert ('X-Instana-S', span.context.span_id) in carrier
-    assert ('X-Instana-L', "1") in carrier
+    assert ('X-INSTANA-T', span.context.trace_id) in carrier
+    assert ('X-INSTANA-S', span.context.span_id) in carrier
+    assert ('X-INSTANA-L', "1") in carrier
 
 
 def test_http_basic_extract():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-Instana-T': '1', 'X-Instana-S': '1', 'X-Instana-L': '1', 'X-Instana-Synthetic': '1'}
+    carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1', 'X-INSTANA-SYNTHETIC': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -63,7 +63,7 @@ def test_http_basic_extract():
 def test_http_extract_with_byte_keys():
     ot.tracer = InstanaTracer()
 
-    carrier = {b'X-Instana-T': '1', b'X-Instana-S': '1', b'X-Instana-L': '1', b'X-Instana-Synthetic': '1'}
+    carrier = {b'X-INSTANA-T': '1', b'X-INSTANA-S': '1', b'X-INSTANA-L': '1', b'X-INSTANA-SYNTHETIC': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -77,7 +77,7 @@ def test_http_extract_from_list_of_tuples():
 
     carrier = [(b'user-agent', b'python-requests/2.23.0'), (b'accept-encoding', b'gzip, deflate'),
                (b'accept', b'*/*'), (b'connection', b'keep-alive'),
-               (b'x-instana-t', b'1'), (b'x-instana-s', b'1'), (b'x-instana-l', b'1'), (b'X-Instana-Synthetic', '1')]
+               (b'x-instana-t', b'1'), (b'x-instana-s', b'1'), (b'x-instana-l', b'1'), (b'X-INSTANA-SYNTHETIC', '1')]
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -101,7 +101,7 @@ def test_http_mixed_case_extract():
 def test_http_extract_synthetic_only():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-Instana-Synthetic': '1'}
+    carrier = {'X-INSTANA-SYNTHETIC': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -122,8 +122,8 @@ def test_http_no_context_extract():
 def test_http_128bit_headers():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-Instana-T': '0000000000000000b0789916ff8f319f',
-               'X-Instana-S': '0000000000000000b0789916ff8f319f', 'X-Instana-L': '1'}
+    carrier = {'X-INSTANA-T': '0000000000000000b0789916ff8f319f',
+               'X-INSTANA-S': '0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -150,12 +150,12 @@ def test_text_inject_with_dict():
     span = ot.tracer.start_span("nosetests")
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
-    assert 'X-INSTANA-T' in carrier
-    assert carrier['X-INSTANA-T'] == span.context.trace_id
-    assert 'X-INSTANA-S' in carrier
-    assert carrier['X-INSTANA-S'] == span.context.span_id
-    assert 'X-INSTANA-L' in carrier
-    assert carrier['X-INSTANA-L'] == "1"
+    assert 'x-instana-t' in carrier
+    assert carrier['x-instana-t'] == span.context.trace_id
+    assert 'x-instana-s' in carrier
+    assert carrier['x-instana-s'] == span.context.span_id
+    assert 'x-instana-l' in carrier
+    assert carrier['x-instana-l'] == "1"
 
 
 def test_text_inject_with_list():
@@ -165,15 +165,15 @@ def test_text_inject_with_list():
     span = ot.tracer.start_span("nosetests")
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
-    assert ('X-INSTANA-T', span.context.trace_id) in carrier
-    assert ('X-INSTANA-S', span.context.span_id) in carrier
-    assert ('X-INSTANA-L', "1") in carrier
+    assert ('x-instana-t', span.context.trace_id) in carrier
+    assert ('x-instana-s', span.context.span_id) in carrier
+    assert ('x-instana-l', "1") in carrier
 
 
 def test_text_basic_extract():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-INSTANA-T': '1', 'X-INSTANA-S': '1', 'X-INSTANA-L': '1'}
+    carrier = {'x-instana-t': '1', 'x-instana-s': '1', 'x-instana-l': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -204,8 +204,8 @@ def test_text_no_context_extract():
 def test_text_128bit_headers():
     ot.tracer = InstanaTracer()
 
-    carrier = {'X-INSTANA-T': '0000000000000000b0789916ff8f319f',
-               'X-INSTANA-S': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
+    carrier = {'x-instana-t': '0000000000000000b0789916ff8f319f',
+               'x-instana-s': ' 0000000000000000b0789916ff8f319f', 'X-INSTANA-L': '1'}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
     assert isinstance(ctx, SpanContext)
@@ -237,7 +237,7 @@ def test_binary_inject_with_dict():
     assert b'x-instana-s' in carrier
     assert carrier[b'x-instana-s'] == str.encode(span.context.span_id)
     assert b'x-instana-l' in carrier
-    assert carrier[b'x-instana-l'] == b'1' 
+    assert carrier[b'x-instana-l'] == b'1'
 
 
 def test_binary_inject_with_list():

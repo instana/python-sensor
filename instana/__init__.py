@@ -47,12 +47,14 @@ eum_api_key = ''
 do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_install", "easy_install-2.7",
                     "smtpd.py", "twine", "ufw", "unattended-upgrade"]
 
-
 def load(_):
     """
     Method used to activate the Instana sensor via AUTOWRAPT_BOOTSTRAP
     environment variable.
     """
+    # Work around https://bugs.python.org/issue32573
+    if not hasattr("sys", "argv"):
+        sys.argv = ['']
     return None
 
 def get_lambda_handler_or_default():

@@ -1,14 +1,13 @@
 import json
 import logging
 import os
-from concurrent.futures import TimeoutError
-from wsgiref.simple_server import make_server
 
 import instana
+from instana.singletons import tracer
+
 from flask import Flask, request
 from google.auth import jwt
 from google.cloud import pubsub_v1
-from instana.singletons import tracer
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -21,45 +20,54 @@ SERVICE_ACCOUNT_INFO = json.load(open("service-account-info.json"))
 AUDIENCE_PUB = "https://pubsub.googleapis.com/google.pubsub.v1.Publisher"
 AUDIENCE_SUB = "https://pubsub.googleapis.com/google.pubsub.v1.Subscriber"
 
-credentials_pub = jwt.Credentials.from_service_account_info(
+CRED_PUB = jwt.Credentials.from_service_account_info(
     SERVICE_ACCOUNT_INFO, audience=AUDIENCE_PUB
 )
 
-credentials_sub = jwt.Credentials.from_service_account_info(
+CRED_SUB = jwt.Credentials.from_service_account_info(
     SERVICE_ACCOUNT_INFO, audience=AUDIENCE_SUB
 )
 
-publisher = pubsub_v1.PublisherClient(credentials=credentials_pub)
-subscriber = pubsub_v1.SubscriberClient(credentials=credentials_sub)
+PROJECT_ID = 'k8s-brewery'
+TOPIC_NAME = 'python-test-topic'
+SUBSCRIPTION_ID = 'python-test-subscription'
 
-global topic_name
+publisher = pubsub_v1.PublisherClient(credentials=CRED_PUB)
+subscriber = pubsub_v1.SubscriberClient(credentials=CRED_SUB)
 
-topic_name = f'projects/k8s-brewery/topics/python-test-topic'
-project_id = 'k8s-brewery'
-subscription_id = 'python-test-subscription'
-subscription_path = subscriber.subscription_path(project_id, subscription_id)
+TOPIC_PATH = publisher.topic_path(PROJECT_ID, TOPIC_NAME)
+SUBSCRIPTION_PATH = subscriber.subscription_path(project_id, SUBSCRIPTION_ID)
+
 
 @app.route('/')
 def home():
     return "Welcome to PubSub testing."
 
+
 @app.route('/create')
 def create_topic():
+    """
+    Usage: /create?topic=<your-topic-name-here>
+    """
     topic = request.args.get('topic')
     print(topic, type(topic))
     
-    topic_name = f'projects/k8s-brewery/topics/{topic}'
     try: 
-        publisher.create_topic(topic_name)
+        publisher.create_topic(TOPIC_PATH)
         return "Topic Created"
     except Exception as e:
         return f"Topic Creation Failed: {e}"
 
+
 @app.route('/publish')
 def publish():
+    """
+    Usage: /publish?message=<your-message-here>
+    """
     msg = request.args.get('message').encode('utf-8')
     publisher.publish(topic_name, msg, origin='instana-test')
-    return f"Published msg: {msg}"
+    return "Published msg: %s" % msg
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port='10811')

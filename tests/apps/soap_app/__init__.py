@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 import sys
 from .app import soapserver as server
 from ..utils import launch_background_thread

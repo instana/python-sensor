@@ -1,4 +1,8 @@
 # encoding=utf-8
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 import os
 import sys
 import time

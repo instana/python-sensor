@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """ Module to assist in the data collection about the AWS Fargate task that is running this process """
 from ....log import logger
 from ..base import BaseHelper

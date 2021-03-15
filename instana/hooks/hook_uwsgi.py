@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2019
+
 """
 The uwsgi and uwsgidecorators packages are added automatically to the Python environment
 when running under uWSGI.  Here we attempt to detect the presence of these packages and

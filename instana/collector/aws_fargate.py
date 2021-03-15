@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """
 AWS Fargate Collector: Manages the periodic collection of metrics & snapshot data
 """

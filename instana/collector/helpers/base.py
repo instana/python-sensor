@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """
 Base class for the various helpers that can be used by Collectors.  Helpers assist
 in the data collection for various entities such as host, hardware, AWS Task, ec2,

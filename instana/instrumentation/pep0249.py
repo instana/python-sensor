@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2018
+
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
 import opentracing.ext.tags as ext
 import wrapt

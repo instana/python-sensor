@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2018
+
 from __future__ import absolute_import
 
 from ..log import logger

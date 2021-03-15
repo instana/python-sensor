@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 # Script to make a new python-sensor release on Github
 # Requires the Github CLI to be installed and configured: https://github.com/cli/cli
 

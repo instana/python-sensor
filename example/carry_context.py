@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 #
 # This example illustrates how to carry context from a syncronous tracing context into
 # an asynchronous one.

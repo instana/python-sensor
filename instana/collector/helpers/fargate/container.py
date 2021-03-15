@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """ Module to handle the collection of container metrics in AWS Fargate """
 from ....log import logger
 from ....util import DictionaryOfStan

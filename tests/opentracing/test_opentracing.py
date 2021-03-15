@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 from nose.plugins.skip import SkipTest
 from opentracing.harness.api_check import APICompatibilityCheckMixin
 

@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2019
+
 """
 This file contains a config object that will hold configuration options for the package.
 Defaults are set and can be overridden after package load.

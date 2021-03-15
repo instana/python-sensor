@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 from ..log import logger
 
 def normalize_aws_lambda_arn(context):

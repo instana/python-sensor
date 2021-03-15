@@ -1,3 +1,5 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
 
 import time
 import unittest
@@ -41,7 +43,7 @@ class CPUSamplerTestCase(unittest.TestCase):
 
         profile = sampler.build_profile(2000, 120000).to_dict()
         #print(profile)
-    
+
         self.assertTrue('cpu_work_main_thread' in str(profile))
 
 

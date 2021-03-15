@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """
 The Instana agent (for AWS Lambda functions) that manages
 monitoring state and reporting that data.

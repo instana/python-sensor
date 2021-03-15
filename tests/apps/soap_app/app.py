@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 # -*- coding: utf-8 -*-
 import logging
 

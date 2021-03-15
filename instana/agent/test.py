@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """
 The in-process Instana agent (for testing & the test suite) that manages
 monitoring state and reporting that data.

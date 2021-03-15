@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """
 Celery Signals are disjointed and don't allow us to pass the scope object along
 with the Job message so we instead store all scopes in a dictionary on the

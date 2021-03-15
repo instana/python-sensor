@@ -1,5 +1,9 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 import asyncio
 from aiohttp import web
 

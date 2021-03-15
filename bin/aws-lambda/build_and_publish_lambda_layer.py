@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 import os
 import sys
 import json

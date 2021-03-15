@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 import os.path
 import tornado.auth
 import tornado.escape

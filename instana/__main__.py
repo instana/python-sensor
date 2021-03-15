@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2019
+
 """
 This module provides "python -m instana" functionality.  This is used for basic module
 information display and a IPython console to diagnose environments.

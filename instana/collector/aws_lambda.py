@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 """
 AWS Lambda Collector: Manages the periodic collection of metrics & snapshot data
 """

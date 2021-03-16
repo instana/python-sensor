@@ -81,7 +81,6 @@ class StanRecorder(object):
             if "INSTANA_SERVICE_NAME" in os.environ:
                 service_name = self.agent.options.service_name
 
-            print("###############")
             if span.operation_name in self.REGISTERED_SPANS:
                 json_span = RegisteredSpan(span, source, service_name)
             else:

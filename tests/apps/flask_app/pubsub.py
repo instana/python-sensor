@@ -1,9 +1,7 @@
 import json
 import logging
-import os
 
 import instana
-from instana.singletons import tracer
 
 from flask import Flask, request
 from google.auth import jwt
@@ -36,7 +34,7 @@ publisher = pubsub_v1.PublisherClient(credentials=CRED_PUB)
 subscriber = pubsub_v1.SubscriberClient(credentials=CRED_SUB)
 
 TOPIC_PATH = publisher.topic_path(PROJECT_ID, TOPIC_NAME)
-SUBSCRIPTION_PATH = subscriber.subscription_path(project_id, SUBSCRIPTION_ID)
+SUBSCRIPTION_PATH = subscriber.subscription_path(PROJECT_ID, SUBSCRIPTION_ID)
 
 
 @app.route('/')
@@ -65,7 +63,7 @@ def publish():
     Usage: /publish?message=<your-message-here>
     """
     msg = request.args.get('message').encode('utf-8')
-    publisher.publish(topic_name, msg, origin='instana-test')
+    publisher.publish(TOPIC_PATH, msg, origin='instana-test')
     return "Published msg: %s" % msg
 
 

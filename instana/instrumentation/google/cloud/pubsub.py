@@ -68,10 +68,7 @@ try:
         """
 
         def callback_with_instana(message):
-
             attr = message.attributes
-            callback = args[1]
-
             if attr:
                 # trace continuity
                 headers = {
@@ -90,8 +87,15 @@ try:
                 except Exception as e:
                     scope.span.log_exception(e)
                     raise
-        
-        return wrapped(*[args[0], callback_with_instana], **kwargs)
+
+        # Handle callback appropriately from args or kwargs
+        if 'callback' in kwargs:
+            callback = kwargs['callback']
+            kwargs['callback'] = callback_with_instana
+            return wrapped(*args, **kwargs)
+        else:
+            callback = args[1]
+            return wrapped(*[args[0], callback_with_instana], **kwargs)
 
 except ImportError:
     pass

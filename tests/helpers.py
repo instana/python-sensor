@@ -6,7 +6,6 @@ import pytest
 
 testenv = {}
 
-
 """
 Cassandra Environment
 """
@@ -25,33 +24,30 @@ testenv['couchdb_password'] = os.environ.get('COUCHDB_PASSWORD', 'password')
 MySQL Environment
 """
 if 'MYSQL_HOST' in os.environ:
-    testenv['mysql_host']= os.environ['MYSQL_HOST']
+    testenv['mysql_host'] = os.environ['MYSQL_HOST']
 elif 'TRAVIS_MYSQL_HOST' in os.environ:
     testenv['mysql_host'] = os.environ['TRAVIS_MYSQL_HOST']
 else:
     testenv['mysql_host'] = '127.0.0.1'
 
 testenv['mysql_port'] = int(os.environ.get('MYSQL_PORT', '3306'))
-testenv['mysql_db']   = os.environ.get('MYSQL_DB', 'circle_test')
+testenv['mysql_db'] = os.environ.get('MYSQL_DB', 'circle_test')
 testenv['mysql_user'] = os.environ.get('MYSQL_USER', 'root')
 testenv['mysql_pw'] = os.environ.get('MYSQL_PW', '')
-
 
 """
 PostgreSQL Environment
 """
 testenv['postgresql_host'] = os.environ.get('POSTGRES_HOST', '127.0.0.1')
 testenv['postgresql_port'] = int(os.environ.get('POSTGRES_PORT', '5432'))
-testenv['postgresql_db']   = os.environ.get('POSTGRES_DB', 'circle_test')
+testenv['postgresql_db'] = os.environ.get('POSTGRES_DB', 'circle_test')
 testenv['postgresql_user'] = os.environ.get('POSTGRES_USER', 'root')
 testenv['postgresql_pw'] = os.environ.get('POSTGRES_PW', '')
-
 
 """
 Redis Environment
 """
 testenv['redis_host'] = os.environ.get('REDIS_HOST', '127.0.0.1')
-
 
 """
 MongoDB Environment
@@ -143,6 +139,7 @@ def get_spans_by_filter(spans, filter):
         if filter(span) is True:
             results.append(span)
     return results
+
 
 def launch_traced_request(url):
     import requests

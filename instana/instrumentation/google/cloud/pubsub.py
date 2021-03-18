@@ -16,6 +16,8 @@ try:
 
     def _set_publisher_tags(span, topic_path):
         span.set_tag('gcps.op', 'publish')
+        # Fully qualified identifier is in the form of
+        # `projects/{project_id}/topic/{topic_name}`
         project_id, topic_name = topic_path.split('/')[1::2]
         span.set_tag('gcps.projid', project_id)
         span.set_tag('gcps.top', topic_name)
@@ -23,6 +25,8 @@ try:
 
     def _set_consumer_tags(span, subscription_path):
         span.set_tag('gcps.op', 'consume')
+        # Fully qualified identifier is in the form of
+        # `projects/{project_id}/subscriptions/{subscription_name}`
         project_id, subscription_id = subscription_path.split('/')[1::2]
         span.set_tag('gcps.projid', project_id)
         span.set_tag('gcps.sub', subscription_id)

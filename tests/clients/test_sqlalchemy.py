@@ -177,8 +177,7 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertEqual('postgresql', sql_span.data["sqlalchemy"]["eng"])
         self.assertEqual(sqlalchemy_url, sql_span.data["sqlalchemy"]["url"])
         self.assertEqual('htVwGrCwVThisIsInvalidSQLaw4ijXd88', sql_span.data["sqlalchemy"]["sql"])
-        self.assertEqual('syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88"\nLINE 1: htVwGrCwVThisIsInvalidSQLaw4ijXd88\n        ^\n', sql_span.data["sqlalchemy"]["err"])
-
+        self.assertIn('syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88', sql_span.data["sqlalchemy"]["err"])
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)
         self.assertGreater(len(sql_span.stack), 0)

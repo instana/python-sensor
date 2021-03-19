@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import opentracing
 from ...log import logger
 from ...singletons import tracer
+from .propagation import inject_trace_context
 
 try:
     import celery
@@ -124,16 +125,9 @@ try:
                 scope.span.set_tag("task_id", task_id)
                 add_broker_tags(scope.span, task.app.conf['broker_url'])
 
-                # Context propagation
-                context_headers = {}
-                tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, context_headers)
-
-                # Fix for broken header propagation
-                # https://github.com/celery/celery/issues/4875
-                task_headers = kwargs.get('headers') or {}
-                task_headers.setdefault('headers', {})
-                task_headers['headers'].update(context_headers)
-                kwargs['headers'] = task_headers
+                kwargs['headers'] = inject_trace_context(
+                    scope.span.context,
+                    kwargs.get('headers') or {})
 
                 # Store the scope on the task to eventually close it out on the "after" signal
                 task_catalog_push(task, task_id, scope, False)

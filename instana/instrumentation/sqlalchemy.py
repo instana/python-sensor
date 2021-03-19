@@ -58,15 +58,15 @@ try:
 
     @event.listens_for(Engine, error_event, named=True)
     def receive_handle_db_error(**kw):
-        context = kw['context']
+        context = kw['exception_context'].execution_context
 
         if context is not None and hasattr(context, '_stan_scope'):
             scope = context._stan_scope
             if scope is not None:
                 scope.span.mark_as_errored()
 
-                if 'exception' in kw:
-                    e = kw['exception']
+                if context.exception:
+                    e = context.exception
                     scope.span.set_tag('sqlalchemy.err', str(e))
                 else:
                     scope.span.set_tag('sqlalchemy.err', "No %s specified." % error_event)

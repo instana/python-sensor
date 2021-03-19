@@ -15,6 +15,7 @@ try:
 
     url_regexp = re.compile(r"\/\/(\S+@)")
 
+
     @event.listens_for(Engine, 'before_cursor_execute', named=True)
     def receive_before_cursor_execute(**kw):
         try:
@@ -38,6 +39,7 @@ try:
         finally:
             return
 
+
     @event.listens_for(Engine, 'after_cursor_execute', named=True)
     def receive_after_cursor_execute(**kw):
         context = kw['context']
@@ -47,8 +49,15 @@ try:
             if scope is not None:
                 scope.close()
 
-    @event.listens_for(Engine, 'dbapi_error', named=True)
-    def receive_dbapi_error(**kw):
+
+    error_event = "handle_error"
+    # Handle dbapi_error event; deprecated since version 0.9
+    if sqlalchemy.__version__[0] == "0":
+        error_event = "dbapi_error"
+
+
+    @event.listens_for(Engine, error_event, named=True)
+    def receive_handle_db_error(**kw):
         context = kw['context']
 
         if context is not None and hasattr(context, '_stan_scope'):
@@ -60,7 +69,7 @@ try:
                     e = kw['exception']
                     scope.span.set_tag('sqlalchemy.err', str(e))
                 else:
-                    scope.span.set_tag('sqlalchemy.err', "No dbapi error specified.")
+                    scope.span.set_tag('sqlalchemy.err', "No %s specified." % error_event)
                 scope.close()
 
 

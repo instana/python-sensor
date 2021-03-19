@@ -17,7 +17,7 @@ from instana.singletons import tracer
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8432
-os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8432"
+os.environ["PUBSUB_EMULATOR_HOST"] = "0.0.0.0:8432"
 
 
 class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):

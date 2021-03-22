@@ -49,7 +49,7 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
             future = self.publisher.publish(self.topic_path,
                                             b'Test Message',
                                             origin="instana")
-
+        time.sleep(2.0)  # for sanity
         result = future.result()
         assert isinstance(result, six.string_types)
 
@@ -128,7 +128,7 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
                                             origin="instana")
             self.assertIsInstance(future.result(), six.string_types)
 
-            time.sleep(1)  # for sanity
+            time.sleep(2.0)  # for sanity
 
             # Subscribe to the subscription
             callback_handler = AckCallback()

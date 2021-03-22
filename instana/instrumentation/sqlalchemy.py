@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import re
+from operator import attrgetter
 
 from ..log import logger
 from ..singletons import tracer
@@ -14,7 +15,6 @@ try:
     from sqlalchemy.engine import Engine
 
     url_regexp = re.compile(r"\/\/(\S+@)")
-    logger.debug("Instrumenting sqlalchemy")
 
 
     @event.listens_for(Engine, 'before_cursor_execute', named=True)
@@ -57,13 +57,17 @@ try:
         error_event = "dbapi_error"
 
 
-    def _set_error_tags(scope, exception):
-        scope.span.mark_as_errored()
-        if exception:
-            scope.span.set_tag('sqlalchemy.err', str(exception))
+    def _set_error_tags(context, exception_string, scope_string):
+        scope, context_exception = None, None
+        if attrgetter(scope_string)(context) and attrgetter(exception_string)(context):
+            scope = attrgetter(scope_string)(context)
+            context_exception = attrgetter(exception_string)(context)
+        if scope and context_exception:
+            scope.span.log_exception(context_exception)
+            scope.close()
         else:
-            scope.span.set_tag('sqlalchemy.err', "No %s specified." % error_event)
-        scope.close()
+            scope.span.log_exception("No %s specified." % error_event)
+            scope.close()
 
 
     @event.listens_for(Engine, error_event, named=True)
@@ -72,21 +76,18 @@ try:
         # support older db error event
         if error_event == "dbapi_error":
             context = kw.get('context')
-            if hasattr(context, '_stan_scope') and \
-                    hasattr(context, 'exception'):
-                scope = context._stan_scope
-                context_exception = context.exception
-                if scope:
-                    _set_error_tags(scope, context_exception)
-
+            exception_string = 'exception'
+            scope_string = '_stan_scope'
         else:
             context = kw.get('exception_context')
-            if hasattr(context.execution_context, '_stan_scope') and \
-                    hasattr(context, 'sqlalchemy_exception'):
-                scope = context.execution_context._stan_scope
-                context_exception = context.sqlalchemy_exception
-                if scope:
-                    _set_error_tags(scope, context_exception)
+            exception_string = 'sqlalchemy_exception'
+            scope_string = 'execution_context._stan_scope'
+
+        if context:
+            _set_error_tags(context, exception_string, scope_string)
+
+
+    logger.debug("Instrumenting sqlalchemy")
 
 except ImportError:
     pass

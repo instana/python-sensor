@@ -241,7 +241,7 @@ class RegisteredSpan(BaseSpan):
     ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
                    "rpc-server", "tornado-server", "gcps-consumer")
 
-    LOCAL_SPANS = ("render")
+    LOCAL_SPANS = ("airflow-task", "render")
 
     def __init__(self, span, source, service_name, **kwargs):
         # pylint: disable=invalid-name
@@ -343,6 +343,16 @@ class RegisteredSpan(BaseSpan):
             self.data["render"]["type"] = span.tags.pop('type', None)
             self.data["log"]["message"] = span.tags.pop('message', None)
             self.data["log"]["parameters"] = span.tags.pop('parameters', None)
+
+        elif span.operation_name == "airflow-task":
+            self.data["airflow"]["op"] = span.tags.pop('op', None)
+            self.data["airflow"]["dag_id"] = span.tags.pop('dag_id', None)
+            self.data["airflow"]["task_id"] = span.tags.pop('task_id', None)
+
+            exec_date = span.tags.pop('exec_date', None)
+            if exec_date is not None:
+                self.data["airflow"]["exec_date"] = exec_date.isoformat()
+
         else:
             logger.debug("SpanRecorder: Unknown local span: %s" % span.operation_name)
 

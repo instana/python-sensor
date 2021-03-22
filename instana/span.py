@@ -82,6 +82,8 @@ class InstanaSpan(BasicSpan):
                 self.set_tag('http.error', message)
             elif self.operation_name in ["celery-client", "celery-worker"]:
                 self.set_tag('error', message)
+            elif self.operation_name == "sqlalchemy":
+                self.set_tag('sqlalchemy.err', message)
             else:
                 self.log_kv({'message': message})
         except Exception:

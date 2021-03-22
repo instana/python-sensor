@@ -25,7 +25,7 @@ pytest-celery
 redis>3.0.0
 requests>=2.17.1
 rsa<=4.5
-sqlalchemy>=1.1.15
+sqlalchemy>=1.1.15,<=1.4
 spyne>=2.9,<=2.12.14
 suds-jurko>=0.6
 tornado>=4.5.3,<6.0

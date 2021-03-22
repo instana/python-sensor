@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import re
+from operator import attrgetter
 
 from ..log import logger
 from ..singletons import tracer
@@ -14,6 +15,7 @@ try:
     from sqlalchemy.engine import Engine
 
     url_regexp = re.compile(r"\/\/(\S+@)")
+
 
     @event.listens_for(Engine, 'before_cursor_execute', named=True)
     def receive_before_cursor_execute(**kw):
@@ -38,6 +40,7 @@ try:
         finally:
             return
 
+
     @event.listens_for(Engine, 'after_cursor_execute', named=True)
     def receive_after_cursor_execute(**kw):
         context = kw['context']
@@ -47,23 +50,44 @@ try:
             if scope is not None:
                 scope.close()
 
-    @event.listens_for(Engine, 'dbapi_error', named=True)
-    def receive_dbapi_error(**kw):
-        context = kw['context']
 
-        if context is not None and hasattr(context, '_stan_scope'):
-            scope = context._stan_scope
-            if scope is not None:
-                scope.span.mark_as_errored()
+    error_event = "handle_error"
+    # Handle dbapi_error event; deprecated since version 0.9
+    if sqlalchemy.__version__[0] == "0":
+        error_event = "dbapi_error"
 
-                if 'exception' in kw:
-                    e = kw['exception']
-                    scope.span.set_tag('sqlalchemy.err', str(e))
-                else:
-                    scope.span.set_tag('sqlalchemy.err', "No dbapi error specified.")
-                scope.close()
+
+    def _set_error_tags(context, exception_string, scope_string):
+        scope, context_exception = None, None
+        if attrgetter(scope_string)(context) and attrgetter(exception_string)(context):
+            scope = attrgetter(scope_string)(context)
+            context_exception = attrgetter(exception_string)(context)
+        if scope and context_exception:
+            scope.span.log_exception(context_exception)
+            scope.close()
+        else:
+            scope.span.log_exception("No %s specified." % error_event)
+            scope.close()
+
+
+    @event.listens_for(Engine, error_event, named=True)
+    def receive_handle_db_error(**kw):
+
+        # support older db error event
+        if error_event == "dbapi_error":
+            context = kw.get('context')
+            exception_string = 'exception'
+            scope_string = '_stan_scope'
+        else:
+            context = kw.get('exception_context')
+            exception_string = 'sqlalchemy_exception'
+            scope_string = 'execution_context._stan_scope'
+
+        if context:
+            _set_error_tags(context, exception_string, scope_string)
 
 
     logger.debug("Instrumenting sqlalchemy")
+
 except ImportError:
     pass

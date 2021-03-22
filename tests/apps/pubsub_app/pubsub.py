@@ -1,11 +1,14 @@
-import os
-import json
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2020
+
 import logging
 
 import instana
 
 from flask import Flask, request
-from google.auth import jwt
 from google.cloud import pubsub_v1
 
 logging.basicConfig(level=logging.WARNING)
@@ -15,29 +18,16 @@ app = Flask(__name__)
 app.debug = True
 app.use_reloader = True
 
-# Use PubSub Emulator exposed at :8432 for local testing
+# :Development:
+# Use PubSub Emulator exposed at :8432 for local testing and uncomment below
 # os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8432"
-
-SERVICE_FILE = os.path.join(os.path.dirname(__file__), 'service-account-info.json')
-SERVICE_ACCOUNT_INFO = json.load(open(SERVICE_FILE))
-
-AUDIENCE_PUB = "https://pubsub.googleapis.com/google.pubsub.v1.Publisher"
-AUDIENCE_SUB = "https://pubsub.googleapis.com/google.pubsub.v1.Subscriber"
-
-CRED_PUB = jwt.Credentials.from_service_account_info(
-    SERVICE_ACCOUNT_INFO, audience=AUDIENCE_PUB
-)
-
-CRED_SUB = jwt.Credentials.from_service_account_info(
-    SERVICE_ACCOUNT_INFO, audience=AUDIENCE_SUB
-)
 
 PROJECT_ID = 'k8s-brewery'
 TOPIC_NAME = 'python-test-topic'
 SUBSCRIPTION_ID = 'python-test-subscription'
 
-publisher = pubsub_v1.PublisherClient(credentials=CRED_PUB)
-subscriber = pubsub_v1.SubscriberClient(credentials=CRED_SUB)
+publisher = pubsub_v1.PublisherClient()
+subscriber = pubsub_v1.SubscriberClient()
 
 TOPIC_PATH = publisher.topic_path(PROJECT_ID, TOPIC_NAME)
 SUBSCRIPTION_PATH = subscriber.subscription_path(PROJECT_ID, SUBSCRIPTION_ID)

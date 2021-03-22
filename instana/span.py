@@ -262,7 +262,7 @@ class RegisteredSpan(BaseSpan):
             self.k = 1  # entry
 
         # unify the span operation_name for gcps-producer and gcps-consumer
-        if "gcps" in self.data:
+        if "gcps" in span.operation_name:
             self.n = 'gcps'
         
         # Store any leftover tags in the custom section
@@ -314,7 +314,6 @@ class RegisteredSpan(BaseSpan):
         elif span.operation_name == "gcps-consumer":
             self.data["gcps"]["op"] = span.tags.pop('gcps.op', None)
             self.data["gcps"]["projid"] = span.tags.pop('gcps.projid', None)
-            self.data["gcps"]["top"] = span.tags.pop('gcps.top', None)
             self.data["gcps"]["sub"] = span.tags.pop('gcps.sub', None)
 
         elif span.operation_name == "rabbitmq":
@@ -463,7 +462,6 @@ class RegisteredSpan(BaseSpan):
             self.data["gcps"]["op"] = span.tags.pop('gcps.op', None)
             self.data["gcps"]["projid"] = span.tags.pop('gcps.projid', None)
             self.data["gcps"]["top"] = span.tags.pop('gcps.top', None)
-            self.data["gcps"]["sub"] = span.tags.pop('gcps.sub', None)
 
         elif span.operation_name == "log":
             # use last special key values

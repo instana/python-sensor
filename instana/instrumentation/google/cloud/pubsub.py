@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import
 
+import json
 import wrapt
 from opentracing import Format
 
@@ -47,11 +48,11 @@ try:
 
         with tracer.start_active_span('gcps-producer', child_of=parent_span) as scope:
             # trace continuity, inject to the span context
-            headers = dict()
-            tracer.inject(scope.span.context, Format.TEXT_MAP, headers)
+            trace_continuity_headers = dict()
+            tracer.inject(scope.span.context, Format.TEXT_MAP, trace_continuity_headers)
 
             # update the metadata dict with instana trace attributes
-            kwargs.update(headers)
+            kwargs['trace_continuity_headers'] = json.dumps(trace_continuity_headers)
 
             _set_publisher_tags(scope.span, topic_path=args[0])
 
@@ -76,11 +77,7 @@ try:
             attr = message.attributes
             if attr:
                 # trace continuity
-                headers = {
-                    'x-instana-t': attr.get('x-instana-t'),
-                    'x-instana-s': attr.get('x-instana-s'),
-                    'x-instana-l': attr.get('x-instana-l'),
-                }
+                headers = json.loads(attr.get('trace_continuity_headers'))
                 parent_span = tracer.extract(Format.TEXT_MAP, headers)
             else:
                 parent_span = None
@@ -100,7 +97,10 @@ try:
             return wrapped(*args, **kwargs)
         else:
             callback = args[1]
-            return wrapped(*[args[0], callback_with_instana], **kwargs)
+            args_list = list(args)
+            args_list[1] = callback_with_instana
+            args = tuple(args_list)
+            return wrapped(*args, **kwargs)
 
 except ImportError:
     pass

@@ -13,8 +13,6 @@ from ....singletons import tracer
 try:
     from google.cloud import pubsub_v1
 
-    logger.debug('Instrumenting Google Cloud Pub/Sub')
-
 
     def _set_publisher_tags(span, topic_path):
         span.set_tag('gcps.op', 'publish')
@@ -48,11 +46,11 @@ try:
 
         with tracer.start_active_span('gcps-producer', child_of=parent_span) as scope:
             # trace continuity, inject to the span context
-            trace_continuity_headers = dict()
-            tracer.inject(scope.span.context, Format.TEXT_MAP, trace_continuity_headers)
+            headers = dict()
+            tracer.inject(scope.span.context, Format.TEXT_MAP, headers)
 
             # update the metadata dict with instana trace attributes
-            kwargs['trace_continuity_headers'] = json.dumps(trace_continuity_headers)
+            kwargs.update(headers)
 
             _set_publisher_tags(scope.span, topic_path=args[0])
 
@@ -74,11 +72,8 @@ try:
         """
 
         def callback_with_instana(message):
-            attr = message.attributes
-            if attr:
-                # trace continuity
-                headers = json.loads(attr.get('trace_continuity_headers'))
-                parent_span = tracer.extract(Format.TEXT_MAP, headers)
+            if message.attributes:
+                parent_span = tracer.extract(Format.TEXT_MAP, message.attributes)
             else:
                 parent_span = None
 
@@ -92,15 +87,15 @@ try:
 
         # Handle callback appropriately from args or kwargs
         if 'callback' in kwargs:
-            callback = kwargs['callback']
+            callback = kwargs.get('callback')
             kwargs['callback'] = callback_with_instana
             return wrapped(*args, **kwargs)
         else:
-            callback = args[1]
-            args_list = list(args)
-            args_list[1] = callback_with_instana
-            args = tuple(args_list)
+            subscription, callback, *args = args
+            args = (subscription, callback_with_instana, *args)
             return wrapped(*args, **kwargs)
 
+
+    logger.debug('Instrumenting Google Cloud Pub/Sub')
 except ImportError:
     pass

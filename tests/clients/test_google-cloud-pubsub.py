@@ -4,8 +4,10 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import threading
 import time
+import pytest
 
 import six
 import unittest
@@ -17,9 +19,11 @@ from instana.singletons import tracer
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8432
-os.environ["PUBSUB_EMULATOR_HOST"] = "0.0.0.0:8432"
+os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8432"
 
 
+@pytest.mark.skipif(sys.version_info[0] < 3,
+                    reason="google-cloud-pubsub has dropped support for Python 2")
 class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
     @classmethod
     def setUpClass(cls):
@@ -35,13 +39,13 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
         # setup topic_path & topic
         self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
         try:
-            self.publisher.create_topic(self.topic_path)
+            self.publisher.create_topic(request={"name": self.topic_path})
         except AlreadyExists:
-            self.publisher.delete_topic(self.topic_path)
-            self.publisher.create_topic(self.topic_path)
+            self.publisher.delete_topic(request={"topic": self.topic_path})
+            self.publisher.create_topic(request={"name": self.topic_path})
 
     def tearDown(self):
-        self.publisher.delete_topic(self.topic_path)
+        self.publisher.delete_topic(request={"topic": self.topic_path})
 
     def test_publish(self):
         # publish a single message
@@ -83,6 +87,8 @@ class AckCallback(object):
             self.calls += 1
 
 
+@pytest.mark.skipif(sys.version_info[0] < 3,
+                    reason="google-cloud-pubsub has dropped support for Python 2")
 class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
     @classmethod
     def setUpClass(cls):
@@ -101,23 +107,27 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
         # setup topic_path & topic
         self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
         try:
-            self.publisher.create_topic(self.topic_path)
+            self.publisher.create_topic(request={"name": self.topic_path})
         except AlreadyExists:
-            self.publisher.delete_topic(self.topic_path)
-            self.publisher.create_topic(self.topic_path)
+            self.publisher.delete_topic(request={"topic": self.topic_path})
+            self.publisher.create_topic(request={"name": self.topic_path})
 
         # setup subscription path & attach subscription
         self.subscription_path = self.subscriber.subscription_path(
             self.project_id, self.subscription_name)
         try:
-            self.subscriber.create_subscription(self.subscription_path, self.topic_path)
+            self.subscriber.create_subscription(
+                request={"name": self.subscription_path, "topic": self.topic_path}
+            )
         except AlreadyExists:
-            self.subscriber.delete_subscription(self.subscription_path)
-            self.subscriber.create_subscription(self.subscription_path, self.topic_path)
+            self.subscriber.delete_subscription(request={"subscription": self.subscription_path})
+            self.subscriber.create_subscription(
+                request={"name": self.subscription_path, "topic": self.topic_path}
+            )
 
     def tearDown(self):
-        self.publisher.delete_topic(self.topic_path)
-        self.subscriber.delete_subscription(self.subscription_path)
+        self.publisher.delete_topic(request={"topic": self.topic_path})
+        self.subscriber.delete_subscription(request={"subscription": self.subscription_path})
 
     def test_subscribe(self):
 

@@ -235,10 +235,10 @@ class RegisteredSpan(BaseSpan):
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
-                  "soap", "tornado-client", "urllib3", "pymongo", "gcs")
+                  "soap", "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
 
     ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
-                   "rpc-server", "tornado-server")
+                   "rpc-server", "tornado-server", "gcps-consumer")
 
     LOCAL_SPANS = ("render")
 
@@ -246,7 +246,6 @@ class RegisteredSpan(BaseSpan):
         # pylint: disable=invalid-name
         super(RegisteredSpan, self).__init__(span, source, service_name, **kwargs)
         self.n = span.operation_name
-
         self.k = 1
         if span.operation_name in self.ENTRY_SPANS:
             # entry
@@ -262,6 +261,10 @@ class RegisteredSpan(BaseSpan):
         if "rabbitmq" in self.data and self.data["rabbitmq"]["sort"] == "consume":
             self.k = 1  # entry
 
+        # unify the span operation_name for gcps-producer and gcps-consumer
+        if "gcps" in span.operation_name:
+            self.n = 'gcps'
+        
         # Store any leftover tags in the custom section
         if len(span.tags) > 0:
             self.data["custom"]["tags"] = self._validate_tags(span.tags)
@@ -307,6 +310,11 @@ class RegisteredSpan(BaseSpan):
             self.data["celery"]["port"] = span.tags.pop('port', None)
             self.data["celery"]["retry-reason"] = span.tags.pop('retry-reason', None)
             self.data["celery"]["error"] = span.tags.pop('error', None)
+
+        elif span.operation_name == "gcps-consumer":
+            self.data["gcps"]["op"] = span.tags.pop('gcps.op', None)
+            self.data["gcps"]["projid"] = span.tags.pop('gcps.projid', None)
+            self.data["gcps"]["sub"] = span.tags.pop('gcps.sub', None)
 
         elif span.operation_name == "rabbitmq":
             self.data["rabbitmq"]["exchange"] = span.tags.pop('exchange', None)
@@ -449,6 +457,11 @@ class RegisteredSpan(BaseSpan):
             self.data["gcs"]["numberOfOperations"] = span.tags.pop('gcs.numberOfOperations', None)
             self.data["gcs"]["projectId"] = span.tags.pop('gcs.projectId', None)
             self.data["gcs"]["accessId"] = span.tags.pop('gcs.accessId', None)
+
+        elif span.operation_name == "gcps-producer":
+            self.data["gcps"]["op"] = span.tags.pop('gcps.op', None)
+            self.data["gcps"]["projid"] = span.tags.pop('gcps.projid', None)
+            self.data["gcps"]["top"] = span.tags.pop('gcps.top', None)
 
         elif span.operation_name == "log":
             # use last special key values

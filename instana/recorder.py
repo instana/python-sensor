@@ -9,7 +9,7 @@ import sys
 
 from basictracer import Sampler
 
-from .span import (RegisteredSpan, SDKSpan)
+from .span import RegisteredSpan, SDKSpan
 
 if sys.version_info.major == 2:
     import Queue as queue
@@ -20,11 +20,13 @@ else:
 class StanRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
-    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry", "boto3", "cassandra",
-                        "celery-client", "celery-worker", "couchbase", "django", "gcs", "log",
-                        "memcache", "mongo", "mysql", "postgres", "pymongo", "rabbitmq", "redis",
-                        "render", "rpc-client", "rpc-server", "sqlalchemy", "soap", "tornado-client",
-                        "tornado-server", "urllib3", "wsgi")
+    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry",
+                        "boto3", "cassandra", "celery-client", "celery-worker",
+                        "couchbase", "django", "gcs", "gcps-producer",
+                        "gcps-consumer", "log", "memcache", "mongo", "mysql",
+                        "postgres", "pymongo", "rabbitmq", "redis","render",
+                        "rpc-client", "rpc-server", "sqlalchemy", "soap",
+                        "tornado-client", "tornado-server", "urllib3", "wsgi")
 
     # Recorder thread for collection/reporting of spans
     thread = None

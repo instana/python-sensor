@@ -148,6 +148,7 @@ def boot_agent():
 
         if sys.version_info[0] >= 3:
             from .instrumentation.google.cloud import storage
+            from .instrumentation.google.cloud import pubsub
 
         from .instrumentation.celery import hooks
 

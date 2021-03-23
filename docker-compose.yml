@@ -92,5 +92,14 @@ services:
       - 5671:5671
       - 5672:5672
 
+  # pubsub testing
+  pubsub:
+    image: singularities/pubsub-emulator
+    environment:
+      - PUBSUB_PROJECT_ID=project-test
+      - PUBSUB_LISTEN_ADDRESS=0.0.0.0:8432
+    ports:
+      - "8432:8432"
+
 #volumes:
 #  mysql-data:

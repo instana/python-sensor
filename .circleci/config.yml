@@ -60,6 +60,10 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: circleci/mongo:4.2.3-ram
+      - image: singularities/pubsub-emulator
+        environment:
+          PUBSUB_PROJECT_ID: "project-test"
+          PUBSUB_LISTEN_ADDRESS: "0.0.0.0:8432"
     working_directory: ~/repo
     steps:
       - checkout
@@ -80,6 +84,10 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: circleci/mongo:4.2.3-ram
+      - image: singularities/pubsub-emulator
+        environment:
+          PUBSUB_PROJECT_ID: "project-test"
+          PUBSUB_LISTEN_ADDRESS: "0.0.0.0:8432"
     working_directory: ~/repo
     steps:
       - checkout
@@ -100,6 +108,10 @@ jobs:
       - image: circleci/redis:5.0.4
       - image: rabbitmq:3.5.4
       - image: circleci/mongo:4.2.3-ram
+      - image: singularities/pubsub-emulator
+        environment:
+          PUBSUB_PROJECT_ID: "project-test"
+          PUBSUB_LISTEN_ADDRESS: "0.0.0.0:8432"
     working_directory: ~/repo
     steps:
       - checkout

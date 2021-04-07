@@ -18,7 +18,7 @@ try:
     def execute_command_with_instana(wrapped, instance, args, kwargs):
         task_instance, *_ = args
 
-        with tracer.start_active_span("airflow-task", child_of=tracer.active_span) as scope:
+        with tracer.start_active_span("airflow-task") as scope:
             scope.span.set_tag("op", "queue")
             scope.span.set_tag("dag_id", task_instance.dag_id)
             scope.span.set_tag("task_id", task_instance.task_id)

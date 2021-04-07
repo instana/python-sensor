@@ -267,6 +267,9 @@ class RegisteredSpan(BaseSpan):
         if "gcps" in span.operation_name:
             self.n = 'gcps'
 
+        if "airflow" in self.data and self.data["airflow"]["op"] == "queue":
+            self.k = 1 # entry
+
         # Store any leftover tags in the custom section
         if len(span.tags) > 0:
             self.data["custom"]["tags"] = self._validate_tags(span.tags)

@@ -1,5 +1,5 @@
-#  (c) Copyright IBM Corp. 2021
-#  (c) Copyright Instana Inc. 2021
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
 
 from __future__ import absolute_import
 
@@ -14,9 +14,26 @@ try:
     import airflow.executors.celery_executor
     import celery
 
+    class _CommandWithTraceContext:
+        def __init__(self, cmd, ctx, dag_id, task_id, execution_date):
+            self.command = cmd
+            self.context = ctx
+            self.dag_id = dag_id
+            self.task_id = task_id
+            self.execution_date = execution_date
+
+        def __str__(self):
+            return self.command.__str__()
+
+        def __repr__(self):
+            return self.command.__repr__()
+
+    def __bind_queue_command_args(task_instance, command, *args):
+        return task_instance, command, args
+
     @wrapt.patch_function_wrapper("airflow.executors.celery_executor", "CeleryExecutor.queue_command")
-    def execute_command_with_instana(wrapped, instance, args, kwargs):
-        task_instance, *_ = args
+    def _queue_command_with_instana(wrapped, instance, args, kwargs):
+        task_instance, command, args = __bind_queue_command_args(*args)
 
         with tracer.start_active_span("airflow-task") as scope:
             scope.span.set_tag("op", "queue")
@@ -24,44 +41,37 @@ try:
             scope.span.set_tag("task_id", task_instance.task_id)
             scope.span.set_tag("exec_date", task_instance.execution_date)
 
-            # Add the current span context to the TaskInstance to pick it up in Task.apply_async later
-            task_instance.__instana_span_context = scope.span.context
+            # Wrap command to provide the task instance data and trace context to the Task.apply_async
+            command = _CommandWithTraceContext(command,
+                                               scope.span.context,
+                                               task_instance.dag_id,
+                                               task_instance.task_id,
+                                               task_instance.execution_date)
 
-            return wrapped(*args, **kwargs)
+            args = (task_instance, command) + args
 
-    @wrapt.patch_function_wrapper("airflow.executors.celery_executor", "CeleryExecutor._send_tasks_to_celery")
-    def send_send_tasks_to_celery_with_instana(wrapped, instance, args, kwargs):
-        try:
-            for (_, task_instance, _, _, task_to_run) in args[0]:
-                if hasattr(task_instance, "__instana_span_context"):
-                    # forward the Airflow span context to the celery Task instance
-                    task_to_run.__instana_airflow_task = {
-                        "context": task_instance.__instana_span_context,
-                        "dag_id": task_instance.dag_id,
-                        "task_id": task_instance.task_id,
-                        "execution_date": task_instance.execution_date
-                    }
-        except Exception:
-            logger.debug("Instana: airflow.send_send_tasks_to_celery_with_instana error", exc_info=True)
-        finally:
             return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper("celery", "Task.apply_async")
-    def apply_async_with_instana(wrapped, instance, args, kwargs):
-        if not hasattr(instance, '__instana_airflow_task'):
+    def _apply_async_with_instana(wrapped, instance, args, kwargs):
+        cmd = kwargs["args"][0]
+
+        if not isinstance(cmd, _CommandWithTraceContext):
             return wrapped(*args, **kwargs)
 
-        task_metadata = instance.__instana_airflow_task
-        with tracer.start_active_span("airflow-task", child_of=task_metadata["context"]) as scope:
+        # Restore the original command list
+        kwargs["args"] = [cmd.command]
+
+        with tracer.start_active_span("airflow-task", child_of=cmd.context) as scope:
             scope.span.set_tag("op", "execute")
-            scope.span.set_tag("dag_id", task_metadata["dag_id"])
-            scope.span.set_tag("task_id", task_metadata["task_id"])
-            scope.span.set_tag("exec_date", task_metadata["execution_date"])
+            scope.span.set_tag("dag_id", cmd.dag_id)
+            scope.span.set_tag("task_id", cmd.task_id)
+            scope.span.set_tag("exec_date", cmd.execution_date)
 
             try:
-                return wrapped(*args, **kwargs)
+                res = wrapped(*args, **kwargs)
             except Exception as e:
-                span.log_exception(e)
+                scope.span.log_exception(e)
                 raise
             else:
                 return res

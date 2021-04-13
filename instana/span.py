@@ -238,7 +238,7 @@ class RegisteredSpan(BaseSpan):
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
                   "soap", "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
 
-    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi",
+    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq"
                    "rpc-server", "tornado-server", "gcps-consumer")
 
     LOCAL_SPANS = ("render")
@@ -249,8 +249,7 @@ class RegisteredSpan(BaseSpan):
         self.n = span.operation_name
         self.k = 1
 
-        if span.operation_name in self.ENTRY_SPANS or (
-                span.operation_name == "rabbitmq" and span.tags.get('sort', None) == "consume"):
+        if span.operation_name in self.ENTRY_SPANS:
             # entry
             self._populate_entry_span_data(span)
             self.data["service"] = service_name
@@ -260,6 +259,9 @@ class RegisteredSpan(BaseSpan):
         elif span.operation_name in self.LOCAL_SPANS:
             self.k = 3  # intermediate span
             self._populate_local_span_data(span)
+
+        if "rabbitmq" in self.data and self.data["rabbitmq"]["sort"] == "publish":
+            self.k = 2  # exit
 
         # unify the span operation_name for gcps-producer and gcps-consumer
         if "gcps" in span.operation_name:

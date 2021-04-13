@@ -238,7 +238,7 @@ class RegisteredSpan(BaseSpan):
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
                   "soap", "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
 
-    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq"
+    ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
                    "rpc-server", "tornado-server", "gcps-consumer")
 
     LOCAL_SPANS = ("render")

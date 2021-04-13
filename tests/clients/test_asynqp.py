@@ -24,7 +24,8 @@ else:
     rabbitmq_host = "localhost"
 
 is_unsupported_version = LooseVersion(sys.version) < LooseVersion('3.5.3') \
-    or LooseVersion(sys.version) >= LooseVersion('3.8.0')
+                         or LooseVersion(sys.version) >= LooseVersion('3.8.0')
+
 
 @pytest.mark.skipif(is_unsupported_version, reason="Asynqp supports >=3.5.3;<3.8.0")
 class TestAsynqp(unittest.TestCase):
@@ -96,6 +97,9 @@ class TestAsynqp(unittest.TestCase):
         self.assertIsNone(test_span.ec)
         self.assertIsNone(rabbitmq_span.ec)
 
+        # Span type
+        self.assertEqual(rabbitmq_span.k, 2)  # exit
+
         # Rabbitmq
         self.assertEqual('test.exchange', rabbitmq_span.data["rabbitmq"]["exchange"])
         self.assertEqual('publish', rabbitmq_span.data["rabbitmq"]["sort"])
@@ -131,6 +135,9 @@ class TestAsynqp(unittest.TestCase):
         # Error logging
         self.assertIsNone(test_span.ec)
         self.assertIsNone(rabbitmq_span.ec)
+
+        # Span type
+        self.assertEqual(rabbitmq_span.k, 2)  # exit
 
         # Rabbitmq
         self.assertEqual('test.exchange', rabbitmq_span.data["rabbitmq"]["exchange"])
@@ -196,6 +203,10 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(publish_span.p, test_span.s)
         self.assertEqual(get_span.p, test_span.s)
 
+        # Span type
+        self.assertEqual(publish_span.k, 2)  # exit
+        self.assertEqual(get_span.k, 1)  # entry
+
         # Error logging
         self.assertIsNone(test_span.ec)
         self.assertIsNone(publish_span.ec)
@@ -249,6 +260,10 @@ class TestAsynqp(unittest.TestCase):
         # Parent relationships
         self.assertEqual(publish_span.p, test_span.s)
         self.assertEqual(consume_span.p, publish_span.s)
+
+        # Span type
+        self.assertEqual(publish_span.k, 2)  # exit
+        self.assertEqual(consume_span.k, 1)  # entry
 
         # publish
         self.assertEqual('test.exchange', publish_span.data["rabbitmq"]["exchange"])
@@ -310,6 +325,11 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(publish1_span.p, test_span.s)
         self.assertEqual(consume1_span.p, publish1_span.s)
         self.assertEqual(publish2_span.p, consume1_span.s)
+
+        # Span type
+        self.assertEqual(publish1_span.k, 2)  # exit
+        self.assertEqual(consume1_span.k, 1)  # entry
+        self.assertEqual(publish2_span.k, 2)  # exit
 
         # publish
         self.assertEqual('test.exchange', publish1_span.data["rabbitmq"]["exchange"])
@@ -401,6 +421,10 @@ class TestAsynqp(unittest.TestCase):
         self.assertEqual(aioclient_span.p, run_later_span.s)
         self.assertEqual(run_later_span.p, consume_span.s)
         self.assertEqual(wsgi_span.p, aioclient_span.s)
+
+        # Span type
+        self.assertEqual(publish_span.k, 2)  # exit
+        self.assertEqual(consume_span.k, 1)  # entry
 
         # publish
         self.assertEqual('test.exchange', publish_span.data["rabbitmq"]["exchange"])

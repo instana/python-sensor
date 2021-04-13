@@ -26,7 +26,7 @@ class InstanaSpan(BasicSpan):
     stack = None
     synthetic = False
 
-    def mark_as_errored(self, tags = None):
+    def mark_as_errored(self, tags=None):
         """
         Mark this span as errored.
 
@@ -90,6 +90,7 @@ class InstanaSpan(BasicSpan):
             logger.debug("span.log_exception", exc_info=True)
             raise
 
+
 class BaseSpan(object):
     sy = None
 
@@ -149,7 +150,7 @@ class BaseSpan(object):
         try:
             # Tag keys must be some type of text or string type
             if isinstance(key, (six.text_type, six.string_types)):
-                validated_key = key[0:1024] # Max key length of 1024 characters
+                validated_key = key[0:1024]  # Max key length of 1024 characters
 
                 if isinstance(value, (bool, float, int, list, dict, six.text_type, six.string_types)):
                     validated_value = value
@@ -169,7 +170,7 @@ class BaseSpan(object):
             final_value = repr(value)
         except Exception:
             final_value = "(non-fatal) span.set_tag: values must be one of these types: bool, float, int, list, " \
-                            "set, str or alternatively support 'repr'. tag discarded"
+                          "set, str or alternatively support 'repr'. tag discarded"
             logger.debug(final_value, exc_info=True)
             return None
         return final_value
@@ -247,24 +248,25 @@ class RegisteredSpan(BaseSpan):
         super(RegisteredSpan, self).__init__(span, source, service_name, **kwargs)
         self.n = span.operation_name
         self.k = 1
+
         if span.operation_name in self.ENTRY_SPANS:
             # entry
             self._populate_entry_span_data(span)
             self.data["service"] = service_name
         elif span.operation_name in self.EXIT_SPANS:
-            self.k = 2 # exit
+            self.k = 2  # exit
             self._populate_exit_span_data(span)
         elif span.operation_name in self.LOCAL_SPANS:
-            self.k = 3 # intermediate span
+            self.k = 3  # intermediate span
             self._populate_local_span_data(span)
 
-        if "rabbitmq" in self.data and self.data["rabbitmq"]["sort"] == "consume":
-            self.k = 1  # entry
+        if "rabbitmq" in self.data and self.data["rabbitmq"]["sort"] == "publish":
+            self.k = 2  # exit
 
         # unify the span operation_name for gcps-producer and gcps-consumer
         if "gcps" in span.operation_name:
             self.n = 'gcps'
-        
+
         # Store any leftover tags in the custom section
         if len(span.tags) > 0:
             self.data["custom"]["tags"] = self._validate_tags(span.tags)

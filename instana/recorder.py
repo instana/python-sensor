@@ -16,6 +16,9 @@ if sys.version_info.major == 2:
 else:
     import queue
 
+import logging
+LOGGER = logging.getLogger("INSTANA")
+LOGGER.setLevel(logging.DEBUG)
 
 class StanRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
@@ -73,7 +76,7 @@ class StanRecorder(object):
 
     def record_span(self, span):
         """
-        Convert the passed BasicSpan into and add it to the span queue
+        Convert the passed BasicSpan into our own span and add it to the span queue
         """
         if self.agent.can_send():
             service_name = None
@@ -87,8 +90,10 @@ class StanRecorder(object):
                 service_name = self.agent.options.service_name
                 json_span = SDKSpan(span, source, service_name)
 
-            # logger.debug("Recorded span: %s", json_span)
+            LOGGER.debug("Recorded span: %s (agent pid %s)", json_span, os.getpid())
             self.agent.collector.span_queue.put(json_span)
+        else:
+            LOGGER.debug("Ignoring span (agent pid %s is not ready)", os.getpid())
 
 
 class InstanaSampler(Sampler):

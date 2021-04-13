@@ -10,6 +10,13 @@ import wrapt
 from ...log import logger
 from ...singletons import tracer, get_agent
 
+import logging
+LOGGER = logging.getLogger("INSTANA")
+LOGGER.setLevel(logging.DEBUG)
+
+import os
+import time
+
 try:
     import airflow.executors.celery_executor
     import celery
@@ -37,6 +44,8 @@ try:
     def _queue_command_with_instana(wrapped, instance, args, kwargs):
         task_instance, command, args = __bind_queue_command_args(*args)
 
+        LOGGER.info(">>>>> Scheduling {}.{}, pid: {}".format(task_instance.dag_id, task_instance.task_id, os.getpid()))
+
         with tracer.start_active_span("airflow-task") as scope:
             scope.span.set_tag("op", "ENQUEUE")
             scope.span.set_tag("dag_id", task_instance.dag_id)
@@ -59,7 +68,10 @@ try:
         cmd = kwargs["args"][0]
 
         if not isinstance(cmd, _CommandWithTraceContext):
+            LOGGER.warn(">>>>> The command came unwrapped {}".format(cmd))
             return wrapped(*args, **kwargs)
+
+        LOGGER.info(">>>>> Executing {}.{}, pid: {}".format(cmd.dag_id, cmd.task_id, os.getpid()))
 
         # Restore the original command list
         kwargs["args"] = [cmd.command]
@@ -72,7 +84,9 @@ try:
 
             try:
                 res = wrapped(*args, **kwargs)
+                LOGGER.info(">>>>> {}.{} has been executed".format(cmd.dag_id, cmd.task_id))
             except Exception as e:
+                LOGGER.error(">>>>> Failed to execute {}.{}".format(cmd.dag_id, cmd.task_id), exc_info=True)
                 scope.span.log_exception(e)
                 raise
             else:

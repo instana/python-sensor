@@ -10,6 +10,11 @@ from .base import BaseCollector
 from ..util import DictionaryOfStan
 from .helpers.runtime import RuntimeHelper
 
+import os
+
+import logging
+LOGGER = logging.getLogger("INSTANA")
+LOGGER.setLevel(logging.DEBUG)
 
 class HostCollector(BaseCollector):
     """ Collector for AWS Fargate """
@@ -43,6 +48,7 @@ class HostCollector(BaseCollector):
                         logger.debug("Agent is ready.  Getting to work.")
                         self.agent.machine.fsm.ready()
                 else:
+                    LOGGER.debug("agent pid {} is not ready, skip reporting data this time".format(os.getpid()))
                     return
 
             if self.agent.machine.fsm.current == "good2go" and self.agent.is_timed_out():
@@ -68,6 +74,7 @@ class HostCollector(BaseCollector):
         try:
             if not self.span_queue.empty():
                 payload["spans"] = self.queued_spans()
+                LOGGER.debug("Collected spans %s (agent pid %s)", payload["spans"], os.getpid())
 
             if not self.profile_queue.empty():
                 payload["profiles"] = self.queued_profiles()

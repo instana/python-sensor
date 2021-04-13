@@ -23,6 +23,9 @@ from ..collector.host import HostCollector
 from ..util import to_json
 from ..util.runtime import get_py_source
 
+import logging
+LOGGER = logging.getLogger("INSTANA")
+LOGGER.setLevel(logging.DEBUG)
 
 class AnnounceData(object):
     """ The Announce Payload """
@@ -115,6 +118,7 @@ class HostAgent(BaseAgent):
         if self._boot_pid != current_pid:
             self._boot_pid = current_pid
             logger.debug("Fork detected; Handling like a pro...")
+            LOGGER.debug("Process {} fork detected (new pid {})".format(self._boot_pid, current_pid))
             self.handle_fork()
             return False
 
@@ -240,6 +244,7 @@ class HostAgent(BaseAgent):
             span_count = len(payload['spans'])
             if span_count > 0:
                 logger.debug("Reporting %d spans", span_count)
+                LOGGER.debug("Sending spans {}".format(to_json(payload['spans'])))
                 response = self.client.post(self.__traces_url(),
                                             data=to_json(payload['spans']),
                                             headers={"Content-Type": "application/json"},

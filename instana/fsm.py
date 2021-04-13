@@ -16,6 +16,9 @@ from .log import logger
 from .util import get_default_gateway
 from .version import VERSION
 
+import logging
+LOGGER = logging.getLogger("INSTANA")
+LOGGER.setLevel(logging.DEBUG)
 
 class Discovery(object):
     pid = 0
@@ -182,6 +185,7 @@ class TheMachine(object):
         ns_pid = str(os.getpid())
         true_pid = str(self.agent.announce_data.pid)
 
+        LOGGER.debug("agent pid {} is ready".format(os.getpid()))
         logger.info("Instana host agent available. We're in business. Announced PID: %s (true pid: %s)", ns_pid, true_pid)
 
     def on_good2go(self, _):

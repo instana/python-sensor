@@ -8,11 +8,13 @@ import opentracing
 import wrapt
 
 from ...log import logger
-from ...singletons import tracer
+from ...singletons import tracer, get_agent
 
 try:
     import airflow.executors.celery_executor
     import celery
+
+    agent = get_agent()
 
     class _CommandWithTraceContext:
         def __init__(self, cmd, ctx, dag_id, task_id, execution_date):
@@ -75,6 +77,11 @@ try:
                 raise
             else:
                 return res
+
+    @wrapt.patch_function_wrapper("airflow.executors.celery_executor", "CeleryExecutor.end")
+    def _CeleryExecutor_end_with_instana(wrapped, instance, args, kwargs):
+        agent.collector.shutdown()
+        return wrapped(*args, **kwargs)
 
     logger.debug("Instrumenting Airflow celery executor")
 except ImportError:

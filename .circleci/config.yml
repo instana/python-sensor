@@ -122,7 +122,11 @@ jobs:
             INSTANA_TEST: "true"
           command: |
             . venv/bin/activate
-            pytest -v
+            coverage run --source=instana -m pytest -v
+            coverage report -m
+            coverage html
+      - store_artifacts:
+          path: htmlcov
 
   python39:
     docker:

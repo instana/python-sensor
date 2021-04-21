@@ -38,7 +38,7 @@ try:
         task_instance, command, args = __bind_queue_command_args(*args)
 
         with tracer.start_active_span("airflow-task") as scope:
-            scope.span.set_tag("op", "queue")
+            scope.span.set_tag("op", "ENQUEUE")
             scope.span.set_tag("dag_id", task_instance.dag_id)
             scope.span.set_tag("task_id", task_instance.task_id)
             scope.span.set_tag("exec_date", task_instance.execution_date)
@@ -65,7 +65,7 @@ try:
         kwargs["args"] = [cmd.command]
 
         with tracer.start_active_span("airflow-task", child_of=cmd.context) as scope:
-            scope.span.set_tag("op", "execute")
+            scope.span.set_tag("op", "EXECUTE")
             scope.span.set_tag("dag_id", cmd.dag_id)
             scope.span.set_tag("task_id", cmd.task_id)
             scope.span.set_tag("exec_date", cmd.execution_date)

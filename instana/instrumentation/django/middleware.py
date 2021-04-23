@@ -68,7 +68,7 @@ class InstanaMiddleware(MiddlewareMixin):
                     try:
                         from django.urls import resolve
                         view_name = resolve(request.path)._func_path
-                        path_tpl = self.__url_pattern_route(view_name)
+                        path_tpl = "".join(self.__url_pattern_route(view_name))
                     except Exception:
                         # the resolve method can fire a Resolver404 exception, in this case there is no matching route
                         # so the path_tpl is set to None in order not to be added as a tag
@@ -123,7 +123,7 @@ class InstanaMiddleware(MiddlewareMixin):
                     return list_urls(l.url_patterns, parent_pattern + [str(l.regex.pattern)])
                 else:
                     return list_urls(l.url_patterns, parent_pattern + [str(l.pattern)])
-            return "".join(list_urls(lis[1:], parent_pattern))
+            return list_urls(lis[1:], parent_pattern)
 
         return list_urls(urlconf.urlpatterns)
 

@@ -13,13 +13,9 @@ import wrapt
 from ...log import logger
 from ...singletons import agent, tracer
 from ...util.secrets import strip_secrets_from_query
+from django.utils.deprecation import MiddlewareMixin
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
-
-try:
-    from django.utils.deprecation import MiddlewareMixin
-except ImportError:
-    MiddlewareMixin = object
 
 
 class InstanaMiddleware(MiddlewareMixin):

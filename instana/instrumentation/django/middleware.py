@@ -74,7 +74,6 @@ class InstanaMiddleware(MiddlewareMixin):
                         # so the path_tpl is set to None in order not to be added as a tag
                         path_tpl = None
                 if path_tpl:
-                    path_tpl = path_tpl.replace(">", "}").replace("<", "{").replace("^", "")
                     request.iscope.span.set_tag("http.path_tpl", path_tpl)
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
                 tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)

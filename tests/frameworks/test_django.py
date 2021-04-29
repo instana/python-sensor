@@ -74,7 +74,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
         self.assertEqual('test=1', django_span.data["http"]["params"])
-        self.assertEqual('$', django_span.data["http"]["path_tpl"])
+        self.assertEqual('^$', django_span.data["http"]["path_tpl"])
 
         self.assertIsNone(django_span.stack)
 
@@ -96,7 +96,7 @@ class TestDjango(StaticLiveServerTestCase):
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        self.assertEqual('$', django_span.data["http"]["path_tpl"])
+        self.assertEqual('^$', django_span.data["http"]["path_tpl"])
 
         self.assertTrue(django_span.sy)
         self.assertIsNone(urllib3_span.sy)
@@ -160,7 +160,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(500, django_span.data["http"]["status"])
         self.assertEqual('This is a fake error: /cause-error', django_span.data["http"]["error"])
-        self.assertEqual('cause_error$', django_span.data["http"]["path_tpl"])
+        self.assertEqual('^cause_error$', django_span.data["http"]["path_tpl"])
         self.assertIsNone(django_span.stack)
 
     def test_request_with_not_found(self):
@@ -259,7 +259,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('/complex', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
-        self.assertEqual('complex$', django_span.data["http"]["path_tpl"])
+        self.assertEqual('^complex$', django_span.data["http"]["path_tpl"])
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -299,7 +299,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('/', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
-        self.assertEqual('$', django_span.data["http"]["path_tpl"])
+        self.assertEqual('^$', django_span.data["http"]["path_tpl"])
 
         assert "X-Capture-This" in django_span.data["http"]["header"]
         self.assertEqual("this", django_span.data["http"]["header"]["X-Capture-This"])

@@ -105,24 +105,24 @@ class InstanaMiddleware(MiddlewareMixin):
 
         urlconf = __import__(settings.ROOT_URLCONF, {}, {}, [''])
 
-        def list_urls(lis, parent_pattern=None):
+        def list_urls(urlpatterns, parent_pattern=None):
+            if not urlpatterns:
+                return
             if parent_pattern is None:
                 parent_pattern = []
-            if not lis:
-                return
-            l = lis[0]
-            if isinstance(l, URLPattern):
-                if l.lookup_str == view_name:
-                    if hasattr(l, "regex"):
-                        return parent_pattern + [str(l.regex.pattern)]
+            first = urlpatterns[0]
+            if isinstance(first, URLPattern):
+                if first.lookup_str == view_name:
+                    if hasattr(first, "regex"):
+                        return parent_pattern + [str(first.regex.pattern)]
                     else:
-                        return parent_pattern + [str(l.pattern)]
-            elif isinstance(l, URLResolver):
-                if hasattr(l, "regex"):
-                    return list_urls(l.url_patterns, parent_pattern + [str(l.regex.pattern)])
+                        return parent_pattern + [str(first.pattern)]
+            elif isinstance(first, URLResolver):
+                if hasattr(first, "regex"):
+                    return list_urls(first.url_patterns, parent_pattern + [str(first.regex.pattern)])
                 else:
-                    return list_urls(l.url_patterns, parent_pattern + [str(l.pattern)])
-            return list_urls(lis[1:], parent_pattern)
+                    return list_urls(first.url_patterns, parent_pattern + [str(first.pattern)])
+            return list_urls(urlpatterns[1:], parent_pattern)
 
         return list_urls(urlconf.urlpatterns)
 

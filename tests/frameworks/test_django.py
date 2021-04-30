@@ -28,7 +28,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def test_basic_request(self):
         with tracer.start_active_span('test'):
-            response = self.http.request('GET', self.live_server_url + '/')
+            response = self.http.request('GET', self.live_server_url + '/', fields={"test": 1})
 
         assert response
         self.assertEqual(200, response.status)
@@ -70,10 +70,12 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertIsNone(test_span.sy)
 
         self.assertEqual(None, django_span.ec)
-
         self.assertEqual('/', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
+        self.assertEqual('test=1', django_span.data["http"]["params"])
+        self.assertEqual('^$', django_span.data["http"]["path_tpl"])
+
         self.assertIsNone(django_span.stack)
 
     def test_synthetic_request(self):
@@ -93,6 +95,8 @@ class TestDjango(StaticLiveServerTestCase):
         test_span = spans[2]
         urllib3_span = spans[1]
         django_span = spans[0]
+
+        self.assertEqual('^$', django_span.data["http"]["path_tpl"])
 
         self.assertTrue(django_span.sy)
         self.assertIsNone(urllib3_span.sy)
@@ -115,15 +119,15 @@ class TestDjango(StaticLiveServerTestCase):
 
         filter = lambda span: span.n == 'sdk' and span.data['sdk']['name'] == 'test'
         test_span = get_first_span_by_filter(spans, filter)
-        assert(test_span)
+        assert (test_span)
 
         filter = lambda span: span.n == 'urllib3'
         urllib3_span = get_first_span_by_filter(spans, filter)
-        assert(urllib3_span)
+        assert (urllib3_span)
 
         filter = lambda span: span.n == 'django'
         django_span = get_first_span_by_filter(spans, filter)
-        assert(django_span)
+        assert (django_span)
 
         assert ('X-INSTANA-T' in response.headers)
         assert (int(response.headers['X-INSTANA-T'], 16))
@@ -156,6 +160,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(500, django_span.data["http"]["status"])
         self.assertEqual('This is a fake error: /cause-error', django_span.data["http"]["error"])
+        self.assertEqual('^cause_error$', django_span.data["http"]["path_tpl"])
         self.assertIsNone(django_span.stack)
 
     def test_request_with_not_found(self):
@@ -175,8 +180,30 @@ class TestDjango(StaticLiveServerTestCase):
 
         filter = lambda span: span.n == 'django'
         django_span = get_first_span_by_filter(spans, filter)
-        assert(django_span)
+        assert (django_span)
 
+        self.assertIsNone(django_span.ec)
+        self.assertEqual(404, django_span.data["http"]["status"])
+
+    def test_request_with_not_found_no_route(self):
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', self.live_server_url + '/no_route')
+
+        assert response
+        self.assertEqual(404, response.status)
+
+        spans = self.recorder.queued_spans()
+        spans = drop_log_spans_from_list(spans)
+
+        span_count = len(spans)
+        if span_count != 3:
+            msg = "Expected 3 spans but got %d" % span_count
+            fail_with_message_and_span_dump(msg, spans)
+
+        filter = lambda span: span.n == 'django'
+        django_span = get_first_span_by_filter(spans, filter)
+        assert (django_span)
+        self.assertIsNone(django_span.data["http"]["path_tpl"])
         self.assertIsNone(django_span.ec)
         self.assertEqual(404, django_span.data["http"]["status"])
 
@@ -232,6 +259,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('/complex', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
+        self.assertEqual('^complex$', django_span.data["http"]["path_tpl"])
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -271,6 +299,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('/', django_span.data["http"]["url"])
         self.assertEqual('GET', django_span.data["http"]["method"])
         self.assertEqual(200, django_span.data["http"]["status"])
+        self.assertEqual('^$', django_span.data["http"]["path_tpl"])
 
         assert "X-Capture-This" in django_span.data["http"]["header"]
         self.assertEqual("this", django_span.data["http"]["header"]["X-Capture-This"])

@@ -3,7 +3,7 @@ aiohttp>=3.5.4;python_version>="3.5"
 asynqp>=0.4;python_version>="3.5"
 boto3>=1.10.0
 celery>=4.1.1
-django<2.0.0
+django>=1.11,<2.0.0
 fastapi>=0.61.1;python_version>="3.6"
 flask>=0.12.2
 grpcio>=1.18.0

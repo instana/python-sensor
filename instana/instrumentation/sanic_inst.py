@@ -77,11 +77,14 @@ try:
 
     @wrapt.patch_function_wrapper('sanic.app', 'Sanic.handle_request')
     async def handle_request_with_instana(wrapped, instance, args, kwargs):
-        request = args[0]
-        if "http" not in request.scheme:
-            return await wrapped(*args, **kwargs)
 
         try:
+            request = args[0]
+            try:
+                if "http" not in request.scheme:
+                    return await wrapped(*args, **kwargs)
+            except AttributeError:
+                pass
             headers = request.headers.copy()
             ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
             with async_tracer.start_active_span("asgi", child_of=ctx) as tracing_scope:
@@ -91,6 +94,7 @@ try:
                 tracing_scope.span.set_tag('http.host', request.host)
 
                 query = request.query_string
+
                 if isinstance(query, (str, bytes)) and len(query):
                     if isinstance(query, bytes):
                         query = query.decode('utf-8')
@@ -98,17 +102,16 @@ try:
                                                                agent.options.secrets_list)
                     tracing_scope.span.set_tag("http.params", scrubbed_params)
 
-                tracing_scope.span.set_tag("http.url", request.url)
-
                 if agent.options.extra_http_headers is not None:
                     extract_custom_headers(tracing_scope, headers)
-
                 await wrapped(*args, **kwargs)
+                tracing_scope.span.set_tag("http.url", request.url)
                 if hasattr(request, "route") and request.route is not None:
                     tracing_scope.span.set_tag("http.path_tpl", request.route.path)
                 elif hasattr(request, "uri_template"):
                     tracing_scope.span.set_tag("http.path_tpl", request.uri_template)
-                request.ctx.iscope = tracing_scope
+                if hasattr(request, "ctx"):
+                    request.ctx.iscope = tracing_scope
         except Exception as e:
             logger.debug("Sanic framework @ process_request", exc_info=True)
             return await wrapped(*args, **kwargs)

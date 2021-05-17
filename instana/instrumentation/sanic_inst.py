@@ -23,10 +23,8 @@ try:
                     span.mark_as_errored()
                 span.set_tag('http.status_code', status_code)
 
-            headers = response.headers.copy()
-            if headers is not None:
-                async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, headers)
-                response.headers.extend(headers)
+            if response.headers is not None:
+                async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response.headers)
         except Exception:
             logger.debug("send_wrapper: ", exc_info=True)
 

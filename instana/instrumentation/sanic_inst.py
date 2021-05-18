@@ -15,6 +15,22 @@ try:
     from ..util.headers import extract_custom_headers
 
 
+    @wrapt.patch_function_wrapper('sanic.exceptions', 'SanicException.__init__')
+    def exception_with_instana(wrapped, instance, args, kwargs):
+        message = kwargs.get("message", args[0])
+        status_code = kwargs.get("status_code")
+        span = async_tracer.active_span
+
+        if span and status_code and message and (500 <= status_code <= 599):
+            span.set_tag("http.error", message)
+            try:
+                wrapped(*args, **kwargs)
+            except Exception as exc:
+                span.log_exception(exc)
+        else:
+            wrapped(*args, **kwargs)
+
+
     def response_details(span, response):
         try:
             status_code = response.status
@@ -25,6 +41,7 @@ try:
 
             if response.headers is not None:
                 async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+            response.headers['Server-Timing'] = "intid;desc=%s" % span.context.trace_id
         except Exception:
             logger.debug("send_wrapper: ", exc_info=True)
 
@@ -78,7 +95,7 @@ try:
 
         try:
             request = args[0]
-            try:
+            try:  # scheme attribute is calculated in the sanic handle_request method for v19, not yet present
                 if "http" not in request.scheme:
                     return await wrapped(*args, **kwargs)
             except AttributeError:
@@ -104,11 +121,9 @@ try:
                     extract_custom_headers(tracing_scope, headers)
                 await wrapped(*args, **kwargs)
                 tracing_scope.span.set_tag("http.url", request.url)
-                if hasattr(request, "route") and request.route is not None:
-                    tracing_scope.span.set_tag("http.path_tpl", request.route.path)
-                elif hasattr(request, "uri_template"):
+                if hasattr(request, "uri_template"):
                     tracing_scope.span.set_tag("http.path_tpl", request.uri_template)
-                if hasattr(request, "ctx"):
+                if hasattr(request, "ctx"):  # ctx attribute added in the latest v19 versions
                     request.ctx.iscope = tracing_scope
         except Exception as e:
             logger.debug("Sanic framework @ process_request", exc_info=True)

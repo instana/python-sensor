@@ -2,10 +2,10 @@
 # (c) Copyright Instana Inc. 2021
 
 from sanic import Sanic
-from sanic.log import logger
-from simpleview import SimpleView
-from name import NameView
-from sanic.response import text, json
+from sanic.exceptions import SanicException
+from .simpleview import SimpleView
+from .name import NameView
+from sanic.response import text
 import instana
 
 app = Sanic('test')
@@ -17,13 +17,7 @@ async def uuid_handler(request, foo_id: int):
 
 @app.route("/test_request_args")
 async def test_request_args(request):
-    return json({
-        "parsed": True,
-        "url": request.url,
-        "query_string": request.query_string,
-        "args": request.raw_args,
-        "query_args": request.query_args,
-    })
+    raise SanicException("Something went wrong.", status_code=500)
 
 
 @app.get("/tag/<tag>")

@@ -53,6 +53,7 @@ commands:
 
 jobs:
   python27:
+    parallelism: 5
     docker:
       - image: circleci/python:2.7.16-stretch
       - image: circleci/postgres:9.6.5-alpine-ram
@@ -77,6 +78,7 @@ jobs:
             pytest -v
 
   python37:
+    parallelism: 5
     docker:
       - image: circleci/python:3.7.9
       - image: circleci/postgres:9.6.5-alpine-ram
@@ -101,6 +103,7 @@ jobs:
             pytest -v
 
   python38:
+    parallelism: 5
     docker:
       - image: circleci/python:3.8.6
       - image: circleci/postgres:9.6.5-alpine-ram
@@ -129,6 +132,7 @@ jobs:
           path: htmlcov
 
   python39:
+    parallelism: 5
     docker:
       - image: circleci/python:3.9.0-buster
       - image: circleci/postgres:9.6.5-alpine-ram
@@ -153,6 +157,7 @@ jobs:
             pytest -v
 
   py38couchbase:
+    parallelism: 5
     docker:
       - image: circleci/python:3.7.8-stretch
       - image: couchbase/server-sandbox:5.5.0
@@ -172,6 +177,7 @@ jobs:
             pytest -v tests/clients/test_couchbase.py
 
   py27couchbase:
+    parallelism: 5
     docker:
       - image: circleci/python:2.7.16-stretch
       - image: couchbase/server-sandbox:5.5.0
@@ -191,6 +197,7 @@ jobs:
             pytest -v tests/clients/test_couchbase.py
 
   py27cassandra:
+    parallelism: 5
     docker:
       - image: circleci/python:2.7.16-stretch
       - image: circleci/cassandra:3.10
@@ -213,6 +220,7 @@ jobs:
             pytest -v tests/clients/test_cassandra-driver.py
 
   py36cassandra:
+    parallelism: 5
     docker:
       - image: circleci/python:3.6.11
       - image: circleci/cassandra:3.10
@@ -234,6 +242,7 @@ jobs:
             pytest -v tests/clients/test_cassandra-driver.py
 
   gevent38:
+    parallelism: 5
     docker:
       - image: circleci/python:3.8.5
     working_directory: ~/repo

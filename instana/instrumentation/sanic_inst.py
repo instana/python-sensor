@@ -12,7 +12,7 @@ try:
     from ..log import logger
     from ..singletons import async_tracer, agent
     from ..util.secrets import strip_secrets_from_query
-    from ..util.headers import extract_custom_headers
+    from ..util.traceutils import extract_custom_headers
 
 
     @wrapt.patch_function_wrapper('sanic.exceptions', 'SanicException.__init__')
@@ -21,7 +21,7 @@ try:
         status_code = kwargs.get("status_code")
         span = async_tracer.active_span
 
-        if span and status_code and message and (500 <= status_code <= 599):
+        if all([span, status_code, message]) and (500 <= status_code <= 599):
             span.set_tag("http.error", message)
             try:
                 wrapped(*args, **kwargs)
@@ -102,11 +102,12 @@ try:
                 pass
             headers = request.headers.copy()
             ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
-            with async_tracer.start_active_span("asgi", child_of=ctx) as tracing_scope:
-                tracing_scope.span.set_tag('span.kind', 'entry')
-                tracing_scope.span.set_tag('http.path', request.path)
-                tracing_scope.span.set_tag('http.method', request.method)
-                tracing_scope.span.set_tag('http.host', request.host)
+            with async_tracer.start_active_span("asgi", child_of=ctx) as scope:
+                scope.span.set_tag('span.kind', 'entry')
+                scope.span.set_tag('http.path', request.path)
+                scope.span.set_tag('http.method', request.method)
+                scope.span.set_tag('http.host', request.host)
+                scope.span.set_tag("http.url", request.url)
 
                 query = request.query_string
 
@@ -115,18 +116,17 @@ try:
                         query = query.decode('utf-8')
                     scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher,
                                                                agent.options.secrets_list)
-                    tracing_scope.span.set_tag("http.params", scrubbed_params)
+                    scope.span.set_tag("http.params", scrubbed_params)
 
                 if agent.options.extra_http_headers is not None:
-                    extract_custom_headers(tracing_scope, headers)
+                    extract_custom_headers(scope, headers)
                 await wrapped(*args, **kwargs)
-                tracing_scope.span.set_tag("http.url", request.url)
                 if hasattr(request, "uri_template"):
-                    tracing_scope.span.set_tag("http.path_tpl", request.uri_template)
+                    scope.span.set_tag("http.path_tpl", request.uri_template)
                 if hasattr(request, "ctx"):  # ctx attribute added in the latest v19 versions
-                    request.ctx.iscope = tracing_scope
+                    request.ctx.iscope = scope
         except Exception as e:
-            logger.debug("Sanic framework @ process_request", exc_info=True)
+            logger.debug("Sanic framework @ handle_request", exc_info=True)
             return await wrapped(*args, **kwargs)
 
 

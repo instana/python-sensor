@@ -33,6 +33,7 @@ if LooseVersion(sys.version) < LooseVersion('3.5.3') or LooseVersion(sys.version
 if LooseVersion(sys.version) < LooseVersion('3.6.0'):
     collect_ignore_glob.append("*test_fastapi*")
     collect_ignore_glob.append("*test_starlette*")
+if LooseVersion(sys.version) < LooseVersion('3.7.0'):
     collect_ignore_glob.append("*test_sanic*")
 
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
@@ -63,4 +64,3 @@ def celery_includes():
     return {
         'tests.frameworks.test_celery'
     }
-

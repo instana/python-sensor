@@ -25,7 +25,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.proc.start()
         time.sleep(2)
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.proc.kill()
 
     def test_vanilla_get(self):

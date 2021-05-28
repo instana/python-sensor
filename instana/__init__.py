@@ -47,6 +47,7 @@ eum_api_key = ''
 do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_install", "easy_install-2.7",
                     "smtpd.py", "twine", "ufw", "unattended-upgrade"]
 
+
 def load(_):
     """
     Method used to activate the Instana sensor via AUTOWRAPT_BOOTSTRAP
@@ -56,6 +57,7 @@ def load(_):
     if not hasattr("sys", "argv"):
         sys.argv = ['']
     return None
+
 
 def get_lambda_handler_or_default():
     """
@@ -108,7 +110,7 @@ def lambda_handler(event, context):
 def boot_agent_later():
     """ Executes <boot_agent> in the future! """
     if 'gevent' in sys.modules:
-        import gevent # pylint: disable=import-outside-toplevel
+        import gevent  # pylint: disable=import-outside-toplevel
         gevent.spawn_later(2.0, boot_agent)
     else:
         Timer(2.0, boot_agent).start()
@@ -126,6 +128,9 @@ def boot_agent():
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
         # Import & initialize instrumentation
         from .instrumentation.aws import lambda_inst
+
+        if sys.version_info >= (3, 7, 0):
+            from .instrumentation import sanic_inst
 
         if sys.version_info >= (3, 6, 0):
             from .instrumentation import fastapi_inst
@@ -173,6 +178,7 @@ def boot_agent():
     # Hooks
     from .hooks import hook_uwsgi
 
+
 if 'INSTANA_DISABLE' not in os.environ:
     # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
     # and some Pipenv installs.  If this is the case, it's best effort.
@@ -184,6 +190,7 @@ if 'INSTANA_DISABLE' not in os.environ:
         # AutoProfile
         if "INSTANA_AUTOPROFILE" in os.environ:
             from .singletons import get_profiler
+
             profiler = get_profiler()
             if profiler:
                 profiler.start()

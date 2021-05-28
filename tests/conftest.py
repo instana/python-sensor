@@ -6,7 +6,6 @@ import sys
 import pytest
 from distutils.version import LooseVersion
 
-
 collect_ignore_glob = []
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
@@ -44,6 +43,7 @@ os.environ["INSTANA_TEST"] = "true"
 # Make sure the instana package is fully loaded
 import instana
 
+
 @pytest.fixture(scope='session')
 def celery_config():
     return {
@@ -62,4 +62,3 @@ def celery_includes():
     return {
         'tests.frameworks.test_celery'
     }
-

@@ -98,6 +98,8 @@ jobs:
             INSTANA_TEST: "true"
           command: |
             . venv/bin/activate
+            # We uninstall uvloop as it interferes with asyncio changing the event loop policy
+            pip uninstall -y uvloop
             pytest -v
 
   python38:

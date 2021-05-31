@@ -121,7 +121,7 @@ try:
                 if agent.options.extra_http_headers is not None:
                     extract_custom_headers(scope, headers)
                 await wrapped(*args, **kwargs)
-                if hasattr(request, "uri_template"):
+                if hasattr(request, "uri_template") and request.uri_template:
                     scope.span.set_tag("http.path_tpl", request.uri_template)
                 if hasattr(request, "ctx"):  # ctx attribute added in the latest v19 versions
                     request.ctx.iscope = scope

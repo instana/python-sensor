@@ -11,6 +11,7 @@ from .autoprofile.profiler import Profiler
 
 agent = None
 tracer = None
+async_tracer = None
 profiler = None
 span_recorder = None
 
@@ -79,10 +80,10 @@ tracer = InstanaTracer(recorder=span_recorder)
 if sys.version_info >= (3, 4):
     try:
         from opentracing.scope_managers.asyncio import AsyncioScopeManager
+
         async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
     except Exception:
         logger.debug("Error setting up async_tracer:", exc_info=True)
-
 
 # Mock the tornado tracer until tornado is detected and instrumented first
 tornado_tracer = tracer
@@ -116,6 +117,7 @@ def set_tracer(new_tracer):
     """
     global tracer
     tracer = new_tracer
+
 
 def get_profiler():
     """

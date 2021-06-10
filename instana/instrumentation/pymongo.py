@@ -4,7 +4,7 @@
 from __future__ import absolute_import
 
 from ..log import logger
-from ..singletons import tracer
+from ..singletons import tracer, async_tracer
 
 try:
     import pymongo
@@ -17,12 +17,15 @@ try:
 
         def started(self, event):
             parent_span = tracer.active_span
-
+            active_tracer = tracer
             # return early if we're not tracing
             if parent_span is None:
-                return
+                parent_span = async_tracer.active_span
+                if parent_span is None:
+                    return
+                active_tracer = async_tracer
 
-            with tracer.start_active_span("mongo", child_of=parent_span) as scope:
+            with active_tracer.start_active_span("mongo", child_of=parent_span) as scope:
                 self._collect_connection_tags(scope.span, event)
                 self._collect_command_tags(scope.span, event)
 

@@ -14,6 +14,8 @@ from ..helpers import testenv
 from instana.singletons import tracer, async_tracer
 
 import pymongo
+import pytest
+import sys
 import bson
 
 logger = logging.getLogger(__name__)
@@ -231,7 +233,8 @@ class TestPyMongoTracer(unittest.TestCase):
         # ensure spans are ordered the same way as commands
         assert_list_equal(commands, ["insert", "update", "delete"])
 
-
+@pytest.mark.skipif(sys.version_info[0] < 3 ,
+                    reason="testing async tracer for python 3 only")
 class TestPyMongoAsyncTracer(unittest.TestCase):
     def setUp(self):
         self.conn = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),

@@ -19,7 +19,7 @@ import bson
 logger = logging.getLogger(__name__)
 
 
-class TestPyMongo(unittest.TestCase):
+class TestPyMongoTracer(unittest.TestCase):
     def setUp(self):
         self.conn = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),
                                         username=testenv['mongodb_user'], password=testenv['mongodb_pw'])
@@ -107,11 +107,11 @@ class TestPyMongo(unittest.TestCase):
 
         payload = json.loads(db_span.data["mongo"]["json"])
         assert_true({
-            "q": {"type": "string"},
-            "u": {"$set": {"type": "int"}},
-            "multi": False,
-            "upsert": False
-        } in payload, db_span.data["mongo"]["json"])
+                        "q": {"type": "string"},
+                        "u": {"$set": {"type": "int"}},
+                        "multi": False,
+                        "upsert": False
+                    } in payload, db_span.data["mongo"]["json"])
 
     def test_successful_delete_query(self):
         with tracer.start_active_span("test"):
@@ -174,7 +174,8 @@ class TestPyMongo(unittest.TestCase):
         reducer = "function (key, values) { return len(values); }"
 
         with tracer.start_active_span("test"):
-            self.conn.test.records.map_reduce(bson.code.Code(mapper), bson.code.Code(reducer), "results", query={"x": {"$lt": 2}})
+            self.conn.test.records.map_reduce(bson.code.Code(mapper), bson.code.Code(reducer), "results",
+                                              query={"x": {"$lt": 2}})
 
         assert_is_none(tracer.active_span)
 
@@ -192,7 +193,8 @@ class TestPyMongo(unittest.TestCase):
         self.assertEqual(db_span.n, "mongo")
         self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"].lower(), "mapreduce") # mapreduce command was renamed to mapReduce in pymongo 3.9.0
+        self.assertEqual(db_span.data["mongo"]["command"].lower(),
+                         "mapreduce")  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
 
         self.assertEqual(db_span.data["mongo"]["filter"], '{"x": {"$lt": 2}}')
         assert_is_not_none(db_span.data["mongo"]["json"])
@@ -228,3 +230,4 @@ class TestPyMongo(unittest.TestCase):
 
         # ensure spans are ordered the same way as commands
         assert_list_equal(commands, ["insert", "update", "delete"])
+

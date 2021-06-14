@@ -4,25 +4,27 @@
 from __future__ import absolute_import
 
 from ..log import logger
-from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
 
 try:
     import pymongo
     from pymongo import monitoring
     from bson import json_util
 
+
     class MongoCommandTracer(monitoring.CommandListener):
         def __init__(self):
             self.__active_commands = {}
 
         def started(self, event):
-            parent_span = tracer.active_span
-
+            active_tracer = get_active_tracer()
             # return early if we're not tracing
-            if parent_span is None:
+            if active_tracer is None:
                 return
 
-            with tracer.start_active_span("mongo", child_of=parent_span) as scope:
+            parent_span = active_tracer.active_span
+
+            with active_tracer.start_active_span("mongo", child_of=parent_span) as scope:
                 self._collect_connection_tags(scope.span, event)
                 self._collect_command_tags(scope.span, event)
 
@@ -79,7 +81,7 @@ try:
             cmd_doc = None
             if cmd in cmd_doc_locations:
                 cmd_doc = event.command.get(cmd_doc_locations[cmd])
-            elif cmd.lower() == "mapreduce": # mapreduce command was renamed to mapReduce in pymongo 3.9.0
+            elif cmd.lower() == "mapreduce":  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
                 # mapreduce command consists of two mandatory parts: map and reduce
                 cmd_doc = {
                     "map": event.command.get("map"),
@@ -88,6 +90,7 @@ try:
 
             if cmd_doc is not None:
                 span.set_tag("json", json_util.dumps(cmd_doc))
+
 
     monitoring.register(MongoCommandTracer())
 

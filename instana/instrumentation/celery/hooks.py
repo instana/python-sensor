@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import opentracing
 from ...log import logger
 from ...singletons import tracer
+from ...util.traceutils import get_active_tracer
 
 try:
     import celery
@@ -55,8 +56,11 @@ try:
             headers = task.request.get('headers', {})
             if headers is not None:
                 ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
+                active_tracer = tracer
+            else:
+                active_tracer, parent_span = get_active_tracer()
 
-            scope = tracer.start_active_span("celery-worker", child_of=ctx)
+            scope = active_tracer.start_active_span("celery-worker", child_of=ctx)
             scope.span.set_tag("task", task.name)
             scope.span.set_tag("task_id", task_id)
             add_broker_tags(scope.span, task.app.conf['broker_url'])
@@ -111,7 +115,7 @@ try:
     @signals.before_task_publish.connect
     def before_task_publish(*args, **kwargs):
         try:
-            parent_span = tracer.active_span
+            active_tracer, parent_span = get_active_tracer()
             if parent_span is not None:
                 body = kwargs['body']
                 headers = kwargs['headers']
@@ -119,14 +123,14 @@ try:
                 task = registry.tasks.get(task_name)
                 task_id = get_task_id(headers, body)
 
-                scope = tracer.start_active_span("celery-client", child_of=parent_span)
+                scope = active_tracer.start_active_span("celery-client", child_of=parent_span)
                 scope.span.set_tag("task", task_name)
                 scope.span.set_tag("task_id", task_id)
                 add_broker_tags(scope.span, task.app.conf['broker_url'])
 
                 # Context propagation
                 context_headers = {}
-                tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, context_headers)
+                active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, context_headers)
 
                 # Fix for broken header propagation
                 # https://github.com/celery/celery/issues/4875

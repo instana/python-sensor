@@ -3,7 +3,7 @@
 
 from ..singletons import agent, tracer, async_tracer
 from ..log import logger
-
+from .ctx_propagation import get_parent_span
 
 def extract_custom_headers(tracing_scope, headers):
     try:
@@ -19,11 +19,16 @@ def extract_custom_headers(tracing_scope, headers):
 def get_active_tracer():
     try:
         if tracer.active_span:
-            return tracer
+            return tracer, tracer.active_span
         elif async_tracer.active_span:
-            return async_tracer
+            return async_tracer, async_tracer.active_span
         else:
-            return None
+            parent_span = get_parent_span()
+            if parent_span:
+                return tracer, parent_span
+            return None, None
     except Exception as e:
         logger.debug("error while getting active tracer: ", exc_info=True)
         return None
+
+

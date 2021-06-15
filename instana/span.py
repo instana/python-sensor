@@ -231,7 +231,7 @@ class SDKSpan(BaseSpan):
 
 
 class RegisteredSpan(BaseSpan):
-    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
+    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "asgi", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",

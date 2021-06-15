@@ -18,6 +18,7 @@ from .recorder import StanRecorder, InstanaSampler
 from .propagators.http_propagator import HTTPPropagator
 from .propagators.text_propagator import TextPropagator
 from .propagators.binary_propagator import BinaryPropagator
+from .util.ctx_propagation import set_parent_span
 
 
 class InstanaTracer(BasicTracer):
@@ -106,6 +107,12 @@ class InstanaTracer(BasicTracer):
 
         if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span)
+
+        if operation_name in RegisteredSpan.HTTP_SPANS and child_of is None:
+            set_parent_span(ctx)
+        # check if the value is reset
+        # else:
+        #     set_parent_span(None)
 
         return span
 

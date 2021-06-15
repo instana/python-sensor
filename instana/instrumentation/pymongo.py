@@ -17,12 +17,10 @@ try:
             self.__active_commands = {}
 
         def started(self, event):
-            active_tracer = get_active_tracer()
+            active_tracer, parent_span = get_active_tracer()
             # return early if we're not tracing
             if active_tracer is None:
                 return
-
-            parent_span = active_tracer.active_span
 
             with active_tracer.start_active_span("mongo", child_of=parent_span) as scope:
                 self._collect_connection_tags(scope.span, event)

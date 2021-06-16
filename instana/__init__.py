@@ -54,7 +54,7 @@ def load(_):
     environment variable.
     """
     # Work around https://bugs.python.org/issue32573
-    if not hasattr("sys", "argv"):
+    if not hasattr(sys, "argv"):
         sys.argv = ['']
     return None
 

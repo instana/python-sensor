@@ -6,7 +6,10 @@ from __future__ import absolute_import
 import sys
 import wrapt
 import logging
-import collections
+try:
+    from collections.abc import Mapping
+except ImportError:
+    from collections import Mapping
 
 from ..log import logger
 from ..singletons import tracer
@@ -25,7 +28,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
 
             msg = str(argv[1])
             args = argv[2]
-            if args and len(args) == 1 and isinstance(args[0], collections.Mapping) and args[0]:
+            if args and len(args) == 1 and isinstance(args[0], Mapping) and args[0]:
                 args = args[0]
 
             # get the formatted log message

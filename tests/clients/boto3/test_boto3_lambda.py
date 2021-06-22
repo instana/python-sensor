@@ -33,6 +33,7 @@ def setup_method():
 
 @pytest.mark.skip("Lambda mocking requires docker")
 def test_lambda_invoke(aws_lambda):
+    setup_method()
     result = None
 
     with tracer.start_active_span('test'):

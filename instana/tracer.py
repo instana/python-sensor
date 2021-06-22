@@ -108,11 +108,12 @@ class InstanaTracer(BasicTracer):
         if operation_name in RegisteredSpan.EXIT_SPANS:
             self.__add_stack(span)
 
+        # TODO: test how it performs on context propagation under load
         if operation_name in RegisteredSpan.HTTP_SPANS and child_of is None:
             set_parent_span(ctx)
         # check if the value is reset
-        # else:
-        #     set_parent_span(None)
+        else:
+            set_parent_span(None)
 
         return span
 

@@ -19,7 +19,7 @@ download_target_filename = os.path.abspath(pwd + '/../../data/boto3/download_tar
 def setup_method():
     """ Clear all spans before a test run """
     tracer.recorder.clear_spans()
-    os.remove(download_target_filename)
+#    os.remove(download_target_filename)
 
 
 @pytest.fixture(scope='function')
@@ -38,6 +38,7 @@ def s3(aws_credentials):
 
 
 def test_vanilla_create_bucket(s3):
+    setup_method()
     # s3 is a fixture defined above that yields a boto3 s3 client.
     # Feel free to instantiate another boto3 S3 client -- Keep note of the region though.
     s3.create_bucket(Bucket="aws_bucket_name")
@@ -48,6 +49,7 @@ def test_vanilla_create_bucket(s3):
 
 
 def test_s3_create_bucket(s3):
+    setup_method()
     result = None
     with tracer.start_active_span('test'):
         result = s3.create_bucket(Bucket="aws_bucket_name")
@@ -83,6 +85,7 @@ def test_s3_create_bucket(s3):
 
 
 def test_s3_list_buckets(s3):
+    setup_method()
     result = None
     with tracer.start_active_span('test'):
         result = s3.list_buckets()
@@ -117,6 +120,7 @@ def test_s3_list_buckets(s3):
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/ListBuckets'
 
 def test_s3_vanilla_upload_file(s3):
+    setup_method()
     object_name = 'aws_key_name'
     bucket_name = 'aws_bucket_name'
 
@@ -125,6 +129,7 @@ def test_s3_vanilla_upload_file(s3):
     assert result is None
 
 def test_s3_upload_file(s3):
+    setup_method()
     object_name = 'aws_key_name'
     bucket_name = 'aws_bucket_name'
 
@@ -160,6 +165,7 @@ def test_s3_upload_file(s3):
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/upload_file'
 
 def test_s3_upload_file_obj(s3):
+    setup_method()
     object_name = 'aws_key_name'
     bucket_name = 'aws_bucket_name'
 
@@ -196,6 +202,7 @@ def test_s3_upload_file_obj(s3):
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/upload_fileobj'
 
 def test_s3_download_file(s3):
+    setup_method()
     object_name = 'aws_key_name'
     bucket_name = 'aws_bucket_name'
 
@@ -232,6 +239,7 @@ def test_s3_download_file(s3):
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/download_file'
 
 def test_s3_download_file_obj(s3):
+    setup_method()
     object_name = 'aws_key_name'
     bucket_name = 'aws_bucket_name'
 

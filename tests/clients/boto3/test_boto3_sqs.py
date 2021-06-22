@@ -41,6 +41,7 @@ def sqs(aws_credentials):
 
 
 def test_vanilla_create_queue(sqs):
+    setup_method()
     result = sqs.create_queue(
     QueueName='SQS_QUEUE_NAME',
     Attributes={
@@ -51,6 +52,7 @@ def test_vanilla_create_queue(sqs):
 
 
 def test_send_message(sqs):
+    setup_method()
     response = None
 
     # Create the Queue:
@@ -110,6 +112,7 @@ def test_send_message(sqs):
 
 @mock_sqs
 def test_app_boto3_sqs(http_client):
+    setup_method()
     with tracer.start_active_span('test'):
         response = http_client.request('GET', testenv["wsgi_server"] + '/boto3/sqs')
 

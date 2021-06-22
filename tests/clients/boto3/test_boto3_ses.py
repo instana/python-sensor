@@ -35,11 +35,13 @@ def ses(aws_credentials):
 
 
 def test_vanilla_verify_email(ses):
+    setup_method()
     result = ses.verify_email_identity(EmailAddress='pglombardo+instana299@tuta.io')
     assert result['ResponseMetadata']['HTTPStatusCode'] == 200
 
 
 def test_verify_email(ses):
+    setup_method()
     result = None
 
     with tracer.start_active_span('test'):

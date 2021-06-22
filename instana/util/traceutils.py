@@ -29,6 +29,6 @@ def get_active_tracer():
             return None, None
     except Exception as e:
         logger.debug("error while getting active tracer: ", exc_info=True)
-        return None
+        return None, None
 
 

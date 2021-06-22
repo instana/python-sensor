@@ -62,6 +62,8 @@ class TestAsynqp(unittest.TestCase):
     def tearDown(self):
         """ Purge the queue """
         self.loop.run_until_complete(self.reset())
+        self.recorder = async_tracer.recorder
+        self.recorder.clear_spans()
 
     async def fetch(self, session, url, headers=None):
         try:

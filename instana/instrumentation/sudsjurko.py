@@ -10,7 +10,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
-from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
 
 try:
     import suds # noqa
@@ -22,19 +22,19 @@ try:
 
     @wrapt.patch_function_wrapper('suds.client', class_method)
     def send_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
+        active_tracer, parent_span = get_active_tracer()
 
         # If we're not tracing, just return
         if parent_span is None:
             return wrapped(*args, **kwargs)
 
-        with tracer.start_active_span("soap", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("soap", child_of=parent_span) as scope:
             try:
                 scope.span.set_tag('soap.action', instance.method.name)
                 scope.span.set_tag(ext.HTTP_URL, instance.method.location)
                 scope.span.set_tag(ext.HTTP_METHOD, 'POST')
 
-                tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance.options.headers)
+                active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance.options.headers)
 
                 rv = wrapped(*args, **kwargs)
 

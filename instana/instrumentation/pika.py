@@ -11,6 +11,7 @@ import types
 
 from ..log import logger
 from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
 
 try:
     import pika
@@ -41,7 +42,7 @@ try:
         def _bind_args(exchange, routing_key, body, properties=None, *args, **kwargs):
             return (exchange, routing_key, body, properties, args, kwargs)
 
-        parent_span = tracer.active_span
+        active_tracer, parent_span = get_active_tracer()
 
         if parent_span is None:
             return wrapped(*args, **kwargs)

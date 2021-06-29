@@ -131,7 +131,7 @@ class TestAsynqp(unittest.TestCase):
         self.loop.run_until_complete(test())
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(31, len(spans))
+        self.assertGreaterEqual(len(spans), 31)
 
         trace_id = spans[0].t
         for span in spans:

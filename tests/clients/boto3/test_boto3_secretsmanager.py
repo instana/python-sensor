@@ -35,13 +35,11 @@ def secretsmanager(aws_credentials):
 
 
 def test_vanilla_list_secrets(secretsmanager):
-    setup_method()
     result = secretsmanager.list_secrets(MaxResults=123)
     assert result['SecretList'] == []
 
 
 def test_get_secret_value(secretsmanager):
-    setup_method()
     result = None
 
     secretsmanager.put_secret_value(

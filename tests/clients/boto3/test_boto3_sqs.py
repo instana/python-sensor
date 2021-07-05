@@ -14,8 +14,8 @@ import tests.apps.flask_app
 from instana.singletons import tracer
 from ...helpers import get_first_span_by_filter, testenv
 
-
 pwd = os.path.dirname(os.path.abspath(__file__))
+
 
 def setup_method():
     """ Clear all spans before a test run """
@@ -30,9 +30,11 @@ def aws_credentials():
     os.environ['AWS_SECURITY_TOKEN'] = 'testing'
     os.environ['AWS_SESSION_TOKEN'] = 'testing'
 
+
 @pytest.fixture(scope='function')
 def http_client():
     yield urllib3.PoolManager()
+
 
 @pytest.fixture(scope='function')
 def sqs(aws_credentials):
@@ -41,18 +43,16 @@ def sqs(aws_credentials):
 
 
 def test_vanilla_create_queue(sqs):
-    setup_method()
     result = sqs.create_queue(
-    QueueName='SQS_QUEUE_NAME',
-    Attributes={
-        'DelaySeconds': '60',
-        'MessageRetentionPeriod': '86400'
-    })
+        QueueName='SQS_QUEUE_NAME',
+        Attributes={
+            'DelaySeconds': '60',
+            'MessageRetentionPeriod': '86400'
+        })
     assert result['ResponseMetadata']['HTTPStatusCode'] == 200
 
 
 def test_send_message(sqs):
-    setup_method()
     response = None
 
     # Create the Queue:
@@ -87,32 +87,34 @@ def test_send_message(sqs):
 
     filter = lambda span: span.n == "sdk"
     test_span = get_first_span_by_filter(spans, filter)
-    assert(test_span)
+    assert (test_span)
 
     filter = lambda span: span.n == "boto3"
     boto_span = get_first_span_by_filter(spans, filter)
-    assert(boto_span)
+    assert (boto_span)
 
-    assert(boto_span.t == test_span.t)
-    assert(boto_span.p == test_span.s)
+    assert (boto_span.t == test_span.t)
+    assert (boto_span.p == test_span.s)
 
-    assert(test_span.ec is None)
-    assert(boto_span.ec is None)
+    assert (test_span.ec is None)
+    assert (boto_span.ec is None)
 
     assert boto_span.data['boto3']['op'] == 'SendMessage'
     assert boto_span.data['boto3']['ep'] == 'https://queue.amazonaws.com'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
-    payload = {'QueueUrl': 'https://queue.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10, 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}}, 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
+    payload = {'QueueUrl': 'https://queue.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
+               'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
+               'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
     assert boto_span.data['boto3']['payload'] == payload
-    
+
     assert boto_span.data['http']['status'] == 200
     assert boto_span.data['http']['method'] == 'POST'
     assert boto_span.data['http']['url'] == 'https://queue.amazonaws.com:443/SendMessage'
 
+
 @mock_sqs
 def test_app_boto3_sqs(http_client):
-    setup_method()
     with tracer.start_active_span('test'):
         response = http_client.request('GET', testenv["wsgi_server"] + '/boto3/sqs')
 
@@ -150,4 +152,3 @@ def test_app_boto3_sqs(http_client):
 
     assert bsm_span.t == test_span.t
     assert bsm_span.p == wsgi_span.s
-

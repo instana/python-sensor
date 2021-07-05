@@ -35,8 +35,6 @@ def setup_method():
 
 
 def test_apply_async(celery_app, celery_worker):
-    setup_method()
-
     result = None
     with tracer.start_active_span('test'):
         result = add.apply_async(args=(4, 5))
@@ -82,7 +80,6 @@ def test_apply_async(celery_app, celery_worker):
 
 
 def test_delay(celery_app, celery_worker):
-    setup_method()
     result = None
     with tracer.start_active_span('test'):
         result = add.delay(4, 5)
@@ -128,7 +125,6 @@ def test_delay(celery_app, celery_worker):
 
 
 def test_send_task(celery_app, celery_worker):
-    setup_method()
     result = None
     with tracer.start_active_span('test'):
         result = celery_app.send_task('tests.frameworks.test_celery.add', (1, 2))
@@ -174,7 +170,6 @@ def test_send_task(celery_app, celery_worker):
 
 
 def test_error_reporting(celery_app, celery_worker):
-    setup_method()
     result = None
     with tracer.start_active_span('test'):
         result = will_raise_error.apply_async()

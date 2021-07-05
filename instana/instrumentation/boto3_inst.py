@@ -8,6 +8,7 @@ import wrapt
 import inspect
 
 from ..log import logger
+from ..singletons import tracer
 from ..util.traceutils import get_active_tracer
 
 try:
@@ -27,8 +28,7 @@ try:
             if not isinstance(invoke_payload, dict):
                 invoke_payload = json.loads(invoke_payload)
 
-            active_tracer, parent_span = get_active_tracer()
-            active_tracer.inject(scope.span.context, 'http_headers', invoke_payload)
+            tracer.inject(scope.span.context, 'http_headers', invoke_payload)
             payload['Payload'] = json.dumps(invoke_payload)
         except Exception:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)
@@ -37,13 +37,13 @@ try:
     @wrapt.patch_function_wrapper('botocore.client', 'BaseClient._make_api_call')
     def make_api_call_with_instana(wrapped, instance, arg_list, kwargs):
         # pylint: disable=protected-access
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
         # If we're not tracing, just return
-        if parent_span is None:
+        if active_tracer is None:
             return wrapped(*arg_list, **kwargs)
 
-        with active_tracer.start_active_span("boto3", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("boto3", child_of=active_tracer.active_span) as scope:
             try:
                 operation = arg_list[0]
                 payload = arg_list[1]
@@ -88,13 +88,13 @@ try:
         fas_args.remove('self')
 
         # pylint: disable=protected-access
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
         # If we're not tracing, just return
-        if parent_span is None:
+        if active_tracer is None:
             return wrapped(*arg_list, **kwargs)
 
-        with active_tracer.start_active_span("boto3", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("boto3", child_of=active_tracer.active_span) as scope:
             try:
                 operation = wrapped.__name__
                 scope.span.set_tag('op', operation)

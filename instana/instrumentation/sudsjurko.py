@@ -22,13 +22,13 @@ try:
 
     @wrapt.patch_function_wrapper('suds.client', class_method)
     def send_with_instana(wrapped, instance, args, kwargs):
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
         # If we're not tracing, just return
-        if parent_span is None:
+        if active_tracer is None:
             return wrapped(*args, **kwargs)
 
-        with active_tracer.start_active_span("soap", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("soap", child_of=active_tracer.active_span) as scope:
             try:
                 scope.span.set_tag('soap.action', instance.method.name)
                 scope.span.set_tag(ext.HTTP_URL, instance.method.location)

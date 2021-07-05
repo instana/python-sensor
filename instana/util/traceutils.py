@@ -19,13 +19,13 @@ def extract_custom_headers(tracing_scope, headers):
 def get_active_tracer():
     try:
         if tracer.active_span:
-            return tracer, tracer.active_span
+            return tracer
         elif async_tracer.active_span:
-            return async_tracer, async_tracer.active_span
+            return async_tracer
         elif tornado_tracer.active_span:
-            return tornado_tracer, tornado_tracer.active_span
+            return tornado_tracer
         else:
-            return None, None
+            return None
     except Exception:
         logger.debug("error while getting active tracer: ", exc_info=True)
-        return None, None
+        return None

@@ -39,13 +39,13 @@ class CursorWrapper(wrapt.ObjectProxy):
             return span
 
     def execute(self, sql, params=None):
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
-        if (parent_span is None) or (parent_span.operation_name == "sqlalchemy"):
+        if (active_tracer is None) or (active_tracer.active_span.operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(sql, params)
 
-        with active_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+        with active_tracer.start_active_span(self._module_name, child_of=active_tracer.active_span) as scope:
             try:
                 self._collect_kvs(scope.span, sql)
 
@@ -58,13 +58,13 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return result
 
     def executemany(self, sql, seq_of_parameters):
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
-        if (parent_span is None) or (parent_span.operation_name == "sqlalchemy"):
+        if (active_tracer is None) or (active_tracer.active_span.operation_name == "sqlalchemy"):
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
-        with active_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+        with active_tracer.start_active_span(self._module_name, child_of=active_tracer.active_span) as scope:
             try:
                 self._collect_kvs(scope.span, sql)
 
@@ -77,13 +77,13 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return result
 
     def callproc(self, proc_name, params):
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
-        if (parent_span is None) or (parent_span.operation_name == "sqlalchemy"):
+        if (active_tracer is None) or (active_tracer.active_span.operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(proc_name, params)
 
-        with active_tracer.start_active_span(self._module_name, child_of=parent_span) as scope:
+        with active_tracer.start_active_span(self._module_name, child_of=active_tracer.active_span) as scope:
             try:
                 self._collect_kvs(scope.span, proc_name)
 

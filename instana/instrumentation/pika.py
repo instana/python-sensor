@@ -42,14 +42,14 @@ try:
         def _bind_args(exchange, routing_key, body, properties=None, *args, **kwargs):
             return (exchange, routing_key, body, properties, args, kwargs)
 
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
-        if parent_span is None:
+        if active_tracer is None:
             return wrapped(*args, **kwargs)
 
         (exchange, routing_key, body, properties, args, kwargs) = (_bind_args(*args, **kwargs))
 
-        with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
+        with tracer.start_active_span("rabbitmq", child_of=active_tracer.active_span) as scope:
             try:
                 _extract_publisher_tags(scope.span,
                                         conn=instance.connection,

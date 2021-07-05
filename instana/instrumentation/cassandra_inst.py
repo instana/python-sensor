@@ -52,9 +52,10 @@ try:
 
 
     def request_init_with_instana(fn):
-        active_tracer, parent_span = get_active_tracer()
+        active_tracer = get_active_tracer()
 
-        if parent_span is not None:
+        if active_tracer is not None:
+            parent_span = active_tracer.active_span
             ctags = dict()
             if isinstance(fn.query, cassandra.query.SimpleStatement):
                 ctags["cassandra.query"] = fn.query.query_string

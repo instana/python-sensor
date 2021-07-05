@@ -56,11 +56,8 @@ try:
             headers = task.request.get('headers', {})
             if headers is not None:
                 ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
-                active_tracer = tracer
-            else:
-                active_tracer, parent_span = get_active_tracer()
 
-            scope = active_tracer.start_active_span("celery-worker", child_of=ctx)
+            scope = tracer.start_active_span("celery-worker", child_of=ctx)
             scope.span.set_tag("task", task.name)
             scope.span.set_tag("task_id", task_id)
             add_broker_tags(scope.span, task.app.conf['broker_url'])
@@ -115,15 +112,15 @@ try:
     @signals.before_task_publish.connect
     def before_task_publish(*args, **kwargs):
         try:
-            active_tracer, parent_span = get_active_tracer()
-            if parent_span is not None:
+            active_tracer = get_active_tracer()
+            if active_tracer is not None:
                 body = kwargs['body']
                 headers = kwargs['headers']
                 task_name = kwargs['sender']
                 task = registry.tasks.get(task_name)
                 task_id = get_task_id(headers, body)
 
-                scope = active_tracer.start_active_span("celery-client", child_of=parent_span)
+                scope = active_tracer.start_active_span("celery-client", child_of=active_tracer.active_span)
                 scope.span.set_tag("task", task_name)
                 scope.span.set_tag("task_id", task_id)
                 add_broker_tags(scope.span, task.app.conf['broker_url'])

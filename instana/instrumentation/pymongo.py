@@ -22,9 +22,7 @@ try:
             if active_tracer is None:
                 return
 
-            parent_span = active_tracer.active_span
-
-            with active_tracer.start_active_span("mongo", child_of=parent_span) as scope:
+            with active_tracer.start_active_span("mongo", child_of=active_tracer.active_span) as scope:
                 self._collect_connection_tags(scope.span, event)
                 self._collect_command_tags(scope.span, event)
 

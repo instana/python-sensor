@@ -8,6 +8,7 @@ from celery import shared_task
 from instana.singletons import tracer
 from ..helpers import get_first_span_by_filter
 
+# TODO: Refactor to class based tests
 
 @shared_task
 def add(x, y):

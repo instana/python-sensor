@@ -9,7 +9,7 @@ import logging
 import collections
 
 from ..log import logger
-from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
 
 
 @wrapt.patch_function_wrapper('logging', 'Logger._log')
@@ -18,10 +18,10 @@ def log_with_instana(wrapped, instance, argv, kwargs):
     # argv[1] = message
     # argv[2] = args for message
     try:
-        parent_span = tracer.active_span
+        active_tracer = get_active_tracer()
 
         # Only needed if we're tracing and serious log
-        if parent_span and argv[0] >= logging.WARN:
+        if active_tracer and argv[0] >= logging.WARN:
 
             msg = str(argv[1])
             args = argv[2]
@@ -38,7 +38,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
                 parameters = '{} {}'.format(t , v)
 
             # create logging span
-            with tracer.start_active_span('log', child_of=parent_span) as scope:
+            with active_tracer.start_active_span('log', child_of=active_tracer.active_span) as scope:
                 scope.span.log_kv({ 'message': msg })
                 if parameters is not None:
                     scope.span.log_kv({ 'parameters': parameters })

@@ -6,7 +6,8 @@ from __future__ import absolute_import
 import wrapt
 
 from ..log import logger
-from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
+
 
 try:
     import redis
@@ -36,13 +37,13 @@ try:
 
 
     def execute_command_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
+        active_tracer = get_active_tracer()
 
         # If we're not tracing, just return
-        if parent_span is None or parent_span.operation_name in EXCLUDED_PARENT_SPANS:
+        if active_tracer is None or active_tracer.active_span.operation_name in EXCLUDED_PARENT_SPANS:
             return wrapped(*args, **kwargs)
 
-        with tracer.start_active_span("redis", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("redis", child_of=active_tracer.active_span) as scope:
             try:
                 collect_tags(scope.span, instance, args, kwargs)
                 if (len(args) > 0):
@@ -57,13 +58,13 @@ try:
 
 
     def execute_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
+        active_tracer = get_active_tracer()
 
         # If we're not tracing, just return
-        if parent_span is None or parent_span.operation_name in EXCLUDED_PARENT_SPANS:
+        if active_tracer is None or active_tracer.active_span.operation_name in EXCLUDED_PARENT_SPANS:
             return wrapped(*args, **kwargs)
 
-        with tracer.start_active_span("redis", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("redis", child_of=active_tracer.active_span) as scope:
             try:
                 collect_tags(scope.span, instance, args, kwargs)
                 scope.span.set_tag("command", 'PIPELINE')

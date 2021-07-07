@@ -26,7 +26,8 @@ if LooseVersion(sys.version) < LooseVersion('3.5.3'):
     collect_ignore_glob.append("*test_grpc*")
     collect_ignore_glob.append("*test_boto3*")
 
-if LooseVersion(sys.version) < LooseVersion('3.5.3') or LooseVersion(sys.version) >= LooseVersion('3.8.0'):
+if "ASYNQP_TEST" not in os.environ:
+# if LooseVersion(sys.version) < LooseVersion('3.5.3') or LooseVersion(sys.version) >= LooseVersion('3.8.0'):
     collect_ignore_glob.append("*test_asynqp*")
 
 if LooseVersion(sys.version) < LooseVersion('3.6.0'):

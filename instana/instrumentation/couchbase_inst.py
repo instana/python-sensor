@@ -11,7 +11,7 @@ from distutils.version import LooseVersion
 import wrapt
 
 from ..log import logger
-from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
 
 try:
     import couchbase
@@ -47,13 +47,13 @@ try:
 
     def make_wrapper(op):
         def wrapper(wrapped, instance, args, kwargs):
-            parent_span = tracer.active_span
+            active_tracer = get_active_tracer()
 
             # If we're not tracing, just return
-            if parent_span is None:
+            if active_tracer is None:
                 return wrapped(*args, **kwargs)
 
-            with tracer.start_active_span("couchbase", child_of=parent_span) as scope:
+            with active_tracer.start_active_span("couchbase", child_of=active_tracer.active_span) as scope:
                 capture_kvs(scope, instance, None, op)
                 try:
                     return wrapped(*args, **kwargs)
@@ -64,13 +64,13 @@ try:
         return wrapper
 
     def query_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
+        active_tracer = get_active_tracer()
 
         # If we're not tracing, just return
-        if parent_span is None:
+        if active_tracer is None:
             return wrapped(*args, **kwargs)
 
-        with tracer.start_active_span("couchbase", child_of=parent_span) as scope:
+        with active_tracer.start_active_span("couchbase", child_of=active_tracer.active_span) as scope:
             capture_kvs(scope, instance, args[0], 'n1ql_query')
             try:
                 return wrapped(*args, **kwargs)

@@ -7,12 +7,9 @@ https://docs.datastax.com/en/developer/python-driver/3.20/
 https://github.com/datastax/python-driver
 """
 from __future__ import absolute_import
-
-from distutils.version import LooseVersion
 import wrapt
-
 from ..log import logger
-from ..singletons import tracer
+from ..util.traceutils import get_active_tracer
 
 try:
     import cassandra
@@ -28,6 +25,7 @@ try:
                                8: "SERIAL",
                                9: "LOCAL_SERIAL",
                                10: "LOCAL_ONE"})
+
 
     def collect_response(span, fn):
         tried_hosts = list()
@@ -46,15 +44,18 @@ try:
         collect_response(span, fn)
         span.finish()
 
+
     def cb_request_error(results, span, fn):
         collect_response(span, fn)
         span.mark_as_errored({"cassandra.error": results.message})
         span.finish()
 
-    def request_init_with_instana(fn):
-        parent_span = tracer.active_span
 
-        if parent_span is not None:
+    def request_init_with_instana(fn):
+        active_tracer = get_active_tracer()
+
+        if active_tracer is not None:
+            parent_span = active_tracer.active_span
             ctags = dict()
             if isinstance(fn.query, cassandra.query.SimpleStatement):
                 ctags["cassandra.query"] = fn.query.query_string
@@ -64,7 +65,7 @@ try:
             ctags["cassandra.keyspace"] = fn.session.keyspace
             ctags["cassandra.cluster"] = fn.session.cluster.metadata.cluster_name
 
-            span = tracer.start_span(
+            span = active_tracer.start_span(
                 operation_name="cassandra",
                 child_of=parent_span,
                 tags=ctags)
@@ -72,11 +73,13 @@ try:
             fn.add_callback(cb_request_finish, span, fn)
             fn.add_errback(cb_request_error, span, fn)
 
+
     @wrapt.patch_function_wrapper('cassandra.cluster', 'Session.__init__')
     def init_with_instana(wrapped, instance, args, kwargs):
-        session =  wrapped(*args, **kwargs)
+        session = wrapped(*args, **kwargs)
         instance.add_request_init_listener(request_init_with_instana)
         return session
+
 
     logger.debug("Instrumenting cassandra")
 

@@ -27,9 +27,11 @@ def aws_lambda(aws_credentials):
     with mock_lambda():
         yield boto3.client('lambda', region_name='us-east-1')
 
+
 def setup_method():
     """ Clear all spans before a test run """
     tracer.recorder.clear_spans()
+
 
 @pytest.mark.skip("Lambda mocking requires docker")
 def test_lambda_invoke(aws_lambda):
@@ -47,17 +49,17 @@ def test_lambda_invoke(aws_lambda):
 
     filter = lambda span: span.n == "sdk"
     test_span = get_first_span_by_filter(spans, filter)
-    assert(test_span)
+    assert (test_span)
 
     filter = lambda span: span.n == "boto3"
     boto_span = get_first_span_by_filter(spans, filter)
-    assert(boto_span)
+    assert (boto_span)
 
-    assert(boto_span.t == test_span.t)
-    assert(boto_span.p == test_span.s)
+    assert (boto_span.t == test_span.t)
+    assert (boto_span.p == test_span.s)
 
-    assert(test_span.ec is None)
-    assert(boto_span.ec is None)
+    assert (test_span.ec is None)
+    assert (boto_span.ec is None)
 
     assert boto_span.data['boto3']['op'] == 'CreateBucket'
     assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'

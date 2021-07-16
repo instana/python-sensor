@@ -25,7 +25,7 @@ PY3 = sys.version_info[0] == 3
 #   X-Instana-T
 
 
-class BasePropagator():
+class BasePropagator(object):
     UC_HEADER_KEY_T = 'X-INSTANA-T'
     UC_HEADER_KEY_S = 'X-INSTANA-S'
     UC_HEADER_KEY_L = 'X-INSTANA-L'

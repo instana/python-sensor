@@ -8,7 +8,7 @@ import sys
 from ..log import logger
 from .base_propagator import BasePropagator
 from ..w3c_trace_context.treceparent import Traceparent
-from ..w3c_trace_context.tracestate import Trancestate
+from ..w3c_trace_context.tracestate import Tracestate
 
 from ..util.ids import header_to_id
 from ..span_context import SpanContext
@@ -29,13 +29,16 @@ class HTTPPropagator(BasePropagator):
 
     def __init__(self):
         self.__traceparent = Traceparent()
-        self.__tracestate = Trancestate()
+        self.__tracestate = Tracestate()
         super(HTTPPropagator, self).__init__()
 
     def inject(self, span_context, carrier):
         try:
             trace_id = span_context.trace_id
             span_id = span_context.span_id
+            sampled = span_context.sampled
+            self.__traceparent.update_traceparent(trace_id, span_id, sampled)
+            self.__tracestate.update_tracestate(trace_id, span_id)
             traceparent = self.__traceparent.traceparent
             tracestate = self.__tracestate.tracestate
 
@@ -77,7 +80,7 @@ class HTTPPropagator(BasePropagator):
             else:
                 dc = dict(carrier)
         except Exception:
-            logger.debug("extract: Couln't convert %s", carrier)
+            logger.debug("extract: Couldn't convert %s", carrier)
             dc = None
 
         return dc
@@ -88,7 +91,7 @@ class HTTPPropagator(BasePropagator):
             if headers is None:
                 return None
             headers = {k.lower(): v for k, v in headers.items()}
-            traceparent = self.__traceparent.extract_tranparent(headers)
+            traceparent = self.__traceparent.extract_traceparent(headers)
             tracestate = self.__tracestate.extract_tracestate(headers)
 
             # TODO use traceparent and tracestate

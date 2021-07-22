@@ -2,10 +2,12 @@
 # (c) Copyright Instana Inc. 2021
 
 from ..log import logger
+import re
 
 
 class Traceparent:
     SPECIFICATION_VERSION = "00"
+    TRACEPARENT_REGEX = re.compile("[0-9a-f]{2}-(?!0{32})([0-9a-f]{32})-(?!0{16})([0-9a-f]{16})-[0-9a-f]{2}")
 
     def __init__(self):
         self.traceparent = None
@@ -19,7 +21,10 @@ class Traceparent:
 
     @traceparent.setter
     def traceparent(self, value):
-        self._traceparent = value
+        if value and self.TRACEPARENT_REGEX.match(value):
+            self._traceparent = value
+        else:
+            self._traceparent = None
 
     @property
     def trace_id(self):
@@ -45,7 +50,7 @@ class Traceparent:
     def sampled(self, value):
         self._sampled = value
 
-    def extract_tranparent(self, headers):
+    def extract_traceparent(self, headers):
         self.traceparent = headers.get('traceparent', None)
         if self.traceparent is None:
             return None
@@ -64,4 +69,11 @@ class Traceparent:
 
         return self.traceparent
 
-        # Value = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    def update_traceparent(self, in_trace_id, in_span_id, sampled):
+        self.trace_id = in_trace_id.zfill(32)
+        self.parent_id = in_span_id.zfill(16)
+        self.sampled = "01" if sampled else "00"
+        self.traceparent = "{version}-{traceid}-{parentid}-{sampled}".format(version=self.SPECIFICATION_VERSION,
+                                                                             traceid=self.trace_id,
+                                                                             parentid=self.parent_id,
+                                                                             sampled=self.sampled)

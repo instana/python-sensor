@@ -32,7 +32,8 @@ class Tracestate:
         :param in_span_id: instana parent_id
         :return:
         """
-
+        if self.tracestate is None:
+            return
         span_id = in_span_id.zfill(16)  # if span_id is shorter than 16 characters we prepend zeros
         instana_tracestate = "in={};{}".format(in_trace_id, span_id)
         # tracestate can contain a max of 32 list members, if it contains up to 31

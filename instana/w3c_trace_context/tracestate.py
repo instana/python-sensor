@@ -1,6 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+class InstanaAncestor:
+    def __init__(self, trace_id, parent_id):
+        self.t = trace_id
+        self.p = parent_id
+
 
 class Tracestate:
     MAX_NUMBER_OF_LIST_MEMBERS = 32

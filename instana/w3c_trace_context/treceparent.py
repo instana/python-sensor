@@ -69,10 +69,11 @@ class Traceparent:
 
         return self.traceparent
 
-    def update_traceparent(self, in_trace_id, in_span_id, sampled):
-        self.trace_id = in_trace_id.zfill(32)
+    def update_traceparent(self, in_trace_id, in_span_id, level):
+        if self.trace_id is None:  # modify the trace_id part only when it was not present at all
+            self.trace_id = in_trace_id.zfill(32)
         self.parent_id = in_span_id.zfill(16)
-        self.sampled = "01" if sampled else "00"
+        self.sampled = "01" if level == 1 else "00"
         self.traceparent = "{version}-{traceid}-{parentid}-{sampled}".format(version=self.SPECIFICATION_VERSION,
                                                                              traceid=self.trace_id,
                                                                              parentid=self.parent_id,

@@ -8,7 +8,7 @@ import sys
 from ..log import logger
 from .base_propagator import BasePropagator
 from ..w3c_trace_context.treceparent import Traceparent
-from ..w3c_trace_context.tracestate import Tracestate
+from ..w3c_trace_context.tracestate import Tracestate, InstanaAncestor
 
 from ..util.ids import header_to_id
 from ..span_context import SpanContext
@@ -36,8 +36,8 @@ class HTTPPropagator(BasePropagator):
         try:
             trace_id = span_context.trace_id
             span_id = span_context.span_id
-            sampled = span_context.sampled
-            self.__traceparent.update_traceparent(trace_id, span_id, sampled)
+            level = span_context.level
+            self.__traceparent.update_traceparent(trace_id, span_id, level)
             self.__tracestate.update_tracestate(trace_id, span_id)
             traceparent = self.__traceparent.traceparent
             tracestate = self.__tracestate.tracestate
@@ -95,10 +95,55 @@ class HTTPPropagator(BasePropagator):
             tracestate = self.__tracestate.extract_tracestate(headers)
 
             # TODO use traceparent and tracestate
-            ctx = self.__extract_instana_headers(dc=headers)
+            trace_id, span_id, level, synthetic = self.__extract_instana_headers(dc=headers)
+            ctx = self.__determine_span_context(trace_id, span_id, level, synthetic)
+
             return ctx
         except Exception:
             logger.debug("extract error:", exc_info=True)
+
+    def __determine_span_context(self, trace_id, span_id, level, synthetic):
+        ctx = None
+        if all(v is None for v in [trace_id, span_id, level]) and self.__traceparent.traceparent:
+
+            ctx = SpanContext(span_id=self.__traceparent.parent_id,
+                              trace_id=self.__traceparent.trace_id[-16:],
+                              level=1,
+                              baggage={},
+                              sampled=True,
+                              synthetic=False if synthetic is None else True)
+
+            ctx.trace_parent = True
+
+            try:
+                if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
+                    in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
+                    ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
+                                                           parent_id=in_list_member.split(";")[1])
+
+            except Exception as e:
+                logger.debug("extract instana ancestor error:", exc_info=True)
+
+            ctx.long_trace_id = self.__traceparent.trace_id
+
+        elif trace_id and span_id:
+            try:
+                if "correlationType" in level:
+                    ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
+                if "correlationId" in level:
+                    ctx.correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
+            except Exception as e:
+                logger.debug("extract instana correlation type/id error:", exc_info=True)
+
+            ctx = SpanContext(span_id=span_id,
+                              trace_id=trace_id,
+                              level=int(level.split(",")[0]),
+                              baggage={},
+                              sampled=True,
+                              synthetic=False if synthetic is None else True)
+        elif synthetic:
+            ctx = SpanContext(synthetic=synthetic)
+        return ctx
 
     def __extract_instana_headers(self, dc):
         """
@@ -112,8 +157,8 @@ class HTTPPropagator(BasePropagator):
         """
         trace_id = None
         span_id = None
-        level = 1
-        synthetic = False
+        level = None
+        synthetic = None
 
         try:
             # Headers can exist in the standard X-Instana-T/S format or the alternate HTTP_X_INSTANA_T/S style
@@ -144,18 +189,7 @@ class HTTPPropagator(BasePropagator):
                 elif self.ALT_LC_HEADER_KEY_SYNTHETIC == lc_key:
                     synthetic = dc[key] in ['1', b'1']
 
-            ctx = None
-            if trace_id is not None and span_id is not None:
-                ctx = SpanContext(span_id=span_id,
-                                  trace_id=trace_id,
-                                  level=level,
-                                  baggage={},
-                                  sampled=True,
-                                  synthetic=synthetic)
-            elif synthetic:
-                ctx = SpanContext(synthetic=synthetic)
-
-            return ctx
-
         except Exception:
             logger.debug("extract error:", exc_info=True)
+
+        return trace_id, span_id, level, synthetic

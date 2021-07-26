@@ -53,7 +53,7 @@ class Traceparent:
     def extract_traceparent(self, headers):
         self.traceparent = headers.get('traceparent', None)
         if self.traceparent is None:
-            return None
+            return
 
         try:
             traceparent_properties = self.traceparent.split("-")
@@ -65,9 +65,6 @@ class Traceparent:
                 raise Exception
         except Exception:
             logger.debug("traceparent does follow version 00 specification")
-            return None
-
-        return self.traceparent
 
     def update_traceparent(self, in_trace_id, in_span_id, level):
         if self.trace_id is None:  # modify the trace_id part only when it was not present at all

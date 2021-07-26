@@ -12,6 +12,7 @@ from ..w3c_trace_context.tracestate import Tracestate, InstanaAncestor
 
 from ..util.ids import header_to_id
 from ..span_context import SpanContext
+import os
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
@@ -91,8 +92,8 @@ class HTTPPropagator(BasePropagator):
             if headers is None:
                 return None
             headers = {k.lower(): v for k, v in headers.items()}
-            traceparent = self.__traceparent.extract_traceparent(headers)
-            tracestate = self.__tracestate.extract_tracestate(headers)
+            self.__traceparent.extract_traceparent(headers)
+            self.__tracestate.extract_tracestate(headers)
 
             # TODO use traceparent and tracestate
             trace_id, span_id, level, synthetic = self.__extract_instana_headers(dc=headers)
@@ -103,28 +104,45 @@ class HTTPPropagator(BasePropagator):
             logger.debug("extract error:", exc_info=True)
 
     def __determine_span_context(self, trace_id, span_id, level, synthetic):
+        disable_traceparent = os.environ.get("INSTANA_W3C_DISABLE_TRACE_CORRELATION", "")
+
         ctx = None
-        if all(v is None for v in [trace_id, span_id, level]) and self.__traceparent.traceparent:
+        if self.__traceparent.traceparent and all(v is None for v in [trace_id, span_id, level]):
+            if disable_traceparent == "":
+                ctx = SpanContext(span_id=self.__traceparent.parent_id,
+                                  trace_id=self.__traceparent.trace_id[-16:],
+                                  level=1,
+                                  baggage={},
+                                  sampled=True,
+                                  synthetic=False if synthetic is None else True)
 
-            ctx = SpanContext(span_id=self.__traceparent.parent_id,
-                              trace_id=self.__traceparent.trace_id[-16:],
-                              level=1,
-                              baggage={},
-                              sampled=True,
-                              synthetic=False if synthetic is None else True)
+                ctx.trace_parent = True
 
-            ctx.trace_parent = True
+                try:
+                    if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
+                        in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
+                        ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
+                                                               parent_id=in_list_member.split(";")[1])
 
-            try:
-                if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
-                    in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
-                    ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
-                                                           parent_id=in_list_member.split(";")[1])
+                except Exception as e:
+                    logger.debug("extract instana ancestor error:", exc_info=True)
 
-            except Exception as e:
-                logger.debug("extract instana ancestor error:", exc_info=True)
+                ctx.long_trace_id = self.__traceparent.trace_id
+            else:
+                try:
+                    if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
+                        in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
+                        ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
+                                                               parent_id=in_list_member.split(";")[1])
 
-            ctx.long_trace_id = self.__traceparent.trace_id
+                        ctx = SpanContext(span_id=in_list_member.split(";")[1],
+                                          trace_id=in_list_member.split(";")[0],
+                                          level=1,
+                                          baggage={},
+                                          sampled=True,
+                                          synthetic=False if synthetic is None else True)
+                except Exception as e:
+                    logger.debug("extract instana ancestor error:", exc_info=True)
 
         elif trace_id and span_id:
             try:

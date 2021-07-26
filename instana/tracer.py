@@ -89,6 +89,11 @@ class InstanaTracer(BasicTracer):
                 ctx._baggage = parent_ctx._baggage.copy()
             ctx.trace_id = parent_ctx.trace_id
             ctx.sampled = parent_ctx.sampled
+            ctx.long_trace_id = parent_ctx.long_trace_id
+            ctx.trace_parent = parent_ctx.trace_parent
+            ctx.instana_ancestor = parent_ctx.instana_ancestor
+            ctx.correlation_type = parent_ctx.correlation_type
+            ctx.correlation_id = parent_ctx.correlation_id
         else:
             ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)

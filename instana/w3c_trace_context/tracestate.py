@@ -24,10 +24,6 @@ class Tracestate:
 
     def extract_tracestate(self, headers):
         self.tracestate = headers.get('tracestate', None)
-        if self.tracestate is None:
-            return None
-
-        return self.tracestate
 
     def update_tracestate(self, in_trace_id, in_span_id):
         """

@@ -112,15 +112,15 @@ class BaseSpan(object):
         self.data = DictionaryOfStan()
         self.stack = span.stack
 
-        if hasattr(span.context, 'trace_parent'):
+        if span.context.trace_parent:
             self.tp = span.context.trace_parent
-        if hasattr(span.context, 'instana_ancestor'):
+        if span.context.instana_ancestor:
             self.ia = span.context.instana_ancestor
-        if hasattr(span.context, 'long_trace_id'):
+        if span.context.long_trace_id:
             self.lt = span.context.long_trace_id
-        if hasattr(span.context, 'correlation_type'):
+        if span.context.correlation_type:
             self.crtp = span.context.correlation_type
-        if hasattr(span.context, 'correlation_id'):
+        if span.context.correlation_id:
             self.crid = span.context.correlation_id
 
         if span.synthetic is True:

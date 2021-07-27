@@ -71,8 +71,11 @@ class HTTPPropagator(BasePropagator):
             logger.debug("inject error:", exc_info=True)
 
     def __extract_headers_dict(self, carrier):
-        # Attempt to convert incoming <carrier> into a dict
-        # TODO: Support for multiple header fields with the same name? (e.g. tracestate)
+        """
+        This method converts the incoming carrier into a dict
+        :param carrier:
+        :return: dc dictionary
+        """
         try:
             if isinstance(carrier, dict):
                 dc = carrier
@@ -87,6 +90,12 @@ class HTTPPropagator(BasePropagator):
         return dc
 
     def extract(self, carrier):
+        """
+        This method overrides the one of the Baseclass as with the introduction of W3C trace context for the HTTP
+        requests more extracting steps and logic was required
+        :param carrier:
+        :return: the context or None
+        """
         try:
             headers = self.__extract_headers_dict(carrier=carrier)
             if headers is None:
@@ -95,7 +104,6 @@ class HTTPPropagator(BasePropagator):
             self.__traceparent.extract_traceparent(headers)
             self.__tracestate.extract_tracestate(headers)
 
-            # TODO use traceparent and tracestate
             trace_id, span_id, level, synthetic = self.__extract_instana_headers(dc=headers)
             ctx = self.__determine_span_context(trace_id, span_id, level, synthetic)
 
@@ -104,6 +112,16 @@ class HTTPPropagator(BasePropagator):
             logger.debug("extract error:", exc_info=True)
 
     def __determine_span_context(self, trace_id, span_id, level, synthetic):
+        """
+        This method determines the span context depending on a set of conditions being met
+        Detailed description of the conditions can be found here:
+        https://github.com/instana/technical-documentation/tree/master/tracing/specification#http-processing-for-instana-tracers
+        :param trace_id: instana trace id
+        :param span_id: instana span id
+        :param level: instana level
+        :param synthetic: instana synthetic
+        :return: ctx or None
+        """
         disable_traceparent = os.environ.get("INSTANA_W3C_DISABLE_TRACE_CORRELATION", "")
 
         ctx = None
@@ -121,6 +139,7 @@ class HTTPPropagator(BasePropagator):
                 try:
                     if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
                         in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
+
                         ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
                                                                parent_id=in_list_member.split(";")[1])
 
@@ -132,8 +151,6 @@ class HTTPPropagator(BasePropagator):
                 try:
                     if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
                         in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
-                        ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
-                                                               parent_id=in_list_member.split(";")[1])
 
                         ctx = SpanContext(span_id=in_list_member.split(";")[1],
                                           trace_id=in_list_member.split(";")[0],
@@ -141,10 +158,21 @@ class HTTPPropagator(BasePropagator):
                                           baggage={},
                                           sampled=True,
                                           synthetic=False if synthetic is None else True)
+
+                        ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
+                                                               parent_id=in_list_member.split(";")[1])
                 except Exception as e:
                     logger.debug("extract instana ancestor error:", exc_info=True)
 
         elif trace_id and span_id:
+
+            ctx = SpanContext(span_id=span_id,
+                              trace_id=trace_id,
+                              level=int(level.split(",")[0]),
+                              baggage={},
+                              sampled=True,
+                              synthetic=False if synthetic is None else True)
+
             try:
                 if "correlationType" in level:
                     ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
@@ -153,25 +181,17 @@ class HTTPPropagator(BasePropagator):
             except Exception as e:
                 logger.debug("extract instana correlation type/id error:", exc_info=True)
 
-            ctx = SpanContext(span_id=span_id,
-                              trace_id=trace_id,
-                              level=int(level.split(",")[0]),
-                              baggage={},
-                              sampled=True,
-                              synthetic=False if synthetic is None else True)
         elif synthetic:
             ctx = SpanContext(synthetic=synthetic)
+
         return ctx
 
     def __extract_instana_headers(self, dc):
         """
         Search carrier for the *HEADER* keys and return a SpanContext or None
 
-        Note: Extract is on the base class since it never really varies in task regardless
-        of the propagator in uses.
-
         :param dc: The dict or list potentially containing context
-        :return: SpanContext or None
+        :return: trace_id, span_id, level, synthetic
         """
         trace_id = None
         span_id = None

@@ -51,6 +51,12 @@ class Traceparent:
         self._sampled = value
 
     def extract_traceparent(self, headers):
+        """
+        Extracts from the headers dict the traceparent key/value and validates the value while trying to set the
+        traceparent property. If the validation succeeds all other traceparent sub-properties are getting extracted
+        :param headers: dict with headers
+        :return: it sets the class properties accordingly
+        """
         self.traceparent = headers.get('traceparent', None)
         if self.traceparent is None:
             return
@@ -64,9 +70,17 @@ class Traceparent:
             else:
                 raise Exception
         except Exception:
-            logger.debug("traceparent does follow version 00 specification")
+            logger.debug("traceparent does not follow version 00 specification")
 
     def update_traceparent(self, in_trace_id, in_span_id, level):
+        """
+        This method updates the traceparent header or generates one if there was no traceparent incoming header or it
+        was invalid
+        :param in_trace_id: instana trace id, used when there is no preexisting trace_id from the traceparent header
+        :param in_span_id: instana span id, used to update the parent id of the traceparent header
+        :param level: instana level, used to determine the value of sampled flag of the traceparent header
+        :return: sets the updated traceparent header
+        """
         if self.trace_id is None:  # modify the trace_id part only when it was not present at all
             self.trace_id = in_trace_id.zfill(32)
         self.parent_id = in_span_id.zfill(16)

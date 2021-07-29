@@ -13,6 +13,7 @@ import time
 from ..helpers import testenv
 from instana.singletons import tracer
 
+
 class _TestPika(unittest.TestCase):
     @staticmethod
     @mock.patch('pika.connection.Connection')
@@ -34,6 +35,7 @@ class _TestPika(unittest.TestCase):
         del self.connection
         del self._on_openok_callback
         del self.obj
+
 
 class TestPikaChannel(_TestPika):
     def _create_obj(self):
@@ -78,10 +80,12 @@ class TestPikaChannel(_TestPika):
             pika.spec.Basic.Publish(
                 exchange="test.exchange",
                 routing_key="test.queue"), (pika.spec.BasicProperties(headers={
-                    "X-INSTANA-T": rabbitmq_span.t,
-                    "X-INSTANA-S": rabbitmq_span.s,
-                    "X-INSTANA-L": "1"
-                }), b"Hello!"))
+                'traceparent': '00-0000000000000000{}-{}-01'.format(rabbitmq_span.t, rabbitmq_span.s),
+                'tracestate': 'in={};{}'.format(rabbitmq_span.t, rabbitmq_span.s),
+                "X-INSTANA-T": rabbitmq_span.t,
+                "X-INSTANA-S": rabbitmq_span.s,
+                "X-INSTANA-L": "1"
+            }), b"Hello!"))
 
     @mock.patch('pika.spec.Basic.Publish')
     @mock.patch('pika.channel.Channel._send_method')
@@ -106,11 +110,13 @@ class TestPikaChannel(_TestPika):
             pika.spec.Basic.Publish(
                 exchange="test.exchange",
                 routing_key="test.queue"), (pika.spec.BasicProperties(headers={
-                    "X-Custom-1": "test",
-                    "X-INSTANA-T": rabbitmq_span.t,
-                    "X-INSTANA-S": rabbitmq_span.s,
-                    "X-INSTANA-L": "1"
-                }), b"Hello!"))
+                'traceparent': '00-0000000000000000{}-{}-01'.format(rabbitmq_span.t, rabbitmq_span.s),
+                'tracestate': 'in={};{}'.format(rabbitmq_span.t, rabbitmq_span.s),
+                "X-Custom-1": "test",
+                "X-INSTANA-T": rabbitmq_span.t,
+                "X-INSTANA-S": rabbitmq_span.s,
+                "X-INSTANA-L": "1"
+            }), b"Hello!"))
 
     @mock.patch('pika.spec.Basic.Get')
     def test_basic_get(self, _unused):
@@ -262,6 +268,7 @@ class TestPikaChannel(_TestPika):
         self.assertIsNotNone(rabbitmq_span.s)
         self.assertNotEqual(rabbitmq_span.p, rabbitmq_span.s)
 
+
 class TestPikaBlockingChannel(_TestPika):
     @mock.patch('pika.channel.Channel', spec=pika.channel.Channel)
     def _create_obj(self, channel_impl):
@@ -282,6 +289,7 @@ class TestPikaBlockingChannel(_TestPika):
 
     def test_consume(self):
         consumed_deliveries = []
+
         def __consume():
             for delivery in self.obj.consume("test.queue", inactivity_timeout=3.0):
                 # Skip deliveries generated due to inactivity
@@ -331,6 +339,7 @@ class TestPikaBlockingChannel(_TestPika):
 
     def test_consume_with_trace_context(self):
         consumed_deliveries = []
+
         def __consume():
             for delivery in self.obj.consume("test.queue", inactivity_timeout=3.0):
                 # Skip deliveries generated due to inactivity

@@ -29,8 +29,8 @@ class HTTPPropagator(BasePropagator):
     HEADER_KEY_TRACESTATE = "tracestate"
 
     def __init__(self):
-        self.__traceparent = Traceparent()
-        self.__tracestate = Tracestate()
+        self.__tp = Traceparent()
+        self.__ts = Tracestate()
         super(HTTPPropagator, self).__init__()
 
     def inject(self, span_context, carrier):
@@ -38,10 +38,10 @@ class HTTPPropagator(BasePropagator):
             trace_id = span_context.trace_id
             span_id = span_context.span_id
             level = span_context.level
-            self.__traceparent.update_traceparent(trace_id, span_id, level)
-            self.__tracestate.update_tracestate(trace_id, span_id)
-            traceparent = self.__traceparent.traceparent
-            tracestate = self.__tracestate.tracestate
+            traceparent = span_context.traceparent
+            tracestate = span_context.tracestate
+            traceparent = self.__tp.update_traceparent(traceparent, trace_id, span_id, level)
+            tracestate = self.__ts.update_tracestate(tracestate, trace_id, span_id)
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
                 if traceparent and tracestate:
@@ -101,17 +101,17 @@ class HTTPPropagator(BasePropagator):
             if headers is None:
                 return None
             headers = {k.lower(): v for k, v in headers.items()}
-            self.__traceparent.extract_traceparent(headers)
-            self.__tracestate.extract_tracestate(headers)
+            traceparent = self.__tp.extract_traceparent(headers)
+            tracestate = self.__ts.extract_tracestate(headers)
 
             trace_id, span_id, level, synthetic = self.__extract_instana_headers(dc=headers)
-            ctx = self.__determine_span_context(trace_id, span_id, level, synthetic)
+            ctx = self.__determine_span_context(trace_id, span_id, level, synthetic, traceparent, tracestate)
 
             return ctx
         except Exception:
             logger.debug("extract error:", exc_info=True)
 
-    def __determine_span_context(self, trace_id, span_id, level, synthetic):
+    def __determine_span_context(self, trace_id, span_id, level, synthetic, traceparent, tracestate):
         """
         This method determines the span context depending on a set of conditions being met
         Detailed description of the conditions can be found here:
@@ -125,61 +125,62 @@ class HTTPPropagator(BasePropagator):
         disable_traceparent = os.environ.get("INSTANA_W3C_DISABLE_TRACE_CORRELATION", "")
 
         ctx = None
-        if self.__traceparent.traceparent and all(v is None for v in [trace_id, span_id, level]):
+        if level and "correlationType" in level:
+            trace_id = None
+            span_id = None
+
+        if traceparent and all(v is None for v in [trace_id, span_id]):
+            tp_trace_id, tp_parent_id, tp_sampled = self.__tp.get_traceparent_fields(traceparent)
             if disable_traceparent == "":
-                ctx = SpanContext(span_id=self.__traceparent.parent_id,
-                                  trace_id=self.__traceparent.trace_id[-16:],
-                                  level=1,
+                ctx = SpanContext(span_id=tp_parent_id,
+                                  trace_id=tp_trace_id[-16:],
+                                  level=int(level.split(",")[0]) if level else 1,
                                   baggage={},
                                   sampled=True,
                                   synthetic=False if synthetic is None else True)
 
                 ctx.trace_parent = True
 
-                try:
-                    if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
-                        in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
+                if tracestate and "in=" in tracestate:
+                    instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
+                    ctx.instana_ancestor = instana_ancestor
 
-                        ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
-                                                               parent_id=in_list_member.split(";")[1])
-
-                except Exception as e:
-                    logger.debug("extract instana ancestor error:", exc_info=True)
-
-                ctx.long_trace_id = self.__traceparent.trace_id
+                ctx.long_trace_id = tp_trace_id
             else:
                 try:
-                    if self.__tracestate.tracestate and "in=" in self.__tracestate.tracestate:
-                        in_list_member = self.__tracestate.tracestate.split("in=")[1].split(",")[0]
+                    if tracestate and "in=" in tracestate:
+                        instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
 
-                        ctx = SpanContext(span_id=in_list_member.split(";")[1],
-                                          trace_id=in_list_member.split(";")[0],
-                                          level=1,
+                        ctx = SpanContext(span_id=instana_ancestor.p,
+                                          trace_id=instana_ancestor.t,
+                                          level=int(level.split(",")[0]) if level else 1,
                                           baggage={},
                                           sampled=True,
                                           synthetic=False if synthetic is None else True)
 
-                        ctx.instana_ancestor = InstanaAncestor(trace_id=in_list_member.split(";")[0],
-                                                               parent_id=in_list_member.split(";")[1])
+                        ctx.instana_ancestor = instana_ancestor
                 except Exception as e:
                     logger.debug("extract instana ancestor error:", exc_info=True)
+
+            try:
+                if level and "correlationType" in level:
+                    ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
+                if level and "correlationId" in level:
+                    ctx.correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
+            except Exception as e:
+                logger.debug("extract instana correlation type/id error:", exc_info=True)
+
+            ctx.traceparent = traceparent
+            ctx.tracestate = tracestate
 
         elif trace_id and span_id:
 
             ctx = SpanContext(span_id=span_id,
                               trace_id=trace_id,
-                              level=int(level.split(",")[0]),
+                              level=int(level.split(",")[0]) if level else 1,
                               baggage={},
                               sampled=True,
                               synthetic=False if synthetic is None else True)
-
-            try:
-                if "correlationType" in level:
-                    ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
-                if "correlationId" in level:
-                    ctx.correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
-            except Exception as e:
-                logger.debug("extract instana correlation type/id error:", exc_info=True)
 
         elif synthetic:
             ctx = SpanContext(synthetic=synthetic)
@@ -214,7 +215,7 @@ class HTTPPropagator(BasePropagator):
                 elif self.LC_HEADER_KEY_S == lc_key:
                     span_id = header_to_id(dc[key])
                 elif self.LC_HEADER_KEY_L == lc_key:
-                    level = dc[key]
+                    level = dc[key].decode("utf-8") if PY3 is True and isinstance(dc[key], bytes) else dc[key]
                 elif self.LC_HEADER_KEY_SYNTHETIC == lc_key:
                     synthetic = dc[key] in ['1', b'1']
 
@@ -223,7 +224,7 @@ class HTTPPropagator(BasePropagator):
                 elif self.ALT_LC_HEADER_KEY_S == lc_key:
                     span_id = header_to_id(dc[key])
                 elif self.ALT_LC_HEADER_KEY_L == lc_key:
-                    level = dc[key]
+                    level = dc[key].decode("utf-8") if PY3 is True and isinstance(dc[key], bytes) else dc[key]
                 elif self.ALT_LC_HEADER_KEY_SYNTHETIC == lc_key:
                     synthetic = dc[key] in ['1', b'1']
 

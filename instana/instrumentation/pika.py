@@ -49,7 +49,7 @@ try:
 
         (exchange, routing_key, body, properties, args, kwargs) = (_bind_args(*args, **kwargs))
 
-        with tracer.start_active_span("rabbitmq", child_of=active_tracer.active_span) as scope:
+        with active_tracer.start_active_span("rabbitmq", child_of=active_tracer.active_span) as scope:
             try:
                 _extract_publisher_tags(scope.span,
                                         conn=instance.connection,
@@ -62,7 +62,7 @@ try:
             properties = properties or pika.BasicProperties()
             properties.headers = properties.headers or {}
 
-            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, properties.headers)
+            active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, properties.headers)
             args = (exchange, routing_key, body, properties) + args
 
             try:

@@ -94,6 +94,8 @@ class InstanaTracer(BasicTracer):
             ctx.instana_ancestor = parent_ctx.instana_ancestor
             ctx.correlation_type = parent_ctx.correlation_type
             ctx.correlation_id = parent_ctx.correlation_id
+            ctx.traceparent = parent_ctx.traceparent
+            ctx.tracestate = parent_ctx.tracestate
         else:
             ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)

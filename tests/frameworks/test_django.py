@@ -7,7 +7,7 @@ import urllib3
 from django.apps import apps
 from ..apps.app_django import INSTALLED_APPS
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-
+import os
 from instana.singletons import agent, tracer
 
 from ..helpers import fail_with_message_and_span_dump, get_first_span_by_filter, drop_log_spans_from_list
@@ -310,6 +310,8 @@ class TestDjango(StaticLiveServerTestCase):
         request_headers = dict()
         request_headers['X-INSTANA-T'] = '1'
         request_headers['X-INSTANA-S'] = '1'
+        request_headers['traceparent'] = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+        request_headers['tracestate'] = 'rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'
 
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
 
@@ -334,6 +336,155 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert ('X-INSTANA-L' in response.headers)
         self.assertEqual('1', response.headers['X-INSTANA-L'])
+
+        assert ('traceparent' in response.headers)
+        self.assertEqual('00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
+                         response.headers['traceparent'])
+
+        assert ('tracestate' in response.headers)
+        self.assertEqual(
+            'in={};{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+                django_span.t, django_span.s), response.headers['tracestate'])
+        server_timing_value = "intid;desc=%s" % django_span.t
+        assert ('Server-Timing' in response.headers)
+        self.assertEqual(server_timing_value, response.headers['Server-Timing'])
+
+    def test_with_incoming_context_and_correlation(self):
+        request_headers = dict()
+        request_headers['X-INSTANA-T'] = '1'
+        request_headers['X-INSTANA-S'] = '1'
+        request_headers['X-INSTANA-L'] = '1, correlationType=web; correlationId=1234567890abcdef'
+        request_headers['traceparent'] = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+        request_headers['tracestate'] = 'rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'
+
+        response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        django_span = spans[0]
+
+        self.assertEqual(django_span.t, 'a3ce929d0e0e4736')
+        self.assertEqual(django_span.p, '00f067aa0ba902b7')
+        self.assertEqual(django_span.ia.t, 'a3ce929d0e0e4736')
+        self.assertEqual(django_span.ia.p, '8357ccd9da194656')
+        self.assertEqual(django_span.lt, '4bf92f3577b34da6a3ce929d0e0e4736')
+        self.assertEqual(django_span.tp, True)
+        self.assertEqual(django_span.crtp, 'web')
+        self.assertEqual(django_span.crid, '1234567890abcdef')
+
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
+
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
+
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
+
+        assert ('traceparent' in response.headers)
+        self.assertEqual('00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
+                         response.headers['traceparent'])
+
+        assert ('tracestate' in response.headers)
+        self.assertEqual(
+            'in={};{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+                django_span.t, django_span.s), response.headers['tracestate'])
+        server_timing_value = "intid;desc=%s" % django_span.t
+        assert ('Server-Timing' in response.headers)
+        self.assertEqual(server_timing_value, response.headers['Server-Timing'])
+
+    def test_with_incoming_traceparent_tracestate(self):
+        request_headers = dict()
+        request_headers['traceparent'] = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+        request_headers['tracestate'] = 'rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'
+
+        response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        django_span = spans[0]
+
+        self.assertEqual(django_span.t, 'a3ce929d0e0e4736')  # last 16 chars from traceparent trace_id
+        self.assertEqual(django_span.p, '00f067aa0ba902b7')
+        self.assertEqual(django_span.ia.t, 'a3ce929d0e0e4736')
+        self.assertEqual(django_span.ia.p, '8357ccd9da194656')
+        self.assertEqual(django_span.lt, '4bf92f3577b34da6a3ce929d0e0e4736')
+        self.assertEqual(django_span.tp, True)
+
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
+
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
+
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
+
+        assert ('traceparent' in response.headers)
+        self.assertEqual('00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
+                         response.headers['traceparent'])
+
+        assert ('tracestate' in response.headers)
+        self.assertEqual(
+            'in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+                django_span.s), response.headers['tracestate'])
+
+        server_timing_value = "intid;desc=%s" % django_span.t
+        assert ('Server-Timing' in response.headers)
+        self.assertEqual(server_timing_value, response.headers['Server-Timing'])
+
+    def test_with_incoming_traceparent_tracestate_disable_traceparent(self):
+        os.environ["INSTANA_W3C_DISABLE_TRACE_CORRELATION"] = "1"
+        request_headers = dict()
+        request_headers['traceparent'] = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+        request_headers['tracestate'] = 'rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'
+
+        response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        django_span = spans[0]
+
+        self.assertEqual(django_span.t, 'a3ce929d0e0e4736')  # last 16 chars from traceparent trace_id
+        self.assertEqual(django_span.p, '8357ccd9da194656')
+        self.assertEqual(django_span.ia.t, 'a3ce929d0e0e4736')
+        self.assertEqual(django_span.ia.p, '8357ccd9da194656')
+
+        assert ('X-INSTANA-T' in response.headers)
+        assert (int(response.headers['X-INSTANA-T'], 16))
+        self.assertEqual(django_span.t, response.headers['X-INSTANA-T'])
+
+        assert ('X-INSTANA-S' in response.headers)
+        assert (int(response.headers['X-INSTANA-S'], 16))
+        self.assertEqual(django_span.s, response.headers['X-INSTANA-S'])
+
+        assert ('X-INSTANA-L' in response.headers)
+        self.assertEqual('1', response.headers['X-INSTANA-L'])
+
+        assert ('traceparent' in response.headers)
+        self.assertEqual('00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
+                         response.headers['traceparent'])
+
+        assert ('tracestate' in response.headers)
+        self.assertEqual(
+            'in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+                django_span.s), response.headers['tracestate'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)

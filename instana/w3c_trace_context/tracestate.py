@@ -2,7 +2,9 @@
 # (c) Copyright Instana Inc. 2021
 
 from ..log import logger
+import sys
 
+PY3 = sys.version_info[0] == 3
 
 class InstanaAncestor:
     def __init__(self, trace_id, parent_id):
@@ -21,7 +23,11 @@ class Tracestate:
         :param headers: dict
         :return: tracestate value or None
         """
-        return headers.get('tracestate', None)
+        tracestate = headers.get('tracestate', None) or headers.get('http_tracestate', None) or headers.get(
+            b'tracestate', None) or headers.get(b'http_tracestate', None)
+        if PY3 is True and isinstance(tracestate, bytes):
+            tracestate = tracestate.decode("utf-8")
+        return tracestate
 
     @staticmethod
     def get_instana_ancestor(tracestate):
@@ -31,7 +37,7 @@ class Tracestate:
         :return: instana ancestor instance
         """
         try:
-            in_list_member = tracestate.split("in=")[1].split(",")[0]
+            in_list_member = tracestate.strip().split("in=")[1].split(",")[0]
 
             ia = InstanaAncestor(trace_id=in_list_member.split(";")[0],
                                  parent_id=in_list_member.split(";")[1])

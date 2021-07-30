@@ -3,6 +3,9 @@
 
 from ..log import logger
 import re
+import sys
+
+PY3 = sys.version_info[0] == 3
 
 
 class Traceparent:
@@ -28,9 +31,13 @@ class Traceparent:
         :param headers: dict with headers
         :return: the validated traceparent or None
         """
-        traceparent = headers.get('traceparent', None)
-        if traceparent and self.__validate(traceparent):
-            return traceparent
+        traceparent = headers.get('traceparent', None) or headers.get('http_traceparent', None) or headers.get(
+            b'traceparent', None) or headers.get(b'http_traceparent', None)
+        if traceparent:
+            if PY3 is True and isinstance(traceparent, bytes):
+                traceparent = traceparent.decode("utf-8")
+            if self.__validate(traceparent):
+                return traceparent
         else:
             return None
 

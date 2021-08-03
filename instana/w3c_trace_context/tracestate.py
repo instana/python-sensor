@@ -2,9 +2,7 @@
 # (c) Copyright Instana Inc. 2021
 
 from ..log import logger
-import sys
 
-PY3 = sys.version_info[0] == 3
 
 class InstanaAncestor:
     def __init__(self, trace_id, parent_id):
@@ -15,19 +13,6 @@ class InstanaAncestor:
 class Tracestate:
     MAX_NUMBER_OF_LIST_MEMBERS = 32
     REMOVE_ENTRIES_LARGER_THAN = 128
-
-    @staticmethod
-    def extract_tracestate(headers):
-        """
-        Method to extract the tracestate header
-        :param headers: dict
-        :return: tracestate value or None
-        """
-        tracestate = headers.get('tracestate', None) or headers.get('http_tracestate', None) or headers.get(
-            b'tracestate', None) or headers.get(b'http_tracestate', None)
-        if PY3 is True and isinstance(tracestate, bytes):
-            tracestate = tracestate.decode("utf-8")
-        return tracestate
 
     @staticmethod
     def get_instana_ancestor(tracestate):
@@ -43,7 +28,7 @@ class Tracestate:
                                  parent_id=in_list_member.split(";")[1])
             return ia
 
-        except Exception as e:
+        except Exception:
             logger.debug("extract instana ancestor error:", exc_info=True)
         return None
 

@@ -3,43 +3,24 @@
 
 from ..log import logger
 import re
-import sys
-
-PY3 = sys.version_info[0] == 3
 
 
 class Traceparent:
     SPECIFICATION_VERSION = "00"
     TRACEPARENT_REGEX = re.compile("[0-9a-f]{2}-(?!0{32})([0-9a-f]{32})-(?!0{16})([0-9a-f]{16})-[0-9a-f]{2}")
 
-    def __validate(self, traceparent):
+    def validate(self, traceparent):
         """
         Method used to validate the traceparent header
         :param traceparent: string
-        :return: True or False
+        :return: traceparent or None
         """
         try:
             if self.TRACEPARENT_REGEX.match(traceparent) and traceparent.split("-")[0] == self.SPECIFICATION_VERSION:
-                return True
+                return traceparent
         except Exception:
             logger.debug("traceparent does not follow version 00 specification")
-        return False
-
-    def extract_traceparent(self, headers):
-        """
-        Extracts from the headers dict the traceparent key/value and validates its value
-        :param headers: dict with headers
-        :return: the validated traceparent or None
-        """
-        traceparent = headers.get('traceparent', None) or headers.get('http_traceparent', None) or headers.get(
-            b'traceparent', None) or headers.get(b'http_traceparent', None)
-        if traceparent:
-            if PY3 is True and isinstance(traceparent, bytes):
-                traceparent = traceparent.decode("utf-8")
-            if self.__validate(traceparent):
-                return traceparent
-        else:
-            return None
+        return None
 
     @staticmethod
     def get_traceparent_fields(traceparent):
@@ -62,7 +43,7 @@ class Traceparent:
         :param in_trace_id: instana trace id, used when there is no preexisting trace_id from the traceparent header
         :param in_span_id: instana span id, used to update the parent id of the traceparent header
         :param level: instana level, used to determine the value of sampled flag of the traceparent header
-        :return: sets the updated traceparent header
+        :return: the updated traceparent header
         """
 
         if traceparent is None:  # modify the trace_id part only when it was not present at all

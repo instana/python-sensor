@@ -3,15 +3,10 @@
 
 from __future__ import absolute_import
 
-import sys
-
 from ..log import logger
 from .base_propagator import BasePropagator
 from ..w3c_trace_context.treceparent import Traceparent
 from ..w3c_trace_context.tracestate import Tracestate
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
 
 class HTTPPropagator(BasePropagator):
@@ -61,5 +56,5 @@ class HTTPPropagator(BasePropagator):
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 
-        except Exception as e:
+        except Exception:
             logger.debug("inject error:", exc_info=True)

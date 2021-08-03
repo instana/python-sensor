@@ -78,5 +78,5 @@ class BinaryPropagator(BasePropagator):
                 raise Exception("Unsupported carrier type", type(carrier))
 
             return carrier
-        except Exception as e:
+        except Exception:
             logger.debug("inject error:", exc_info=True)

@@ -29,11 +29,16 @@ class Traceparent:
         :param traceparent: the original validated traceparent header
         :return: trace_id, parent_id, sampled
         """
-        traceparent_properties = traceparent.split("-")
-        trace_id = traceparent_properties[1]
-        parent_id = traceparent_properties[2]
-        sampled = traceparent_properties[3]
-        return trace_id, parent_id, sampled
+        try:
+            traceparent_properties = traceparent.split("-")
+            trace_id = traceparent_properties[1]
+            parent_id = traceparent_properties[2]
+            sampled = traceparent_properties[3]
+            return trace_id, parent_id, sampled
+        except Exception:  # This method is intended to be called with a version 00 validated traceparent
+            # This exception handling is added just for making sure we do not throw any unhandled exception
+            # if somebody calls the method in the future without a validated traceparent
+            return None, None, None
 
     def update_traceparent(self, traceparent, in_trace_id, in_span_id, level):
         """

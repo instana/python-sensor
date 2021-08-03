@@ -121,7 +121,7 @@ class BasePropagator(object):
             if disable_traceparent == "":
                 ctx = SpanContext(span_id=tp_parent_id, trace_id=tp_trace_id[-16:],
                                   level=int(level.split(",")[0]) if level else 1, baggage={}, sampled=True,
-                                  synthetic=False if synthetic is None else True)
+                                  synthetic=synthetic is not None)
 
                 ctx.trace_parent = True
 

@@ -137,7 +137,7 @@ class BasePropagator(object):
 
                         ctx = SpanContext(span_id=instana_ancestor.p, trace_id=instana_ancestor.t,
                                           level=int(level.split(",")[0]) if level else 1, baggage={}, sampled=True,
-                                          synthetic=False if synthetic is None else True)
+                                          synthetic=synthetic is not None)
 
                         ctx.instana_ancestor = instana_ancestor
                 except Exception:

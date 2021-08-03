@@ -148,7 +148,7 @@ class BasePropagator(object):
         elif trace_id and span_id:
 
             ctx = SpanContext(span_id=span_id, trace_id=trace_id, level=int(level.split(",")[0]) if level else 1,
-                              baggage={}, sampled=True, synthetic=False if synthetic is None else True)
+                              baggage={}, sampled=True, synthetic=synthetic is not None)
 
         elif synthetic:
             ctx = SpanContext(synthetic=synthetic)

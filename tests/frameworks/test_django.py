@@ -24,7 +24,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def tearDown(self):
         """ Do nothing for now """
-        return None
+        os.environ["INSTANA_W3C_DISABLE_TRACE_CORRELATION"] = ""
 
     def test_basic_request(self):
         with tracer.start_active_span('test'):

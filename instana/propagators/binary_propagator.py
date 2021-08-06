@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 from ..log import logger
 from .base_propagator import BasePropagator
-from ..w3c_trace_context.treceparent import Traceparent
+from ..w3c_trace_context.traceparent import Traceparent
 from ..w3c_trace_context.tracestate import Tracestate
 
 

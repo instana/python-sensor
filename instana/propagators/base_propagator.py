@@ -8,7 +8,7 @@ import sys
 from ..log import logger
 from ..util.ids import header_to_id
 from ..span_context import SpanContext
-from ..w3c_trace_context.treceparent import Traceparent
+from ..w3c_trace_context.traceparent import Traceparent
 from ..w3c_trace_context.tracestate import Tracestate
 import os
 
@@ -111,32 +111,38 @@ class BasePropagator(object):
         :return: ctx or None
         """
         disable_traceparent = os.environ.get("INSTANA_W3C_DISABLE_TRACE_CORRELATION", "")
-
+        instana_ancestor = None
         ctx = None
         if level and "correlationType" in level:
             trace_id, span_id = [None] * 2
 
-        if traceparent and all(v is None for v in [trace_id, span_id]):
-            tp_trace_id, tp_parent_id, tp_sampled = self.__tp.get_traceparent_fields(traceparent)
+        ctx_level = int(level.split(",")[0]) if level else 1
+
+        if trace_id and span_id:
+
+            ctx = SpanContext(span_id=span_id, trace_id=trace_id, level=ctx_level,
+                              baggage={}, sampled=True, synthetic=synthetic is not None)
+
+        elif traceparent and trace_id is None and span_id is None:
+            tp_trace_id, tp_parent_id = self.__tp.get_traceparent_fields(traceparent)
+
+            if tracestate and "in=" in tracestate:
+                instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
+
             if disable_traceparent == "":
                 ctx = SpanContext(span_id=tp_parent_id, trace_id=tp_trace_id[-16:],
-                                  level=int(level.split(",")[0]) if level else 1, baggage={}, sampled=True,
+                                  level=ctx_level, baggage={}, sampled=True,
                                   synthetic=synthetic is not None)
 
                 ctx.trace_parent = True
-
-                if tracestate and "in=" in tracestate:
-                    instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
-                    ctx.instana_ancestor = instana_ancestor
+                ctx.instana_ancestor = instana_ancestor
 
                 ctx.long_trace_id = tp_trace_id
             else:
                 try:
-                    if tracestate and "in=" in tracestate:
-                        instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
-
+                    if instana_ancestor:
                         ctx = SpanContext(span_id=instana_ancestor.p, trace_id=instana_ancestor.t,
-                                          level=int(level.split(",")[0]) if level else 1, baggage={}, sampled=True,
+                                          level=ctx_level, baggage={}, sampled=True,
                                           synthetic=synthetic is not None)
 
                         ctx.instana_ancestor = instana_ancestor
@@ -145,16 +151,12 @@ class BasePropagator(object):
 
             self.__set_correlation_properties(level, ctx)
 
-        elif trace_id and span_id:
-
-            ctx = SpanContext(span_id=span_id, trace_id=trace_id, level=int(level.split(",")[0]) if level else 1,
-                              baggage={}, sampled=True, synthetic=synthetic is not None)
-
         elif synthetic:
             ctx = SpanContext(synthetic=synthetic)
 
-        ctx.traceparent = traceparent
-        ctx.tracestate = tracestate
+        if ctx and traceparent:
+            ctx.traceparent = traceparent
+            ctx.tracestate = tracestate
 
         return ctx
 

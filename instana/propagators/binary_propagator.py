@@ -28,19 +28,25 @@ class BinaryPropagator(BasePropagator):
         self.__ts = Tracestate()
         super(BinaryPropagator, self).__init__()
 
-    def inject(self, span_context, carrier):
+    def inject(self, span_context, carrier, binary_w3c_injection=False):
         try:
             trace_id = str.encode(span_context.trace_id)
             span_id = str.encode(span_context.span_id)
             level = str.encode(str(span_context.level))
             server_timing = str.encode("intid;desc=%s" % span_context.trace_id)
-            traceparent = span_context.traceparent
-            tracestate = span_context.tracestate
-            traceparent = self.__tp.update_traceparent(traceparent, span_context.trace_id, span_context.span_id,
-                                                       span_context.level)
-            tracestate = self.__ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)
-            traceparent = str.encode(traceparent)
-            tracestate = str.encode(tracestate)
+            if binary_w3c_injection:
+                traceparent = span_context.traceparent
+                tracestate = span_context.tracestate
+                traceparent = self.__tp.update_traceparent(traceparent, span_context.trace_id, span_context.span_id,
+                                                           span_context.level)
+                tracestate = self.__ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)
+                try:
+                    traceparent = str.encode(traceparent)
+                    tracestate = str.encode(tracestate)
+                except Exception:
+                    traceparent, tracestate = [None] * 2
+            else:
+                traceparent, tracestate = [None] * 2
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
                 if traceparent and tracestate:

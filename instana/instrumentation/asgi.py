@@ -10,10 +10,12 @@ from ..log import logger
 from ..singletons import async_tracer, agent
 from ..util.secrets import strip_secrets_from_query
 
+
 class InstanaASGIMiddleware:
     """
     Instana ASGI Middleware
     """
+
     def __init__(self, app):
         self.app = app
 
@@ -41,7 +43,8 @@ class InstanaASGIMiddleware:
             if isinstance(query, (str, bytes)) and len(query):
                 if isinstance(query, bytes):
                     query = query.decode('utf-8')
-                scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher, agent.options.secrets_list)
+                scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher,
+                                                           agent.options.secrets_list)
                 span.set_tag("http.params", scrubbed_params)
 
             app = scope.get('app')
@@ -54,7 +57,6 @@ class InstanaASGIMiddleware:
                         span.set_tag("http.path_tpl", route.path)
         except Exception:
             logger.debug("ASGI collect_kvs: ", exc_info=True)
-
 
     async def __call__(self, scope, receive, send):
         request_context = None
@@ -82,7 +84,8 @@ class InstanaASGIMiddleware:
 
                         headers = response.get('headers')
                         if headers is not None:
-                            async_tracer.inject(span.context, opentracing.Format.BINARY, headers)
+                            async_tracer.inject(span.context, opentracing.Format.BINARY, headers,
+                                                binary_w3c_injection=True)
                     except Exception:
                         logger.debug("send_wrapper: ", exc_info=True)
 

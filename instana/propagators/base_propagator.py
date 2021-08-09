@@ -116,7 +116,10 @@ class BasePropagator(object):
         if level and "correlationType" in level:
             trace_id, span_id = [None] * 2
 
-        ctx_level = int(level.split(",")[0]) if level else 1
+        try:
+            ctx_level = int(level.split(",")[0]) if level else 1
+        except Exception:
+            ctx_level = 1
 
         if trace_id and span_id:
 
@@ -139,15 +142,12 @@ class BasePropagator(object):
 
                 ctx.long_trace_id = tp_trace_id
             else:
-                try:
-                    if instana_ancestor:
-                        ctx = SpanContext(span_id=instana_ancestor.p, trace_id=instana_ancestor.t,
-                                          level=ctx_level, baggage={}, sampled=True,
-                                          synthetic=synthetic is not None)
+                if instana_ancestor:
+                    ctx = SpanContext(span_id=instana_ancestor.p, trace_id=instana_ancestor.t,
+                                      level=ctx_level, baggage={}, sampled=True,
+                                      synthetic=synthetic is not None)
 
-                        ctx.instana_ancestor = instana_ancestor
-                except Exception:
-                    logger.debug("extract instana ancestor error:", exc_info=True)
+                    ctx.instana_ancestor = instana_ancestor
 
             self.__set_correlation_properties(level, ctx)
 

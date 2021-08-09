@@ -116,9 +116,11 @@ class InstanaTracer(BasicTracer):
 
         return span
 
-    def inject(self, span_context, format, carrier):
-        if format in self._propagators:
+    def inject(self, span_context, format, carrier, binary_w3c_injection=False):
+        if format in self._propagators and format != ot.Format.BINARY:
             return self._propagators[format].inject(span_context, carrier)
+        elif format == ot.Format.BINARY:
+            return self._propagators[format].inject(span_context, carrier, binary_w3c_injection)
 
         raise ot.UnsupportedFormatException()
 

@@ -310,7 +310,7 @@ class TestDjango(StaticLiveServerTestCase):
         request_headers = dict()
         request_headers['X-INSTANA-T'] = '1'
         request_headers['X-INSTANA-S'] = '1'
-        request_headers['traceparent'] = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+        request_headers['traceparent'] = '01-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-788777'
         request_headers['tracestate'] = 'rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'
 
         response = self.http.request('GET', self.live_server_url + '/', headers=request_headers)
@@ -338,7 +338,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         assert ('traceparent' in response.headers)
-        self.assertEqual('00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
+        self.assertEqual('01-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
                          response.headers['traceparent'])
 
         assert ('tracestate' in response.headers)

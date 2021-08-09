@@ -23,19 +23,19 @@ class TestTraceparent(unittest.TestCase):
 
     def test_get_traceparent_fields(self):
         traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
-        trace_id, parent_id = self.tp.get_traceparent_fields(traceparent)
+        version, trace_id, parent_id, trace_flags = self.tp.get_traceparent_fields(traceparent)
         self.assertEqual(trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
         self.assertEqual(parent_id, "00f067aa0ba902b7")
 
     def test_get_traceparent_fields_None_input(self):
         traceparent = None
-        trace_id, parent_id = self.tp.get_traceparent_fields(traceparent)
+        version, trace_id, parent_id, trace_flags = self.tp.get_traceparent_fields(traceparent)
         self.assertIsNone(trace_id)
         self.assertIsNone(parent_id)
 
     def test_get_traceparent_fields_string_input_no_dash(self):
         traceparent = "invalid"
-        trace_id, parent_id = self.tp.get_traceparent_fields(traceparent)
+        version, trace_id, parent_id, trace_flags = self.tp.get_traceparent_fields(traceparent)
         self.assertIsNone(trace_id)
         self.assertIsNone(parent_id)
 

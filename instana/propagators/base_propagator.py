@@ -124,7 +124,7 @@ class BasePropagator(object):
                               baggage={}, sampled=True, synthetic=synthetic is not None)
 
         elif traceparent and trace_id is None and span_id is None:
-            tp_trace_id, tp_parent_id = self.__tp.get_traceparent_fields(traceparent)
+            _, tp_trace_id, tp_parent_id, _ = self.__tp.get_traceparent_fields(traceparent)
 
             if tracestate and "in=" in tracestate:
                 instana_ancestor = self.__ts.get_instana_ancestor(tracestate)

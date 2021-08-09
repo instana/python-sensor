@@ -72,6 +72,5 @@ class Tracestate:
                     tracestate = "{},{}".format(instana_tracestate, tracestate)
         except Exception:
             logger.debug("Something went wrong while updating tracestate: {}:".format(tracestate), exc_info=True)
-            return ""  # return empty string since None could trigger an exception in an attempt to encode it
 
         return tracestate

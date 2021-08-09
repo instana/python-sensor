@@ -67,5 +67,5 @@ class TestTracestate(unittest.TestCase):
         tracestate = []
         in_trace_id = "1234d0e0e4736234"
         in_span_id = "1234567890abcdef"
-        expected_tracestate = ""
+        expected_tracestate = []
         self.assertEqual(expected_tracestate, self.ts.update_tracestate(tracestate, in_trace_id, in_span_id))

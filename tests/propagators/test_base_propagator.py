@@ -23,7 +23,7 @@ class TestBasePropagator(unittest.TestCase):
             'X-INSTANA-L': '1, correlationType=web; correlationId=1234567890abcdef'
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
-        mock_get_traceparent_fields.return_value = ["4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7"]
+        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
         ctx = self.bp.extract(carrier)
         self.assertEqual(ctx.correlation_id, '1234567890abcdef')
         self.assertEqual(ctx.correlation_type, "web")
@@ -34,6 +34,33 @@ class TestBasePropagator(unittest.TestCase):
         self.assertFalse(ctx.synthetic)
         self.assertEqual(ctx.trace_id, "a3ce929d0e0e4736")  # 16 last chars from traceparent trace_id
         self.assertTrue(ctx.trace_parent)
+        self.assertEqual(ctx.traceparent, '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01')
+        self.assertEqual(ctx.tracestate, 'congo=t61rcWkgMzE')
+
+
+    @patch.object(Traceparent, "get_traceparent_fields")
+    @patch.object(Traceparent, "validate")
+    def test_extract_carrier_list(self, mock_validate, mock_get_traceparent_fields):
+        carrier = [(b'user-agent', b'python-requests/2.23.0'), (b'accept-encoding', b'gzip, deflate'),
+                   (b'accept', b'*/*'), (b'connection', b'keep-alive'),
+                   (b'traceparent', b'00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'),
+                   (b'tracestate', b'congo=t61rcWkgMzE'),
+                   (b'X-INSTANA-T', b'1234d0e0e4736234'),
+                   (b'X-INSTANA-S', b'1234567890abcdef'),
+                   (b'X-INSTANA-L', b'1')]
+
+        mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
+        ctx = self.bp.extract(carrier)
+        self.assertIsNone(ctx.correlation_id)
+        self.assertIsNone(ctx.correlation_type)
+        self.assertIsNone(ctx.instana_ancestor)
+        self.assertEqual(ctx.level, 1)
+        self.assertIsNone(ctx.long_trace_id)
+        self.assertEqual(ctx.span_id, "1234567890abcdef")
+        self.assertFalse(ctx.synthetic)
+        self.assertEqual(ctx.trace_id, "1234d0e0e4736234")  # 16 last chars from traceparent trace_id
+        self.assertIsNone(ctx.trace_parent)
         self.assertEqual(ctx.traceparent, '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01')
         self.assertEqual(ctx.tracestate, 'congo=t61rcWkgMzE')
 
@@ -56,3 +83,4 @@ class TestBasePropagator(unittest.TestCase):
         mock_validate.return_value = None
         ctx = self.bp.extract(carrier)
         self.assertIsNone(ctx)
+

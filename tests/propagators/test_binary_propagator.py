@@ -3,9 +3,6 @@
 
 from instana.propagators.binary_propagator import BinaryPropagator
 from instana.span_context import SpanContext
-from instana.w3c_trace_context.traceparent import Traceparent
-from instana.w3c_trace_context.tracestate import Tracestate
-from mock import patch, MagicMock
 import unittest
 
 

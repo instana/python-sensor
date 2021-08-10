@@ -123,7 +123,7 @@ class BasePropagator(object):
 
         if trace_id and span_id:
 
-            ctx = SpanContext(span_id=span_id, trace_id=trace_id[-16:], level=ctx_level,
+            ctx = SpanContext(span_id=span_id[-16:], trace_id=trace_id[-16:], level=ctx_level,
                               baggage={}, sampled=True, synthetic=synthetic is not None)
             if len(trace_id) > 16:
                 ctx.long_trace_id = trace_id

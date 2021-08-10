@@ -37,7 +37,7 @@ def test_various_header_to_id_conversion():
 
     # Very long incoming header should just return the rightmost 16 bytes
     result = instana.util.ids.header_to_id('0x0123456789abcdef0123456789abcdef')
-    assert('0123456789abcdef' == result)
+    assert('0x0123456789abcdef0123456789abcdef' == result)
 
 
 def test_header_to_id_conversion_with_bogus_header():

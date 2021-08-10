@@ -343,7 +343,7 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert ('tracestate' in response.headers)
         self.assertEqual(
-            'in={};{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+            'in={};{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'.format(
                 django_span.t, django_span.s), response.headers['tracestate'])
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -393,7 +393,7 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert ('tracestate' in response.headers)
         self.assertEqual(
-            'in={};{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+            'in={};{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'.format(
                 django_span.t, django_span.s), response.headers['tracestate'])
         server_timing_value = "intid;desc=%s" % django_span.t
         assert ('Server-Timing' in response.headers)
@@ -438,7 +438,7 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert ('tracestate' in response.headers)
         self.assertEqual(
-            'in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+            'in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'.format(
                 django_span.s), response.headers['tracestate'])
 
         server_timing_value = "intid;desc=%s" % django_span.t
@@ -483,7 +483,7 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert ('tracestate' in response.headers)
         self.assertEqual(
-            'in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'.format(
+            'in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'.format(
                 django_span.s), response.headers['tracestate'])
 
         server_timing_value = "intid;desc=%s" % django_span.t

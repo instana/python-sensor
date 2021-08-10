@@ -66,8 +66,8 @@ class BinaryPropagator(BasePropagator):
                 carrier.append((self.HEADER_SERVER_TIMING, server_timing))
             elif isinstance(carrier, tuple):
                 if traceparent and tracestate:
-                    carrier.__add__(((self.HEADER_KEY_TRACEPARENT, traceparent),))
-                    carrier.__add__(((self.HEADER_KEY_TRACESTATE, tracestate),))
+                    carrier = carrier.__add__(((self.HEADER_KEY_TRACEPARENT, traceparent),))
+                    carrier = carrier.__add__(((self.HEADER_KEY_TRACESTATE, tracestate),))
                 carrier = carrier.__add__(((self.HEADER_KEY_T, trace_id),))
                 carrier = carrier.__add__(((self.HEADER_KEY_S, span_id),))
                 carrier = carrier.__add__(((self.HEADER_KEY_L, level),))

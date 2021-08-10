@@ -27,9 +27,13 @@ class HTTPPropagator(BasePropagator):
             trace_id = span_context.trace_id
             span_id = span_context.span_id
             level = span_context.level
+            if span_context.long_trace_id and not span_context.trace_parent:
+                tp_trace_id = span_context.long_trace_id
+            else:
+                tp_trace_id = trace_id
             traceparent = span_context.traceparent
             tracestate = span_context.tracestate
-            traceparent = self.__tp.update_traceparent(traceparent, trace_id, span_id, level)
+            traceparent = self.__tp.update_traceparent(traceparent, tp_trace_id, span_id, level)
             tracestate = self.__ts.update_tracestate(tracestate, trace_id, span_id)
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):

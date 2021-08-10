@@ -47,6 +47,12 @@ class Tracestate:
             if tracestate is None or tracestate == "":
                 tracestate = instana_tracestate
             else:
+                # remove the existing in= entry
+                if "in=" in tracestate:
+                    splitted = tracestate.split("in=")
+                    before_in = splitted[0]
+                    after_in = splitted[1].split(",")[1:]
+                    tracestate = '{}{}'.format(before_in, ",".join(after_in))
                 # tracestate can contain a max of 32 list members, if it contains up to 31
                 # we can safely add the instana one without the need to truncate anything
                 if len(tracestate.split(",")) <= self.MAX_NUMBER_OF_LIST_MEMBERS - 1:

@@ -58,9 +58,9 @@ def header_to_id(header):
         if length < 16:
             # Left pad ID with zeros
             header = header.zfill(16)
-        elif length > 16:
-            # Phase 0: Discard everything but the last 16byte
-            header = header[-16:]
+        # elif length > 16:
+        #     # Phase 0: Discard everything but the last 16byte
+        #     header = header[-16:]
 
         return header
     except ValueError:

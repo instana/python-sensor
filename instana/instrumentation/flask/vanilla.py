@@ -22,8 +22,7 @@ def before_request_with_instana(*argv, **kwargs):
         env = flask.request.environ
         ctx = None
 
-        if 'HTTP_X_INSTANA_T' in env and 'HTTP_X_INSTANA_S' in env:
-            ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
+        ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
 
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span

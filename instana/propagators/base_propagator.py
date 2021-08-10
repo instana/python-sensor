@@ -123,9 +123,10 @@ class BasePropagator(object):
 
         if trace_id and span_id:
 
-            ctx = SpanContext(span_id=span_id, trace_id=trace_id, level=ctx_level,
+            ctx = SpanContext(span_id=span_id, trace_id=trace_id[-16:], level=ctx_level,
                               baggage={}, sampled=True, synthetic=synthetic is not None)
-
+            if len(trace_id) > 16:
+                ctx.long_trace_id = trace_id
         elif traceparent and trace_id is None and span_id is None:
             _, tp_trace_id, tp_parent_id, _ = self.__tp.get_traceparent_fields(traceparent)
 

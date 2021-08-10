@@ -117,6 +117,17 @@ class InstanaTracer(BasicTracer):
         return span
 
     def inject(self, span_context, format, carrier, binary_w3c_injection=False):
+        """
+        In this method the binary_w3c_injection parameter is to be used only for the binary injection call,
+        by default in the binary injection the w3c trace context parameters are not getting injected. if there is
+        a wish to inject them for a specific instrumentation the inject method here should be called with the
+        parameter set to True
+        :param span_context:
+        :param format:
+        :param carrier:
+        :param binary_w3c_injection: default False
+        :return:
+        """
         if format in self._propagators and format != ot.Format.BINARY:
             return self._propagators[format].inject(span_context, carrier)
         elif format == ot.Format.BINARY:

@@ -204,8 +204,8 @@ class SDKSpan(BaseSpan):
         if self.k == 1 and service_name is not None:
             self.data["service"] = service_name
 
-        if self.k == 1:
-            self._populate_extra_span_attributes(span)
+        # if self.k == 1:
+        #     self._populate_extra_span_attributes(span)
 
         self.data["sdk"]["name"] = span.operation_name
         self.data["sdk"]["type"] = span_kind[0]
@@ -247,14 +247,14 @@ class SDKSpan(BaseSpan):
 
 class RegisteredSpan(BaseSpan):
     HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
-                  "tornado-server", "urllib3", "wsgi")
+                  "tornado-server", "urllib3", "wsgi", "asgi")
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
                   "soap", "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
 
     ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
-                   "rpc-server", "tornado-server", "gcps-consumer")
+                   "rpc-server", "tornado-server", "gcps-consumer", "asgi")
 
     LOCAL_SPANS = ("render")
 

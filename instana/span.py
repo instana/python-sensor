@@ -117,6 +117,18 @@ class BaseSpan(object):
 
         self.__dict__.update(kwargs)
 
+    def _populate_extra_span_attributes(self, span):
+        if span.context.trace_parent:
+            self.tp = span.context.trace_parent
+        if span.context.instana_ancestor:
+            self.ia = span.context.instana_ancestor
+        if span.context.long_trace_id:
+            self.lt = span.context.long_trace_id
+        if span.context.correlation_type:
+            self.crtp = span.context.correlation_type
+        if span.context.correlation_id:
+            self.crid = span.context.correlation_id
+
     def _validate_tags(self, tags):
         """
         This method will loop through a set of tags to validate each key and value.
@@ -192,6 +204,9 @@ class SDKSpan(BaseSpan):
         if self.k == 1 and service_name is not None:
             self.data["service"] = service_name
 
+        if self.k == 1:
+            self._populate_extra_span_attributes(span)
+
         self.data["sdk"]["name"] = span.operation_name
         self.data["sdk"]["type"] = span_kind[0]
         self.data["sdk"]["custom"]["tags"] = self._validate_tags(span.tags)
@@ -231,7 +246,7 @@ class SDKSpan(BaseSpan):
 
 
 class RegisteredSpan(BaseSpan):
-    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "asgi", "django", "http", "soap", "tornado-client",
+    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
                   "tornado-server", "urllib3", "wsgi")
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
@@ -271,18 +286,6 @@ class RegisteredSpan(BaseSpan):
         # Store any leftover tags in the custom section
         if len(span.tags) > 0:
             self.data["custom"]["tags"] = self._validate_tags(span.tags)
-
-    def _populate_extra_span_attributes(self, span):
-        if span.context.trace_parent:
-            self.tp = span.context.trace_parent
-        if span.context.instana_ancestor:
-            self.ia = span.context.instana_ancestor
-        if span.context.long_trace_id:
-            self.lt = span.context.long_trace_id
-        if span.context.correlation_type:
-            self.crtp = span.context.correlation_type
-        if span.context.correlation_id:
-            self.crid = span.context.correlation_id
 
     def _populate_entry_span_data(self, span):
         if span.operation_name in self.HTTP_SPANS:

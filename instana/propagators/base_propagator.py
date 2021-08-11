@@ -110,7 +110,7 @@ class BasePropagator(object):
         :param synthetic: instana synthetic
         :return: ctx or None
         """
-        disable_traceparent = os.environ.get("INSTANA_W3C_DISABLE_TRACE_CORRELATION", "")
+        disable_traceparent = os.environ.get("INSTANA_DISABLE_W3C_TRACE_CORRELATION", "")
         instana_ancestor = None
         ctx = None
         if level and "correlationType" in level:

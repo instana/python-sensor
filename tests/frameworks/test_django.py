@@ -24,7 +24,7 @@ class TestDjango(StaticLiveServerTestCase):
 
     def tearDown(self):
         """ Do nothing for now """
-        os.environ["INSTANA_W3C_DISABLE_TRACE_CORRELATION"] = ""
+        os.environ["INSTANA_DISABLE_W3C_TRACE_CORRELATION"] = ""
 
     def test_basic_request(self):
         with tracer.start_active_span('test'):
@@ -446,7 +446,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(server_timing_value, response.headers['Server-Timing'])
 
     def test_with_incoming_traceparent_tracestate_disable_traceparent(self):
-        os.environ["INSTANA_W3C_DISABLE_TRACE_CORRELATION"] = "1"
+        os.environ["INSTANA_DISABLE_W3C_TRACE_CORRELATION"] = "1"
         request_headers = dict()
         request_headers['traceparent'] = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
         request_headers['tracestate'] = 'rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE'

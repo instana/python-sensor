@@ -108,25 +108,27 @@ class BasePropagator(object):
         :param span_id: instana span id
         :param level: instana level
         :param synthetic: instana synthetic
-        :return: ctx or None
+        :return: ctx
         """
+        correlation = False
         disable_traceparent = os.environ.get("INSTANA_DISABLE_W3C_TRACE_CORRELATION", "")
         instana_ancestor = None
-        ctx = None
+        ctx = SpanContext()
         if level and "correlationType" in level:
             trace_id, span_id = [None] * 2
+            correlation = True
 
-        try:
-            ctx_level = int(level.split(",")[0]) if level else 1
-        except Exception:
-            ctx_level = 1
+        ctx_level = self.__get_ctx_level(level)
 
         if trace_id and span_id:
+            ctx.trace_id = trace_id[-16:]  # only the last 16 chars
+            ctx.span_id = span_id[-16:]  # only the last 16 chars
+            ctx.level = ctx_level
+            ctx.synthetic = synthetic is not None
 
-            ctx = SpanContext(span_id=span_id[-16:], trace_id=trace_id[-16:], level=ctx_level,
-                              baggage={}, sampled=True, synthetic=synthetic is not None)
             if len(trace_id) > 16:
                 ctx.long_trace_id = trace_id
+
         elif traceparent and trace_id is None and span_id is None:
             _, tp_trace_id, tp_parent_id, _ = self.__tp.get_traceparent_fields(traceparent)
 
@@ -134,41 +136,56 @@ class BasePropagator(object):
                 instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
 
             if disable_traceparent == "":
-                ctx = SpanContext(span_id=tp_parent_id, trace_id=tp_trace_id[-16:],
-                                  level=ctx_level, baggage={}, sampled=True,
-                                  synthetic=synthetic is not None)
-
+                ctx.trace_id = tp_trace_id[-16:]
+                ctx.span_id = tp_parent_id
+                ctx.level = ctx_level
+                ctx.synthetic = synthetic is not None
                 ctx.trace_parent = True
                 ctx.instana_ancestor = instana_ancestor
-
                 ctx.long_trace_id = tp_trace_id
             else:
                 if instana_ancestor:
-                    ctx = SpanContext(span_id=instana_ancestor.p, trace_id=instana_ancestor.t,
-                                      level=ctx_level, baggage={}, sampled=True,
-                                      synthetic=synthetic is not None)
-
-            self.__set_correlation_properties(level, ctx)
+                    ctx.trace_id = instana_ancestor.t
+                    ctx.span_id = instana_ancestor.p
+                    ctx.level = ctx_level
+                    ctx.synthetic = synthetic is not None
 
         elif synthetic:
-            ctx = SpanContext(synthetic=synthetic)
+            ctx.synthetic = synthetic
 
-        if ctx is None:
-            ctx = SpanContext()
+        if correlation:
             self.__set_correlation_properties(level, ctx)
 
-        if ctx and traceparent:
+        if traceparent:
             ctx.traceparent = traceparent
             ctx.tracestate = tracestate
 
         return ctx
 
     @staticmethod
-    def __set_correlation_properties(level, ctx):
+    def __get_ctx_level(level):
+        """
+        Extract the level value and return it, as it may include correlation values
+        :param level:
+        :return:
+        """
         try:
-            if level and "correlationType" in level:
-                ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
-            if level and "correlationId" in level:
+            ctx_level = int(level.split(",")[0]) if level else 1
+        except Exception:
+            ctx_level = 1
+        return ctx_level
+
+    @staticmethod
+    def __set_correlation_properties(level, ctx):
+        """
+        Set the correlation values if they are present
+        :param level:
+        :param ctx:
+        :return:
+        """
+        try:
+            ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
+            if "correlationId" in level:
                 ctx.correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
         except Exception:
             logger.debug("extract instana correlation type/id error:", exc_info=True)

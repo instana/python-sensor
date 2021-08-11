@@ -148,8 +148,6 @@ class BasePropagator(object):
                                       level=ctx_level, baggage={}, sampled=True,
                                       synthetic=synthetic is not None)
 
-                    ctx.instana_ancestor = instana_ancestor
-
             self.__set_correlation_properties(level, ctx)
 
         elif synthetic:

@@ -463,8 +463,6 @@ class TestDjango(StaticLiveServerTestCase):
 
         self.assertEqual(django_span.t, 'a3ce929d0e0e4736')  # last 16 chars from traceparent trace_id
         self.assertEqual(django_span.p, '8357ccd9da194656')
-        self.assertEqual(django_span.ia.t, 'a3ce929d0e0e4736')
-        self.assertEqual(django_span.ia.p, '8357ccd9da194656')
 
         assert ('X-INSTANA-T' in response.headers)
         assert (int(response.headers['X-INSTANA-T'], 16))

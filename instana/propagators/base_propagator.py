@@ -154,6 +154,9 @@ class BasePropagator(object):
 
         elif synthetic:
             ctx = SpanContext(synthetic=synthetic)
+        else:
+            ctx = SpanContext()
+            self.__set_correlation_properties(level, ctx)
 
         if ctx and traceparent:
             ctx.traceparent = traceparent

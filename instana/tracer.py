@@ -99,6 +99,9 @@ class InstanaTracer(BasicTracer):
         else:
             ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
+            if parent_ctx is not None and parent_ctx.correlation_id is not None:
+                ctx.correlation_type = parent_ctx.correlation_type
+                ctx.correlation_id = parent_ctx.correlation_id
 
         # Tie it all together
         span = InstanaSpan(self,

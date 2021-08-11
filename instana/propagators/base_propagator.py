@@ -152,7 +152,8 @@ class BasePropagator(object):
 
         elif synthetic:
             ctx = SpanContext(synthetic=synthetic)
-        else:
+
+        if ctx is None:
             ctx = SpanContext()
             self.__set_correlation_properties(level, ctx)
 

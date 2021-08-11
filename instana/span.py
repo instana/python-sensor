@@ -112,17 +112,6 @@ class BaseSpan(object):
         self.data = DictionaryOfStan()
         self.stack = span.stack
 
-        if span.context.trace_parent:
-            self.tp = span.context.trace_parent
-        if span.context.instana_ancestor:
-            self.ia = span.context.instana_ancestor
-        if span.context.long_trace_id:
-            self.lt = span.context.long_trace_id
-        if span.context.correlation_type:
-            self.crtp = span.context.correlation_type
-        if span.context.correlation_id:
-            self.crid = span.context.correlation_id
-
         if span.synthetic is True:
             self.sy = span.synthetic
 
@@ -264,6 +253,7 @@ class RegisteredSpan(BaseSpan):
             # entry
             self._populate_entry_span_data(span)
             self.data["service"] = service_name
+            self._populate_extra_span_attributes(span)
         elif span.operation_name in self.EXIT_SPANS:
             self.k = 2  # exit
             self._populate_exit_span_data(span)
@@ -281,6 +271,18 @@ class RegisteredSpan(BaseSpan):
         # Store any leftover tags in the custom section
         if len(span.tags) > 0:
             self.data["custom"]["tags"] = self._validate_tags(span.tags)
+
+    def _populate_extra_span_attributes(self, span):
+        if span.context.trace_parent:
+            self.tp = span.context.trace_parent
+        if span.context.instana_ancestor:
+            self.ia = span.context.instana_ancestor
+        if span.context.long_trace_id:
+            self.lt = span.context.long_trace_id
+        if span.context.correlation_type:
+            self.crtp = span.context.correlation_type
+        if span.context.correlation_id:
+            self.crid = span.context.correlation_id
 
     def _populate_entry_span_data(self, span):
         if span.operation_name in self.HTTP_SPANS:

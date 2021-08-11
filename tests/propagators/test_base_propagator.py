@@ -3,6 +3,7 @@
 
 from instana.propagators.base_propagator import BasePropagator
 from instana.w3c_trace_context.traceparent import Traceparent
+from instana.span_context import SpanContext
 from mock import patch
 import unittest
 
@@ -80,7 +81,12 @@ class TestBasePropagator(unittest.TestCase):
         }
         mock_validate.return_value = None
         ctx = self.bp.extract(carrier)
-        self.assertIsNone(ctx)
+        self.assertTrue(isinstance(ctx, SpanContext))
+        assert ctx.trace_id is None
+        assert ctx.span_id is None
+        assert ctx.synthetic is False
+        self.assertEqual(ctx.correlation_id, "1234567890abcdef")
+        self.assertEqual(ctx.correlation_type, "web")
 
     @patch.object(Traceparent, "validate")
     def test_extract_fake_exception(self, mock_validate):

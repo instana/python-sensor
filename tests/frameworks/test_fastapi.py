@@ -35,7 +35,7 @@ def test_vanilla_get(server):
     spans = tracer.recorder.queued_spans()
     # FastAPI instrumentation (like all instrumentation) _always_ traces unless told otherwise
     assert len(spans) == 1
-    assert spans[0].n == 'sdk'
+    assert spans[0].n == 'asgi'
 
 
 def test_basic_get(server):
@@ -56,7 +56,7 @@ def test_basic_get(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == "asgi"
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -74,13 +74,13 @@ def test_basic_get(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == None)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 200)
-    assert ('http.error' not in asgi_span.data['sdk']['custom']['tags'])
-    assert ('http.params' not in asgi_span.data['sdk']['custom']['tags'])
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/')
+    assert (asgi_span.data['http']['path_tpl'] == '/')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 200)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] is None)
 
 
 def test_400(server):
@@ -101,7 +101,7 @@ def test_400(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == 'asgi'
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -119,14 +119,13 @@ def test_400(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == None)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/400')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/400')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 400)
-    assert ('http.error' not in asgi_span.data['sdk']['custom']['tags'])
-    assert ('http.params' not in asgi_span.data['sdk']['custom']['tags'])
-
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/400')
+    assert (asgi_span.data['http']['path_tpl'] == '/400')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 400)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] is None)
 
 def test_500(server):
     result = None
@@ -146,7 +145,7 @@ def test_500(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == 'asgi'
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -164,14 +163,13 @@ def test_500(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == 1)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/500')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/500')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 500)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.error'] == '500 response')
-    assert ('http.params' not in asgi_span.data['sdk']['custom']['tags'])
-
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/500')
+    assert (asgi_span.data['http']['path_tpl'] == '/500')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 500)
+    assert (asgi_span.data['http']['error'] == '500 response')
+    assert (asgi_span.data['http']['params'] is None)
 
 def test_path_templates(server):
     result = None
@@ -191,7 +189,7 @@ def test_path_templates(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == 'asgi'
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -209,13 +207,13 @@ def test_path_templates(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == None)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/users/1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/users/{user_id}')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 200)
-    assert ('http.error' not in asgi_span.data['sdk']['custom']['tags'])
-    assert ('http.params' not in asgi_span.data['sdk']['custom']['tags'])
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/users/1')
+    assert (asgi_span.data['http']['path_tpl'] == '/users/{user_id}')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 200)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] is None)
 
 
 def test_secret_scrubbing(server):
@@ -236,7 +234,7 @@ def test_secret_scrubbing(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == 'asgi'
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -254,14 +252,13 @@ def test_secret_scrubbing(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == None)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.params'] == 'secret=<redacted>')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 200)
-    assert ('http.error' not in asgi_span.data['sdk']['custom']['tags'])
-
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/')
+    assert (asgi_span.data['http']['path_tpl'] == '/')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 200)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] == 'secret=<redacted>')
 
 def test_synthetic_request(server):
     request_headers = {
@@ -283,7 +280,7 @@ def test_synthetic_request(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == 'asgi'
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -301,13 +298,13 @@ def test_synthetic_request(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == None)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 200)
-    assert ('http.error' not in asgi_span.data['sdk']['custom']['tags'])
-    assert ('http.params' not in asgi_span.data['sdk']['custom']['tags'])
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/')
+    assert (asgi_span.data['http']['path_tpl'] == '/')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 200)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] is None)
 
     assert (asgi_span.sy)
     assert (urllib3_span.sy is None)
@@ -339,7 +336,7 @@ def test_custom_header_capture(server):
     urllib3_span = get_first_span_by_filter(spans, span_filter)
     assert (urllib3_span)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+    span_filter = lambda span: span.n == 'asgi'
     asgi_span = get_first_span_by_filter(spans, span_filter)
     assert (asgi_span)
 
@@ -357,15 +354,15 @@ def test_custom_header_capture(server):
     assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
     assert (asgi_span.ec == None)
-    assert (asgi_span.data['sdk']['custom']['tags']['http.host'] == '127.0.0.1')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.path_tpl'] == '/')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.method'] == 'GET')
-    assert (asgi_span.data['sdk']['custom']['tags']['http.status_code'] == 200)
-    assert ('http.error' not in asgi_span.data['sdk']['custom']['tags'])
-    assert ('http.params' not in asgi_span.data['sdk']['custom']['tags'])
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/')
+    assert (asgi_span.data['http']['path_tpl'] == '/')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 200)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] is None)
 
-    assert ("http.header.X-Capture-This" in asgi_span.data["sdk"]["custom"]['tags'])
-    assert ("this" == asgi_span.data["sdk"]["custom"]['tags']["http.header.X-Capture-This"])
-    assert ("http.header.X-Capture-That" in asgi_span.data["sdk"]["custom"]['tags'])
-    assert ("that" == asgi_span.data["sdk"]["custom"]['tags']["http.header.X-Capture-That"])
+    assert ("X-Capture-This" in asgi_span.data["http"]["header"])
+    assert ("this" == asgi_span.data["http"]["header"]["X-Capture-This"])
+    assert ("X-Capture-That" in asgi_span.data["http"]["header"])
+    assert ("that" == asgi_span.data["http"]["header"]["X-Capture-That"])

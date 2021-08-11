@@ -39,7 +39,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertIn("Server-Timing", result.headers)
         spans = tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].n, 'sdk')
+        self.assertEqual(spans[0].n, 'asgi')
 
     def test_basic_get(self):
         result = None
@@ -59,7 +59,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -76,13 +76,13 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 200)
-        self.assertNotIn('http.error', asgi_span.data['sdk']['custom']['tags'])
-        self.assertNotIn('http.params', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/')
+        assert (asgi_span.data['http']['path_tpl'] == '/')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 200)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] is None)
 
     def test_404(self):
         result = None
@@ -102,7 +102,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -119,13 +119,13 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/foo/not_an_int')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 404)
-        self.assertNotIn('http.error', asgi_span.data['sdk']['custom']['tags'])
-        self.assertNotIn('http.params', asgi_span.data['sdk']['custom']['tags'])
-        self.assertNotIn('http.path_tpl', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/foo/not_an_int')
+        assert (asgi_span.data['http']['path_tpl'] is None)
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 404)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] is None)
 
     def test_500(self):
         result = None
@@ -145,7 +145,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -162,14 +162,13 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertEqual(asgi_span.ec, 1)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/test_request_args')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'], '/test_request_args')
-
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 500)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.error'], 'Something went wrong.')
-        self.assertNotIn('http.params', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/test_request_args')
+        assert (asgi_span.data['http']['path_tpl'] == '/test_request_args')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 500)
+        assert (asgi_span.data['http']['error'] == 'Something went wrong.')
+        assert (asgi_span.data['http']['params'] is None)
 
     def test_path_templates(self):
         result = None
@@ -189,7 +188,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -206,13 +205,14 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/foo/1')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'], '/foo/<foo_id:int>')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 200)
-        self.assertNotIn('http.error', asgi_span.data['sdk']['custom']['tags'])
-        self.assertNotIn('http.params', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/foo/1')
+        assert (asgi_span.data['http']['path_tpl'] == '/foo/<foo_id:int>')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 200)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] is None)
+
 
     def test_secret_scrubbing(self):
         result = None
@@ -232,7 +232,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -249,13 +249,13 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 200)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.params'], 'secret=<redacted>')
-        self.assertNotIn('http.error', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/')
+        assert (asgi_span.data['http']['path_tpl'] == '/')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 200)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] == 'secret=<redacted>')
 
     def test_synthetic_request(self):
         request_headers = {
@@ -277,7 +277,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -294,13 +294,13 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 200)
-        self.assertNotIn('http.error', asgi_span.data['sdk']['custom']['tags'])
-        self.assertNotIn('http.params', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/')
+        assert (asgi_span.data['http']['path_tpl'] == '/')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 200)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] is None)
 
         self.assertIsNotNone(asgi_span.sy)
         self.assertIsNone(urllib3_span.sy)
@@ -327,7 +327,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         urllib3_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(urllib3_span)
 
-        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'asgi'
+        span_filter = lambda span: span.n == 'asgi'
         asgi_span = get_first_span_by_filter(spans, span_filter)
         self.assertIsNotNone(asgi_span)
 
@@ -344,15 +344,15 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
         self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.host'], '127.0.0.1:1337')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.path_tpl'], '/')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.method'], 'GET')
-        self.assertEqual(asgi_span.data['sdk']['custom']['tags']['http.status_code'], 200)
-        self.assertNotIn('http.error', asgi_span.data['sdk']['custom']['tags'])
-        self.assertNotIn('http.params', asgi_span.data['sdk']['custom']['tags'])
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/')
+        assert (asgi_span.data['http']['path_tpl'] == '/')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 200)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] is None)
 
-        self.assertIn("http.header.X-Capture-This", asgi_span.data["sdk"]["custom"]['tags'])
-        self.assertEqual("this", asgi_span.data["sdk"]["custom"]['tags']["http.header.X-Capture-This"])
-        self.assertIn("http.header.X-Capture-That", asgi_span.data["sdk"]["custom"]['tags'])
-        self.assertEqual("that", asgi_span.data["sdk"]["custom"]['tags']["http.header.X-Capture-That"])
+        assert ("X-Capture-This" in asgi_span.data["http"]["header"])
+        assert ("this" == asgi_span.data["http"]["header"]["X-Capture-This"])
+        assert ("X-Capture-That" in asgi_span.data["http"]["header"])
+        assert ("that" == asgi_span.data["http"]["header"]["X-Capture-That"])

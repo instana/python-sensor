@@ -107,7 +107,8 @@ try:
                 scope.span.set_tag('http.path', request.path)
                 scope.span.set_tag('http.method', request.method)
                 scope.span.set_tag('http.host', request.host)
-                scope.span.set_tag("http.url", request.url)
+                if hasattr(request, "url"):
+                    scope.span.set_tag("http.url", request.url)
 
                 query = request.query_string
 

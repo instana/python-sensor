@@ -1,14 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from instana.propagators.binary_propagator import BinaryPropagator
+from instana.propagators.binary_propagator_tc import BinaryPropagatorTC
 from instana.span_context import SpanContext
 import unittest
 
 
 class TestBinaryPropagator(unittest.TestCase):
     def setUp(self):
-        self.bp = BinaryPropagator()
+        self.bp = BinaryPropagatorTC()
 
     def test_inject_carrier_dict(self):
         carrier = {}

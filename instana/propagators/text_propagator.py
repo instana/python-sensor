@@ -4,10 +4,10 @@
 from __future__ import absolute_import
 
 from ..log import logger
-from .base_propagator import BasePropagator
+from .http_propagator import HTTPPropagator
 
 
-class TextPropagator(BasePropagator):
+class TextPropagator(HTTPPropagator):
     """
     Instana context propagator for TEXT_MAP.
 

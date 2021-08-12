@@ -40,7 +40,8 @@ try:
                 span.set_tag('http.status_code', status_code)
 
             if response.headers is not None:
-                async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+                async_tracer.inject(span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
+                                    response.headers)
             response.headers['Server-Timing'] = "intid;desc=%s" % span.context.trace_id
         except Exception:
             logger.debug("send_wrapper: ", exc_info=True)
@@ -101,7 +102,7 @@ try:
             except AttributeError:
                 pass
             headers = request.headers.copy()
-            ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
+            ctx = async_tracer.extract("{}_trace_context".format(opentracing.Format.HTTP_HEADERS), headers)
             with async_tracer.start_active_span("asgi", child_of=ctx) as scope:
                 scope.span.set_tag('span.kind', 'entry')
                 scope.span.set_tag('http.path', request.path)

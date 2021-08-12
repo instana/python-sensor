@@ -27,7 +27,7 @@ try:
             scope = async_tracer.start_active_span("aiohttp-client", child_of=parent_span)
             trace_config_ctx.scope = scope
 
-            async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, params.headers)
+            async_tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS), params.headers)
 
             parts = str(params.url).split('?')
             if len(parts) > 1:

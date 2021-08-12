@@ -80,8 +80,6 @@ class TestPikaChannel(_TestPika):
             pika.spec.Basic.Publish(
                 exchange="test.exchange",
                 routing_key="test.queue"), (pika.spec.BasicProperties(headers={
-                'traceparent': '00-0000000000000000{}-{}-01'.format(rabbitmq_span.t, rabbitmq_span.s),
-                'tracestate': 'in={};{}'.format(rabbitmq_span.t, rabbitmq_span.s),
                 "X-INSTANA-T": rabbitmq_span.t,
                 "X-INSTANA-S": rabbitmq_span.s,
                 "X-INSTANA-L": "1"
@@ -110,8 +108,6 @@ class TestPikaChannel(_TestPika):
             pika.spec.Basic.Publish(
                 exchange="test.exchange",
                 routing_key="test.queue"), (pika.spec.BasicProperties(headers={
-                'traceparent': '00-0000000000000000{}-{}-01'.format(rabbitmq_span.t, rabbitmq_span.s),
-                'tracestate': 'in={};{}'.format(rabbitmq_span.t, rabbitmq_span.s),
                 "X-Custom-1": "test",
                 "X-INSTANA-T": rabbitmq_span.t,
                 "X-INSTANA-S": rabbitmq_span.s,

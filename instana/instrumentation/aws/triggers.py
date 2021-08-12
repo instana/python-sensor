@@ -8,6 +8,7 @@ import gzip
 import json
 import base64
 from io import BytesIO
+import opentracing as ot
 
 from ...log import logger
 
@@ -21,9 +22,9 @@ def get_context(tracer, event):
         is_application_load_balancer_trigger(event)
 
     if is_proxy_event:
-        return tracer.extract('http_headers', event.get('headers', {}))
+        return tracer.extract(ot.Format.HTTP_HEADERS, event.get('headers', {}))
 
-    return tracer.extract('http_headers', event)
+    return tracer.extract(ot.Format.HTTP_HEADERS, event)
 
 
 def is_api_gateway_proxy_trigger(event):

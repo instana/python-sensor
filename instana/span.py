@@ -204,9 +204,6 @@ class SDKSpan(BaseSpan):
         if self.k == 1 and service_name is not None:
             self.data["service"] = service_name
 
-        # if self.k == 1:
-        #     self._populate_extra_span_attributes(span)
-
         self.data["sdk"]["name"] = span.operation_name
         self.data["sdk"]["type"] = span_kind[0]
         self.data["sdk"]["custom"]["tags"] = self._validate_tags(span.tags)

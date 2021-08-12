@@ -22,7 +22,7 @@ def before_request_with_instana(*argv, **kwargs):
         env = flask.request.environ
         ctx = None
 
-        ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
+        ctx = tracer.extract("{}_trace_context".format(opentracing.Format.HTTP_HEADERS), env)
 
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
@@ -38,7 +38,8 @@ def before_request_with_instana(*argv, **kwargs):
         if 'PATH_INFO' in env:
             span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
         if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-            scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher, agent.options.secrets_list)
+            scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher,
+                                                       agent.options.secrets_list)
             span.set_tag("http.params", scrubbed_params)
         if 'HTTP_HOST' in env:
             span.set_tag("http.host", env['HTTP_HOST'])
@@ -69,7 +70,8 @@ def after_request_with_instana(response):
                 span.mark_as_errored()
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
-            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+            tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
+                          response.headers)
             response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
     except:
         logger.debug("Flask after_request", exc_info=True)

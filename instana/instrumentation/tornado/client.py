@@ -47,12 +47,14 @@ try:
                     kwargs = new_kwargs
 
                 scope = tornado_tracer.start_active_span('tornado-client', child_of=parent_span)
-                tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers)
+                tornado_tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
+                                      request.headers)
 
                 # Query param scrubbing
                 parts = request.url.split('?')
                 if len(parts) > 1:
-                    cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
+                    cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
+                                                          agent.options.secrets_list)
                     scope.span.set_tag("http.params", cleaned_qp)
 
                 scope.span.set_tag("http.url", parts[0])
@@ -69,6 +71,7 @@ try:
                 logger.debug("tornado fetch", exc_info=True)
                 raise
 
+
         def finish_tracing(future, scope):
             try:
                 response = future.result()
@@ -84,4 +87,3 @@ try:
         logger.debug("Instrumenting tornado client")
 except ImportError:
     pass
-

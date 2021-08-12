@@ -1,16 +1,16 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from instana.propagators.base_propagator import BasePropagator
+from instana.propagators.http_propagator_tc import HTTPPropagatorTC
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.span_context import SpanContext
 from mock import patch
 import unittest
 
 
-class TestBasePropagator(unittest.TestCase):
+class TestHTTPPropagatorTC(unittest.TestCase):
     def setUp(self):
-        self.bp = BasePropagator()
+        self.hptc = HTTPPropagatorTC()
 
     @patch.object(Traceparent, "get_traceparent_fields")
     @patch.object(Traceparent, "validate")
@@ -24,7 +24,7 @@ class TestBasePropagator(unittest.TestCase):
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
         mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
-        ctx = self.bp.extract(carrier)
+        ctx = self.hptc.extract(carrier)
         self.assertEqual(ctx.correlation_id, '1234567890abcdef')
         self.assertEqual(ctx.correlation_type, "web")
         self.assertIsNone(ctx.instana_ancestor)
@@ -40,17 +40,17 @@ class TestBasePropagator(unittest.TestCase):
     @patch.object(Traceparent, "get_traceparent_fields")
     @patch.object(Traceparent, "validate")
     def test_extract_carrier_list(self, mock_validate, mock_get_traceparent_fields):
-        carrier = [(b'user-agent', b'python-requests/2.23.0'), (b'accept-encoding', b'gzip, deflate'),
-                   (b'accept', b'*/*'), (b'connection', b'keep-alive'),
-                   (b'traceparent', b'00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'),
-                   (b'tracestate', b'congo=t61rcWkgMzE'),
-                   (b'X-INSTANA-T', b'1234d0e0e4736234'),
-                   (b'X-INSTANA-S', b'1234567890abcdef'),
-                   (b'X-INSTANA-L', b'1')]
+        carrier = [('user-agent', 'python-requests/2.23.0'), ('accept-encoding', 'gzip, deflate'),
+                   ('accept', '*/*'), ('connection', 'keep-alive'),
+                   ('traceparent', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'),
+                   ('tracestate', 'congo=t61rcWkgMzE'),
+                   ('X-INSTANA-T', '1234d0e0e4736234'),
+                   ('X-INSTANA-S', '1234567890abcdef'),
+                   ('X-INSTANA-L', '1')]
 
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
         mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
-        ctx = self.bp.extract(carrier)
+        ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx.correlation_id)
         self.assertIsNone(ctx.correlation_type)
         self.assertIsNone(ctx.instana_ancestor)
@@ -80,7 +80,7 @@ class TestBasePropagator(unittest.TestCase):
             'X-INSTANA-L': '1, correlationType=web; correlationId=1234567890abcdef'
         }
         mock_validate.return_value = None
-        ctx = self.bp.extract(carrier)
+        ctx = self.hptc.extract(carrier)
         self.assertTrue(isinstance(ctx, SpanContext))
         assert ctx.trace_id is None
         assert ctx.span_id is None
@@ -98,7 +98,7 @@ class TestBasePropagator(unittest.TestCase):
             'X-INSTANA-L': '1, correlationType=web; correlationId=1234567890abcdef'
         }
         mock_validate.side_effect = Exception
-        ctx = self.bp.extract(carrier)
+        ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx)
 
     @patch.object(Traceparent, "get_traceparent_fields")
@@ -120,7 +120,7 @@ class TestBasePropagator(unittest.TestCase):
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
         mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
-        ctx = self.bp.extract(carrier)
+        ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx.correlation_id)
         self.assertIsNone(ctx.correlation_type)
         self.assertIsNone(ctx.instana_ancestor)
@@ -152,7 +152,7 @@ class TestBasePropagator(unittest.TestCase):
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
         mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
-        ctx = self.bp.extract(carrier)
+        ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx.correlation_id)
         self.assertIsNone(ctx.correlation_type)
         self.assertIsNone(ctx.instana_ancestor)

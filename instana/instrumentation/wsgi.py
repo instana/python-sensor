@@ -22,7 +22,7 @@ class InstanaWSGIMiddleware(object):
 
         def new_start_response(status, headers, exc_info=None):
             """Modified start response with additional headers."""
-            tracer.inject(self.scope.span.context, ot.Format.HTTP_HEADERS, headers)
+            tracer.inject(self.scope.span.context, "{}_trace_context".format(ot.Format.HTTP_HEADERS), headers)
             headers.append(('Server-Timing', "intid;desc=%s" % self.scope.span.context.trace_id))
 
             res = start_response(status, headers, exc_info)
@@ -35,7 +35,7 @@ class InstanaWSGIMiddleware(object):
             self.scope.close()
             return res
 
-        ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
+        ctx = tracer.extract("{}_trace_context".format(ot.Format.HTTP_HEADERS), env)
         self.scope = tracer.start_active_span("wsgi", child_of=ctx)
 
         if agent.options.extra_http_headers is not None:

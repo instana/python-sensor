@@ -63,7 +63,8 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
                 span.set_tag(ext.HTTP_STATUS_CODE, int(status_code))
 
                 if hasattr(response, 'headers'):
-                    tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
+                    tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
+                                  response.headers)
                     value = "intid;desc=%s" % scope.span.context.trace_id
                     if hasattr(response.headers, 'add'):
                         response.headers.add('Server-Timing', value)

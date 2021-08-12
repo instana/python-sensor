@@ -6,11 +6,6 @@ from __future__ import absolute_import
 import sys
 
 from ..log import logger
-from ..util.ids import header_to_id
-from ..span_context import SpanContext
-from ..w3c_trace_context.traceparent import Traceparent
-from ..w3c_trace_context.tracestate import Tracestate
-import os
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
@@ -51,12 +46,8 @@ class BasePropagator(object):
     ALT_HEADER_KEY_TRACEPARENT = "http_traceparent"
     ALT_HEADER_KEY_TRACESTATE = "http_tracestate"
 
-    def __init__(self):
-        self.__tp = Traceparent()
-        self.__ts = Tracestate()
-
     @staticmethod
-    def __extract_headers_dict(carrier):
+    def _extract_headers_dict(carrier):
         """
         This method converts the incoming carrier into a dict
         :param carrier:
@@ -75,95 +66,8 @@ class BasePropagator(object):
 
         return dc
 
-    def extract(self, carrier):
-        """
-        This method overrides the one of the Baseclass as with the introduction of W3C trace context for the HTTP
-        requests more extracting steps and logic was required
-        :param carrier:
-        :return: the context or None
-        """
-        try:
-            headers = self.__extract_headers_dict(carrier=carrier)
-            if headers is None:
-                return None
-            headers = {k.lower(): v for k, v in headers.items()}
-
-            trace_id, span_id, level, synthetic, traceparent, tracestate = self.__extract_instana_headers(dc=headers)
-
-            if traceparent:
-                traceparent = self.__tp.validate(traceparent)
-
-            ctx = self.__determine_span_context(trace_id, span_id, level, synthetic, traceparent, tracestate)
-
-            return ctx
-        except Exception:
-            logger.debug("extract error:", exc_info=True)
-
-    def __determine_span_context(self, trace_id, span_id, level, synthetic, traceparent, tracestate):
-        """
-        This method determines the span context depending on a set of conditions being met
-        Detailed description of the conditions can be found here:
-        https://github.com/instana/technical-documentation/tree/master/tracing/specification#http-processing-for-instana-tracers
-        :param trace_id: instana trace id
-        :param span_id: instana span id
-        :param level: instana level
-        :param synthetic: instana synthetic
-        :return: ctx
-        """
-        correlation = False
-        disable_traceparent = os.environ.get("INSTANA_DISABLE_W3C_TRACE_CORRELATION", "")
-        instana_ancestor = None
-        ctx = SpanContext()
-        if level and "correlationType" in level:
-            trace_id, span_id = [None] * 2
-            correlation = True
-
-        ctx_level = self.__get_ctx_level(level)
-
-        if trace_id and span_id:
-            ctx.trace_id = trace_id[-16:]  # only the last 16 chars
-            ctx.span_id = span_id[-16:]  # only the last 16 chars
-            ctx.level = ctx_level
-            ctx.synthetic = synthetic is not None
-
-            if len(trace_id) > 16:
-                ctx.long_trace_id = trace_id
-
-        elif traceparent and trace_id is None and span_id is None:
-            _, tp_trace_id, tp_parent_id, _ = self.__tp.get_traceparent_fields(traceparent)
-
-            if tracestate and "in=" in tracestate:
-                instana_ancestor = self.__ts.get_instana_ancestor(tracestate)
-
-            if disable_traceparent == "":
-                ctx.trace_id = tp_trace_id[-16:]
-                ctx.span_id = tp_parent_id
-                ctx.level = ctx_level
-                ctx.synthetic = synthetic is not None
-                ctx.trace_parent = True
-                ctx.instana_ancestor = instana_ancestor
-                ctx.long_trace_id = tp_trace_id
-            else:
-                if instana_ancestor:
-                    ctx.trace_id = instana_ancestor.t
-                    ctx.span_id = instana_ancestor.p
-                    ctx.level = ctx_level
-                    ctx.synthetic = synthetic is not None
-
-        elif synthetic:
-            ctx.synthetic = synthetic
-
-        if correlation:
-            self.__set_correlation_properties(level, ctx)
-
-        if traceparent:
-            ctx.traceparent = traceparent
-            ctx.tracestate = tracestate
-
-        return ctx
-
     @staticmethod
-    def __get_ctx_level(level):
+    def _get_ctx_level(level):
         """
         Extract the level value and return it, as it may include correlation values
         :param level:
@@ -176,7 +80,7 @@ class BasePropagator(object):
         return ctx_level
 
     @staticmethod
-    def __set_correlation_properties(level, ctx):
+    def _set_correlation_properties(level, ctx):
         """
         Set the correlation values if they are present
         :param level:
@@ -189,50 +93,3 @@ class BasePropagator(object):
                 ctx.correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
         except Exception:
             logger.debug("extract instana correlation type/id error:", exc_info=True)
-
-    def __extract_instana_headers(self, dc):
-        """
-        Search carrier for the *HEADER* keys and return the tracing key-values
-
-        :param dc: The dict or list potentially containing context
-        :return: trace_id, span_id, level, synthetic, traceparent, tracestate
-        """
-        trace_id, span_id, level, synthetic, traceparent, tracestate = [None] * 6
-
-        # Headers can exist in the standard X-Instana-T/S format or the alternate HTTP_X_INSTANA_T/S style
-        try:
-            trace_id = dc.get(self.LC_HEADER_KEY_T) or dc.get(self.ALT_LC_HEADER_KEY_T) or dc.get(
-                self.LC_HEADER_KEY_T.encode("utf-8")) or dc.get(self.ALT_LC_HEADER_KEY_T.encode("utf-8"))
-            if trace_id:
-                trace_id = header_to_id(trace_id)
-
-            span_id = dc.get(self.LC_HEADER_KEY_S) or dc.get(self.ALT_LC_HEADER_KEY_S) or dc.get(
-                self.LC_HEADER_KEY_S.encode("utf-8")) or dc.get(self.ALT_LC_HEADER_KEY_S.encode("utf-8"))
-            if span_id:
-                span_id = header_to_id(span_id)
-
-            level = dc.get(self.LC_HEADER_KEY_L) or dc.get(self.ALT_LC_HEADER_KEY_L) or dc.get(
-                self.LC_HEADER_KEY_L.encode("utf-8")) or dc.get(self.ALT_LC_HEADER_KEY_L.encode("utf-8"))
-            if level and PY3 is True and isinstance(level, bytes):
-                level = level.decode("utf-8")
-
-            synthetic = dc.get(self.LC_HEADER_KEY_SYNTHETIC) or dc.get(self.ALT_LC_HEADER_KEY_SYNTHETIC) or dc.get(
-                self.LC_HEADER_KEY_SYNTHETIC.encode("utf-8")) or dc.get(
-                self.ALT_LC_HEADER_KEY_SYNTHETIC.encode("utf-8"))
-            if synthetic:
-                synthetic = synthetic in ['1', b'1']
-
-            traceparent = dc.get(self.HEADER_KEY_TRACEPARENT) or dc.get(self.ALT_HEADER_KEY_TRACEPARENT) or dc.get(
-                self.HEADER_KEY_TRACEPARENT.encode("utf-8")) or dc.get(self.ALT_HEADER_KEY_TRACEPARENT.encode("utf-8"))
-            if traceparent and PY3 is True and isinstance(traceparent, bytes):
-                traceparent = traceparent.decode("utf-8")
-
-            tracestate = dc.get(self.HEADER_KEY_TRACESTATE) or dc.get(self.ALT_HEADER_KEY_TRACESTATE) or dc.get(
-                self.HEADER_KEY_TRACESTATE.encode("utf-8")) or dc.get(self.ALT_HEADER_KEY_TRACESTATE.encode("utf-8"))
-            if tracestate and PY3 is True and isinstance(tracestate, bytes):
-                tracestate = tracestate.decode("utf-8")
-
-        except Exception:
-            logger.debug("extract error:", exc_info=True)
-
-        return trace_id, span_id, level, synthetic, traceparent, tracestate

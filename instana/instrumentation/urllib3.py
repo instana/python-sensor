@@ -15,6 +15,7 @@ from ..util.secrets import strip_secrets_from_query
 try:
     import urllib3
 
+
     def collect(instance, args, kwargs):
         """ Build and return a fully qualified URL for this request """
         kvs = dict()
@@ -36,7 +37,8 @@ try:
                 parts = kvs['path'].split('?')
                 kvs['path'] = parts[0]
                 if len(parts) == 2:
-                    kvs['query'] = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
+                    kvs['query'] = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
+                                                            agent.options.secrets_list)
 
             if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
                 kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
@@ -47,6 +49,7 @@ try:
             return kvs
         else:
             return kvs
+
 
     def collect_response(scope, response):
         try:
@@ -61,6 +64,7 @@ try:
                 scope.span.mark_as_errored()
         except Exception:
             logger.debug("collect_response", exc_info=True)
+
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
@@ -81,7 +85,8 @@ try:
                     scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
                 if 'headers' in kwargs:
-                    active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
+                    active_tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
+                                         kwargs['headers'])
 
                 response = wrapped(*args, **kwargs)
 
@@ -91,6 +96,7 @@ try:
             except Exception as e:
                 scope.span.mark_as_errored({'message': e})
                 raise
+
 
     logger.debug("Instrumenting urllib3")
 except ImportError:

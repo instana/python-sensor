@@ -12,6 +12,7 @@ from ..singletons import tracer
 from ..util.traceutils import get_active_tracer
 
 try:
+    import opentracing as ot
     import boto3
     from boto3.s3 import inject
 
@@ -28,7 +29,7 @@ try:
             if not isinstance(invoke_payload, dict):
                 invoke_payload = json.loads(invoke_payload)
 
-            tracer.inject(scope.span.context, 'http_headers', invoke_payload)
+            tracer.inject(scope.span.context, "{}_trace_context".format(ot.Format.HTTP_HEADERS), invoke_payload)
             payload['Payload'] = json.dumps(invoke_payload)
         except Exception:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)

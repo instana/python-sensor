@@ -20,7 +20,7 @@ class InstanaTweenFactory(object):
         self.handler = handler
 
     def __call__(self, request):
-        ctx = tracer.extract("{}_trace_context".format(ot.Format.HTTP_HEADERS), dict(request.headers))
+        ctx = tracer.extract(ot.Format.HTTP_HEADERS, dict(request.headers), disable_w3c_trace_context=False)
         scope = tracer.start_active_span('http', child_of=ctx)
 
         scope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
@@ -47,7 +47,7 @@ class InstanaTweenFactory(object):
         try:
             response = self.handler(request)
 
-            tracer.inject(scope.span.context, "{}_trace_context".format(ot.Format.HTTP_HEADERS), response.headers)
+            tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, response.headers, disable_w3c_trace_context=False)
             response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
         except HTTPException as e:
             response = e

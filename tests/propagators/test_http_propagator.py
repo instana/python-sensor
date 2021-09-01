@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from instana.propagators.http_propagator_tc import HTTPPropagatorTC
+from instana.propagators.http_propagator import HTTPPropagator
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.span_context import SpanContext
 from mock import patch
@@ -10,7 +10,7 @@ import unittest
 
 class TestHTTPPropagatorTC(unittest.TestCase):
     def setUp(self):
-        self.hptc = HTTPPropagatorTC()
+        self.hptc = HTTPPropagator()
 
     @patch.object(Traceparent, "get_traceparent_fields")
     @patch.object(Traceparent, "validate")

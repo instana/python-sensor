@@ -35,8 +35,8 @@ try:
                 scope.span.set_tag(ext.HTTP_URL, instance.method.location)
                 scope.span.set_tag(ext.HTTP_METHOD, 'POST')
 
-                active_tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
-                                     instance.options.headers)
+                active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance.options.headers,
+                                     disable_w3c_trace_context=False)
 
                 rv = wrapped(*args, **kwargs)
 

@@ -29,8 +29,9 @@ try:
                 with tracer_stack_context():
                     ctx = None
                     if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
-                        ctx = tornado_tracer.extract("{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
-                                                     instance.request.headers.__dict__['_dict'])
+                        ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS,
+                                                     instance.request.headers.__dict__['_dict'],
+                                                     disable_w3c_trace_context=False)
                     scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
 
                     # Query param scrubbing
@@ -56,8 +57,8 @@ try:
 
                     # Set the context response headers now because tornado doesn't give us a better option to do so
                     # later for this request.
-                    tornado_tracer.inject(scope.span.context,
-                                          "{}_trace_context".format(opentracing.Format.HTTP_HEADERS), instance._headers)
+                    tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers,
+                                          disable_w3c_trace_context=False)
                     instance.set_header(name='Server-Timing', value="intid;desc=%s" % scope.span.context.trace_id)
 
                     return wrapped(*argv, **kwargs)
@@ -71,8 +72,8 @@ try:
                 return wrapped(*argv, **kwargs)
 
             scope = instance.request._instana
-            tornado_tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
-                                  instance._headers)
+            tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers,
+                                  disable_w3c_trace_context=False)
             instance.set_header(name='Server-Timing', value="intid;desc=%s" % scope.span.context.trace_id)
 
 

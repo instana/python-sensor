@@ -20,7 +20,8 @@ try:
     @middleware
     async def stan_middleware(request, handler):
         try:
-            ctx = async_tracer.extract("{}_trace_context".format(opentracing.Format.HTTP_HEADERS), request.headers)
+            ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, request.headers,
+                                       disable_w3c_trace_context=False)
             request['scope'] = async_tracer.start_active_span('aiohttp-server', child_of=ctx)
             scope = request['scope']
 
@@ -56,8 +57,8 @@ try:
                     scope.span.mark_as_errored()
 
                 scope.span.set_tag("http.status_code", response.status)
-                async_tracer.inject(scope.span.context, "{}_trace_context".format(opentracing.Format.HTTP_HEADERS),
-                                    response.headers)
+                async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers,
+                                    disable_w3c_trace_context=False)
                 response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
 
             return response

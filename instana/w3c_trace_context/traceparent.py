@@ -19,7 +19,7 @@ class Traceparent:
             if self.TRACEPARENT_REGEX.match(traceparent):
                 return traceparent
         except Exception:
-            logger.debug("traceparent does not follow version 00 specification")
+            logger.debug("traceparent does not follow version {} specification".format(self.SPECIFICATION_VERSION))
         return None
 
     @staticmethod

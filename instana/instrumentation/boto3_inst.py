@@ -29,7 +29,7 @@ try:
             if not isinstance(invoke_payload, dict):
                 invoke_payload = json.loads(invoke_payload)
 
-            tracer.inject(scope.span.context, "{}_trace_context".format(ot.Format.HTTP_HEADERS), invoke_payload)
+            tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, invoke_payload, disable_w3c_trace_context=False)
             payload['Payload'] = json.dumps(invoke_payload)
         except Exception:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)

@@ -30,8 +30,7 @@ try:
                     ctx = None
                     if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
                         ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS,
-                                                     instance.request.headers.__dict__['_dict'],
-                                                     disable_w3c_trace_context=False)
+                                                     instance.request.headers.__dict__['_dict'])
                     scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
 
                     # Query param scrubbing
@@ -57,8 +56,7 @@ try:
 
                     # Set the context response headers now because tornado doesn't give us a better option to do so
                     # later for this request.
-                    tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers,
-                                          disable_w3c_trace_context=False)
+                    tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers)
                     instance.set_header(name='Server-Timing', value="intid;desc=%s" % scope.span.context.trace_id)
 
                     return wrapped(*argv, **kwargs)
@@ -72,8 +70,7 @@ try:
                 return wrapped(*argv, **kwargs)
 
             scope = instance.request._instana
-            tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers,
-                                  disable_w3c_trace_context=False)
+            tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers)
             instance.set_header(name='Server-Timing', value="intid;desc=%s" % scope.span.context.trace_id)
 
 

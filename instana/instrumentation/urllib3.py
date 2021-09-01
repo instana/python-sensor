@@ -85,8 +85,7 @@ try:
                     scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
                 if 'headers' in kwargs:
-                    active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'],
-                                         disable_w3c_trace_context=False)
+                    active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
 
                 response = wrapped(*args, **kwargs)
 

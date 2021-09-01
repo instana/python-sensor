@@ -26,7 +26,7 @@ try:
             """Modified start response with additional headers."""
             if 'stan_scope' in env:
                 scope = env['stan_scope']
-                tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, headers, disable_w3c_trace_context=False)
+                tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, headers)
                 headers.append(('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id))
 
                 res = start_response(status, headers, exc_info)
@@ -41,7 +41,7 @@ try:
             else:
                 return start_response(status, headers, exc_info)
 
-        ctx = tracer.extract(ot.Format.HTTP_HEADERS, env, disable_w3c_trace_context=False)
+        ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
         scope = env['stan_scope'] = tracer.start_active_span("wsgi", child_of=ctx)
 
         if agent.options.extra_http_headers is not None:

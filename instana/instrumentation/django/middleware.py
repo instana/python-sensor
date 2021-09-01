@@ -33,7 +33,7 @@ class InstanaMiddleware(MiddlewareMixin):
         try:
             env = request.environ
 
-            ctx = tracer.extract(ot.Format.HTTP_HEADERS, env, disable_w3c_trace_context=False)
+            ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
             if agent.options.extra_http_headers is not None:
@@ -76,8 +76,7 @@ class InstanaMiddleware(MiddlewareMixin):
                 if path_tpl:
                     request.iscope.span.set_tag("http.path_tpl", path_tpl)
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-                tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response,
-                              disable_w3c_trace_context=False)
+                tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
                 response['Server-Timing'] = "intid;desc=%s" % request.iscope.span.context.trace_id
         except Exception:
             logger.debug("Instana middleware @ process_response", exc_info=True)

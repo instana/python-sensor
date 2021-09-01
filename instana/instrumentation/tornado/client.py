@@ -47,8 +47,7 @@ try:
                     kwargs = new_kwargs
 
                 scope = tornado_tracer.start_active_span('tornado-client', child_of=parent_span)
-                tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers,
-                                      disable_w3c_trace_context=False)
+                tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers)
 
                 # Query param scrubbing
                 parts = request.url.split('?')

@@ -67,8 +67,7 @@ class InstanaASGIMiddleware:
 
         request_headers = scope.get('headers')
         if isinstance(request_headers, list):
-            request_context = async_tracer.extract(opentracing.Format.BINARY, request_headers,
-                                                   disable_w3c_trace_context=False)
+            request_context = async_tracer.extract(opentracing.Format.BINARY, request_headers)
 
         async def send_wrapper(response):
             span = async_tracer.active_span
@@ -85,8 +84,7 @@ class InstanaASGIMiddleware:
 
                         headers = response.get('headers')
                         if headers is not None:
-                            async_tracer.inject(span.context, opentracing.Format.BINARY, headers,
-                                                disable_w3c_trace_context=False)
+                            async_tracer.inject(span.context, opentracing.Format.BINARY, headers)
                     except Exception:
                         logger.debug("send_wrapper: ", exc_info=True)
 

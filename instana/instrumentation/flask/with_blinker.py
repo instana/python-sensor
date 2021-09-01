@@ -23,7 +23,7 @@ def request_started_with_instana(sender, **extra):
         env = flask.request.environ
         ctx = None
 
-        ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env, disable_w3c_trace_context=False)
+        ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
 
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
@@ -68,8 +68,7 @@ def request_finished_with_instana(sender, response, **extra):
                 span.mark_as_errored()
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
-            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers,
-                          disable_w3c_trace_context=False)
+            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
             response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
     except:
         logger.debug("Flask after_request", exc_info=True)

@@ -36,7 +36,7 @@ def generate_id():
     return new_id
 
 
-def header_to_id_no_truncation(header):
+def header_to_long_id(header):
     """
     We can receive headers in the following formats:
       1. unsigned base 16 hex string (or bytes) of variable length

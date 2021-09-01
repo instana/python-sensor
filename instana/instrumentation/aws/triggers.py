@@ -22,9 +22,9 @@ def get_context(tracer, event):
         is_application_load_balancer_trigger(event)
 
     if is_proxy_event:
-        return tracer.extract(ot.Format.HTTP_HEADERS, event.get('headers', {}))
+        return tracer.extract(ot.Format.HTTP_HEADERS, event.get('headers', {}), disable_w3c_trace_context=True)
 
-    return tracer.extract(ot.Format.HTTP_HEADERS, event)
+    return tracer.extract(ot.Format.HTTP_HEADERS, event, disable_w3c_trace_context=True)
 
 
 def is_api_gateway_proxy_trigger(event):

@@ -19,6 +19,7 @@ try:
         import urlparse as parse
         import urllib
 
+
     def add_broker_tags(span, broker_url):
         try:
             url = parse.urlparse(broker_url)
@@ -45,6 +46,7 @@ try:
         except Exception:
             logger.debug("Error parsing broker URL: %s" % broker_url, exc_info=True)
 
+
     @signals.task_prerun.connect
     def task_prerun(*args, **kwargs):
         try:
@@ -55,7 +57,7 @@ try:
 
             headers = task.request.get('headers', {})
             if headers is not None:
-                ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
+                ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, headers, disable_w3c_trace_context=True)
 
             scope = tracer.start_active_span("celery-worker", child_of=ctx)
             scope.span.set_tag("task", task.name)
@@ -67,6 +69,7 @@ try:
         except:
             logger.debug("task_prerun: ", exc_info=True)
 
+
     @signals.task_postrun.connect
     def task_postrun(*args, **kwargs):
         try:
@@ -77,6 +80,7 @@ try:
                 scope.close()
         except:
             logger.debug("after_task_publish: ", exc_info=True)
+
 
     @signals.task_failure.connect
     def task_failure(*args, **kwargs):
@@ -95,6 +99,7 @@ try:
         except:
             logger.debug("task_failure: ", exc_info=True)
 
+
     @signals.task_retry.connect
     def task_retry(*args, **kwargs):
         try:
@@ -108,6 +113,7 @@ try:
                     scope.span.set_tag('retry-reason', reason)
         except:
             logger.debug("task_failure: ", exc_info=True)
+
 
     @signals.before_task_publish.connect
     def before_task_publish(*args, **kwargs):
@@ -127,7 +133,8 @@ try:
 
                 # Context propagation
                 context_headers = {}
-                active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, context_headers)
+                active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, context_headers,
+                                     disable_w3c_trace_context=True)
 
                 # Fix for broken header propagation
                 # https://github.com/celery/celery/issues/4875
@@ -141,6 +148,7 @@ try:
         except:
             logger.debug("before_task_publish: ", exc_info=True)
 
+
     @signals.after_task_publish.connect
     def after_task_publish(*args, **kwargs):
         try:
@@ -151,6 +159,7 @@ try:
                 scope.close()
         except:
             logger.debug("after_task_publish: ", exc_info=True)
+
 
     logger.debug("Instrumenting celery")
 except ImportError:

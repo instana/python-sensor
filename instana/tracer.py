@@ -121,13 +121,13 @@ class InstanaTracer(BasicTracer):
 
         return span
 
-    def inject(self, span_context, format, carrier, disable_w3c_trace_context=True):
+    def inject(self, span_context, format, carrier, disable_w3c_trace_context=False):
         if format in self._propagators:
             return self._propagators[format].inject(span_context, carrier, disable_w3c_trace_context)
 
         raise ot.UnsupportedFormatException()
 
-    def extract(self, format, carrier, disable_w3c_trace_context=True):
+    def extract(self, format, carrier, disable_w3c_trace_context=False):
         if format in self._propagators:
             return self._propagators[format].extract(carrier, disable_w3c_trace_context)
 

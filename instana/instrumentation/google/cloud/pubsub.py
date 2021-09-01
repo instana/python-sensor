@@ -47,7 +47,7 @@ try:
         with tracer.start_active_span('gcps-producer', child_of=parent_span) as scope:
             # trace continuity, inject to the span context
             headers = dict()
-            tracer.inject(scope.span.context, Format.TEXT_MAP, headers)
+            tracer.inject(scope.span.context, Format.TEXT_MAP, headers, disable_w3c_trace_context=True)
 
             # update the metadata dict with instana trace attributes
             kwargs.update(headers)
@@ -73,7 +73,7 @@ try:
 
         def callback_with_instana(message):
             if message.attributes:
-                parent_span = tracer.extract(Format.TEXT_MAP, message.attributes)
+                parent_span = tracer.extract(Format.TEXT_MAP, message.attributes, disable_w3c_trace_context=True)
             else:
                 parent_span = None
 

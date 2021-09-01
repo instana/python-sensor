@@ -13,7 +13,8 @@ try:
     import asynqp
     import asyncio
 
-    @wrapt.patch_function_wrapper('asynqp.exchange','Exchange.publish')
+
+    @wrapt.patch_function_wrapper('asynqp.exchange', 'Exchange.publish')
     def publish_with_instana(wrapped, instance, argv, kwargs):
         parent_span = async_tracer.active_span
 
@@ -27,12 +28,13 @@ try:
             msg = argv[0]
             if msg.headers is None:
                 msg.headers = {}
-            async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, msg.headers)
+            async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, msg.headers,
+                                disable_w3c_trace_context=True)
 
             try:
                 scope.span.set_tag("exchange", instance.name)
                 scope.span.set_tag("sort", "publish")
-                scope.span.set_tag("address", host + ":" + str(port) )
+                scope.span.set_tag("address", host + ":" + str(port))
 
                 if 'routing_key' in kwargs:
                     scope.span.set_tag("key", kwargs['routing_key'])
@@ -46,8 +48,9 @@ try:
             else:
                 return rv
 
+
     @asyncio.coroutine
-    @wrapt.patch_function_wrapper('asynqp.queue','Queue.get')
+    @wrapt.patch_function_wrapper('asynqp.queue', 'Queue.get')
     def get_with_instana(wrapped, instance, argv, kwargs):
         parent_span = async_tracer.active_span
 
@@ -59,7 +62,7 @@ try:
             host, port = instance.sender.protocol.transport._sock.getsockname()
 
             scope.span.set_tag("sort", "consume")
-            scope.span.set_tag("address", host + ":" + str(port) )
+            scope.span.set_tag("address", host + ":" + str(port))
 
             msg = yield from wrapped(*argv, **kwargs)
 
@@ -69,15 +72,17 @@ try:
 
             return msg
 
+
     @asyncio.coroutine
-    @wrapt.patch_function_wrapper('asynqp.queue','Queue.consume')
+    @wrapt.patch_function_wrapper('asynqp.queue', 'Queue.consume')
     def consume_with_instana(wrapped, instance, argv, kwargs):
         def callback_generator(original_callback):
             def callback_with_instana(*argv, **kwargs):
                 ctx = None
                 msg = argv[0]
                 if msg.headers is not None:
-                    ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers))
+                    ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, dict(msg.headers),
+                                               disable_w3c_trace_context=True)
 
                 with async_tracer.start_active_span("rabbitmq", child_of=ctx) as scope:
                     host, port = msg.sender.protocol.transport._sock.getsockname()
@@ -85,7 +90,7 @@ try:
                     try:
                         scope.span.set_tag("exchange", msg.exchange_name)
                         scope.span.set_tag("sort", "consume")
-                        scope.span.set_tag("address", host + ":" + str(port) )
+                        scope.span.set_tag("address", host + ":" + str(port))
                         scope.span.set_tag("key", msg.routing_key)
 
                         original_callback(*argv, **kwargs)
@@ -98,6 +103,7 @@ try:
         cb = argv[0]
         argv = (callback_generator(cb),)
         return wrapped(*argv, **kwargs)
+
 
     logger.debug("Instrumenting asynqp")
 except ImportError:

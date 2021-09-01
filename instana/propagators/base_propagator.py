@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import sys
 
 from instana.log import logger
-from instana.util.ids import header_to_id_no_truncation
+from instana.util.ids import header_to_id, header_to_long_id
 from instana.span_context import SpanContext
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
@@ -119,9 +119,9 @@ class BasePropagator(object):
 
     def _get_participating_trace_context(self, span_context):
         """
-
+        This method is called for getting the updated traceparent and tracestate values
         :param span_context:
-        :return:
+        :return: traceparent, tracestate
         """
         if span_context.long_trace_id and not span_context.trace_parent:
             tp_trace_id = span_context.long_trace_id
@@ -143,6 +143,9 @@ class BasePropagator(object):
         :param span_id: instana span id
         :param level: instana level
         :param synthetic: instana synthetic
+        :param traceparent:
+        :param tracestate:
+        :param disable_w3c_trace_context: flag used to enable w3c trace context only on HTTP requests
         :return: ctx
         """
         correlation = False
@@ -202,7 +205,7 @@ class BasePropagator(object):
         Search carrier for the *HEADER* keys and return the tracing key-values
 
         :param dc: The dict or list potentially containing context
-        :return: trace_id, span_id, level, synthetic, traceparent, tracestate
+        :return: trace_id, span_id, level, synthetic
         """
         trace_id, span_id, level, synthetic = [None] * 4
 
@@ -211,12 +214,12 @@ class BasePropagator(object):
             trace_id = dc.get(self.LC_HEADER_KEY_T) or dc.get(self.ALT_LC_HEADER_KEY_T) or dc.get(
                 self.B_HEADER_KEY_T) or dc.get(self.B_ALT_LC_HEADER_KEY_T)
             if trace_id:
-                trace_id = header_to_id_no_truncation(trace_id)
+                trace_id = header_to_long_id(trace_id)
 
             span_id = dc.get(self.LC_HEADER_KEY_S) or dc.get(self.ALT_LC_HEADER_KEY_S) or dc.get(
                 self.B_HEADER_KEY_S) or dc.get(self.B_ALT_LC_HEADER_KEY_S)
             if span_id:
-                span_id = header_to_id_no_truncation(span_id)
+                span_id = header_to_id(span_id)
 
             level = dc.get(self.LC_HEADER_KEY_L) or dc.get(self.ALT_LC_HEADER_KEY_L) or dc.get(
                 self.B_HEADER_KEY_L) or dc.get(self.B_ALT_LC_HEADER_KEY_L)

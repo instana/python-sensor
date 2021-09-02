@@ -89,9 +89,21 @@ class InstanaTracer(BasicTracer):
                 ctx._baggage = parent_ctx._baggage.copy()
             ctx.trace_id = parent_ctx.trace_id
             ctx.sampled = parent_ctx.sampled
+            ctx.long_trace_id = parent_ctx.long_trace_id
+            ctx.trace_parent = parent_ctx.trace_parent
+            ctx.instana_ancestor = parent_ctx.instana_ancestor
+            ctx.correlation_type = parent_ctx.correlation_type
+            ctx.correlation_id = parent_ctx.correlation_id
+            ctx.traceparent = parent_ctx.traceparent
+            ctx.tracestate = parent_ctx.tracestate
         else:
             ctx.trace_id = gid
             ctx.sampled = self.sampler.sampled(ctx.trace_id)
+            if parent_ctx is not None:
+                ctx.correlation_type = parent_ctx.correlation_type
+                ctx.correlation_id = parent_ctx.correlation_id
+                ctx.traceparent = parent_ctx.traceparent
+                ctx.tracestate = parent_ctx.tracestate
 
         # Tie it all together
         span = InstanaSpan(self,
@@ -109,15 +121,15 @@ class InstanaTracer(BasicTracer):
 
         return span
 
-    def inject(self, span_context, format, carrier):
+    def inject(self, span_context, format, carrier, disable_w3c_trace_context=False):
         if format in self._propagators:
-            return self._propagators[format].inject(span_context, carrier)
+            return self._propagators[format].inject(span_context, carrier, disable_w3c_trace_context)
 
         raise ot.UnsupportedFormatException()
 
-    def extract(self, format, carrier):
+    def extract(self, format, carrier, disable_w3c_trace_context=False):
         if format in self._propagators:
-            return self._propagators[format].extract(carrier)
+            return self._propagators[format].extract(carrier, disable_w3c_trace_context)
 
         raise ot.UnsupportedFormatException()
 

@@ -62,7 +62,8 @@ try:
             properties = properties or pika.BasicProperties()
             properties.headers = properties.headers or {}
 
-            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, properties.headers)
+            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, properties.headers,
+                          disable_w3c_trace_context=True)
             args = (exchange, routing_key, body, properties) + args
 
             try:
@@ -81,7 +82,8 @@ try:
         queue, callback, args, kwargs = _bind_args(*args, **kwargs)
 
         def _cb_wrapper(channel, method, properties, body):
-            parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers)
+            parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers,
+                                         disable_w3c_trace_context=True)
 
             with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
                 try:
@@ -109,7 +111,8 @@ try:
         queue, on_consume_callback, args, kwargs = _bind_args(*args, **kwargs)
 
         def _cb_wrapper(channel, method, properties, body):
-            parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers)
+            parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers,
+                                         disable_w3c_trace_context=True)
 
             with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
                 try:
@@ -145,7 +148,8 @@ try:
 
                 (method_frame, properties, body) = yilded
 
-                parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers)
+                parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers,
+                                             disable_w3c_trace_context=True)
                 with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
                     try:
                         _extract_consumer_tags(scope.span,

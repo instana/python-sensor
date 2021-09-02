@@ -3,8 +3,8 @@
 
 from __future__ import absolute_import
 
-from ..log import logger
-from .base_propagator import BasePropagator
+from instana.log import logger
+from instana.propagators.base_propagator import BasePropagator
 
 
 class TextPropagator(BasePropagator):
@@ -15,7 +15,7 @@ class TextPropagator(BasePropagator):
     The character set is unrestricted.
     """
 
-    def inject(self, span_context, carrier):
+    def inject(self, span_context, carrier, disable_w3c_trace_context=True):
         try:
             trace_id = span_context.trace_id
             span_id = span_context.span_id

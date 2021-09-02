@@ -26,7 +26,7 @@ class StanRecorder(object):
                         "gcps-consumer", "log", "memcache", "mongo", "mysql",
                         "postgres", "pymongo", "rabbitmq", "redis","render",
                         "rpc-client", "rpc-server", "sqlalchemy", "soap",
-                        "tornado-client", "tornado-server", "urllib3", "wsgi")
+                        "tornado-client", "tornado-server", "urllib3", "wsgi", "asgi")
 
     # Recorder thread for collection/reporting of spans
     thread = None

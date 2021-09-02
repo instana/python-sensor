@@ -117,6 +117,18 @@ class BaseSpan(object):
 
         self.__dict__.update(kwargs)
 
+    def _populate_extra_span_attributes(self, span):
+        if span.context.trace_parent:
+            self.tp = span.context.trace_parent
+        if span.context.instana_ancestor:
+            self.ia = span.context.instana_ancestor
+        if span.context.long_trace_id:
+            self.lt = span.context.long_trace_id
+        if span.context.correlation_type:
+            self.crtp = span.context.correlation_type
+        if span.context.correlation_id:
+            self.crid = span.context.correlation_id
+
     def _validate_tags(self, tags):
         """
         This method will loop through a set of tags to validate each key and value.
@@ -231,15 +243,15 @@ class SDKSpan(BaseSpan):
 
 
 class RegisteredSpan(BaseSpan):
-    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "asgi", "django", "http", "soap", "tornado-client",
-                  "tornado-server", "urllib3", "wsgi")
+    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
+                  "tornado-server", "urllib3", "wsgi", "asgi")
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
                   "soap", "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
 
     ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
-                   "rpc-server", "tornado-server", "gcps-consumer")
+                   "rpc-server", "tornado-server", "gcps-consumer", "asgi")
 
     LOCAL_SPANS = ("render")
 
@@ -253,6 +265,7 @@ class RegisteredSpan(BaseSpan):
             # entry
             self._populate_entry_span_data(span)
             self.data["service"] = service_name
+            self._populate_extra_span_attributes(span)
         elif span.operation_name in self.EXIT_SPANS:
             self.k = 2  # exit
             self._populate_exit_span_data(span)

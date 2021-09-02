@@ -3,8 +3,8 @@
 
 from sanic import Sanic
 from sanic.exceptions import SanicException
-from .simpleview import SimpleView
-from .name import NameView
+from tests.apps.sanic_app.simpleview import SimpleView
+from tests.apps.sanic_app.name import NameView
 from sanic.response import text
 import instana
 

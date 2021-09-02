@@ -19,7 +19,7 @@ except ImportError:
     # in test sets that don't install/test for it.
     pass
 
-from ...helpers import testenv
+from tests.helpers import testenv
 from instana.singletons import tracer
 
 logging.basicConfig(level=logging.WARNING)

@@ -10,12 +10,12 @@ from ...log import logger
 from ...singletons import agent, async_tracer
 from ...util.secrets import strip_secrets_from_query
 
-
 try:
     import aiohttp
     import asyncio
 
     from aiohttp.web import middleware
+
 
     @middleware
     async def stan_middleware(request, handler):
@@ -79,6 +79,7 @@ try:
             kwargs["middlewares"] = [stan_middleware]
 
         return wrapped(*argv, **kwargs)
+
 
     logger.debug("Instrumenting aiohttp server")
 except ImportError:

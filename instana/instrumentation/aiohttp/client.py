@@ -10,10 +10,10 @@ from ...log import logger
 from ...singletons import agent, async_tracer
 from ...util.secrets import strip_secrets_from_query
 
-
 try:
     import aiohttp
     import asyncio
+
 
     async def stan_request_start(session, trace_config_ctx, params):
         try:
@@ -31,12 +31,14 @@ try:
 
             parts = str(params.url).split('?')
             if len(parts) > 1:
-                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher, agent.options.secrets_list)
+                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
+                                                      agent.options.secrets_list)
                 scope.span.set_tag("http.params", cleaned_qp)
             scope.span.set_tag("http.url", parts[0])
             scope.span.set_tag('http.method', params.method)
         except Exception:
             logger.debug("stan_request_start", exc_info=True)
+
 
     async def stan_request_end(session, trace_config_ctx, params):
         try:
@@ -56,6 +58,7 @@ try:
         except Exception:
             logger.debug("stan_request_end", exc_info=True)
 
+
     async def stan_request_exception(session, trace_config_ctx, params):
         try:
             scope = trace_config_ctx.scope
@@ -66,7 +69,8 @@ try:
         except Exception:
             logger.debug("stan_request_exception", exc_info=True)
 
-    @wrapt.patch_function_wrapper('aiohttp.client','ClientSession.__init__')
+
+    @wrapt.patch_function_wrapper('aiohttp.client', 'ClientSession.__init__')
     def init_with_instana(wrapped, instance, argv, kwargs):
         instana_trace_config = aiohttp.TraceConfig()
         instana_trace_config.on_request_start.append(stan_request_start)
@@ -79,7 +83,7 @@ try:
 
         return wrapped(*argv, **kwargs)
 
+
     logger.debug("Instrumenting aiohttp client")
 except ImportError:
     pass
-

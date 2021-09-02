@@ -113,14 +113,16 @@ def test_http_extract_synthetic_only():
     assert ctx.synthetic
 
 
-def test_http_no_context_extract():
+def test_http_default_context_extract():
     ot.tracer = InstanaTracer()
 
     carrier = {}
     ctx = ot.tracer.extract(ot.Format.HTTP_HEADERS, carrier)
 
-    assert ctx is None
-
+    assert isinstance(ctx, SpanContext)
+    assert ctx.trace_id is None
+    assert ctx.span_id is None
+    assert ctx.synthetic is False
 
 def test_http_128bit_headers():
     ot.tracer = InstanaTracer()
@@ -195,13 +197,16 @@ def test_text_mixed_case_extract():
     assert ctx.span_id == '0000000000000001'
 
 
-def test_text_no_context_extract():
+def test_text_default_context_extract():
     ot.tracer = InstanaTracer()
 
     carrier = {}
     ctx = ot.tracer.extract(ot.Format.TEXT_MAP, carrier)
 
-    assert ctx is None
+    assert isinstance(ctx, SpanContext)
+    assert ctx.trace_id is None
+    assert ctx.span_id is None
+    assert ctx.synthetic is False
 
 
 def test_text_128bit_headers():
@@ -279,13 +284,16 @@ def test_binary_mixed_case_extract():
     assert ctx.synthetic
 
 
-def test_binary_no_context_extract():
+def test_binary_default_context_extract():
     ot.tracer = InstanaTracer()
 
     carrier = {}
     ctx = ot.tracer.extract(ot.Format.BINARY, carrier)
 
-    assert ctx is None
+    assert isinstance(ctx, SpanContext)
+    assert ctx.trace_id is None
+    assert ctx.span_id is None
+    assert ctx.synthetic is False
 
 
 def test_binary_128bit_headers():

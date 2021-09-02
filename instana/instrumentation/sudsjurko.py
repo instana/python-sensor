@@ -13,12 +13,13 @@ from ..log import logger
 from ..util.traceutils import get_active_tracer
 
 try:
-    import suds # noqa
+    import suds  # noqa
 
     if (LooseVersion(suds.version.__version__) <= LooseVersion('0.6')):
         class_method = 'SoapClient.send'
     else:
         class_method = '_SoapClient.send'
+
 
     @wrapt.patch_function_wrapper('suds.client', class_method)
     def send_with_instana(wrapped, instance, args, kwargs):
@@ -45,6 +46,7 @@ try:
             else:
                 scope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
                 return rv
+
 
     logger.debug("Instrumenting suds-jurko")
 except ImportError:

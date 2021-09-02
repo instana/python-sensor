@@ -29,12 +29,14 @@ try:
                 with tracer_stack_context():
                     ctx = None
                     if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
-                        ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS, instance.request.headers.__dict__['_dict'])
+                        ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS,
+                                                     instance.request.headers.__dict__['_dict'])
                     scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
 
                     # Query param scrubbing
                     if instance.request.query is not None and len(instance.request.query) > 0:
-                        cleaned_qp = strip_secrets_from_query(instance.request.query, agent.options.secrets_matcher, agent.options.secrets_list)
+                        cleaned_qp = strip_secrets_from_query(instance.request.query, agent.options.secrets_matcher,
+                                                              agent.options.secrets_list)
                         scope.span.set_tag("http.params", cleaned_qp)
 
                     url = "%s://%s%s" % (instance.request.protocol, instance.request.host, instance.request.path)
@@ -47,7 +49,8 @@ try:
                     if agent.options.extra_http_headers is not None:
                         for custom_header in agent.options.extra_http_headers:
                             if custom_header in instance.request.headers:
-                                scope.span.set_tag("http.header.%s" % custom_header, instance.request.headers[custom_header])
+                                scope.span.set_tag("http.header.%s" % custom_header,
+                                                   instance.request.headers[custom_header])
 
                     setattr(instance.request, "_instana", scope)
 
@@ -91,6 +94,7 @@ try:
             except Exception:
                 logger.debug("tornado on_finish", exc_info=True)
 
+
         @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler.log_exception')
         def log_exception_with_instana(wrapped, instance, argv, kwargs):
             try:
@@ -105,7 +109,7 @@ try:
             except Exception:
                 logger.debug("tornado log_exception", exc_info=True)
 
+
         logger.debug("Instrumenting tornado server")
 except ImportError:
     pass
-

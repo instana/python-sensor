@@ -24,38 +24,38 @@ def test_id_generation():
 def test_various_header_to_id_conversion():
     # Get a hex string to test against & convert
     header_id = instana.util.ids.generate_id()
-    converted_id = instana.util.ids.header_to_id(header_id)
+    converted_id = instana.util.ids.header_to_long_id(header_id)
     assert(header_id == converted_id)
 
     # Hex value - result should be left padded
-    result = instana.util.ids.header_to_id('abcdef')
+    result = instana.util.ids.header_to_long_id('abcdef')
     assert('0000000000abcdef' == result)
 
     # Hex value
-    result = instana.util.ids.header_to_id('0123456789abcdef')
+    result = instana.util.ids.header_to_long_id('0123456789abcdef')
     assert('0123456789abcdef' == result)
 
     # Very long incoming header should just return the rightmost 16 bytes
-    result = instana.util.ids.header_to_id('0x0123456789abcdef0123456789abcdef')
-    assert('0123456789abcdef' == result)
+    result = instana.util.ids.header_to_long_id('0x0123456789abcdef0123456789abcdef')
+    assert('0x0123456789abcdef0123456789abcdef' == result)
 
 
 def test_header_to_id_conversion_with_bogus_header():
     # Bogus nil arg
-    bogus_result = instana.util.ids.header_to_id(None)
+    bogus_result = instana.util.ids.header_to_long_id(None)
     assert(instana.util.ids.BAD_ID == bogus_result)
 
     # Bogus Integer arg
-    bogus_result = instana.util.ids.header_to_id(1234)
+    bogus_result = instana.util.ids.header_to_long_id(1234)
     assert(instana.util.ids.BAD_ID == bogus_result)
 
     # Bogus Array arg
-    bogus_result = instana.util.ids.header_to_id([1234])
+    bogus_result = instana.util.ids.header_to_long_id([1234])
     assert(instana.util.ids.BAD_ID == bogus_result)
 
     # Bogus Hex Values in String
-    bogus_result = instana.util.ids.header_to_id('0xZZZZZZ')
+    bogus_result = instana.util.ids.header_to_long_id('0xZZZZZZ')
     assert(instana.util.ids.BAD_ID == bogus_result)
 
-    bogus_result = instana.util.ids.header_to_id('ZZZZZZ')
+    bogus_result = instana.util.ids.header_to_long_id('ZZZZZZ')
     assert(instana.util.ids.BAD_ID == bogus_result)

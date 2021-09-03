@@ -37,7 +37,6 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
         except Exception as exc:
             if scope.span:
                 scope.span.log_exception(exc)
-            raise
 
     agent.collector.shutdown()
     return result

@@ -28,7 +28,8 @@ try:
 
             scope = active_tracer.start_active_span("sqlalchemy", child_of=active_tracer.active_span)
             context = kw['context']
-            context._stan_scope = scope
+            if context:
+                context._stan_scope = scope
 
             conn = kw['conn']
             url = str(conn.engine.url)

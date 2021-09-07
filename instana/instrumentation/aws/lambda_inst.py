@@ -12,6 +12,7 @@ from ...singletons import env_is_aws_lambda
 from ... import get_lambda_handler_or_default
 from ...singletons import get_agent, get_tracer
 from .triggers import enrich_lambda_span, get_context
+import traceback
 
 
 def lambda_handler_with_instana(wrapped, instance, args, kwargs):
@@ -36,6 +37,7 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
                     result['multiValueHeaders']['Server-Timing'] = [server_timing_value]
         except Exception as exc:
             if scope.span:
+                exc = traceback.format_exc()
                 scope.span.log_exception(exc)
             raise
         finally:

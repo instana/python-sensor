@@ -64,7 +64,6 @@ class InstanaSpan(BasicSpan):
         try:
             message = ""
             self.mark_as_errored()
-
             if hasattr(exc, '__str__') and len(str(exc)) > 0:
                 message = str(exc)
             elif hasattr(exc, 'message') and exc.message is not None:
@@ -84,6 +83,8 @@ class InstanaSpan(BasicSpan):
                 self.set_tag('error', message)
             elif self.operation_name == "sqlalchemy":
                 self.set_tag('sqlalchemy.err', message)
+            elif self.operation_name == "aws.lambda.entry":
+                self.set_tag('lambda.error', message)
             else:
                 self.log_kv({'message': message})
         except Exception:
@@ -295,7 +296,7 @@ class RegisteredSpan(BaseSpan):
             self.data["lambda"]["functionName"] = span.tags.pop('lambda.name', "Unknown")
             self.data["lambda"]["functionVersion"] = span.tags.pop('lambda.version', "Unknown")
             self.data["lambda"]["trigger"] = span.tags.pop('lambda.trigger', None)
-            self.data["lambda"]["error"] = None
+            self.data["lambda"]["error"] = span.tags.pop('lambda.error', None)
 
             trigger_type = self.data["lambda"]["trigger"]
 

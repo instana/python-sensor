@@ -6,7 +6,7 @@ celery>=4.1.1
 django>=1.11,<2.0.0
 fastapi>=0.61.1;python_version>="3.6"
 flask>=0.12.2
-grpcio>=1.18.0
+grpcio>=1.18.0,<1.40
 google-cloud-pubsub<=2.1.0
 google-cloud-storage>=1.24.0;python_version>="3.5"
 lxml>=3.4

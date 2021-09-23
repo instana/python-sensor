@@ -38,8 +38,7 @@ try:
             scope.span.set_tag('sqlalchemy.url', url_regexp.sub('//', url))
         except Exception as e:
             logger.debug(e)
-        finally:
-            return
+        return
 
 
     @event.listens_for(Engine, 'after_cursor_execute', named=True)

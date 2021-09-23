@@ -47,8 +47,8 @@ def log_with_instana(wrapped, instance, argv, kwargs):
                     scope.span.mark_as_errored()
     except Exception:
         logger.debug('log_with_instana:', exc_info=True)
-    finally:
-        return wrapped(*argv, **kwargs)
+
+    return wrapped(*argv, **kwargs)
 
 
 logger.debug('Instrumenting logging')

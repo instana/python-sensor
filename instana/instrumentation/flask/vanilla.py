@@ -51,8 +51,8 @@ def before_request_with_instana(*argv, **kwargs):
             span.set_tag("http.path_tpl", path_tpl)
     except:
         logger.debug("Flask before_request", exc_info=True)
-    finally:
-        return None
+
+    return None
 
 
 def after_request_with_instana(response):
@@ -78,7 +78,7 @@ def after_request_with_instana(response):
         if scope is not None:
             scope.close()
             flask.g.scope = None
-        return response
+    return response
 
 
 def teardown_request_with_instana(*argv, **kwargs):

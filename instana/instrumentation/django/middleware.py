@@ -84,7 +84,7 @@ class InstanaMiddleware(MiddlewareMixin):
             if request.iscope is not None:
                 request.iscope.close()
                 request.iscope = None
-            return response
+        return response
 
     def process_exception(self, request, exception):
         from django.http.response import Http404

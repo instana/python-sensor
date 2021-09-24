@@ -35,8 +35,7 @@ class CursorWrapper(wrapt.ObjectProxy):
             span.set_tag('port', self._connect_params[1]['port'])
         except Exception as e:
             logger.debug(e)
-        finally:
-            return span
+        return span
 
     def execute(self, sql, params=None):
         active_tracer = get_active_tracer()

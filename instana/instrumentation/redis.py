@@ -32,8 +32,8 @@ try:
 
         except:
             logger.debug("redis.collect_tags non-fatal error", exc_info=True)
-        finally:
-            return span
+
+        return span
 
 
     def execute_command_with_instana(wrapped, instance, args, kwargs):

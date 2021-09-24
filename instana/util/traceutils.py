@@ -27,5 +27,6 @@ def get_active_tracer():
         else:
             return None
     except Exception:
-        logger.debug("error while getting active tracer: ", exc_info=True)
+        # Do not try to log this with instana, as there is no active tracer and there will be an infinite loop at least
+        # for PY2
         return None

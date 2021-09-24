@@ -42,8 +42,7 @@ try:
                 span.set_tag('rpc.port', parts[1])
         except:
             logger.debug("grpc.collect_tags non-fatal error", exc_info=True)
-        finally:
-            return span
+        return span
 
 
     @wrapt.patch_function_wrapper('grpc._channel', '_UnaryUnaryMultiCallable.with_call')

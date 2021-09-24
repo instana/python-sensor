@@ -74,5 +74,5 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
             flask.g.scope = None
     except:
         logger.debug("handle_user_exception_with_instana:", exc_info=True)
-    finally:
-        return response
+
+    return response

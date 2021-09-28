@@ -132,7 +132,7 @@ class TestHostCollector(unittest.TestCase):
         assert type(python_plugin['data']['metrics']['gc']['threshold2']) in [float, int]
 
     def test_prepare_payload_basics_disable_runtime_metrics(self):
-        os.environ["INSTANA_DISABLE_METRICS_COLLECTION"] = "disable"
+        os.environ["INSTANA_DISABLE_METRICS_COLLECTION"] = "TRUE"
         self.create_agent_and_setup_tracer()
 
         payload = self.agent.collector.prepare_payload()

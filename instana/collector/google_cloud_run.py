@@ -14,110 +14,94 @@ from instana.collector.base import BaseCollector
 from instana.util import DictionaryOfStan, validate_url
 from instana.singletons import env_is_test
 
-from instana.collector.helpers.process import ProcessHelper
-from instana.collector.helpers.runtime import RuntimeHelper
+from instana.collector.helpers.google_cloud_run.process import GCRProcessHelper
+from instana.collector.helpers.google_cloud_run.service_revision_instance_entity import InstanceEntityHelper
 
 
 class GCRCollector(BaseCollector):
     """ Collector for Google Cloud Run """
+
     def __init__(self, agent):
         super(GCRCollector, self).__init__(agent)
-        logger.debug("Loading AWS Fargate Collector")
+        logger.debug("Loading Google Cloud Run Collector")
 
         # Indicates if this Collector has all requirements to run successfully
         self.ready_to_start = True
 
+        self.revision = os.environ.get("K_REVISION")
+        self.service = os.environ.get("K_SERVICE")
+        self.configuration = os.environ.get("K_CONFIGURATION")
         # Prepare the URLS that we will collect data from
-        self.ecmu = os.environ.get("ECS_CONTAINER_METADATA_URI", "")
+        self.gcr_md_uri = os.environ.get("GOOGLE_CLOUD_RUN_METADATA_ENDPOINT", "http://metadata.google.internal")
 
-        if self.ecmu == "" or validate_url(self.ecmu) is False:
-            logger.warning("AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
+        if self.gcr_md_uri == "" or validate_url(self.gcr_md_uri) is False:
+            logger.warning("GCRCollector: GOOGLE_CLOUD_RUN_METADATA_ENDPOINT not in environment or invalid URL.  "
                            "Instana will not be able to monitor this environment")
             self.ready_to_start = False
 
-        self.ecmu_url_root = self.ecmu
-        self.ecmu_url_task = self.ecmu + '/task'
-        self.ecmu_url_stats = self.ecmu + '/stats'
-        self.ecmu_url_task_stats = self.ecmu + '/task/stats'
+        self.gcr_md_project_uri = self.gcr_md_uri + '/computeMetadata/v1/project/?recursive=true'
+        self.gcr_md_instance_uri = self.gcr_md_uri + '/computeMetadata/v1/instance/?recursive=true'
 
-        # Timestamp in seconds of the last time we fetched all ECMU data
-        self.last_ecmu_full_fetch = 0
+        # Timestamp in seconds of the last time we fetched all GCR metadata
+        self.last_gcr_md_full_fetch = 0
 
-        # How often to do a full fetch of ECMU data
-        self.ecmu_full_fetch_interval = 304
+        # How often to do a full fetch of GCR metadata
+        self.gcr_md_full_fetch_interval = 300
 
         # HTTP client with keep-alive
         self.http_client = requests.Session()
 
         # This is the collector thread querying the metadata url
-        self.ecs_metadata_thread = None
+        self.gcr_metadata_thread = None
 
         # The fully qualified ARN for this process
-        self._fq_arn = None
+        self._gcp_arn = None
 
         # Response from the last call to
-        # ${ECS_CONTAINER_METADATA_URI}/
-        self.root_metadata = None
+        # Instance URI
+        self.instance_metadata = None
 
         # Response from the last call to
-        # ${ECS_CONTAINER_METADATA_URI}/task
-        self.task_metadata = None
-
-        # Response from the last call to
-        # ${ECS_CONTAINER_METADATA_URI}/stats
-        self.stats_metadata = None
-
-        # Response from the last call to
-        # ${ECS_CONTAINER_METADATA_URI}/task/stats
-        self.task_stats_metadata = None
+        # Project URI
+        self.project_metadata = None
 
         # Populate the collection helpers
-        self.helpers.append(ProcessHelper(self))
-        self.helpers.append(RuntimeHelper(self))
+        self.helpers.append(GCRProcessHelper(self))
+        self.helpers.append(InstanceEntityHelper(self))
 
     def start(self):
         if self.ready_to_start is False:
-            logger.warning("AWS Fargate Collector is missing requirements and cannot monitor this environment.")
+            logger.warning("Google Cloud Run Collector is missing requirements and cannot monitor this environment.")
             return
 
         super(GCRCollector, self).start()
 
-    def get_ecs_metadata(self):
+    def get_service_revision_instance_metadata(self):
         """
-        Get the latest data from the ECS metadata container API and store on the class
+        Get the latest data from the service revision instance entity metadata and store in the class
         @return: Boolean
         """
         if env_is_test is True:
-            # For test, we are using mock ECS metadata
+            # For test, we are using mock service revision instance entity metadata
             return
 
         try:
-            delta = int(time()) - self.last_ecmu_full_fetch
-            if delta > self.ecmu_full_fetch_interval:
-                # Refetch the ECMU snapshot data
-                self.last_ecmu_full_fetch = int(time())
+            delta = int(time()) - self.last_gcr_md_full_fetch
+            if delta > self.gcr_md_full_fetch_interval:
+                # Refetch the GCR snapshot data
+                self.last_gcr_md_full_fetch = int(time())
 
                 # Response from the last call to
-                # ${ECS_CONTAINER_METADATA_URI}/
-                json_body = self.http_client.get(self.ecmu_url_root, timeout=1).content
-                self.root_metadata = json.loads(json_body)
+                # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
+                json_body = self.http_client.get(self.gcr_md_project_uri, timeout=1).content
+                self.project_metadata = json.loads(json_body)
 
                 # Response from the last call to
-                # ${ECS_CONTAINER_METADATA_URI}/task
-                json_body = self.http_client.get(self.ecmu_url_task, timeout=1).content
-                self.task_metadata = json.loads(json_body)
-
-            # Response from the last call to
-            # ${ECS_CONTAINER_METADATA_URI}/stats
-            json_body = self.http_client.get(self.ecmu_url_stats, timeout=2).content
-            self.stats_metadata = json.loads(json_body)
-
-            # Response from the last call to
-            # ${ECS_CONTAINER_METADATA_URI}/task/stats
-            json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=1).content
-            self.task_stats_metadata = json.loads(json_body)
+                # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/instance/?recursive=true
+                json_body = self.http_client.get(self.gcr_md_instance_uri, timeout=1).content
+                self.instance_metadata = json.loads(json_body)
         except Exception:
-            logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
+            logger.debug("GoogleCloudRunCollector.get_service_revision_instance_metadata", exc_info=True)
 
     def should_send_snapshot_data(self):
         delta = int(time()) - self.snapshot_data_last_sent
@@ -137,7 +121,7 @@ class GCRCollector(BaseCollector):
             with_snapshot = self.should_send_snapshot_data()
 
             # Fetch the latest metrics
-            self.get_ecs_metadata()
+            self.get_service_revision_instance_metadata()
 
             plugins = []
             for helper in self.helpers:
@@ -152,18 +136,10 @@ class GCRCollector(BaseCollector):
 
         return payload
 
-    def get_fq_arn(self):
-        if self._fq_arn is not None:
-            return self._fq_arn
-
-        if self.root_metadata is not None:
-            labels = self.root_metadata.get("Labels", None)
-            if labels is not None:
-                task_arn = labels.get("com.amazonaws.ecs.task-arn", "")
-
-            container_name = self.root_metadata.get("Name", "")
-
-            self._fq_arn = task_arn + "::" + container_name
-            return self._fq_arn
-        else:
-            return "Missing ECMU metadata"
+    def get_instance_id(self):
+        try:
+            if self.instance_metadata:
+                return self.instance_metadata.get("id")
+        except Exception:
+            logger.debug("get_instance_id error", exc_info=True)
+        return None

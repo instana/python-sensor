@@ -18,8 +18,8 @@ class GCRFrom(object):
     """ The source identifier for GCRAgent """
 
     hl = True
-    cp = "gcr"
-    e = "taskDefinition"
+    cp = "gcp"
+    e = None  # the instance ID of the Cloud Run service revision instance
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -62,7 +62,7 @@ class GCRAgent(BaseAgent):
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        return {'hl': True, 'cp': 'aws', 'e': self.collector.get_fq_arn()}
+        return {'hl': True, 'cp': 'gcp', 'e': self.collector.get_instance_id()}
 
     def report_data_payload(self, payload):
         """
@@ -74,7 +74,8 @@ class GCRAgent(BaseAgent):
                 # Prepare request headers
                 self.report_headers = dict()
                 self.report_headers["Content-Type"] = "application/json"
-                self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
+                self.report_headers["X-Instana-Host"] = "gcp:cloud-run:revision:{revision}".format(
+                    revision=self.collector.revision)
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
 
             self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))

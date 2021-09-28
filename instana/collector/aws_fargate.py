@@ -14,7 +14,7 @@ from .base import BaseCollector
 from ..util import DictionaryOfStan, validate_url
 from ..singletons import env_is_test
 
-from .helpers.process import ProcessHelper
+from .helpers.fargate.process import FargateProcessHelper
 from .helpers.runtime import RuntimeHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
@@ -77,7 +77,7 @@ class AWSFargateCollector(BaseCollector):
         # Populate the collection helpers
         self.helpers.append(TaskHelper(self))
         self.helpers.append(DockerHelper(self))
-        self.helpers.append(ProcessHelper(self))
+        self.helpers.append(FargateProcessHelper(self))
         self.helpers.append(RuntimeHelper(self))
         self.helpers.append(ContainerHelper(self))
 

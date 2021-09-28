@@ -56,7 +56,7 @@ class RuntimeHelper(BaseHelper):
 
     def _collect_runtime_metrics(self, plugin_data, with_snapshot):
         if os.environ.get('INSTANA_DISABLE_METRICS_COLLECTION', False):
-            return False
+            return
         
         """ Collect up and return the runtime metrics """
         try:

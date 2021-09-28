@@ -40,6 +40,8 @@ class TestHostCollector(unittest.TestCase):
             os.environ.pop("INSTANA_ZONE")
         if "INSTANA_TAGS" in os.environ:
             os.environ.pop("INSTANA_TAGS")
+        if "INSTANA_DISABLE_METRICS_COLLECTION" in os.environ:
+            os.environ.pop("INSTANA_DISABLE_METRICS_COLLECTION")
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
@@ -55,17 +57,17 @@ class TestHostCollector(unittest.TestCase):
         self.create_agent_and_setup_tracer()
 
         payload = self.agent.collector.prepare_payload()
-        assert(payload)
+        assert (payload)
 
-        assert(len(payload.keys()) == 3)
-        assert('spans' in payload)
-        assert(isinstance(payload['spans'], list))
-        assert(len(payload['spans']) == 0)
-        assert('metrics' in payload)
-        assert(len(payload['metrics'].keys()) == 1)
-        assert('plugins' in payload['metrics'])
-        assert(isinstance(payload['metrics']['plugins'], list))
-        assert(len(payload['metrics']['plugins']) == 1)
+        assert (len(payload.keys()) == 3)
+        assert ('spans' in payload)
+        assert (isinstance(payload['spans'], list))
+        assert (len(payload['spans']) == 0)
+        assert ('metrics' in payload)
+        assert (len(payload['metrics'].keys()) == 1)
+        assert ('plugins' in payload['metrics'])
+        assert (isinstance(payload['metrics']['plugins'], list))
+        assert (len(payload['metrics']['plugins']) == 1)
 
         python_plugin = payload['metrics']['plugins'][0]
         assert python_plugin['name'] == 'com.instana.plugin.python'
@@ -113,7 +115,7 @@ class TestHostCollector(unittest.TestCase):
         assert type(python_plugin['data']['metrics']['dummy_threads']) in [float, int]
         assert 'daemon_threads' in python_plugin['data']['metrics']
         assert type(python_plugin['data']['metrics']['daemon_threads']) in [float, int]
-        
+
         assert 'gc' in python_plugin['data']['metrics']
         assert isinstance(python_plugin['data']['metrics']['gc'], dict)
         assert 'collect0' in python_plugin['data']['metrics']['gc']
@@ -128,3 +130,27 @@ class TestHostCollector(unittest.TestCase):
         assert type(python_plugin['data']['metrics']['gc']['threshold1']) in [float, int]
         assert 'threshold2' in python_plugin['data']['metrics']['gc']
         assert type(python_plugin['data']['metrics']['gc']['threshold2']) in [float, int]
+
+    def test_prepare_payload_basics_disable_runtime_metrics(self):
+        os.environ["INSTANA_DISABLE_METRICS_COLLECTION"] = "disable"
+        self.create_agent_and_setup_tracer()
+
+        payload = self.agent.collector.prepare_payload()
+        assert (payload)
+
+        assert (len(payload.keys()) == 3)
+        assert ('spans' in payload)
+        assert (isinstance(payload['spans'], list))
+        assert (len(payload['spans']) == 0)
+        assert ('metrics' in payload)
+        assert (len(payload['metrics'].keys()) == 1)
+        assert ('plugins' in payload['metrics'])
+        assert (isinstance(payload['metrics']['plugins'], list))
+        assert (len(payload['metrics']['plugins']) == 1)
+
+        python_plugin = payload['metrics']['plugins'][0]
+        assert python_plugin['name'] == 'com.instana.plugin.python'
+        assert python_plugin['entityId'] == str(os.getpid())
+        assert 'data' in python_plugin
+        assert 'snapshot' in python_plugin['data']
+        assert 'metrics' not in python_plugin['data']

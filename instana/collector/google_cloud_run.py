@@ -15,7 +15,7 @@ from instana.util import DictionaryOfStan, validate_url
 from instana.singletons import env_is_test
 
 from instana.collector.helpers.google_cloud_run.process import GCRProcessHelper
-from instana.collector.helpers.google_cloud_run.service_revision_instance_entity import InstanceEntityHelper
+from instana.collector.helpers.google_cloud_run.instance_entity import InstanceEntityHelper
 
 
 class GCRCollector(BaseCollector):
@@ -76,7 +76,7 @@ class GCRCollector(BaseCollector):
 
         super(GCRCollector, self).start()
 
-    def get_service_revision_instance_metadata(self):
+    def get_project_instance_metadata(self):
         """
         Get the latest data from the service revision instance entity metadata and store in the class
         @return: Boolean
@@ -101,7 +101,7 @@ class GCRCollector(BaseCollector):
                 json_body = self.http_client.get(self.gcr_md_instance_uri, timeout=1).content
                 self.instance_metadata = json.loads(json_body)
         except Exception:
-            logger.debug("GoogleCloudRunCollector.get_service_revision_instance_metadata", exc_info=True)
+            logger.debug("GoogleCloudRunCollector.get_project_instance_metadata", exc_info=True)
 
     def should_send_snapshot_data(self):
         delta = int(time()) - self.snapshot_data_last_sent
@@ -121,7 +121,7 @@ class GCRCollector(BaseCollector):
             with_snapshot = self.should_send_snapshot_data()
 
             # Fetch the latest metrics
-            self.get_service_revision_instance_metadata()
+            self.get_project_instance_metadata()
 
             plugins = []
             for helper in self.helpers:

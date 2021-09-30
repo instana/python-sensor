@@ -135,7 +135,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         self.assertEqual(result.status_code, 400)
 
         spans = tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 4)
+        self.assertEqual(len(spans), 3)
 
         span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
         test_span = get_first_span_by_filter(spans, span_filter)

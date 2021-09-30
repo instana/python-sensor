@@ -170,6 +170,49 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         assert (asgi_span.data['http']['error'] is None)
         assert (asgi_span.data['http']['params'] is None)
 
+    def test_500_instana_exception(self):
+        result = None
+        with tracer.start_active_span('test'):
+            result = requests.get(testenv["sanic_server"] + '/instana_exception')
+
+        self.assertEqual(result.status_code, 500)
+
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(len(spans), 4)
+
+        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertIsNotNone(test_span)
+
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertIsNotNone(urllib3_span)
+
+        span_filter = lambda span: span.n == 'asgi'
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertIsNotNone(asgi_span)
+
+        self.assertTraceContextPropagated(test_span, urllib3_span)
+        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
+        self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
+
+        self.assertEqual(asgi_span.ec, 1)
+        assert (asgi_span.data['http']['host'] == '127.0.0.1:1337')
+        assert (asgi_span.data['http']['path'] == '/instana_exception')
+        assert (asgi_span.data['http']['path_tpl'] == '/instana_exception')
+        assert (asgi_span.data['http']['method'] == 'GET')
+        assert (asgi_span.data['http']['status'] == 500)
+        assert (asgi_span.data['http']['error'] is None)
+        assert (asgi_span.data['http']['params'] is None)
+
     def test_500(self):
         result = None
         with tracer.start_active_span('test'):
@@ -255,7 +298,6 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         assert (asgi_span.data['http']['status'] == 200)
         assert (asgi_span.data['http']['error'] is None)
         assert (asgi_span.data['http']['params'] is None)
-
 
     def test_secret_scrubbing(self):
         result = None

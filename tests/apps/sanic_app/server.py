@@ -20,6 +20,9 @@ async def uuid_handler(request, foo_id: int):
 async def test_request_args(request):
     raise SanicException("Something went wrong.", status_code=500)
 
+@app.route("/instana_exception")
+async def test_request_args(request):
+    raise SanicException(description="Something went wrong.", status_code=500)
 
 @app.route("/wrong")
 async def test_request_args(request):

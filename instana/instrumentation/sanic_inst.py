@@ -17,17 +17,21 @@ try:
 
     @wrapt.patch_function_wrapper('sanic.exceptions', 'SanicException.__init__')
     def exception_with_instana(wrapped, instance, args, kwargs):
-        message = kwargs.get("message", args[0])
-        status_code = kwargs.get("status_code")
-        span = async_tracer.active_span
+        try:
+            message = kwargs.get("message") or args[0]
+            status_code = kwargs.get("status_code")
+            span = async_tracer.active_span
 
-        if all([span, status_code, message]) and (500 <= status_code <= 599):
-            span.set_tag("http.error", message)
-            try:
+            if all([span, status_code, message]) and (500 <= status_code <= 599):
+                span.set_tag("http.error", message)
+                try:
+                    wrapped(*args, **kwargs)
+                except Exception as exc:
+                    span.log_exception(exc)
+            else:
                 wrapped(*args, **kwargs)
-            except Exception as exc:
-                span.log_exception(exc)
-        else:
+        except Exception:
+            logger.debug("exception_with_instana: ", exc_info=True)
             wrapped(*args, **kwargs)
 
 

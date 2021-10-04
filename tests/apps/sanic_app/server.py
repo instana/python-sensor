@@ -1,12 +1,13 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+import instana
+
 from sanic import Sanic
 from sanic.exceptions import SanicException
 from tests.apps.sanic_app.simpleview import SimpleView
 from tests.apps.sanic_app.name import NameView
 from sanic.response import text
-import instana
 
 app = Sanic('test')
 
@@ -19,6 +20,13 @@ async def uuid_handler(request, foo_id: int):
 async def test_request_args(request):
     raise SanicException("Something went wrong.", status_code=500)
 
+@app.route("/instana_exception")
+async def test_request_args(request):
+    raise SanicException(description="Something went wrong.", status_code=500)
+
+@app.route("/wrong")
+async def test_request_args(request):
+    raise SanicException(message="Something went wrong.", status_code=400)
 
 @app.get("/tag/<tag>")
 async def tag_handler(request, tag):

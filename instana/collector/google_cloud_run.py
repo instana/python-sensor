@@ -90,15 +90,15 @@ class GCRCollector(BaseCollector):
             if delta > self.gcr_md_full_fetch_interval:
                 # Refetch the GCR snapshot data
                 self.last_gcr_md_full_fetch = int(time())
-
+                headers = {"Metadata-Flavor": "Google"}
                 # Response from the last call to
                 # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
-                json_body = self.http_client.get(self.gcr_md_project_uri, timeout=1).content
+                json_body = self.http_client.get(self.gcr_md_project_uri, timeout=1, headers=headers).content
                 self.project_metadata = json.loads(json_body)
 
                 # Response from the last call to
                 # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/instance/?recursive=true
-                json_body = self.http_client.get(self.gcr_md_instance_uri, timeout=1).content
+                json_body = self.http_client.get(self.gcr_md_instance_uri, timeout=1, headers=headers).content
                 self.instance_metadata = json.loads(json_body)
         except Exception:
             logger.debug("GoogleCloudRunCollector.get_project_instance_metadata", exc_info=True)

@@ -93,15 +93,12 @@ class GCRCollector(BaseCollector):
                 headers = {"Metadata-Flavor": "Google"}
                 # Response from the last call to
                 # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
-                logger.debug("Project endpoint {}".format(self.gcr_md_project_uri))
-                json_body = self.http_client.get(self.gcr_md_project_uri, timeout=1, headers=headers).json()
-                logger.debug("Project data {}".format(json_body))
-                self.project_metadata = json.loads(json_body)
+                self.project_metadata = self.http_client.get(self.gcr_md_project_uri, timeout=1, headers=headers).json()
 
                 # Response from the last call to
                 # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/instance/?recursive=true
-                json_body = self.http_client.get(self.gcr_md_instance_uri, timeout=1, headers=headers).json()
-                self.instance_metadata = json.loads(json_body)
+                self.instance_metadata = self.http_client.get(self.gcr_md_instance_uri, timeout=1,
+                                                              headers=headers).json()
         except Exception:
             logger.debug("GoogleCloudRunCollector.get_project_instance_metadata", exc_info=True)
 

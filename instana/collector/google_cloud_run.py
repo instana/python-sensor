@@ -93,7 +93,9 @@ class GCRCollector(BaseCollector):
                 headers = {"Metadata-Flavor": "Google"}
                 # Response from the last call to
                 # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
+                logger.debug("Project endpoint {}".format(self.gcr_md_project_uri))
                 json_body = self.http_client.get(self.gcr_md_project_uri, timeout=1, headers=headers).content
+                logger.debug("Project data {}".format(json_body))
                 self.project_metadata = json.loads(json_body)
 
                 # Response from the last call to

@@ -14,22 +14,11 @@ from ..collector.aws_lambda import AWSLambdaCollector
 from ..options import AWSLambdaOptions
 
 
-class AWSLambdaFrom(object):
-    """ The source identifier for AWSLambdaAgent """
-    hl = True
-    cp = "aws"
-    e = "qualifiedARN"
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
 class AWSLambdaAgent(BaseAgent):
     """ In-process agent for AWS Lambda """
     def __init__(self):
         super(AWSLambdaAgent, self).__init__()
 
-        self.from_ = AWSLambdaFrom()
         self.collector = None
         self.options = AWSLambdaOptions()
         self.report_headers = None

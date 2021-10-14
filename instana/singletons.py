@@ -51,7 +51,7 @@ elif env_is_google_cloud_run:
     from instana.agent.google_cloud_run import GCRAgent
     from instana.recorder import StanRecorder
 
-    agent = GCRAgent()
+    agent = GCRAgent(service=k_service, configuraiton=k_configuration, revision=k_revision)
     span_recorder = StanRecorder(agent)
 else:
     from .agent.host import HostAgent

@@ -74,5 +74,5 @@ class BaseHelper(object):
         if previous_value != new_value or with_snapshot is True:
             previous[dst_metric] = new[dst_metric] = new_value
     
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         logger.debug("BaseHelper.collect_metrics must be overridden")

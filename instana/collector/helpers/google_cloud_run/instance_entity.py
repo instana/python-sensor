@@ -12,7 +12,7 @@ from ....util import DictionaryOfStan
 class InstanceEntityHelper(BaseHelper):
     """ This class helps in collecting data about the google cloud run service revision instance entity """
 
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         """
         Collect and return metrics data (and optionally snapshot data) for this task
         @return: list - with one plugin entity

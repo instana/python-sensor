@@ -14,23 +14,12 @@ from .base import BaseAgent
 from ..version import VERSION
 
 
-class AWSFargateFrom(object):
-    """ The source identifier for AWSFargateAgent """
-    hl = True
-    cp = "aws"
-    e = "taskDefinition"
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
 class AWSFargateAgent(BaseAgent):
     """ In-process agent for AWS Fargate """
     def __init__(self):
         super(AWSFargateAgent, self).__init__()
 
         self.options = AWSFargateOptions()
-        self.from_ = AWSFargateFrom()
         self.collector = None
         self.report_headers = None
         self._can_send = False

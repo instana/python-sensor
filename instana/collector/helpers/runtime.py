@@ -21,6 +21,7 @@ from .base import BaseHelper
 
 class RuntimeHelper(BaseHelper):
     """ Helper class to collect snapshot and metrics for this Python runtime """
+
     def __init__(self, collector):
         super(RuntimeHelper, self).__init__(collector)
         self.previous = DictionaryOfStan()
@@ -31,7 +32,7 @@ class RuntimeHelper(BaseHelper):
         else:
             self.previous_gc_count = None
 
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.python"
@@ -46,9 +47,10 @@ class RuntimeHelper(BaseHelper):
             else:
                 plugin_data["data"]["pid"] = str(os.getpid())
 
+            with_snapshot = kwargs.get("with_snapshot", False)
             self._collect_runtime_metrics(plugin_data, with_snapshot)
 
-            if with_snapshot is True:
+            if with_snapshot:
                 self._collect_runtime_snapshot(plugin_data)
         except Exception:
             logger.debug("_collect_metrics: ", exc_info=True)
@@ -57,7 +59,7 @@ class RuntimeHelper(BaseHelper):
     def _collect_runtime_metrics(self, plugin_data, with_snapshot):
         if os.environ.get('INSTANA_DISABLE_METRICS_COLLECTION', False):
             return
-        
+
         """ Collect up and return the runtime metrics """
         try:
             rusage = resource.getrusage(resource.RUSAGE_SELF)
@@ -159,20 +161,21 @@ class RuntimeHelper(BaseHelper):
             self.apply_delta(alive_threads, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "alive_threads", with_snapshot)
 
-            dummy_threads = [isinstance(thread, threading._DummyThread) for thread in threads].count(True) # pylint: disable=protected-access
+            dummy_threads = [isinstance(thread, threading._DummyThread) for thread in threads].count(
+                True)  # pylint: disable=protected-access
             self.apply_delta(dummy_threads, self.previous['data']['metrics'],
                              plugin_data['data']['metrics'], "dummy_threads", with_snapshot)
         except Exception:
             logger.debug("_collect_thread_metrics", exc_info=True)
 
-    def _collect_runtime_snapshot(self,plugin_data):
+    def _collect_runtime_snapshot(self, plugin_data):
         """ Gathers Python specific Snapshot information for this process """
         snapshot_payload = {}
         try:
             snapshot_payload['name'] = determine_service_name()
             snapshot_payload['version'] = sys.version
-            snapshot_payload['f'] = platform.python_implementation() # flavor
-            snapshot_payload['a'] = platform.architecture()[0] # architecture
+            snapshot_payload['f'] = platform.python_implementation()  # flavor
+            snapshot_payload['a'] = platform.architecture()[0]  # architecture
             snapshot_payload['versions'] = self.gather_python_packages()
             snapshot_payload['iv'] = VERSION
 
@@ -184,7 +187,7 @@ class RuntimeHelper(BaseHelper):
                 snapshot_payload['m'] = 'Manual'
 
             try:
-                from django.conf import settings # pylint: disable=import-outside-toplevel
+                from django.conf import settings  # pylint: disable=import-outside-toplevel
                 if hasattr(settings, 'MIDDLEWARE') and settings.MIDDLEWARE is not None:
                     snapshot_payload['djmw'] = settings.MIDDLEWARE
                 elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
@@ -228,7 +231,7 @@ class RuntimeHelper(BaseHelper):
                         pass
                     except Exception:
                         logger.debug("gather_python_packages: could not process module: %s", pkg_name)
-            
+
             # Manually set our package version
             versions['instana'] = VERSION
         except Exception:

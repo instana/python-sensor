@@ -9,7 +9,7 @@ from ....util import DictionaryOfStan
 
 class TaskHelper(BaseHelper):
     """ This class helps in collecting data about the AWS Fargate task that is running """
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         """
         Collect and return metrics data (and optionally snapshot data) for this task
         @return: list - with one plugin entity
@@ -18,8 +18,8 @@ class TaskHelper(BaseHelper):
 
         try:
             if self.collector.task_metadata is not None:
+                plugin_data = dict()
                 try:
-                    plugin_data = dict()
                     plugin_data["name"] = "com.instana.plugin.aws.ecs.task"
                     plugin_data["entityId"] = self.collector.task_metadata.get("TaskARN", None)
                     plugin_data["data"] = DictionaryOfStan()
@@ -29,7 +29,7 @@ class TaskHelper(BaseHelper):
                     plugin_data["data"]["taskDefinitionVersion"] = self.collector.task_metadata.get("Revision", None)
                     plugin_data["data"]["availabilityZone"] = self.collector.task_metadata.get("AvailabilityZone", None)
 
-                    if with_snapshot is True:
+                    if kwargs.get("with_snapshot"):
                         plugin_data["data"]["desiredStatus"] = self.collector.task_metadata.get("DesiredStatus", None)
                         plugin_data["data"]["knownStatus"] = self.collector.task_metadata.get("KnownStatus", None)
                         plugin_data["data"]["pullStartedAt"] = self.collector.task_metadata.get("PullStartedAt", None)

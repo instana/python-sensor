@@ -62,7 +62,7 @@ class TestGCRCollector(unittest.TestCase):
         set_tracer(self.original_tracer)
 
     def create_agent_and_setup_tracer(self):
-        self.agent = GCRAgent()
+        self.agent = GCRAgent(service="service", configuration="configuration", revision="revision")
         self.span_recorder = StanRecorder(self.agent)
         self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)

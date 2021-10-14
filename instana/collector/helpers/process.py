@@ -15,7 +15,7 @@ from .base import BaseHelper
 class ProcessHelper(BaseHelper):
     """ Helper class to collect metrics for this process """
 
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.process"
@@ -23,7 +23,7 @@ class ProcessHelper(BaseHelper):
             plugin_data["data"] = DictionaryOfStan()
             plugin_data["data"]["pid"] = int(os.getpid())
 
-            if with_snapshot:
+            if kwargs.get("with_snapshot"):
                 self._collect_process_snapshot(plugin_data)
         except Exception:
             logger.debug("ProcessHelper.collect_metrics: ", exc_info=True)
@@ -58,7 +58,7 @@ class ProcessHelper(BaseHelper):
             except Exception:
                 logger.debug("euid/egid detection: ", exc_info=True)
 
-            plugin_data["data"]["start"] = 1  # FIXME: process start time reporting
+            plugin_data["data"]["start"] = self.collector.fetching_start_time
 
         except Exception:
             logger.debug("ProcessHelper._collect_process_snapshot: ", exc_info=True)

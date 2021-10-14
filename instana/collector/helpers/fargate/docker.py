@@ -20,7 +20,7 @@ class DockerHelper(BaseHelper):
         # Indexed by docker_id:  self.previous_blkio[docker_id][metric]
         self.previous_blkio = DictionaryOfStan()
 
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         """
         Collect and return docker metrics (and optionally snapshot data) for this task
         @return: list - with one or more plugin entities
@@ -42,6 +42,7 @@ class DockerHelper(BaseHelper):
                     plugin_data["data"] = DictionaryOfStan()
                     plugin_data["data"]["Id"] = container.get("DockerId", None)
 
+                    with_snapshot = kwargs.get("with_snapshot", False)
                     # Metrics
                     self._collect_container_metrics(plugin_data, docker_id, with_snapshot)
 

@@ -5,7 +5,6 @@
 Google Cloud Run Collector: Manages the periodic collection of metrics & snapshot data
 """
 import os
-import json
 from time import time
 import requests
 
@@ -21,38 +20,35 @@ from instana.collector.helpers.google_cloud_run.instance_entity import InstanceE
 class GCRCollector(BaseCollector):
     """ Collector for Google Cloud Run """
 
-    def __init__(self, agent):
+    def __init__(self, agent, service, configuration, revision):
         super(GCRCollector, self).__init__(agent)
         logger.debug("Loading Google Cloud Run Collector")
 
         # Indicates if this Collector has all requirements to run successfully
         self.ready_to_start = True
 
-        self.revision = os.environ.get("K_REVISION")
-        self.service = os.environ.get("K_SERVICE")
-        self.configuration = os.environ.get("K_CONFIGURATION")
+        self.revision = revision
+        self.service = service
+        self.configuration = configuration
         # Prepare the URLS that we will collect data from
-        self.gcr_md_uri = os.environ.get("GOOGLE_CLOUD_RUN_METADATA_ENDPOINT", "http://metadata.google.internal")
+        self._gcr_md_uri = os.environ.get("GOOGLE_CLOUD_RUN_METADATA_ENDPOINT", "http://metadata.google.internal")
 
-        if self.gcr_md_uri == "" or validate_url(self.gcr_md_uri) is False:
+        if self._gcr_md_uri == "" or validate_url(self._gcr_md_uri) is False:
             logger.warning("GCRCollector: GOOGLE_CLOUD_RUN_METADATA_ENDPOINT not in environment or invalid URL.  "
                            "Instana will not be able to monitor this environment")
             self.ready_to_start = False
 
-        self.gcr_md_project_uri = self.gcr_md_uri + '/computeMetadata/v1/project/?recursive=true'
-        self.gcr_md_instance_uri = self.gcr_md_uri + '/computeMetadata/v1/instance/?recursive=true'
+        self._gcr_md_project_uri = self._gcr_md_uri + '/computeMetadata/v1/project/?recursive=true'
+        self._gcr_md_instance_uri = self._gcr_md_uri + '/computeMetadata/v1/instance/?recursive=true'
 
         # Timestamp in seconds of the last time we fetched all GCR metadata
-        self.last_gcr_md_full_fetch = 0
+        self.__last_gcr_md_full_fetch = 0
 
         # How often to do a full fetch of GCR metadata
-        self.gcr_md_full_fetch_interval = 300
+        self.__gcr_md_full_fetch_interval = 300
 
         # HTTP client with keep-alive
-        self.http_client = requests.Session()
-
-        # This is the collector thread querying the metadata url
-        self.gcr_metadata_thread = None
+        self._http_client = requests.Session()
 
         # The fully qualified ARN for this process
         self._gcp_arn = None
@@ -76,7 +72,7 @@ class GCRCollector(BaseCollector):
 
         super(GCRCollector, self).start()
 
-    def get_project_instance_metadata(self):
+    def __get_project_instance_metadata(self):
         """
         Get the latest data from the service revision instance entity metadata and store in the class
         @return: Boolean
@@ -86,27 +82,23 @@ class GCRCollector(BaseCollector):
             return
 
         try:
-            delta = int(time()) - self.last_gcr_md_full_fetch
-            if delta > self.gcr_md_full_fetch_interval:
-                # Refetch the GCR snapshot data
-                self.last_gcr_md_full_fetch = int(time())
-                headers = {"Metadata-Flavor": "Google"}
-                # Response from the last call to
-                # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
-                self.project_metadata = self.http_client.get(self.gcr_md_project_uri, timeout=1, headers=headers).json()
+            # Refetch the GCR snapshot data
+            self.__last_gcr_md_full_fetch = int(time())
+            headers = {"Metadata-Flavor": "Google"}
+            # Response from the last call to
+            # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
+            self.project_metadata = self._http_client.get(self._gcr_md_project_uri, timeout=1,
+                                                          headers=headers).json()
 
-                # Response from the last call to
-                # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/instance/?recursive=true
-                self.instance_metadata = self.http_client.get(self.gcr_md_instance_uri, timeout=1,
-                                                              headers=headers).json()
+            # Response from the last call to
+            # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/instance/?recursive=true
+            self.instance_metadata = self._http_client.get(self._gcr_md_instance_uri, timeout=1,
+                                                           headers=headers).json()
         except Exception:
             logger.debug("GoogleCloudRunCollector.get_project_instance_metadata", exc_info=True)
 
     def should_send_snapshot_data(self):
-        delta = int(time()) - self.snapshot_data_last_sent
-        if delta > self.snapshot_data_interval:
-            return True
-        return False
+        return int(time()) - self.snapshot_data_last_sent > self.snapshot_data_interval
 
     def prepare_payload(self):
         payload = DictionaryOfStan()
@@ -114,21 +106,27 @@ class GCRCollector(BaseCollector):
         payload["metrics"]["plugins"] = []
 
         try:
+
             if not self.span_queue.empty():
                 payload["spans"] = self.queued_spans()
+
+            self.fetching_start_time = int(time())
+            delta = self.fetching_start_time - self.__last_gcr_md_full_fetch
+            if delta < self.__gcr_md_full_fetch_interval:
+                return payload
 
             with_snapshot = self.should_send_snapshot_data()
 
             # Fetch the latest metrics
-            self.get_project_instance_metadata()
+            self.__get_project_instance_metadata()
 
             plugins = []
             for helper in self.helpers:
-                plugins.extend(helper.collect_metrics(with_snapshot))
+                plugins.extend(helper.collect_metrics(with_snapshot=with_snapshot))
 
             payload["metrics"]["plugins"] = plugins
 
-            if with_snapshot is True:
+            if with_snapshot:
                 self.snapshot_data_last_sent = int(time())
         except Exception:
             logger.debug("collect_snapshot error", exc_info=True)

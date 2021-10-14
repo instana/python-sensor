@@ -14,25 +14,13 @@ from instana.agent.base import BaseAgent
 from instana.version import VERSION
 
 
-class GCRFrom(object):
-    """ The source identifier for GCRAgent """
-
-    hl = True
-    cp = "gcp"
-    e = None  # the instance ID of the Cloud Run service revision instance
-
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
 class GCRAgent(BaseAgent):
     """ In-process agent for Google Cloud Run """
 
-    def __init__(self):
+    def __init__(self, service, configuration, revision):
         super(GCRAgent, self).__init__()
 
         self.options = GCROptions()
-        self.from_ = GCRFrom()
         self.collector = None
         self.report_headers = None
         self._can_send = False
@@ -44,7 +32,7 @@ class GCRAgent(BaseAgent):
 
         if self._validate_options():
             self._can_send = True
-            self.collector = GCRCollector(self)
+            self.collector = GCRCollector(self, service, configuration, revision)
             self.collector.start()
         else:
             logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "

@@ -11,8 +11,6 @@ import requests
 from instana.log import logger
 from instana.collector.base import BaseCollector
 from instana.util import DictionaryOfStan, validate_url
-from instana.singletons import env_is_test
-
 from instana.collector.helpers.google_cloud_run.process import GCRProcessHelper
 from instana.collector.helpers.google_cloud_run.instance_entity import InstanceEntityHelper
 
@@ -77,10 +75,6 @@ class GCRCollector(BaseCollector):
         Get the latest data from the service revision instance entity metadata and store in the class
         @return: Boolean
         """
-        if env_is_test is True:
-            # For test, we are using mock service revision instance entity metadata
-            return
-
         try:
             # Refetch the GCR snapshot data
             self.__last_gcr_md_full_fetch = int(time())

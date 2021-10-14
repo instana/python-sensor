@@ -22,6 +22,7 @@ pyramid>=2.0
 pytest>=6.2.4
 pytest-celery
 redis>=3.5.3
+requests-mock
 sanic>=19.0.0,<21.9.0
 sqlalchemy>=1.4.15
 spyne>=2.13.16

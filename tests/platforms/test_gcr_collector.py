@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import os
 import json
+import requests_mock
 import unittest
 
 from instana.tracer import InstanaTracer
@@ -25,9 +26,6 @@ class TestGCRCollector(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
-        os.environ["K_SERVICE"] = "service"
-        os.environ["K_CONFIGURATION"] = "configuration"
-        os.environ["K_REVISION"] = "revision"
         os.environ["PORT"] = "port"
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
@@ -39,12 +37,6 @@ class TestGCRCollector(unittest.TestCase):
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
-        if "K_SERVICE" in os.environ:
-            os.environ.pop("K_SERVICE")
-        if "K_CONFIGURATION" in os.environ:
-            os.environ.pop("K_CONFIGURATION")
-        if "K_REVISION" in os.environ:
-            os.environ.pop("K_REVISION")
         if "PORT" in os.environ:
             os.environ.pop("PORT")
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
@@ -74,8 +66,14 @@ class TestGCRCollector(unittest.TestCase):
         with open(self.pwd + '/../data/gcr/project_metadata.json', 'r') as json_file:
             self.agent.collector.project_metadata = json.load(json_file)
 
-    def test_prepare_payload_basics(self):
+    @requests_mock.Mocker()
+    def test_prepare_payload_basics(self, m):
         self.create_agent_and_setup_tracer()
+        m.get("http://metadata.google.internal/computeMetadata/v1/project/?recursive=true",
+              headers={"Metadata-Flavor": "Google"}, json=self.agent.collector.project_metadata)
+
+        m.get("http://metadata.google.internal/computeMetadata/v1/instance/?recursive=true",
+              headers={"Metadata-Flavor": "Google"}, json=self.agent.collector.instance_metadata)
 
         payload = self.agent.collector.prepare_payload()
         assert (payload)

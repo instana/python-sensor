@@ -76,7 +76,7 @@ class GCRAgent(BaseAgent):
                                         verify=self.options.ssl_verify,
                                         proxies=self.options.endpoint_proxy)
 
-            if not 200 <= response.status_code < 300:
+            if response.status_code >= 400:
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
         except Exception as exc:
             logger.debug("report_data_payload: connection error (%s)", type(exc))

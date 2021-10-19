@@ -19,27 +19,25 @@ class InstanceEntityHelper(BaseHelper):
         """
         plugins = []
         plugin_data = dict()
+        instance_metadata = kwargs.get('instance_metadata', {})
+        project_metadata = kwargs.get('project_metadata', {})
         try:
-            if self.collector.project_metadata and self.collector.instance_metadata:
-                try:
+            plugin_data["name"] = "com.instana.plugin.gcp.run.revision.instance"
+            plugin_data["entityId"] = instance_metadata.get("id")
+            plugin_data["data"] = DictionaryOfStan()
+            plugin_data["data"]["runtime"] = "python"
+            plugin_data["data"]["region"] = instance_metadata.get("region").split("/")[-1]
+            plugin_data["data"]["service"] = self.collector.service
+            plugin_data["data"]["configuration"] = self.collector.configuration
+            plugin_data["data"]["revision"] = self.collector.revision
+            plugin_data["data"]["instanceId"] = plugin_data["entityId"]
+            plugin_data["data"]["port"] = os.getenv("PORT", "")
+            plugin_data["data"]["numericProjectId"] = project_metadata.get("numericProjectId")
+            plugin_data["data"]["projectId"] = project_metadata.get("projectId")
 
-                    plugin_data["name"] = "com.instana.plugin.gcp.run.revision.instance"
-                    plugin_data["entityId"] = self.collector.instance_metadata.get("id")
-                    plugin_data["data"] = DictionaryOfStan()
-                    plugin_data["data"]["runtime"] = "python"
-                    plugin_data["data"]["region"] = self.collector.instance_metadata.get("region").split("/")[-1]
-                    plugin_data["data"]["service"] = self.collector.service
-                    plugin_data["data"]["configuration"] = self.collector.configuration
-                    plugin_data["data"]["revision"] = self.collector.revision
-                    plugin_data["data"]["instanceId"] = plugin_data["entityId"]
-                    plugin_data["data"]["port"] = os.getenv("PORT", "")
-                    plugin_data["data"]["numericProjectId"] = self.collector.project_metadata.get("numericProjectId")
-                    plugin_data["data"]["projectId"] = self.collector.project_metadata.get("projectId")
-
-                except Exception:
-                    logger.debug("collect_service_revision_entity_metrics: ", exc_info=True)
-                finally:
-                    plugins.append(plugin_data)
         except Exception:
             logger.debug("collect_service_revision_entity_metrics: ", exc_info=True)
+        finally:
+            plugins.append(plugin_data)
+
         return plugins

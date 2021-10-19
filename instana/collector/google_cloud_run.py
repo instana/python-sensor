@@ -113,10 +113,14 @@ class GCRCollector(BaseCollector):
 
             # Fetch the latest metrics
             self.__get_project_instance_metadata()
+            if self.instance_metadata is None and self.project_metadata is None:
+                return payload
 
             plugins = []
             for helper in self.helpers:
-                plugins.extend(helper.collect_metrics(with_snapshot=with_snapshot))
+                plugins.extend(
+                    helper.collect_metrics(with_snapshot=with_snapshot, instance_metadata=self.instance_metadata,
+                                           project_metadata=self.project_metadata))
 
             payload["metrics"]["plugins"] = plugins
 

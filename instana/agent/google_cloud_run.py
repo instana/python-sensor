@@ -92,4 +92,4 @@ class GCRAgent(BaseAgent):
         """
         URL for posting metrics to the host agent.  Only valid when announced.
         """
-        return "%s/bundle" % self.options.endpoint_url
+        return "{endpoint_url}/bundle".format(endpoint_url=self.options.endpoint_url)

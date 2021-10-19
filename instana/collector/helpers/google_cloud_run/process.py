@@ -17,5 +17,5 @@ class GCRProcessHelper(ProcessHelper):
             plugin_data["data"]["com.instana.plugin.host.name"] = "gcp:cloud-run:revision:{revision}".format(
                 revision=self.collector.revision)
         except Exception:
-            logger.debug("FargateProcessHelper.collect_metrics: ", exc_info=True)
+            logger.debug("GCRProcessHelper.collect_metrics: ", exc_info=True)
         return [plugin_data]

@@ -60,11 +60,12 @@ class GCRAgent(BaseAgent):
         try:
             if self.report_headers is None:
                 # Prepare request headers
-                self.report_headers = dict()
-                self.report_headers["Content-Type"] = "application/json"
-                self.report_headers["X-Instana-Host"] = "gcp:cloud-run:revision:{revision}".format(
-                    revision=self.collector.revision)
-                self.report_headers["X-Instana-Key"] = self.options.agent_key
+                self.report_headers = {
+                    "Content-Type": "application/json",
+                    "X-Instana-Host": "gcp:cloud-run:revision:{revision}".format(
+                        revision=self.collector.revision),
+                    "X-Instana-Key": self.options.agent_key
+                }
 
             self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 

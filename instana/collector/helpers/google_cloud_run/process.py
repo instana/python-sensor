@@ -6,7 +6,7 @@ from instana.log import logger
 
 
 class GCRProcessHelper(ProcessHelper):
-    """ Helper class to extend the generic process helper class with the corresponding fargate attributes """
+    """ Helper class to extend the generic process helper class with the corresponding Google Cloud Run attributes """
 
     def collect_metrics(self, **kwargs):
         plugin_data = dict()

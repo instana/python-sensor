@@ -76,7 +76,7 @@ class HostCollector(BaseCollector):
 
             plugins = []
             for helper in self.helpers:
-                plugins.extend(helper.collect_metrics(with_snapshot))
+                plugins.extend(helper.collect_metrics(with_snapshot=with_snapshot))
 
             payload["metrics"]["plugins"] = plugins
 

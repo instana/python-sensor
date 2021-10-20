@@ -70,6 +70,9 @@ class BaseCollector(object):
         # Flag to indicate if start/shutdown state
         self.started = False
 
+        # Startime of fetching metadata
+        self.fetching_start_time = 0
+
     def is_reporting_thread_running(self):
         """
         Indicates if there is a thread running with the name self.THREAD_NAME

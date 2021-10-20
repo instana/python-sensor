@@ -11,6 +11,7 @@ BaseOptions - base class for all environments.  Holds settings common to all.
   - ServerlessOptions - Base class for serverless environments.  Holds settings common to all serverless environments.
     - AWSLambdaOptions - Options class for AWS Lambda.  Holds settings specific to AWS Lambda.
     - AWSFargateOptions - Options class for AWS Fargate.  Holds settings specific to AWS Fargate.
+    - GCROptions - Options class for Google cloud Run.  Holds settings specific to GCR.
 """
 import os
 import logging
@@ -21,6 +22,7 @@ from .util.runtime import determine_service_name
 
 class BaseOptions(object):
     """ Base class for all option classes.  Holds items common to all """
+
     def __init__(self, **kwds):
         self.debug = False
         self.log_level = logging.WARN
@@ -69,6 +71,7 @@ class StandardOptions(BaseOptions):
 
 class ServerlessOptions(BaseOptions):
     """ Base class for serverless environments.  Holds settings common to all serverless environments. """
+
     def __init__(self, **kwds):
         super(ServerlessOptions, self).__init__()
 
@@ -120,14 +123,17 @@ class ServerlessOptions(BaseOptions):
             except Exception:
                 logger.debug("BaseAgent.update_log_level: ", exc_info=True)
 
+
 class AWSLambdaOptions(ServerlessOptions):
     """ Options class for AWS Lambda.  Holds settings specific to AWS Lambda. """
+
     def __init__(self, **kwds):
         super(AWSLambdaOptions, self).__init__()
 
 
 class AWSFargateOptions(ServerlessOptions):
     """ Options class for AWS Fargate.  Holds settings specific to AWS Fargate. """
+
     def __init__(self, **kwds):
         super(AWSFargateOptions, self).__init__()
 
@@ -148,3 +154,10 @@ class AWSFargateOptions(ServerlessOptions):
                 logger.debug("Error parsing INSTANA_TAGS env var: %s", tag_list)
 
         self.zone = os.environ.get("INSTANA_ZONE", None)
+
+
+class GCROptions(ServerlessOptions):
+    """ Options class for Google Cloud Run.  Holds settings specific to Google Cloud Run. """
+
+    def __init__(self, **kwds):
+        super(GCROptions, self).__init__()

@@ -14,7 +14,7 @@ from .base import BaseCollector
 from ..util import DictionaryOfStan, validate_url
 from ..singletons import env_is_test
 
-from .helpers.process import ProcessHelper
+from .helpers.fargate.process import FargateProcessHelper
 from .helpers.runtime import RuntimeHelper
 from .helpers.fargate.task import TaskHelper
 from .helpers.fargate.docker import DockerHelper
@@ -23,6 +23,7 @@ from .helpers.fargate.container import ContainerHelper
 
 class AWSFargateCollector(BaseCollector):
     """ Collector for AWS Fargate """
+
     def __init__(self, agent):
         super(AWSFargateCollector, self).__init__(agent)
         logger.debug("Loading AWS Fargate Collector")
@@ -77,7 +78,7 @@ class AWSFargateCollector(BaseCollector):
         # Populate the collection helpers
         self.helpers.append(TaskHelper(self))
         self.helpers.append(DockerHelper(self))
-        self.helpers.append(ProcessHelper(self))
+        self.helpers.append(FargateProcessHelper(self))
         self.helpers.append(RuntimeHelper(self))
         self.helpers.append(ContainerHelper(self))
 
@@ -98,7 +99,8 @@ class AWSFargateCollector(BaseCollector):
             return
 
         try:
-            delta = int(time()) - self.last_ecmu_full_fetch
+            self.fetching_start_time = int(time())
+            delta = self.fetching_start_time - self.last_ecmu_full_fetch
             if delta > self.ecmu_full_fetch_interval:
                 # Refetch the ECMU snapshot data
                 self.last_ecmu_full_fetch = int(time())
@@ -126,10 +128,7 @@ class AWSFargateCollector(BaseCollector):
             logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)
 
     def should_send_snapshot_data(self):
-        delta = int(time()) - self.snapshot_data_last_sent
-        if delta > self.snapshot_data_interval:
-            return True
-        return False
+        return int(time()) - self.snapshot_data_last_sent > self.snapshot_data_interval
 
     def prepare_payload(self):
         payload = DictionaryOfStan()
@@ -147,7 +146,7 @@ class AWSFargateCollector(BaseCollector):
 
             plugins = []
             for helper in self.helpers:
-                plugins.extend(helper.collect_metrics(with_snapshot))
+                plugins.extend(helper.collect_metrics(with_snapshot=with_snapshot))
 
             payload["metrics"]["plugins"] = plugins
 
@@ -162,6 +161,7 @@ class AWSFargateCollector(BaseCollector):
         if self._fq_arn is not None:
             return self._fq_arn
 
+        task_arn = ""
         if self.root_metadata is not None:
             labels = self.root_metadata.get("Labels", None)
             if labels is not None:

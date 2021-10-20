@@ -25,6 +25,7 @@ pytest>=4.6
 pytest-celery
 redis>3.0.0
 requests>=2.17.1
+requests-mock
 rsa<=4.5
 sqlalchemy>=1.1.15,<=1.4
 spyne>=2.9,<=2.12.14

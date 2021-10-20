@@ -9,7 +9,7 @@ from ..base import BaseHelper
 
 class ContainerHelper(BaseHelper):
     """ This class acts as a helper to collect container snapshot and metric information """
-    def collect_metrics(self, with_snapshot=False):
+    def collect_metrics(self, **kwargs):
         """
         Collect and return metrics (and optionally snapshot data) for every container in this task
         @return: list - with one or more plugin entities
@@ -34,7 +34,7 @@ class ContainerHelper(BaseHelper):
                         plugin_data["data"]["dockerId"] = container.get("DockerId", None)
                         plugin_data["data"]["taskArn"] = labels.get("com.amazonaws.ecs.task-arn", None)
 
-                        if with_snapshot is True:
+                        if kwargs.get("with_snapshot"):
                             plugin_data["data"]["runtime"] = "python"
                             plugin_data["data"]["dockerName"] = container.get("DockerName", None)
                             plugin_data["data"]["containerName"] = container.get("Name", None)

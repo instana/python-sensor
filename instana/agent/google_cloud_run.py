@@ -1,25 +1,26 @@
 # (c) Copyright IBM Corp. 2021
-# (c) Copyright Instana Inc. 2020
+# (c) Copyright Instana Inc. 2021
 
 """
-The Instana agent (for AWS Fargate) that manages
+The Instana agent (for GCR) that manages
 monitoring state and reporting that data.
 """
 import time
-from instana.options import AWSFargateOptions
-from instana.collector.aws_fargate import AWSFargateCollector
-from ..log import logger
-from ..util import to_json
-from .base import BaseAgent
-from ..version import VERSION
+from instana.options import GCROptions
+from instana.collector.google_cloud_run import GCRCollector
+from instana.log import logger
+from instana.util import to_json
+from instana.agent.base import BaseAgent
+from instana.version import VERSION
 
 
-class AWSFargateAgent(BaseAgent):
-    """ In-process agent for AWS Fargate """
-    def __init__(self):
-        super(AWSFargateAgent, self).__init__()
+class GCRAgent(BaseAgent):
+    """ In-process agent for Google Cloud Run """
 
-        self.options = AWSFargateOptions()
+    def __init__(self, service, configuration, revision):
+        super(GCRAgent, self).__init__()
+
+        self.options = GCROptions()
         self.collector = None
         self.report_headers = None
         self._can_send = False
@@ -31,11 +32,11 @@ class AWSFargateAgent(BaseAgent):
 
         if self._validate_options():
             self._can_send = True
-            self.collector = AWSFargateCollector(self)
+            self.collector = GCRCollector(self, service, configuration, revision)
             self.collector.start()
         else:
             logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
-                           "We will not be able monitor this AWS Fargate cluster.")
+                           "We will not be able monitor this GCR cluster.")
 
     def can_send(self):
         """
@@ -49,7 +50,7 @@ class AWSFargateAgent(BaseAgent):
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        return {'hl': True, 'cp': 'aws', 'e': self.collector.get_fq_arn()}
+        return {'hl': True, 'cp': 'gcp', 'e': self.collector.get_instance_id()}
 
     def report_data_payload(self, payload):
         """
@@ -59,10 +60,12 @@ class AWSFargateAgent(BaseAgent):
         try:
             if self.report_headers is None:
                 # Prepare request headers
-                self.report_headers = dict()
-                self.report_headers["Content-Type"] = "application/json"
-                self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
-                self.report_headers["X-Instana-Key"] = self.options.agent_key
+                self.report_headers = {
+                    "Content-Type": "application/json",
+                    "X-Instana-Host": "gcp:cloud-run:revision:{revision}".format(
+                        revision=self.collector.revision),
+                    "X-Instana-Key": self.options.agent_key
+                }
 
             self.report_headers["X-Instana-Time"] = str(round(time.time() * 1000))
 
@@ -73,7 +76,7 @@ class AWSFargateAgent(BaseAgent):
                                         verify=self.options.ssl_verify,
                                         proxies=self.options.endpoint_proxy)
 
-            if not 200 <= response.status_code < 300:
+            if response.status_code >= 400:
                 logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
         except Exception as exc:
             logger.debug("report_data_payload: connection error (%s)", type(exc))
@@ -89,4 +92,4 @@ class AWSFargateAgent(BaseAgent):
         """
         URL for posting metrics to the host agent.  Only valid when announced.
         """
-        return "%s/bundle" % self.options.endpoint_url
+        return "{endpoint_url}/bundle".format(endpoint_url=self.options.endpoint_url)

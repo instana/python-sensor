@@ -76,7 +76,9 @@ try:
 
 
     def basic_get_with_instana(wrapped, instance, args, kwargs):
-        def _bind_args(queue, callback, *args, **kwargs):
+        def _bind_args(*args, **kwargs):
+            queue = kwargs.pop('queue', None) or args[0]
+            callback = kwargs.pop('callback', None) or kwargs.pop('on_message_callback', None) or args[1]
             return (queue, callback, args, kwargs)
 
         queue, callback, args, kwargs = _bind_args(*args, **kwargs)
@@ -99,34 +101,7 @@ try:
                     scope.span.log_exception(e)
                     raise
 
-        args = (queue, _cb_wrapper) + args
-        return wrapped(*args, **kwargs)
-
-    def channel_basic_consume_with_instana(wrapped, instance, args, kwargs):
-        def _bind_args(queue, on_message_callback, *args, **kwargs):
-            return (queue, on_message_callback, args, kwargs)
-
-        queue, on_message_callback, args, kwargs = _bind_args(*args, **kwargs)
-
-        def _cb_wrapper(channel, method, properties, body):
-            parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers,
-                                         disable_w3c_trace_context=True)
-
-            with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
-                try:
-                    _extract_consumer_tags(scope.span,
-                                           conn=instance.connection,
-                                           queue=queue)
-                except:
-                    logger.debug("basic_consume_with_instana: ", exc_info=True)
-
-                try:
-                    on_message_callback(channel, method, properties, body)
-                except Exception as e:
-                    scope.span.log_exception(e)
-                    raise
-
-        args = (queue, _cb_wrapper) + args
+        args = (queue, _cb_wrapper)
         return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.basic_consume')
@@ -211,7 +186,7 @@ try:
 
 
     wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_get', basic_get_with_instana)
-    wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_consume', channel_basic_consume_with_instana)
+    wrapt.wrap_function_wrapper('pika.channel', 'Channel.basic_consume', basic_get_with_instana)
 
     logger.debug("Instrumenting pika")
 except ImportError:

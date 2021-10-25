@@ -201,7 +201,7 @@ class TestPikaChannel(_TestPika):
 
         cb = mock.Mock()
 
-        self.obj.basic_consume("test.queue", cb, consumer_tag="test")
+        self.obj.basic_consume(queue="test.queue", on_message_callback=cb, consumer_tag="test")
         self.obj._on_deliver(method_frame, header_frame, body)
 
         spans = self.recorder.queued_spans()
@@ -246,7 +246,7 @@ class TestPikaChannel(_TestPika):
 
         cb = mock.Mock()
 
-        self.obj.basic_consume("test.queue", cb, consumer_tag="test")
+        self.obj.basic_consume(queue="test.queue", on_message_callback=cb, consumer_tag="test")
         self.obj._on_deliver(method_frame, header_frame, body)
 
         spans = self.recorder.queued_spans()

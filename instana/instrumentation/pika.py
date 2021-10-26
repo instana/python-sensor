@@ -77,9 +77,10 @@ try:
 
     def basic_get_with_instana(wrapped, instance, args, kwargs):
         def _bind_args(*args, **kwargs):
-            queue = kwargs.pop('queue', None) or args[0]
-            callback = kwargs.pop('callback', None) or kwargs.pop('on_message_callback', None) or args[1]
-            return (queue, callback, args, kwargs)
+            args = list(args)
+            queue = kwargs.pop('queue', None) or args.pop(0)
+            callback = kwargs.pop('callback', None) or kwargs.pop('on_message_callback', None) or args.pop(0)
+            return (queue, callback, tuple(args), kwargs)
 
         queue, callback, args, kwargs = _bind_args(*args, **kwargs)
 
@@ -101,7 +102,7 @@ try:
                     scope.span.log_exception(e)
                     raise
 
-        args = (queue, _cb_wrapper)
+        args = (queue, _cb_wrapper) + args
         return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.basic_consume')

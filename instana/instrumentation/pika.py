@@ -76,8 +76,11 @@ try:
 
 
     def basic_get_with_instana(wrapped, instance, args, kwargs):
-        def _bind_args(queue, callback, *args, **kwargs):
-            return (queue, callback, args, kwargs)
+        def _bind_args(*args, **kwargs):
+            args = list(args)
+            queue = kwargs.pop('queue', None) or args.pop(0)
+            callback = kwargs.pop('callback', None) or kwargs.pop('on_message_callback', None) or args.pop(0)
+            return (queue, callback, tuple(args), kwargs)
 
         queue, callback, args, kwargs = _bind_args(*args, **kwargs)
 
@@ -102,13 +105,12 @@ try:
         args = (queue, _cb_wrapper) + args
         return wrapped(*args, **kwargs)
 
-
     @wrapt.patch_function_wrapper('pika.adapters.blocking_connection', 'BlockingChannel.basic_consume')
     def basic_consume_with_instana(wrapped, instance, args, kwargs):
-        def _bind_args(queue, on_consume_callback, *args, **kwargs):
-            return (queue, on_consume_callback, args, kwargs)
+        def _bind_args(queue, on_message_callback, *args, **kwargs):
+            return (queue, on_message_callback, args, kwargs)
 
-        queue, on_consume_callback, args, kwargs = _bind_args(*args, **kwargs)
+        queue, on_message_callback, args, kwargs = _bind_args(*args, **kwargs)
 
         def _cb_wrapper(channel, method, properties, body):
             parent_span = tracer.extract(opentracing.Format.HTTP_HEADERS, properties.headers,
@@ -123,7 +125,7 @@ try:
                     logger.debug("basic_consume_with_instana: ", exc_info=True)
 
                 try:
-                    on_consume_callback(channel, method, properties, body)
+                    on_message_callback(channel, method, properties, body)
                 except Exception as e:
                     scope.span.log_exception(e)
                     raise

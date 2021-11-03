@@ -1,12 +1,29 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import instana
+import uvicorn
+
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import requests
+from starlette.middleware import Middleware
+from starlette_context import context
+from starlette.responses import JSONResponse
 
-fastapi_server = FastAPI()
+from starlette.requests import Request
+from starlette_context.middleware import RawContextMiddleware
+
+middleware = [
+    Middleware(
+        RawContextMiddleware,
+    )
+]
+
+fastapi_server = FastAPI(middleware=middleware)
+
 
 # @fastapi_server.exception_handler(StarletteHTTPException)
 # async def http_exception_handler(request, exc):
@@ -21,7 +38,7 @@ async def root():
     return {"message": "Hello World"}
 
 @fastapi_server.get("/users/{user_id}")
-async def user(user_id):
+def user(user_id):
     return {"user": user_id}
 
 @fastapi_server.get("/400")
@@ -39,3 +56,11 @@ async def five_hundred():
 @fastapi_server.get("/starlette_exception")
 async def starlette_exception():
     raise StarletteHTTPException(status_code=500, detail="500 response")
+
+
+@fastapi_server.get("/test_context")
+async def index(request: Request):
+    response = requests.get("http://0.0.0.0:8000/users/1", headers=context.data.get("instana_context"))
+    return JSONResponse({**context.data["instana_context"], **response.headers})
+
+uvicorn.run(fastapi_server, host="0.0.0.0")

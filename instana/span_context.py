@@ -12,7 +12,6 @@ class SpanContext():
             level=1,
             synthetic=False
     ):
-
         self.level = level
         self.trace_id = trace_id
         self.span_id = span_id
@@ -96,3 +95,7 @@ class SpanContext():
             span_id=self.span_id,
             sampled=self.sampled,
             baggage=new_baggage)
+
+    def get_propagation_headers(self):
+        return {"X-INSTANA-T": self.trace_id, "X-INSTANA-S": self.span_id, "X-INSTANA-L": str(self.level),
+                "tracestate": self.tracestate, "traceparent": self.traceparent}

@@ -66,6 +66,7 @@ class InstanaASGIMiddleware:
             return
 
         request_headers = scope.get('headers')
+
         if isinstance(request_headers, list):
             request_context = async_tracer.extract(opentracing.Format.BINARY, request_headers)
 
@@ -95,6 +96,11 @@ class InstanaASGIMiddleware:
                     raise
 
         with async_tracer.start_active_span("asgi", child_of=request_context) as tracing_scope:
+            try:
+                from starlette_context import context
+                context["instana_context"] = tracing_scope.span.context.get_propagation_headers()
+            except ImportError:
+                pass
             self._collect_kvs(scope, tracing_scope.span)
             if 'headers' in scope and agent.options.extra_http_headers is not None:
                 self._extract_custom_headers(tracing_scope.span, scope['headers'])

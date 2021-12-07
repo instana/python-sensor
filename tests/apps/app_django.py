@@ -9,8 +9,7 @@ import sys
 import time
 import opentracing
 import opentracing.ext.tags as ext
-
-from django.conf.urls import url
+from django.urls import re_path
 from django.http import HttpResponse, Http404
 
 filepath, extension = os.path.splitext(__file__)
@@ -123,9 +122,9 @@ def complex(request):
 
 
 urlpatterns = [
-    url(r'^$', index, name='index'),
-    url(r'^cause_error$', cause_error, name='cause_error'),
-    url(r'^another$', another),
-    url(r'^not_found$', not_found, name='not_found'),
-    url(r'^complex$', complex, name='complex')
+    re_path(r'^$', index, name='index'),
+    re_path(r'^cause_error$', cause_error, name='cause_error'),
+    re_path(r'^another$', another),
+    re_path(r'^not_found$', not_found, name='not_found'),
+    re_path(r'^complex$', complex, name='complex')
 ]

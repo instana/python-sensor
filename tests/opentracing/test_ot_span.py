@@ -6,6 +6,7 @@ import sys
 import json
 import time
 import unittest
+import pytest
 import opentracing
 from uuid import UUID
 from instana.util import to_json
@@ -72,6 +73,7 @@ class TestOTSpan(unittest.TestCase):
         self.assertEqual("string", span.tags['tagone'])
         self.assertEqual(150, span.tags['tagtwo'])
 
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
     def test_span_queueing(self):
         recorder = opentracing.tracer.recorder
 

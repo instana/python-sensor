@@ -9,7 +9,11 @@ import sys
 import time
 import opentracing
 import opentracing.ext.tags as ext
-from django.urls import re_path
+try:
+    from django.urls import re_path
+except ImportError:
+    from django.conf.urls import url as re_path
+
 from django.http import HttpResponse, Http404
 
 filepath, extension = os.path.splitext(__file__)

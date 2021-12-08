@@ -203,7 +203,7 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.data["cassandra"]["keyspace"], 'instana_tests')
         self.assertIsNone(cspan.data["cassandra"]["achievedConsistency"])
         self.assertIsNotNone(cspan.data["cassandra"]["triedHosts"])
-        self.assertEqual(cspan.data["cassandra"]["error"],"error")
+        self.assertEqual(cspan.data["cassandra"]["error"], "error")
 
     def test_prepared_statement(self):
         prepared = None

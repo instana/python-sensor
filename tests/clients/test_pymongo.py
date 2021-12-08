@@ -19,6 +19,10 @@ import bson
 
 logger = logging.getLogger(__name__)
 
+pymongoversion = pytest.mark.skipif(
+    pymongo.version_tuple >= (4, 0), reason="map reduce is removed in pymongo 4.0"
+)
+
 
 class TestPyMongoTracer(unittest.TestCase):
     def setUp(self):
@@ -170,7 +174,7 @@ class TestPyMongoTracer(unittest.TestCase):
         payload = json.loads(db_span.data["mongo"]["json"])
         assert_true({"$match": {"type": "string"}} in payload, db_span.data["mongo"]["json"])
 
-    @pytest.xfail(reason="map reduce is removed in pymongo 4.0")
+    @pymongoversion
     def test_successful_map_reduce_query(self):
         mapper = "function () { this.tags.forEach(function(z) { emit(z, 1); }); }"
         reducer = "function (key, values) { return len(values); }"

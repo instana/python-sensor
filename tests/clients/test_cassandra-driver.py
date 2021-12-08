@@ -19,7 +19,8 @@ from cassandra.query import SimpleStatement
 cluster = Cluster([testenv['cassandra_host']], load_balancing_policy=None)
 session = cluster.connect()
 
-session.execute("CREATE KEYSPACE IF NOT EXISTS instana_tests WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};")
+session.execute(
+    "CREATE KEYSPACE IF NOT EXISTS instana_tests WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};")
 session.set_keyspace('instana_tests')
 session.execute("CREATE TABLE IF NOT EXISTS users("
                 "id int PRIMARY KEY,"
@@ -203,7 +204,7 @@ class TestCassandra(unittest.TestCase):
         self.assertEqual(cspan.data["cassandra"]["keyspace"], 'instana_tests')
         self.assertIsNone(cspan.data["cassandra"]["achievedConsistency"])
         self.assertIsNotNone(cspan.data["cassandra"]["triedHosts"])
-        self.assertEqual(cspan.data["cassandra"]["error"], "error")
+        self.assertEqual(cspan.data["cassandra"]["error"], "Syntax error in CQL query")
 
     def test_prepared_statement(self):
         prepared = None

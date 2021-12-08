@@ -1,4 +1,4 @@
-cassandra-driver==3.20.2
+cassandra-driver>=3.20.2
 mock>=2.0.0
 nose>=1.0
 pytest>=4.6

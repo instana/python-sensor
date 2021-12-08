@@ -47,7 +47,8 @@ try:
 
     def cb_request_error(results, span, fn):
         collect_response(span, fn)
-        span.mark_as_errored({"cassandra.error": results})
+        logger.error(results, results.message)
+        span.mark_as_errored({"cassandra.error": results.message})
         span.finish()
 
 

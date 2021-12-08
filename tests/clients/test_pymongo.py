@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import json
 import unittest
 import logging
+import pytest
 
 from nose.tools import (assert_is_none, assert_is_not_none,
                         assert_false, assert_true, assert_list_equal)
@@ -17,6 +18,10 @@ import pymongo
 import bson
 
 logger = logging.getLogger(__name__)
+
+pymongoversion = pytest.mark.skipif(
+    pymongo.version_tuple >= (4, 0), reason="map reduce is removed in pymongo 4.0"
+)
 
 
 class TestPyMongoTracer(unittest.TestCase):
@@ -169,6 +174,7 @@ class TestPyMongoTracer(unittest.TestCase):
         payload = json.loads(db_span.data["mongo"]["json"])
         assert_true({"$match": {"type": "string"}} in payload, db_span.data["mongo"]["json"])
 
+    @pymongoversion
     def test_successful_map_reduce_query(self):
         mapper = "function () { this.tags.forEach(function(z) { emit(z, 1); }); }"
         reducer = "function (key, values) { return len(values); }"

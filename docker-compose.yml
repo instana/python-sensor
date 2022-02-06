@@ -1,50 +1,12 @@
-version: '2'
+version: '3.8'
 services:
   redis:
-    image: redis:4.0.6
-    #image: 'bitnami/redis:latest'
-    #environment:
-    #  - ALLOW_EMPTY_PASSWORD=yes
-    #volumes:
-    #  - ./tests/conf/redis.conf:/opt/bitnami/redis/mounted-etc/redis.conf
+    image: redis:5.0.4
     volumes:
-      - ./tests/conf/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./tests/conf/redis.conf:/usr/local/etc/redis/redis.conf:Z
     command: redis-server /usr/local/etc/redis/redis.conf
     ports:
       - "0.0.0.0:6379:6379"
-
-#
-#  Dev: Optionally enable to validate Redis Sentinel
-#
-#  redis-sentinel:
-#    image: 'bitnami/redis-sentinel:latest'
-#    environment:
-#      - REDIS_MASTER_HOST=redis
-#    ports:
-#      - '26379:26379'
-
-  # Kafka test will sometimes fail because Zookeeper won't start due to
-  # java.io.IOException: Unable to create data directory /opt/zookeeper-3.4.9/data/version-2, which seems to be a known issue:
-  # -> https://issues.apache.org/jira/browse/ZOOKEEPER-1936
-  zookeeper:
-    image: wurstmeister/zookeeper
-    ports:
-      - 2181:2181
-
-  kafka:
-    image: wurstmeister/kafka:0.10.1.0-2
-    ports:
-      - 9092:9092
-    depends_on:
-      - "zookeeper"
-    environment:
-      KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
-      KAFKA_CREATE_TOPICS: test:1:1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./bin:/nodejs-collector-bin
-#    command: ["/nodejs-collector-bin/wait-for-it.sh", "-s", "-t", "120", "zookeeper:2181", "--", "start-kafka.sh"]
 
   cassandra:
     image: cassandra:3.11.5
@@ -70,10 +32,10 @@ services:
       MYSQL_ROOT_PASSWORD: ''
       MYSQL_ROOT_HOST: '%'
     volumes:
-      - ./tests/config/database/mysql/conf.d:/etc/mysql/conf.d
+      - ./tests/config/database/mysql/conf.d/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:Z
 
   mongodb:
-    image: 'mongo:3.4.1'
+    image: 'mongo:4.2.3'
     ports:
       - '27017:27017'
 
@@ -88,11 +50,12 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.7.8-alpine
+    environment:
+      - RABBITMQ_NODENAME=rabbit@localhost
     ports:
       - 5671:5671
       - 5672:5672
 
-  # pubsub testing
   pubsub:
     image: singularities/pubsub-emulator
     environment:
@@ -100,6 +63,3 @@ services:
       - PUBSUB_LISTEN_ADDRESS=0.0.0.0:8432
     ports:
       - "8432:8432"
-
-#volumes:
-#  mysql-data:

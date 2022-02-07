@@ -102,8 +102,8 @@ class BaseCollector(object):
             logger.debug("BaseCollector.start: launching collection thread")
             self.thread_shutdown.clear()
             self.reporting_thread = threading.Thread(target=self.thread_loop, args=())
-            self.reporting_thread.setDaemon(True)
-            self.reporting_thread.setName(self.THREAD_NAME)
+            self.reporting_thread.daemon = True
+            self.reporting_thread.name = self.THREAD_NAME
             self.reporting_thread.start()
             self.started = True
         else:

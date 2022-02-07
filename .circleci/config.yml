@@ -154,6 +154,31 @@ jobs:
             . venv/bin/activate
             pytest -v
 
+  python310:
+    docker:
+      - image: circleci/python:3.10.0-buster
+      - image: circleci/postgres:9.6.5-alpine-ram
+      - image: circleci/mariadb:10-ram
+      - image: circleci/redis:5.0.4
+      - image: rabbitmq:3.5.4
+      - image: circleci/mongo:4.2.3-ram
+      - image: singularities/pubsub-emulator
+        environment:
+          PUBSUB_PROJECT_ID: "project-test"
+          PUBSUB_LISTEN_ADDRESS: "0.0.0.0:8432"
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-310.txt"
+      - run:
+          name: run tests
+          environment:
+            INSTANA_TEST: "true"
+          command: |
+            . venv/bin/activate
+            pytest -v
+
   py38couchbase:
     docker:
       - image: circleci/python:3.7.8-stretch
@@ -300,6 +325,7 @@ workflows:
       - python37
       - python38
       - python39
+      - python310
       - py27cassandra
       - py36cassandra
       - py37asynqp

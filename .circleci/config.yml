@@ -255,6 +255,26 @@ jobs:
             pip uninstall -y uvloop
             pytest -v tests/clients/test_asynqp.py
 
+  py37asynqp-legacy:
+    docker:
+      - image: circleci/python:3.7.9
+      - image: rabbitmq:3.5.4
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-asynqp-legacy-flask-markupsafe.txt"
+      - run:
+          name: run tests
+          environment:
+            INSTANA_TEST: "true"
+            ASYNQP_TEST: "true"
+          command: |
+            . venv/bin/activate
+            # We uninstall uvloop as it interferes with asyncio changing the event loop policy
+            pip uninstall -y uvloop
+            pytest -v tests/clients/test_asynqp.py
+
   gevent38:
     docker:
       - image: circleci/python:3.8.5
@@ -283,4 +303,5 @@ workflows:
       - py27cassandra
       - py36cassandra
       - py37asynqp
+      - py37asynqp-legacy
       - gevent38

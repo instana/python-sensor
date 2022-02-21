@@ -1,6 +1,6 @@
 aiohttp>=3.7.4
 asynqp>=0.6
-flask>=1.1.4,<2.0.0
+flask>=2.0.0,<3.0.0
 mock>=2.0.0
 nose>=1.0
 pytest>=4.6

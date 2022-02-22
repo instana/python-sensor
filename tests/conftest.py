@@ -37,6 +37,11 @@ if LooseVersion(sys.version) < LooseVersion('3.6.0'):
 if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
     collect_ignore_glob.append("*test_sudsjurko*")
 
+if LooseVersion(sys.version) >= LooseVersion('3.10.0'):
+    collect_ignore_glob.append("*test_tornado*")
+    collect_ignore_glob.append("*test_boto3_secretsmanager*")
+
+
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"
 # os.environ["INSTANA_DEBUG"] = "true"

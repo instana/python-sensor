@@ -8,6 +8,11 @@ import wrapt
 import logging
 import collections
 
+# TODO: Remove this alias once we don't have to support <=Python 3.3
+collections_abc = getattr(collections, 'abc', collections)
+Mapping = collections_abc.Mapping
+# End of alias
+
 from ..log import logger
 from ..util.traceutils import get_active_tracer
 
@@ -25,7 +30,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
 
             msg = str(argv[1])
             args = argv[2]
-            if args and len(args) == 1 and isinstance(args[0], collections.Mapping) and args[0]:
+            if args and len(args) == 1 and isinstance(args[0], Mapping) and args[0]:
                 args = args[0]
 
             # get the formatted log message

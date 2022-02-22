@@ -12,7 +12,7 @@ from .helpers.runtime import RuntimeHelper
 
 
 class HostCollector(BaseCollector):
-    """ Collector for AWS Fargate """
+    """ Collector for host agent """
     def __init__(self, agent):
         super(HostCollector, self).__init__(agent)
         logger.debug("Loading Host Collector")

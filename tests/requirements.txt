@@ -29,4 +29,4 @@ spyne>=2.13.16
 suds-jurko>=0.6
 tornado>=4.5.3,<6.0
 uvicorn>=0.13.4
-urllib3[secure]!=1.25.0,!=1.25.1,<1.27,>=1.21.1
+urllib3[secure]<1.27,>=1.26.5

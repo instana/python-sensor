@@ -138,7 +138,7 @@ class BasePropagator(object):
         """
         This method determines the span context depending on a set of conditions being met
         Detailed description of the conditions can be found here:
-        https://github.com/instana/technical-documentation/tree/master/tracing/specification#http-processing-for-instana-tracers
+        https://github.ibm.com/instana/technical-documentation/tree/master/tracing/specification#http-processing-for-instana-tracers
         :param trace_id: instana trace id
         :param span_id: instana span id
         :param level: instana level
@@ -157,6 +157,13 @@ class BasePropagator(object):
             correlation = True
 
         ctx_level = self._get_ctx_level(level)
+        if ctx_level == 0 or level == '0':
+            ctx.level = ctx_level
+            trace_id = ctx.trace_id = None
+            span_id = ctx.span_id = None
+            ctx.correlation_type = None
+            ctx.correlation_id = None
+#           return ctx
 
         if trace_id and span_id:
             ctx.trace_id = trace_id[-16:]  # only the last 16 chars
@@ -263,7 +270,7 @@ class BasePropagator(object):
 
     def extract(self, carrier, disable_w3c_trace_context=False):
         """
-        This method overrides the one of the Baseclass as with the introduction of W3C trace context for the HTTP
+        This method overrides one of the Baseclasses as with the introduction of W3C trace context for the HTTP
         requests more extracting steps and logic was required
         :param disable_w3c_trace_context:
         :param carrier:

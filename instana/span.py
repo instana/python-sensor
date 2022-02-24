@@ -106,6 +106,7 @@ class BaseSpan(object):
         self.t = span.context.trace_id
         self.p = span.parent_id
         self.s = span.context.span_id
+        self.l = span.context.level
         self.ts = int(round(span.start_time * 1000))
         self.d = int(round(span.duration * 1000))
         self.f = source

@@ -102,6 +102,15 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
+    def test_get_request_with_suppression(self):
+        headers = {'X-INSTANA-L':'0'}
+        response = self.http.urlopen('GET', testenv["wsgi_server"] + '/', headers=headers)
+
+        spans = self.recorder.queued_spans()
+
+        # Assert that there isn't any span, where level is not 0!
+        self.assertFalse(any(map(lambda x: x.l != 0 ,spans)))
+
     def test_synthetic_request(self):
         headers = {
             'X-INSTANA-SYNTHETIC': '1'

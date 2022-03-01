@@ -137,8 +137,8 @@ class BasePropagator(object):
                                  disable_w3c_trace_context):
         """
         This method determines the span context depending on a set of conditions being met
-        Detailed description of the conditions can be found here:
-        https://github.ibm.com/instana/technical-documentation/tree/master/tracing/specification#http-processing-for-instana-tracers
+        Detailed description of the conditions can be found in the instana internal technical-documentation,
+        under section http-processing-for-instana-tracers
         :param trace_id: instana trace id
         :param span_id: instana span id
         :param level: instana level

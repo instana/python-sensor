@@ -35,7 +35,17 @@ class InstanaWSGIMiddleware(object):
             self.scope.close()
             return res
 
+        def new_start_response_only_propagate_suppression(status, headers, exc_info=None):
+          # tracer.inject(ctx, ot.Format.HTTP_HEADERS, headers)
+            res = start_response(status, headers, exc_info)
+            return res
+
         ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
+        # If we're in suppressed tracing mode, then don't start a new span
+        # only propagate suppression
+        if ctx.level in ('0', 0):
+            return self.app(environ, new_start_response_only_propagate_suppression)
+
         self.scope = tracer.start_active_span("wsgi", child_of=ctx)
 
         if agent.options.extra_http_headers is not None:

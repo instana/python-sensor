@@ -20,9 +20,12 @@ path_tpl_re = re.compile('<.*>')
 def before_request_with_instana(*argv, **kwargs):
     try:
         env = flask.request.environ
-        ctx = None
-
         ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
+        # If we're in suppressed tracing mode, then don't start a new span
+        # only propagate suppression
+        if ctx.level == 0:
+            flask.g.scope = 'suppress'
+            return None
 
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
@@ -58,8 +61,14 @@ def before_request_with_instana(*argv, **kwargs):
 def after_request_with_instana(response):
     scope = None
     try:
-        # If we're not tracing, just return
+        # If we're not tracing at all, then just return
         if not hasattr(flask.g, 'scope'):
+            return response
+        # If we're in suppressed tracing mode, then propagate suppression
+        elif flask.g.scope == 'suppress':
+            # TODO: This ctx should be saved from the before_request
+           #ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, flask.request.environ)
+            tracer.inject(ctx, opentracing.Format.HTTP_HEADERS, response.headers)
             return response
 
         scope = flask.g.scope
@@ -87,6 +96,10 @@ def teardown_request_with_instana(*argv, **kwargs):
     so we capture those cases here.
     """
     if hasattr(flask.g, 'scope') and flask.g.scope is not None:
+        if flask.g.scope == 'suppress':
+            flask.g.scope = None
+            return
+
         if len(argv) > 0 and argv[0] is not None:
             scope = flask.g.scope
             scope.span.log_exception(argv[0])

@@ -108,8 +108,14 @@ class TestFlask(unittest.TestCase):
 
         spans = self.recorder.queued_spans()
 
+        self.assertEqual(response.headers.get('X-INSTANA-L', None), '0')
+        self.assertIsNotNone(response.headers.get('traceparent', None))
+
         # Assert that there isn't any span, where level is not 0!
         self.assertFalse(any(map(lambda x: x.l != 0 ,spans)))
+
+        # Assert that there are no spans in the recorded list
+        self.assertEquals(spans, [])
 
     def test_synthetic_request(self):
         headers = {

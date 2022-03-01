@@ -22,7 +22,7 @@ class HTTPPropagator(BasePropagator):
         try:
             trace_id = span_context.trace_id
             span_id = span_context.span_id
-            level = span_context.level
+            level = str(span_context.level)
 
             if disable_w3c_trace_context:
                 traceparent, tracestate = [None] * 2
@@ -35,21 +35,21 @@ class HTTPPropagator(BasePropagator):
                     carrier[self.HEADER_KEY_TRACESTATE] = tracestate
                 carrier[self.HEADER_KEY_T] = trace_id
                 carrier[self.HEADER_KEY_S] = span_id
-                carrier[self.HEADER_KEY_L] = "1"
+                carrier[self.HEADER_KEY_L] = level
             elif isinstance(carrier, list):
                 if traceparent and tracestate:
                     carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
                     carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
                 carrier.append((self.HEADER_KEY_T, trace_id))
                 carrier.append((self.HEADER_KEY_S, span_id))
-                carrier.append((self.HEADER_KEY_L, "1"))
+                carrier.append((self.HEADER_KEY_L, level))
             elif hasattr(carrier, '__setitem__'):
                 if traceparent and tracestate:
                     carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
                     carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
                 carrier.__setitem__(self.HEADER_KEY_T, trace_id)
                 carrier.__setitem__(self.HEADER_KEY_S, span_id)
-                carrier.__setitem__(self.HEADER_KEY_L, "1")
+                carrier.__setitem__(self.HEADER_KEY_L, level)
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

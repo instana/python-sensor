@@ -63,7 +63,8 @@ class StanRecorder(object):
             except queue.Empty:
                 break
             else:
-                spans.append(span)
+                if span.l != 0:
+                    spans.append(span)
         return spans
 
     def clear_spans(self):

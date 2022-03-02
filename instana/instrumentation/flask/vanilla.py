@@ -67,7 +67,7 @@ def after_request_with_instana(response):
         # If we're in suppressed tracing mode, then propagate suppression
         elif flask.g.scope == 'suppress':
             # TODO: This ctx should be saved from the before_request
-           #ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, flask.request.environ)
+            ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, flask.request.environ)
             tracer.inject(ctx, opentracing.Format.HTTP_HEADERS, response.headers)
             return response
 

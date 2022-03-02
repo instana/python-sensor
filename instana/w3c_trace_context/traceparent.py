@@ -54,13 +54,13 @@ class Traceparent:
         mask = 1 << 0
         trace_flags = 0
         if traceparent is None:  # modify the trace_id part only when it was not present at all
-            trace_id = in_trace_id.zfill(32)
+            trace_id = (in_trace_id or '').zfill(32)
             version = self.SPECIFICATION_VERSION
         else:
             version, trace_id, _, trace_flags = self.get_traceparent_fields(traceparent)
             trace_flags = int(trace_flags, 16)
 
-        parent_id = in_span_id.zfill(16)
+        parent_id = (in_span_id or '').zfill(16)
         trace_flags = (trace_flags & ~mask) | ((level << 0) & mask)
         trace_flags = format(trace_flags, '0>2x')
 

@@ -36,7 +36,7 @@ class InstanaWSGIMiddleware(object):
             return res
 
         def new_start_response_only_propagate_suppression(status, headers, exc_info=None):
-          # tracer.inject(ctx, ot.Format.HTTP_HEADERS, headers)
+            tracer.inject(ctx, ot.Format.HTTP_HEADERS, headers)
             res = start_response(status, headers, exc_info)
             return res
 

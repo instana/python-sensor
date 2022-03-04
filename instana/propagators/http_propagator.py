@@ -22,7 +22,8 @@ class HTTPPropagator(BasePropagator):
         try:
             trace_id = span_context.trace_id
             span_id = span_context.span_id
-            level = str(span_context.level)
+            level = span_context.level
+            serializable_level = str(level)
 
             if disable_w3c_trace_context:
                 traceparent, tracestate = [None] * 2
@@ -33,35 +34,28 @@ class HTTPPropagator(BasePropagator):
                 if traceparent and tracestate:
                     carrier[self.HEADER_KEY_TRACEPARENT] = traceparent
                     carrier[self.HEADER_KEY_TRACESTATE] = tracestate
-                carrier[self.HEADER_KEY_T] = trace_id
-                carrier[self.HEADER_KEY_S] = span_id
-                carrier[self.HEADER_KEY_L] = level
+                if level != 0:
+                    carrier[self.HEADER_KEY_T] = trace_id
+                    carrier[self.HEADER_KEY_S] = span_id
+                carrier[self.HEADER_KEY_L] = serializable_level
             elif isinstance(carrier, list):
                 if traceparent and tracestate:
                     carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
                     carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
-                carrier.append((self.HEADER_KEY_T, trace_id))
-                carrier.append((self.HEADER_KEY_S, span_id))
-                carrier.append((self.HEADER_KEY_L, level))
+                if level != 0:
+                    carrier.append((self.HEADER_KEY_T, trace_id))
+                    carrier.append((self.HEADER_KEY_S, span_id))
+                carrier.append((self.HEADER_KEY_L, serializable_level))
             elif hasattr(carrier, '__setitem__'):
                 if traceparent and tracestate:
                     carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
                     carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
-                carrier.__setitem__(self.HEADER_KEY_T, trace_id)
-                carrier.__setitem__(self.HEADER_KEY_S, span_id)
-                carrier.__setitem__(self.HEADER_KEY_L, level)
+                if level != 0:
+                    carrier.__setitem__(self.HEADER_KEY_T, trace_id)
+                    carrier.__setitem__(self.HEADER_KEY_S, span_id)
+                carrier.__setitem__(self.HEADER_KEY_L, serializable_level)
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 
         except Exception:
             logger.debug("inject error:", exc_info=True)
-
-
-
-
-
-
-
-
-
-

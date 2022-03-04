@@ -63,8 +63,7 @@ class StanRecorder(object):
             except queue.Empty:
                 break
             else:
-                if span.l != 0:
-                    spans.append(span)
+                spans.append(span)
         return spans
 
     def clear_spans(self):
@@ -88,8 +87,9 @@ class StanRecorder(object):
                 service_name = self.agent.options.service_name
                 json_span = SDKSpan(span, source, service_name)
 
-            # logger.debug("Recorded span: %s", json_span)
-            self.agent.collector.span_queue.put(json_span)
+            if json_span.l != 0:
+                # logger.debug("Recorded span: %s", json_span)
+                self.agent.collector.span_queue.put(json_span)
 
 
 class InstanaSampler(Sampler):

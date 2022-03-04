@@ -75,6 +75,9 @@ class StanRecorder(object):
         """
         Convert the passed BasicSpan into and add it to the span queue
         """
+        if span.context.level == 0:
+            return
+
         if self.agent.can_send():
             service_name = None
             source = self.agent.get_from_structure()
@@ -87,9 +90,8 @@ class StanRecorder(object):
                 service_name = self.agent.options.service_name
                 json_span = SDKSpan(span, source, service_name)
 
-            if json_span.l != 0:
-                # logger.debug("Recorded span: %s", json_span)
-                self.agent.collector.span_queue.put(json_span)
+            # logger.debug("Recorded span: %s", json_span)
+            self.agent.collector.span_queue.put(json_span)
 
 
 class InstanaSampler(Sampler):

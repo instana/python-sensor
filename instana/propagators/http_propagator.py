@@ -34,26 +34,41 @@ class HTTPPropagator(BasePropagator):
                 if traceparent and tracestate:
                     carrier[self.HEADER_KEY_TRACEPARENT] = traceparent
                     carrier[self.HEADER_KEY_TRACESTATE] = tracestate
-                if level != 0:
-                    carrier[self.HEADER_KEY_T] = trace_id
-                    carrier[self.HEADER_KEY_S] = span_id
+
                 carrier[self.HEADER_KEY_L] = serializable_level
+
+                if level == 0:
+                    return
+
+                carrier[self.HEADER_KEY_T] = trace_id
+                carrier[self.HEADER_KEY_S] = span_id
+
             elif isinstance(carrier, list):
                 if traceparent and tracestate:
                     carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
                     carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
-                if level != 0:
-                    carrier.append((self.HEADER_KEY_T, trace_id))
-                    carrier.append((self.HEADER_KEY_S, span_id))
+
                 carrier.append((self.HEADER_KEY_L, serializable_level))
+
+                if level == 0:
+                    return
+
+                carrier.append((self.HEADER_KEY_T, trace_id))
+                carrier.append((self.HEADER_KEY_S, span_id))
+
             elif hasattr(carrier, '__setitem__'):
                 if traceparent and tracestate:
                     carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
                     carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
-                if level != 0:
-                    carrier.__setitem__(self.HEADER_KEY_T, trace_id)
-                    carrier.__setitem__(self.HEADER_KEY_S, span_id)
+
                 carrier.__setitem__(self.HEADER_KEY_L, serializable_level)
+
+                if level == 0:
+                    return
+
+                carrier.__setitem__(self.HEADER_KEY_T, trace_id)
+                carrier.__setitem__(self.HEADER_KEY_S, span_id)
+
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

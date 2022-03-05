@@ -31,11 +31,12 @@ class HTTPPropagator(BasePropagator):
                 traceparent, tracestate = self._get_participating_trace_context(span_context)
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
-                if traceparent and tracestate:
-                    carrier[self.HEADER_KEY_TRACEPARENT] = traceparent
-                    carrier[self.HEADER_KEY_TRACESTATE] = tracestate
-
                 carrier[self.HEADER_KEY_L] = serializable_level
+
+                if traceparent:
+                    carrier[self.HEADER_KEY_TRACEPARENT] = traceparent
+                if tracestate:
+                    carrier[self.HEADER_KEY_TRACESTATE] = tracestate
 
                 if level == 0:
                     return
@@ -44,11 +45,12 @@ class HTTPPropagator(BasePropagator):
                 carrier[self.HEADER_KEY_S] = span_id
 
             elif isinstance(carrier, list):
-                if traceparent and tracestate:
-                    carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
-                    carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
-
                 carrier.append((self.HEADER_KEY_L, serializable_level))
+
+                if traceparent:
+                    carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
+                if tracestate:
+                    carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
 
                 if level == 0:
                     return
@@ -57,11 +59,12 @@ class HTTPPropagator(BasePropagator):
                 carrier.append((self.HEADER_KEY_S, span_id))
 
             elif hasattr(carrier, '__setitem__'):
-                if traceparent and tracestate:
-                    carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
-                    carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
-
                 carrier.__setitem__(self.HEADER_KEY_L, serializable_level)
+
+                if traceparent:
+                    carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
+                if tracestate:
+                    carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
 
                 if level == 0:
                     return

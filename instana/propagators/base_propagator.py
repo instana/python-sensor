@@ -130,6 +130,13 @@ class BasePropagator(object):
         traceparent = span_context.traceparent
         tracestate = span_context.tracestate
         traceparent = self._tp.update_traceparent(traceparent, tp_trace_id, span_context.span_id, span_context.level)
+
+        # In suppression mode do not update the tracestate and
+        # do not add the 'in=' key-value pair to the incoming tracestate
+        # Just propagate the incoming tracestate (if any) unchanged.
+        if span_context.level == 0:
+            return traceparent, tracestate
+
         tracestate = self._ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)
         return traceparent, tracestate
 

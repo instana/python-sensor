@@ -109,10 +109,41 @@ class TestFlask(unittest.TestCase):
         spans = self.recorder.queued_spans()
 
         self.assertEqual(response.headers.get('X-INSTANA-L', None), '0')
+        # The traceparent has to be present
         self.assertIsNotNone(response.headers.get('traceparent', None))
+        # The last digit of the traceparent has to be 0
+        self.assertEqual(response.headers['traceparent'][-1], '0')
+
+        # This should not be present
+        self.assertIsNone(response.headers.get('tracestate', None))
 
         # Assert that there isn't any span, where level is not 0!
-        self.assertFalse(any(map(lambda x: x.l != 0 ,spans)))
+        self.assertFalse(any(map(lambda x: x.l != 0, spans)))
+
+        # Assert that there are no spans in the recorded list
+        self.assertEquals(spans, [])
+
+    def test_get_request_with_suppression_and_w3c(self):
+        headers = {
+                'X-INSTANA-L':'0',
+                'traceparent': '00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01',
+                'tracestate': 'congo=ucfJifl5GOE,rojo=00f067aa0ba902b7'}
+
+        response = self.http.urlopen('GET', testenv["wsgi_server"] + '/', headers=headers)
+
+        spans = self.recorder.queued_spans()
+
+        self.assertEqual(response.headers.get('X-INSTANA-L', None), '0')
+        self.assertIsNotNone(response.headers.get('traceparent', None))
+        self.assertEqual(response.headers['traceparent'][-1], '0')
+        # The tracestate has to be present
+        self.assertIsNotNone(response.headers.get('tracestate', None))
+
+        # The 'in=' section can not be in the tracestate
+        self.assertTrue('in=' not in response.headers['tracestate'])
+
+        # Assert that there isn't any span, where level is not 0!
+        self.assertFalse(any(map(lambda x: x.l != 0, spans)))
 
         # Assert that there are no spans in the recorded list
         self.assertEquals(spans, [])

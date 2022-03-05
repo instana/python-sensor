@@ -158,7 +158,6 @@ class BasePropagator(object):
 
         ctx_level = self._get_ctx_level(level)
         if ctx_level == 0 or level == '0':
-            ctx.level = ctx_level
             trace_id = ctx.trace_id = None
             span_id = ctx.span_id = None
             ctx.correlation_type = None
@@ -167,7 +166,6 @@ class BasePropagator(object):
         if trace_id and span_id:
             ctx.trace_id = trace_id[-16:]  # only the last 16 chars
             ctx.span_id = span_id[-16:]  # only the last 16 chars
-            ctx.level = ctx_level
             ctx.synthetic = synthetic is not None
 
             if len(trace_id) > 16:
@@ -182,7 +180,6 @@ class BasePropagator(object):
             if disable_traceparent == "":
                 ctx.trace_id = tp_trace_id[-16:]
                 ctx.span_id = tp_parent_id
-                ctx.level = ctx_level
                 ctx.synthetic = synthetic is not None
                 ctx.trace_parent = True
                 ctx.instana_ancestor = instana_ancestor
@@ -191,7 +188,6 @@ class BasePropagator(object):
                 if instana_ancestor:
                     ctx.trace_id = instana_ancestor.t
                     ctx.span_id = instana_ancestor.p
-                    ctx.level = ctx_level
                     ctx.synthetic = synthetic is not None
 
         elif synthetic:
@@ -203,6 +199,8 @@ class BasePropagator(object):
         if traceparent:
             ctx.traceparent = traceparent
             ctx.tracestate = tracestate
+
+        ctx.level = ctx_level
 
         return ctx
 

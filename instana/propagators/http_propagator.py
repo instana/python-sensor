@@ -21,8 +21,7 @@ class HTTPPropagator(BasePropagator):
     def inject(self, span_context, carrier, disable_w3c_trace_context=False):
         trace_id = span_context.trace_id
         span_id = span_context.span_id
-        level = span_context.level
-        serializable_level = str(level)
+        serializable_level = str(span_context.level)
 
         if disable_w3c_trace_context:
             traceparent, tracestate = [None] * 2
@@ -45,7 +44,7 @@ class HTTPPropagator(BasePropagator):
             if tracestate:
                 inject_key_value(carrier, self.HEADER_KEY_TRACESTATE, tracestate)
 
-            if level == 0:
+            if span_context.suppression:
                 return
 
             inject_key_value(carrier, self.HEADER_KEY_T, trace_id)

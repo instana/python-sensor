@@ -130,6 +130,13 @@ class BasePropagator(object):
         traceparent = span_context.traceparent
         tracestate = span_context.tracestate
         traceparent = self._tp.update_traceparent(traceparent, tp_trace_id, span_context.span_id, span_context.level)
+
+        # In suppression mode do not update the tracestate and
+        # do not add the 'in=' key-value pair to the incoming tracestate
+        # Just propagate the incoming tracestate (if any) unchanged.
+        if span_context.suppression:
+            return traceparent, tracestate
+
         tracestate = self._ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)
         return traceparent, tracestate
 
@@ -137,8 +144,8 @@ class BasePropagator(object):
                                  disable_w3c_trace_context):
         """
         This method determines the span context depending on a set of conditions being met
-        Detailed description of the conditions can be found here:
-        https://github.com/instana/technical-documentation/tree/master/tracing/specification#http-processing-for-instana-tracers
+        Detailed description of the conditions can be found in the instana internal technical-documentation,
+        under section http-processing-for-instana-tracers
         :param trace_id: instana trace id
         :param span_id: instana span id
         :param level: instana level
@@ -157,11 +164,15 @@ class BasePropagator(object):
             correlation = True
 
         ctx_level = self._get_ctx_level(level)
+        if ctx_level == 0 or level == '0':
+            trace_id = ctx.trace_id = None
+            span_id = ctx.span_id = None
+            ctx.correlation_type = None
+            ctx.correlation_id = None
 
         if trace_id and span_id:
             ctx.trace_id = trace_id[-16:]  # only the last 16 chars
             ctx.span_id = span_id[-16:]  # only the last 16 chars
-            ctx.level = ctx_level
             ctx.synthetic = synthetic is not None
 
             if len(trace_id) > 16:
@@ -176,7 +187,6 @@ class BasePropagator(object):
             if disable_traceparent == "":
                 ctx.trace_id = tp_trace_id[-16:]
                 ctx.span_id = tp_parent_id
-                ctx.level = ctx_level
                 ctx.synthetic = synthetic is not None
                 ctx.trace_parent = True
                 ctx.instana_ancestor = instana_ancestor
@@ -185,7 +195,6 @@ class BasePropagator(object):
                 if instana_ancestor:
                     ctx.trace_id = instana_ancestor.t
                     ctx.span_id = instana_ancestor.p
-                    ctx.level = ctx_level
                     ctx.synthetic = synthetic is not None
 
         elif synthetic:
@@ -197,6 +206,8 @@ class BasePropagator(object):
         if traceparent:
             ctx.traceparent = traceparent
             ctx.tracestate = tracestate
+
+        ctx.level = ctx_level
 
         return ctx
 
@@ -263,7 +274,7 @@ class BasePropagator(object):
 
     def extract(self, carrier, disable_w3c_trace_context=False):
         """
-        This method overrides the one of the Baseclass as with the introduction of W3C trace context for the HTTP
+        This method overrides one of the Baseclasses as with the introduction of W3C trace context for the HTTP
         requests more extracting steps and logic was required
         :param disable_w3c_trace_context:
         :param carrier:

@@ -20,8 +20,6 @@ path_tpl_re = re.compile('<.*>')
 def before_request_with_instana(*argv, **kwargs):
     try:
         env = flask.request.environ
-        ctx = None
-
         ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
 
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)

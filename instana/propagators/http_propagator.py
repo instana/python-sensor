@@ -19,49 +19,36 @@ class HTTPPropagator(BasePropagator):
         super(HTTPPropagator, self).__init__()
 
     def inject(self, span_context, carrier, disable_w3c_trace_context=False):
-        try:
-            trace_id = span_context.trace_id
-            span_id = span_context.span_id
-            level = span_context.level
+        trace_id = span_context.trace_id
+        span_id = span_context.span_id
+        serializable_level = str(span_context.level)
 
-            if disable_w3c_trace_context:
-                traceparent, tracestate = [None] * 2
-            else:
-                traceparent, tracestate = self._get_participating_trace_context(span_context)
+        if disable_w3c_trace_context:
+            traceparent, tracestate = [None] * 2
+        else:
+            traceparent, tracestate = self._get_participating_trace_context(span_context)
 
-            if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
-                if traceparent and tracestate:
-                    carrier[self.HEADER_KEY_TRACEPARENT] = traceparent
-                    carrier[self.HEADER_KEY_TRACESTATE] = tracestate
-                carrier[self.HEADER_KEY_T] = trace_id
-                carrier[self.HEADER_KEY_S] = span_id
-                carrier[self.HEADER_KEY_L] = "1"
-            elif isinstance(carrier, list):
-                if traceparent and tracestate:
-                    carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
-                    carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
-                carrier.append((self.HEADER_KEY_T, trace_id))
-                carrier.append((self.HEADER_KEY_S, span_id))
-                carrier.append((self.HEADER_KEY_L, "1"))
-            elif hasattr(carrier, '__setitem__'):
-                if traceparent and tracestate:
-                    carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
-                    carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
-                carrier.__setitem__(self.HEADER_KEY_T, trace_id)
-                carrier.__setitem__(self.HEADER_KEY_S, span_id)
-                carrier.__setitem__(self.HEADER_KEY_L, "1")
+        def inject_key_value(carrier, key, value):
+            if isinstance(carrier, list):
+                carrier.append((key, value))
+            elif isinstance(carrier, dict) or '__setitem__' in dir(carrier):
+                carrier[key] = value
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 
+        try:
+            inject_key_value(carrier, self.HEADER_KEY_L, serializable_level)
+
+            if traceparent:
+                inject_key_value(carrier, self.HEADER_KEY_TRACEPARENT, traceparent)
+            if tracestate:
+                inject_key_value(carrier, self.HEADER_KEY_TRACESTATE, tracestate)
+
+            if span_context.suppression:
+                return
+
+            inject_key_value(carrier, self.HEADER_KEY_T, trace_id)
+            inject_key_value(carrier, self.HEADER_KEY_S, span_id)
+
         except Exception:
             logger.debug("inject error:", exc_info=True)
-
-
-
-
-
-
-
-
-
-

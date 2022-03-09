@@ -88,6 +88,10 @@ class SpanContext():
     def baggage(self):
         return self._baggage
 
+    @property
+    def suppression(self):
+        return self.level == 0
+
     def with_baggage_item(self, key, value):
         new_baggage = self._baggage.copy()
         new_baggage[key] = value
@@ -95,4 +99,5 @@ class SpanContext():
             trace_id=self.trace_id,
             span_id=self.span_id,
             sampled=self.sampled,
+            level=self.level,
             baggage=new_baggage)

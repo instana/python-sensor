@@ -75,6 +75,9 @@ class StanRecorder(object):
         """
         Convert the passed BasicSpan into and add it to the span queue
         """
+        if span.context.suppression:
+            return
+
         if self.agent.can_send():
             service_name = None
             source = self.agent.get_from_structure()

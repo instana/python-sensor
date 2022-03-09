@@ -134,7 +134,7 @@ class BasePropagator(object):
         # In suppression mode do not update the tracestate and
         # do not add the 'in=' key-value pair to the incoming tracestate
         # Just propagate the incoming tracestate (if any) unchanged.
-        if span_context.level == 0:
+        if span_context.suppression:
             return traceparent, tracestate
 
         tracestate = self._ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)

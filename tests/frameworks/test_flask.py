@@ -121,7 +121,7 @@ class TestFlask(unittest.TestCase):
         self.assertFalse(any(map(lambda x: x.l != 0, spans)))
 
         # Assert that there are no spans in the recorded list
-        self.assertEquals(spans, [])
+        self.assertEqual(spans, [])
 
     def test_get_request_with_suppression_and_w3c(self):
         headers = {
@@ -146,7 +146,7 @@ class TestFlask(unittest.TestCase):
         self.assertFalse(any(map(lambda x: x.l != 0, spans)))
 
         # Assert that there are no spans in the recorded list
-        self.assertEquals(spans, [])
+        self.assertEqual(spans, [])
 
     def test_synthetic_request(self):
         headers = {

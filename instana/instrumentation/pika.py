@@ -119,7 +119,7 @@ try:
             with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
                 try:
                     _extract_consumer_tags(scope.span,
-                                           conn=instance.connection,
+                                           conn=instance.connection._impl,
                                            queue=queue)
                 except:
                     logger.debug("basic_consume_with_instana: ", exc_info=True)

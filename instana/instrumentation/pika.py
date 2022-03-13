@@ -32,7 +32,6 @@ try:
     def _extract_consumer_tags(span, conn, queue):
         _extract_broker_tags(span, conn)
 
-        span.set_tag("address", "%s:%d" % (conn.params.host, conn.params.port))
         span.set_tag("sort", "consume")
         span.set_tag("queue", queue)
 

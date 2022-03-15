@@ -23,7 +23,7 @@ class TestDjango(StaticLiveServerTestCase):
         self.http = urllib3.PoolManager()
 
     def tearDown(self):
-        """ Do nothing for now """
+        """ Clear the INSTANA_DISABLE_W3C_TRACE_CORRELATION environment variable """
         os.environ["INSTANA_DISABLE_W3C_TRACE_CORRELATION"] = ""
 
     def test_basic_request(self):

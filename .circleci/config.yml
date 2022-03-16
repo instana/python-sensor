@@ -16,7 +16,7 @@ commands:
           command: |
             rm -rf venv
             export PATH=/home/circleci/.local/bin:$PATH
-            pip install --user -U pip setuptools virtualenv wheel
+            pip install -U pip setuptools virtualenv wheel
             virtualenv --python=python2.7 --always-copy venv
             . venv/bin/activate
             pip install 'wheel>=0.29.0'
@@ -31,9 +31,12 @@ commands:
     steps:
       - run:
           name: Install Python Dependencies
+          # TODO: Remove the pinning of setuptools
+          # as soon as we get rid of suds-jurko
           command: |
             python -m venv venv
             . venv/bin/activate
+            pip install --upgrade 'setuptools<58'
             pip install --upgrade pip
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
@@ -54,12 +57,16 @@ commands:
 jobs:
   python27:
     docker:
-      - image: circleci/python:2.7.16-stretch
-      - image: circleci/postgres:9.6.5-alpine-ram
-      - image: circleci/mariadb:10.1-ram
-      - image: circleci/redis:5.0.4
+      - image: cimg/python:2.7.18
+      - image: cimg/postgres:9.6.24
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: circle_test
+      - image: cimg/mariadb:10.6.7
+      - image: cimg/redis:5.0.14
       - image: rabbitmq:3.5.4
-      - image: circleci/mongo:4.2.3-ram
+      - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
           PUBSUB_PROJECT_ID: "project-test"
@@ -67,6 +74,11 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - run:
+          name: Install MySQL Dependencies
+          command: |
+            sudo apt update
+            sudo apt install libmysqlclient-dev
       - pip-install-deps-27
       - run:
           name: run tests
@@ -78,12 +90,16 @@ jobs:
 
   python37:
     docker:
-      - image: circleci/python:3.7.9
-      - image: circleci/postgres:9.6.5-alpine-ram
-      - image: circleci/mariadb:10-ram
-      - image: circleci/redis:5.0.4
+      - image: cimg/python:3.7.12
+      - image: cimg/postgres:9.6.24
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: circle_test
+      - image: cimg/mariadb:10.6.7
+      - image: cimg/redis:5.0.14
       - image: rabbitmq:3.5.4
-      - image: circleci/mongo:4.2.3-ram
+      - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
           PUBSUB_PROJECT_ID: "project-test"
@@ -104,12 +120,16 @@ jobs:
 
   python38:
     docker:
-      - image: circleci/python:3.8.6
-      - image: circleci/postgres:9.6.5-alpine-ram
-      - image: circleci/mariadb:10-ram
-      - image: circleci/redis:5.0.4
+      - image: cimg/python:3.8.12
+      - image: cimg/postgres:9.6.24
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: circle_test
+      - image: cimg/mariadb:10.6.7
+      - image: cimg/redis:5.0.14
       - image: rabbitmq:3.5.4
-      - image: circleci/mongo:4.2.3-ram
+      - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
           PUBSUB_PROJECT_ID: "project-test"
@@ -132,12 +152,16 @@ jobs:
 
   python39:
     docker:
-      - image: circleci/python:3.9.0-buster
-      - image: circleci/postgres:9.6.5-alpine-ram
-      - image: circleci/mariadb:10-ram
-      - image: circleci/redis:5.0.4
+      - image: cimg/python:3.9.10
+      - image: cimg/postgres:9.6.24
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: circle_test
+      - image: cimg/mariadb:10.6.7
+      - image: cimg/redis:5.0.14
       - image: rabbitmq:3.5.4
-      - image: circleci/mongo:4.2.3-ram
+      - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
           PUBSUB_PROJECT_ID: "project-test"
@@ -156,12 +180,16 @@ jobs:
 
   python310:
     docker:
-      - image: circleci/python:3.10.0-buster
-      - image: circleci/postgres:9.6.5-alpine-ram
-      - image: circleci/mariadb:10-ram
-      - image: circleci/redis:5.0.4
+      - image: cimg/python:3.10.2
+      - image: cimg/postgres:9.6.24
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: circle_test
+      - image: cimg/mariadb:10.6.7
+      - image: cimg/redis:5.0.14
       - image: rabbitmq:3.5.4
-      - image: circleci/mongo:4.2.3-ram
+      - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
           PUBSUB_PROJECT_ID: "project-test"
@@ -181,7 +209,7 @@ jobs:
 
   py38couchbase:
     docker:
-      - image: circleci/python:3.7.8-stretch
+      - image: cimg/python:3.8.12
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -200,7 +228,7 @@ jobs:
 
   py27couchbase:
     docker:
-      - image: circleci/python:2.7.16-stretch
+      - image: cimg/python:2.7.18
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -219,8 +247,8 @@ jobs:
 
   py27cassandra:
     docker:
-      - image: circleci/python:2.7.16-stretch
-      - image: circleci/cassandra:3.10
+      - image: cimg/python:2.7.16
+      - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
           HEAP_NEWSIZE: 512m
@@ -241,8 +269,8 @@ jobs:
 
   py36cassandra:
     docker:
-      - image: circleci/python:3.6.11
-      - image: circleci/cassandra:3.10
+      - image: cimg/python:3.6.11
+      - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
           HEAP_NEWSIZE: 512m
@@ -263,6 +291,8 @@ jobs:
   py37asynqp:
     docker:
       - image: circleci/python:3.7.9
+# TODO: Figure out why this causes 'AssertionError: 6 != 8'
+#     - image: cimg/python:3.7.12
       - image: rabbitmq:3.5.4
     working_directory: ~/repo
     steps:
@@ -282,7 +312,7 @@ jobs:
 
   py37asynqp-legacy:
     docker:
-      - image: circleci/python:3.7.9
+      - image: cimg/python:3.7.12
       - image: rabbitmq:3.5.4
     working_directory: ~/repo
     steps:
@@ -302,7 +332,7 @@ jobs:
 
   gevent38:
     docker:
-      - image: circleci/python:3.8.5
+      - image: cimg/python:3.8.5
     working_directory: ~/repo
     steps:
       - checkout

@@ -1,0 +1,69 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to fill out this report.
+        Remember that these issues are public and if you need to discuss
+        implementation specific issues securely,
+        please [use our support portal](https://support.instana.com/hc/en-us).
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem Description
+      description: What was the issue that caused you to file this bug?
+    validations:
+      required: true
+  - type: textarea
+    id: mcve
+    attributes:
+      label: Minimal, Complete, Verifiable, Example
+      description: |
+        If you can, then please provide steps
+        needed to reproduce this issue outside of your application.
+    validations:
+      required: false
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: |
+        What version of Python was the application running with
+        when it encountered this bug?
+      placeholder: Python 3.x
+    validations:
+      required: true
+  - type: textarea
+    id: python-modules
+    attributes:
+      label: Python Modules
+      description: |
+        Please paste the version information of all available Python modules
+        for the application that was affected by this bug.
+        Both the system pre-installed
+        (for example `apt list '*python*' --installed` or `rpm -qa | grep python`)
+        and the packages from PyPI (`pip list` or equivalent).
+        If your application is running in a container and/or a virtualenv etc,
+        then please provide these from the innermost environment.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: python-environment
+    attributes:
+      label: Python Environment
+      description: |
+        Please the list of environment variables available for the application.
+        For example
+        ```
+        for pid in $(pidof python3); do
+          echo "#### PID: ${pid} ####";
+          cat /proc/${pid}/environ | tr '\0' '\n';
+        done
+        ```
+      render: shell
+    validations:
+      required: true

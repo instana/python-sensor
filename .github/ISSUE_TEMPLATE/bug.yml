@@ -58,10 +58,12 @@ body:
       description: |
         Please the list of environment variables available for the application.
         For example
-        `for pid in $(pidof python3); do
-           echo "#### PID: ${pid} ####";
-           cat /proc/${pid}/environ | tr '\0' '\n';
-         done`
+        ```
+        for pid in $(pidof python3); do
+          echo "#### PID: ${pid} ####";
+          cat /proc/${pid}/environ | tr '\0' '\n';
+        done
+        ```
       render: shell
     validations:
       required: true

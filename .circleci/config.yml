@@ -65,7 +65,7 @@ jobs:
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.6.7
       - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.5.4
+      - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
@@ -98,7 +98,7 @@ jobs:
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.6.7
       - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.5.4
+      - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
@@ -128,7 +128,7 @@ jobs:
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.6.7
       - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.5.4
+      - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
@@ -160,7 +160,7 @@ jobs:
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.6.7
       - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.5.4
+      - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
@@ -188,7 +188,7 @@ jobs:
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.6.7
       - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.5.4
+      - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: singularities/pubsub-emulator
         environment:
@@ -290,10 +290,8 @@ jobs:
 
   py37asynqp:
     docker:
-      - image: circleci/python:3.7.9
-# TODO: Figure out why this causes 'AssertionError: 6 != 8'
-#     - image: cimg/python:3.7.12
-      - image: rabbitmq:3.5.4
+      - image: cimg/python:3.7.12
+      - image: rabbitmq:3.9.13
     working_directory: ~/repo
     steps:
       - checkout
@@ -313,7 +311,7 @@ jobs:
   py37asynqp-legacy:
     docker:
       - image: cimg/python:3.7.12
-      - image: rabbitmq:3.5.4
+      - image: rabbitmq:3.9.13
     working_directory: ~/repo
     steps:
       - checkout

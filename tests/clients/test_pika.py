@@ -3,14 +3,12 @@
 
 from __future__ import absolute_import
 
-import os
 import pika
 import unittest
 import mock
 import threading
 import time
 
-from ..helpers import testenv
 from instana.singletons import tracer
 
 

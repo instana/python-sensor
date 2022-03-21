@@ -375,18 +375,16 @@ class TestPikaBlockingChannel(_TestPika):
         self.assertNotEqual(rabbitmq_span.p, rabbitmq_span.s)
 
 
-class _TestPikaBlockingConnection(_TestPika):
+class TestPikaBlockingChannelBlockingConnection(_TestPika):
+
+    DEFAULT_HOST = pika.connection.Parameters.DEFAULT_HOST
+    DEFAULT_PORT = pika.connection.Parameters.DEFAULT_PORT
+
     @mock.patch('pika.adapters.blocking_connection.BlockingConnection', autospec=True)
     def _create_connection(self, connection=None):
         connection._impl = mock.create_autospec(pika.connection.Connection)
         connection._impl.params = pika.connection.Parameters()
         return connection
-
-
-class TestPikaBlockingChannelBlockingConnection(_TestPikaBlockingConnection):
-
-    DEFAULT_HOST = pika.connection.Parameters.DEFAULT_HOST
-    DEFAULT_PORT = pika.connection.Parameters.DEFAULT_PORT
 
     @mock.patch('pika.channel.Channel', spec=pika.channel.Channel)
     def _create_obj(self, channel_impl):

@@ -443,3 +443,37 @@ class TestPikaBlockingChannelBlockingConnection(_TestPikaBlockingConnection):
         self.assertGreater(len(rabbitmq_span.stack), 0)
 
         cb.assert_called_once_with(self.obj, method, properties, body)
+
+    def test_basic_consume_with_trace_context(self):
+        consumer_tag = "test.consumer"
+
+        self.impl.basic_consume.return_value = consumer_tag
+        self.impl._generate_consumer_tag.return_value = consumer_tag
+
+        cb = mock.Mock()
+
+        self.obj.basic_consume(queue="test.queue", on_message_callback=cb)
+
+        body = "Hello!"
+        properties = pika.BasicProperties(headers={
+            "X-INSTANA-T": "0000000000000001",
+            "X-INSTANA-S": "0000000000000002",
+            "X-INSTANA-L": "1"
+        })
+        method = pika.spec.Basic.Deliver(consumer_tag)
+        self._generate_delivery(method, properties, body)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        rabbitmq_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Trace context propagation
+        self.assertEqual("0000000000000001", rabbitmq_span.t)
+        self.assertEqual("0000000000000002", rabbitmq_span.p)
+
+        # A new span has been started
+        self.assertIsNotNone(rabbitmq_span.s)
+        self.assertNotEqual(rabbitmq_span.p, rabbitmq_span.s)

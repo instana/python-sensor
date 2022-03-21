@@ -375,3 +375,71 @@ class TestPikaBlockingChannel(_TestPika):
         # A new span has been started
         self.assertIsNotNone(rabbitmq_span.s)
         self.assertNotEqual(rabbitmq_span.p, rabbitmq_span.s)
+
+
+class _TestPikaBlockingConnection(_TestPika):
+    @mock.patch('pika.adapters.blocking_connection.BlockingConnection', autospec=True)
+    def _create_connection(self, connection=None):
+        connection._impl = mock.create_autospec(pika.connection.Connection)
+        connection._impl.params = pika.connection.Parameters()
+        return connection
+
+
+class TestPikaBlockingChannelBlockingConnection(_TestPikaBlockingConnection):
+
+    DEFAULT_HOST = pika.connection.Parameters.DEFAULT_HOST
+    DEFAULT_PORT = pika.connection.Parameters.DEFAULT_PORT
+
+    @mock.patch('pika.channel.Channel', spec=pika.channel.Channel)
+    def _create_obj(self, channel_impl):
+        self.impl = channel_impl()
+        self.impl.channel_number = 1
+
+        return pika.adapters.blocking_connection.BlockingChannel(self.impl, self.connection)
+
+    def _generate_delivery(self, method, properties, body):
+        from pika.adapters.blocking_connection import _ConsumerDeliveryEvt
+        evt = _ConsumerDeliveryEvt(method, properties, body)
+        self.obj._add_pending_event(evt)
+        self.obj._dispatch_events()
+
+    def test_basic_consume(self):
+        consumer_tag = "test.consumer"
+
+        self.impl.basic_consume.return_value = consumer_tag
+        self.impl._generate_consumer_tag.return_value = consumer_tag
+
+        cb = mock.Mock()
+
+        self.obj.basic_consume(queue="test.queue", on_message_callback=cb)
+
+        body = "Hello!"
+        properties = pika.BasicProperties()
+        method = pika.spec.Basic.Deliver(consumer_tag)
+        self._generate_delivery(method, properties, body)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        rabbitmq_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+
+        # A new span has been started
+        self.assertIsNotNone(rabbitmq_span.t)
+        self.assertIsNone(rabbitmq_span.p)
+        self.assertIsNotNone(rabbitmq_span.s)
+
+        # Error logging
+        self.assertIsNone(rabbitmq_span.ec)
+
+        # Span tags
+        self.assertIsNone(rabbitmq_span.data["rabbitmq"]["exchange"])
+        self.assertEqual("consume", rabbitmq_span.data["rabbitmq"]["sort"])
+        self.assertIsNotNone(rabbitmq_span.data["rabbitmq"]["address"])
+        self.assertEqual("test.queue", rabbitmq_span.data["rabbitmq"]["queue"])
+        self.assertIsNotNone(rabbitmq_span.stack)
+        self.assertTrue(type(rabbitmq_span.stack) is list)
+        self.assertGreater(len(rabbitmq_span.stack), 0)
+
+        cb.assert_called_once_with(self.obj, method, properties, body)

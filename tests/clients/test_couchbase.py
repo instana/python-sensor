@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import
 
+import os
 import time
 import pytest
 import unittest
@@ -37,7 +38,7 @@ class TestStandardCouchDB(unittest.TestCase):
         self.bucket = Bucket('couchbase://%s/travel-sample' % testenv['couchdb_host'],
                              username=testenv['couchdb_username'], password=testenv['couchdb_password'])
 
-    def setup_method(self):
+    def setup_method(self, _):
         self.bucket.upsert('test-key', 1)
         time.sleep(0.5)
         self.recorder.clear_spans()

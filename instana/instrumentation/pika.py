@@ -32,7 +32,6 @@ try:
     def _extract_consumer_tags(span, conn, queue):
         _extract_broker_tags(span, conn)
 
-        span.set_tag("address", "%s:%d" % (conn.params.host, conn.params.port))
         span.set_tag("sort", "consume")
         span.set_tag("queue", queue)
 
@@ -119,7 +118,7 @@ try:
             with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
                 try:
                     _extract_consumer_tags(scope.span,
-                                           conn=instance.connection,
+                                           conn=instance.connection._impl,
                                            queue=queue)
                 except:
                     logger.debug("basic_consume_with_instana: ", exc_info=True)

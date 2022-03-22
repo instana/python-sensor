@@ -46,12 +46,14 @@ commands:
     steps:
       - run:
           name: Install Couchbase Dependencies
+          # Even if we use focal, we need to add the bionic repo
+          # See: https://forums.couchbase.com/
+          # t/installing-libcouchbase-dev-on-ubuntu-20-focal-fossa/25955/3
           command: |
-            sudo apt-get update
-            sudo apt install lsb-release -y
-            curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-6-amd64.deb
-            sudo dpkg -i ./couchbase-release-1.0-6-amd64.deb
-            sudo apt-get update
+            sudo apt update
+            sudo wget -O - http://packages.couchbase.com/ubuntu/couchbase.key | sudo apt-key add -
+            echo "deb http://packages.couchbase.com/ubuntu bionic bionic/main" | sudo tee /etc/apt/sources.list.d/couchbase.list
+            sudo apt update
             sudo apt install libcouchbase-dev -y
 
 jobs:
@@ -358,4 +360,5 @@ workflows:
       - py36cassandra
       - py37asynqp
       - py37asynqp-legacy
+      - py38couchbase
       - gevent38

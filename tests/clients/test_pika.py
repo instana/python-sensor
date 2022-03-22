@@ -376,10 +376,6 @@ class TestPikaBlockingChannel(_TestPika):
 
 
 class TestPikaBlockingChannelBlockingConnection(_TestPika):
-
-    DEFAULT_HOST = pika.connection.Parameters.DEFAULT_HOST
-    DEFAULT_PORT = pika.connection.Parameters.DEFAULT_PORT
-
     @mock.patch('pika.adapters.blocking_connection.BlockingConnection', autospec=True)
     def _create_connection(self, connection=None):
         connection._impl = mock.create_autospec(pika.connection.Connection)

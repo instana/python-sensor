@@ -1,0 +1,52 @@
+[
+  {
+    "model": "materials.category",
+    "pk": 1,
+    "fields": {
+      "name": "Metal"
+    }
+  },
+  {
+    "model": "materials.category",
+    "pk": 2,
+    "fields": {
+      "name": "Nonmetal"
+    }
+  },
+  {
+    "model": "materials.material",
+    "pk": 1,
+    "fields": {
+      "name": "Sodium",
+      "notes": "An essential element for all animals and some plants.",
+      "category": 1
+    }
+  },
+  {
+    "model": "materials.material",
+    "pk": 2,
+    "fields": {
+      "name": "Iron",
+      "notes": "Plays an essential role in vertebrate metabolism.",
+      "category": 1
+    }
+  },
+  {
+    "model": "materials.material",
+    "pk": 3,
+    "fields": {
+      "name": "Chlorine",
+      "notes": "In form of compounds, it is necessary to all known species of life.",
+      "category": 2
+    }
+  },
+  {
+    "model": "materials.material",
+    "pk": 4,
+    "fields": {
+      "name": "Carbon",
+      "notes": "Compounds of Carbon form the basis of all known life on Earth.",
+      "category": 2
+    }
+  }
+]

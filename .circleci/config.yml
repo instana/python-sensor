@@ -92,7 +92,7 @@ jobs:
 
   python37:
     docker:
-      - image: cimg/python:3.7.12
+      - image: cimg/python:3.7.13
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -122,7 +122,7 @@ jobs:
 
   python38:
     docker:
-      - image: cimg/python:3.8.12
+      - image: cimg/python:3.8.13
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -154,7 +154,7 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9.10
+      - image: cimg/python:3.9.12
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -182,7 +182,7 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10.2
+      - image: cimg/python:3.10.4
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -211,7 +211,7 @@ jobs:
 
   py38couchbase:
     docker:
-      - image: cimg/python:3.8.12
+      - image: cimg/python:3.8.13
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -271,7 +271,7 @@ jobs:
 
   py36cassandra:
     docker:
-      - image: cimg/python:3.6.11
+      - image: cimg/python:3.6.15
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -292,7 +292,7 @@ jobs:
 
   py37asynqp:
     docker:
-      - image: cimg/python:3.7.12
+      - image: cimg/python:3.7.13
       - image: rabbitmq:3.9.13
     working_directory: ~/repo
     steps:
@@ -312,7 +312,7 @@ jobs:
 
   py37asynqp-legacy:
     docker:
-      - image: cimg/python:3.7.12
+      - image: cimg/python:3.7.13
       - image: rabbitmq:3.9.13
     working_directory: ~/repo
     steps:
@@ -332,7 +332,7 @@ jobs:
 
   gevent38:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.8.12
     working_directory: ~/repo
     steps:
       - checkout

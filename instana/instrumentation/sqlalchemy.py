@@ -57,34 +57,26 @@ try:
         error_event = "dbapi_error"
 
 
-    def _set_error_tags(context, exception_string, scope_string):
-        scope, context_exception = None, None
-        if attrgetter(scope_string)(context) and attrgetter(exception_string)(context):
-            scope = attrgetter(scope_string)(context)
-            context_exception = attrgetter(exception_string)(context)
-        if scope and context_exception:
-            scope.span.log_exception(context_exception)
-            scope.close()
-        else:
-            scope.span.log_exception("No %s specified." % error_event)
-            scope.close()
-
-
     @event.listens_for(Engine, error_event, named=True)
     def receive_handle_db_error(**kw):
+        scope = context_exception = None
 
         # support older db error event
         if error_event == "dbapi_error":
             context = kw.get('context')
-            exception_string = 'exception'
-            scope_string = '_stan_scope'
+            if context and hasattr(context, '_stan_scope'):
+                scope = context._context._stan_scope
+                context_exception = scope.exception
         else:
             context = kw.get('exception_context')
-            exception_string = 'sqlalchemy_exception'
-            scope_string = 'execution_context._stan_scope'
+            if context and hasattr(context.execution_context, '_stan_scope'):
+                scope = context.execution_context._stan_scope
+                context_exception = context.sqlalchemy_exception
 
-        if context:
-            _set_error_tags(context, exception_string, scope_string)
+        if not scope: return
+
+        scope.span.log_exception(context_exception or ("No %s specified." % error_event))
+        scope.close()
 
 
     logger.debug("Instrumenting sqlalchemy")

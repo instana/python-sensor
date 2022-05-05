@@ -85,7 +85,7 @@ for region in regions:
                              "Provides Instana tracing and monitoring of AWS Lambda functions built with Python",
                              "--license-info", "MIT", "--output", "json",
                              "--layer-name", LAYER_NAME, "--zip-file", aws_zip_filename,
-                             "--compatible-runtimes", "python2.7", "python3.6", "python3.7", "python3.8"])
+                             "--compatible-runtimes", "python3.7", "python3.8", "python3.9", "python3.10"])
 
     json_data = json.loads(response)
     version = json_data['Version']

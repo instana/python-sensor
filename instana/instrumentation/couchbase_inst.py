@@ -7,7 +7,6 @@ https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 """
 from __future__ import absolute_import
 
-from distutils.version import LooseVersion
 import wrapt
 
 from ..log import logger
@@ -15,6 +14,14 @@ from ..util.traceutils import get_active_tracer
 
 try:
     import couchbase
+
+    if not (hasattr(couchbase, '__version__') and couchbase.__version__[0] == '2'
+            and (couchbase.__version__[2] > '3'
+                 or (couchbase.__version__[2] == '3' and couchbase.__version__[4] >= '4'))
+        ):
+        logger.debug("Instana supports 2.3.4 <= couchbase_versions < 3.0.0. Skipping.")
+        raise ImportError
+
     from couchbase.n1ql import N1QLQuery
 
     # List of operations to instrument
@@ -79,14 +86,11 @@ try:
                 scope.span.set_tag('couchbase.error', repr(e))
                 raise
 
-    if hasattr(couchbase, '__version__') \
-            and (LooseVersion(couchbase.__version__) >= LooseVersion('2.3.4')) \
-            and (LooseVersion(couchbase.__version__) < LooseVersion('3.0.0')):
-        logger.debug("Instrumenting couchbase")
-        wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.n1ql_query', query_with_instana)
-        for op in operations:
-            f = make_wrapper(op)
-            wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.%s' % op, f)
+    logger.debug("Instrumenting couchbase")
+    wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.n1ql_query', query_with_instana)
+    for op in operations:
+        f = make_wrapper(op)
+        wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.%s' % op, f)
 
 except ImportError:
     pass

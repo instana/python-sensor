@@ -5,16 +5,13 @@
 from __future__ import absolute_import
 
 import os
+import queue
 import sys
 
 from basictracer import Sampler
 
 from .span import RegisteredSpan, SDKSpan
 
-if sys.version_info.major == 2:
-    import Queue as queue
-else:
-    import queue
 
 
 class StanRecorder(object):

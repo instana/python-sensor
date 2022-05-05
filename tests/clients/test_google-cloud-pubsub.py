@@ -22,8 +22,6 @@ from tests.test_utils import _TraceContextMixin
 os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8432"
 
 
-@pytest.mark.skipif(sys.version_info[0] < 3,
-                    reason="google-cloud-pubsub has dropped support for Python 2")
 class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
     @classmethod
     def setUpClass(cls):
@@ -87,8 +85,6 @@ class AckCallback(object):
             self.calls += 1
 
 
-@pytest.mark.skipif(sys.version_info[0] < 3,
-                    reason="google-cloud-pubsub has dropped support for Python 2")
 class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
     @classmethod
     def setUpClass(cls):

@@ -16,11 +16,9 @@ from ..test_utils import _TraceContextMixin
 from mock import patch, Mock
 from six.moves import http_client
 
-if sys.version_info[0] >= 3:
-    from google.cloud import storage
-    from google.api_core import iam
+from google.cloud import storage
+from google.api_core import iam
 
-@pytest.mark.skipif(sys.version_info[0] < 3, reason="google-cloud-storage has dropped support for Python 2")
 class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
     def setUp(self):
         self.recorder = tracer.recorder

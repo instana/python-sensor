@@ -1,12 +1,3 @@
-# pre 6.0 tornado would try to import 'MutableMapping' from 'collections'
-# directly, and in Python 3.10 that doesn't work anymore, so that would fail with:
-# venv/lib/python3.10/site-packages/tornado/httputil.py:107: in <module>
-# AttributeError: module 'collections' has no attribute 'MutableMapping'
-# An alternative would be to disable this in testconf:
-# collect_ignore_glob.append("*test_tornado*")
-tornado>=6.1
-
-
 aiofiles>=0.5.0
 aiohttp>=3.7.4
 boto3>=1.17.74
@@ -14,16 +5,13 @@ celery>=5.0.5
 coverage>=5.5
 Django>=3.2.10
 fastapi>=0.65.1
-flask>=2.0.0
-markupsafe>=2.1.0
+flask>=1.1.4,<2.0.0
 grpcio>=1.37.1
 google-cloud-pubsub<=2.1.0
 google-cloud-storage>=1.24.0
 lxml>=4.6.3
 mock>=4.0.3
-
-# We have to increase the minimum moto version so we can keep markupsafe on the required minimum
-moto>=2.0
+moto>=1.3.16,<2.0
 mysqlclient>=2.0.3
 nose>=1.3.7
 PyMySQL[rsa]>=1.0.2
@@ -48,7 +36,6 @@ responses<=0.17.0
 sanic>=19.0.0,<21.9.0
 sqlalchemy>=1.4.15
 spyne>=2.13.16
-suds-jurko>=0.6
 
 uvicorn>=0.13.4
 urllib3[secure]<1.27,>=1.26.5

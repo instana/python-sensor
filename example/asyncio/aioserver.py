@@ -3,6 +3,7 @@
 
 import os
 import asyncio
+# TODO: Change asynqp to aio-pika once it is fully supported
 import asynqp
 from aiohttp import web
 

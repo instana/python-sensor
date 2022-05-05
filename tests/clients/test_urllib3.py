@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import urllib3
 import unittest
-import pytest
 import sys
 import requests
 
@@ -35,7 +34,6 @@ class TestUrllib3(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
 
-    @pytest.mark.skipif(sys.version_info[0] < 3, reason="ThreadPool works differently on python 2")
     def test_parallel_requests(self):
         http_pool_5 = urllib3.PoolManager(num_pools=5)
 

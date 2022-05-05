@@ -66,11 +66,6 @@ class BlockSamplerTestCase(unittest.TestCase):
         t = threading.Thread(target=event_wait)
         t.start()
 
-        # make sure signals are delivered in python 2, when main thread is waiting
-        if runtime_info.PYTHON_2:
-            while record_t.is_alive():
-                pass
-
         record_t.join()
 
         profile = sampler.build_profile(2000, 120000).to_dict()

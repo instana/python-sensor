@@ -5,24 +5,6 @@ version: 2.1
 #   ruby: circleci/ruby@1.1.2
 
 commands:
-  pip-install-deps-27:
-    parameters:
-      requirements:
-        default: "tests/requirements-27.txt"
-        type: string
-    steps:
-      - run:
-          name: Install Python 2.7 Dependencies
-          command: |
-            rm -rf venv
-            export PATH=/home/circleci/.local/bin:$PATH
-            pip install -U pip setuptools virtualenv wheel
-            virtualenv --python=python2.7 --always-copy venv
-            . venv/bin/activate
-            pip install 'wheel>=0.29.0'
-            pip install -r requirements.txt
-            pip install -r <<parameters.requirements>>
-
   pip-install-deps:
     parameters:
       requirements:
@@ -31,12 +13,9 @@ commands:
     steps:
       - run:
           name: Install Python Dependencies
-          # TODO: Remove the pinning of setuptools
-          # as soon as we get rid of suds-jurko
           command: |
             python -m venv venv
             . venv/bin/activate
-            pip install --upgrade 'setuptools<58'
             pip install --upgrade pip
             pip install 'wheel>=0.29.0'
             pip install -r requirements.txt
@@ -57,39 +36,6 @@ commands:
             sudo apt install libcouchbase-dev -y
 
 jobs:
-  python27:
-    docker:
-      - image: cimg/python:2.7.18
-      - image: cimg/postgres:9.6.24
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
-          POSTGRES_DB: circle_test
-      - image: cimg/mariadb:10.6.7
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: singularities/pubsub-emulator
-        environment:
-          PUBSUB_PROJECT_ID: "project-test"
-          PUBSUB_LISTEN_ADDRESS: "0.0.0.0:8432"
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install MySQL Dependencies
-          command: |
-            sudo apt update
-            sudo apt install libmysqlclient-dev
-      - pip-install-deps-27
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v
-
   python37:
     docker:
       - image: cimg/python:3.7.13
@@ -228,49 +174,9 @@ jobs:
             . venv/bin/activate
             pytest -v tests/clients/test_couchbase.py
 
-  py27couchbase:
+  py37cassandra:
     docker:
-      - image: cimg/python:2.7.18
-      - image: couchbase/server-sandbox:5.5.0
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - install-couchbase-deps
-      - pip-install-deps-27:
-          requirements: "tests/requirements-couchbase.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            COUCHBASE_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v tests/clients/test_couchbase.py
-
-  py27cassandra:
-    docker:
-      - image: cimg/python:2.7.16
-      - image: cassandra:3.11
-        environment:
-          MAX_HEAP_SIZE: 2048m
-          HEAP_NEWSIZE: 512m
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps-27:
-          requirements: "tests/requirements-cassandra.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            CASSANDRA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v tests/clients/test_cassandra-driver.py
-
-  py36cassandra:
-    docker:
-      - image: cimg/python:3.6.15
+      - image: cimg/python:3.7.13
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -289,47 +195,7 @@ jobs:
             . venv/bin/activate
             pytest -v tests/clients/test_cassandra-driver.py
 
-  py37asynqp:
-    docker:
-      - image: cimg/python:3.7.13
-      - image: rabbitmq:3.9.13
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps:
-          requirements: "tests/requirements-asynqp.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            ASYNQP_TEST: "true"
-          command: |
-            . venv/bin/activate
-            # We uninstall uvloop as it interferes with asyncio changing the event loop policy
-            pip uninstall -y uvloop
-            pytest -v tests/clients/test_asynqp.py
-
-  py37asynqp-legacy:
-    docker:
-      - image: cimg/python:3.7.13
-      - image: rabbitmq:3.9.13
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps:
-          requirements: "tests/requirements-asynqp-legacy-flask-markupsafe.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            ASYNQP_TEST: "true"
-          command: |
-            . venv/bin/activate
-            # We uninstall uvloop as it interferes with asyncio changing the event loop policy
-            pip uninstall -y uvloop
-            pytest -v tests/clients/test_asynqp.py
-
-  gevent38:
+  py38gevent:
     docker:
       - image: cimg/python:3.8.12
     working_directory: ~/repo
@@ -350,14 +216,10 @@ workflows:
   version: 2
   build:
     jobs:
-      - python27
       - python37
       - python38
       - python39
       - python310
-      - py27cassandra
-      - py36cassandra
-      - py37asynqp
-      - py37asynqp-legacy
+      - py37cassandra
       - py38couchbase
-      - gevent38
+      - py38gevent

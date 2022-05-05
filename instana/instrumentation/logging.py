@@ -6,12 +6,7 @@ from __future__ import absolute_import
 import sys
 import wrapt
 import logging
-import collections
-
-# TODO: Remove this alias once we don't have to support <=Python 3.3
-collections_abc = getattr(collections, 'abc', collections)
-Mapping = collections_abc.Mapping
-# End of alias
+from collections.abc import Mapping
 
 from ..log import logger
 from ..util.traceutils import get_active_tracer

@@ -1,11 +1,11 @@
 # Asyncio Examples
 
-This directory includes an example asyncio application and client with aiohttp and asynqp used for testing.
+This directory includes an example asyncio application and client with aiohttp and aio-pika used for testing.
 
 # Requirements
 
-* Python 3.5 or greater
-* instana, aiohttp and asynqp Python packages installed
+* Python 3.7 or greater
+* instana, aiohttp and aio-pika Python packages installed
 * A RabbitMQ server with it's location specified in the `RABBITMQ_HOST` environment variable
 
 
@@ -36,5 +36,8 @@ Some example traces from local tests.
 aiohttp client calling aiohttp server:
 ![screen shot 2019-02-25 at 19 12 28](https://user-images.githubusercontent.com/395132/53401921-0f49cc00-39b1-11e9-8606-24844925a478.png)
 
-aiohttp server making multiple asynqp calls (publish & consume)
+aiohttp server making multiple aio-pika calls (publish & consume)
+<!--
+#TODO: Add new screenshot once we actually have the aio-pika support
+-->
 ![screen shot 2019-02-26 at 10 21 50](https://user-images.githubusercontent.com/395132/53401997-2e485e00-39b1-11e9-97fd-460b136cf92a.png)

@@ -232,10 +232,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
-        if sys.version[:3] == '2.7':
-            self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
-        else:
-            self.assertEqual("foo=['bar']", span.data['http']['params'])
+        self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_api_gateway_trigger_tracing(self):
         with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
@@ -298,10 +295,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
-        if sys.version[:3] == '2.7':
-            self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
-        else:
-            self.assertEqual("foo=['bar']", span.data['http']['params'])
+        self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_api_gateway_v2_trigger_tracing(self):
         with open(self.pwd + '/../data/lambda/api_gateway_v2_event.json', 'r') as json_file:
@@ -364,10 +358,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/my/path', span.data['http']['url'])
         self.assertEqual('/my/{resource}', span.data['http']['path_tpl'])
-        if sys.version[:3] == '2.7':
-            self.assertEqual(u"q=term&secret=key", span.data['http']['params'])
-        else:
-            self.assertEqual("secret=key&q=term", span.data['http']['params'])
+        self.assertEqual("secret=key&q=term", span.data['http']['params'])
 
 
     def test_application_lb_trigger_tracing(self):
@@ -430,10 +421,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
-        if sys.version[:3] == '2.7':
-            self.assertEqual(u"foo=[u'bar']", span.data['http']['params'])
-        else:
-            self.assertEqual("foo=['bar']", span.data['http']['params'])
+        self.assertEqual("foo=['bar']", span.data['http']['params'])
 
     def test_cloudwatch_trigger_tracing(self):
         with open(self.pwd + '/../data/lambda/cloudwatch_event.json', 'r') as json_file:

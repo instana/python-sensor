@@ -107,15 +107,6 @@ def lambda_handler(event, context):
             print("Couldn't determine and locate default function handler: %s.%s" % (module_name, function_name))
 
 
-def boot_agent_later():
-    """ Executes <boot_agent> in the future! """
-    if 'gevent' in sys.modules:
-        import gevent  # pylint: disable=import-outside-toplevel
-        gevent.spawn_later(2.0, boot_agent)
-    else:
-        Timer(2.0, boot_agent).start()
-
-
 def boot_agent():
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
     # Disable all the unused-import violations in this function
@@ -129,31 +120,21 @@ def boot_agent():
         # Import & initialize instrumentation
         from .instrumentation.aws import lambda_inst
 
-        if sys.version_info >= (3, 7, 0):
-            from .instrumentation import sanic_inst
+        from .instrumentation import sanic_inst
 
-        if sys.version_info >= (3, 6, 0):
-            from .instrumentation import fastapi_inst
-            from .instrumentation import starlette_inst
+        from .instrumentation import fastapi_inst
+        from .instrumentation import starlette_inst
 
-        if sys.version_info >= (3, 5, 3):
-            from .instrumentation import asyncio
-            from .instrumentation.aiohttp import client
-            from .instrumentation.aiohttp import server
-            from .instrumentation import boto3_inst
+        from .instrumentation import asyncio
+        from .instrumentation.aiohttp import client
+        from .instrumentation.aiohttp import server
+        from .instrumentation import boto3_inst
 
-        if sys.version_info >= (3, 5, 3) and sys.version_info < (3, 8, 0):
-            from .instrumentation import asynqp
 
-        if sys.version_info[0] < 3:
-            from .instrumentation import mysqlpython
-            from .instrumentation import webapp2_inst
-        else:
-            from .instrumentation import mysqlclient
+        from .instrumentation import mysqlclient
 
-        if sys.version_info[0] >= 3:
-            from .instrumentation.google.cloud import storage
-            from .instrumentation.google.cloud import pubsub
+        from .instrumentation.google.cloud import storage
+        from .instrumentation.google.cloud import pubsub
 
         from .instrumentation.celery import hooks
 
@@ -170,7 +151,6 @@ def boot_agent():
         from .instrumentation import psycopg2
         from .instrumentation import redis
         from .instrumentation import sqlalchemy
-        from .instrumentation import sudsjurko
         from .instrumentation import urllib3
         from .instrumentation.django import middleware
         from .instrumentation import pymongo
@@ -195,12 +175,4 @@ if 'INSTANA_DISABLE' not in os.environ:
             if profiler:
                 profiler.start()
 
-        if "INSTANA_MAGIC" in os.environ:
-            pkg_resources.working_set.add_entry("/tmp/.instana/python")
-            # The following path is deprecated: To be removed at a future date
-            pkg_resources.working_set.add_entry("/tmp/instana/python")
-
-            # If we're being loaded into an already running process, then delay agent initialization
-            boot_agent_later()
-        else:
-            boot_agent()
+        boot_agent()

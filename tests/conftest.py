@@ -4,7 +4,6 @@
 import os
 import sys
 import pytest
-from distutils.version import LooseVersion
 
 collect_ignore_glob = []
 
@@ -19,29 +18,9 @@ if "COUCHBASE_TEST" not in os.environ:
 if "GEVENT_TEST" not in os.environ:
     collect_ignore_glob.append("*test_gevent*")
 
-if LooseVersion(sys.version) < LooseVersion('3.5.3'):
-    collect_ignore_glob.append("*test_aiohttp*")
-    collect_ignore_glob.append("*test_async*")
+# TODO: Remove this once we start supporting Tornado >= 6.0
+if sys.version_info.minor >= 10:
     collect_ignore_glob.append("*test_tornado*")
-    collect_ignore_glob.append("*test_grpc*")
-    collect_ignore_glob.append("*test_boto3*")
-    collect_ignore_glob.append("*test_stan_recorder*")
-    collect_ignore_glob.append("*test_sqlalchemy*")
-
-if "ASYNQP_TEST" not in os.environ:
-# if LooseVersion(sys.version) < LooseVersion('3.5.3') or LooseVersion(sys.version) >= LooseVersion('3.8.0'):
-    collect_ignore_glob.append("*test_asynqp*")
-
-if LooseVersion(sys.version) < LooseVersion('3.6.0'):
-    collect_ignore_glob.append("*test_fastapi*")
-    collect_ignore_glob.append("*test_starlette*")
-
-if LooseVersion(sys.version) >= LooseVersion('3.7.0'):
-    collect_ignore_glob.append("*test_sudsjurko*")
-
-if LooseVersion(sys.version) >= LooseVersion('3.10.0'):
-    collect_ignore_glob.append("*test_tornado*")
-    collect_ignore_glob.append("*test_boto3_secretsmanager*")
 
 
 # Set our testing flags

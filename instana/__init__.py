@@ -129,31 +129,21 @@ def boot_agent():
         # Import & initialize instrumentation
         from .instrumentation.aws import lambda_inst
 
-        if sys.version_info >= (3, 7, 0):
-            from .instrumentation import sanic_inst
+        from .instrumentation import sanic_inst
 
-        if sys.version_info >= (3, 6, 0):
-            from .instrumentation import fastapi_inst
-            from .instrumentation import starlette_inst
+        from .instrumentation import fastapi_inst
+        from .instrumentation import starlette_inst
 
-        if sys.version_info >= (3, 5, 3):
-            from .instrumentation import asyncio
-            from .instrumentation.aiohttp import client
-            from .instrumentation.aiohttp import server
-            from .instrumentation import boto3_inst
+        from .instrumentation import asyncio
+        from .instrumentation.aiohttp import client
+        from .instrumentation.aiohttp import server
+        from .instrumentation import boto3_inst
 
-        if sys.version_info >= (3, 5, 3) and sys.version_info < (3, 8, 0):
-            from .instrumentation import asynqp
 
-        if sys.version_info[0] < 3:
-            from .instrumentation import mysqlpython
-            from .instrumentation import webapp2_inst
-        else:
-            from .instrumentation import mysqlclient
+        from .instrumentation import mysqlclient
 
-        if sys.version_info[0] >= 3:
-            from .instrumentation.google.cloud import storage
-            from .instrumentation.google.cloud import pubsub
+        from .instrumentation.google.cloud import storage
+        from .instrumentation.google.cloud import pubsub
 
         from .instrumentation.celery import hooks
 
@@ -170,7 +160,6 @@ def boot_agent():
         from .instrumentation import psycopg2
         from .instrumentation import redis
         from .instrumentation import sqlalchemy
-        from .instrumentation import sudsjurko
         from .instrumentation import urllib3
         from .instrumentation.django import middleware
         from .instrumentation import pymongo

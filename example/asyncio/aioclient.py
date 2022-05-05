@@ -14,7 +14,7 @@ async def test():
         await asyncio.sleep(2)
         with async_tracer.start_active_span('JobRunner'):
             async with aiohttp.ClientSession() as session:
-                    # aioserver exposes /, /401, /500 & /publish (via asynqp)
+                    # aioserver exposes /, /401, /500 & /publish
                     async with session.get("http://localhost:5102/publish?secret=iloveyou") as response:
                         print(response.status)
 

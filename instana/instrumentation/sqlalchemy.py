@@ -73,6 +73,9 @@ try:
     @event.listens_for(Engine, error_event, named=True)
     def receive_handle_db_error(**kw):
 
+        if get_active_tracer() is None:
+            return
+
         # support older db error event
         if error_event == "dbapi_error":
             context = kw.get('context')

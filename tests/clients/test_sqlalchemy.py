@@ -8,6 +8,7 @@ import unittest
 from ..helpers import testenv
 from instana.singletons import tracer
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, create_engine
 
@@ -181,3 +182,29 @@ class TestSQLAlchemy(unittest.TestCase):
         self.assertIsNotNone(sql_span.stack)
         self.assertTrue(type(sql_span.stack) is list)
         self.assertGreater(len(sql_span.stack), 0)
+
+    def test_error_before_tracing(self):
+        """Test the scenario, in which instana is loaded,
+           but connection fails before tracing begins.
+           This is typical in test container scenario,
+           where it is "normal" to just start hammering a database container
+           which is still starting and not ready to handle requests yet.
+           In this scenario it is important that we get
+           an sqlalachemy exception, and not something else
+           like an AttributeError. Because testcontainer has a logic
+           to retry in case of certain sqlalchemy exceptions but it
+           can't handle an AttributeError."""
+        # https://github.com/instana/python-sensor/issues/362
+
+        self.assertIsNone(tracer.active_span)
+
+        invalid_connection_url = 'postgresql://user1:pwd1@localhost:9999/mydb1'
+        with self.assertRaisesRegex(
+                OperationalError,
+                r'\(psycopg2.OperationalError\) connection .* failed.*'
+                               ) as context_manager:
+            engine = create_engine(invalid_connection_url)
+            version, = engine.execute("select version()").fetchone()
+
+        the_exception = context_manager.exception
+        self.assertFalse(the_exception.connection_invalidated)

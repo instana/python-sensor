@@ -14,6 +14,11 @@ Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 7. Validate the new release on https://pypi.org/project/instana/
 8. Update Python documentation with latest changes: https://docs.instana.io/ecosystem/python/
 9. Publish the draft release on [Github](https://github.com/instana/python-sensor/releases)
+10. Ensure that the new [Concourse CI resource version](
+    https://ci.instana.io/teams/tracer-community/pipelines/tracer-test-suite:main/resources/instana-python-package)
+    has been discovered. Trigger it manually if the automation doesn't do it. Also ensure that the [update job](
+    https://ci.instana.io/teams/tracer-community/pipelines/tracer-test-suite%3Amain/jobs/update-python-package/)
+    and its downstream jobs are successfull. In particular the `run-test-suite` doesn't report any errors.
 
 ## AWS Lambda Layer
 
@@ -24,6 +29,6 @@ To release a new AWS Lambda layer, see `bin/aws-lambda/lambda_build_publish_laye
 ./bin/create_lambda_release.py <version>
 ```
 
-These scripts assumes that you have the AWS CLI and Github CLI installed and credentials already configured.
+These scripts assume that you have the AWS CLI and Github CLI installed and credentials already configured.
 
 Post release, remember to update documentation and the Instana UI.

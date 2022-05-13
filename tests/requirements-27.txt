@@ -19,6 +19,14 @@ PyMySQL[rsa]>=0.9.1
 pyOpenSSL>=16.1.0;python_version<="2.7"
 psycopg2>=2.7.1
 pika>=1.0.0
+
+# protobuf is pulled in and also `basictracer`, a core instana dependency
+# and also by google-cloud-storage
+# but also directly needed by tests/apps/grpc_server/stan_pb2.py
+# when protobuf is above 4.0.0 the following error happens:
+# ERROR: Package 'protobuf' requires a different Python: 2.7.16 not in '>=3.7'
+protobuf<4.0.0
+
 pymongo>=3.7.0
 pyramid>=1.2
 pytest>=4.6

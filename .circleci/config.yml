@@ -20,6 +20,10 @@ commands:
             virtualenv --python=python2.7 --always-copy venv
             . venv/bin/activate
             pip install 'wheel>=0.29.0'
+            # Install pinned verison of proobuf first,
+            # as opentracing in the core requirements
+            # would pull in a newer one
+            pip install 'protobuf<4.0.0'
             pip install -r requirements.txt
             pip install -r <<parameters.requirements>>
 
@@ -257,7 +261,6 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - install-couchbase-deps
       - pip-install-deps-27:
           requirements: "tests/requirements-cassandra.txt"
       - run:

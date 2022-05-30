@@ -8,7 +8,7 @@ import opentracing.ext.tags as ext
 import wrapt
 
 from ..log import logger
-from ..singletons import agent
+from ..singletons import agent, get_tracer
 from ..util.traceutils import get_active_tracer
 from ..util.secrets import strip_secrets_from_query
 
@@ -69,10 +69,12 @@ try:
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
         active_tracer = get_active_tracer()
-
-        # If we're not tracing, just return; boto3 has it's own visibility
-        if active_tracer is None or active_tracer.active_span.operation_name == 'boto3':
+        # boto3 has it's own visibility
+        if active_tracer is not None and active_tracer.active_span.operation_name == 'boto3':
             return wrapped(*args, **kwargs)
+
+        if active_tracer is None:
+            active_tracer = get_tracer()
 
         with active_tracer.start_active_span("urllib3", child_of=active_tracer.active_span) as scope:
             try:

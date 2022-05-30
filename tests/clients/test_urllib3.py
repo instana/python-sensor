@@ -5,7 +5,12 @@ from __future__ import absolute_import
 
 import urllib3
 import unittest
+import pytest
+import sys
 import requests
+
+from multiprocessing.pool import ThreadPool
+from time import sleep
 
 import tests.apps.flask_app
 from ..helpers import testenv
@@ -29,6 +34,43 @@ class TestUrllib3(unittest.TestCase):
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
+
+    @pytest.mark.skipif(sys.version_info[0] < 3, reason="ThreadPool works differently on python 2")
+    def test_parallel_requests(self):
+        http_pool_5 = urllib3.PoolManager(num_pools=5)
+
+        def task(num):
+           r = http_pool_5.request('GET', testenv["wsgi_server"] + '/', fields={'num': num})
+           return r
+
+        with ThreadPool(processes=5) as executor:
+            # iterate over results as they become available
+            for result in executor.map(task, (1, 2, 3, 4, 5)):
+                self.assertEqual(result.status, 200)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(5, len(spans))
+        nums = map(lambda s: s.data['http']['params'].split('=')[1], spans)
+        self.assertEqual(set(nums), set(('1', '2', '3', '4', '5')))
+
+    def test_customers_setup_zd_26466(self):
+        def make_request(u=None):
+          sleep(10)
+          x = requests.get(testenv["wsgi_server"] + '/')
+          sleep(10)
+          return x.status_code
+
+        status = make_request()
+        #print(f'request made outside threadpool, instana should instrument - status: {status}')
+
+        threadpool_size = 15
+        pool = ThreadPool(processes=threadpool_size)
+        res = pool.map(make_request, [u for u in range(threadpool_size)])
+        #print(f'requests made within threadpool, instana does not instrument - statuses: {res}')
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(16, len(spans))
+
 
     def test_get_request(self):
         with tracer.start_active_span('test'):

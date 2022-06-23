@@ -87,13 +87,20 @@ def set_agent(new_agent):
 # this package.
 tracer = InstanaTracer(recorder=span_recorder)
 
-if sys.version_info >= (3, 4):
-    try:
+
+try:
+    if (3, 4) <= sys.version_info < (3, 7):
         from opentracing.scope_managers.asyncio import AsyncioScopeManager
 
         async_tracer = InstanaTracer(scope_manager=AsyncioScopeManager(), recorder=span_recorder)
-    except Exception:
-        logger.debug("Error setting up async_tracer:", exc_info=True)
+
+    elif sys.version_info >= (3, 7):
+        from opentracing.scope_managers.contextvars import ContextVarsScopeManager
+
+        async_tracer = InstanaTracer(scope_manager=ContextVarsScopeManager(), recorder=span_recorder)
+
+except Exception:
+    logger.debug("Error setting up async_tracer:", exc_info=True)
 
 # Mock the tornado tracer until tornado is detected and instrumented first
 tornado_tracer = tracer

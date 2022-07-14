@@ -168,7 +168,7 @@ try:
         logger.debug("Instrumenting django")
         wrapt.wrap_function_wrapper('django.core.handlers.base', 'BaseHandler.load_middleware', load_middleware_wrapper)
 
-        if 'INSTANA_MAGIC' in os.environ:
+        if '/tmp/.instana/python' in sys.path:
             # If we are instrumenting via AutoTrace (in an already running process), then the
             # WSGI middleware has to be live reloaded.
             from django.core.servers.basehttp import get_internal_wsgi_application

@@ -16,7 +16,7 @@ commands:
           command: |
             rm -rf venv
             export PATH=/home/circleci/.local/bin:$PATH
-            pip install -U pip setuptools virtualenv wheel
+            pip install -U 'pip<21.0.0' 'setuptools<58' virtualenv wheel
             virtualenv --python=python2.7 --always-copy venv
             . venv/bin/activate
             pip install 'wheel>=0.29.0'

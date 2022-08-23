@@ -100,7 +100,7 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9.12
+      - image: cimg/python:3.9.13
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -128,7 +128,7 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10.4
+      - image: cimg/python:3.10.6
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root

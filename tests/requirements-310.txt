@@ -5,13 +5,16 @@ celery>=5.0.5
 coverage>=5.5
 Django>=3.2.10
 fastapi>=0.65.1
-flask>=1.1.4,<2.0.0
+flask>=2.2.0
+markupsafe>=2.1.0
 grpcio>=1.37.1
 google-cloud-pubsub<=2.1.0
 google-cloud-storage>=1.24.0
 lxml>=4.6.3
 mock>=4.0.3
-moto>=1.3.16,<2.0
+# We have to increase the minimum moto version so we can keep markupsafe on the required minimum
+# TODO: This appears to break 'test_get_secret_value' in test_boto3_secretsmanager.py
+moto>=2.0
 mysqlclient>=2.0.3
 nose>=1.3.7
 PyMySQL[rsa]>=1.0.2

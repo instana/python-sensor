@@ -14,15 +14,16 @@ from ...singletons import tracer
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')
 def render_with_instana(wrapped, instance, argv, kwargs):
-    ctx = argv[1]
-
     # If we're not tracing, just return
-    if not hasattr(ctx['g'], 'scope'):
+    if not (hasattr(flask, 'g') and hasattr(flask.g, 'scope')):
         return wrapped(*argv, **kwargs)
 
-    with tracer.start_active_span("render", child_of=ctx['g'].scope.span) as rscope:
+    parent_span = flask.g.scope.span
+
+    with tracer.start_active_span("render", child_of=parent_span) as rscope:
         try:
-            template = argv[0]
+            flask_version = tuple(map(int, flask.__version__.split('.')))
+            template = argv[1] if flask_version >= (2, 2, 0) else argv[0]
 
             rscope.span.set_tag("type", "template")
             if template.name is None:

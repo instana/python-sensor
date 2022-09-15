@@ -14,16 +14,13 @@ celery>=5.0.5
 coverage>=5.5
 Django>=3.2.10
 fastapi>=0.65.1
-flask>=2.0.0
-markupsafe>=2.1.0
+flask>=1.1.4,<2.0.0
 grpcio>=1.37.1
 google-cloud-pubsub<=2.1.0
 google-cloud-storage>=1.24.0
 lxml>=4.6.3
 mock>=4.0.3
-
-# We have to increase the minimum moto version so we can keep markupsafe on the required minimum
-moto>=2.0
+moto>=1.3.16,<2.0
 mysqlclient>=2.0.3
 nose>=1.3.7
 PyMySQL[rsa]>=1.0.2
@@ -45,7 +42,7 @@ pytest-celery
 redis>=3.5.3
 requests-mock
 responses<=0.17.0
-sanic>=19.0.0,<21.9.0
+sanic==21.6.2
 sqlalchemy>=1.4.15
 spyne>=2.13.16
 suds-jurko>=0.6

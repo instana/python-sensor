@@ -73,6 +73,7 @@ class TestAsynqp(unittest.TestCase):
         except aiohttp.web_exceptions.HTTPException:
             pass
 
+    @pytest.mark.skip(reason="Asynqp is an abandoned library, sometimes messages are duplicated randomly")
     def test_publish(self):
         @asyncio.coroutine
         def test():

@@ -18,9 +18,12 @@ if "COUCHBASE_TEST" not in os.environ:
 if "GEVENT_TEST" not in os.environ:
     collect_ignore_glob.append("*test_gevent*")
 
+# Python 3.10 support is incomplete yet
 # TODO: Remove this once we start supporting Tornado >= 6.0
+# TODO: Remove this once we start supporting moto>=2.0 (impacting boto)
 if sys.version_info.minor >= 10:
     collect_ignore_glob.append("*test_tornado*")
+    collect_ignore_glob.append("*test_boto3_secretsmanager*")
 
 
 # Set our testing flags

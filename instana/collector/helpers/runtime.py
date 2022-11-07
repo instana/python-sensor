@@ -201,7 +201,9 @@ class RuntimeHelper(BaseHelper):
 
     def gather_python_packages(self):
         """ Collect up the list of modules in use """
-        versions = dict()
+        if os.environ.get('INSTANA_DISABLE_PYTHON_PACKAGE_COLLECTION'):
+            return {'instana': VERSION}
+
         try:
             sys_packages = sys.modules.copy()
 

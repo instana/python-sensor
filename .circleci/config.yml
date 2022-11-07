@@ -55,7 +55,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - pip-install-deps
+      - pip-install-deps:
+          requirements: "tests/requirements-307.txt"
       - run:
           name: run tests
           environment:

@@ -100,17 +100,17 @@ def test_send_message(sqs):
     assert (boto_span.ec is None)
 
     assert boto_span.data['boto3']['op'] == 'SendMessage'
-    assert boto_span.data['boto3']['ep'] == 'https://queue.amazonaws.com'
+    assert boto_span.data['boto3']['ep'] == 'https://sqs.us-east-1.amazonaws.com'
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
-    payload = {'QueueUrl': 'https://queue.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
+    payload = {'QueueUrl': 'https://sqs.us-east-1.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
                'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
                'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
     assert boto_span.data['boto3']['payload'] == payload
 
     assert boto_span.data['http']['status'] == 200
     assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://queue.amazonaws.com:443/SendMessage'
+    assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
 
 @mock_sqs

@@ -204,6 +204,7 @@ class RuntimeHelper(BaseHelper):
         if os.environ.get('INSTANA_DISABLE_PYTHON_PACKAGE_COLLECTION'):
             return {'instana': VERSION}
 
+        versions = {}
         try:
             sys_packages = sys.modules.copy()
 

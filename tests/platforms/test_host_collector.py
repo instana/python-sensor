@@ -53,100 +53,100 @@ class TestHostCollector(unittest.TestCase):
         self.create_agent_and_setup_tracer()
 
         payload = self.agent.collector.prepare_payload()
-        assert (payload)
+        self.assertTrue(payload)
 
-        assert (len(payload.keys()) == 3)
-        assert ('spans' in payload)
-        assert (isinstance(payload['spans'], list))
-        assert (len(payload['spans']) == 0)
-        assert ('metrics' in payload)
-        assert (len(payload['metrics'].keys()) == 1)
-        assert ('plugins' in payload['metrics'])
-        assert (isinstance(payload['metrics']['plugins'], list))
-        assert (len(payload['metrics']['plugins']) == 1)
+        self.assertEqual(len(payload.keys()), 3)
+        self.assertIn('spans', payload)
+        self.assertIsInstance(payload['spans'], list)
+        self.assertEqual(len(payload['spans']), 0)
+        self.assertIn('metrics', payload)
+        self.assertEqual(len(payload['metrics'].keys()), 1)
+        self.assertIn('plugins', payload['metrics'])
+        self.assertIsInstance(payload['metrics']['plugins'], list)
+        self.assertEqual(len(payload['metrics']['plugins']), 1)
 
         python_plugin = payload['metrics']['plugins'][0]
-        assert python_plugin['name'] == 'com.instana.plugin.python'
-        assert python_plugin['entityId'] == str(os.getpid())
-        assert 'data' in python_plugin
-        assert 'snapshot' in python_plugin['data']
-        assert 'metrics' in python_plugin['data']
+        self.assertEqual(python_plugin['name'], 'com.instana.plugin.python')
+        self.assertEqual(python_plugin['entityId'], str(os.getpid()))
+        self.assertIn('data', python_plugin)
+        self.assertIn('snapshot', python_plugin['data'])
+        self.assertIn('metrics', python_plugin['data'])
 
         # Validate that all metrics are reported on the first run
-        assert 'ru_utime' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_utime']) in [float, int]
-        assert 'ru_stime' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_stime']) in [float, int]
-        assert 'ru_maxrss' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_maxrss']) in [float, int]
-        assert 'ru_ixrss' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_ixrss']) in [float, int]
-        assert 'ru_idrss' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_idrss']) in [float, int]
-        assert 'ru_isrss' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_isrss']) in [float, int]
-        assert 'ru_minflt' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_minflt']) in [float, int]
-        assert 'ru_majflt' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_majflt']) in [float, int]
-        assert 'ru_nswap' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_nswap']) in [float, int]
-        assert 'ru_inblock' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_inblock']) in [float, int]
-        assert 'ru_oublock' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_oublock']) in [float, int]
-        assert 'ru_msgsnd' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_msgsnd']) in [float, int]
-        assert 'ru_msgrcv' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_msgrcv']) in [float, int]
-        assert 'ru_nsignals' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_nsignals']) in [float, int]
-        assert 'ru_nvcsw' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_nvcsw']) in [float, int]
-        assert 'ru_nivcsw' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['ru_nivcsw']) in [float, int]
-        assert 'alive_threads' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['alive_threads']) in [float, int]
-        assert 'dummy_threads' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['dummy_threads']) in [float, int]
-        assert 'daemon_threads' in python_plugin['data']['metrics']
-        assert type(python_plugin['data']['metrics']['daemon_threads']) in [float, int]
+        self.assertIn('ru_utime', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_utime']), [float, int])
+        self.assertIn('ru_stime', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_stime']), [float, int])
+        self.assertIn('ru_maxrss', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_maxrss']), [float, int])
+        self.assertIn('ru_ixrss', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_ixrss']), [float, int])
+        self.assertIn('ru_idrss', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_idrss']), [float, int])
+        self.assertIn('ru_isrss', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_isrss']), [float, int])
+        self.assertIn('ru_minflt', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_minflt']), [float, int])
+        self.assertIn('ru_majflt', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_majflt']), [float, int])
+        self.assertIn('ru_nswap', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_nswap']), [float, int])
+        self.assertIn('ru_inblock', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_inblock']), [float, int])
+        self.assertIn('ru_oublock', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_oublock']), [float, int])
+        self.assertIn('ru_msgsnd', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_msgsnd']), [float, int])
+        self.assertIn('ru_msgrcv', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_msgrcv']), [float, int])
+        self.assertIn('ru_nsignals', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_nsignals']), [float, int])
+        self.assertIn('ru_nvcsw', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_nvcsw']), [float, int])
+        self.assertIn('ru_nivcsw', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['ru_nivcsw']), [float, int])
+        self.assertIn('alive_threads', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['alive_threads']), [float, int])
+        self.assertIn('dummy_threads', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['dummy_threads']), [float, int])
+        self.assertIn('daemon_threads', python_plugin['data']['metrics'])
+        self.assertIn(type(python_plugin['data']['metrics']['daemon_threads']), [float, int])
 
-        assert 'gc' in python_plugin['data']['metrics']
-        assert isinstance(python_plugin['data']['metrics']['gc'], dict)
-        assert 'collect0' in python_plugin['data']['metrics']['gc']
-        assert type(python_plugin['data']['metrics']['gc']['collect0']) in [float, int]
-        assert 'collect1' in python_plugin['data']['metrics']['gc']
-        assert type(python_plugin['data']['metrics']['gc']['collect1']) in [float, int]
-        assert 'collect2' in python_plugin['data']['metrics']['gc']
-        assert type(python_plugin['data']['metrics']['gc']['collect2']) in [float, int]
-        assert 'threshold0' in python_plugin['data']['metrics']['gc']
-        assert type(python_plugin['data']['metrics']['gc']['threshold0']) in [float, int]
-        assert 'threshold1' in python_plugin['data']['metrics']['gc']
-        assert type(python_plugin['data']['metrics']['gc']['threshold1']) in [float, int]
-        assert 'threshold2' in python_plugin['data']['metrics']['gc']
-        assert type(python_plugin['data']['metrics']['gc']['threshold2']) in [float, int]
+        self.assertIn('gc', python_plugin['data']['metrics'])
+        self.assertIsInstance(python_plugin['data']['metrics']['gc'], dict)
+        self.assertIn('collect0', python_plugin['data']['metrics']['gc'])
+        self.assertIn(type(python_plugin['data']['metrics']['gc']['collect0']), [float, int])
+        self.assertIn('collect1', python_plugin['data']['metrics']['gc'])
+        self.assertIn(type(python_plugin['data']['metrics']['gc']['collect1']), [float, int])
+        self.assertIn('collect2', python_plugin['data']['metrics']['gc'])
+        self.assertIn(type(python_plugin['data']['metrics']['gc']['collect2']), [float, int])
+        self.assertIn('threshold0', python_plugin['data']['metrics']['gc'])
+        self.assertIn(type(python_plugin['data']['metrics']['gc']['threshold0']), [float, int])
+        self.assertIn('threshold1', python_plugin['data']['metrics']['gc'])
+        self.assertIn(type(python_plugin['data']['metrics']['gc']['threshold1']), [float, int])
+        self.assertIn('threshold2', python_plugin['data']['metrics']['gc'])
+        self.assertIn(type(python_plugin['data']['metrics']['gc']['threshold2']), [float, int])
 
     def test_prepare_payload_basics_disable_runtime_metrics(self):
         os.environ["INSTANA_DISABLE_METRICS_COLLECTION"] = "TRUE"
         self.create_agent_and_setup_tracer()
 
         payload = self.agent.collector.prepare_payload()
-        assert (payload)
+        self.assertTrue(payload)
 
-        assert (len(payload.keys()) == 3)
-        assert ('spans' in payload)
-        assert (isinstance(payload['spans'], list))
-        assert (len(payload['spans']) == 0)
-        assert ('metrics' in payload)
-        assert (len(payload['metrics'].keys()) == 1)
-        assert ('plugins' in payload['metrics'])
-        assert (isinstance(payload['metrics']['plugins'], list))
-        assert (len(payload['metrics']['plugins']) == 1)
+        self.assertEqual(len(payload.keys()), 3)
+        self.assertIn('spans', payload)
+        self.assertIsInstance(payload['spans'], list)
+        self.assertEqual(len(payload['spans']), 0)
+        self.assertIn('metrics', payload)
+        self.assertEqual(len(payload['metrics'].keys()), 1)
+        self.assertIn('plugins', payload['metrics'])
+        self.assertIsInstance(payload['metrics']['plugins'], list)
+        self.assertEqual(len(payload['metrics']['plugins']), 1)
 
         python_plugin = payload['metrics']['plugins'][0]
-        assert python_plugin['name'] == 'com.instana.plugin.python'
-        assert python_plugin['entityId'] == str(os.getpid())
-        assert 'data' in python_plugin
-        assert 'snapshot' in python_plugin['data']
-        assert 'metrics' not in python_plugin['data']
+        self.assertEqual(python_plugin['name'], 'com.instana.plugin.python')
+        self.assertEqual(python_plugin['entityId'], str(os.getpid()))
+        self.assertIn('data', python_plugin)
+        self.assertIn('snapshot', python_plugin['data'])
+        self.assertNotIn('metrics', python_plugin['data'])

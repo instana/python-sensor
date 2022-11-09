@@ -32,6 +32,7 @@ class TestHostCollector(unittest.TestCase):
                 "AWS_EXECUTION_ENV", "INSTANA_EXTRA_HTTP_HEADERS",
                 "INSTANA_ENDPOINT_URL", "INSTANA_AGENT_KEY", "INSTANA_ZONE",
                 "INSTANA_TAGS", "INSTANA_DISABLE_METRICS_COLLECTION",
+                "INSTANA_DISABLE_PYTHON_PACKAGE_COLLECTION"
                 )
 
         for variable_name in variable_names:

@@ -6,11 +6,15 @@ from __future__ import absolute_import
 import os
 import json
 import unittest
+import mock
+from mock import patch
 
 from instana.tracer import InstanaTracer
 from instana.recorder import StanRecorder
 from instana.agent.host import HostAgent
+from instana.collector.host import HostCollector
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
+from instana.version import VERSION
 
 
 class TestHostCollector(unittest.TestCase):
@@ -150,3 +154,36 @@ class TestHostCollector(unittest.TestCase):
         self.assertIn('data', python_plugin)
         self.assertIn('snapshot', python_plugin['data'])
         self.assertNotIn('metrics', python_plugin['data'])
+
+    @patch.object(HostCollector, "should_send_snapshot_data")
+    def test_prepare_payload_with_snapshot_with_python_packages(self, mock_should_send_snapshot_data):
+        mock_should_send_snapshot_data.return_value = True
+        self.create_agent_and_setup_tracer()
+
+        payload = self.agent.collector.prepare_payload()
+        self.assertTrue(payload)
+        self.assertIn('snapshot', payload['metrics']['plugins'][0]['data'])
+        snapshot =  payload['metrics']['plugins'][0]['data']['snapshot']
+        self.assertTrue(snapshot)
+        self.assertIn('version', snapshot)
+        self.assertGreater(len(snapshot['versions']), 5)
+        self.assertEqual(snapshot['versions']['instana'], VERSION)
+        self.assertIn('wrapt', snapshot['versions'])
+        self.assertIn('fysom', snapshot['versions'])
+        self.assertIn('opentracing', snapshot['versions'])
+        self.assertIn('basictracer', snapshot['versions'])
+
+    @patch.object(HostCollector, "should_send_snapshot_data")
+    def test_prepare_payload_with_snapshot_disabled_python_packages(self, mock_should_send_snapshot_data):
+        mock_should_send_snapshot_data.return_value = True
+        os.environ["INSTANA_DISABLE_PYTHON_PACKAGE_COLLECTION"] = "TRUE"
+        self.create_agent_and_setup_tracer()
+
+        payload = self.agent.collector.prepare_payload()
+        self.assertTrue(payload)
+        self.assertIn('snapshot', payload['metrics']['plugins'][0]['data'])
+        snapshot =  payload['metrics']['plugins'][0]['data']['snapshot']
+        self.assertTrue(snapshot)
+        self.assertIn('version', snapshot)
+        self.assertEqual(len(snapshot['versions']), 1)
+        self.assertEqual(snapshot['versions']['instana'], VERSION)

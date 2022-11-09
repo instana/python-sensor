@@ -28,20 +28,15 @@ class TestHostCollector(unittest.TestCase):
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
-        if "AWS_EXECUTION_ENV" in os.environ:
-            os.environ.pop("AWS_EXECUTION_ENV")
-        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
-            os.environ.pop("INSTANA_EXTRA_HTTP_HEADERS")
-        if "INSTANA_ENDPOINT_URL" in os.environ:
-            os.environ.pop("INSTANA_ENDPOINT_URL")
-        if "INSTANA_AGENT_KEY" in os.environ:
-            os.environ.pop("INSTANA_AGENT_KEY")
-        if "INSTANA_ZONE" in os.environ:
-            os.environ.pop("INSTANA_ZONE")
-        if "INSTANA_TAGS" in os.environ:
-            os.environ.pop("INSTANA_TAGS")
-        if "INSTANA_DISABLE_METRICS_COLLECTION" in os.environ:
-            os.environ.pop("INSTANA_DISABLE_METRICS_COLLECTION")
+        variable_names = (
+                "AWS_EXECUTION_ENV", "INSTANA_EXTRA_HTTP_HEADERS",
+                "INSTANA_ENDPOINT_URL", "INSTANA_AGENT_KEY", "INSTANA_ZONE",
+                "INSTANA_TAGS", "INSTANA_DISABLE_METRICS_COLLECTION",
+                )
+
+        for variable_name in variable_names:
+            if variable_name in os.environ:
+                os.environ.pop(variable_name)
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)

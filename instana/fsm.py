@@ -65,7 +65,7 @@ class TheMachine(object):
                 "onpending":      self.on_ready,
                 "ongood2go":      self.on_good2go}})
 
-        self.timer = threading.Timer(1, self.fsm.lookup)
+        self.timer = threading.Timer(15, self.fsm.lookup)
         self.timer.daemon = True
         self.timer.name = self.THREAD_NAME
 

@@ -116,44 +116,44 @@ def boot_agent():
     import instana.singletons
 
     # Instrumentation
-    if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
-        # Import & initialize instrumentation
-        from .instrumentation.aws import lambda_inst
+#   if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
+    # Import & initialize instrumentation
+    from .instrumentation.aws import lambda_inst
 
-        from .instrumentation import sanic_inst
+    from .instrumentation import sanic_inst
 
-        from .instrumentation import fastapi_inst
-        from .instrumentation import starlette_inst
+    from .instrumentation import fastapi_inst
+    from .instrumentation import starlette_inst
 
-        from .instrumentation import asyncio
-        from .instrumentation.aiohttp import client
-        from .instrumentation.aiohttp import server
-        from .instrumentation import boto3_inst
+    from .instrumentation import asyncio
+    from .instrumentation.aiohttp import client
+    from .instrumentation.aiohttp import server
+    from .instrumentation import boto3_inst
 
 
-        from .instrumentation import mysqlclient
+    from .instrumentation import mysqlclient
 
-        from .instrumentation.google.cloud import storage
-        from .instrumentation.google.cloud import pubsub
+    from .instrumentation.google.cloud import storage
+    from .instrumentation.google.cloud import pubsub
 
-        from .instrumentation.celery import hooks
+    from .instrumentation.celery import hooks
 
-        from .instrumentation import cassandra_inst
-        from .instrumentation import couchbase_inst
-        from .instrumentation import flask
-        from .instrumentation import gevent_inst
-        from .instrumentation import grpcio
-        from .instrumentation.tornado import client
-        from .instrumentation.tornado import server
-        from .instrumentation import logging
-        from .instrumentation import pika
-        from .instrumentation import pymysql
-        from .instrumentation import psycopg2
-        from .instrumentation import redis
-        from .instrumentation import sqlalchemy
-        from .instrumentation import urllib3
-        from .instrumentation.django import middleware
-        from .instrumentation import pymongo
+    from .instrumentation import cassandra_inst
+    from .instrumentation import couchbase_inst
+    from .instrumentation import flask
+    from .instrumentation import gevent_inst
+    from .instrumentation import grpcio
+    from .instrumentation.tornado import client
+    from .instrumentation.tornado import server
+    from .instrumentation import logging
+    from .instrumentation import pika
+    from .instrumentation import pymysql
+    from .instrumentation import psycopg2
+    from .instrumentation import redis
+    from .instrumentation import sqlalchemy
+    from .instrumentation import urllib3
+    from .instrumentation.django import middleware
+    from .instrumentation import pymongo
 
     # Hooks
     from .hooks import hook_uwsgi

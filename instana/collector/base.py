@@ -150,16 +150,16 @@ class BaseCollector(object):
         Prepare and report the data payload.
         @return: Boolean
         """
-        if env_is_test is False:
-            lock_acquired = self.background_report_lock.acquire(False)
-            if lock_acquired:
-                try:
-                    payload = self.prepare_payload()
-                    self.agent.report_data_payload(payload)
-                finally:
-                    self.background_report_lock.release()
-            else:
-                logger.debug("prepare_and_report_data: Couldn't acquire lock")
+#       if env_is_test is False:
+        lock_acquired = self.background_report_lock.acquire(False)
+        if lock_acquired:
+            try:
+                payload = self.prepare_payload()
+                self.agent.report_data_payload(payload)
+            finally:
+                self.background_report_lock.release()
+#           else:
+#               logger.debug("prepare_and_report_data: Couldn't acquire lock")
         return True
 
     def prepare_payload(self):

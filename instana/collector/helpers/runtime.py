@@ -172,7 +172,7 @@ class RuntimeHelper(BaseHelper):
         """ Gathers Python specific Snapshot information for this process """
         snapshot_payload = {}
         try:
-            snapshot_payload['name'] = determine_service_name()
+            snapshot_payload['name'] = 'uvicorn-workaround' #determine_service_name()
             snapshot_payload['version'] = sys.version
             snapshot_payload['f'] = platform.python_implementation()  # flavor
             snapshot_payload['a'] = platform.architecture()[0]  # architecture

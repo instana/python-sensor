@@ -176,7 +176,7 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['version'] = sys.version
             snapshot_payload['f'] = platform.python_implementation()  # flavor
             snapshot_payload['a'] = platform.architecture()[0]  # architecture
-            snapshot_payload['versions'] = self.gather_python_packages()
+            snapshot_payload['versions'] = {'instana': VERSION} # self.gather_python_packages()
             snapshot_payload['iv'] = VERSION
 
             if 'AUTOWRAPT_BOOTSTRAP' in os.environ:

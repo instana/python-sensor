@@ -48,7 +48,7 @@ class RuntimeHelper(BaseHelper):
                 plugin_data["data"]["pid"] = str(os.getpid())
 
             with_snapshot = kwargs.get("with_snapshot", False)
-            self._collect_runtime_metrics(plugin_data, with_snapshot)
+#           self._collect_runtime_metrics(plugin_data, with_snapshot)
 
             if with_snapshot:
                 self._collect_runtime_snapshot(plugin_data)

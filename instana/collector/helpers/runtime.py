@@ -179,12 +179,12 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['versions'] = {'instana': VERSION} # self.gather_python_packages()
             snapshot_payload['iv'] = VERSION
 
-            if 'AUTOWRAPT_BOOTSTRAP' in os.environ:
-                snapshot_payload['m'] = 'Autowrapt'
-            elif 'INSTANA_MAGIC' in os.environ:
-                snapshot_payload['m'] = 'AutoTrace'
-            else:
-                snapshot_payload['m'] = 'Manual'
+#           if 'AUTOWRAPT_BOOTSTRAP' in os.environ:
+#               snapshot_payload['m'] = 'Autowrapt'
+#           elif 'INSTANA_MAGIC' in os.environ:
+#               snapshot_payload['m'] = 'AutoTrace'
+#           else:
+            snapshot_payload['m'] = 'Manual'
 
 #           try:
 #               from django.conf import settings  # pylint: disable=import-outside-toplevel

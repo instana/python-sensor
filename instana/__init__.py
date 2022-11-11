@@ -159,20 +159,20 @@ def boot_agent():
 #   from .hooks import hook_uwsgi
 
 
-if 'INSTANA_DISABLE' not in os.environ:
-    # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
-    # and some Pipenv installs.  If this is the case, it's best effort.
-    if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0]) in do_not_load_list):
-        if "INSTANA_DEBUG" in os.environ:
-            print("Instana: No use in monitoring this process type (%s).  "
-                  "Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
-    else:
-        # AutoProfile
-        if "INSTANA_AUTOPROFILE" in os.environ:
-            from .singletons import get_profiler
-
-            profiler = get_profiler()
-            if profiler:
-                profiler.start()
-
-        boot_agent()
+#if 'INSTANA_DISABLE' not in os.environ:
+#    # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
+#    # and some Pipenv installs.  If this is the case, it's best effort.
+#    if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0]) in do_not_load_list):
+#        if "INSTANA_DEBUG" in os.environ:
+#            print("Instana: No use in monitoring this process type (%s).  "
+#                  "Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
+#    else:
+#        # AutoProfile
+#        if "INSTANA_AUTOPROFILE" in os.environ:
+#            from .singletons import get_profiler
+#
+#            profiler = get_profiler()
+#            if profiler:
+#                profiler.start()
+#
+boot_agent()

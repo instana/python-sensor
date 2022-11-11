@@ -59,7 +59,7 @@ from .recorder import StanRecorder
 
 agent = HostAgent()
 span_recorder = StanRecorder(agent)
-profiler = Profiler(agent)
+#profiler = Profiler(agent)
 
 
 def get_agent():

@@ -186,14 +186,14 @@ class RuntimeHelper(BaseHelper):
             else:
                 snapshot_payload['m'] = 'Manual'
 
-            try:
-                from django.conf import settings  # pylint: disable=import-outside-toplevel
-                if hasattr(settings, 'MIDDLEWARE') and settings.MIDDLEWARE is not None:
-                    snapshot_payload['djmw'] = settings.MIDDLEWARE
-                elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
-                    snapshot_payload['djmw'] = settings.MIDDLEWARE_CLASSES
-            except Exception:
-                pass
+#           try:
+#               from django.conf import settings  # pylint: disable=import-outside-toplevel
+#               if hasattr(settings, 'MIDDLEWARE') and settings.MIDDLEWARE is not None:
+#                   snapshot_payload['djmw'] = settings.MIDDLEWARE
+#               elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
+#                   snapshot_payload['djmw'] = settings.MIDDLEWARE_CLASSES
+#           except Exception:
+#               pass
         except Exception:
             logger.debug("collect_snapshot: ", exc_info=True)
 

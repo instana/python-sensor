@@ -9,7 +9,7 @@ import sys
 import threading
 
 from ..log import logger
-from ..singletons import env_is_test
+#from ..singletons import env_is_test
 from ..util import every, DictionaryOfStan
 
 
@@ -32,15 +32,15 @@ class BaseCollector(object):
         self.THREAD_NAME = "Instana Collector"
 
         # The Queue where we store finished spans before they are sent
-        if env_is_test:
-            # Override span queue with a multiprocessing version
-            # The test suite runs background applications - some in background threads,
-            # others in background processes.  This multiprocess queue allows us to collect
-            # up spans from all sources.
-            import multiprocessing
-            self.span_queue = multiprocessing.Queue()
-        else:
-            self.span_queue = queue.Queue()
+#       if env_is_test:
+#           # Override span queue with a multiprocessing version
+#           # The test suite runs background applications - some in background threads,
+#           # others in background processes.  This multiprocess queue allows us to collect
+#           # up spans from all sources.
+#           import multiprocessing
+#           self.span_queue = multiprocessing.Queue()
+#       else:
+        self.span_queue = queue.Queue()
 
         # The Queue where we store finished profiles before they are sent
         self.profile_queue = queue.Queue()

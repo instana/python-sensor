@@ -59,9 +59,14 @@ commands:
             GEVENT_TEST: "<<parameters.gevent>>"
           command: |
             . venv/bin/activate
-            coverage run --source=instana -m pytest -v <<parameters.tests>>
+            coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
             coverage report -m
             coverage html
+
+  store-pytest-results:
+    steps:
+      - store_test_results:
+          path: test-results
 
   store-coverage-report:
     steps:
@@ -91,6 +96,7 @@ jobs:
       - pip-install-deps:
           requirements: "tests/requirements-307.txt"
       - run-tests-with-coverage-report
+      - store-pytest-results
       - store-coverage-report
 
   python38:
@@ -114,6 +120,7 @@ jobs:
       - checkout
       - pip-install-deps
       - run-tests-with-coverage-report
+      - store-pytest-results
       - store-coverage-report
 
   python39:
@@ -137,6 +144,7 @@ jobs:
       - checkout
       - pip-install-deps
       - run-tests-with-coverage-report
+      - store-pytest-results
       - store-coverage-report
 
   python310:
@@ -161,6 +169,7 @@ jobs:
       - pip-install-deps:
           requirements: "tests/requirements-310.txt"
       - run-tests-with-coverage-report
+      - store-pytest-results
       - store-coverage-report
 
   py38couchbase:
@@ -176,6 +185,7 @@ jobs:
       - run-tests-with-coverage-report:
           couchbase: "true"
           tests: "tests/clients/test_couchbase.py"
+      - store-pytest-results
       - store-coverage-report
 
   py37cassandra:
@@ -193,6 +203,7 @@ jobs:
       - run-tests-with-coverage-report:
           cassandra: "true"
           tests: "tests/clients/test_cassandra-driver.py"
+      - store-pytest-results
       - store-coverage-report
 
   py38gevent:
@@ -206,6 +217,7 @@ jobs:
       - run-tests-with-coverage-report:
           gevent: "true"
           tests: "tests/frameworks/test_gevent.py"
+      - store-pytest-results
       - store-coverage-report
 
 workflows:

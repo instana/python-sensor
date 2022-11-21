@@ -31,7 +31,7 @@ session.execute("CREATE TABLE IF NOT EXISTS users("
                 ");")
 
 
-@pytest.mark.skipif("CASSANDRA_TEST" not in os.environ, reason="")
+@pytest.mark.skipif(not os.environ.get("CASSANDRA_TEST"), reason="")
 class TestCassandra(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """

@@ -9,13 +9,13 @@ collect_ignore_glob = []
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # be run explicitly.  (So always exclude them here)
-if "CASSANDRA_TEST" not in os.environ:
+if not os.environ.get("CASSANDRA_TEST" ):
     collect_ignore_glob.append("*test_cassandra*")
 
-if "COUCHBASE_TEST" not in os.environ:
+if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
-if "GEVENT_TEST" not in os.environ:
+if not os.environ.get("GEVENT_TEST"):
     collect_ignore_glob.append("*test_gevent*")
 
 # Python 3.10 support is incomplete yet

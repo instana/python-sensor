@@ -6,7 +6,7 @@ import os
 
 os.environ["INSTANA_TEST"] = "true"
 
-if 'GEVENT_TEST' in os.environ:
+if os.environ.get('GEVENT_TEST'):
     from gevent import monkey
     monkey.patch_all()
 

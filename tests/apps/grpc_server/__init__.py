@@ -6,7 +6,9 @@ import sys
 import time
 import threading
 
-if 'GEVENT_TEST' not in os.environ and 'CASSANDRA_TEST' not in os.environ and sys.version_info >= (3, 5, 3):
+if not any((os.environ.get('GEVENT_TEST'),
+            os.environ.get('CASSANDRA_TEST'),
+            sys.version_info < (3, 5, 3))):
     # Background RPC application
     #
     # Spawn the background RPC app that the tests will throw

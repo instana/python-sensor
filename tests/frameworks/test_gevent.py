@@ -17,7 +17,7 @@ from ..helpers import testenv, get_spans_by_filter
 from opentracing.scope_managers.gevent import GeventScopeManager
 
 
-@pytest.mark.skipif("GEVENT_TEST" not in os.environ, reason="")
+@pytest.mark.skipif(not os.environ.get("GEVENT_TEST"), reason="")
 class TestGEvent(unittest.TestCase):
     def setUp(self):
         self.http = urllib3.HTTPConnectionPool('127.0.0.1', port=testenv["wsgi_port"], maxsize=20)

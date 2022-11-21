@@ -7,5 +7,5 @@ from ..utils import launch_background_thread
 
 app_thread = None
 
-if 'CASSANDRA_TEST' not in os.environ:
+if not os.environ.get('CASSANDRA_TEST'):
     app_thread = launch_background_thread(server.serve_forever, "Pyramid")

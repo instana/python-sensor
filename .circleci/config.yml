@@ -35,6 +35,39 @@ commands:
             sudo apt update
             sudo apt install libcouchbase-dev -y
 
+  run-tests-with-coverage-report:
+    parameters:
+      cassandra:
+        default: ""
+        type: string
+      couchbase:
+        default: ""
+        type: string
+      gevent:
+        default: ""
+        type: string
+      tests:
+        default: "tests"
+        type: string
+    steps:
+      - run:
+          name: Run Tests With Coverage Report
+          environment:
+            INSTANA_TEST: "true"
+            CASSANDRA_TEST: "<<parameters.cassandra>>"
+            COUCHBASE_TEST: "<<parameters.couchbase>>"
+            GEVENT_TEST: "<<parameters.gevent>>"
+          command: |
+            . venv/bin/activate
+            coverage run --source=instana -m pytest -v <<parameters.tests>>
+            coverage report -m
+            coverage html
+
+  store-coverage-report:
+    steps:
+      - store_artifacts:
+          path: htmlcov
+
 jobs:
   python37:
     docker:
@@ -57,15 +90,8 @@ jobs:
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements-307.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            # We uninstall uvloop as it interferes with asyncio changing the event loop policy
-            pip uninstall -y uvloop
-            pytest -v
+      - run-tests-with-coverage-report
+      - store-coverage-report
 
   python38:
     docker:
@@ -87,17 +113,8 @@ jobs:
     steps:
       - checkout
       - pip-install-deps
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            coverage run --source=instana -m pytest -v
-            coverage report -m
-            coverage html
-      - store_artifacts:
-          path: htmlcov
+      - run-tests-with-coverage-report
+      - store-coverage-report
 
   python39:
     docker:
@@ -119,13 +136,8 @@ jobs:
     steps:
       - checkout
       - pip-install-deps
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v
+      - run-tests-with-coverage-report
+      - store-coverage-report
 
   python310:
     docker:
@@ -148,13 +160,8 @@ jobs:
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements-310.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v
+      - run-tests-with-coverage-report
+      - store-coverage-report
 
   py38couchbase:
     docker:
@@ -166,14 +173,10 @@ jobs:
       - install-couchbase-deps
       - pip-install-deps:
           requirements: "tests/requirements-couchbase.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            COUCHBASE_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v tests/clients/test_couchbase.py
+      - run-tests-with-coverage-report:
+          couchbase: "true"
+          tests: "tests/clients/test_couchbase.py"
+      - store-coverage-report
 
   py37cassandra:
     docker:
@@ -187,14 +190,10 @@ jobs:
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements-cassandra.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            CASSANDRA_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v tests/clients/test_cassandra-driver.py
+      - run-tests-with-coverage-report:
+          cassandra: "true"
+          tests: "tests/clients/test_cassandra-driver.py"
+      - store-coverage-report
 
   py38gevent:
     docker:
@@ -204,14 +203,10 @@ jobs:
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements-gevent.txt"
-      - run:
-          name: run tests
-          environment:
-            INSTANA_TEST: "true"
-            GEVENT_TEST: "true"
-          command: |
-            . venv/bin/activate
-            pytest -v tests/frameworks/test_gevent.py
+      - run-tests-with-coverage-report:
+          gevent: "true"
+          tests: "tests/frameworks/test_gevent.py"
+      - store-coverage-report
 
 workflows:
   version: 2

@@ -49,6 +49,9 @@ class TestOTSpan(unittest.TestCase):
             assert 0 <= int(context.span_id, 16) <= 18446744073709551615
             assert 0 <= int(context.trace_id, 16) <= 18446744073709551615
 
+    # Python 3.11 support is incomplete yet
+    # TODO: Remove this once we find a workaround or DROP opentracing!
+    @pytest.mark.skipif(sys.version_info.minor >= 11, reason="Raises not Implemented exception in OSX")
     def test_stacks(self):
         # Entry spans have no stack attached by default
         wsgi_span = opentracing.tracer.start_span("wsgi")

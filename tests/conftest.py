@@ -24,7 +24,9 @@ if not os.environ.get("GEVENT_TEST"):
 if sys.version_info.minor >= 10:
     collect_ignore_glob.append("*test_tornado*")
     collect_ignore_glob.append("*test_boto3_secretsmanager*")
-
+    # Furthermore on Python 3.11 the above TC is skipped:
+    # tests/opentracing/test_ot_span.py::TestOTSpan::test_stacks
+    # TODO: Remove that once we find a workaround or DROP opentracing!
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"

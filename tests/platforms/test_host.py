@@ -69,14 +69,14 @@ class TestHost(unittest.TestCase):
 
     def test_agent_default_log_level(self):
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.log_level == logging.WARNING
+        self.assertEqual(self.agent.options.log_level, logging.WARNING)
 
     def test_agent_instana_debug(self):
         os.environ['INSTANA_DEBUG'] = "asdf"
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.log_level == logging.DEBUG
-    
+        self.assertEqual(self.agent.options.log_level, logging.DEBUG)
+
     def test_agent_instana_service_name(self):
         os.environ['INSTANA_SERVICE_NAME'] = "greycake"
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.service_name == "greycake"
+        self.assertEqual(self.agent.options.service_name, "greycake")

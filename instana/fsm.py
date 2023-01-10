@@ -157,18 +157,18 @@ class TheMachine(object):
             except:
                 logger.debug("Error generating file descriptor: ", exc_info=True)
 
-        response = self.agent.announce(d)
+        payload = self.agent.announce(d)
 
-        if response and (response.status_code == 200) and (len(response.content) > 2):
-            self.agent.set_from(response.content)
-            self.fsm.pending()
-            logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
-                         str(pid), str(self.agent.announce_data.pid))
-            return True
-
-        logger.debug("Cannot announce sensor. Scheduling retry.")
-        self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
-        return False
+        if not payload:
+            logger.debug("Cannot announce sensor. Scheduling retry.")
+            self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
+            return False
+        
+        self.agent.set_from(payload)
+        self.fsm.pending()
+        logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
+                     str(pid), str(self.agent.announce_data.pid))
+        return True
 
     def schedule_retry(self, fun, e, name):
         self.timer = threading.Timer(self.RETRY_PERIOD, fun, [e])

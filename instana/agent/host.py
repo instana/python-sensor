@@ -123,19 +123,12 @@ class HostAgent(BaseAgent):
 
         return False
 
-    def set_from(self, json_string):
+    def set_from(self, res_data):
         """
         Sets the source identifiers given to use by the Instana Host agent.
-        @param json_string: source identifiers
+        @param res_data: source identifiers provided as announce response
         @return: None
         """
-        if isinstance(json_string, bytes):
-            raw_json = json_string.decode("UTF-8")
-        else:
-            raw_json = json_string
-
-        res_data = json.loads(raw_json)
-
         if "secrets" in res_data:
             self.options.secrets_matcher = res_data['secrets']['matcher']
             self.options.secrets_list = res_data['secrets']['list']
@@ -181,19 +174,43 @@ class HostAgent(BaseAgent):
         """
         With the passed in Discovery class, attempt to announce to the host agent.
         """
-        response = None
         try:
             url = self.__discovery_url()
             response = self.client.put(url,
                                        data=to_json(discovery),
                                        headers={"Content-Type": "application/json"},
                                        timeout=0.8)
-
-            if 200 <= response.status_code <= 204:
-                self.last_seen = datetime.now()
         except Exception as exc:
             logger.debug("announce: connection error (%s)", type(exc))
-        return response
+            return None
+
+        if 200 <= response.status_code <= 204:
+            self.last_seen = datetime.now()
+
+        if response.status_code != 200:
+            logger.debug("announce: response status code (%s) is NOT 200", response.status_code)
+            return None
+
+        if isinstance(response.content, bytes):
+            raw_json = response.content.decode("UTF-8")
+        else:
+            raw_json = response.content
+
+        try:
+            payload = json.loads(raw_json)
+        except json.JSONDecodeError as e:
+            logger.debug("announce: response is not JSON: (%s)", raw_json)
+            return None
+
+        if not payload.get('pid'):
+            logger.debug("announce: response payload has no pid: (%s)", payload)
+            return None
+
+        if not payload.get('agentUuid'):
+            logger.debug("announce: response payload has no agentUuid: (%s)", payload)
+            return None
+
+        return payload
 
     def log_message_to_host_agent(self, message):
         """

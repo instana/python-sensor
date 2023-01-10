@@ -29,24 +29,16 @@ class TestHost(unittest.TestCase):
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
-        if "AWS_EXECUTION_ENV" in os.environ:
-            os.environ.pop("AWS_EXECUTION_ENV")
-        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
-            os.environ.pop("INSTANA_EXTRA_HTTP_HEADERS")
-        if "INSTANA_ENDPOINT_URL" in os.environ:
-            os.environ.pop("INSTANA_ENDPOINT_URL")
-        if "INSTANA_ENDPOINT_PROXY" in os.environ:
-            os.environ.pop("INSTANA_ENDPOINT_PROXY")
-        if "INSTANA_AGENT_KEY" in os.environ:
-            os.environ.pop("INSTANA_AGENT_KEY")
-        if "INSTANA_LOG_LEVEL" in os.environ:
-            os.environ.pop("INSTANA_LOG_LEVEL")
-        if "INSTANA_SERVICE_NAME" in os.environ:
-            os.environ.pop("INSTANA_SERVICE_NAME")
-        if "INSTANA_SECRETS" in os.environ:
-            os.environ.pop("INSTANA_SECRETS")
-        if "INSTANA_TAGS" in os.environ:
-            os.environ.pop("INSTANA_TAGS")
+        variable_names = (
+                "AWS_EXECUTION_ENV", "INSTANA_EXTRA_HTTP_HEADERS",
+                "INSTANA_ENDPOINT_URL", "INSTANA_ENDPOINT_PROXY",
+                "INSTANA_AGENT_KEY", "INSTANA_LOG_LEVEL",
+                "INSTANA_SERVICE_NAME", "INSTANA_SECRETS", "INSTANA_TAGS",
+                )
+
+        for variable_name in variable_names:
+            if variable_name in os.environ:
+                os.environ.pop(variable_name)
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)

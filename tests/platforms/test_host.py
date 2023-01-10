@@ -7,11 +7,17 @@ import os
 import logging
 import unittest
 
+from mock import MagicMock, patch
+
+import requests
+
 from instana.agent.host import HostAgent
-from instana.tracer import InstanaTracer
+from instana.fsm import Discovery
+from instana.log import logger
 from instana.options import StandardOptions
 from instana.recorder import StanRecorder
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
+from instana.tracer import InstanaTracer
 
 
 class TestHost(unittest.TestCase):
@@ -80,3 +86,131 @@ class TestHost(unittest.TestCase):
         os.environ['INSTANA_SERVICE_NAME'] = "greycake"
         self.create_agent_and_setup_tracer()
         self.assertEqual(self.agent.options.service_name, "greycake")
+
+    @patch.object(requests.Session, "put")
+    def test_announce_is_successful(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = (
+                '{'
+                f'  "pid": {test_pid}, '
+                f'  "agentUuid": "{test_agent_uuid}"'
+                '}')
+
+        # This mocks the call to self.agent.client.put
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(pid=test_pid,
+                      name=test_process_name, args=test_process_args)
+        payload = self.agent.announce(d)
+
+        self.assertIn('pid', payload)
+        self.assertEqual(test_pid, payload['pid'])
+
+        self.assertIn('agentUuid', payload)
+        self.assertEqual(test_agent_uuid, payload['agentUuid'])
+
+
+    @patch.object(requests.Session, "put")
+    def test_announce_fails_with_non_200(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.content = ''
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(pid=test_pid,
+                      name=test_process_name, args=test_process_args)
+        with self.assertLogs(logger, level='DEBUG') as log:
+            payload = self.agent.announce(d)
+        self.assertIsNone(payload)
+        self.assertEqual(len(log.output), 1)
+        self.assertEqual(len(log.records), 1)
+        self.assertIn('response status code', log.output[0])
+        self.assertIn('is NOT 200', log.output[0])
+
+
+    @patch.object(requests.Session, "put")
+    def test_announce_fails_with_non_json(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = ''
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(pid=test_pid,
+                      name=test_process_name, args=test_process_args)
+        with self.assertLogs(logger, level='DEBUG') as log:
+            payload = self.agent.announce(d)
+        self.assertIsNone(payload)
+        self.assertEqual(len(log.output), 1)
+        self.assertEqual(len(log.records), 1)
+        self.assertIn('response is not JSON', log.output[0])
+
+
+    @patch.object(requests.Session, "put")
+    def test_announce_fails_with_missing_pid(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = (
+                '{'
+                f'  "agentUuid": "{test_agent_uuid}"'
+                '}')
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(pid=test_pid,
+                      name=test_process_name, args=test_process_args)
+        with self.assertLogs(logger, level='DEBUG') as log:
+            payload = self.agent.announce(d)
+        self.assertIsNone(payload)
+        self.assertEqual(len(log.output), 1)
+        self.assertEqual(len(log.records), 1)
+        self.assertIn('response payload has no pid', log.output[0])
+
+
+    @patch.object(requests.Session, "put")
+    def test_announce_fails_with_missing_uuid(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = (
+                '{'
+                f'  "pid": {test_pid} '
+                '}')
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(pid=test_pid,
+                      name=test_process_name, args=test_process_args)
+        with self.assertLogs(logger, level='DEBUG') as log:
+            payload = self.agent.announce(d)
+        self.assertIsNone(payload)
+        self.assertEqual(len(log.output), 1)
+        self.assertEqual(len(log.records), 1)
+        self.assertIn('response payload has no agentUuid', log.output[0])

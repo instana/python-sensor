@@ -4,11 +4,13 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import logging
 import unittest
 
 from mock import MagicMock, patch
 
+import pytest
 import requests
 
 from instana.agent.host import HostAgent
@@ -98,9 +100,9 @@ class TestHost(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.content = (
                 '{'
-                f'  "pid": {test_pid}, '
-                f'  "agentUuid": "{test_agent_uuid}"'
-                '}')
+                '  "pid": %d, '
+                '  "agentUuid": "%s"'
+                '}' % (test_pid, test_agent_uuid))
 
         # This mocks the call to self.agent.client.put
         mock_requests_session_put.return_value = mock_response
@@ -117,6 +119,8 @@ class TestHost(unittest.TestCase):
         self.assertEqual(test_agent_uuid, payload['agentUuid'])
 
 
+    @pytest.mark.skipif(sys.version_info[0] < 3,
+                        reason="assertLogs is not available in Python 2")
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_non_200(self, mock_requests_session_put):
         test_pid = 4242
@@ -141,6 +145,8 @@ class TestHost(unittest.TestCase):
         self.assertIn('is NOT 200', log.output[0])
 
 
+    @pytest.mark.skipif(sys.version_info[0] < 3,
+                        reason="assertLogs is not available in Python 2")
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_non_json(self, mock_requests_session_put):
         test_pid = 4242
@@ -164,6 +170,8 @@ class TestHost(unittest.TestCase):
         self.assertIn('response is not JSON', log.output[0])
 
 
+    @pytest.mark.skipif(sys.version_info[0] < 3,
+                        reason="assertLogs is not available in Python 2")
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_missing_pid(self, mock_requests_session_put):
         test_pid = 4242
@@ -175,8 +183,8 @@ class TestHost(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.content = (
                 '{'
-                f'  "agentUuid": "{test_agent_uuid}"'
-                '}')
+                '  "agentUuid": "%s"'
+                '}' % (test_agent_uuid))
         mock_requests_session_put.return_value = mock_response
 
         self.create_agent_and_setup_tracer()
@@ -190,6 +198,8 @@ class TestHost(unittest.TestCase):
         self.assertIn('response payload has no pid', log.output[0])
 
 
+    @pytest.mark.skipif(sys.version_info[0] < 3,
+                        reason="assertLogs is not available in Python 2")
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_missing_uuid(self, mock_requests_session_put):
         test_pid = 4242
@@ -201,8 +211,8 @@ class TestHost(unittest.TestCase):
         mock_response.status_code = 200
         mock_response.content = (
                 '{'
-                f'  "pid": {test_pid} '
-                '}')
+                '  "pid": "%d"'
+                '}' % (test_pid))
         mock_requests_session_put.return_value = mock_response
 
         self.create_agent_and_setup_tracer()

@@ -9,8 +9,8 @@ from ..helpers import testenv
 from instana.singletons import tracer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, create_engine, text
 
 
 engine = create_engine("postgresql://%s:%s@%s/%s" % (testenv['postgresql_user'], testenv['postgresql_pw'],
@@ -90,8 +90,8 @@ class TestSQLAlchemy(unittest.TestCase):
         result = None
         with tracer.start_active_span('test'):
             with engine.begin() as connection:
-                result = connection.execute("select 1")
-                result = connection.execute("select (name, fullname, password) from churchofstan where name='doesntexist'")
+                result = connection.execute(text("select 1"))
+                result = connection.execute(text("select (name, fullname, password) from churchofstan where name='doesntexist'"))
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -146,7 +146,7 @@ class TestSQLAlchemy(unittest.TestCase):
     def test_error_logging(self):
         with tracer.start_active_span('test'):
             try:
-                self.session.execute("htVwGrCwVThisIsInvalidSQLaw4ijXd88")
+                self.session.execute(text("htVwGrCwVThisIsInvalidSQLaw4ijXd88"))
                 self.session.commit()
             except:
                 pass
@@ -204,7 +204,8 @@ class TestSQLAlchemy(unittest.TestCase):
                 r'\(psycopg2.OperationalError\) connection .* failed.*'
                                ) as context_manager:
             engine = create_engine(invalid_connection_url)
-            version, = engine.execute("select version()").fetchone()
+            with engine.connect() as connection:
+                version, = connection.execute(text("select version()")).fetchone()
 
         the_exception = context_manager.exception
         self.assertFalse(the_exception.connection_invalidated)

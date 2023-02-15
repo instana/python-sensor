@@ -202,6 +202,10 @@ class HostAgent(BaseAgent):
             logger.debug("announce: response is not JSON: (%s)", raw_json)
             return None
 
+        if not hasattr(payload, 'get'):
+            logger.debug("announce: response payload has no fields: (%s)", payload)
+            return None
+
         if not payload.get('pid'):
             logger.debug("announce: response payload has no pid: (%s)", payload)
             return None

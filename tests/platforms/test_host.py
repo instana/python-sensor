@@ -163,6 +163,28 @@ class TestHost(unittest.TestCase):
         self.assertEqual(len(log.records), 1)
         self.assertIn('response is not JSON', log.output[0])
 
+    @patch.object(requests.Session, "put")
+    def test_announce_fails_with_empty_list_json(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = '[]'
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(pid=test_pid,
+                      name=test_process_name, args=test_process_args)
+        with self.assertLogs(logger, level='DEBUG') as log:
+            payload = self.agent.announce(d)
+        self.assertIsNone(payload)
+        self.assertEqual(len(log.output), 1)
+        self.assertEqual(len(log.records), 1)
+        self.assertIn('payload has no fields', log.output[0])
+
 
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_missing_pid(self, mock_requests_session_put):

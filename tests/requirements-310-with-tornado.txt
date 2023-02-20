@@ -32,7 +32,7 @@ pytest-celery
 redis>=3.5.3
 requests-mock
 responses<=0.17.0
-sanic==21.6.2
+sanic>=21.12.2
 sqlalchemy>=2.0.0
 spyne>=2.14.0
 

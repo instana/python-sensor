@@ -3,6 +3,6 @@ flask>=0.12.2
 gevent>=1.4.0
 mock>=2.0.0
 nose>=1.0
-pyramid>=1.2
+pyramid>=2.0.1
 pytest>=4.6
 urllib3[secure]<1.27,>=1.26.5

@@ -76,7 +76,7 @@ commands:
 jobs:
   python37:
     docker:
-      - image: cimg/python:3.7.13
+      - image: cimg/python:3.7.16
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root

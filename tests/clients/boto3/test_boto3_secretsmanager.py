@@ -41,20 +41,20 @@ def test_vanilla_list_secrets(secretsmanager):
 
 def test_get_secret_value(secretsmanager):
     result = None
+    secret_id = 'Uber_Password'
 
-    secretsmanager.put_secret_value(
-        SecretId='Uber_Password',
+    response = secretsmanager.create_secret(
+        Name=secret_id,
         SecretBinary=b'password1',
         SecretString='password1',
-        VersionStages=[
-            'string',
-        ]
     )
-    
-    with tracer.start_active_span('test'):
-        result = secretsmanager.get_secret_value(SecretId="Uber_Password")
 
-    assert result['Name'] == 'Uber_Password'
+    assert response['Name'] == secret_id
+
+    with tracer.start_active_span('test'):
+        result = secretsmanager.get_secret_value(SecretId=secret_id)
+
+    assert result['Name'] == secret_id
 
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 2

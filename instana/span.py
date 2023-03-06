@@ -203,7 +203,7 @@ class SDKSpan(BaseSpan):
         self.n = "sdk"
         self.k = span_kind[1]
 
-        if self.k == 1 and service_name is not None:
+        if service_name is not None:
             self.data["service"] = service_name
 
         self.data["sdk"]["name"] = span.operation_name
@@ -263,10 +263,10 @@ class RegisteredSpan(BaseSpan):
         self.n = span.operation_name
         self.k = 1
 
+        self.data["service"] = service_name
         if span.operation_name in self.ENTRY_SPANS:
             # entry
             self._populate_entry_span_data(span)
-            self.data["service"] = service_name
             self._populate_extra_span_attributes(span)
         elif span.operation_name in self.EXIT_SPANS:
             self.k = 2  # exit

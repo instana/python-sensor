@@ -269,7 +269,6 @@ class TestOTSpan(unittest.TestCase):
         exit_span = get_first_span_by_filter(spans, filter)
         assert (exit_span)
 
-        # Custom service name should be set on ENTRY spans and none other
         assert(entry_span)
         assert(len(entry_span.data['sdk']['custom']['tags']) == 2)
         assert(entry_span.data['sdk']['custom']['tags']['type'] == 'entry_span')
@@ -279,13 +278,13 @@ class TestOTSpan(unittest.TestCase):
         assert(intermediate_span)
         assert(len(intermediate_span.data['sdk']['custom']['tags']) == 1)
         assert(intermediate_span.data['sdk']['custom']['tags']['type'] == 'intermediate_span')
-        assert("service" not in intermediate_span.data)
+        assert(intermediate_span.data['service'] == 'custom_service_name')
         assert(intermediate_span.k == 3)
 
         assert(exit_span)
         assert(len(exit_span.data['sdk']['custom']['tags']) == 2)
         assert(exit_span.data['sdk']['custom']['tags']['type'] == 'exit_span')
-        assert("service" not in intermediate_span.data)
+        assert(exit_span.data['service'] == 'custom_service_name')
         assert(exit_span.k == 2)
 
     def test_span_log(self):

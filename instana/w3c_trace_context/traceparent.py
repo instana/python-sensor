@@ -4,6 +4,8 @@
 from ..log import logger
 import re
 
+# See https://www.w3.org/TR/trace-context-2/#trace-flags for details on the bitmasks.
+SAMPLED_BITMASK = 0b1;
 
 class Traceparent:
     SPECIFICATION_VERSION = "00"
@@ -27,15 +29,16 @@ class Traceparent:
         """
         Parses the validated traceparent header into its fields and returns the fields
         :param traceparent: the original validated traceparent header
-        :return: version, trace_id, parent_id, trace_flags
+        :return: version, trace_id, parent_id, sampled_flag
         """
         try:
             traceparent_properties = traceparent.split("-")
             version = traceparent_properties[0]
             trace_id = traceparent_properties[1]
             parent_id = traceparent_properties[2]
-            trace_flags = traceparent_properties[3]
-            return version, trace_id, parent_id, trace_flags
+            flags = int(traceparent_properties[3])
+            sampled_flag = (flags & SAMPLED_BITMASK) == SAMPLED_BITMASK
+            return version, trace_id, parent_id, sampled_flag
         except Exception:  # This method is intended to be called with a version 00 validated traceparent
             # This exception handling is added just for making sure we do not throw any unhandled exception
             # if somebody calls the method in the future without a validated traceparent
@@ -51,21 +54,24 @@ class Traceparent:
         :param level: instana level, used to determine the value of sampled flag of the traceparent header
         :return: the updated traceparent header
         """
-        mask = 1 << 0
-        trace_flags = 0
         if traceparent is None:  # modify the trace_id part only when it was not present at all
             trace_id = in_trace_id.zfill(32)
-            version = self.SPECIFICATION_VERSION
         else:
-            version, trace_id, _, trace_flags = self.get_traceparent_fields(traceparent)
-            trace_flags = int(trace_flags, 16)
+            # - We do not need the incoming upstream parent span ID for the header we sent downstream.
+            # - We also do not care about the incoming version: The version field we sent downstream needs to match the
+            #   format of the traceparent header we produce here, so we always send the version _we_ support downstream,
+            #   even if the header coming from upstream supported a different version.
+            # - Finally, we also do not care about the incoming sampled flag , we only need to communicate our own
+            #   sampling decision downstream. The sampling decisions from our upstream is irrelevant for what we send
+            #   downstream.
+            _, trace_id, _, _ = self.get_traceparent_fields(traceparent)
 
         parent_id = in_span_id.zfill(16)
-        trace_flags = (trace_flags & ~mask) | ((level << 0) & mask)
-        trace_flags = format(trace_flags, '0>2x')
+        flags = level & SAMPLED_BITMASK
+        flags = format(flags, '0>2x')
 
-        traceparent = "{version}-{traceid}-{parentid}-{trace_flags}".format(version=version,
+        traceparent = "{version}-{traceid}-{parentid}-{flags}".format(version=self.SPECIFICATION_VERSION,
                                                                         traceid=trace_id,
                                                                         parentid=parent_id,
-                                                                        trace_flags=trace_flags)
+                                                                        flags=flags)
         return traceparent

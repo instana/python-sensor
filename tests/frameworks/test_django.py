@@ -338,7 +338,9 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual('1', response.headers['X-INSTANA-L'])
 
         assert ('traceparent' in response.headers)
-        self.assertEqual('01-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
+        # The incoming traceparent header had version 01 (which does not exist at the time of writing), but since we
+        # support version 00, we also need to pass down 00 for the version field.
+        self.assertEqual('00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01'.format(django_span.s),
                          response.headers['traceparent'])
 
         assert ('tracestate' in response.headers)

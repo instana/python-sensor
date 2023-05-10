@@ -28,7 +28,7 @@ class TestHTTPPropagatorTC(unittest.TestCase):
             'X-INSTANA-L': '1, correlationType=web; correlationId=1234567890abcdef'
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
-        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
+        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", True]
         ctx = self.hptc.extract(carrier)
         self.assertEqual(ctx.correlation_id, '1234567890abcdef')
         self.assertEqual(ctx.correlation_type, "web")
@@ -54,7 +54,7 @@ class TestHTTPPropagatorTC(unittest.TestCase):
                    ('X-INSTANA-L', '1')]
 
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
-        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
+        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", True]
         ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx.correlation_id)
         self.assertIsNone(ctx.correlation_type)
@@ -124,7 +124,7 @@ class TestHTTPPropagatorTC(unittest.TestCase):
             'X-INSTANA-L': '1, correlationTypeweb; correlationId1234567890abcdef'
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
-        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
+        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", True]
         ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx.correlation_id)
         self.assertIsNone(ctx.correlation_type)
@@ -156,7 +156,7 @@ class TestHTTPPropagatorTC(unittest.TestCase):
             'X-INSTANA-L': ['1']
         }
         mock_validate.return_value = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
-        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", "01"]
+        mock_get_traceparent_fields.return_value = ["00", "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", True]
         ctx = self.hptc.extract(carrier)
         self.assertIsNone(ctx.correlation_id)
         self.assertIsNone(ctx.correlation_type)

@@ -38,3 +38,4 @@ spyne>=2.14.0
 
 uvicorn>=0.13.4
 urllib3[secure]<1.27,>=1.26.5
+yarl==1.8.2

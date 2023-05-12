@@ -5,7 +5,7 @@ celery>=5.2.7
 coverage>=5.5
 Django>=3.2.10
 fastapi>=0.92.0
-flask==2.2.3
+flask==2.2.5
 grpcio>=1.37.1
 google-cloud-pubsub<=2.1.0
 google-cloud-storage>=1.24.0

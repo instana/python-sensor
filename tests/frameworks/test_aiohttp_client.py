@@ -16,9 +16,9 @@ from ..helpers import testenv
 
 class TestAiohttp(unittest.TestCase):
 
-    async def fetch(self, session, url, headers=None):
+    async def fetch(self, session, url, headers=None, params=None):
         try:
-            async with session.get(url, headers=headers) as response:
+            async with session.get(url, headers=headers, params=params) as response:
                 return response
         except aiohttp.web_exceptions.HTTPException:
             pass
@@ -296,7 +296,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/?secret=yeah")
+                    return await self.fetch(session, testenv["wsgi_server"], params={"secret": "yeah"})
 
         response = self.loop.run_until_complete(test())
 

@@ -15,9 +15,9 @@ from instana.singletons import async_tracer, agent
 
 class TestAiohttpServer(unittest.TestCase):
 
-    async def fetch(self, session, url, headers=None):
+    async def fetch(self, session, url, headers=None, params=None):
         try:
-            async with session.get(url, headers=headers) as response:
+            async with session.get(url, headers=headers, params=params) as response:
                 return response
         except aiohttp.web_exceptions.HTTPException:
             pass
@@ -185,7 +185,7 @@ class TestAiohttpServer(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["aiohttp_server"] + "/?secret=iloveyou")
+                    return await self.fetch(session, testenv["aiohttp_server"], params={"secret": "iloveyou"})
 
         response = self.loop.run_until_complete(test())
 
@@ -254,7 +254,7 @@ class TestAiohttpServer(unittest.TestCase):
                     headers['X-Capture-This'] = 'this'
                     headers['X-Capture-That'] = 'that'
 
-                    return await self.fetch(session, testenv["aiohttp_server"] + "/?secret=iloveyou", headers=headers)
+                    return await self.fetch(session, testenv["aiohttp_server"], headers=headers, params={"secret": "iloveyou"})
 
         response = self.loop.run_until_complete(test())
 

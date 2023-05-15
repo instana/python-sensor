@@ -18,9 +18,9 @@ from ..helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 
 class TestTornadoServer(unittest.TestCase):
-    async def fetch(self, session, url, headers=None):
+    async def fetch(self, session, url, headers=None, params=None):
         try:
-            async with session.get(url, headers=headers) as response:
+            async with session.get(url, headers=headers, params=params) as response:
                 return response
         except aiohttp.web_exceptions.HTTPException:
             pass
@@ -456,7 +456,7 @@ class TestTornadoServer(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["tornado_server"] + "/?secret=yeah")
+                    return await self.fetch(session, testenv["tornado_server"], params={"secret": "yeah"})
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
@@ -525,7 +525,7 @@ class TestTornadoServer(unittest.TestCase):
                     headers['X-Capture-This'] = 'this'
                     headers['X-Capture-That'] = 'that'
 
-                    return await self.fetch(session, testenv["tornado_server"] + "/?secret=iloveyou", headers=headers)
+                    return await self.fetch(session, testenv["tornado_server"], headers=headers, params={"secret": "iloveyou"})
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 

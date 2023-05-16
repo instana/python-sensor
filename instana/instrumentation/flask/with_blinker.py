@@ -82,6 +82,12 @@ def log_exception_with_instana(sender, exception, **extra):
         scope = flask.g.scope
         if scope.span is not None:
             scope.span.log_exception(exception)
+            # As of Flask 2.3.x:
+            # https://github.com/pallets/flask/blob/
+            # d0bf462866289ad8bfe29b6e4e1e0f531003ab34/src/flask/app.py#L1379
+            # The `got_request_exception` signal, is only sent by
+            # the `handle_exception` method which "always causes a 500"
+            scope.span.set_tag(ext.HTTP_STATUS_CODE, 500)
         scope.close()
 
 

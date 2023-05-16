@@ -501,8 +501,7 @@ class TestUrllib3(unittest.TestCase):
         self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
         self.assertEqual('/exception', wsgi_span.data["http"]["url"])
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        # TODO: Investigate the missing status code in a separate commit
-        #self.assertEqual(500, wsgi_span.data["http"]["status"])
+        self.assertEqual(500, wsgi_span.data["http"]["status"])
         if with_blinker:
           self.assertEqual('fake error', wsgi_span.data["http"]["error"])
         else:

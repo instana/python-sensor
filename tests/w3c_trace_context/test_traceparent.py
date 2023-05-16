@@ -13,6 +13,16 @@ class TestTraceparent(unittest.TestCase):
         traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
         self.assertEqual(traceparent, self.tp.validate(traceparent))
 
+    def test_validate_newer_version(self):
+        # Although the incoming traceparent header sports a newer version number, we should still be able to parse the
+        # parts that we understand (and consider it valid).
+        traceparent = "ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-12345-abcd"
+        self.assertEqual(traceparent, self.tp.validate(traceparent))
+
+    def test_validate_unknown_flags(self):
+        traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-ee"
+        self.assertEqual(traceparent, self.tp.validate(traceparent))
+
     def test_validate_invalid_traceparent(self):
         traceparent = "00-4bxxxxx3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
         self.assertIsNone(self.tp.validate(traceparent))
@@ -34,6 +44,22 @@ class TestTraceparent(unittest.TestCase):
         self.assertEqual(trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
         self.assertEqual(parent_id, "00f067aa0ba902b7")
         self.assertFalse(sampled_flag)
+
+    def test_get_traceparent_fields_newer_version(self):
+        # Although the incoming traceparent header sports a newer version number, we should still be able to parse the
+        # parts that we understand (and consider it valid).
+        traceparent = "ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-12345-abcd"
+        version, trace_id, parent_id, sampled_flag = self.tp.get_traceparent_fields(traceparent)
+        self.assertEqual(trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+        self.assertEqual(parent_id, "00f067aa0ba902b7")
+        self.assertTrue(sampled_flag)
+
+    def test_get_traceparent_fields_unknown_flags(self):
+        traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-ff"
+        version, trace_id, parent_id, sampled_flag = self.tp.get_traceparent_fields(traceparent)
+        self.assertEqual(trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+        self.assertEqual(parent_id, "00f067aa0ba902b7")
+        self.assertTrue(sampled_flag)
 
     def test_get_traceparent_fields_None_input(self):
         traceparent = None

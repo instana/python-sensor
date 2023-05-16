@@ -36,12 +36,13 @@ class Traceparent:
             version = traceparent_properties[0]
             trace_id = traceparent_properties[1]
             parent_id = traceparent_properties[2]
-            flags = int(traceparent_properties[3])
+            flags = int(traceparent_properties[3], 16)
             sampled_flag = (flags & SAMPLED_BITMASK) == SAMPLED_BITMASK
             return version, trace_id, parent_id, sampled_flag
-        except Exception:  # This method is intended to be called with a version 00 validated traceparent
+        except Exception as err:  # This method is intended to be called with a version 00 validated traceparent
             # This exception handling is added just for making sure we do not throw any unhandled exception
             # if somebody calls the method in the future without a validated traceparent
+            logger.debug("Parsing the traceparent failed: {}".format(err))
             return None, None, None, None
 
     def update_traceparent(self, traceparent, in_trace_id, in_span_id, level):

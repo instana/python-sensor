@@ -9,7 +9,7 @@ SAMPLED_BITMASK = 0b1;
 
 class Traceparent:
     SPECIFICATION_VERSION = "00"
-    TRACEPARENT_REGEX = re.compile("^[0-9a-f]{2}-(?!0{32})([0-9a-f]{32})-(?!0{16})([0-9a-f]{16})-[0-9a-f]{2}")
+    TRACEPARENT_REGEX = re.compile("^[0-9a-f][0-9a-e]-(?!0{32})([0-9a-f]{32})-(?!0{16})([0-9a-f]{16})-[0-9a-f]{2}")
 
     def validate(self, traceparent):
         """

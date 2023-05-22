@@ -236,3 +236,41 @@ class TestHost(unittest.TestCase):
         self.assertEqual(len(log.output), 1)
         self.assertEqual(len(log.records), 1)
         self.assertIn('response payload has no agentUuid', log.output[0])
+
+
+    @patch.object(requests.Session, "get")
+    def test_agent_connection_attempt(self, mock_requests_session_get):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_requests_session_get.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        host = self.agent.options.agent_host
+        port = self.agent.options.agent_port
+        msg = f"Instana host agent found on {host}:{port}"
+        
+        with self.assertLogs(logger, level='DEBUG') as log:
+            result = self.agent.is_agent_listening(host, port)
+
+        self.assertTrue(result)
+        self.assertIn(msg, log.output[0])
+
+
+    @patch.object(requests.Session, "get")
+    def test_agent_connection_attempt_fails_with_404(self, mock_requests_session_get):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_requests_session_get.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        host = self.agent.options.agent_host
+        port = self.agent.options.agent_port
+        msg = "The attempt to connect to the Instana host agent on " \
+              f"{host}:{port} has failed with an unexpected status code. " \
+              f"Expected HTTP 200 but received: {mock_response.status_code}"
+
+        with self.assertLogs(logger, level='DEBUG') as log:
+            result = self.agent.is_agent_listening(host, port)
+
+        self.assertFalse(result)
+        self.assertIn(msg, log.output[0])

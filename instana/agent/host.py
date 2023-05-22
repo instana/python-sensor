@@ -41,7 +41,6 @@ class HostAgent(BaseAgent):
     """
     AGENT_DISCOVERY_PATH = "com.instana.plugin.python.discovery"
     AGENT_DATA_PATH = "com.instana.plugin.python.%d"
-    AGENT_HEADER = "Instana Agent"
 
     def __init__(self):
         super(HostAgent, self).__init__()
@@ -157,15 +156,16 @@ class HostAgent(BaseAgent):
         result = False
         try:
             url = "http://%s:%s/" % (host, port)
-            response = self.client.get(url, timeout=0.8)
+            response = self.client.get(url, timeout=5)
 
-            server_header = response.headers["Server"]
-            if server_header == self.AGENT_HEADER:
+            if 200 <= response.status_code < 300:
                 logger.debug("Instana host agent found on %s:%d", host, port)
                 result = True
             else:
-                logger.debug("...something is listening on %s:%d but it's not the Instana Host Agent: %s",
-                             host, port, server_header)
+                logger.debug("The attempt to connect to the Instana host "\
+                             "agent on %s:%d has failed with an unexpected " \
+                             "status code. Expected HTTP 200 but received: %d",
+                             host, port, response.status_code)
         except Exception:
             logger.debug("Instana Host Agent not found on %s:%d", host, port)
         return result

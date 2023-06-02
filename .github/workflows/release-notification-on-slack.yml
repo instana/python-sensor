@@ -1,0 +1,19 @@
+name: Slack Post
+on:
+  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#release
+  release:
+    types: [published]
+jobs:
+  build:
+    name: Slack Post
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "New release published ${GITHUB_REF}"
+          pip3 install PyGithub
+          ./bin/announce_release_on_slack.py
+        env:
+          GITHUB_RELEASE_TAG: ${{ basename GITHUB_REF }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID_RELEASES: ${{ secrets.SLACK_CHANNEL_ID_RELEASES }}

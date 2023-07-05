@@ -2,9 +2,9 @@ aiofiles>=0.5.0
 aiohttp>=3.8.3
 boto3>=1.17.74
 
-# TODO: importlib_metadata package removed deprecated entry_point interfaces on 
-# version 5.0.0 [1], and this change impacts celery >= 5.2.7 [2] running with 
-# python 3.7.X (it doesn't impact >= 3.8). For this reason, we control celery 
+# TODO: importlib_metadata package removed deprecated entry_point interfaces on
+# version 5.0.0 [1], and this change impacts celery >= 5.2.7 [2] running with
+# python 3.7.X (it doesn't impact >= 3.8). For this reason, we control celery
 # and importlib_metadata versions on python 3.7 environments.
 # [1] https://github.com/python/importlib_metadata/pull/405
 # [2] https://github.com/celery/celery/issues/7783

@@ -76,13 +76,13 @@ commands:
 jobs:
   python37:
     docker:
-      - image: cimg/python:3.7.16
+      - image: cimg/python:3.7.17
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: ''
           POSTGRES_DB: circle_test
-      - image: cimg/mariadb:10.6.7
+      - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -101,13 +101,13 @@ jobs:
 
   python38:
     docker:
-      - image: cimg/python:3.8.16
+      - image: cimg/python:3.8.17
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: ''
           POSTGRES_DB: circle_test
-      - image: cimg/mariadb:10.6.7
+      - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -125,13 +125,13 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9.16
+      - image: cimg/python:3.9.17
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: ''
           POSTGRES_DB: circle_test
-      - image: cimg/mariadb:10.6.7
+      - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -149,13 +149,13 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10.11
+      - image: cimg/python:3.10.12
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: ''
           POSTGRES_DB: circle_test
-      - image: cimg/mariadb:10.6.7
+      - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -174,13 +174,13 @@ jobs:
 
   python311:
     docker:
-      - image: cimg/python:3.11.3
+      - image: cimg/python:3.11.4
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: ''
           POSTGRES_DB: circle_test
-      - image: cimg/mariadb:10.6.7
+      - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -199,7 +199,7 @@ jobs:
 
   py38couchbase:
     docker:
-      - image: cimg/python:3.8.16
+      - image: cimg/python:3.8.17
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -215,7 +215,7 @@ jobs:
 
   py37cassandra:
     docker:
-      - image: cimg/python:3.7.16
+      - image: cimg/python:3.7.17
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -233,7 +233,7 @@ jobs:
 
   py38gevent:
     docker:
-      - image: cimg/python:3.8.12
+      - image: cimg/python:3.8.17
     working_directory: ~/repo
     steps:
       - checkout

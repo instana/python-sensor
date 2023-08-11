@@ -1,5 +1,12 @@
 name: Slack Post
 on:
+  workflow_dispatch: # Manual trigger
+    inputs:
+      github_ref:
+        description: 'Manually provided value for GITHUB_REF of a release'
+        required: true
+        type: string
+
   # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#release
   release:
     types: [published]

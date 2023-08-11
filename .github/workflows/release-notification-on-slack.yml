@@ -15,7 +15,7 @@ jobs:
     name: Slack Post
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the needed file only: ./bin/announce_release_on_slack.py
+      - name: 'Checkout the needed file only ./bin/announce_release_on_slack.py'
         uses: actions/checkout@v3
         with:
           sparse-checkout: |

@@ -15,6 +15,12 @@ jobs:
     name: Slack Post
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the needed file only: ./bin/announce_release_on_slack.py
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            ./bin/announce_release_on_slack.py
+        sparse-checkout-cone-mode: false
       - run: |
           if [[ ${{ github.event_name == 'workflow_dispatch' }} == true ]]; then
             export GITHUB_RELEASE_TAG=${{ inputs.github_ref }}

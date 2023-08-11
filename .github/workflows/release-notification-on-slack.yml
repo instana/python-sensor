@@ -3,7 +3,7 @@ on:
   workflow_dispatch: # Manual trigger
     inputs:
       github_ref:
-        description: 'Manually provided value for GITHUB_REF of a release'
+        description: 'Manually provided value for GITHUB_RELEASE_TAG of a release'
         required: true
         type: string
 
@@ -17,7 +17,11 @@ jobs:
     steps:
       - run: |
           echo "New release published ${GITHUB_REF}"
-          export GITHUB_RELEASE_TAG=$(basename ${GITHUB_REF})
+          if [[ ${{ github.event_name == 'workflow_dispatch' }} == true ]]; then
+            export GITHUB_RELEASE_TAG=${{ inputs.github_ref }}
+          else # release event
+            export GITHUB_RELEASE_TAG=$(basename ${GITHUB_REF})
+          fi
           pip3 install PyGithub
           ./bin/announce_release_on_slack.py
         env:

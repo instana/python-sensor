@@ -37,6 +37,9 @@ class CursorWrapper(wrapt.ObjectProxy):
             logger.debug(e)
         return span
 
+    def __enter__(self):
+        return self
+
     def execute(self, sql, params=None):
         active_tracer = get_active_tracer()
 
@@ -102,6 +105,9 @@ class ConnectionWrapper(wrapt.ObjectProxy):
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
         self._connect_params = connect_params
+
+    def __enter__(self):
+        return self
 
     def cursor(self, *args, **kwargs):
         return CursorWrapper(

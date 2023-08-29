@@ -9,7 +9,7 @@ body:
         Thank you for taking the time to fill out this report.
         Remember that these issues are public and if you need to discuss
         implementation specific issues securely,
-        please [use our support portal](https://support.instana.com/hc/en-us).
+        please [use our support portal](https://www.ibm.com/mysupport).
   - type: textarea
     id: problem-description
     attributes:

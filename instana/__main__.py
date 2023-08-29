@@ -46,7 +46,7 @@ https://www.instana.com/docs/ecosystem/python/
 
 
 Help & Support:
-https://support.instana.com/
+https://www.ibm.com/mysupport
 """)
 
         IPython.start_ipython(argv=[])
@@ -81,7 +81,7 @@ Monitoring Python Documentation:
 https://www.instana.com/docs/ecosystem/python/
 
 Help & Support:
-https://support.instana.com/
+https://www.ibm.com/mysupport
 
 Python Instrumentation on Github:
 https://github.com/instana/python-sensor/

@@ -217,3 +217,80 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["stmt"], 'SELECT * from blah')
         self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+
+    def test_connect_cursor_ctx_mgr(self):
+        with tracer.start_active_span("test"):
+            with self.db as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("""SELECT * from users""")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "mysql")
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
+
+    def test_connect_ctx_mgr(self):
+        with tracer.start_active_span("test"):
+            with self.db as connection:
+                cursor = connection.cursor()
+                cursor.execute("""SELECT * from users""")
+
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "mysql")
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
+
+    def test_cursor_ctx_mgr(self):
+        with tracer.start_active_span("test"):
+            connection = self.db
+            with connection.cursor() as cursor:
+                cursor.execute("""SELECT * from users""")
+
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "mysql")
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])

@@ -36,9 +36,13 @@ $$ LANGUAGE plpgsql;
 
 drop_proc_query = "DROP FUNCTION IF EXISTS test_proc(VARCHAR(70));"
 
-db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
-                     user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
-                     database=testenv['postgresql_db'])
+db = psycopg2.connect(
+    host=testenv["postgresql_host"],
+    port=testenv["postgresql_port"],
+    user=testenv["postgresql_user"],
+    password=testenv["postgresql_pw"],
+    database=testenv["postgresql_db"],
+)
 
 cursor = db.cursor()
 cursor.execute(create_table_query)
@@ -51,16 +55,20 @@ db.close()
 
 class TestPsycoPG2(unittest.TestCase):
     def setUp(self):
-        self.db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
-                                   user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
-                                   database=testenv['postgresql_db'])
+        self.db = psycopg2.connect(
+            host=testenv["postgresql_host"],
+            port=testenv["postgresql_port"],
+            user=testenv["postgresql_user"],
+            password=testenv["postgresql_pw"],
+            database=testenv["postgresql_db"],
+        )
         self.cursor = self.db.cursor()
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
         tracer.cur_ctx = None
 
     def tearDown(self):
-        """ Do nothing for now """
+        """Do nothing for now"""
         return None
 
     def test_vanilla_query(self):
@@ -76,7 +84,7 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(0, len(spans))
 
     def test_basic_query(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             self.cursor.execute("""SELECT * from users""")
             self.cursor.fetchone()
             self.db.commit()
@@ -94,15 +102,18 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(None, db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
-        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
-        self.assertEqual(db_span.data["pg"]["user"], testenv['postgresql_user'])
-        self.assertEqual(db_span.data["pg"]["stmt"], 'SELECT * from users')
-        self.assertEqual(db_span.data["pg"]["host"], testenv['postgresql_host'])
-        self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(db_span.data["pg"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
 
     def test_basic_insert(self):
-        with tracer.start_active_span('test'):
-            self.cursor.execute("""INSERT INTO users(name, email) VALUES(%s, %s)""", ('beaker', 'beaker@muppets.com'))
+        with tracer.start_active_span("test"):
+            self.cursor.execute(
+                """INSERT INTO users(name, email) VALUES(%s, %s)""",
+                ("beaker", "beaker@muppets.com"),
+            )
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -117,17 +128,21 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(None, db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
-        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
-        self.assertEqual(db_span.data["pg"]["user"], testenv['postgresql_user'])
-        self.assertEqual(db_span.data["pg"]["stmt"], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        self.assertEqual(db_span.data["pg"]["host"], testenv['postgresql_host'])
-        self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(
+            db_span.data["pg"]["stmt"], "INSERT INTO users(name, email) VALUES(%s, %s)"
+        )
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
 
     def test_executemany(self):
         result = None
-        with tracer.start_active_span('test'):
-            result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
-                                             [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
+        with tracer.start_active_span("test"):
+            result = self.cursor.executemany(
+                "INSERT INTO users(name, email) VALUES(%s, %s)",
+                [("beaker", "beaker@muppets.com"), ("beaker", "beaker@muppets.com")],
+            )
             self.db.commit()
 
         spans = self.recorder.queued_spans()
@@ -143,18 +158,20 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(None, db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
-        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
-        self.assertEqual(db_span.data["pg"]["user"], testenv['postgresql_user'])
-        self.assertEqual(db_span.data["pg"]["stmt"], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        self.assertEqual(db_span.data["pg"]["host"], testenv['postgresql_host'])
-        self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(
+            db_span.data["pg"]["stmt"], "INSERT INTO users(name, email) VALUES(%s, %s)"
+        )
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
 
     def test_call_proc(self):
         result = None
-        with tracer.start_active_span('test'):
-            result = self.cursor.callproc('test_proc', ('beaker',))
+        with tracer.start_active_span("test"):
+            result = self.cursor.callproc("test_proc", ("beaker",))
 
-        assert(type(result) is tuple)
+        assert type(result) is tuple
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -169,22 +186,22 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(None, db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
-        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
-        self.assertEqual(db_span.data["pg"]["user"], testenv['postgresql_user'])
-        self.assertEqual(db_span.data["pg"]["stmt"], 'test_proc')
-        self.assertEqual(db_span.data["pg"]["host"], testenv['postgresql_host'])
-        self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(db_span.data["pg"]["stmt"], "test_proc")
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
 
     def test_error_capture(self):
         result = None
         try:
-            with tracer.start_active_span('test'):
+            with tracer.start_active_span("test"):
                 result = self.cursor.execute("""SELECT * from blah""")
                 self.cursor.fetchone()
         except Exception:
             pass
 
-        assert(result is None)
+        assert result is None
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -197,14 +214,17 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(db_span.p, test_span.s)
 
         self.assertEqual(1, db_span.ec)
-        self.assertEqual(db_span.data["pg"]["error"], 'relation "blah" does not exist\nLINE 1: SELECT * from blah\n                      ^\n')
+        self.assertEqual(
+            db_span.data["pg"]["error"],
+            'relation "blah" does not exist\nLINE 1: SELECT * from blah\n                      ^\n',
+        )
 
         self.assertEqual(db_span.n, "postgres")
-        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
-        self.assertEqual(db_span.data["pg"]["user"], testenv['postgresql_user'])
-        self.assertEqual(db_span.data["pg"]["stmt"], 'SELECT * from blah')
-        self.assertEqual(db_span.data["pg"]["host"], testenv['postgresql_host'])
-        self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(db_span.data["pg"]["stmt"], "SELECT * from blah")
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
 
     # Added to validate unicode support and register_type.
     def test_unicode(self):
@@ -242,9 +262,85 @@ class TestPsycoPG2(unittest.TestCase):
         oid1 = 2950
         oid2 = 2951
 
-        ext.UUID = ext.new_type((oid1,), "UUID", lambda data, cursor: data and uuid.UUID(data) or None)
+        ext.UUID = ext.new_type(
+            (oid1,), "UUID", lambda data, cursor: data and uuid.UUID(data) or None
+        )
         ext.UUIDARRAY = ext.new_array_type((oid2,), "UUID[]", ext.UUID)
 
         ext.register_type(ext.UUID, self.cursor)
         ext.register_type(ext.UUIDARRAY, self.cursor)
 
+    def test_connect_cursor_ctx_mgr(self):
+        with tracer.start_active_span("test"):
+            with self.db as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("""SELECT * from users""")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertEqual(None, db_span.ec)
+
+        self.assertEqual(db_span.n, "postgres")
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(db_span.data["pg"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
+
+    def test_connect_ctx_mgr(self):
+        with tracer.start_active_span("test"):
+            with self.db as connection:
+                cursor = connection.cursor()
+                cursor.execute("""SELECT * from users""")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertEqual(None, db_span.ec)
+
+        self.assertEqual(db_span.n, "postgres")
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(db_span.data["pg"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
+
+    def test_cursor_ctx_mgr(self):
+        with tracer.start_active_span("test"):
+            connection = self.db
+            with connection.cursor() as cursor:
+                cursor.execute("""SELECT * from users""")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span = spans[0]
+        test_span = spans[1]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertEqual(None, db_span.ec)
+
+        self.assertEqual(db_span.n, "postgres")
+        self.assertEqual(db_span.data["pg"]["db"], testenv["postgresql_db"])
+        self.assertEqual(db_span.data["pg"]["user"], testenv["postgresql_user"])
+        self.assertEqual(db_span.data["pg"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
+        self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])

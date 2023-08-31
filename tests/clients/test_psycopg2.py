@@ -87,7 +87,6 @@ class TestPsycoPG2(unittest.TestCase):
         with tracer.start_active_span("test"):
             self.cursor.execute("""SELECT * from users""")
             self.cursor.fetchone()
-            self.db.commit()
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))

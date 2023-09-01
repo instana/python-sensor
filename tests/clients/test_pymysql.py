@@ -69,24 +69,22 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual(0, len(spans))
 
     def test_basic_query(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.execute("""SELECT * from users""")
             self.cursor.fetchone()
 
-        assert(result >= 0)
+        self.assertTrue(result >= 0)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -96,24 +94,22 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_query_with_params(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.execute("""SELECT * from users where id=1""")
             self.cursor.fetchone()
 
-        assert(result >= 0)
+        self.assertTrue(result >= 0)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -123,7 +119,6 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_basic_insert(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.execute(
                         """INSERT INTO users(name, email) VALUES(%s, %s)""",
@@ -134,14 +129,13 @@ class TestPyMySQL(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -151,7 +145,6 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_executemany(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
                                              [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
@@ -162,14 +155,13 @@ class TestPyMySQL(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -179,23 +171,21 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_call_proc(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.callproc('test_proc', ('beaker',))
 
-        assert(result)
+        self.assertTrue(result)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -206,36 +196,26 @@ class TestPyMySQL(unittest.TestCase):
 
     def test_error_capture(self):
         result = None
-        span = None
         try:
             with tracer.start_active_span('test'):
                 result = self.cursor.execute("""SELECT * from blah""")
                 self.cursor.fetchone()
         except Exception:
             pass
-        finally:
-            if span:
-                span.finish()
 
-        assert(result is None)
+        self.assertIsNone(result)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
         self.assertEqual(1, db_span.ec)
 
-        if sys.version_info[0] >= 3:
-            # Python 3
-            self.assertEqual(db_span.data["mysql"]["error"], u'(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
-        else:
-            # Python 2
-            self.assertEqual(db_span.data["mysql"]["error"], u'(1146, u"Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
+        self.assertEqual(db_span.data["mysql"]["error"], u'(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -253,8 +233,7 @@ class TestPyMySQL(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -278,8 +257,7 @@ class TestPyMySQL(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -304,8 +282,7 @@ class TestPyMySQL(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)

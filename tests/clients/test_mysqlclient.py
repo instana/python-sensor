@@ -6,15 +6,11 @@ from __future__ import absolute_import
 import sys
 import logging
 import unittest
+import MySQLdb
 from ..helpers import testenv
 from unittest import SkipTest
 from instana.singletons import tracer
 
-
-if sys.version_info[0] > 2:
-    import MySQLdb
-else:
-    raise SkipTest("mysqlclient supported on Python 3 only")
 
 logger = logging.getLogger(__name__)
 
@@ -75,24 +71,22 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(0, len(spans))
 
     def test_basic_query(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.execute("""SELECT * from users""")
             self.cursor.fetchone()
 
-        assert(result >= 0)
+        self.assertTrue(result >= 0)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -102,7 +96,6 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_basic_insert(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.execute(
                         """INSERT INTO users(name, email) VALUES(%s, %s)""",
@@ -113,14 +106,13 @@ class TestMySQLPython(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -130,7 +122,6 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_executemany(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
                                              [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
@@ -141,14 +132,13 @@ class TestMySQLPython(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -158,23 +148,21 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
 
     def test_call_proc(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.callproc('test_proc', ('beaker',))
 
-        assert(result)
+        self.assertTrue(result)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
         self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
@@ -185,24 +173,19 @@ class TestMySQLPython(unittest.TestCase):
 
     def test_error_capture(self):
         result = None
-        span = None
         try:
             with tracer.start_active_span('test'):
                 result = self.cursor.execute("""SELECT * from blah""")
                 self.cursor.fetchone()
         except Exception:
             pass
-        finally:
-            if span:
-                span.finish()
 
-        assert(result is None)
+        self.assertIsNone(result)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -227,8 +210,7 @@ class TestMySQLPython(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -253,8 +235,7 @@ class TestMySQLPython(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -279,8 +260,7 @@ class TestMySQLPython(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)

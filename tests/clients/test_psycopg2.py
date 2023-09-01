@@ -64,8 +64,8 @@ class TestPsycoPG2(unittest.TestCase):
         return None
 
     def test_vanilla_query(self):
-        assert psycopg2.extras.register_uuid(None, self.db)
-        assert psycopg2.extras.register_uuid(None, self.db.cursor())
+        self.assertTrue(psycopg2.extras.register_uuid(None, self.db))
+        self.assertTrue(psycopg2.extras.register_uuid(None, self.db.cursor()))
 
         self.cursor.execute("""SELECT * from users""")
         result = self.cursor.fetchone()
@@ -84,14 +84,13 @@ class TestPsycoPG2(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
         self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
@@ -107,14 +106,13 @@ class TestPsycoPG2(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
         self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
@@ -124,7 +122,6 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
 
     def test_executemany(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
                                              [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
@@ -133,14 +130,13 @@ class TestPsycoPG2(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
         self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
@@ -150,23 +146,21 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
 
     def test_call_proc(self):
-        result = None
         with tracer.start_active_span('test'):
             result = self.cursor.callproc('test_proc', ('beaker',))
 
-        assert(type(result) is tuple)
+        self.assertIsInstance(result, tuple)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
 
-        self.assertEqual(None, db_span.ec)
+        self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "postgres")
         self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
@@ -184,13 +178,12 @@ class TestPsycoPG2(unittest.TestCase):
         except Exception:
             pass
 
-        assert(result is None)
+        self.assertIsNone(result)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -257,8 +250,7 @@ class TestPsycoPG2(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -282,8 +274,7 @@ class TestPsycoPG2(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
@@ -307,8 +298,7 @@ class TestPsycoPG2(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        db_span = spans[0]
-        test_span = spans[1]
+        db_span, test_span = spans
 
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)

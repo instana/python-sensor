@@ -14,60 +14,56 @@ import psycopg2.extensions as ext
 
 logger = logging.getLogger(__name__)
 
-create_table_query = """
-CREATE TABLE IF NOT EXISTS users(
-   id serial PRIMARY KEY,
-   name VARCHAR (50),
-   password VARCHAR (50),
-   email VARCHAR (355),
-   created_on TIMESTAMP,
-   last_login TIMESTAMP
-);
-"""
-
-create_proc_query = """\
-CREATE OR REPLACE FUNCTION test_proc(candidate VARCHAR(70)) 
-RETURNS text AS $$
-BEGIN
-    RETURN(SELECT name FROM users where email = candidate);
-END;
-$$ LANGUAGE plpgsql;
-"""
-
-drop_proc_query = "DROP FUNCTION IF EXISTS test_proc(VARCHAR(70));"
-
-db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
-                     user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
-                     database=testenv['postgresql_db'])
-
-cursor = db.cursor()
-cursor.execute(create_table_query)
-cursor.execute(drop_proc_query)
-cursor.execute(create_proc_query)
-db.commit()
-cursor.close()
-db.close()
-
 
 class TestPsycoPG2(unittest.TestCase):
     def setUp(self):
         self.db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
                                    user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
                                    database=testenv['postgresql_db'])
+
+        database_setup_query = """
+        DROP TABLE IF EXISTS users;
+        CREATE TABLE users(
+           id serial PRIMARY KEY,
+           name VARCHAR (50),
+           password VARCHAR (50),
+           email VARCHAR (355),
+           created_on TIMESTAMP,
+           last_login TIMESTAMP
+        );
+        INSERT INTO users(name, email) VALUES('kermit', 'kermit@muppets.com');
+        DROP FUNCTION IF EXISTS test_proc(VARCHAR(70));
+        CREATE FUNCTION test_proc(candidate VARCHAR(70))
+        RETURNS text AS $$
+        BEGIN
+            RETURN(SELECT name FROM users where email = candidate);
+        END;
+        $$ LANGUAGE plpgsql;
+        """
+        cursor = self.db.cursor()
+        cursor.execute(database_setup_query)
+        self.db.commit()
+        cursor.close()
+
+
         self.cursor = self.db.cursor()
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
         tracer.cur_ctx = None
 
     def tearDown(self):
-        """ Do nothing for now """
-        return None
+        if self.cursor and not self.cursor.connection.closed:
+          self.cursor.close()
+        if self.db and not self.db.closed:
+          self.db.close()
 
     def test_vanilla_query(self):
         self.assertTrue(psycopg2.extras.register_uuid(None, self.db))
         self.assertTrue(psycopg2.extras.register_uuid(None, self.db.cursor()))
 
         self.cursor.execute("""SELECT * from users""")
+        affected_rows = self.cursor.rowcount
+        self.assertEqual(1, affected_rows)
         result = self.cursor.fetchone()
 
         self.assertEqual(6, len(result))
@@ -78,8 +74,12 @@ class TestPsycoPG2(unittest.TestCase):
     def test_basic_query(self):
         with tracer.start_active_span('test'):
             self.cursor.execute("""SELECT * from users""")
-            self.cursor.fetchone()
+            affected_rows = self.cursor.rowcount
+            result = self.cursor.fetchone()
             self.db.commit()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(6, len(result))
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -102,6 +102,9 @@ class TestPsycoPG2(unittest.TestCase):
     def test_basic_insert(self):
         with tracer.start_active_span('test'):
             self.cursor.execute("""INSERT INTO users(name, email) VALUES(%s, %s)""", ('beaker', 'beaker@muppets.com'))
+            affected_rows = self.cursor.rowcount
+
+        self.assertEqual(1, affected_rows)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -123,9 +126,12 @@ class TestPsycoPG2(unittest.TestCase):
 
     def test_executemany(self):
         with tracer.start_active_span('test'):
-            result = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
-                                             [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
+            self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
+                                    [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
+            affected_rows = self.cursor.rowcount
             self.db.commit()
+
+        self.assertEqual(2, affected_rows)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -147,9 +153,9 @@ class TestPsycoPG2(unittest.TestCase):
 
     def test_call_proc(self):
         with tracer.start_active_span('test'):
-            result = self.cursor.callproc('test_proc', ('beaker',))
+            callproc_result = self.cursor.callproc('test_proc', ('beaker',))
 
-        self.assertIsInstance(result, tuple)
+        self.assertIsInstance(callproc_result, tuple)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -170,14 +176,16 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
 
     def test_error_capture(self):
-        result = None
+        affected_rows = result = None
         try:
             with tracer.start_active_span('test'):
-                result = self.cursor.execute("""SELECT * from blah""")
+                self.cursor.execute("""SELECT * from blah""")
+                affected_rows = self.cursor.rowcount
                 self.cursor.fetchone()
         except Exception:
             pass
 
+        self.assertIsNone(affected_rows)
         self.assertIsNone(result)
 
         spans = self.recorder.queued_spans()
@@ -246,6 +254,11 @@ class TestPsycoPG2(unittest.TestCase):
             with self.db as connection:
                 with connection.cursor() as cursor:
                     cursor.execute("""SELECT * from users""")
+                    affected_rows = cursor.rowcount
+                    result = cursor.fetchone()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(6, len(result))
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -270,6 +283,11 @@ class TestPsycoPG2(unittest.TestCase):
             with self.db as connection:
                 cursor = connection.cursor()
                 cursor.execute("""SELECT * from users""")
+                affected_rows = cursor.rowcount
+                result = cursor.fetchone()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(6, len(result))
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
@@ -294,6 +312,11 @@ class TestPsycoPG2(unittest.TestCase):
             connection = self.db
             with connection.cursor() as cursor:
                 cursor.execute("""SELECT * from users""")
+                affected_rows = cursor.rowcount
+                result = cursor.fetchone()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(6, len(result))
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))

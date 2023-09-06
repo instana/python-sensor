@@ -210,32 +210,27 @@ class TestPsycoPG2(unittest.TestCase):
     # Added to validate unicode support and register_type.
     def test_unicode(self):
         ext.register_type(ext.UNICODE, self.cursor)
-        #
-        # Python 2 chokes on Unicode and CircleCI tests are hanging (but pass locally).
-        # Disable these tests for now as we want to really just test register_type
-        # anyways
-        #
-        # snowman = "\u2603"
-        #
-        # self.cursor.execute("delete from users where id in (1,2,3)")
-        #
-        # # unicode in statement
-        # psycopg2.extras.execute_batch(self.cursor,
-        #     "insert into users (id, name) values (%%s, %%s) -- %s" % snowman, [(1, 'x')])
-        # self.cursor.execute("select id, name from users where id = 1")
-        # self.assertEqual(self.cursor.fetchone(), (1, 'x'))
-        #
-        # # unicode in data
-        # psycopg2.extras.execute_batch(self.cursor,
-        #     "insert into users (id, name) values (%s, %s)", [(2, snowman)])
-        # self.cursor.execute("select id, name from users where id = 2")
-        # self.assertEqual(self.cursor.fetchone(), (2, snowman))
-        #
-        # # unicode in both
-        # psycopg2.extras.execute_batch(self.cursor,
-        #     "insert into users (id, name) values (%%s, %%s) -- %s" % snowman, [(3, snowman)])
-        # self.cursor.execute("select id, name from users where id = 3")
-        # self.assertEqual(self.cursor.fetchone(), (3, snowman))
+        snowman = "\u2603"
+
+        self.cursor.execute("delete from users where id in (1,2,3)")
+
+        # unicode in statement
+        psycopg2.extras.execute_batch(self.cursor,
+            "insert into users (id, name) values (%%s, %%s) -- %s" % snowman, [(1, 'x')])
+        self.cursor.execute("select id, name from users where id = 1")
+        self.assertEqual(self.cursor.fetchone(), (1, 'x'))
+
+        # unicode in data
+        psycopg2.extras.execute_batch(self.cursor,
+            "insert into users (id, name) values (%s, %s)", [(2, snowman)])
+        self.cursor.execute("select id, name from users where id = 2")
+        self.assertEqual(self.cursor.fetchone(), (2, snowman))
+
+        # unicode in both
+        psycopg2.extras.execute_batch(self.cursor,
+            "insert into users (id, name) values (%%s, %%s) -- %s" % snowman, [(3, snowman)])
+        self.cursor.execute("select id, name from users where id = 3")
+        self.assertEqual(self.cursor.fetchone(), (3, snowman))
 
     def test_register_type(self):
         import uuid

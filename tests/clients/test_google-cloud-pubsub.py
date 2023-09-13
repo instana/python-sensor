@@ -18,8 +18,8 @@ from google.cloud.pubsub_v1.publisher import exceptions
 from instana.singletons import tracer
 from tests.test_utils import _TraceContextMixin
 
-# Use PubSub Emulator exposed at :8432
-os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8432"
+# Use PubSub Emulator exposed at :8085
+os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8085"
 
 
 class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):

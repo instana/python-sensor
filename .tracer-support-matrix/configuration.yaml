@@ -1,0 +1,245 @@
+---
+
+instrumentationDirectory: instana/instrumentation
+sourceFileSuffix: .py
+firstTag: 0.4.0
+
+gitNameRevTagPatterns:
+ - "[0-9]*.[0-9]*.[0-9]*"
+ # Between 1.27.0 and 1.27.1, the tag pattern was changed from 1.27.0 (without a "v" prefix)
+ # to v1.27.1 (with a "v" prefix).
+ - "v[0-9]*.[0-9]*.[0-9]*"
+
+overrides:
+
+  aiohttp:
+    displayName: Aiohttp
+    category: clients
+    support:
+      lowerBound: '3.1.0'
+
+  asgiref:
+    displayName: ASGI
+    category: frameworks
+    link: ../../ecosystem/python/components/asgi.md
+    firstHistoricallyTestedVersion: N.A.
+    supportedSinceVersion: Any
+    support:
+      lowerBound: '2.0'
+
+  # asyncio is part of the standard library since Python 3.4, so it is not mentioned in requirements.txt.
+  asyncio:
+    category: other
+    supportedSinceVersion: v1.5.0
+    support:
+      lowerBound: all supported Python versions
+      upperBound: all supported Python versions
+    link: https://pypi.org/project/asyncio/
+
+  boto3:
+    displayName: Boto3
+    category: clients
+    support:
+      lowerBound: 1.15.0
+
+  cassandra-driver:
+    displayName: Cassandra
+    category: clients
+
+  celery:
+    displayName: Celery
+    category: frameworks
+    support:
+      lowerBound: '4.3.0'
+
+  couchbase:
+    displayName: Couchbase
+    category: clients
+    support:
+      lowerBound: '2.3.5'
+
+  Django:
+    displayName: Django
+    category: frameworks
+    support:
+      lowerBound: '1.11'
+
+  fastapi:
+    displayName: FastAPI
+    category: frameworks
+    link: ../../ecosystem/python/components/fastapi.md
+    support:
+      lowerBound: '0.51.0'
+
+  flask:
+    displayName: Flask
+    category: frameworks
+    support:
+      lowerBound: '0.12.0'
+
+  google:
+    mapTo:
+    - google-cloud-storage
+    - google-cloud-pubsub
+
+  google.protobuf:
+    mapTo:
+    - protobuf
+
+  google-cloud-pubsub:
+    displayName: 'Google-cloud-pubsub'
+    category: clients
+
+  google-cloud-storage:
+    displayName: Google-cloud-storage
+    category: clients
+    support:
+      lowerBound: '1.24.0'
+
+  gevent:
+    displayName: Gevent
+    category: other
+    support:
+      lowerBound: '1.4.0'
+
+  grpcio:
+    displayName: Grpcio
+    category: clients
+    support:
+      lowerBound: '1.14.1'
+
+  logging:
+    displayName: Logging
+    category: logging
+    supportedAddedWithCommit: 6a502a62523de9fe845d4527f6c550b2c429f84b
+    support:
+      lowerBound: '0.4.9'
+
+  mysqlclient:
+    displayName: Mysqlclient
+    category: clients
+    support:
+      lowerBound: '1.3.14'
+
+  pika:
+    displayName: Pika
+    category: clients
+    support:
+      lowerBound: '1.0.0'
+
+  psycopg2-binary:
+    displayName: Psycopg2
+    category: clients
+    support:
+      lowerBound: '2.7.2'
+
+  redis:
+    displayName: Redis
+    category: clients
+    support:
+      lowerBound: '2.10.6'
+
+  pymongo:
+    displayName: Pymongo
+    category: clients
+    support:
+      lowerBound: '4.6.1'
+
+  requests:
+    displayName: Requests
+    category: clients
+    support:
+      lowerBound: '2.16.1'
+
+  sqlalchemy:
+    displayName: SQLAlchemy
+    category: clients
+    support:
+      lowerBound: '1.1.5'
+
+  pymysql:
+    displayName: PyMySQL
+    category: clients
+    support:
+      lowerBound: '0.6.7'
+
+  pyramid:
+    displayName: Pyramid
+    category: frameworks
+    support:
+      lowerBound: '1.65.0'
+
+  sanic:
+    displayName: Sanic
+    category: frameworks
+    support:
+      lowerBound: '19.0.0'
+
+  starlette:
+    displayName: Starlette
+    category: frameworks
+    supportedAddedWithCommit: 72b800f16b7c05750fc5a9c159cc0bdf74245d01
+    link: ../../ecosystem/python/components/starlette.md
+    support:
+      lowerBound: '0.12.13'
+
+  tornado:
+    displayName: Tornado
+    category: frameworks
+    support:
+      lowerBound: '4.5.3'
+
+  urllib3:
+    displayName: Urllib3
+    category: clients
+    support:
+      lowerBound: '1.26.5'
+
+
+additionalModuleNames:
+  # Django instrumentation is a middleware, so our search for @wrapt statements does not find it. But it is mentioned
+  # in the tests/requirements*.txt files, so we do not want to add the whole definition for Django support via
+  # additionalLibraries.
+  - django
+  - asgiref
+  - celery
+  - pyramid
+  - mysqlclient
+  - pymysql
+  - pymongo
+  - requests
+  - sqlalchemy
+  - gevent
+
+additionalLibraries:
+- name: asynqp
+  displayName: Asynqp
+  category: clients
+  supportedSinceVersion: < 2.0.0
+  support:
+    lowerBound: '0.5.1'
+    upperBound: '0.6'
+  noLatestAvailableVersionCheck: true
+- name: webapp2
+  displayName: Webapp2
+  category: frameworks
+  supportedSinceVersion: < 2.0.0
+  support:
+    lowerBound: &amp;gt;= 1.5
+    upperBound: < 3.0
+  noLatestAvailableVersionCheck: true
+- name: wsgi
+  displayName: WSGI
+  category: frameworks
+  supportedSinceVersion: Any
+  support:
+    lowerBound: PEP 333 &amp;gt;= 1.0
+    upperBound: PEP 333 &amp;gt;= 1.0
+  noLatestAvailableVersionCheck: true
+
+updateDocs:
+  documentationPage: src/pages/ecosystem/python/supported-versions.md
+  columnHeaders:
+  - Name
+  - Supported versions
+  - Python sensor version

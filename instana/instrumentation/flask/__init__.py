@@ -11,8 +11,7 @@ try:
     #
     # Blinker support is preferred but we do the best we can when it's not available.
     #
-    flask_version = tuple(map(int, flask.__version__.split('.')))
-    if flask_version < (2, 3, 0):
+    if hasattr(flask.signals, 'signals_available'):
       from flask.signals import signals_available
     else:
       # Beginning from 2.3.0 as stated in the notes

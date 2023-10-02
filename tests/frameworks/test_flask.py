@@ -6,10 +6,9 @@ from __future__ import absolute_import
 import sys
 import unittest
 import urllib3
-
 import flask
-flask_version = tuple(map(int, flask.__version__.split('.')))
-if flask_version < (2, 3, 0):
+
+if hasattr(flask.signals, 'signals_available'):
   from flask.signals import signals_available
 else:
   # Beginning from 2.3.0 as stated in the notes

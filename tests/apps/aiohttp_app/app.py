@@ -38,7 +38,7 @@ def aiohttp_server():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    app = web.Application(debug=False)
+    app = web.Application()
     app.add_routes([web.get('/', say_hello)])
     app.add_routes([web.get('/204', two_hundred_four)])
     app.add_routes([web.get('/401', four_hundred_one)])

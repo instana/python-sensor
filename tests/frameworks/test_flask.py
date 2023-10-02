@@ -6,7 +6,17 @@ from __future__ import absolute_import
 import sys
 import unittest
 import urllib3
-from flask.signals import signals_available
+
+import flask
+flask_version = tuple(map(int, flask.__version__.split('.')))
+if flask_version < (2, 3, 0):
+  from flask.signals import signals_available
+else:
+  # Beginning from 2.3.0 as stated in the notes
+  # https://flask.palletsprojects.com/en/2.3.x/changes/#version-2-3-0
+  # "Signals are always available. blinker>=1.6.2 is a required dependency.
+  # The signals_available attribute is deprecated. #5056"
+  signals_available = True
 
 import tests.apps.flask_app
 from instana.singletons import tracer

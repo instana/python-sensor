@@ -28,6 +28,14 @@ if sys.version_info.minor >= 10:
     # tests/opentracing/test_ot_span.py::TestOTSpan::test_stacks
     # TODO: Remove that once we find a workaround or DROP opentracing!
 
+if sys.version_info.minor >= 12:
+    # Currently the dependencies of sanic and aiohttp are not installable on 3.12
+    # PyLongObject’ {aka ‘struct _longobject’} has no member named ‘ob_digit’
+    collect_ignore_glob.append("*test_sanic*")
+    collect_ignore_glob.append("*test_aiohttp*")
+    # The asyncio also depends on aiohttp
+    collect_ignore_glob.append("*test_asyncio*")
+
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"
 # os.environ["INSTANA_DEBUG"] = "true"

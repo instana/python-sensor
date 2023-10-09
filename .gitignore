@@ -41,8 +41,6 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
-nosetests.json
 coverage.xml
 *,cover
 .hypothesis/

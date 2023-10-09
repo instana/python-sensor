@@ -14,8 +14,7 @@ from instana.singletons import tornado_tracer
 import tests.apps.tornado_server
 from ..helpers import testenv
 
-from nose.plugins.skip import SkipTest
-raise SkipTest("Non deterministic tests TBR")
+raise unittest.SkipTest("Non deterministic tests TBR")
 
 class TestTornadoClient(unittest.TestCase):
 

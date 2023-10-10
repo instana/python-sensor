@@ -28,7 +28,7 @@ def test_http_inject_with_dict():
     ot.tracer = InstanaTracer()
 
     carrier = {}
-    span = ot.tracer.start_span("nosetests")
+    span = ot.tracer.start_span("unittest")
     ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
 
     assert 'X-INSTANA-T' in carrier
@@ -43,7 +43,7 @@ def test_http_inject_with_list():
     ot.tracer = InstanaTracer()
 
     carrier = []
-    span = ot.tracer.start_span("nosetests")
+    span = ot.tracer.start_span("unittest")
     ot.tracer.inject(span.context, ot.Format.HTTP_HEADERS, carrier)
 
     assert ('X-INSTANA-T', span.context.trace_id) in carrier
@@ -152,7 +152,7 @@ def test_text_inject_with_dict():
     ot.tracer = InstanaTracer()
 
     carrier = {}
-    span = ot.tracer.start_span("nosetests")
+    span = ot.tracer.start_span("unittest")
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
     assert 'x-instana-t' in carrier
@@ -167,7 +167,7 @@ def test_text_inject_with_list():
     ot.tracer = InstanaTracer()
 
     carrier = []
-    span = ot.tracer.start_span("nosetests")
+    span = ot.tracer.start_span("unittest")
     ot.tracer.inject(span.context, ot.Format.TEXT_MAP, carrier)
 
     assert ('x-instana-t', span.context.trace_id) in carrier
@@ -237,7 +237,7 @@ def test_binary_inject_with_dict():
     ot.tracer = InstanaTracer()
 
     carrier = {}
-    span = ot.tracer.start_span("nosetests")
+    span = ot.tracer.start_span("unittest")
     ot.tracer.inject(span.context, ot.Format.BINARY, carrier)
 
     assert b'x-instana-t' in carrier
@@ -252,7 +252,7 @@ def test_binary_inject_with_list():
     ot.tracer = InstanaTracer()
 
     carrier = []
-    span = ot.tracer.start_span("nosetests")
+    span = ot.tracer.start_span("unittest")
     ot.tracer.inject(span.context, ot.Format.BINARY, carrier)
 
     assert (b'x-instana-t', str.encode(span.context.trace_id)) in carrier

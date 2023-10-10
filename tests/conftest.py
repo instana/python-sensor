@@ -5,6 +5,13 @@ import os
 import sys
 import pytest
 
+# Set our testing flags
+os.environ["INSTANA_TEST"] = "true"
+# os.environ["INSTANA_DEBUG"] = "true"
+
+# Make sure the instana package is fully loaded
+import instana
+
 collect_ignore_glob = []
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
@@ -35,14 +42,6 @@ if sys.version_info.minor >= 12:
     collect_ignore_glob.append("*test_aiohttp*")
     # The asyncio also depends on aiohttp
     collect_ignore_glob.append("*test_asyncio*")
-
-# Set our testing flags
-os.environ["INSTANA_TEST"] = "true"
-# os.environ["INSTANA_DEBUG"] = "true"
-
-# Make sure the instana package is fully loaded
-import instana
-
 
 @pytest.fixture(scope='session')
 def celery_config():

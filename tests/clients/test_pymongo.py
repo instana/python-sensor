@@ -23,19 +23,19 @@ pymongoversion = pytest.mark.skipif(
 
 class TestPyMongoTracer(unittest.TestCase):
     def setUp(self):
-        self.conn = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),
-                                        username=testenv['mongodb_user'], password=testenv['mongodb_pw'])
-        self.conn.test.records.delete_many(filter={})
+        self.client = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),
+                                          username=testenv['mongodb_user'], password=testenv['mongodb_pw'])
+        self.client.test.records.delete_many(filter={})
 
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
 
     def tearDown(self):
-        return None
+        self.client.close()
 
     def test_successful_find_query(self):
         with tracer.start_active_span("test"):
-            self.conn.test.records.find_one({"type": "string"})
+            self.client.test.records.find_one({"type": "string"})
 
         self.assertIsNone(tracer.active_span)
 
@@ -60,7 +60,7 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def test_successful_insert_query(self):
         with tracer.start_active_span("test"):
-            self.conn.test.records.insert_one({"type": "string"})
+            self.client.test.records.insert_one({"type": "string"})
 
         self.assertIsNone(tracer.active_span)
 
@@ -84,7 +84,7 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def test_successful_update_query(self):
         with tracer.start_active_span("test"):
-            self.conn.test.records.update_one({"type": "string"}, {"$set": {"type": "int"}})
+            self.client.test.records.update_one({"type": "string"}, {"$set": {"type": "int"}})
 
         self.assertIsNone(tracer.active_span)
 
@@ -117,7 +117,7 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def test_successful_delete_query(self):
         with tracer.start_active_span("test"):
-            self.conn.test.records.delete_one(filter={"type": "string"})
+            self.client.test.records.delete_one(filter={"type": "string"})
 
         self.assertIsNone(tracer.active_span)
 
@@ -145,7 +145,7 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def test_successful_aggregate_query(self):
         with tracer.start_active_span("test"):
-            self.conn.test.records.count_documents({"type": "string"})
+            self.client.test.records.count_documents({"type": "string"})
 
         self.assertIsNone(tracer.active_span)
 
@@ -177,7 +177,7 @@ class TestPyMongoTracer(unittest.TestCase):
         reducer = "function (key, values) { return len(values); }"
 
         with tracer.start_active_span("test"):
-            self.conn.test.records.map_reduce(bson.code.Code(mapper), bson.code.Code(reducer), "results",
+            self.client.test.records.map_reduce(bson.code.Code(mapper), bson.code.Code(reducer), "results",
                                               query={"x": {"$lt": 2}})
 
         self.assertIsNone(tracer.active_span)
@@ -208,9 +208,9 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def test_successful_mutiple_queries(self):
         with tracer.start_active_span("test"):
-            self.conn.test.records.bulk_write([pymongo.InsertOne({"type": "string"}),
-                                               pymongo.UpdateOne({"type": "string"}, {"$set": {"type": "int"}}),
-                                               pymongo.DeleteOne({"type": "string"})])
+            self.client.test.records.bulk_write([pymongo.InsertOne({"type": "string"}),
+                                                 pymongo.UpdateOne({"type": "string"}, {"$set": {"type": "int"}}),
+                                                 pymongo.DeleteOne({"type": "string"})])
 
         self.assertIsNone(tracer.active_span)
 

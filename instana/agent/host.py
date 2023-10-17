@@ -115,7 +115,6 @@ class HostAgent(BaseAgent):
             self._boot_pid = current_pid
             logger.debug("Fork detected; Handling like a pro...")
             self.handle_fork()
-            return False
 
         if self.machine.fsm.current in ["wait4init", "good2go"]:
             return True

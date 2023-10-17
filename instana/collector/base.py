@@ -115,9 +115,9 @@ class BaseCollector(object):
         e.g. If the host agent disappeared, we won't be able to report final data.
         @return: None
         """
-        logger.debug("Collector.shutdown: Reporting final data.")
         self.thread_shutdown.set()
         if report_final is True:
+            logger.debug("Collector.shutdown: Reporting final data.")
             self.prepare_and_report_data()
         self.started = False
 

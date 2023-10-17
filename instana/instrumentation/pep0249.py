@@ -24,10 +24,9 @@ class CursorWrapper(wrapt.ObjectProxy):
         try:
             span.set_tag(ext.SPAN_KIND, 'exit')
 
-            if 'db' in self._connect_params[1]:
-                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['db'])
-            elif 'database' in self._connect_params[1]:
-                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1]['database'])
+            db_parameter_name = next((p for p in ('db', 'database', 'dbname') if p in self._connect_params[1]), None)
+            if db_parameter_name:
+                span.set_tag(ext.DATABASE_INSTANCE, self._connect_params[1][db_parameter_name])
 
             span.set_tag(ext.DATABASE_STATEMENT, sql_sanitizer(sql))
             span.set_tag(ext.DATABASE_USER, self._connect_params[1]['user'])

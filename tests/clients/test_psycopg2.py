@@ -17,9 +17,15 @@ logger = logging.getLogger(__name__)
 
 class TestPsycoPG2(unittest.TestCase):
     def setUp(self):
-        self.db = psycopg2.connect(host=testenv['postgresql_host'], port=testenv['postgresql_port'],
-                                   user=testenv['postgresql_user'], password=testenv['postgresql_pw'],
-                                   database=testenv['postgresql_db'])
+        deprecated_param_name = self.shortDescription() == 'test_deprecated_parameter_database'
+        kwargs = {
+            'host': testenv['postgresql_host'],
+            'port': testenv['postgresql_port'],
+            'user': testenv['postgresql_user'],
+            'password': testenv['postgresql_pw'],
+            'dbname' if not deprecated_param_name else 'database': testenv['postgresql_db'],
+        }
+        self.db = psycopg2.connect(**kwargs)
 
         database_setup_query = """
         DROP TABLE IF EXISTS users;
@@ -330,3 +336,29 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual(db_span.data["pg"]["stmt"], "SELECT * from users")
         self.assertEqual(db_span.data["pg"]["host"], testenv["postgresql_host"])
         self.assertEqual(db_span.data["pg"]["port"], testenv["postgresql_port"])
+
+    def test_deprecated_parameter_database(self):
+        """test_deprecated_parameter_database"""
+
+        with tracer.start_active_span('test'):
+            self.cursor.execute("""SELECT * from users""")
+            affected_rows = self.cursor.rowcount
+            result = self.cursor.fetchone()
+            self.db.commit()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(6, len(result))
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span, test_span = spans
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "postgres")
+        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])

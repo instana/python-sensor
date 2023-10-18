@@ -15,9 +15,16 @@ logger = logging.getLogger(__name__)
 
 class TestPyMySQL(unittest.TestCase):
     def setUp(self):
-        self.db = pymysql.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
-                                  user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
-                                  db=testenv['mysql_db'])
+        deprecated_param_name = self.shortDescription() == 'test_deprecated_parameter_db'
+        kwargs = {
+            'host': testenv['mysql_host'],
+            'port': testenv['mysql_port'],
+            'user': testenv['mysql_user'],
+            'passwd': testenv['mysql_pw'],
+            'database' if not deprecated_param_name else 'db': testenv['mysql_db'],
+        }
+        self.db = pymysql.connect(**kwargs)
+
         database_setup_query = """
         DROP TABLE IF EXISTS users; |
         CREATE TABLE users(
@@ -286,3 +293,27 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from users")
         self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
         self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
+
+    def test_deprecated_parameter_db(self):
+        """test_deprecated_parameter_db"""
+
+        with tracer.start_active_span('test'):
+            affected_rows = self.cursor.execute("""SELECT * from users""")
+            result = self.cursor.fetchone()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(3, len(result))
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        db_span, test_span = spans
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual(test_span.t, db_span.t)
+        self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "mysql")
+        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])

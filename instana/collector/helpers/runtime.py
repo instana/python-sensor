@@ -181,7 +181,7 @@ class RuntimeHelper(BaseHelper):
 
             if 'AUTOWRAPT_BOOTSTRAP' in os.environ:
                 snapshot_payload['m'] = 'Autowrapt'
-            elif 'INSTANA_MAGIC' in os.environ:
+            elif '/tmp/.instana/python' in sys.path:
                 snapshot_payload['m'] = 'AutoTrace'
             else:
                 snapshot_payload['m'] = 'Manual'

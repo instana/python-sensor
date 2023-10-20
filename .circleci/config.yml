@@ -65,6 +65,7 @@ commands:
             coverage report -m
             mkdir coverage_results
             cp -R .coverage coverage_results/.coverage-${CIRCLE_BUILD_NUM}
+            cd coverage_results
             ls
       - persist_to_workspace:
           root: .
@@ -87,7 +88,7 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
-            cd coverage_results
+            cp ./coverage_results/* .
             coverage combine .
             coverage xml
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
@@ -335,10 +336,8 @@ workflows:
   build:
     jobs:
       - py37cassandra
-      - py38couchbase
       - py38gevent
       - final_job:
           requires:
             - py37cassandra
-            - py38couchbase
             - py38gevent

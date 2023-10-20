@@ -58,16 +58,53 @@ commands:
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_TEST: "<<parameters.gevent>>"
           command: |
+            echo "CIRCLE_BUILD_NUM"
+            echo ${CIRCLE_BUILD_NUM}
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
             coverage report -m
-            coverage combine
-            coverage html
+            mkdir coverage_results
+            cp -R .coverage coverage_results/.coverage-${CIRCLE_BUILD_NUM}
+      - persist_to_workspace:
+          root: .
+          paths:
+            - coverage_results
 
   store-pytest-results:
     steps:
       - store_test_results:
           path: test-results
+  run_sonarqube:
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install Java
+          command: |
+            sudo apt-get update
+            sudo apt-get install openjdk-11-jdk
+      - run:
+          name: Run SonarQube to report the coverage
+          command: |
+            cd coverage_results
+            coverage combine .
+            coverage xml
+            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
+            unzip -d /tmp /tmp/sonar-scanner-cli.zip
+            if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
+              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
+                -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
+                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
+            else
+              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
+                -Dsonar.branch.name="${CIRCLE_BRANCH}"
+            fi
+          store_artifacts:
+            path: htmlcov
 
   store-coverage-report:
     steps:
@@ -296,3 +333,14 @@ workflows:
       - py37cassandra
       - py38couchbase
       - py38gevent
+      - run_sonarqube:
+          requires:
+            - python37
+            - python38
+            - python39
+            - python310
+            - python311
+            - python312
+            - py37cassandra
+            - py38couchbase
+            - py38gevent

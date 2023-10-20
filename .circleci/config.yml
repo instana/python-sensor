@@ -306,6 +306,11 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  final_job:
+    steps:
+      - checkout
+      - run_sonarqube
+
   py38gevent:
     docker:
       - image: cimg/python:3.8.17
@@ -333,7 +338,7 @@ workflows:
       - py37cassandra
       - py38couchbase
       - py38gevent
-      - run_sonarqube:
+      - final_job:
           requires:
             - python37
             - python38

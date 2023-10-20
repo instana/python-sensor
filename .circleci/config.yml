@@ -307,6 +307,8 @@ jobs:
       - store-coverage-report
 
   final_job:
+    docker:
+      - image: cimg/python:3.8.17
     steps:
       - checkout
       - run_sonarqube

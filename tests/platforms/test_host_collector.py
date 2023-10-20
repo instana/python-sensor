@@ -74,6 +74,8 @@ class TestHostCollector(unittest.TestCase):
         self.assertEqual(python_plugin['entityId'], str(os.getpid()))
         self.assertIn('data', python_plugin)
         self.assertIn('snapshot', python_plugin['data'])
+        self.assertIn('m', python_plugin['data']['snapshot'])
+        self.assertEqual('Manual', python_plugin['data']['snapshot']['m'])
         self.assertIn('metrics', python_plugin['data'])
 
         # Validate that all metrics are reported on the first run
@@ -153,6 +155,8 @@ class TestHostCollector(unittest.TestCase):
         self.assertEqual(python_plugin['entityId'], str(os.getpid()))
         self.assertIn('data', python_plugin)
         self.assertIn('snapshot', python_plugin['data'])
+        self.assertIn('m', python_plugin['data']['snapshot'])
+        self.assertEqual('Manual', python_plugin['data']['snapshot']['m'])
         self.assertNotIn('metrics', python_plugin['data'])
 
     @patch.object(HostCollector, "should_send_snapshot_data")
@@ -165,6 +169,8 @@ class TestHostCollector(unittest.TestCase):
         self.assertIn('snapshot', payload['metrics']['plugins'][0]['data'])
         snapshot =  payload['metrics']['plugins'][0]['data']['snapshot']
         self.assertTrue(snapshot)
+        self.assertIn('m', snapshot)
+        self.assertEqual('Manual', snapshot['m'])
         self.assertIn('version', snapshot)
         self.assertGreater(len(snapshot['versions']), 5)
         self.assertEqual(snapshot['versions']['instana'], VERSION)
@@ -184,6 +190,8 @@ class TestHostCollector(unittest.TestCase):
         self.assertIn('snapshot', payload['metrics']['plugins'][0]['data'])
         snapshot =  payload['metrics']['plugins'][0]['data']['snapshot']
         self.assertTrue(snapshot)
+        self.assertIn('m', snapshot)
+        self.assertEqual('Manual', snapshot['m'])
         self.assertIn('version', snapshot)
         self.assertEqual(len(snapshot['versions']), 1)
         self.assertEqual(snapshot['versions']['instana'], VERSION)

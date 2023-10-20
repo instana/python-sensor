@@ -63,6 +63,7 @@ commands:
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
             coverage report -m
+            coverage html
             mkdir coverage_results
             cp -R .coverage coverage_results/.coverage-${CIRCLE_BUILD_NUM}
             cd coverage_results
@@ -88,6 +89,8 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
+            pwd
+            ls
             cp ./coverage_results/* .
             coverage combine .
             coverage xml

@@ -204,7 +204,7 @@ jobs:
 
   python312:
     docker:
-      - image: python:3.12
+      - image: cimg/python:3.12.0
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -221,12 +221,6 @@ jobs:
           - test-subscription
     working_directory: ~/repo
     steps:
-      - run:
-          name: Install extra Python Dependencies for 3.12
-          command: |
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            source ~/.cargo/env
-
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements-312.txt"

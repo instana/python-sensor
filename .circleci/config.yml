@@ -91,7 +91,7 @@ commands:
           command: |
             pwd
             ls
-            cp ./coverage_results/* .
+            cp coverage_results/* .
             coverage combine .
             coverage xml
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip

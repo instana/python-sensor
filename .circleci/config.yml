@@ -95,7 +95,7 @@ commands:
             ls -a /home/circleci/project/coverage_results
             cd /home/circleci/project/coverage_results
             ls -a
-            cp -a * /home/circleci/project/
+            cp -a . /home/circleci/project/
             ls -a
             coverage combine .
             coverage xml

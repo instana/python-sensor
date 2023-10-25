@@ -18,6 +18,7 @@ from instana.util.runtime import determine_service_name
 
 from .base import BaseHelper
 
+PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT = '/tmp/.instana/python'
 
 class RuntimeHelper(BaseHelper):
     """ Helper class to collect snapshot and metrics for this Python runtime """
@@ -181,7 +182,7 @@ class RuntimeHelper(BaseHelper):
 
             if 'AUTOWRAPT_BOOTSTRAP' in os.environ:
                 snapshot_payload['m'] = 'Autowrapt'
-            elif '/tmp/.instana/python' in sys.path:
+            elif PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT in sys.path:
                 snapshot_payload['m'] = 'AutoTrace'
             else:
                 snapshot_payload['m'] = 'Manual'

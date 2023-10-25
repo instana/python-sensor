@@ -65,6 +65,7 @@ commands:
             coverage report -m
             coverage html
             mkdir coverage_results
+            ls -A
             cp -R .coverage coverage_results/.coverage-${CIRCLE_BUILD_NUM}
             cd coverage_results
             ls

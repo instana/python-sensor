@@ -68,7 +68,7 @@ commands:
             ls -A
             cp -R .coverage coverage_results/.coverage-${CIRCLE_BUILD_NUM}
             cd coverage_results
-            ls
+            ls -A
       - persist_to_workspace:
           root: .
           paths:

@@ -91,6 +91,7 @@ commands:
           command: |
             pwd
             ls
+            ls coverage_results
             cp coverage_results/* .
             coverage combine .
             coverage xml

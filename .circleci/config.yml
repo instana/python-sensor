@@ -92,10 +92,9 @@ commands:
           command: |
             pwd
             . venv/bin/activate
-            ls -a /home/circleci/project/coverage_results
             cd /home/circleci/project/coverage_results
-            ls -a
             cp -a . /home/circleci/project/
+            cd /home/circleci/project/
             ls -a
             coverage combine .
             coverage xml

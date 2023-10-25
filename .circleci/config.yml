@@ -100,14 +100,14 @@ commands:
             coverage xml -i
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
-            export SONARQUBE_TOKEN=((sonarqube-instana-io-token))
-            echo ${CIRCLE_PR_NUMBER}
+            echo ${SONARQUBE_LOGIN}
             echo ${SONARQUBE_TOKEN}
             echo ${CIRCLE_BRANCH}
+            echo ${CIRCLE_PR_NUMBER}
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
               /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
                 -Dsonar.host.url=https://sonarqube.instana.io/ \
-                -Dsonar.login="${SONARQUBE_TOKEN}" \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
                 -Dsonar.projectKey=Python-Tracer \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"

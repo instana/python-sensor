@@ -93,7 +93,7 @@ commands:
             pwd
             ls
             cd 
-            ls -a coverage_results
+            ls -a /home/circleci/project/coverage_results
             cp coverage_results/* .
             coverage combine .
             coverage xml

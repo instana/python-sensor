@@ -90,10 +90,17 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
-            pwd
-            . venv/bin/activate
+            echo "Files under coverage_results"
             ls -a /home/circleci/project/coverage_results
-            cp  /home/circleci/project/coverage_results/* /home/circleci/project/
+            cd /home/circleci/project/coverage_results
+            cp * /home/circleci/project
+            ls -a 
+            pwd
+            cd /home/circleci/project
+            pwd
+            ls -a 
+            . venv/bin/activate
+          # cp  /home/circleci/project/coverage_results/* /home/circleci/project/
             coverage combine .
             coverage xml
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip

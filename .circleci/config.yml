@@ -347,9 +347,23 @@ workflows:
   version: 2
   build:
     jobs:
+      - python37
+      - python38
+      - python39
+      - python310
+      - python311
+      - python312
       - py37cassandra
+      - py38couchbase
       - py38gevent
       - final_job:
           requires:
+            - python37
+            - python38
+            - python39
+            - python310
+            - python311
+            - python312
             - py37cassandra
+            - py38couchbase
             - py38gevent

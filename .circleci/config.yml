@@ -66,7 +66,7 @@ commands:
             coverage html
             mkdir coverage_results
             ls -A
-            cp -R .coverage coverage_results/.coverage-${CIRCLE_BUILD_NUM}
+            cp -R .coverage coverage_results/.coverage.${CIRCLE_BUILD_NUM}
             cd coverage_results
             ls -A
       - persist_to_workspace:
@@ -96,7 +96,7 @@ commands:
             cp -a . /home/circleci/project/
             cd /home/circleci/project/
             ls -a -ltr
-            coverage combine .coverage*
+            coverage combine
             coverage xml -i
             ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip

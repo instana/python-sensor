@@ -95,10 +95,10 @@ commands:
             cd /home/circleci/project/coverage_results
             cp -a . /home/circleci/project/
             cd /home/circleci/project/
-            ls -a
+            ls -a -ltr
             coverage combine .coverage*
             coverage xml -i
-            ls -a
+            ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then

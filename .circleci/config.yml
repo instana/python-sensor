@@ -97,8 +97,10 @@ commands:
             cd /home/circleci/project/
             ls -a -ltr
             coverage combine
+            echo "started coverage html"
+            covergae html
             echo "started coverage xml"
-            coverage xml 
+            coverage xml -i
             echo "end coverage xml"
             ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip

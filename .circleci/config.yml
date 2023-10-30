@@ -98,7 +98,7 @@ commands:
             ls -a -ltr
             coverage combine
             echo "started coverage html"
-            covergae html
+            coverage html
             echo "started coverage xml"
             coverage xml -i
             echo "end coverage xml"

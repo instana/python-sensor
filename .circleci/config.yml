@@ -97,7 +97,7 @@ commands:
             cd /home/circleci/project/
             ls -a -ltr
             coverage combine
-            coverage xml -i
+            coverage xml
             ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
@@ -347,23 +347,9 @@ workflows:
   version: 2
   build:
     jobs:
-      - python37
-      - python38
-      - python39
-      - python310
-      - python311
-      - python312
-      - py37cassandra
       - py38couchbase
       - py38gevent
       - final_job:
           requires:
-            - python37
-            - python38
-            - python39
-            - python310
-            - python311
-            - python312
-            - py37cassandra
             - py38couchbase
             - py38gevent

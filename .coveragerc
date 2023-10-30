@@ -1,0 +1,6 @@
+[run]
+source =
+   instana/*
+   tests/*
+   .
+

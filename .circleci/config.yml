@@ -95,8 +95,11 @@ commands:
             cd /home/circleci/project/coverage_results
             cp -a . /home/circleci/project/
             cd /home/circleci/project/
+            coverage report -m
             ls -a -ltr
             coverage combine
+            echo "after coverage combine"
+            ls -a -ltr 
             echo "started coverage html"
             coverage html
             echo "started coverage xml"

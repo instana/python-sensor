@@ -58,17 +58,13 @@ commands:
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_TEST: "<<parameters.gevent>>"
           command: |
-            pwd
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
-            ls -a -ltr
             coverage report -m
             coverage html
             mkdir coverage_results
-            ls -A
             cp -R .coverage coverage_results/.coverage.${CIRCLE_BUILD_NUM}
             cd coverage_results
-            ls -A
       - persist_to_workspace:
           root: .
           paths:
@@ -90,17 +86,12 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
-            pwd
             . venv/bin/activate
-            ls -a -ltr
             coverage combine ./coverage_results
-            ls -a -ltr
             coverage xml -i
-            ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
-              echo "inside if"
               /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
                 -Dsonar.host.url=${SONARQUBE_URL} \
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
@@ -113,7 +104,6 @@ commands:
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.projectKey=Python-Tracer \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
-              echo "inside else"
             fi
           store_artifacts:
             path: htmlcov

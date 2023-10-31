@@ -97,6 +97,14 @@ commands:
             cd /home/circleci/project/
             ls -a -ltr
             coverage combine
+            ls -a -ltr
+            coverage config
+            echo "##########after coverage config##########"
+            coverage sys
+            echo "##########after coverage sys##########"
+            coverage data
+            echo "##########after coverage data##########"
+            echo "after coverage combine"
             coverage report -m
             echo "after coverage combine"
             ls -a -ltr 

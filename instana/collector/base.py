@@ -35,7 +35,7 @@ class BaseCollector(object):
         if env_is_test:
             # Override span queue with a multiprocessing version
             # The test suite runs background applications - some in background threads,
-            # others in background processes.  This multiprocess queue allows us to collect
+            # others in background processes.  This multiprocessing queue allows us to collect
             # up spans from all sources.
             import multiprocessing
             self.span_queue = multiprocessing.Queue()
@@ -59,8 +59,8 @@ class BaseCollector(object):
         # List of helpers that help out in data collection
         self.helpers = []
 
-        # Lock used syncronize reporting - no updates when sending
-        # Used by the background reporting thread.  Used to syncronize report attempts and so
+        # Lock used synchronize reporting - no updates when sending
+        # Used by the background reporting thread.  Used to synchronize report attempts and so
         # that we never have two in progress at once.
         self.background_report_lock = threading.Lock()
 
@@ -70,7 +70,7 @@ class BaseCollector(object):
         # Flag to indicate if start/shutdown state
         self.started = False
 
-        # Startime of fetching metadata
+        # Start time of fetching metadata
         self.fetching_start_time = 0
 
     def is_reporting_thread_running(self):
@@ -95,7 +95,7 @@ class BaseCollector(object):
                 timer.name = "Collector Timed Start"
                 timer.start()
                 return
-            logger.debug("Collecter.start non-fatal: call but thread already running (started: %s)", self.started)
+            logger.debug("BaseCollector.start non-fatal: call but thread already running (started: %s)", self.started)
             return
 
         if self.agent.can_send():

@@ -59,18 +59,9 @@ commands:
             GEVENT_TEST: "<<parameters.gevent>>"
           command: |
             pwd
-            echo "CIRCLE_BUILD_NUM"
-            echo ${CIRCLE_BUILD_NUM}
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
             ls -a -ltr
-            coverage debug config
-            echo "##########after coverage config##########"
-            coverage debug sys
-            echo "##########after coverage sys##########"
-            coverage  debug data
-            echo "##########after coverage data##########"
-            echo "after coverage data"
             coverage report -m
             coverage html
             mkdir coverage_results
@@ -104,21 +95,10 @@ commands:
             ls -a -ltr
             coverage combine ./coverage_results
             ls -a -ltr
-            coverage debug config
-            echo "##########after coverage config##########"
-            coverage debug sys
-            echo "##########after coverage sys##########"
-            coverage  debug data
-            echo "##########after coverage data##########"
-            echo "after coverage combine"
             coverage report -m
-            echo "after coverage combine"
             ls -a -ltr 
-            echo "started coverage html"
             coverage html
-            echo "started coverage xml"
             coverage xml -i
-            echo "end coverage xml"
             ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
@@ -370,7 +350,9 @@ workflows:
   version: 2
   build:
     jobs:
+      - py38couchbase
       - py38gevent
       - final_job:
           requires:
+            - py38couchbase
             - py38gevent

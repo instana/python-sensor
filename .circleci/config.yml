@@ -87,18 +87,9 @@ commands:
       - store_test_results:
           path: test-results
   run_sonarqube:
-    parameters:
-      tests:
-        default: "tests"
-        type: string
     steps:
       - run:
           name: Install Java
-          environment:
-            INSTANA_TEST: "true"
-            CASSANDRA_TEST: "<<parameters.cassandra>>"
-            COUCHBASE_TEST: "<<parameters.couchbase>>"
-            GEVENT_TEST: "<<parameters.gevent>>"
           command: |
             sudo apt-get update
             sudo apt-get install openjdk-11-jdk

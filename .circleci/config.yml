@@ -98,11 +98,11 @@ commands:
             ls -a -ltr
             coverage combine
             ls -a -ltr
-            coverage config
+            coverage debug config
             echo "##########after coverage config##########"
-            coverage sys
+            coverage debug sys
             echo "##########after coverage sys##########"
-            coverage data
+            coverage  debug data
             echo "##########after coverage data##########"
             echo "after coverage combine"
             coverage report -m

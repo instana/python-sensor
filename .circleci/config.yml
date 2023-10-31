@@ -62,6 +62,14 @@ commands:
             echo ${CIRCLE_BUILD_NUM}
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
+            ls -a -ltr
+            coverage debug config
+            echo "##########after coverage config##########"
+            coverage debug sys
+            echo "##########after coverage sys##########"
+            coverage  debug data
+            echo "##########after coverage data##########"
+            echo "after coverage data"
             coverage report -m
             coverage html
             mkdir coverage_results

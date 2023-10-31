@@ -102,10 +102,6 @@ commands:
             pwd
             . venv/bin/activate
             ls -a -ltr
-         #  cd ./coverage_results
-         #  cp -a . /home/circleci/project/
-         #  cd /home/circleci/project/
-            ls -a -ltr
             coverage combine ./coverage_results
             ls -a -ltr
             coverage debug config

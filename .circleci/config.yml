@@ -95,9 +95,6 @@ commands:
             ls -a -ltr
             coverage combine ./coverage_results
             ls -a -ltr
-            coverage report -m
-            ls -a -ltr 
-            coverage html
             coverage xml -i
             ls -a -ltr
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip

@@ -1,6 +1,6 @@
 [path]
 source =
-   .
+   ./instana
 [run]
 source =
-   .
+   ./instana

@@ -62,11 +62,51 @@ commands:
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
             coverage report -m
             coverage html
+            mkdir coverage_results
+            cp -R .coverage coverage_results/.coverage.${CIRCLE_BUILD_NUM}
+            cd coverage_results
+      - persist_to_workspace:
+          root: .
+          paths:
+            - coverage_results
 
   store-pytest-results:
     steps:
       - store_test_results:
           path: test-results
+  run_sonarqube:
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install Java
+          command: |
+            sudo apt-get update
+            sudo apt-get install openjdk-11-jdk
+      - run:
+          name: Run SonarQube to report the coverage
+          command: |
+            . venv/bin/activate
+            coverage combine ./coverage_results
+            coverage xml -i
+            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
+            unzip -d /tmp /tmp/sonar-scanner-cli.zip
+            if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
+              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+                -Dsonar.host.url=${SONARQUBE_URL} \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
+                -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
+                -Dsonar.projectKey=Python-Tracer \
+                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
+            else
+              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+                -Dsonar.host.url=https://sonarqube.instana.io/ \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
+                -Dsonar.projectKey=Python-Tracer \
+                -Dsonar.branch.name="${CIRCLE_BRANCH}"
+            fi
+          store_artifacts:
+            path: htmlcov
 
   store-coverage-report:
     steps:
@@ -262,6 +302,17 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  final_job:
+    docker:
+      - image: cimg/python:3.8.17
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+            requirements: "tests/requirements-307.txt"
+      - store-pytest-results
+      - run_sonarqube
+
   py38gevent:
     docker:
       - image: cimg/python:3.8.17
@@ -289,3 +340,14 @@ workflows:
       - py37cassandra
       - py38couchbase
       - py38gevent
+      - final_job:
+          requires:
+            - python37
+            - python38
+            - python39
+            - python310
+            - python311
+            - python312
+            - py37cassandra
+            - py38couchbase
+            - py38gevent

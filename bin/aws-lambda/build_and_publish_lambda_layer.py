@@ -9,7 +9,15 @@ import json
 import shutil
 import time
 import distutils.spawn
-from subprocess import call, check_output
+from subprocess import call, check_call, check_output, CalledProcessError, DEVNULL
+
+for profile in ('china', 'non-china'):
+    try:
+        check_call(['aws', 'configure', 'list', '--profile', profile], stdout=DEVNULL)
+    except CalledProcessError:
+        raise ValueError(
+            f"Please ensure, that your aws configuration includes a profile called '{profile}'"
+             "and has the 'access_key' and 'secret_key' configured for the respective regions")
 
 # Either -dev or -prod must be specified (and nothing else)
 if len(sys.argv) != 2 or (('-dev' not in sys.argv) and ('-prod' not in sys.argv)):
@@ -67,11 +75,17 @@ fq_zip_filename = os.getcwd() + '/%s' % zip_filename
 aws_zip_filename = "fileb://%s" % fq_zip_filename
 print("Zipfile should be at: ", fq_zip_filename)
 
+cn_regions = [
+           'cn-north-1',
+           'cn-northwest-1',
+           ]
+
 if dev_mode:
-    regions = ['us-west-1']
+    target_regions = ['us-west-1']
     LAYER_NAME = "instana-py-dev"
 else:
-    regions = [
+
+    target_regions = [
                'af-south-1',
                'ap-east-1',
                'ap-northeast-1',
@@ -107,14 +121,17 @@ else:
 
 published = dict()
 
-for region in regions:
+for region in target_regions:
     print("===> Uploading layer to AWS %s " % region)
+    profile = 'china' if region in cn_regions else 'non-china'
+
     response = check_output(["aws", "--region", region, "lambda", "publish-layer-version",
                              "--description",
                              "Provides Instana tracing and monitoring of AWS Lambda functions built with Python",
                              "--license-info", "MIT", "--output", "json",
                              "--layer-name", LAYER_NAME, "--zip-file", aws_zip_filename,
-                             "--compatible-runtimes", "python3.7", "python3.8", "python3.9", "python3.10"])
+                             "--compatible-runtimes", "python3.7", "python3.8", "python3.9", "python3.10",
+                             "--profile", profile])
 
     json_data = json.loads(response)
     version = json_data['Version']
@@ -127,7 +144,8 @@ for region in regions:
                                  "--statement-id", "public-permission-all-accounts",
                                  "--principal", "*",
                                  "--action", "lambda:GetLayerVersion",
-                                 "--output", "text"])
+                                 "--output", "text",
+                                 "--profile", profile])
 
     published[region] = json_data['LayerVersionArn']
 

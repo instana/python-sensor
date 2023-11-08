@@ -22,12 +22,5 @@ class TestAgent(HostAgent):
         """
         return {'e': os.getpid(), 'h': 'fake'}
 
-    def can_send(self):
-        """
-        Are we in a state where we can send data?
-        @return: Boolean
-        """
-        return True
-
     def report_traces(self, spans):
         logger.warning("Tried to report_traces with a TestAgent!")

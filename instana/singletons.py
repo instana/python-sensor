@@ -19,6 +19,7 @@ span_recorder = None
 aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
 env_is_test = "INSTANA_TEST" in os.environ
 env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
+env_is_aws_eks_fargate = (os.environ.get("INSTANA_TRACER_ENVIRONMENT") == "AWS_EKS_FARGATE")
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 k_service = os.environ.get("K_SERVICE")
 k_configuration = os.environ.get("K_CONFIGURATION")
@@ -52,6 +53,12 @@ elif env_is_google_cloud_run:
     from instana.recorder import StanRecorder
 
     agent = GCRAgent(service=k_service, configuration=k_configuration, revision=k_revision)
+    span_recorder = StanRecorder(agent)
+elif env_is_aws_eks_fargate:
+    from .agent.aws_eks_fargate import EKSFargateAgent
+    from .recorder import StanRecorder
+
+    agent = EKSFargateAgent()
     span_recorder = StanRecorder(agent)
 else:
     from .agent.host import HostAgent

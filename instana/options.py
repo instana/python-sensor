@@ -155,6 +155,10 @@ class AWSFargateOptions(ServerlessOptions):
 
         self.zone = os.environ.get("INSTANA_ZONE", None)
 
+class EKSFargateOptions(AWSFargateOptions):
+    """ Options class for EKS Pods on AWS Fargate. Holds settings specific to EKS Pods on AWS Fargate. """
+    def __init__(self, **kwds):
+        super(EKSFargateOptions, self).__init__()
 
 class GCROptions(ServerlessOptions):
     """ Options class for Google Cloud Run.  Holds settings specific to Google Cloud Run. """

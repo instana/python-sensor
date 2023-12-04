@@ -1,7 +1,3 @@
-<div align="center">
-<img src="https://disznc.s3.amazonaws.com/python-dashboard-2019.gif"/>
-</div>
-
 # Instana
 
 The `instana` Python package collects key metrics and distributed traces for [Instana].

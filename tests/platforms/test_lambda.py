@@ -230,6 +230,7 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
+        self.assertEqual(200, span.data['http']['status'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
         self.assertEqual("foo=['bar']", span.data['http']['params'])
@@ -293,6 +294,7 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
+        self.assertEqual(200, span.data['http']['status'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
         self.assertEqual("foo=['bar']", span.data['http']['params'])
@@ -356,6 +358,7 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
+        self.assertEqual(200, span.data['http']['status'])
         self.assertEqual('/my/path', span.data['http']['url'])
         self.assertEqual('/my/{resource}', span.data['http']['path_tpl'])
         self.assertEqual("secret=key&q=term", span.data['http']['params'])
@@ -420,6 +423,7 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
+        self.assertEqual(200, span.data['http']['status'])
         self.assertEqual('/path/to/resource', span.data['http']['url'])
         self.assertEqual("foo=['bar']", span.data['http']['params'])
 

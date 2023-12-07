@@ -48,7 +48,7 @@ setup(name='instana',
                         'protobuf<5.0.0',
                         'requests>=2.6.0',
                         'six>=1.12.0',
-                        'urllib3>=1.26.18',],
+                        'urllib3>=1.26.5',],
       entry_points={
                     'instana':  ['string = instana:load'],
                     'flask':    ['string = instana:load'],  # deprecated: use same as 'instana'

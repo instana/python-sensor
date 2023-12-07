@@ -4,4 +4,4 @@ gevent>=1.4.0
 mock>=2.0.0
 pyramid>=2.0.1
 pytest>=4.6
-urllib3>=1.26.18
+urllib3>=1.26.5

@@ -42,4 +42,4 @@ sqlalchemy>=2.0.0
 spyne>=2.14.0
 
 uvicorn>=0.13.4
-urllib3>=1.26.18
+urllib3>=1.26.5

@@ -6,6 +6,7 @@ Instrumentation for AWS Lambda functions
 """
 import sys
 import wrapt
+import opentracing.ext.tags as ext
 
 from ...log import logger
 from ...singletons import env_is_aws_lambda
@@ -35,6 +36,8 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
                     result['headers']['Server-Timing'] = server_timing_value
                 elif 'multiValueHeaders' in result:
                     result['multiValueHeaders']['Server-Timing'] = [server_timing_value]
+                if 'statusCode' in result:
+                    scope.span.set_tag(ext.HTTP_STATUS_CODE, int(result['statusCode']))
         except Exception as exc:
             if scope.span:
                 exc = traceback.format_exc()

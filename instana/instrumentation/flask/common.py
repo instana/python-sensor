@@ -58,7 +58,7 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
                     else:
                         status_code = response.status_code
 
-                if 500 <= status_code <= 511:
+                if 500 <= status_code:
                     span.log_exception(exc)
 
                 span.set_tag(ext.HTTP_STATUS_CODE, int(status_code))

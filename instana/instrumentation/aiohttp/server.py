@@ -52,7 +52,7 @@ try:
 
             if response is not None:
                 # Mark 500 responses as errored
-                if 500 <= response.status <= 511:
+                if 500 <= response.status:
                     scope.span.mark_as_errored()
 
                 scope.span.set_tag("http.status_code", response.status)

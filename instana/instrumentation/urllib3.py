@@ -60,7 +60,7 @@ try:
                     if custom_header in response.headers:
                         scope.span.set_tag("http.header.%s" % custom_header, response.headers[custom_header])
 
-            if 500 <= response.status <= 599:
+            if 500 <= response.status:
                 scope.span.mark_as_errored()
         except Exception:
             logger.debug("collect_response", exc_info=True)

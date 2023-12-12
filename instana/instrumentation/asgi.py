@@ -78,7 +78,7 @@ class InstanaASGIMiddleware:
                     try:
                         status_code = response.get('status')
                         if status_code is not None:
-                            if 500 <= int(status_code) <= 511:
+                            if 500 <= int(status_code):
                                 span.mark_as_errored()
                             span.set_tag('http.status_code', status_code)
 

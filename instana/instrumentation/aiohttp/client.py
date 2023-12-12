@@ -51,7 +51,7 @@ try:
                         if custom_header in params.response.headers:
                             scope.span.set_tag("http.header.%s" % custom_header, params.response.headers[custom_header])
 
-                if 500 <= params.response.status <= 599:
+                if 500 <= params.response.status:
                     scope.span.mark_as_errored({"http.error": params.response.reason})
 
                 scope.close()

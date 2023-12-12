@@ -85,7 +85,7 @@ try:
             status_code = instance.get_status()
 
             # Mark 500 responses as errored
-            if 500 <= status_code <= 511:
+            if 500 <= status_code:
                 scope.span.mark_as_errored()
 
             scope.span.set_tag("http.status_code", status_code)

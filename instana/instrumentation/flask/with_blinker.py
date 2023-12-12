@@ -64,7 +64,7 @@ def request_finished_with_instana(sender, response, **extra):
         if scope is not None:
             span = scope.span
 
-            if 500 <= response.status_code <= 511:
+            if 500 <= response.status_code:
                 span.mark_as_errored()
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))

@@ -22,7 +22,7 @@ try:
             status_code = kwargs.get("status_code")
             span = async_tracer.active_span
 
-            if all([span, status_code, message]) and (500 <= status_code <= 599):
+            if all([span, status_code, message]) and 500 <= status_code:
                 span.set_tag("http.error", message)
                 try:
                     wrapped(*args, **kwargs)
@@ -39,7 +39,7 @@ try:
         try:
             status_code = response.status
             if status_code is not None:
-                if 500 <= int(status_code) <= 511:
+                if 500 <= int(status_code):
                     span.mark_as_errored()
                 span.set_tag('http.status_code', status_code)
 

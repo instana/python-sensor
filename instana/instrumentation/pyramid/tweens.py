@@ -65,7 +65,7 @@ class InstanaTweenFactory(object):
             if response:
                 scope.span.set_tag("http.status", response.status_int)
 
-                if 500 <= response.status_int <= 511:
+                if 500 <= response.status_int:
                     if response.exception is not None:
                         message = str(response.exception)
                         scope.span.log_exception(response.exception)

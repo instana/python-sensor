@@ -58,7 +58,7 @@ class InstanaMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         try:
             if request.iscope is not None:
-                if 500 <= response.status_code <= 511:
+                if 500 <= response.status_code:
                     request.iscope.span.assure_errored()
                 # for django >= 2.2
                 if request.resolver_match is not None and hasattr(request.resolver_match, 'route'):

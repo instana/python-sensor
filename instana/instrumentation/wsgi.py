@@ -28,7 +28,7 @@ class InstanaWSGIMiddleware(object):
             res = start_response(status, headers, exc_info)
 
             sc = status.split(' ')[0]
-            if 500 <= int(sc) <= 511:
+            if 500 <= int(sc):
                 self.scope.span.mark_as_errored()
 
             self.scope.span.set_tag(tags.HTTP_STATUS_CODE, sc)

@@ -46,6 +46,16 @@ os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
 module_name, function_name = get_lambda_handler_or_default()
 wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 
+def my_errored_lambda_handler(event, context):
+    return {
+        'statusCode': 500,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({'site': 'wikipedia.org', 'response': 500})
+    }
+
+os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_errored_lambda_handler"
+module_name, function_name = get_lambda_handler_or_default()
+wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 
 class TestLambda(unittest.TestCase):
     def __init__(self, methodName='runTest'):
@@ -359,6 +369,70 @@ class TestLambda(unittest.TestCase):
         self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
         self.assertEqual('POST', span.data['http']['method'])
         self.assertEqual(200, span.data['http']['status'])
+        self.assertEqual('/my/path', span.data['http']['url'])
+        self.assertEqual('/my/{resource}', span.data['http']['path_tpl'])
+        self.assertEqual("secret=key&q=term", span.data['http']['params'])
+
+
+    def test_api_gateway_v2_trigger_errored_tracing(self):
+
+        with open(self.pwd + '/../data/lambda/api_gateway_v2_event.json', 'r') as json_file:
+            event = json.load(json_file)
+
+        os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_errored_lambda_handler"
+        self.create_agent_and_setup_tracer()
+
+        result = lambda_handler(event, self.context)
+
+        assert isinstance(result, dict)
+        assert 'headers' in result
+        assert 'Server-Timing' in result['headers']
+
+        time.sleep(1)
+        payload = self.agent.collector.prepare_payload()
+
+        self.assertTrue("metrics" in payload)
+        self.assertTrue("spans" in payload)
+        self.assertEqual(2, len(payload.keys()))
+
+        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
+        self.assertTrue(len(payload['metrics']['plugins']) == 1)
+        plugin_data = payload['metrics']['plugins'][0]
+
+        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+
+        self.assertEqual(1, len(payload['spans']))
+
+        span = payload['spans'][0]
+        self.assertEqual('aws.lambda.entry', span.n)
+        self.assertEqual('0000000000001234', span.t)
+        self.assertIsNotNone(span.s)
+        self.assertEqual('0000000000004567', span.p)
+        self.assertIsNotNone(span.ts)
+        self.assertIsNotNone(span.d)
+
+        server_timing_value = "intid;desc=%s" % span.t
+        assert result['headers']['Server-Timing'] == server_timing_value
+
+        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
+                         span.f)
+
+        self.assertTrue(span.sy)
+
+        self.assertEqual(1, span.ec)
+        self.assertEqual('HTTP status 500', span.data['lambda']['error'])
+
+        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
+        self.assertEqual(None, span.data['lambda']['alias'])
+        self.assertEqual('python', span.data['lambda']['runtime'])
+        self.assertEqual('TestPython', span.data['lambda']['functionName'])
+        self.assertEqual('1', span.data['lambda']['functionVersion'])
+        self.assertIsNone(span.data['service'])
+
+        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
+        self.assertEqual('POST', span.data['http']['method'])
+        self.assertEqual(500, span.data['http']['status'])
         self.assertEqual('/my/path', span.data['http']['url'])
         self.assertEqual('/my/{resource}', span.data['http']['path_tpl'])
         self.assertEqual("secret=key&q=term", span.data['http']['params'])

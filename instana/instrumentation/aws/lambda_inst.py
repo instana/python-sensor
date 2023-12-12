@@ -36,8 +36,11 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
                     result['headers']['Server-Timing'] = server_timing_value
                 elif 'multiValueHeaders' in result:
                     result['multiValueHeaders']['Server-Timing'] = [server_timing_value]
-                if 'statusCode' in result:
-                    scope.span.set_tag(ext.HTTP_STATUS_CODE, int(result['statusCode']))
+                if 'statusCode' in result and result.get('statusCode'):
+                    status_code = int(result['statusCode'])
+                    scope.span.set_tag(ext.HTTP_STATUS_CODE, status_code)
+                    if 500 <= status_code:
+                        scope.span.log_exception(f'HTTP status {status_code}')
         except Exception as exc:
             if scope.span:
                 exc = traceback.format_exc()

@@ -27,10 +27,8 @@ if not os.environ.get("GEVENT_TEST"):
 
 # Python 3.10 support is incomplete yet
 # TODO: Remove this once we start supporting Tornado >= 6.0
-# TODO: Remove this once we start supporting moto>=2.0 (impacting boto)
 if sys.version_info.minor >= 10:
     collect_ignore_glob.append("*test_tornado*")
-    collect_ignore_glob.append("*test_boto3_secretsmanager*")
     # Furthermore on Python 3.11 the above TC is skipped:
     # tests/opentracing/test_ot_span.py::TestOTSpan::test_stacks
     # TODO: Remove that once we find a workaround or DROP opentracing!

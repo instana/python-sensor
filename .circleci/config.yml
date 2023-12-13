@@ -118,7 +118,7 @@ jobs:
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
@@ -144,7 +144,7 @@ jobs:
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
@@ -169,7 +169,7 @@ jobs:
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
@@ -194,7 +194,7 @@ jobs:
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
@@ -220,7 +220,7 @@ jobs:
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14
@@ -246,7 +246,7 @@ jobs:
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: circle_test
       - image: cimg/mariadb:10.11.2
       - image: cimg/redis:5.0.14

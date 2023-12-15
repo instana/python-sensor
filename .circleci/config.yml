@@ -99,7 +99,7 @@ commands:
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
               /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
-                -Dsonar.host.url=https://sonarqube.instana.io/ \
+                -Dsonar.host.url=${SONARQUBE_URL} \
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi

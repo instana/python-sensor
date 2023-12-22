@@ -266,9 +266,9 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py38couchbase:
+  py39couchbase:
     docker:
-      - image: cimg/python:3.8.17
+      - image: cimg/python:3.9.17
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -311,9 +311,9 @@ jobs:
       - store-pytest-results
       - run_sonarqube
 
-  py38gevent:
+  py39gevent:
     docker:
-      - image: cimg/python:3.8.17
+      - image: cimg/python:3.9.17
     working_directory: ~/repo
     steps:
       - checkout
@@ -336,8 +336,8 @@ workflows:
       - python311
       - python312
       - py39cassandra
-      - py38couchbase
-      - py38gevent
+      - py39couchbase
+      - py39gevent
       - final_job:
           requires:
             - python37
@@ -347,5 +347,5 @@ workflows:
             - python311
             - python312
             - py39cassandra
-            - py38couchbase
-            - py38gevent
+            - py39couchbase
+            - py39gevent

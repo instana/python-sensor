@@ -282,9 +282,9 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py37cassandra:
+  py39cassandra:
     docker:
-      - image: cimg/python:3.7.17
+      - image: cimg/python:3.9.17
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -335,7 +335,7 @@ workflows:
       - python310
       - python311
       - python312
-      - py37cassandra
+      - py39cassandra
       - py38couchbase
       - py38gevent
       - final_job:
@@ -346,6 +346,6 @@ workflows:
             - python310
             - python311
             - python312
-            - py37cassandra
+            - py39cassandra
             - py38couchbase
             - py38gevent

@@ -54,24 +54,26 @@ try:
     def request_init_with_instana(fn):
         active_tracer = get_active_tracer()
 
-        if active_tracer is not None:
-            parent_span = active_tracer.active_span
-            ctags = dict()
-            if isinstance(fn.query, cassandra.query.SimpleStatement):
-                ctags["cassandra.query"] = fn.query.query_string
-            elif isinstance(fn.query, cassandra.query.BoundStatement):
-                ctags["cassandra.query"] = fn.query.prepared_statement.query_string
+        if active_tracer is None:
+            return
 
-            ctags["cassandra.keyspace"] = fn.session.keyspace
-            ctags["cassandra.cluster"] = fn.session.cluster.metadata.cluster_name
+        parent_span = active_tracer.active_span
+        ctags = dict()
+        if isinstance(fn.query, cassandra.query.SimpleStatement):
+            ctags["cassandra.query"] = fn.query.query_string
+        elif isinstance(fn.query, cassandra.query.BoundStatement):
+            ctags["cassandra.query"] = fn.query.prepared_statement.query_string
 
-            span = active_tracer.start_span(
-                operation_name="cassandra",
-                child_of=parent_span,
-                tags=ctags)
+        ctags["cassandra.keyspace"] = fn.session.keyspace
+        ctags["cassandra.cluster"] = fn.session.cluster.metadata.cluster_name
 
-            fn.add_callback(cb_request_finish, span, fn)
-            fn.add_errback(cb_request_error, span, fn)
+        span = active_tracer.start_span(
+            operation_name="cassandra",
+            child_of=parent_span,
+            tags=ctags)
+
+        fn.add_callback(cb_request_finish, span, fn)
+        fn.add_errback(cb_request_error, span, fn)
 
 
     @wrapt.patch_function_wrapper('cassandra.cluster', 'Session.__init__')

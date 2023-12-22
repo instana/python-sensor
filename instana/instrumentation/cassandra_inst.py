@@ -57,8 +57,7 @@ try:
         if active_tracer is None:
             return
 
-        parent_span = active_tracer.active_span
-        ctags = dict()
+        ctags = {}
         if isinstance(fn.query, cassandra.query.SimpleStatement):
             ctags["cassandra.query"] = fn.query.query_string
         elif isinstance(fn.query, cassandra.query.BoundStatement):
@@ -67,13 +66,10 @@ try:
         ctags["cassandra.keyspace"] = fn.session.keyspace
         ctags["cassandra.cluster"] = fn.session.cluster.metadata.cluster_name
 
-        span = active_tracer.start_span(
-            operation_name="cassandra",
-            child_of=parent_span,
-            tags=ctags)
-
-        fn.add_callback(cb_request_finish, span, fn)
-        fn.add_errback(cb_request_error, span, fn)
+        with active_tracer.start_active_span("cassandra", child_of=active_tracer.active_span,
+                                             tags=ctags, finish_on_close=False) as scope:
+            fn.add_callback(cb_request_finish, scope.span, fn)
+            fn.add_errback(cb_request_error, scope.span, fn)
 
 
     @wrapt.patch_function_wrapper('cassandra.cluster', 'Session.__init__')

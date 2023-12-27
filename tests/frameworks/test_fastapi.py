@@ -311,8 +311,7 @@ def test_synthetic_request(server):
     assert (test_span.sy is None)
 
 
-def test_custom_header_capture(server):
-    from instana.singletons import agent
+def test_request_header_capture(server):
 
     # The background FastAPI server is pre-configured with custom headers to capture
 
@@ -320,6 +319,7 @@ def test_custom_header_capture(server):
         'X-Capture-This': 'this',
         'X-Capture-That': 'that'
     }
+
     with tracer.start_active_span('test'):
         result = requests.get(testenv["fastapi_server"] + '/', headers=request_headers)
 
@@ -366,3 +366,53 @@ def test_custom_header_capture(server):
     assert ("this" == asgi_span.data["http"]["header"]["X-Capture-This"])
     assert ("X-Capture-That" in asgi_span.data["http"]["header"])
     assert ("that" == asgi_span.data["http"]["header"]["X-Capture-That"])
+
+
+def test_response_header_capture(server):
+
+     # The background FastAPI server is pre-configured with custom headers to capture
+    
+    with tracer.start_active_span('test'):
+        result = requests.get(testenv["fastapi_server"] + '/response_headers')
+
+    assert result.status_code == 200
+
+    spans = tracer.recorder.queued_spans()
+    assert len(spans) == 3
+
+    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+    test_span = get_first_span_by_filter(spans, span_filter)
+    assert (test_span)
+
+    span_filter = lambda span: span.n == "urllib3"
+    urllib3_span = get_first_span_by_filter(spans, span_filter)
+    assert (urllib3_span)
+
+    span_filter = lambda span: span.n == 'asgi'
+    asgi_span = get_first_span_by_filter(spans, span_filter)
+    assert (asgi_span)
+
+    assert (test_span.t == urllib3_span.t == asgi_span.t)
+    assert (asgi_span.p == urllib3_span.s)
+    assert (urllib3_span.p == test_span.s)
+
+    assert "X-INSTANA-T" in result.headers
+    assert result.headers["X-INSTANA-T"] == asgi_span.t
+    assert "X-INSTANA-S" in result.headers
+    assert result.headers["X-INSTANA-S"] == asgi_span.s
+    assert "X-INSTANA-L" in result.headers
+    assert result.headers["X-INSTANA-L"] == '1'
+    assert "Server-Timing" in result.headers
+    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+
+    assert (asgi_span.ec == None)
+    assert (asgi_span.data['http']['host'] == '127.0.0.1')
+    assert (asgi_span.data['http']['path'] == '/response_headers')
+    assert (asgi_span.data['http']['path_tpl'] == '/response_headers')
+    assert (asgi_span.data['http']['method'] == 'GET')
+    assert (asgi_span.data['http']['status'] == 200)
+    assert (asgi_span.data['http']['error'] is None)
+    assert (asgi_span.data['http']['params'] is None)
+
+    assert ("X-Capture-This-Too" in asgi_span.data["http"]["header"])
+    assert ("this too" == asgi_span.data["http"]["header"]["X-Capture-This-Too"])

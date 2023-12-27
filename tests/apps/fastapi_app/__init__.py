@@ -13,6 +13,6 @@ def launch_fastapi():
     from instana.singletons import agent
 
     # Hack together a manual custom headers list; We'll use this in tests
-    agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
+    agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That', u'X-Capture-This-Too']
 
     uvicorn.run(fastapi_server, host='127.0.0.1', port=testenv['fastapi_port'], log_level="critical")

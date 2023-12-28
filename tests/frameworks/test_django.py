@@ -261,8 +261,9 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual(200, django_span.data["http"]["status"])
         self.assertEqual('^complex$', django_span.data["http"]["path_tpl"])
 
-    def test_custom_header_capture(self):
+    def test_request_header_capture(self):
         # Hack together a manual custom headers list
+        original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
         request_headers = dict()
@@ -305,6 +306,49 @@ class TestDjango(StaticLiveServerTestCase):
         self.assertEqual("this", django_span.data["http"]["header"]["X-Capture-This"])
         assert "X-Capture-That" in django_span.data["http"]["header"]
         self.assertEqual("that", django_span.data["http"]["header"]["X-Capture-That"])
+
+        agent.options.extra_http_headers = original_extra_http_headers
+
+    def test_response_header_capture(self):
+        # Hack together a manual custom headers list
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = [u'X-Capture-This-Too']
+
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', self.live_server_url + '/response_with_headers')
+
+        assert response
+        self.assertEqual(200, response.status)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        test_span = spans[2]
+        urllib3_span = spans[1]
+        django_span = spans[0]
+
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual("django", django_span.n)
+
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, django_span.t)
+
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(django_span.p, urllib3_span.s)
+
+        self.assertEqual(None, django_span.ec)
+        self.assertIsNone(django_span.stack)
+
+        self.assertEqual('/response_with_headers', django_span.data["http"]["url"])
+        self.assertEqual('GET', django_span.data["http"]["method"])
+        self.assertEqual(200, django_span.data["http"]["status"])
+        self.assertEqual('^response_with_headers$', django_span.data["http"]["path_tpl"])
+
+        assert "X-Capture-This-Too" in django_span.data["http"]["header"]
+        self.assertEqual("this too", django_span.data["http"]["header"]["X-Capture-This-Too"])
+
+        agent.options.extra_http_headers = original_extra_http_headers
 
     def test_with_incoming_context(self):
         request_headers = dict()

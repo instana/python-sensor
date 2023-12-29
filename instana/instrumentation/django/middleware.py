@@ -30,14 +30,16 @@ class InstanaMiddleware(MiddlewareMixin):
         self.get_response = get_response
 
     def _extract_custom_headers(self, span, headers, format):
-        try:
-            if agent.options.extra_http_headers is not None:
-                for custom_header in agent.options.extra_http_headers:
-                    # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                    django_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+        if agent.options.extra_http_headers is None:
+            return
 
-                    if django_header in headers:
-                        span.set_tag("http.header.%s" % custom_header, headers[django_header])
+        try:            
+            for custom_header in agent.options.extra_http_headers:
+                # Headers are available in this format: HTTP_X_CAPTURE_THIS
+                django_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+
+                if django_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[django_header])
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)

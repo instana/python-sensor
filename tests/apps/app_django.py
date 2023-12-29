@@ -126,9 +126,11 @@ def complex(request):
 
 
 def response_with_headers(request):
-    response = HttpResponse(content_type='')
-    response['X-Capture-This-Too'] = 'this too'
-    return response
+    headers = {
+        'X-Capture-This-Too': 'this too',
+        'X-Capture-That-Too': 'that too'
+    }
+    return HttpResponse('Stan wuz here with headers!', headers=headers)
 
 
 urlpatterns = [

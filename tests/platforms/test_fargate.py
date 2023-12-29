@@ -84,7 +84,7 @@ class TestFargate(unittest.TestCase):
         self.assertTrue(hasattr(self.agent.options, 'secrets_matcher'))
         self.assertEqual(self.agent.options.secrets_matcher, 'contains-ignore-case')
         self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
-        self.assertEqual(self.agent.options.secrets_list, ['key', 'pass', 'secret'])
+        self.assertListEqual(self.agent.options.secrets_list, ['key', 'pass', 'secret'])
 
     def test_custom_secrets(self):
         os.environ["INSTANA_SECRETS"] = "equals:love,war,games"
@@ -93,7 +93,7 @@ class TestFargate(unittest.TestCase):
         self.assertTrue(hasattr(self.agent.options, 'secrets_matcher'))
         self.assertEqual(self.agent.options.secrets_matcher, 'equals')
         self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
-        self.assertEqual(self.agent.options.secrets_list, ['love', 'war', 'games'])
+        self.assertListEqual(self.agent.options.secrets_list, ['love', 'war', 'games'])
 
     def test_default_tags(self):
         self.create_agent_and_setup_tracer()
@@ -110,18 +110,18 @@ class TestFargate(unittest.TestCase):
         self.create_agent_and_setup_tracer()
         self.assertIsNotNone(self.agent.options.extra_http_headers)
         should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
-        self.assertEqual(should_headers, self.agent.options.extra_http_headers)
+        self.assertListEqual(should_headers, self.agent.options.extra_http_headers)
 
     def test_agent_default_log_level(self):
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.log_level == logging.WARNING
+        self.assertEqual(self.agent.options.log_level, logging.WARNING)
 
     def test_agent_custom_log_level(self):
         os.environ['INSTANA_LOG_LEVEL'] = "eRror"
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.log_level == logging.ERROR
+        self.assertEqual(self.agent.options.log_level, logging.ERROR)
 
     def test_custom_proxy(self):
         os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.endpoint_proxy == {'https': "http://myproxy.123"}
+        self.assertDictEqual(self.agent.options.endpoint_proxy, {'https': "http://myproxy.123"})

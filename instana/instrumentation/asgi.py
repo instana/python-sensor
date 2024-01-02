@@ -20,13 +20,14 @@ class InstanaASGIMiddleware:
         self.app = app
 
     def _extract_custom_headers(self, span, headers):
+        if agent.options.extra_http_headers is None:
+            return        
         try:
-            if agent.options.extra_http_headers is not None:
-                for custom_header in agent.options.extra_http_headers:
-                    # Headers are in the following format: b'x-header-1'
-                    for header_pair in headers:
-                        if header_pair[0].decode('utf-8').lower() == custom_header.lower():
-                            span.set_tag("http.header.%s" % custom_header, header_pair[1].decode('utf-8'))
+            for custom_header in agent.options.extra_http_headers:
+                # Headers are in the following format: b'x-header-1'
+                for header_pair in headers:
+                    if header_pair[0].decode('utf-8').lower() == custom_header.lower():
+                        span.set_tag("http.header.%s" % custom_header, header_pair[1].decode('utf-8'))
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
 

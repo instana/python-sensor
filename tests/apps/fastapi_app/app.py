@@ -26,8 +26,11 @@ async def user(user_id):
 
 @fastapi_server.get("/response_headers")
 async def response_headers():
-    headers = {'X-Capture-This-Too': 'this too'}
-    return Response(content=None, headers=headers)
+    headers = {
+        'X-Capture-This-Too': 'this too',
+        'X-Capture-That-Too': 'that too'
+    }
+    return Response("Stan wuz here with headers!", headers=headers)
 
 @fastapi_server.get("/400")
 async def four_zero_zero():

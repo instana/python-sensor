@@ -29,6 +29,21 @@ class InstanaMiddleware(MiddlewareMixin):
         super(InstanaMiddleware, self).__init__(get_response)
         self.get_response = get_response
 
+    def _extract_custom_headers(self, span, headers, format):
+        if agent.options.extra_http_headers is None:
+            return
+
+        try:            
+            for custom_header in agent.options.extra_http_headers:
+                # Headers are available in this format: HTTP_X_CAPTURE_THIS
+                django_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+
+                if django_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[django_header])
+
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
+
     def process_request(self, request):
         try:
             env = request.environ
@@ -36,12 +51,7 @@ class InstanaMiddleware(MiddlewareMixin):
             ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
 
-            if agent.options.extra_http_headers is not None:
-                for custom_header in agent.options.extra_http_headers:
-                    # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                    django_header = ('HTTP_' + custom_header.upper()).replace('-', '_')
-                    if django_header in env:
-                        request.iscope.span.set_tag("http.header.%s" % custom_header, env[django_header])
+            self._extract_custom_headers(request.iscope.span, env, format=True)
 
             request.iscope.span.set_tag(ext.HTTP_METHOD, request.method)
             if 'PATH_INFO' in env:
@@ -75,7 +85,9 @@ class InstanaMiddleware(MiddlewareMixin):
                         path_tpl = None
                 if path_tpl:
                     request.iscope.span.set_tag("http.path_tpl", path_tpl)
+
                 request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
+                self._extract_custom_headers(request.iscope.span, response.headers, format=False)
                 tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
                 response['Server-Timing'] = "intid;desc=%s" % request.iscope.span.context.trace_id
         except Exception:

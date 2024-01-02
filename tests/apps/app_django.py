@@ -125,10 +125,19 @@ def complex(request):
     return HttpResponse('Stan wuz here!')
 
 
+def response_with_headers(request):
+    headers = {
+        'X-Capture-This-Too': 'this too',
+        'X-Capture-That-Too': 'that too'
+    }
+    return HttpResponse('Stan wuz here with headers!', headers=headers)
+
+
 urlpatterns = [
     re_path(r'^$', index, name='index'),
     re_path(r'^cause_error$', cause_error, name='cause_error'),
     re_path(r'^another$', another),
     re_path(r'^not_found$', not_found, name='not_found'),
-    re_path(r'^complex$', complex, name='complex')
+    re_path(r'^complex$', complex, name='complex'),
+    re_path(r'^response_with_headers$', response_with_headers, name='response_with_headers')
 ]

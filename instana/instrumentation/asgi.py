@@ -20,6 +20,8 @@ class InstanaASGIMiddleware:
         self.app = app
 
     def _extract_custom_headers(self, span, headers):
+        if agent.options.extra_http_headers is None:
+            return        
         try:
             for custom_header in agent.options.extra_http_headers:
                 # Headers are in the following format: b'x-header-1'
@@ -84,6 +86,7 @@ class InstanaASGIMiddleware:
 
                         headers = response.get('headers')
                         if headers is not None:
+                            self._extract_custom_headers(span, headers)
                             async_tracer.inject(span.context, opentracing.Format.BINARY, headers)
                     except Exception:
                         logger.debug("send_wrapper: ", exc_info=True)

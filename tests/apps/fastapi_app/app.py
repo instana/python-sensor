@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -23,6 +23,14 @@ async def root():
 @fastapi_server.get("/users/{user_id}")
 async def user(user_id):
     return {"user": user_id}
+
+@fastapi_server.get("/response_headers")
+async def response_headers():
+    headers = {
+        'X-Capture-This-Too': 'this too',
+        'X-Capture-That-Too': 'that too'
+    }
+    return Response("Stan wuz here with headers!", headers=headers)
 
 @fastapi_server.get("/400")
 async def four_zero_zero():

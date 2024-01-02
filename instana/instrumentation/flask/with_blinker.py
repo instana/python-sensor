@@ -18,6 +18,21 @@ from flask import request_started, request_finished, got_request_exception
 path_tpl_re = re.compile('<.*>')
 
 
+def extract_custom_headers(span, headers, format):
+    if agent.options.extra_http_headers is None:
+        return
+    try:
+        for custom_header in agent.options.extra_http_headers:
+            # Headers are available in this format: HTTP_X_CAPTURE_THIS
+            flask_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+
+            if flask_header in headers:
+                span.set_tag("http.header.%s" % custom_header, headers[flask_header])
+
+    except Exception:
+        logger.debug("extract_custom_headers: ", exc_info=True)
+
+
 def request_started_with_instana(sender, **extra):
     try:
         env = flask.request.environ
@@ -28,12 +43,7 @@ def request_started_with_instana(sender, **extra):
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
 
-        if agent.options.extra_http_headers is not None:
-            for custom_header in agent.options.extra_http_headers:
-                # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                header = ('HTTP_' + custom_header.upper()).replace('-', '_')
-                if header in env:
-                    span.set_tag("http.header.%s" % custom_header, env[header])
+        extract_custom_headers(span, env, format=True)
 
         span.set_tag(ext.HTTP_METHOD, flask.request.method)
         if 'PATH_INFO' in env:
@@ -68,6 +78,8 @@ def request_finished_with_instana(sender, response, **extra):
                 span.mark_as_errored()
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
+            extract_custom_headers(span, response.headers, format=False)
+
             tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
             response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
     except:

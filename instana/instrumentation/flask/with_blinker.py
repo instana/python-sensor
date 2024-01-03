@@ -11,7 +11,7 @@ import opentracing.ext.tags as ext
 from ...log import logger
 from ...util.secrets import strip_secrets_from_query
 from ...singletons import agent, tracer
-from common import extract_custom_headers
+from .common import extract_custom_headers
 
 import flask
 from flask import request_started, request_finished, got_request_exception

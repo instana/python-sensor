@@ -13,23 +13,9 @@ import wrapt
 from ...log import logger
 from ...singletons import agent, tracer
 from ...util.secrets import strip_secrets_from_query
+from common import extract_custom_headers
 
 path_tpl_re = re.compile('<.*>')
-
-
-def extract_custom_headers(span, headers, format):
-    if agent.options.extra_http_headers is None:
-        return
-    try:
-        for custom_header in agent.options.extra_http_headers:
-            # Headers are available in this format: HTTP_X_CAPTURE_THIS
-            flask_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
-
-            if flask_header in headers:
-                span.set_tag("http.header.%s" % custom_header, headers[flask_header])
-
-    except Exception:
-        logger.debug("extract_custom_headers: ", exc_info=True)
 
 
 def before_request_with_instana(*argv, **kwargs):

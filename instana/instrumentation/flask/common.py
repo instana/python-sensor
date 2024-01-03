@@ -9,7 +9,7 @@ import opentracing
 import opentracing.ext.tags as ext
 
 from ...log import logger
-from ...singletons import tracer
+from ...singletons import tracer, agent
 
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')
@@ -77,3 +77,17 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
         logger.debug("handle_user_exception_with_instana:", exc_info=True)
 
     return response
+
+
+def extract_custom_headers(span, headers, format):
+    if agent.options.extra_http_headers is None:
+        return
+    try:
+        for custom_header in agent.options.extra_http_headers:
+            # Headers are available in this format: HTTP_X_CAPTURE_THIS
+            flask_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+            if flask_header in headers:
+                span.set_tag("http.header.%s" % custom_header, headers[flask_header])
+
+    except Exception:
+        logger.debug("extract_custom_headers: ", exc_info=True)

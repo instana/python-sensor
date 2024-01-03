@@ -13,7 +13,7 @@ import wrapt
 from ...log import logger
 from ...singletons import agent, tracer
 from ...util.secrets import strip_secrets_from_query
-from common import extract_custom_headers
+from .common import extract_custom_headers
 
 path_tpl_re = re.compile('<.*>')
 

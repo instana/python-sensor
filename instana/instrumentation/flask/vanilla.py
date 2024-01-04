@@ -13,6 +13,7 @@ import wrapt
 from ...log import logger
 from ...singletons import agent, tracer
 from ...util.secrets import strip_secrets_from_query
+from .common import extract_custom_headers
 
 path_tpl_re = re.compile('<.*>')
 
@@ -25,12 +26,7 @@ def before_request_with_instana(*argv, **kwargs):
         flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
         span = flask.g.scope.span
 
-        if agent.options.extra_http_headers is not None:
-            for custom_header in agent.options.extra_http_headers:
-                # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                header = ('HTTP_' + custom_header.upper()).replace('-', '_')
-                if header in env:
-                    span.set_tag("http.header.%s" % custom_header, env[header])
+        extract_custom_headers(span, env, format=True)
 
         span.set_tag(ext.HTTP_METHOD, flask.request.method)
         if 'PATH_INFO' in env:
@@ -68,6 +64,8 @@ def after_request_with_instana(response):
                 span.mark_as_errored()
 
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
+            extract_custom_headers(span, response.headers, format=False)
+
             tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
             response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
     except:

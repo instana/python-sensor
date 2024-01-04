@@ -161,10 +161,11 @@ def render_error():
 
 @app.route("/response_headers")
 def response_headers():
-    resp = Response("Foo bar baz")
-    resp.headers['X-Capture-This'] = 'Ok'
-    return resp
-
+    headers = {
+        'X-Capture-This': 'Ok',
+        'X-Capture-That': 'Ok too'
+    }
+    return Response("Stan wuz here with headers!", headers=headers)
 
 @app.route("/boto3/sqs")
 def boto3_sqs():

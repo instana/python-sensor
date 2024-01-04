@@ -758,11 +758,16 @@ class TestUrllib3(unittest.TestCase):
 
     def test_request_header_capture(self):
         original_extra_http_headers = agent.options.extra_http_headers
-        agent.options.extra_http_headers = ['X-Capture-This-Too']
+        agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
 
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/',
-                                  headers={'X-Capture-This-Too': 'this too'})
+        request_headers = {
+            "X-Capture-This-Too": "this too",
+            "X-Capture-That-Too": "that too",
+        }
+        with tracer.start_active_span("test"):
+            r = self.http.request(
+                "GET", testenv["wsgi_server"] + "/", headers=request_headers
+            )
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -809,5 +814,7 @@ class TestUrllib3(unittest.TestCase):
 
         self.assertIn("X-Capture-This-Too", urllib3_span.data["http"]["header"])
         self.assertEqual("this too", urllib3_span.data["http"]["header"]["X-Capture-This-Too"])
+        self.assertIn("X-Capture-That-Too", urllib3_span.data["http"]["header"])
+        self.assertEqual("that too", urllib3_span.data["http"]["header"]["X-Capture-That-Too"])
 
         agent.options.extra_http_headers = original_extra_http_headers

@@ -16,6 +16,18 @@ try:
     import urllib3
 
 
+    def extract_custom_headers(span, headers):
+        if agent.options.extra_http_headers is None:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
+
+
     def collect(instance, args, kwargs):
         """ Build and return a fully qualified URL for this request """
         kvs = dict()
@@ -55,10 +67,7 @@ try:
         try:
             scope.span.set_tag(ext.HTTP_STATUS_CODE, response.status)
 
-            if agent.options.extra_http_headers is not None:
-                for custom_header in agent.options.extra_http_headers:
-                    if custom_header in response.headers:
-                        scope.span.set_tag("http.header.%s" % custom_header, response.headers[custom_header])
+            extract_custom_headers(scope.span, response.headers)
 
             if 500 <= response.status:
                 scope.span.mark_as_errored()
@@ -85,6 +94,7 @@ try:
                     scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
 
                 if 'headers' in kwargs:
+                    extract_custom_headers(scope.span, kwargs['headers'])
                     active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
 
                 response = wrapped(*args, **kwargs)

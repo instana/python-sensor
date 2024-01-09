@@ -245,3 +245,72 @@ class TestPyramid(unittest.TestCase):
         self.assertIsNotNone(urllib3_span.stack)
         self.assertTrue(type(urllib3_span.stack) is list)
         self.assertTrue(len(urllib3_span.stack) > 1)
+
+    def test_response_header_capture(self):
+        from instana.singletons import agent
+        # Hack together a manual custom headers list
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
+
+        with tracer.start_active_span('test'):
+            response = self.http.request('GET', testenv["pyramid_server"] + '/response_headers')
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        pyramid_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        self.assertTrue(response)
+        self.assertEqual(200, response.status)
+
+        # Same traceId
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, pyramid_span.t)
+
+        # Parent relationships
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(pyramid_span.p, urllib3_span.s)
+
+        # Synthetic
+        self.assertIsNone(pyramid_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
+
+        # Error logging
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(urllib3_span.ec)
+        self.assertIsNone(pyramid_span.ec)
+
+        # HTTP SDK span
+        self.assertEqual("sdk", pyramid_span.n)
+
+        self.assertTrue(pyramid_span.data["sdk"])
+        self.assertEqual('http', pyramid_span.data["sdk"]["name"])
+        self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
+
+        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
+        self.assertEqual('/response_headers', sdk_data["http.url"])
+        self.assertEqual('GET', sdk_data["http.method"])
+        self.assertEqual(200, sdk_data["http.status"])
+        self.assertNotIn("message", sdk_data)
+
+        # urllib3
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual(200, urllib3_span.data["http"]["status"])
+        self.assertEqual(testenv["pyramid_server"] + '/response_headers', urllib3_span.data["http"]["url"])
+        self.assertEqual("GET", urllib3_span.data["http"]["method"])
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
+
+        	
+        self.assertTrue(sdk_data["http.header.X-Capture-This"])
+        self.assertEqual("Ok", sdk_data["http.header.X-Capture-This"])
+        self.assertTrue(sdk_data["http.header.X-Capture-That"])
+        self.assertEqual("Ok too", sdk_data["http.header.X-Capture-That"])
+
+        agent.options.extra_http_headers = original_extra_http_headers

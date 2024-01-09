@@ -25,6 +25,13 @@ def please_fail(request):
 def tableflip(request):
     raise BaseException("fake exception")
 
+def response_headers(request):
+    headers = {
+        'X-Capture-This': 'Ok',
+        'X-Capture-That': 'Ok too'
+    }
+    return Response("Stan wuz here with headers!", headers=headers)
+
 app = None
 with Configurator() as config:
     config.add_tween('instana.instrumentation.pyramid.tweens.InstanaTweenFactory')
@@ -34,6 +41,8 @@ with Configurator() as config:
     config.add_view(please_fail, route_name='fail')
     config.add_route('crash', '/exception')
     config.add_view(tableflip, route_name='crash')
+    config.add_route('response_headers', '/response_headers')
+    config.add_view(response_headers, route_name='response_headers')
     app = config.make_wsgi_app()
     
 pyramid_server = make_server('127.0.0.1', testenv["pyramid_port"], app)

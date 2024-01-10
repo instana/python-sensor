@@ -8,7 +8,7 @@ import urllib3
 
 import tests.apps.pyramid_app
 from ..helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 
 
 class TestPyramid(unittest.TestCase):
@@ -85,13 +85,13 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
-        self.assertEqual('/', sdk_data["http.url"])
-        self.assertEqual('GET', sdk_data["http.method"])
-        self.assertEqual(200, sdk_data["http.status"])
-        self.assertNotIn("message", sdk_data)
-        self.assertNotIn("http.path_tpl", sdk_data)
+        sdk_custom_tags = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_custom_tags["http.host"])
+        self.assertEqual('/', sdk_custom_tags["http.url"])
+        self.assertEqual('GET', sdk_custom_tags["http.method"])
+        self.assertEqual(200, sdk_custom_tags["http.status"])
+        self.assertNotIn("message", sdk_custom_tags)
+        self.assertNotIn("http.path_tpl", sdk_custom_tags)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -175,13 +175,13 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
-        self.assertEqual('/500', sdk_data["http.url"])
-        self.assertEqual('GET', sdk_data["http.method"])
-        self.assertEqual(500, sdk_data["http.status"])
-        self.assertEqual("internal error", sdk_data["message"])
-        self.assertNotIn("http.path_tpl", sdk_data)
+        sdk_custom_tags = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_custom_tags["http.host"])
+        self.assertEqual('/500', sdk_custom_tags["http.url"])
+        self.assertEqual('GET', sdk_custom_tags["http.method"])
+        self.assertEqual(500, sdk_custom_tags["http.status"])
+        self.assertEqual("internal error", sdk_custom_tags["message"])
+        self.assertNotIn("http.path_tpl", sdk_custom_tags)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -228,13 +228,13 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
-        self.assertEqual('/exception', sdk_data["http.url"])
-        self.assertEqual('GET', sdk_data["http.method"])
-        self.assertEqual(500, sdk_data["http.status"])
-        self.assertEqual("fake exception", sdk_data["message"])
-        self.assertNotIn("http.path_tpl", sdk_data)
+        sdk_custom_tags = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_custom_tags["http.host"])
+        self.assertEqual('/exception', sdk_custom_tags["http.url"])
+        self.assertEqual('GET', sdk_custom_tags["http.method"])
+        self.assertEqual(500, sdk_custom_tags["http.status"])
+        self.assertEqual("fake exception", sdk_custom_tags["message"])
+        self.assertNotIn("http.path_tpl", sdk_custom_tags)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -247,7 +247,6 @@ class TestPyramid(unittest.TestCase):
         self.assertTrue(len(urllib3_span.stack) > 1)
 
     def test_response_header_capture(self):
-        from instana.singletons import agent
         # Hack together a manual custom headers list
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
@@ -290,12 +289,12 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
-        self.assertEqual('/response_headers', sdk_data["http.url"])
-        self.assertEqual('GET', sdk_data["http.method"])
-        self.assertEqual(200, sdk_data["http.status"])
-        self.assertNotIn("message", sdk_data)
+        sdk_custom_tags = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_custom_tags["http.host"])
+        self.assertEqual('/response_headers', sdk_custom_tags["http.url"])
+        self.assertEqual('GET', sdk_custom_tags["http.method"])
+        self.assertEqual(200, sdk_custom_tags["http.status"])
+        self.assertNotIn("message", sdk_custom_tags)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -308,9 +307,9 @@ class TestPyramid(unittest.TestCase):
         self.assertTrue(len(urllib3_span.stack) > 1)
 
         	
-        self.assertTrue(sdk_data["http.header.X-Capture-This"])
-        self.assertEqual("Ok", sdk_data["http.header.X-Capture-This"])
-        self.assertTrue(sdk_data["http.header.X-Capture-That"])
-        self.assertEqual("Ok too", sdk_data["http.header.X-Capture-That"])
+        self.assertTrue(sdk_custom_tags["http.header.X-Capture-This"])
+        self.assertEqual("Ok", sdk_custom_tags["http.header.X-Capture-This"])
+        self.assertTrue(sdk_custom_tags["http.header.X-Capture-That"])
+        self.assertEqual("Ok too", sdk_custom_tags["http.header.X-Capture-That"])
 
         agent.options.extra_http_headers = original_extra_http_headers

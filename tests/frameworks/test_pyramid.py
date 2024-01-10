@@ -2,8 +2,8 @@
 # (c) Copyright Instana Inc. 2020
 
 from __future__ import absolute_import
-
 import unittest
+
 import urllib3
 
 import tests.apps.pyramid_app
@@ -40,21 +40,21 @@ class TestPyramid(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
+        self.assertTrue(response)
         self.assertEqual(200, response.status)
 
-        assert('X-INSTANA-T' in response.headers)
-        assert(int(response.headers['X-INSTANA-T'], 16))
+        self.assertIn('X-INSTANA-T', response.headers)
+        self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
         self.assertEqual(response.headers['X-INSTANA-T'], pyramid_span.t)
 
-        assert('X-INSTANA-S' in response.headers)
-        assert(int(response.headers['X-INSTANA-S'], 16))
+        self.assertIn('X-INSTANA-S', response.headers)
+        self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
         self.assertEqual(response.headers['X-INSTANA-S'], pyramid_span.s)
 
-        assert('X-INSTANA-L' in response.headers)
+        self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        self.assertIn('Server-Timing', response.headers)
         server_timing_value = "intid;desc=%s" % pyramid_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -81,17 +81,17 @@ class TestPyramid(unittest.TestCase):
         # HTTP SDK span
         self.assertEqual("sdk", pyramid_span.n)
 
-        assert(pyramid_span.data["sdk"])
+        self.assertTrue(pyramid_span.data["sdk"])
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["tags"]["http.host"])
-        self.assertEqual('/', sdk_data["tags"]["http.url"])
-        self.assertEqual('GET', sdk_data["tags"]["http.method"])
-        self.assertEqual(200, sdk_data["tags"]["http.status"])
-        self.assertNotIn("message", sdk_data["tags"])
-        self.assertNotIn("http.path_tpl", sdk_data["tags"])
+        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
+        self.assertEqual('/', sdk_data["http.url"])
+        self.assertEqual('GET', sdk_data["http.method"])
+        self.assertEqual(200, sdk_data["http.status"])
+        self.assertNotIn("message", sdk_data)
+        self.assertNotIn("http.path_tpl", sdk_data)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -118,7 +118,7 @@ class TestPyramid(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
+        self.assertTrue(response)
         self.assertEqual(200, response.status)
 
         self.assertTrue(pyramid_span.sy)
@@ -137,21 +137,21 @@ class TestPyramid(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
+        self.assertTrue(response)
         self.assertEqual(500, response.status)
 
-        assert('X-INSTANA-T' in response.headers)
-        assert(int(response.headers['X-INSTANA-T'], 16))
+        self.assertIn('X-INSTANA-T', response.headers)
+        self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
         self.assertEqual(response.headers['X-INSTANA-T'], pyramid_span.t)
 
-        assert('X-INSTANA-S' in response.headers)
-        assert(int(response.headers['X-INSTANA-S'], 16))
+        self.assertIn('X-INSTANA-S', response.headers)
+        self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
         self.assertEqual(response.headers['X-INSTANA-S'], pyramid_span.s)
 
-        assert('X-INSTANA-L' in response.headers)
+        self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
 
-        assert('Server-Timing' in response.headers)
+        self.assertIn('Server-Timing', response.headers)
         server_timing_value = "intid;desc=%s" % pyramid_span.t
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
@@ -175,13 +175,13 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["tags"]["http.host"])
-        self.assertEqual('/500', sdk_data["tags"]["http.url"])
-        self.assertEqual('GET', sdk_data["tags"]["http.method"])
-        self.assertEqual(500, sdk_data["tags"]["http.status"])
-        self.assertEqual("internal error", sdk_data["tags"]["message"])
-        self.assertNotIn("http.path_tpl", sdk_data["tags"])
+        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
+        self.assertEqual('/500', sdk_data["http.url"])
+        self.assertEqual('GET', sdk_data["http.method"])
+        self.assertEqual(500, sdk_data["http.status"])
+        self.assertEqual("internal error", sdk_data["message"])
+        self.assertNotIn("http.path_tpl", sdk_data)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
@@ -205,7 +205,7 @@ class TestPyramid(unittest.TestCase):
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
+        self.assertTrue(response)
         self.assertEqual(500, response.status)
 
         self.assertIsNone(tracer.active_span)
@@ -228,13 +228,13 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual('http', pyramid_span.data["sdk"]["name"])
         self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
 
-        sdk_data = pyramid_span.data["sdk"]["custom"]
-        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["tags"]["http.host"])
-        self.assertEqual('/exception', sdk_data["tags"]["http.url"])
-        self.assertEqual('GET', sdk_data["tags"]["http.method"])
-        self.assertEqual(500, sdk_data["tags"]["http.status"])
-        self.assertEqual("fake exception", sdk_data["tags"]["message"])
-        self.assertNotIn("http.path_tpl", sdk_data["tags"])
+        sdk_data = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_data["http.host"])
+        self.assertEqual('/exception', sdk_data["http.url"])
+        self.assertEqual('GET', sdk_data["http.method"])
+        self.assertEqual(500, sdk_data["http.status"])
+        self.assertEqual("fake exception", sdk_data["message"])
+        self.assertNotIn("http.path_tpl", sdk_data)
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])

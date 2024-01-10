@@ -313,3 +313,78 @@ class TestPyramid(unittest.TestCase):
         self.assertEqual("Ok too", sdk_custom_tags["http.header.X-Capture-That"])
 
         agent.options.extra_http_headers = original_extra_http_headers
+
+    def test_request_header_capture(self):
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
+
+        request_headers = {
+            "X-Capture-This-Too": "this too",
+            "X-Capture-That-Too": "that too",
+        }
+
+        with tracer.start_active_span("test"):
+            response = self.http.request(
+                "GET", testenv["pyramid_server"] + "/", headers=request_headers
+            )
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        pyramid_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        self.assertTrue(response)
+        self.assertEqual(200, response.status)
+
+        # Same traceId
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, pyramid_span.t)
+
+        # Parent relationships
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(pyramid_span.p, urllib3_span.s)
+
+        # Synthetic
+        self.assertIsNone(pyramid_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
+
+        # Error logging
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(urllib3_span.ec)
+        self.assertIsNone(pyramid_span.ec)
+
+        # HTTP SDK span
+        self.assertEqual("sdk", pyramid_span.n)
+
+        self.assertTrue(pyramid_span.data["sdk"])
+        self.assertEqual('http', pyramid_span.data["sdk"]["name"])
+        self.assertEqual('entry', pyramid_span.data["sdk"]["type"])
+
+        sdk_custom_tags = pyramid_span.data["sdk"]["custom"]["tags"]
+        self.assertEqual('127.0.0.1:' + str(testenv['pyramid_port']), sdk_custom_tags["http.host"])
+        self.assertEqual('/', sdk_custom_tags["http.url"])
+        self.assertEqual('GET', sdk_custom_tags["http.method"])
+        self.assertEqual(200, sdk_custom_tags["http.status"])
+        self.assertNotIn("message", sdk_custom_tags)
+        self.assertNotIn("http.path_tpl", sdk_custom_tags)
+
+        # urllib3
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual(200, urllib3_span.data["http"]["status"])
+        self.assertEqual(testenv["pyramid_server"] + '/', urllib3_span.data["http"]["url"])
+        self.assertEqual("GET", urllib3_span.data["http"]["method"])
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # custom headers
+        self.assertTrue(sdk_custom_tags["http.header.X-Capture-This-Too"])
+        self.assertEqual("this too", sdk_custom_tags["http.header.X-Capture-This-Too"])
+        self.assertTrue(sdk_custom_tags["http.header.X-Capture-That-Too"])
+        self.assertEqual("that too", sdk_custom_tags["http.header.X-Capture-That-Too"])
+
+        agent.options.extra_http_headers = original_extra_http_headers

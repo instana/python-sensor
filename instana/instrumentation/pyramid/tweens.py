@@ -19,15 +19,13 @@ class InstanaTweenFactory(object):
     def __init__(self, handler, registry):
         self.handler = handler
 
-    def _extract_custom_headers(self, span, headers, format):
+    def _extract_custom_headers(self, span, headers):
         if agent.options.extra_http_headers is None:
             return
         try:
             for custom_header in agent.options.extra_http_headers:
-                # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                pyramid_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
-                if pyramid_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[pyramid_header])
+                if custom_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
@@ -44,7 +42,7 @@ class InstanaTweenFactory(object):
         if request.matched_route is not None:
             scope.span.set_tag("http.path_tpl", request.matched_route.pattern)
 
-        self._extract_custom_headers(scope.span, request.headers, format=True)
+        self._extract_custom_headers(scope.span, request.headers)
         
         if len(request.query_string):
             scrubbed_params = strip_secrets_from_query(request.query_string, agent.options.secrets_matcher,
@@ -55,7 +53,7 @@ class InstanaTweenFactory(object):
         try:
             response = self.handler(request)
 
-            self._extract_custom_headers(scope.span, response.headers, format=False)
+            self._extract_custom_headers(scope.span, response.headers)
 
             tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, response.headers)
             response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id

@@ -9,7 +9,7 @@ import pytest
 
 from moto import mock_s3
 
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter
 
 pwd = os.path.dirname(os.path.abspath(__file__))
@@ -271,3 +271,70 @@ def test_s3_download_file_obj(s3):
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
     assert boto_span.data['http']['method'] == 'POST'
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/download_fileobj'
+
+
+def test_request_header_capture(s3):
+
+    original_extra_http_headers = agent.options.extra_http_headers
+    agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
+
+    # Access the event system on the S3 client
+    event_system = s3.meta.events
+    
+    # Create a function that adds a custom header and prints all headers.
+    def add_custom_header_before_call(params, **kwargs):
+        params['headers'] = {
+            'X-Capture-This': 'this',
+            'X-Capture-That': 'that'
+        }
+        headers = params['headers']
+        print(f'params headers in add_custom_header_before_call: {headers}')
+
+    print("\nRegistering add_custom_header_before_call to event before-call")
+    #  Register the function to an event.
+    event_system.register('before-call', add_custom_header_before_call)
+
+    # Create a function that prints the request information.
+    def inspect_request_created(request, operation_name, **kwargs):
+        print("headers after request is created:")
+        for header in request.headers:
+            if header.startswith("X-Capture"):
+                print(header, sep='\t')
+
+
+    event_system.register('request-created', inspect_request_created)
+
+    with tracer.start_active_span('test'):
+        result = s3.create_bucket(Bucket="aws_bucket_name")
+
+    # result = s3.list_buckets()
+    # # print(result)
+    # assert len(result['Buckets']) == 1
+    # assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
+
+    # spans = tracer.recorder.queued_spans()
+    # assert len(spans) == 2
+
+    # filter = lambda span: span.n == "sdk"
+    # test_span = get_first_span_by_filter(spans, filter)
+    # assert (test_span)
+
+    # filter = lambda span: span.n == "boto3"
+    # boto_span = get_first_span_by_filter(spans, filter)
+    # assert (boto_span)
+
+    # assert (boto_span.t == test_span.t)
+    # assert (boto_span.p == test_span.s)
+
+    # assert (test_span.ec is None)
+    # assert (boto_span.ec is None)
+
+    # assert boto_span.data['boto3']['op'] == 'CreateBucket'
+    # assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
+    # assert boto_span.data['boto3']['reg'] == 'us-east-1'
+    # assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
+    # assert boto_span.data['http']['status'] == 200
+    # assert boto_span.data['http']['method'] == 'POST'
+    # assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
+        
+    agent.options.extra_http_headers = original_extra_http_headers

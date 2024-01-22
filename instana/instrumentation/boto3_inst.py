@@ -8,13 +8,24 @@ import wrapt
 import inspect
 
 from ..log import logger
-from ..singletons import tracer
+from ..singletons import tracer, agent
 from ..util.traceutils import get_active_tracer
 
 try:
     import opentracing as ot
     import boto3
     from boto3.s3 import inject
+
+    def extract_custom_headers(span, headers):
+        if agent.options.extra_http_headers is None:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
 
 
     def lambda_inject_context(payload, scope):
@@ -39,6 +50,9 @@ try:
     def make_api_call_with_instana(wrapped, instance, arg_list, kwargs):
         # pylint: disable=protected-access
         active_tracer = get_active_tracer()
+
+        print("\nWrapping BaseClient._make_api_call with instrumentation")
+        logger.info("\nkwargs inside make_api_call_with_instana: %s", kwargs)
 
         # If we're not tracing, just return
         if active_tracer is None:
@@ -71,6 +85,7 @@ try:
                 result = wrapped(*arg_list, **kwargs)
 
                 if isinstance(result, dict):
+                    ## can use response['ResponseMetadata']['HTTPHeaders'] to attach response headers
                     http_dict = result.get('ResponseMetadata')
                     if isinstance(http_dict, dict):
                         status = http_dict.get('HTTPStatusCode')

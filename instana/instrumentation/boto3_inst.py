@@ -52,7 +52,6 @@ try:
         active_tracer = get_active_tracer()
 
         print("\nWrapping BaseClient._make_api_call with instrumentation")
-        logger.info("\nkwargs inside make_api_call_with_instana: %s", kwargs)
 
         # If we're not tracing, just return
         if active_tracer is None:
@@ -85,12 +84,13 @@ try:
                 result = wrapped(*arg_list, **kwargs)
 
                 if isinstance(result, dict):
-                    ## can use response['ResponseMetadata']['HTTPHeaders'] to attach response headers
                     http_dict = result.get('ResponseMetadata')
                     if isinstance(http_dict, dict):
                         status = http_dict.get('HTTPStatusCode')
                         if status is not None:
                             scope.span.set_tag('http.status_code', status)
+                        headers = http_dict.get('HTTPHeaders')
+                        extract_custom_headers(scope.span, headers)
 
                 return result
             except Exception as exc:

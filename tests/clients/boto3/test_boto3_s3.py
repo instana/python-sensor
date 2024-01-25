@@ -14,7 +14,7 @@ if sys.version_info >= (3, 8):
 else:
   from moto import mock_s3 as mock_aws
 
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter
 
 pwd = os.path.dirname(os.path.abspath(__file__))
@@ -95,7 +95,7 @@ def test_s3_list_buckets(s3):
 
     result = s3.list_buckets()
     assert len(result['Buckets']) == 0
-    assert result['ResponseMetadata']['HTTPStatusCode'] is 200
+    assert result['ResponseMetadata']['HTTPStatusCode'] == 200
 
     spans = tracer.recorder.queued_spans()
     assert len(spans) == 2
@@ -276,3 +276,125 @@ def test_s3_download_file_obj(s3):
     assert boto_span.data['boto3']['reg'] == 'us-east-1'
     assert boto_span.data['http']['method'] == 'POST'
     assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/download_fileobj'
+
+
+def test_request_header_capture(s3):
+
+    original_extra_http_headers = agent.options.extra_http_headers
+    agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
+
+    # Access the event system on the S3 client
+    event_system = s3.meta.events
+
+    request_headers = {
+            'X-Capture-This': 'this',
+            'X-Capture-That': 'that'
+        }
+    
+    # We set the custom headers in the request context instead of params 
+    # because later in the processing of the request, there is a parameter validation step, 
+    # which doesn't allow for custom arguments. 
+    def process_custom_arguments(params, context, **kwargs):
+        if "custom_request_headers" not in context:
+            context["custom_request_headers"] = request_headers
+    
+    event_system.register('before-parameter-build', process_custom_arguments)
+
+    with tracer.start_active_span('test'):
+        result = s3.create_bucket(Bucket="aws_bucket_name")
+   
+    result = s3.list_buckets()
+    assert len(result['Buckets']) == 1
+    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
+
+    spans = tracer.recorder.queued_spans()
+    assert len(spans) == 2
+
+    filter = lambda span: span.n == "sdk"
+    test_span = get_first_span_by_filter(spans, filter)
+    assert (test_span)
+
+    filter = lambda span: span.n == "boto3"
+    boto_span = get_first_span_by_filter(spans, filter)
+    assert (boto_span)
+
+    assert (boto_span.t == test_span.t)
+    assert (boto_span.p == test_span.s)
+
+    assert (test_span.ec is None)
+    assert (boto_span.ec is None)
+
+    assert boto_span.data['boto3']['op'] == 'CreateBucket'
+    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
+    assert boto_span.data['boto3']['reg'] == 'us-east-1'
+    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
+    assert boto_span.data['http']['status'] == 200
+    assert boto_span.data['http']['method'] == 'POST'
+    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
+
+    assert ("X-Capture-This" in boto_span.data["http"]["header"])
+    assert ("this" == boto_span.data["http"]["header"]["X-Capture-This"])
+    assert ("X-Capture-That" in boto_span.data["http"]["header"])
+    assert ("that" == boto_span.data["http"]["header"]["X-Capture-That"])
+        
+    agent.options.extra_http_headers = original_extra_http_headers
+
+
+def test_response_header_capture(s3):
+
+    original_extra_http_headers = agent.options.extra_http_headers
+    agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
+
+    # Access the event system on the S3 client
+    event_system = s3.meta.events
+    
+    response_headers = {
+        "X-Capture-This-Too": "this too",
+        "X-Capture-That-Too": "that too",
+    }
+
+    # Create a function that sets the custom headers in the after-call event.
+    def modify_after_call_args(parsed, **kwargs):
+        parsed['ResponseMetadata']['HTTPHeaders'].update(response_headers)
+
+    # Register the function to an event
+    event_system.register('after-call', modify_after_call_args)
+
+    with tracer.start_active_span('test'):
+        result = s3.create_bucket(Bucket="aws_bucket_name")
+
+    result = s3.list_buckets()
+    assert len(result['Buckets']) == 1
+    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
+
+    spans = tracer.recorder.queued_spans()
+    assert len(spans) == 2
+
+    filter = lambda span: span.n == "sdk"
+    test_span = get_first_span_by_filter(spans, filter)
+    assert (test_span)
+
+    filter = lambda span: span.n == "boto3"
+    boto_span = get_first_span_by_filter(spans, filter)
+    assert (boto_span)
+
+    assert (boto_span.t == test_span.t)
+    assert (boto_span.p == test_span.s)
+
+    assert (test_span.ec is None)
+    assert (boto_span.ec is None)
+
+    assert boto_span.data['boto3']['op'] == 'CreateBucket'
+    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
+    assert boto_span.data['boto3']['reg'] == 'us-east-1'
+    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
+    assert boto_span.data['http']['status'] == 200
+    assert boto_span.data['http']['method'] == 'POST'
+    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
+
+    assert ("X-Capture-This-Too" in boto_span.data["http"]["header"])
+    assert ("this too" == boto_span.data["http"]["header"]["X-Capture-This-Too"])
+    assert ("X-Capture-That-Too" in boto_span.data["http"]["header"])
+    assert ("that too" == boto_span.data["http"]["header"]["X-Capture-That-Too"])
+        
+    agent.options.extra_http_headers = original_extra_http_headers

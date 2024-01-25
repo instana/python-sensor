@@ -8,13 +8,24 @@ import wrapt
 import inspect
 
 from ..log import logger
-from ..singletons import tracer
+from ..singletons import tracer, agent
 from ..util.traceutils import get_active_tracer
 
 try:
     import opentracing as ot
     import boto3
     from boto3.s3 import inject
+
+    def extract_custom_headers(span, headers):
+        if agent.options.extra_http_headers is None:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
 
 
     def lambda_inject_context(payload, scope):
@@ -34,6 +45,20 @@ try:
         except Exception:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)
 
+
+    @wrapt.patch_function_wrapper("botocore.hooks", "HierarchicalEmitter.emit_until_response")
+    def emit_until_response_with_instana(wrapped, instance, args, kwargs):
+        active_tracer = get_active_tracer()
+        
+        # If we're not tracing or the event emitted is not before-call, just return;
+        if active_tracer is None or args[0].split(".")[0] != "before-call":
+            return wrapped(*args, **kwargs)
+        
+        span = active_tracer.active_span
+        if "custom_request_headers" in kwargs["context"]:
+            extract_custom_headers(span, kwargs["context"]["custom_request_headers"])
+
+        return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper('botocore.client', 'BaseClient._make_api_call')
     def make_api_call_with_instana(wrapped, instance, arg_list, kwargs):
@@ -76,6 +101,8 @@ try:
                         status = http_dict.get('HTTPStatusCode')
                         if status is not None:
                             scope.span.set_tag('http.status_code', status)
+                        headers = http_dict.get('HTTPHeaders')
+                        extract_custom_headers(scope.span, headers)
 
                 return result
             except Exception as exc:

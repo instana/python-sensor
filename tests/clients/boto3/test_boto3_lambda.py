@@ -7,7 +7,12 @@ import os
 import boto3
 import pytest
 
-from moto import mock_lambda
+# TODO: Remove branching when we drop support for Python 3.7
+import sys
+if sys.version_info >= (3, 8):
+  from moto import mock_aws
+else:
+  from moto import mock_sqs as mock_aws
 
 from instana.singletons import tracer
 from ...helpers import get_first_span_by_filter
@@ -24,7 +29,7 @@ def aws_credentials():
 
 @pytest.fixture(scope='function')
 def aws_lambda(aws_credentials):
-    with mock_lambda():
+    with mock_aws():
         yield boto3.client('lambda', region_name='us-east-1')
 
 

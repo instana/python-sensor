@@ -8,7 +8,12 @@ import boto3
 import pytest
 import urllib3
 
-from moto import mock_sqs
+# TODO: Remove branching when we drop support for Python 3.7
+import sys
+if sys.version_info >= (3, 8):
+  from moto import mock_aws
+else:
+  from moto import mock_sqs as mock_aws
 
 import tests.apps.flask_app
 from instana.singletons import tracer
@@ -38,7 +43,7 @@ def http_client():
 
 @pytest.fixture(scope='function')
 def sqs(aws_credentials):
-    with mock_sqs():
+    with mock_aws():
         yield boto3.client('sqs', region_name='us-east-1')
 
 
@@ -113,7 +118,7 @@ def test_send_message(sqs):
     assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
 
-@mock_sqs
+@mock_aws
 def test_app_boto3_sqs(http_client):
     with tracer.start_active_span('test'):
         response = http_client.request('GET', testenv["wsgi_server"] + '/boto3/sqs')

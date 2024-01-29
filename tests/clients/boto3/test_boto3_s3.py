@@ -2,10 +2,8 @@
 # (c) Copyright Instana Inc. 2020
 
 from __future__ import absolute_import
-
 import os
-import boto3
-import pytest
+import unittest
 
 # TODO: Remove branching when we drop support for Python 3.7
 import sys
@@ -13,6 +11,7 @@ if sys.version_info >= (3, 8):
   from moto import mock_aws
 else:
   from moto import mock_s3 as mock_aws
+import boto3
 
 from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter
@@ -22,379 +21,373 @@ upload_filename = os.path.abspath(pwd + '/../../data/boto3/test_upload_file.jpg'
 download_target_filename = os.path.abspath(pwd + '/../../data/boto3/download_target_file.asdf')
 
 
-def setup_method():
-    """ Clear all spans before a test run """
-    tracer.recorder.clear_spans()
-    os.remove(download_target_filename)
+class TestS3(unittest.TestCase):
+    def aws_credentials(self):
+        """Mocked AWS Credentials for moto."""
+        os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+        os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+        os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+        os.environ['AWS_SESSION_TOKEN'] = 'testing'
 
+    def setUp(self):
+        """ Clear all spans before a test run """
+        self.recorder = tracer.recorder
+        self.recorder.clear_spans()
+        self.aws_credentials()
+        self.mock = mock_aws()
+        self.mock.start()
+        self.s3 = boto3.client('s3', region_name='us-east-1')
 
-@pytest.fixture(scope='function')
-def aws_credentials():
-    """Mocked AWS Credentials for moto."""
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
 
+    def tearDown(self):
+        # Stop Moto after each test
+        self.mock.stop()
 
-@pytest.fixture(scope='function')
-def s3(aws_credentials):
-    with mock_aws():
-        yield boto3.client('s3', region_name='us-east-1')
 
+    def test_vanilla_create_bucket(self):
+        self.s3.create_bucket(Bucket="aws_bucket_name")
 
-def test_vanilla_create_bucket(s3):
-    # s3 is a fixture defined above that yields a boto3 s3 client.
-    # Feel free to instantiate another boto3 S3 client -- Keep note of the region though.
-    s3.create_bucket(Bucket="aws_bucket_name")
+        result = self.s3.list_buckets()
+        self.assertEqual(1, len(result['Buckets']))
+        self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-    result = s3.list_buckets()
-    assert len(result['Buckets']) == 1
-    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
 
+    def test_s3_create_bucket(self):
+        with tracer.start_active_span('test'):
+            self.s3.create_bucket(Bucket="aws_bucket_name")
 
-def test_s3_create_bucket(s3):
-    result = None
-    with tracer.start_active_span('test'):
-        result = s3.create_bucket(Bucket="aws_bucket_name")
+        result = self.s3.list_buckets()
+        self.assertEqual(1, len(result['Buckets']))
+        self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-    result = s3.list_buckets()
-    assert len(result['Buckets']) == 1
-    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        self.assertEqual(boto_span.data['boto3']['op'], 'CreateBucket')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertDictEqual(boto_span.data['boto3']['payload'], {'Bucket': 'aws_bucket_name'})
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/CreateBucket')
 
-    assert boto_span.data['boto3']['op'] == 'CreateBucket'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
-    assert boto_span.data['http']['status'] == 200
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
 
+    def test_s3_list_buckets(self):
+        with tracer.start_active_span('test'):
+            self.s3.list_buckets()
 
-def test_s3_list_buckets(s3):
-    result = None
-    with tracer.start_active_span('test'):
-        result = s3.list_buckets()
+        result = self.s3.list_buckets()
+        self.assertEqual(0, len(result['Buckets']))
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
-    result = s3.list_buckets()
-    assert len(result['Buckets']) == 0
-    assert result['ResponseMetadata']['HTTPStatusCode'] == 200
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        self.assertEqual(boto_span.data['boto3']['op'], 'ListBuckets')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertDictEqual(boto_span.data['boto3']['payload'], {})
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/ListBuckets')
 
-    assert boto_span.data['boto3']['op'] == 'ListBuckets'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {}
-    assert boto_span.data['http']['status'] == 200
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/ListBuckets'
 
+    def test_s3_vanilla_upload_file(self):
+        object_name = 'aws_key_name'
+        bucket_name = 'aws_bucket_name'
 
-def test_s3_vanilla_upload_file(s3):
-    object_name = 'aws_key_name'
-    bucket_name = 'aws_bucket_name'
+        self.s3.create_bucket(Bucket=bucket_name)
+        result = self.s3.upload_file(upload_filename, bucket_name, object_name)
+        self.assertIsNone(result)
 
-    s3.create_bucket(Bucket=bucket_name)
-    result = s3.upload_file(upload_filename, bucket_name, object_name)
-    assert result is None
 
+    def test_s3_upload_file(self):
+        object_name = 'aws_key_name'
+        bucket_name = 'aws_bucket_name'
 
-def test_s3_upload_file(s3):
-    object_name = 'aws_key_name'
-    bucket_name = 'aws_bucket_name'
+        self.s3.create_bucket(Bucket=bucket_name)
 
-    s3.create_bucket(Bucket=bucket_name)
+        with tracer.start_active_span('test'):
+            self.s3.upload_file(upload_filename, bucket_name, object_name)
 
-    result = None
-    with tracer.start_active_span('test'):
-        s3.upload_file(upload_filename, bucket_name, object_name)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        self.assertEqual(boto_span.data['boto3']['op'], 'upload_file')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        payload = {'Filename': upload_filename, 'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
+        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/upload_file')
 
-    assert boto_span.data['boto3']['op'] == 'upload_file'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    payload = {'Filename': upload_filename, 'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
-    assert boto_span.data['boto3']['payload'] == payload
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/upload_file'
 
+    def test_s3_upload_file_obj(self):
+        object_name = 'aws_key_name'
+        bucket_name = 'aws_bucket_name'
 
-def test_s3_upload_file_obj(s3):
-    object_name = 'aws_key_name'
-    bucket_name = 'aws_bucket_name'
+        self.s3.create_bucket(Bucket=bucket_name)
 
-    s3.create_bucket(Bucket=bucket_name)
+        with tracer.start_active_span('test'):
+            with open(upload_filename, "rb") as fd:
+                self.s3.upload_fileobj(fd, bucket_name, object_name)
 
-    result = None
-    with tracer.start_active_span('test'):
-        with open(upload_filename, "rb") as fd:
-            s3.upload_fileobj(fd, bucket_name, object_name)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        self.assertEqual(boto_span.data['boto3']['op'], 'upload_fileobj')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        payload = {'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
+        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/upload_fileobj')
 
-    assert (boto_span.data['boto3']['op'] == 'upload_fileobj')
-    assert (boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com')
-    assert (boto_span.data['boto3']['reg'] == 'us-east-1')
-    payload = {'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name'}
-    assert boto_span.data['boto3']['payload'] == payload
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/upload_fileobj'
 
+    def test_s3_download_file(self):
+        object_name = 'aws_key_name'
+        bucket_name = 'aws_bucket_name'
 
-def test_s3_download_file(s3):
-    object_name = 'aws_key_name'
-    bucket_name = 'aws_bucket_name'
+        self.s3.create_bucket(Bucket=bucket_name)
+        self.s3.upload_file(upload_filename, bucket_name, object_name)
 
-    s3.create_bucket(Bucket=bucket_name)
-    s3.upload_file(upload_filename, bucket_name, object_name)
+        with tracer.start_active_span('test'):
+            self.s3.download_file(bucket_name, object_name, download_target_filename)
 
-    result = None
-    with tracer.start_active_span('test'):
-        s3.download_file(bucket_name, object_name, download_target_filename)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        self.assertEqual(boto_span.data['boto3']['op'], 'download_file')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        payload = {'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name', 'Filename': '%s' % download_target_filename}
+        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/download_file')
 
-    assert (boto_span.data['boto3']['op'] == 'download_file')
-    assert (boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com')
-    assert (boto_span.data['boto3']['reg'] == 'us-east-1')
-    payload = {'Bucket': 'aws_bucket_name', 'Key': 'aws_key_name', 'Filename': '%s' % download_target_filename}
-    assert boto_span.data['boto3']['payload'] == payload
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/download_file'
 
+    def test_s3_download_file_obj(self):
+        object_name = 'aws_key_name'
+        bucket_name = 'aws_bucket_name'
 
-def test_s3_download_file_obj(s3):
-    object_name = 'aws_key_name'
-    bucket_name = 'aws_bucket_name'
+        self.s3.create_bucket(Bucket=bucket_name)
+        self.s3.upload_file(upload_filename, bucket_name, object_name)
 
-    s3.create_bucket(Bucket=bucket_name)
-    s3.upload_file(upload_filename, bucket_name, object_name)
+        with tracer.start_active_span('test'):
+            with open(download_target_filename, "wb") as fd:
+                self.s3.download_fileobj(bucket_name, object_name, fd)
 
-    result = None
-    with tracer.start_active_span('test'):
-        with open(download_target_filename, "wb") as fd:
-            s3.download_fileobj(bucket_name, object_name, fd)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        self.assertEqual(boto_span.data['boto3']['op'], 'download_fileobj')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/download_fileobj')
 
-    assert boto_span.data['boto3']['op'] == 'download_fileobj'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/download_fileobj'
 
+    def test_request_header_capture(self):
 
-def test_request_header_capture(s3):
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
 
-    original_extra_http_headers = agent.options.extra_http_headers
-    agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
+        # Access the event system on the S3 client
+        event_system = self.s3.meta.events
 
-    # Access the event system on the S3 client
-    event_system = s3.meta.events
+        request_headers = {
+                'X-Capture-This': 'this',
+                'X-Capture-That': 'that'
+            }
+        
+        # We set the custom headers in the request context instead of params 
+        # because later in the processing of the request, there is a parameter validation step, 
+        # which doesn't allow for custom arguments. 
+        def process_custom_arguments(params, context, **kwargs):
+            if "custom_request_headers" not in context:
+                context["custom_request_headers"] = request_headers
+        
+        event_system.register('before-parameter-build.s3.CreateBucket', process_custom_arguments)
 
-    request_headers = {
-            'X-Capture-This': 'this',
-            'X-Capture-That': 'that'
+        with tracer.start_active_span('test'):
+            result = self.s3.create_bucket(Bucket="aws_bucket_name")
+    
+        result = self.s3.list_buckets()
+        self.assertEqual(1, len(result['Buckets']))
+        self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
+
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
+
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
+
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
+
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'CreateBucket')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertDictEqual(boto_span.data['boto3']['payload'], {'Bucket': 'aws_bucket_name'})
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/CreateBucket')
+
+        self.assertIn("X-Capture-This", boto_span.data["http"]["header"])
+        self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
+        self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
+        self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
+            
+        agent.options.extra_http_headers = original_extra_http_headers
+
+
+    def test_response_header_capture(self):
+
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
+
+        # Access the event system on the S3 client
+        event_system = self.s3.meta.events
+        
+        response_headers = {
+            "X-Capture-This-Too": "this too",
+            "X-Capture-That-Too": "that too",
         }
-    
-    # We set the custom headers in the request context instead of params 
-    # because later in the processing of the request, there is a parameter validation step, 
-    # which doesn't allow for custom arguments. 
-    def process_custom_arguments(params, context, **kwargs):
-        if "custom_request_headers" not in context:
-            context["custom_request_headers"] = request_headers
-    
-    event_system.register('before-parameter-build', process_custom_arguments)
 
-    with tracer.start_active_span('test'):
-        result = s3.create_bucket(Bucket="aws_bucket_name")
-   
-    result = s3.list_buckets()
-    assert len(result['Buckets']) == 1
-    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
+        # Create a function that sets the custom headers in the after-call event.
+        def modify_after_call_args(parsed, **kwargs):
+            parsed['ResponseMetadata']['HTTPHeaders'].update(response_headers)
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        # Register the function to an event
+        event_system.register('after-call.s3.CreateBucket', modify_after_call_args)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
+        with tracer.start_active_span('test'):
+            result = self.s3.create_bucket(Bucket="aws_bucket_name")
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
+        result = self.s3.list_buckets()
+        self.assertEqual(1, len(result['Buckets']))
+        self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    assert boto_span.data['boto3']['op'] == 'CreateBucket'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
-    assert boto_span.data['http']['status'] == 200
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    assert ("X-Capture-This" in boto_span.data["http"]["header"])
-    assert ("this" == boto_span.data["http"]["header"]["X-Capture-This"])
-    assert ("X-Capture-That" in boto_span.data["http"]["header"])
-    assert ("that" == boto_span.data["http"]["header"]["X-Capture-That"])
-        
-    agent.options.extra_http_headers = original_extra_http_headers
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-def test_response_header_capture(s3):
+        self.assertEqual(boto_span.data['boto3']['op'], 'CreateBucket')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertDictEqual(boto_span.data['boto3']['payload'], {'Bucket': 'aws_bucket_name'})
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/CreateBucket')
 
-    original_extra_http_headers = agent.options.extra_http_headers
-    agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
-
-    # Access the event system on the S3 client
-    event_system = s3.meta.events
-    
-    response_headers = {
-        "X-Capture-This-Too": "this too",
-        "X-Capture-That-Too": "that too",
-    }
-
-    # Create a function that sets the custom headers in the after-call event.
-    def modify_after_call_args(parsed, **kwargs):
-        parsed['ResponseMetadata']['HTTPHeaders'].update(response_headers)
-
-    # Register the function to an event
-    event_system.register('after-call', modify_after_call_args)
-
-    with tracer.start_active_span('test'):
-        result = s3.create_bucket(Bucket="aws_bucket_name")
-
-    result = s3.list_buckets()
-    assert len(result['Buckets']) == 1
-    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
-
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
-
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
-
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
-
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
-
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
-
-    assert boto_span.data['boto3']['op'] == 'CreateBucket'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
-    assert boto_span.data['http']['status'] == 200
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
-
-    assert ("X-Capture-This-Too" in boto_span.data["http"]["header"])
-    assert ("this too" == boto_span.data["http"]["header"]["X-Capture-This-Too"])
-    assert ("X-Capture-That-Too" in boto_span.data["http"]["header"])
-    assert ("that too" == boto_span.data["http"]["header"]["X-Capture-That-Too"])
-        
-    agent.options.extra_http_headers = original_extra_http_headers
+        self.assertIn("X-Capture-This-Too", boto_span.data["http"]["header"])
+        self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
+        self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
+        self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
+            
+        agent.options.extra_http_headers = original_extra_http_headers

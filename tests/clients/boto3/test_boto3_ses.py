@@ -7,7 +7,12 @@ import os
 import boto3
 import pytest
 
-from moto import mock_ses
+# TODO: Remove branching when we drop support for Python 3.7
+import sys
+if sys.version_info >= (3, 8):
+  from moto import mock_aws
+else:
+  from moto import mock_ses as mock_aws
 
 from instana.singletons import tracer
 from ...helpers import get_first_span_by_filter
@@ -30,7 +35,7 @@ def aws_credentials():
 
 @pytest.fixture(scope='function')
 def ses(aws_credentials):
-    with mock_ses():
+    with mock_aws():
         yield boto3.client('ses', region_name='us-east-1')
 
 

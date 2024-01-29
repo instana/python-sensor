@@ -4,7 +4,7 @@ If you would like to run this test server manually from an ipython console:
 import os
 import urllib3
 
-from moto import mock_sqs
+from moto import mock_aws
 import tests.apps.flask_app
 from tests.helpers import testenv
 from instana.singletons import tracer
@@ -16,7 +16,7 @@ os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
 os.environ['AWS_SECURITY_TOKEN'] = 'testing'
 os.environ['AWS_SESSION_TOKEN'] = 'testing'
 
-@mock_sqs
+@mock_aws
 def test_app_boto3_sqs():
     with tracer.start_active_span('wsgi') as scope:
         scope.span.set_tag('span.kind', 'entry')

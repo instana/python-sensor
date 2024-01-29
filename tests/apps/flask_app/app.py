@@ -13,7 +13,12 @@ from flask import Flask, redirect, render_template, render_template_string
 
 try:
     import boto3
-    from moto import mock_sqs
+    # TODO: Remove branching when we drop support for Python 3.7
+    import sys
+    if sys.version_info >= (3, 8):
+      from moto import mock_aws
+    else:
+      from moto import mock_sqs as mock_aws
 except ImportError:
     # Doesn't matter.  We won't call routes using boto3
     # in test sets that don't install/test for it.
@@ -174,7 +179,7 @@ def boto3_sqs():
     os.environ['AWS_SECURITY_TOKEN'] = 'testing'
     os.environ['AWS_SESSION_TOKEN'] = 'testing'
 
-    with mock_sqs():
+    with mock_aws():
         boto3_client = boto3.client('sqs', region_name='us-east-1')
         response = boto3_client.create_queue(
             QueueName='SQS_QUEUE_NAME',

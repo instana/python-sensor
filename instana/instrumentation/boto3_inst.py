@@ -46,19 +46,19 @@ try:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)
 
 
-    @wrapt.patch_function_wrapper("botocore.hooks", "HierarchicalEmitter.emit_until_response")
-    def emit_until_response_with_instana(wrapped, instance, args, kwargs):
+    @wrapt.patch_function_wrapper("botocore.hooks", "HierarchicalEmitter.emit")
+    def emit_request_created_with_instana(wrapped, instance, args, kwargs):
         active_tracer = get_active_tracer()
         
-        # If we're not tracing or the event emitted is not before-call, just return;
-        if active_tracer is None or args[0].split(".")[0] != "before-call":
+        # If we're not tracing or the event emitted is not request-created, just return;
+        if active_tracer is None or args[0].split(".")[0] != "request-created":
             return wrapped(*args, **kwargs)
         
         span = active_tracer.active_span
-        if "custom_request_headers" in kwargs["context"]:
-            extract_custom_headers(span, kwargs["context"]["custom_request_headers"])
+        extract_custom_headers(span, kwargs["request"].headers)
 
         return wrapped(*args, **kwargs)
+
 
     @wrapt.patch_function_wrapper('botocore.client', 'BaseClient._make_api_call')
     def make_api_call_with_instana(wrapped, instance, arg_list, kwargs):

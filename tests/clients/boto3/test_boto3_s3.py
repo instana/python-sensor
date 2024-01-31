@@ -22,8 +22,8 @@ download_target_filename = os.path.abspath(pwd + '/../../data/boto3/download_tar
 
 
 class TestS3(unittest.TestCase):
-    def aws_credentials(self):
-        """Mocked AWS Credentials for moto."""
+    def set_aws_credentials(self):
+        """ Mocked AWS Credentials for moto """
         os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
         os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
         os.environ['AWS_SECURITY_TOKEN'] = 'testing'
@@ -33,16 +33,25 @@ class TestS3(unittest.TestCase):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        self.aws_credentials()
+        self.set_aws_credentials()
         self.mock = mock_aws()
         self.mock.start()
         self.s3 = boto3.client('s3', region_name='us-east-1')
 
+    def unset_aws_credentials(self):
+        """ Reset all environment variables of consequence """
+        variable_names = (
+                "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+                "AWS_SECURITY_TOKEN", "AWS_SESSION_TOKEN"
+                )
+
+        for variable_name in variable_names:
+            os.environ.pop(variable_name, None)
 
     def tearDown(self):
         # Stop Moto after each test
         self.mock.stop()
-
+        self.unset_aws_credentials()
 
     def test_vanilla_create_bucket(self):
         self.s3.create_bucket(Bucket="aws_bucket_name")
@@ -88,9 +97,8 @@ class TestS3(unittest.TestCase):
 
     def test_s3_list_buckets(self):
         with tracer.start_active_span('test'):
-            self.s3.list_buckets()
+            result = self.s3.list_buckets()
 
-        result = self.s3.list_buckets()
         self.assertEqual(0, len(result['Buckets']))
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
@@ -283,15 +291,13 @@ class TestS3(unittest.TestCase):
                 'X-Capture-This': 'this',
                 'X-Capture-That': 'that'
             }
-        
-        # We set the custom headers in the request context instead of params 
-        # because later in the processing of the request, there is a parameter validation step, 
-        # which doesn't allow for custom arguments. 
-        def process_custom_arguments(params, context, **kwargs):
-            if "custom_request_headers" not in context:
-                context["custom_request_headers"] = request_headers
-        
-        event_system.register('before-parameter-build.s3.CreateBucket', process_custom_arguments)
+
+        # Create a function that adds custom headers
+        def add_custom_header_before_call(params, **kwargs):
+            params['headers'].update(request_headers)
+
+        # Register the function to an event.
+        event_system.register('before-call.s3.CreateBucket', add_custom_header_before_call)
 
         with tracer.start_active_span('test'):
             result = self.s3.create_bucket(Bucket="aws_bucket_name")
@@ -354,7 +360,7 @@ class TestS3(unittest.TestCase):
         event_system.register('after-call.s3.CreateBucket', modify_after_call_args)
 
         with tracer.start_active_span('test'):
-            result = self.s3.create_bucket(Bucket="aws_bucket_name")
+            self.s3.create_bucket(Bucket="aws_bucket_name")
 
         result = self.s3.list_buckets()
         self.assertEqual(1, len(result['Buckets']))

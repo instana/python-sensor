@@ -296,8 +296,15 @@ class TestS3(unittest.TestCase):
         def add_custom_header_before_call(params, **kwargs):
             params['headers'].update(request_headers)
 
-        # Register the function to an event.
-        event_system.register('before-call.s3.CreateBucket', add_custom_header_before_call)
+        # # Register the function to before-call event.
+        # event_system.register('before-call.s3.CreateBucket', add_custom_header_before_call)
+
+        def _add_header(request, **kwargs):
+            for name, value in request_headers.items():
+                request.headers.add_header(name, value)
+
+        # Register the function to before-sign event.
+        event_system.register_first('before-sign.s3.CreateBucket', _add_header)
 
         with tracer.start_active_span('test'):
             result = self.s3.create_bucket(Bucket="aws_bucket_name")

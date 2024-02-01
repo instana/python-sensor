@@ -46,16 +46,16 @@ try:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)
 
 
-    @wrapt.patch_function_wrapper("botocore.hooks", "HierarchicalEmitter.emit")
-    def emit_request_created_with_instana(wrapped, instance, args, kwargs):
+    @wrapt.patch_function_wrapper("botocore.auth", "SigV4Auth.add_auth")
+    def emit_add_auth_with_instana(wrapped, instance, args, kwargs):
         active_tracer = get_active_tracer()
-        
-        # If we're not tracing or the event emitted is not request-created, just return;
-        if active_tracer is None or args[0].split(".")[0] != "request-created":
+
+        # If we're not tracing, just return;
+        if active_tracer is None:
             return wrapped(*args, **kwargs)
         
         span = active_tracer.active_span
-        extract_custom_headers(span, kwargs["request"].headers)
+        extract_custom_headers(span, args[0].headers)
 
         return wrapped(*args, **kwargs)
 

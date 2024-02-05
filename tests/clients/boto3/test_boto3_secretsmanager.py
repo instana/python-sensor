@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 import os
 import boto3
-import pytest
+import unittest
 
 # TODO: Remove branching when we drop support for Python 3.7
 import sys
@@ -14,75 +14,285 @@ if sys.version_info >= (3, 8):
 else:
   from moto import mock_secretsmanager as mock_aws
 
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 
-def setup_method():
-    """ Clear all spans before a test run """
-    tracer.recorder.clear_spans()
+class TestSecretsManager(unittest.TestCase):
+    def set_aws_credentials(self):
+        """ Mocked AWS Credentials for moto """
+        for variable_name in self.variable_names:
+            os.environ[variable_name] = "testing"
+
+    def setUp(self):
+        """ Clear all spans before a test run """
+        self.recorder = tracer.recorder
+        self.recorder.clear_spans()
+        self.variable_names = (
+                "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+                "AWS_SECURITY_TOKEN", "AWS_SESSION_TOKEN"
+                )
+        self.set_aws_credentials()
+        self.mock = mock_aws()
+        self.mock.start()
+        self.secretsmanager = boto3.client('secretsmanager', region_name='us-east-1')
+
+    def unset_aws_credentials(self):
+        """ Reset all environment variables of consequence """
+        for variable_name in self.variable_names:
+            os.environ.pop(variable_name, None)
+
+    def tearDown(self):
+        # Stop Moto after each test
+        self.mock.stop()
+        self.unset_aws_credentials()
 
 
-@pytest.fixture(scope='function')
-def aws_credentials():
-    """Mocked AWS Credentials for moto."""
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    def test_vanilla_list_secrets(self):
+        result = self.secretsmanager.list_secrets(MaxResults=123)
+        self.assertListEqual(result['SecretList'], [])
 
 
-@pytest.fixture(scope='function')
-def secretsmanager(aws_credentials):
-    with mock_aws():
-        yield boto3.client('secretsmanager', region_name='us-east-1')
+    def test_get_secret_value(self):
+        secret_id = 'Uber_Password'
+
+        response = self.secretsmanager.create_secret(
+            Name=secret_id,
+            SecretBinary=b'password1',
+            SecretString='password1',
+        )
+
+        self.assertEqual(response['Name'], secret_id)
+
+        with tracer.start_active_span('test'):
+            result = self.secretsmanager.get_secret_value(SecretId=secret_id)
+
+        self.assertEqual(result['Name'], secret_id)
+
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
+
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
+
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
+
+        self.assertIsNone(test_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertNotIn('payload', boto_span.data['boto3'])
+
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
 
 
-def test_vanilla_list_secrets(secretsmanager):
-    result = secretsmanager.list_secrets(MaxResults=123)
-    assert result['SecretList'] == []
+    def test_request_header_capture_before_call(self):
+        secret_id = 'Uber_Password'
 
+        response = self.secretsmanager.create_secret(
+            Name=secret_id,
+            SecretBinary=b'password1',
+            SecretString='password1',
+        )
 
-def test_get_secret_value(secretsmanager):
-    result = None
-    secret_id = 'Uber_Password'
+        self.assertEqual(response['Name'], secret_id)
 
-    response = secretsmanager.create_secret(
-        Name=secret_id,
-        SecretBinary=b'password1',
-        SecretString='password1',
-    )
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
 
-    assert response['Name'] == secret_id
+        # Access the event system on the S3 client
+        event_system = self.secretsmanager.meta.events
 
-    with tracer.start_active_span('test'):
-        result = secretsmanager.get_secret_value(SecretId=secret_id)
+        request_headers = {
+                'X-Capture-This': 'this',
+                'X-Capture-That': 'that'
+            }
 
-    assert result['Name'] == secret_id
+        # Create a function that adds custom headers
+        def add_custom_header_before_call(params, **kwargs):
+            params['headers'].update(request_headers)
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
+        # Register the function to before-call event.
+        event_system.register('before-call.secrets-manager.GetSecretValue', add_custom_header_before_call)
 
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert(test_span)
+        with tracer.start_active_span('test'):
+            result = self.secretsmanager.get_secret_value(SecretId=secret_id)
 
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert(boto_span)
+        self.assertEqual(result['Name'], secret_id)
 
-    assert(boto_span.t == test_span.t)
-    assert(boto_span.p == test_span.s)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
-    assert(test_span.ec is None)
-    assert(boto_span.ec is None)
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-    assert boto_span.data['boto3']['op'] == 'GetSecretValue'
-    assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert 'payload' not in boto_span.data['boto3']
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
+
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
+
+        self.assertIsNone(test_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertNotIn('payload', boto_span.data['boto3'])
+
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+
+        self.assertIn("X-Capture-This", boto_span.data["http"]["header"])
+        self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
+        self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
+        self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
+            
+        agent.options.extra_http_headers = original_extra_http_headers
+
     
-    assert boto_span.data['http']['status'] == 200
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'
+    def test_request_header_capture_before_sign(self):
+        secret_id = 'Uber_Password'
+
+        response = self.secretsmanager.create_secret(
+            Name=secret_id,
+            SecretBinary=b'password1',
+            SecretString='password1',
+        )
+
+        self.assertEqual(response['Name'], secret_id)
+
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Custom-1', 'X-Custom-2']
+
+        # Access the event system on the S3 client
+        event_system = self.secretsmanager.meta.events
+
+        request_headers = {
+                'X-Custom-1': 'Value1',
+                'X-Custom-2': 'Value2'
+            }
+
+        # Create a function that adds custom headers
+        def add_custom_header_before_sign(request, **kwargs):
+            for name, value in request_headers.items():
+                request.headers.add_header(name, value)
+
+        # Register the function to before-sign event.
+        event_system.register_first('before-sign.secrets-manager.GetSecretValue', add_custom_header_before_sign)
+
+        with tracer.start_active_span('test'):
+            result = self.secretsmanager.get_secret_value(SecretId=secret_id)
+
+        self.assertEqual(result['Name'], secret_id)
+
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
+
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
+
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
+
+        self.assertIsNone(test_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertNotIn('payload', boto_span.data['boto3'])
+
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+
+        self.assertIn("X-Custom-1", boto_span.data["http"]["header"])
+        self.assertEqual("Value1", boto_span.data["http"]["header"]["X-Custom-1"])
+        self.assertIn("X-Custom-2", boto_span.data["http"]["header"])
+        self.assertEqual("Value2", boto_span.data["http"]["header"]["X-Custom-2"])
+            
+        agent.options.extra_http_headers = original_extra_http_headers
+
+
+    def test_response_header_capture(self):
+        secret_id = 'Uber_Password'
+
+        response = self.secretsmanager.create_secret(
+            Name=secret_id,
+            SecretBinary=b'password1',
+            SecretString='password1',
+        )
+
+        self.assertEqual(response['Name'], secret_id)
+
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
+
+        # Access the event system on the S3 client
+        event_system = self.secretsmanager.meta.events
+        
+        response_headers = {
+            "X-Capture-This-Too": "this too",
+            "X-Capture-That-Too": "that too",
+        }
+
+        # Create a function that sets the custom headers in the after-call event.
+        def modify_after_call_args(parsed, **kwargs):
+            parsed['ResponseMetadata']['HTTPHeaders'].update(response_headers)
+
+        # Register the function to an event
+        event_system.register('after-call.secrets-manager.GetSecretValue', modify_after_call_args)
+
+        with tracer.start_active_span('test'):
+            result = self.secretsmanager.get_secret_value(SecretId=secret_id)
+
+        self.assertEqual(result['Name'], secret_id)
+
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
+
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
+
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
+
+        self.assertIsNone(test_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertNotIn('payload', boto_span.data['boto3'])
+
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+
+        self.assertIn("X-Capture-This-Too", boto_span.data["http"]["header"])
+        self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
+        self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
+        self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
+            
+        agent.options.extra_http_headers = original_extra_http_headers

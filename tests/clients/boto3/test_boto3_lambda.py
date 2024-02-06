@@ -16,7 +16,7 @@ else:
 from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter
 
-@unittest.skip(version_info < (3, 8), "Test skipped on Python < 3.8")
+@unittest.skipIf(version_info < (3, 8), "Test skipped on Python < 3.8")
 class TestLambda(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """

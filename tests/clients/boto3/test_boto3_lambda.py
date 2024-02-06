@@ -2,8 +2,11 @@
 # (c) Copyright Instana Inc. 2020
 
 from __future__ import absolute_import
+from io import BytesIO
+from zipfile import ZipFile
+import unittest
+import json
 
-import os
 import boto3
 import pytest
 
@@ -12,64 +15,88 @@ import sys
 if sys.version_info >= (3, 8):
   from moto import mock_aws
 else:
-  from moto import mock_sqs as mock_aws
+  from moto import mock_lambda as mock_aws
 
 from instana.singletons import tracer
 from ...helpers import get_first_span_by_filter
 
+class TestLambda(unittest.TestCase):
+    def _get_role(self):
+        iam = boto3.client("iam", region_name=self.lambda_region)
+        return iam.create_role(
+            RoleName="my-role",
+            AssumeRolePolicyDocument="some policy"
+        )["Role"]["Arn"]
+        
+    def _process_lambda(self, func_str):
+        zip_output = BytesIO()
+        with ZipFile(zip_output, "w") as zip_file:
+            zip_file.writestr("lambda_function.py", func_str)
+        return zip_output.getvalue()
+    
+    def _get_test_zip_file(self):
+        pfunc = """
+def lambda_handler(event, context):
+    print("custom log event")
+    return {"message": "success"}
+"""
+        return self._process_lambda(pfunc)
 
-@pytest.fixture(scope='function')
-def aws_credentials():
-    """Mocked AWS Credentials for moto."""
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    def setUp(self):
+        """ Clear all spans before a test run """
+        self.recorder = tracer.recorder
+        self.recorder.clear_spans()
+        self.mock = mock_aws()
+        self.mock.start()
+        self.lambda_region = "us-east-1"
+        self.aws_lambda = boto3.client('lambda', region_name=self.lambda_region)
+        self.function_name = "myfunc"
+        self.aws_lambda.create_function(
+            FunctionName=self.function_name,
+            Runtime="python3.9",
+            Role=self._get_role(),
+            Handler="lambda_function.lambda_handler",
+            Code={"ZipFile": self._get_test_zip_file()}
+        )
+
+    def tearDown(self):
+        # Stop Moto after each test
+        self.mock.stop()
 
 
-@pytest.fixture(scope='function')
-def aws_lambda(aws_credentials):
-    with mock_aws():
-        yield boto3.client('lambda', region_name='us-east-1')
+    @pytest.mark.skip("Lambda mocking requires docker")
+    def test_lambda_invoke(self):
+        with tracer.start_active_span('test'):
+            result = self.aws_lambda.invoke(FunctionName=self.function_name)
 
+        self.assertEqual(result["StatusCode"], 200)
+        payload = json.loads(result["Payload"].read().decode("utf-8"))
+        self.assertIn("message", payload)
+        self.assertEqual("success", payload["message"])
 
-def setup_method():
-    """ Clear all spans before a test run """
-    tracer.recorder.clear_spans()
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
 
+        filter = lambda span: span.n == "sdk"
+        test_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(test_span)
 
-@pytest.mark.skip("Lambda mocking requires docker")
-def test_lambda_invoke(aws_lambda):
-    result = None
+        filter = lambda span: span.n == "boto3"
+        boto_span = get_first_span_by_filter(spans, filter)
+        self.assertTrue(boto_span)
 
-    with tracer.start_active_span('test'):
-        result = aws_lambda.invoke(FunctionName='arn:aws:lambda:us-west-1:410797082306:function:CanaryInACoalMine')
+        self.assertEqual(boto_span.t, test_span.t)
+        self.assertEqual(boto_span.p, test_span.s)
 
-    assert result
-    assert len(result['Buckets']) == 1
-    assert result['Buckets'][0]['Name'] == 'aws_bucket_name'
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 2
-
-    filter = lambda span: span.n == "sdk"
-    test_span = get_first_span_by_filter(spans, filter)
-    assert (test_span)
-
-    filter = lambda span: span.n == "boto3"
-    boto_span = get_first_span_by_filter(spans, filter)
-    assert (boto_span)
-
-    assert (boto_span.t == test_span.t)
-    assert (boto_span.p == test_span.s)
-
-    assert (test_span.ec is None)
-    assert (boto_span.ec is None)
-
-    assert boto_span.data['boto3']['op'] == 'CreateBucket'
-    assert boto_span.data['boto3']['ep'] == 'https://s3.amazonaws.com'
-    assert boto_span.data['boto3']['reg'] == 'us-east-1'
-    assert boto_span.data['boto3']['payload'] == {'Bucket': 'aws_bucket_name'}
-    assert boto_span.data['http']['status'] == 200
-    assert boto_span.data['http']['method'] == 'POST'
-    assert boto_span.data['http']['url'] == 'https://s3.amazonaws.com:443/CreateBucket'
+        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
+        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
+        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')

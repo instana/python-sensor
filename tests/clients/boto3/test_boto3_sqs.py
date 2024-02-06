@@ -23,34 +23,18 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestSqs(unittest.TestCase):
-    def set_aws_credentials(self):
-        """ Mocked AWS Credentials for moto """
-        for variable_name in self.variable_names:
-            os.environ[variable_name] = "testing"
-
     def setUp(self):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        self.variable_names = (
-                "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
-                "AWS_SECURITY_TOKEN", "AWS_SESSION_TOKEN"
-                )
-        self.set_aws_credentials()
         self.mock = mock_aws()
         self.mock.start()
         self.sqs = boto3.client('sqs', region_name='us-east-1')
         self.http_client = urllib3.PoolManager()
 
-    def unset_aws_credentials(self):
-        """ Reset all environment variables of consequence """
-        for variable_name in self.variable_names:
-            os.environ.pop(variable_name, None)
-
     def tearDown(self):
         # Stop Moto after each test
         self.mock.stop()
-        self.unset_aws_credentials()
 
 
     def test_vanilla_create_queue(self):

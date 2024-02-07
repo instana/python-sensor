@@ -44,7 +44,7 @@ class TestSes(unittest.TestCase):
 
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -95,7 +95,7 @@ class TestSes(unittest.TestCase):
 
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -154,7 +154,7 @@ class TestSes(unittest.TestCase):
 
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -212,7 +212,7 @@ class TestSes(unittest.TestCase):
 
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"

@@ -51,7 +51,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(1, len(result['Buckets']))
         self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -84,7 +84,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(0, len(result['Buckets']))
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -128,7 +128,7 @@ class TestS3(unittest.TestCase):
         with tracer.start_active_span('test'):
             self.s3.upload_file(upload_filename, bucket_name, object_name)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -164,7 +164,7 @@ class TestS3(unittest.TestCase):
             with open(upload_filename, "rb") as fd:
                 self.s3.upload_fileobj(fd, bucket_name, object_name)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -200,7 +200,7 @@ class TestS3(unittest.TestCase):
         with tracer.start_active_span('test'):
             self.s3.download_file(bucket_name, object_name, download_target_filename)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -237,7 +237,7 @@ class TestS3(unittest.TestCase):
             with open(download_target_filename, "wb") as fd:
                 self.s3.download_fileobj(bucket_name, object_name, fd)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -288,7 +288,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(1, len(result['Buckets']))
         self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -349,7 +349,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(1, len(result['Buckets']))
         self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -409,7 +409,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(1, len(result['Buckets']))
         self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"

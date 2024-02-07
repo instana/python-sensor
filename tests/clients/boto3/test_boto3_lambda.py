@@ -10,8 +10,6 @@ import boto3
 from sys import version_info
 if version_info >= (3, 8):
   from moto import mock_aws
-else:
-  from moto import mock_lambda as mock_aws
 
 from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter

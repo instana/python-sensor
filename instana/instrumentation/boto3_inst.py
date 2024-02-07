@@ -17,7 +17,7 @@ try:
     from boto3.s3 import inject
 
     def extract_custom_headers(span, headers):
-        if agent.options.extra_http_headers is None:
+        if agent.options.extra_http_headers is None or headers is None:
             return
         try:
             for custom_header in agent.options.extra_http_headers:

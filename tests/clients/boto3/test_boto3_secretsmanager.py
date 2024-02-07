@@ -20,33 +20,17 @@ from ...helpers import get_first_span_by_filter
 pwd = os.path.dirname(os.path.abspath(__file__))
 
 class TestSecretsManager(unittest.TestCase):
-    def set_aws_credentials(self):
-        """ Mocked AWS Credentials for moto """
-        for variable_name in self.variable_names:
-            os.environ[variable_name] = "testing"
-
     def setUp(self):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
-        self.variable_names = (
-                "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
-                "AWS_SECURITY_TOKEN", "AWS_SESSION_TOKEN"
-                )
-        self.set_aws_credentials()
         self.mock = mock_aws()
         self.mock.start()
         self.secretsmanager = boto3.client('secretsmanager', region_name='us-east-1')
 
-    def unset_aws_credentials(self):
-        """ Reset all environment variables of consequence """
-        for variable_name in self.variable_names:
-            os.environ.pop(variable_name, None)
-
     def tearDown(self):
         # Stop Moto after each test
         self.mock.stop()
-        self.unset_aws_credentials()
 
 
     def test_vanilla_list_secrets(self):
@@ -70,7 +54,7 @@ class TestSecretsManager(unittest.TestCase):
 
         self.assertEqual(result['Name'], secret_id)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -130,7 +114,7 @@ class TestSecretsManager(unittest.TestCase):
 
         self.assertEqual(result['Name'], secret_id)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -198,7 +182,7 @@ class TestSecretsManager(unittest.TestCase):
 
         self.assertEqual(result['Name'], secret_id)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -265,7 +249,7 @@ class TestSecretsManager(unittest.TestCase):
 
         self.assertEqual(result['Name'], secret_id)
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"

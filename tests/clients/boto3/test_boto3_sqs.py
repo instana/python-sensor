@@ -76,7 +76,7 @@ class TestSqs(unittest.TestCase):
 
         self.assertTrue(response['MessageId'])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -110,7 +110,7 @@ class TestSqs(unittest.TestCase):
         with tracer.start_active_span('test'):
             self.http_client.request('GET', testenv["wsgi_server"] + '/boto3/sqs')
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(5, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -193,7 +193,7 @@ class TestSqs(unittest.TestCase):
 
         self.assertTrue(response['MessageId'])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -278,7 +278,7 @@ class TestSqs(unittest.TestCase):
 
         self.assertTrue(response['MessageId'])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -362,7 +362,7 @@ class TestSqs(unittest.TestCase):
 
         self.assertTrue(response['MessageId'])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"

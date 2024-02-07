@@ -11,11 +11,6 @@ from instana.singletons import tracer
 
 http_client = urllib3.PoolManager()
 
-os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-os.environ['AWS_SESSION_TOKEN'] = 'testing'
-
 @mock_aws
 def test_app_boto3_sqs():
     with tracer.start_active_span('wsgi') as scope:

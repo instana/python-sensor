@@ -40,7 +40,7 @@ class TestLambda(unittest.TestCase):
         self.assertIn("message", result_payload)
         self.assertEqual("success", result_payload["message"])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -95,7 +95,7 @@ class TestLambda(unittest.TestCase):
         self.assertIn("message", result_payload)
         self.assertEqual("success", result_payload["message"])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -158,7 +158,7 @@ class TestLambda(unittest.TestCase):
         self.assertIn("message", result_payload)
         self.assertEqual("success", result_payload["message"])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"
@@ -220,7 +220,7 @@ class TestLambda(unittest.TestCase):
         self.assertIn("message", result_payload)
         self.assertEqual("success", result_payload["message"])
 
-        spans = tracer.recorder.queued_spans()
+        spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         filter = lambda span: span.n == "sdk"

@@ -8,7 +8,7 @@ import os
 import time
 from instana.options import EKSFargateOptions
 from instana.collector.aws_eks_fargate import EKSFargateCollector
-from instana.collector.helpers.eks.pod import get_pod_name
+from instana.collector.helpers.eks.process import get_pod_name
 from instana.log import logger
 from instana.util import to_json
 from instana.agent.base import BaseAgent

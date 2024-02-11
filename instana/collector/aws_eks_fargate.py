@@ -7,6 +7,8 @@ Collector for EKS Pods on AWS Fargate: Manages the periodic collection of metric
 from time import time
 from instana.log import logger
 from instana.collector.base import BaseCollector
+from instana.collector.helpers.eks.process import EKSFargateProcessHelper
+from instana.collector.helpers.runtime import RuntimeHelper
 from instana.util import DictionaryOfStan
 
 
@@ -20,22 +22,11 @@ class EKSFargateCollector(BaseCollector):
         self.snapshot_data = DictionaryOfStan()
         self.snapshot_data_sent = False
         self.podname = agent.podname
+        self.helpers.append(EKSFargateProcessHelper(self))
+        self.helpers.append(RuntimeHelper(self))
 
     def should_send_snapshot_data(self):
         return int(time()) - self.snapshot_data_last_sent > self.snapshot_data_interval
-
-    def collect_snapshot(self, event, context):
-        self.context = context
-        self.event = event
-
-        try:
-            plugin_data = dict()
-            plugin_data["name"] = "com.instana.plugin.aws.eks"
-            plugin_data["entityId"] = self.self.podname
-            self.snapshot_data["plugins"] = [plugin_data]
-        except Exception:
-            logger.debug("collect_snapshot error", exc_info=True)
-        return self.snapshot_data
 
     def prepare_payload(self):
         payload = DictionaryOfStan()
@@ -57,6 +48,6 @@ class EKSFargateCollector(BaseCollector):
             if with_snapshot:
                 self.snapshot_data_last_sent = int(time())
         except Exception:
-            logger.debug("collect_snapshot error", exc_info=True)
+            logger.debug("prepare_payload error", exc_info=True)
 
         return payload

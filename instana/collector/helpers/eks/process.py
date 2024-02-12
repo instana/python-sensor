@@ -23,12 +23,6 @@ class EKSFargateProcessHelper(ProcessHelper):
             plugin_data = super(EKSFargateProcessHelper, self).collect_metrics(**kwargs)
             plugin_data["data"]["containerType"] = "docker"
 
-            if self.collector.agent.options.zone is not None:
-                plugin_data["data"]["instanaZone"] = self.collector.agent.options.zone
-
-            if self.collector.agent.options.tags is not None:
-                plugin_data["data"]["tags"] = self.collector.agent.options.tags
-
             if kwargs.get("with_snapshot"):
                 plugin_data["data"]["com.instana.plugin.host.name"] = get_pod_name()
         except Exception:

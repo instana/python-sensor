@@ -78,38 +78,3 @@ class TestFargateCollector(unittest.TestCase):
         self.create_agent_and_setup_tracer()
         self.assertIsNone(self.agent.options.zone)
 
-    def test_instana_zone(self):
-        os.environ["INSTANA_ZONE"] = "YellowDog"
-        self.create_agent_and_setup_tracer()
-
-        self.assertEqual(self.agent.options.zone, "YellowDog")
-
-        payload = self.agent.collector.prepare_payload()
-        self.assertTrue(payload)
-
-        plugins = payload['metrics']['plugins']
-        self.assertIsInstance(plugins, list)
-
-        process_plugin = payload['metrics']['plugins'][0]
-        self.assertTrue(process_plugin)
-        self.assertIn("data", process_plugin)
-        self.assertIn("instanaZone", process_plugin["data"])
-        self.assertEqual(process_plugin["data"]["instanaZone"], "YellowDog")
-
-    def test_custom_tags(self):
-        os.environ["INSTANA_TAGS"] = "love,war=1,games"
-        self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent.options, 'tags'))
-        self.assertDictEqual(self.agent.options.tags, {"love": None, "war": "1", "games": None})
-
-        payload = self.agent.collector.prepare_payload()
-
-        self.assertTrue(payload)
-        task_plugin = None
-        process_plugin = payload['metrics']['plugins'][0]
-        self.assertTrue(process_plugin)
-        self.assertIn("tags", process_plugin["data"])
-        tags = process_plugin["data"]["tags"]
-        self.assertEqual(tags["war"], "1")
-        self.assertIsNone(tags["love"])
-        self.assertIsNone(tags["games"])

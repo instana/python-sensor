@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   redis:
-    image: redis
+    image: docker.io/library/redis
     volumes:
       - ./tests/conf/redis.conf:/usr/local/etc/redis/redis.conf:Z
     command: redis-server /usr/local/etc/redis/redis.conf
@@ -9,19 +9,19 @@ services:
       - "0.0.0.0:6379:6379"
 
   cassandra:
-    image: cassandra
+    image: docker.io/library/cassandra
     ports:
       - 9042:9042
 
 
   couchbase:
-    image: couchbase
+    image: docker.io/library/couchbase
     ports:
       - 8091-8094:8091-8094
       - 11210:11210
 
   mariadb:
-    image: mariadb
+    image: docker.io/library/mariadb
     ports:
       - 3306:3306
     environment:
@@ -35,12 +35,12 @@ services:
       - ./tests/config/database/mysql/conf.d/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:Z
 
   mongodb:
-    image: mongo
+    image: docker.io/library/mongo
     ports:
       - '27017:27017'
 
   postgres:
-    image: postgres
+    image: docker.io/library/postgres
     ports:
       - 5432:5432
     environment:
@@ -49,7 +49,7 @@ services:
       POSTGRES_DB: circle_test
 
   rabbitmq:
-    image: rabbitmq
+    image: docker.io/library/rabbitmq
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost
     ports:
@@ -57,7 +57,7 @@ services:
       - 5672:5672
 
   pubsub:
-    image: egymgmbh/pubsub-emulator
+    image: docker.io/egymgmbh/pubsub-emulator
     environment:
       - PUBSUB_EMULATOR_HOST=0.0.0.0:8085
     command:

@@ -10,7 +10,6 @@ These methods allow pushing and pop'ing of scopes on Task objects.
 
 WeakValueDictionary allows for lost scopes to be garbage collected.
 """
-from __future__ import absolute_import
 
 from weakref import WeakValueDictionary
 

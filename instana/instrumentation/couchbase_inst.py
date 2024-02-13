@@ -5,7 +5,6 @@
 couchbase instrumentation - This instrumentation supports the Python CouchBase 2.3.4 --> 2.5.x SDK currently:
 https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 """
-from __future__ import absolute_import
 
 import wrapt
 

@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
 
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator

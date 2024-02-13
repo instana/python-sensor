@@ -6,7 +6,6 @@ The uwsgi and uwsgidecorators packages are added automatically to the Python env
 when running under uWSGI.  Here we attempt to detect the presence of these packages and
 then use the appropriate hooks.
 """
-from __future__ import absolute_import
 
 from ..log import logger
 from ..singletons import agent

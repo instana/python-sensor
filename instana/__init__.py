@@ -14,7 +14,6 @@ Documentation: https://www.instana.com/docs/
 Source Code: https://github.com/instana/python-sensor
 """
 
-from __future__ import absolute_import
 
 import os
 import sys

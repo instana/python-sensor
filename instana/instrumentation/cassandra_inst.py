@@ -6,7 +6,6 @@ cassandra instrumentation
 https://docs.datastax.com/en/developer/python-driver/3.20/
 https://github.com/datastax/python-driver
 """
-from __future__ import absolute_import
 import wrapt
 from ..log import logger
 from ..util.traceutils import get_active_tracer

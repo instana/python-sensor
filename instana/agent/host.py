@@ -5,7 +5,6 @@
 The in-process Instana agent (for host based processes) that manages
 monitoring state and reporting that data.
 """
-from __future__ import absolute_import
 
 import os
 import json

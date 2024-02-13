@@ -3,7 +3,6 @@
 # (c) Copyright Instana Inc. 2021
 
 
-from __future__ import absolute_import
 
 import wrapt
 import opentracing

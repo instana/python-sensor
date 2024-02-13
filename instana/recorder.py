@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2016
 
 # Accept, process and queue spans for eventual reporting.
-from __future__ import absolute_import
 
 import os
 import queue

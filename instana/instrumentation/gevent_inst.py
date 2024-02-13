@@ -4,7 +4,6 @@
 """
 Instrumentation for the gevent package.
 """
-from __future__ import absolute_import
 
 import sys
 from ..log import logger

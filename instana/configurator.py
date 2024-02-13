@@ -5,7 +5,6 @@
 This file contains a config object that will hold configuration options for the package.
 Defaults are set and can be overridden after package load.
 """
-from __future__ import absolute_import
 from .util import DictionaryOfStan
 
 # La Protagonista

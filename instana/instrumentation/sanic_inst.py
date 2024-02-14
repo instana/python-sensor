@@ -44,6 +44,7 @@ try:
                 span.set_tag('http.status_code', status_code)
 
             if response.headers is not None:
+                extract_custom_headers(span, response.headers)
                 async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response.headers)
             response.headers['Server-Timing'] = "intid;desc=%s" % span.context.trace_id
         except Exception:
@@ -124,7 +125,7 @@ try:
                     scope.span.set_tag("http.params", scrubbed_params)
 
                 if agent.options.extra_http_headers is not None:
-                    extract_custom_headers(scope, headers)
+                    extract_custom_headers(scope.span, headers)
                 await wrapped(*args, **kwargs)
                 if hasattr(request, "uri_template") and request.uri_template:
                     scope.span.set_tag("http.path_tpl", request.uri_template)

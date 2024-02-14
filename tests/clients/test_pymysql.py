@@ -1,12 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
-import sys
 import logging
 import unittest
+
 import pymysql
+
 from ..helpers import testenv
 from instana.singletons import tracer
 

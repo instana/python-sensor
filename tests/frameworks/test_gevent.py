@@ -1,23 +1,21 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import os
-import pytest
+import unittest
+
 import gevent
 from gevent.pool import Group
 import urllib3
-import unittest
+from opentracing.scope_managers.gevent import GeventScopeManager
 
 import tests.apps.flask_app
 from instana.span import SDKSpan
 from instana.singletons import tracer
 from ..helpers import testenv, get_spans_by_filter
-from opentracing.scope_managers.gevent import GeventScopeManager
 
 
-@pytest.mark.skipif(not os.environ.get("GEVENT_TEST"), reason="")
+@unittest.mark.skipif(not os.environ.get("GEVENT_TEST"), reason="")
 class TestGEvent(unittest.TestCase):
     def setUp(self):
         self.http = urllib3.HTTPConnectionPool('127.0.0.1', port=testenv["wsgi_port"], maxsize=20)

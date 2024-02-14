@@ -1,14 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import os
 import logging
 import unittest
 
 from mock import MagicMock, patch
-
 import requests
 
 from instana.agent.host import HostAgent

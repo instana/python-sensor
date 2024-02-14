@@ -1,12 +1,9 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import json
 import unittest
 import logging
-import pytest
 
 from ..helpers import testenv
 from instana.singletons import tracer
@@ -16,7 +13,7 @@ import bson
 
 logger = logging.getLogger(__name__)
 
-pymongoversion = pytest.mark.skipif(
+pymongoversion = unittest.mark.skipif(
     pymongo.version_tuple >= (4, 0), reason="map reduce is removed in pymongo 4.0"
 )
 

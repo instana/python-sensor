@@ -1,12 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import time
 import pytest
 import requests
 import multiprocessing
+
 from ..helpers import testenv
 from instana.singletons import tracer
 from ..helpers import get_first_span_by_filter

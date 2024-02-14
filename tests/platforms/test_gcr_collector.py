@@ -1,12 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from __future__ import absolute_import
-
 import os
 import json
-import requests_mock
 import unittest
+
+import requests_mock
 
 from instana.tracer import InstanaTracer
 from instana.recorder import StanRecorder

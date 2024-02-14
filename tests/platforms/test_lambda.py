@@ -1,15 +1,13 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import os
-import sys
 import json
 import time
-import wrapt
 import logging
 import unittest
+
+import wrapt
 
 from instana.tracer import InstanaTracer
 from instana.agent.aws_lambda import AWSLambdaAgent

@@ -1,0 +1,86 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: python-tracer-ci-pipeline
+spec:
+  params:
+  - name: revision
+    type: string
+  workspaces:
+    - name: python-tracer-ci-pipeline-pvc
+  tasks:
+    - name: clone
+      params:
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        name: python-tracer-clone-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-default
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.7.17-bookworm
+              - "sha256:2011a37d2a08fe83dd9ff923e0f83bfd7290152e2e6afe359bde1453170d9bdc"
+              # 3.8.18-bookworm
+              - "sha256:625008535504ab68868ca06d1bdd868dee92a9878d5b55fc240af7ceb38b7183"
+              # 3.9.18-bookworm
+              - "sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+              # 3.10.13-bookworm
+              - "sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc"
+              # 3.11.8-bookworm
+              - "sha256:72afb375030b13c8c9cb72ba1d8c410f25307c2dbbd7d59f9c6ccea5cb152ff9"
+              # 3.12.2-bookworm
+              - "sha256:35eff340c0acd837b7962f77ee4b8869385dd6fe7d3928375a08f0a3bdd18beb"
+      taskRef:
+        name: python-tracer-unittest-default-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-cassandra
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.9.18-bookworm
+              - "sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+      taskRef:
+        name: python-tracer-unittest-cassandra-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-couchbase
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.9.18-bookworm
+              - "sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+      taskRef:
+        name: python-tracer-unittest-couchbase-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-gevent
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.9.18-bookworm
+              - "sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+      taskRef:
+        name: python-tracer-unittest-gevent-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc

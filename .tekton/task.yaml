@@ -1,0 +1,177 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-clone-task
+spec:
+  params:
+  - name: revision
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: clone
+      # alpine/git:2.43.0
+      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      script: |
+        #!/bin/sh
+        echo "Cloning repo"
+        cd /workspace && git clone --depth 1 -b $(params.revision) https://github.com/instana/python-sensor
+        ls -lah /workspace
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-cassandra-task
+spec:
+  sidecars:
+    - name: cassandra
+      # cassandra:3.11.16-jammy
+      image: cassandra@sha256:7d32a79e9adb4ca8c26f798e4a44ec8438da99c6bda2969410ea46cbdb0b4b94
+      env:
+        - name: MAX_HEAP_SIZE
+          value: 2048m
+        - name: HEAP_NEWSIZE
+          value: 512m
+      readinessProbe:
+        exec:
+          command:
+          - cqlsh
+          - -e
+          - 'describe cluster'
+        initialDelaySeconds: 20
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: cassandra
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-couchbase-task
+spec:
+  sidecars:
+    - name: couchbase
+      # couchbase/server-sandbox:5.5.1
+      image: couchbase/server-sandbox@sha256:d04302ea7782a0f53c3f371971138b339097d5e41f4154def5bdecc5bbb2e1da
+      readinessProbe:
+        httpGet:
+          path: /ui/index.html
+          port: 8091
+        # This Couchbase image recommends 60sec waiting for initial configuration
+        # Starting the tests too soon may result in
+        # "Error during initial configuration - aborting container"
+        # apparently because "vbucket map not available yet"
+        initialDelaySeconds: 60
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: couchbase
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-gevent-task
+spec:
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: gevent
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-default-task
+spec:
+  sidecars:
+    - name: google-cloud-pubsub
+      # egymgmbh/pubsub-emulator:gh-mb117
+      image: egymgmbh/pubsub-emulator@sha256:88897fa72337b22a8edabf17a8b30bf9d9c6388b7c7e6d8c2b5e5c96d73fede1
+      command:
+        - /init.sh
+        - test-project
+        - test-topic
+        - test-subscription
+    - name: mariadb
+      # mariadb:11.3.2
+      image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+      env:
+        - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
+          value: passw0rd
+        - name: MYSQL_DATABASE # or MARIADB_DATABASE
+          value: instana_test_db
+    - name: mongo
+      # mongo:7.0.6
+      image: mongo@sha256:125bda8abe859bcebc47e4a7e0921508d3bcb47725d261f0a2bcf4ea5c837dd5
+    - name: postgres
+      # postgres:16.2-bookworm
+      image: postgres@sha256:3bfb87432e26badf72d727a0c5f5bb7b81438cd9baec5be8531c70a42b07adc6
+      env:
+        - name: POSTGRES_USER
+          value: root
+        - name: POSTGRES_PASSWORD
+          value: passw0rd
+        - name: POSTGRES_DB
+          value: instana_test_db
+      readinessProbe:
+        exec:
+          command:
+          - sh
+          - -c
+          - pg_isready --host 127.0.0.1 --port 5432 --dbname=${POSTGRES_DB}
+        timeoutSeconds: 10
+    - name: redis
+      # redis:7.2.4-bookworm
+      image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744
+    - name: rabbitmq
+      # rabbitmq:3.13.0
+      image: rabbitmq@sha256:27819d7be883b8aea04b9a244460181ef97427a98f8323b39402d65e6eb2ce6f
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: default
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh

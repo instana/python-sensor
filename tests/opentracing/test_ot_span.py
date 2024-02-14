@@ -6,15 +6,13 @@ import sys
 import json
 import time
 import unittest
-import pytest
-import opentracing
 from uuid import UUID
+
+import opentracing
+
 from instana.util import to_json
 from instana.singletons import agent, tracer
 from ..helpers import get_first_span_by_filter
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
 
 class TestOTSpan(unittest.TestCase):
@@ -51,7 +49,7 @@ class TestOTSpan(unittest.TestCase):
 
     # Python 3.11 support is incomplete yet
     # TODO: Remove this once we find a workaround or DROP opentracing!
-    @pytest.mark.skipif(sys.version_info.minor >= 11, reason="Raises not Implemented exception in OSX")
+    @unittest.skipIf(sys.version_info >= (3, 11), reason="Raises not Implemented exception in OSX")
     def test_stacks(self):
         # Entry spans have no stack attached by default
         wsgi_span = opentracing.tracer.start_span("wsgi")
@@ -76,7 +74,7 @@ class TestOTSpan(unittest.TestCase):
         self.assertEqual("string", span.tags['tagone'])
         self.assertEqual(150, span.tags['tagtwo'])
 
-    @pytest.mark.skipif(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
+    @unittest.skipIf(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
     def test_span_queueing(self):
         recorder = opentracing.tracer.recorder
 
@@ -196,12 +194,8 @@ class TestOTSpan(unittest.TestCase):
         assert(test_span.data['sdk']['custom']['tags']['tracer'])
         assert(test_span.data['sdk']['custom']['tags']['none'] == 'None')
         assert(test_span.data['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
-        if PY2:
-            set_regexp = re.compile(r"set\(\[.*,.*\]\)")
-            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
-        else:
-            set_regexp = re.compile(r"\{.*,.*\}")
-            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
+        set_regexp = re.compile(r"\{.*,.*\}")
+        assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
 
         # Convert to JSON
         json_data = to_json(test_span)
@@ -214,12 +208,8 @@ class TestOTSpan(unittest.TestCase):
         assert(span_dict['data']['sdk']['custom']['tags']['tracer'])
         assert(span_dict['data']['sdk']['custom']['tags']['none'] == 'None')
         assert(span_dict['data']['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
-        if PY2:
-            set_regexp = re.compile(r"set\(\[.*,.*\]\)")
-            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
-        else:
-            set_regexp = re.compile(r"{.*,.*}")
-            assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
+        set_regexp = re.compile(r"{.*,.*}")
+        assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
 
     def test_tag_names(self):
         with tracer.start_active_span('test') as scope:

@@ -21,7 +21,7 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
 
-    @unittest.mark.skipif(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
+    @unittest.skipIf(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
     @patch('requests.Session.request')
     def test_buckets_list(self, mock_requests):
         mock_requests.return_value = self._mock_response(
@@ -510,7 +510,7 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
         self.assertEqual('test bucket', gcs_span.data["gcs"]["bucket"])
         self.assertEqual('test object', gcs_span.data["gcs"]["object"])
 
-    @unittest.mark.skipif(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
+    @unittest.skipIf(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
     @patch('requests.Session.request')
     def test_objects_list(self, mock_requests):
         mock_requests.return_value = self._mock_response(
@@ -784,7 +784,7 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
         self.assertEqual('test-project', gcs_span.data["gcs"]["projectId"])
         self.assertEqual('test key', gcs_span.data["gcs"]["accessId"])
 
-    @unittest.mark.skipif(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
+    @unittest.skipIf(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
     @patch('requests.Session.request')
     def test_object_hmac_keys_list(self, mock_requests):
         mock_requests.return_value = self._mock_response(

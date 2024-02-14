@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import sys
 import unittest
 import urllib3
 import flask
@@ -713,10 +712,7 @@ class TestFlask(unittest.TestCase):
         # error log
         self.assertEqual("log", log_span.n)
         self.assertEqual('Exception on /exception [GET]', log_span.data["log"]['message'])
-        if sys.version_info < (3, 0):
-            self.assertEqual("<type 'exceptions.Exception'> fake error", log_span.data["log"]['parameters'])
-        else:
-            self.assertEqual("<class 'Exception'> fake error", log_span.data["log"]['parameters'])
+        self.assertEqual("<class 'Exception'> fake error", log_span.data["log"]['parameters'])
 
 
         # wsgis

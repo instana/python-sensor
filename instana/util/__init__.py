@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2020
 
 import json
-import sys
 import time
 
 from collections import defaultdict
@@ -15,14 +14,6 @@ except ImportError:
     import urllib
 
 from ..log import logger
-
-if sys.version_info.major == 2:
-    string_types = basestring
-else:
-    string_types = str
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
 def nested_dictionary():
     return defaultdict(DictionaryOfStan)

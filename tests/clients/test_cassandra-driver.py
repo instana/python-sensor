@@ -28,7 +28,7 @@ session.execute("CREATE TABLE IF NOT EXISTS users("
                 ");")
 
 
-@unittest.mark.skipif(not os.environ.get("CASSANDRA_TEST"), reason="")
+@unittest.skipUnless(os.environ.get("CASSANDRA_TEST"), reason="")
 class TestCassandra(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """

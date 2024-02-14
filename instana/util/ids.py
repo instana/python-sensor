@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2020
 
 import os
-import sys
 import time
 import random
 
@@ -11,13 +10,7 @@ _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
 
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
-
-if PY2:
-    string_types = basestring
-else:
-    string_types = str
+string_types = str
 
 
 def generate_id():
@@ -45,7 +38,7 @@ def header_to_long_id(header):
     :param header: the header to analyze, validate and convert (if needed)
     :return: a valid ID to be used internal to the tracer
     """
-    if PY3 is True and isinstance(header, bytes):
+    if isinstance(header, bytes):
         header = header.decode('utf-8')
 
     if not isinstance(header, string_types):
@@ -74,7 +67,7 @@ def header_to_id(header):
     :param header: the header to analyze, validate and convert (if needed)
     :return: a valid ID to be used internal to the tracer
     """
-    if PY3 is True and isinstance(header, bytes):
+    if isinstance(header, bytes):
         header = header.decode('utf-8')
 
     if not isinstance(header, string_types):

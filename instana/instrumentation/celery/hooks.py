@@ -3,6 +3,7 @@
 
 
 import opentracing
+
 from ...log import logger
 from ...singletons import tracer
 from ...util.traceutils import get_active_tracer
@@ -12,11 +13,7 @@ try:
     from celery import registry, signals
     from .catalog import task_catalog_get, task_catalog_pop, task_catalog_push, get_task_id
 
-    try:
-        from urllib import parse
-    except ImportError:
-        import urlparse as parse
-        import urllib
+    from urllib import parse
 
 
     def add_broker_tags(span, broker_url):

@@ -108,11 +108,7 @@ class InstanaMiddleware(MiddlewareMixin):
 
     def __url_pattern_route(self, view_name):
         from django.conf import settings
-        try:
-            from django.urls import RegexURLPattern as URLPattern
-            from django.urls import RegexURLResolver as URLResolver
-        except ImportError:
-            from django.urls import URLPattern, URLResolver
+        from django.urls import RegexURLResolver as URLResolver
 
         urlconf = __import__(settings.ROOT_URLCONF, {}, {}, [''])
 

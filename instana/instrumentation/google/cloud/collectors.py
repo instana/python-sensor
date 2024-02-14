@@ -2,13 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 import re
-
-try:
-    # Python 3
-    from urllib.parse import unquote
-except ImportError:
-    # Python 2
-    from urllib import unquote
+from urllib.parse import unquote
 
 # _storage_api defines a conversion of Google Storage JSON API requests into span tags as follows:
 #   request_method -> path_matcher -> collector

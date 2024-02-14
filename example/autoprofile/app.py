@@ -4,7 +4,6 @@
 import time
 import threading
 import random
-import traceback
 import sys
 import os
 
@@ -12,14 +11,6 @@ sys.path.append('../..')
 os.environ['INSTANA_DEBUG'] = 'yes'
 os.environ['INSTANA_AUTOPROFILE'] = 'yes'
 import instana
-
-try:
-    # python 2
-    from urllib2 import urlopen
-except ImportError:
-    # python 3
-    from urllib.request import urlopen
-
 
 # Simulate CPU intensive work
 def simulate_cpu():

@@ -2,16 +2,8 @@
 # (c) Copyright Instana Inc. 2020
 
 import re
-import re
-import sys
+from urllib import parse
 
-try:
-    from urllib import parse
-except ImportError:
-    import urlparse as parse
-    import urllib
-
-from ..util import PY2, PY3
 from ..log import logger
 
 
@@ -127,10 +119,7 @@ def strip_secrets_from_query(qp, matcher, kwlist):
             logger.debug("strip_secrets_from_query: unknown matcher")
             return qp
 
-        if PY2:
-            result = urllib.urlencode(params, doseq=True)
-        else:
-            result = parse.urlencode(params, doseq=True)
+        result = parse.urlencode(params, doseq=True)
         query = parse.unquote(result)
 
         if path:

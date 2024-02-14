@@ -5,9 +5,10 @@ import instana
 
 from sanic import Sanic
 from sanic.exceptions import SanicException
+from sanic.response import text
+
 from tests.apps.sanic_app.simpleview import SimpleView
 from tests.apps.sanic_app.name import NameView
-from sanic.response import text
 
 app = Sanic('test')
 
@@ -15,6 +16,13 @@ app = Sanic('test')
 async def uuid_handler(request, foo_id: int):
     return text("INT - {}".format(foo_id))
 
+@app.route("/response_headers")
+async def response_headers(request):
+    headers = {
+        'X-Capture-This-Too': 'this too',
+        'X-Capture-That-Too': 'that too'
+    }
+    return text("Stan wuz here with headers!", headers=headers)
 
 @app.route("/test_request_args")
 async def test_request_args(request):

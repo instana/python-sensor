@@ -5,13 +5,13 @@ from ..singletons import agent, tracer, async_tracer, tornado_tracer
 from ..log import logger
 
 
-def extract_custom_headers(tracing_scope, headers):
+def extract_custom_headers(tracing_span, headers):
     try:
         for custom_header in agent.options.extra_http_headers:
             # Headers are in the following format: b'x-header-1'
             for header_key, value in headers.items():
                 if header_key.lower() == custom_header.lower():
-                    tracing_scope.span.set_tag("http.header.%s" % custom_header, value)
+                    tracing_span.set_tag("http.header.%s" % custom_header, value)
     except Exception:
         logger.debug("extract_custom_headers: ", exc_info=True)
 

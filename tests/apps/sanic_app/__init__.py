@@ -3,6 +3,7 @@
 
 
 import uvicorn
+
 from ...helpers import testenv
 from instana.log import logger
 
@@ -15,6 +16,16 @@ def launch_sanic():
     from instana.singletons import agent
 
     # Hack together a manual custom headers list; We'll use this in tests
-    agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
+    agent.options.extra_http_headers = [
+        "X-Capture-This",
+        "X-Capture-That",
+        "X-Capture-This-Too",
+        "X-Capture-That-Too",
+    ]
 
-    uvicorn.run(app, host='127.0.0.1', port=testenv['sanic_port'], log_level="critical")
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=testenv["sanic_port"],
+        log_level="critical",
+    )

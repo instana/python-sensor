@@ -1,0 +1,64 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-pr-pipeline-template
+spec:
+  params:
+    - name: git-branch
+      description: The git branch
+      default: master
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        name: python-tracer-ci-pipeline-run-pr-$(params.git-branch)-$(uid)
+      spec:
+        pipelineRef:
+          name: python-tracer-ci-pipeline
+        workspaces:
+        - name: python-tracer-ci-pipeline-pvc-pr-$(params.git-branch)-$(uid)
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 100Mi
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-pr-binding
+spec:
+  params:
+    - name: git-branch
+      value: $(event.pull_request.head.ref)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-pr-eventlistener
+spec:
+  serviceAccountName: tekton-triggers-eventlistener-serviceaccount
+  triggers:
+    - name: github-pr-trigger
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: github-interceptor-secret
+                secretKey: secretToken
+            - name: "eventTypes"
+              value: ["pull_request", "push"]
+        - ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              # We should not trigger on 'assigned', 'unassigned', 'converted_to_draft'
+              value: "body.action in ['opened', 'synchronize', 'reopened']"
+      bindings:
+        - ref: github-pr-binding
+      template:
+        ref: github-pr-pipeline-template

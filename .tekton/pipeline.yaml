@@ -1,0 +1,77 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: python-tracer-ci-pipeline
+spec:
+  params:
+  - name: revision
+    type: string
+  workspaces:
+    - name: python-tracer-ci-pipeline-pvc-$(params.revision)
+  tasks:
+    - name: clone
+      params:
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        name: python-tracer-clone-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc-$(params.revision)
+    - name: unittest-default
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageTag
+            value:
+              - "3.7.17"
+              - "3.8.18"
+              - "3.9.18"
+              - "3.10.13"
+              - "3.11.8"
+              - "3.12.2"
+      taskRef:
+        name: python-tracer-unittest-default-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc-$(params.revision)
+    - name: unittest-cassandra
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageTag
+            value:
+              - "3.9.18"
+      taskRef:
+        name: python-tracer-unittest-cassandra-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc-$(params.revision)
+    - name: unittest-couchbase
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageTag
+            value:
+              - "3.9.18"
+      taskRef:
+        name: python-tracer-unittest-couchbase-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc-$(params.revision)
+    - name: unittest-gevent
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageTag
+            value:
+              - "3.9.18"
+      taskRef:
+        name: python-tracer-unittest-gevent-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc-$(params.revision)

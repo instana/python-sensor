@@ -3,15 +3,10 @@
 
 import json
 import time
-
 from collections import defaultdict
-import pkg_resources
+from urllib import parse
 
-try:
-    from urllib import parse
-except ImportError:
-    import urlparse as parse
-    import urllib
+import pkg_resources
 
 from ..log import logger
 

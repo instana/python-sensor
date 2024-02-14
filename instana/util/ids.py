@@ -10,8 +10,6 @@ _current_pid = 0
 
 BAD_ID = "BADCAFFE"  # Bad Caffe
 
-string_types = str
-
 
 def generate_id():
     """ Generate a 64bit base 16 ID for use as a Span or Trace ID """
@@ -41,7 +39,7 @@ def header_to_long_id(header):
     if isinstance(header, bytes):
         header = header.decode('utf-8')
 
-    if not isinstance(header, string_types):
+    if not isinstance(header, str):
         return BAD_ID
 
     try:
@@ -70,7 +68,7 @@ def header_to_id(header):
     if isinstance(header, bytes):
         header = header.decode('utf-8')
 
-    if not isinstance(header, string_types):
+    if not isinstance(header, str):
         return BAD_ID
 
     try:

@@ -4,7 +4,6 @@
 import time
 import requests
 import multiprocessing
-import sys
 import unittest
 
 from instana.singletons import tracer
@@ -13,7 +12,6 @@ from ..helpers import get_first_span_by_filter
 from ..test_utils import _TraceContextMixin
 
 
-@unittest.mark.skipif(sys.version_info < (3, 7),reason="testing sanic for python 3.7 and up")
 class TestSanic(unittest.TestCase, _TraceContextMixin):
     def setUp(self):
         from tests.apps.sanic_app import launch_sanic

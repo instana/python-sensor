@@ -13,10 +13,7 @@ from ..singletons import env_is_test
 from ..util import every, DictionaryOfStan
 
 
-if sys.version_info.major == 2:
-    import Queue as queue
-else:
-    import queue # pylint: disable=import-error
+import queue # pylint: disable=import-error
 
 
 class BaseCollector(object):

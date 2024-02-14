@@ -26,7 +26,7 @@ except HTTPError:
     pass
 
 
-@unittest.mark.skipif(not os.environ.get("COUCHBASE_TEST"), reason="")
+@unittest.skipIf(not os.environ.get("COUCHBASE_TEST"), reason="")
 class TestStandardCouchDB(unittest.TestCase):
     def setup_class(self):
         """ Clear all spans before a test run """

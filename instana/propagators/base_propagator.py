@@ -3,16 +3,13 @@
 
 
 import sys
+import os
 
 from instana.log import logger
 from instana.util.ids import header_to_id, header_to_long_id
 from instana.span_context import SpanContext
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
-import os
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
 
 # The carrier can be a dict or a list.
@@ -233,7 +230,7 @@ class BasePropagator(object):
 
             level = dc.get(self.LC_HEADER_KEY_L) or dc.get(self.ALT_LC_HEADER_KEY_L) or dc.get(
                 self.B_HEADER_KEY_L) or dc.get(self.B_ALT_LC_HEADER_KEY_L)
-            if level and PY3 is True and isinstance(level, bytes):
+            if level and isinstance(level, bytes):
                 level = level.decode("utf-8")
 
             synthetic = dc.get(self.LC_HEADER_KEY_SYNTHETIC) or dc.get(self.ALT_LC_HEADER_KEY_SYNTHETIC) or dc.get(
@@ -258,12 +255,12 @@ class BasePropagator(object):
         try:
             traceparent = dc.get(self.HEADER_KEY_TRACEPARENT) or dc.get(self.ALT_HEADER_KEY_TRACEPARENT) or dc.get(
                 self.B_HEADER_KEY_TRACEPARENT) or dc.get(self.B_ALT_HEADER_KEY_TRACEPARENT)
-            if traceparent and PY3 is True and isinstance(traceparent, bytes):
+            if traceparent and isinstance(traceparent, bytes):
                 traceparent = traceparent.decode("utf-8")
 
             tracestate = dc.get(self.HEADER_KEY_TRACESTATE) or dc.get(self.ALT_HEADER_KEY_TRACESTATE) or dc.get(
                 self.B_HEADER_KEY_TRACESTATE) or dc.get(self.B_ALT_HEADER_KEY_TRACESTATE)
-            if tracestate and PY3 is True and isinstance(tracestate, bytes):
+            if tracestate and isinstance(tracestate, bytes):
                 tracestate = tracestate.decode("utf-8")
 
         except Exception:

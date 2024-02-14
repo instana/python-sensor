@@ -13,7 +13,7 @@ import bson
 
 logger = logging.getLogger(__name__)
 
-pymongoversion = unittest.mark.skipif(
+pymongoversion = unittest.skipIf(
     pymongo.version_tuple >= (4, 0), reason="map reduce is removed in pymongo 4.0"
 )
 

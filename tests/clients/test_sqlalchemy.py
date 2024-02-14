@@ -1,12 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import unittest
 
 from ..helpers import testenv
 from instana.singletons import tracer
+
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import declarative_base

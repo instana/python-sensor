@@ -1,13 +1,10 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
-import time
-import asyncio
-import aiohttp
 import unittest
 
+import asyncio
+import aiohttp
 import tornado
 from tornado.httpclient import AsyncHTTPClient
 

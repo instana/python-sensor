@@ -1,14 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
-import sys
 import logging
 import unittest
+
 import MySQLdb
+
 from ..helpers import testenv
-from unittest import SkipTest
 from instana.singletons import tracer
 
 logger = logging.getLogger(__name__)

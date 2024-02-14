@@ -1,11 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import os
 import time
-import pytest
 import random
 import unittest
 
@@ -31,7 +28,7 @@ session.execute("CREATE TABLE IF NOT EXISTS users("
                 ");")
 
 
-@pytest.mark.skipif(not os.environ.get("CASSANDRA_TEST"), reason="")
+@unittest.mark.skipif(not os.environ.get("CASSANDRA_TEST"), reason="")
 class TestCassandra(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """

@@ -1,24 +1,20 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from __future__ import absolute_import
-
 import time
-import pytest
 import requests
 import multiprocessing
+import sys
+import unittest
+
 from instana.singletons import tracer
 from ..helpers import testenv
 from ..helpers import get_first_span_by_filter
 from ..test_utils import _TraceContextMixin
-import sys
-import unittest
 
 
-@pytest.mark.skipif(sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7),
-                    reason="testing sanic for python 3.7 and up")
+@unittest.mark.skipif(sys.version_info < (3, 7),reason="testing sanic for python 3.7 and up")
 class TestSanic(unittest.TestCase, _TraceContextMixin):
-
     def setUp(self):
         from tests.apps.sanic_app import launch_sanic
         self.proc = multiprocessing.Process(target=launch_sanic, args=(), daemon=True)
@@ -26,6 +22,7 @@ class TestSanic(unittest.TestCase, _TraceContextMixin):
         time.sleep(2)
 
     def tearDown(self):
+        """ Kill server after tests """
         self.proc.kill()
 
     def test_vanilla_get(self):

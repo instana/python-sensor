@@ -1,11 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from __future__ import absolute_import
-
 import os
 import time
-import pytest
 import unittest
 
 from instana.singletons import tracer
@@ -29,7 +26,7 @@ except HTTPError:
     pass
 
 
-@pytest.mark.skipif(not os.environ.get("COUCHBASE_TEST"), reason="")
+@unittest.mark.skipif(not os.environ.get("COUCHBASE_TEST"), reason="")
 class TestStandardCouchDB(unittest.TestCase):
     def setup_class(self):
         """ Clear all spans before a test run """

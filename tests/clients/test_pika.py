@@ -1,13 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from __future__ import absolute_import
-
-import pika
 import unittest
-import mock
 import threading
 import time
+
+import pika
+import mock
 
 from instana.singletons import tracer
 

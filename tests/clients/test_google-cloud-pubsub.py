@@ -1,14 +1,9 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from __future__ import absolute_import
-
 import os
-import sys
 import threading
 import time
-import pytest
-
 import six
 import unittest
 

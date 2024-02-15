@@ -245,12 +245,12 @@ class SDKSpan(BaseSpan):
 
 
 class RegisteredSpan(BaseSpan):
-    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "soap", "tornado-client",
+    HTTP_SPANS = ("aiohttp-client", "aiohttp-server", "django", "http", "tornado-client",
                   "tornado-server", "urllib3", "wsgi", "asgi")
 
     EXIT_SPANS = ("aiohttp-client", "boto3", "cassandra", "celery-client", "couchbase", "log", "memcache",
                   "mongo", "mysql", "postgres", "rabbitmq", "redis", "rpc-client", "sqlalchemy",
-                  "soap", "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
+                  "tornado-client", "urllib3", "pymongo", "gcs", "gcps-producer")
 
     ENTRY_SPANS = ("aiohttp-server", "aws.lambda.entry", "celery-worker", "django", "wsgi", "rabbitmq",
                    "rpc-server", "tornado-server", "gcps-consumer", "asgi")
@@ -501,9 +501,6 @@ class RegisteredSpan(BaseSpan):
         self.data["http"]["error"] = span.tags.pop('http.error', None)
 
         if len(span.tags) > 0:
-            if span.operation_name == "soap":
-                self.data["soap"]["action"] = span.tags.pop('soap.action', None)
-
             custom_headers = []
             for key in span.tags:
                 if key[0:12] == "http.header.":

@@ -2,7 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 import os
-import sys
+
 from ...helpers import testenv
 from ..utils import launch_background_thread
 

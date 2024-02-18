@@ -23,6 +23,18 @@ try:
 
     setup_tornado_tracer()
 
+    def extract_custom_headers(span, headers):
+        if not agent.options.extra_http_headers or not headers:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
+
+
     @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler._execute')
     def execute_with_instana(wrapped, instance, argv, kwargs):
         try:
@@ -45,12 +57,8 @@ try:
 
                 scope.span.set_tag("handler", instance.__class__.__name__)
 
-                # Custom header tracking support
-                if agent.options.extra_http_headers is not None:
-                    for custom_header in agent.options.extra_http_headers:
-                        if custom_header in instance.request.headers:
-                            scope.span.set_tag("http.header.%s" % custom_header,
-                                               instance.request.headers[custom_header])
+                # Request header tracking support
+                extract_custom_headers(scope.span, instance.request.headers)
 
                 setattr(instance.request, "_instana", scope)
 
@@ -80,15 +88,17 @@ try:
             if not hasattr(instance.request, '_instana'):
                 return wrapped(*argv, **kwargs)
 
-            scope = instance.request._instana
-            status_code = instance.get_status()
+            with instance.request._instana as scope:
+                # Response header tracking support
+                extract_custom_headers(scope.span, instance._headers)
 
-            # Mark 500 responses as errored
-            if 500 <= status_code:
-                scope.span.mark_as_errored()
+                status_code = instance.get_status()
 
-            scope.span.set_tag("http.status_code", status_code)
-            scope.close()
+                # Mark 500 responses as errored
+                if 500 <= status_code:
+                    scope.span.mark_as_errored()
+
+                scope.span.set_tag("http.status_code", status_code)
 
             return wrapped(*argv, **kwargs)
         except Exception:

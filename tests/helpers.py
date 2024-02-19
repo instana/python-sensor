@@ -25,8 +25,6 @@ MySQL Environment
 """
 if 'MYSQL_HOST' in os.environ:
     testenv['mysql_host'] = os.environ['MYSQL_HOST']
-elif 'TRAVIS_MYSQL_HOST' in os.environ:
-    testenv['mysql_host'] = os.environ['TRAVIS_MYSQL_HOST']
 else:
     testenv['mysql_host'] = '127.0.0.1'
 

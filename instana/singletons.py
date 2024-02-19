@@ -2,12 +2,12 @@
 # (c) Copyright Instana Inc. 2018
 
 import os
-import sys
+
 import opentracing
 
+from .autoprofile.profiler import Profiler
 from .log import logger
 from .tracer import InstanaTracer
-from .autoprofile.profiler import Profiler
 
 agent = None
 tracer = None
@@ -19,13 +19,17 @@ span_recorder = None
 aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
 env_is_test = "INSTANA_TEST" in os.environ
 env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
-env_is_aws_eks_fargate = (os.environ.get("INSTANA_TRACER_ENVIRONMENT") == "AWS_EKS_FARGATE")
+env_is_aws_eks_fargate = (
+    os.environ.get("INSTANA_TRACER_ENVIRONMENT") == "AWS_EKS_FARGATE"
+)
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 k_service = os.environ.get("K_SERVICE")
 k_configuration = os.environ.get("K_CONFIGURATION")
 k_revision = os.environ.get("K_REVISION")
 instana_endpoint_url = os.environ.get("INSTANA_ENDPOINT_URL")
-env_is_google_cloud_run = all((k_service, k_configuration, k_revision, instana_endpoint_url))
+env_is_google_cloud_run = all(
+    (k_service, k_configuration, k_revision, instana_endpoint_url)
+)
 
 if env_is_test:
     from .agent.test import TestAgent
@@ -52,7 +56,9 @@ elif env_is_google_cloud_run:
     from instana.agent.google_cloud_run import GCRAgent
     from instana.recorder import StanRecorder
 
-    agent = GCRAgent(service=k_service, configuration=k_configuration, revision=k_revision)
+    agent = GCRAgent(
+        service=k_service, configuration=k_configuration, revision=k_revision
+    )
     span_recorder = StanRecorder(agent)
 elif env_is_aws_eks_fargate:
     from .agent.aws_eks_fargate import EKSFargateAgent
@@ -96,7 +102,10 @@ tracer = InstanaTracer(recorder=span_recorder)
 
 try:
     from opentracing.scope_managers.contextvars import ContextVarsScopeManager
-    async_tracer = InstanaTracer(scope_manager=ContextVarsScopeManager(), recorder=span_recorder)
+
+    async_tracer = InstanaTracer(
+        scope_manager=ContextVarsScopeManager(), recorder=span_recorder
+    )
 except Exception:
     logger.debug("Error setting up async_tracer:", exc_info=True)
 
@@ -107,7 +116,10 @@ tornado_tracer = tracer
 def setup_tornado_tracer():
     global tornado_tracer
     from opentracing.scope_managers.tornado import TornadoScopeManager
-    tornado_tracer = InstanaTracer(scope_manager=TornadoScopeManager(), recorder=span_recorder)
+
+    tornado_tracer = InstanaTracer(
+        scope_manager=TornadoScopeManager(), recorder=span_recorder
+    )
 
 
 # Set ourselves as the tracer.

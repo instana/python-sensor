@@ -3,19 +3,19 @@
 
 
 import wrapt
+from opentracing.scope_managers.constants import ACTIVE_ATTR
+from opentracing.scope_managers.contextvars import no_parent_scope
 
+from ..configurator import config
 from ..log import logger
 from ..singletons import async_tracer
-from ..configurator import config
-from opentracing.scope_managers.contextvars import no_parent_scope
-from opentracing.scope_managers.constants import ACTIVE_ATTR
 
 try:
     import asyncio
 
-    @wrapt.patch_function_wrapper('asyncio','ensure_future')
+    @wrapt.patch_function_wrapper("asyncio", "ensure_future")
     def ensure_future_with_instana(wrapped, instance, argv, kwargs):
-        if config['asyncio_task_context_propagation']['enabled'] is False:
+        if config["asyncio_task_context_propagation"]["enabled"] is False:
             with no_parent_scope():
                 return wrapped(*argv, **kwargs)
 
@@ -28,9 +28,10 @@ try:
         return task
 
     if hasattr(asyncio, "create_task"):
-        @wrapt.patch_function_wrapper('asyncio','create_task')
+
+        @wrapt.patch_function_wrapper("asyncio", "create_task")
         def create_task_with_instana(wrapped, instance, argv, kwargs):
-            if config['asyncio_task_context_propagation']['enabled'] is False:
+            if config["asyncio_task_context_propagation"]["enabled"] is False:
                 with no_parent_scope():
                     return wrapped(*argv, **kwargs)
 

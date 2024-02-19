@@ -31,7 +31,7 @@ else:
 testenv['mysql_port'] = int(os.environ.get('MYSQL_PORT', '3306'))
 testenv['mysql_db'] = os.environ.get('MYSQL_DB', 'circle_test')
 testenv['mysql_user'] = os.environ.get('MYSQL_USER', 'root')
-testenv['mysql_pw'] = os.environ.get('MYSQL_PW', '')
+testenv['mysql_pw'] = os.environ.get('MYSQL_ROOT_PASSWORD', 'passw0rd')
 
 """
 PostgreSQL Environment

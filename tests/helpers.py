@@ -29,7 +29,7 @@ else:
     testenv['mysql_host'] = '127.0.0.1'
 
 testenv['mysql_port'] = int(os.environ.get('MYSQL_PORT', '3306'))
-testenv['mysql_db'] = os.environ.get('MYSQL_DB', 'circle_test')
+testenv['mysql_db'] = os.environ.get('MYSQL_DATABASE', 'instana_test_db')
 testenv['mysql_user'] = os.environ.get('MYSQL_USER', 'root')
 testenv['mysql_pw'] = os.environ.get('MYSQL_ROOT_PASSWORD', 'passw0rd')
 
@@ -38,7 +38,7 @@ PostgreSQL Environment
 """
 testenv['postgresql_host'] = os.environ.get('POSTGRES_HOST', '127.0.0.1')
 testenv['postgresql_port'] = int(os.environ.get('POSTGRES_PORT', '5432'))
-testenv['postgresql_db'] = os.environ.get('POSTGRES_DB', 'circle_test')
+testenv['postgresql_db'] = os.environ.get('POSTGRES_DB', 'instana_test_db')
 testenv['postgresql_user'] = os.environ.get('POSTGRES_USER', 'root')
 testenv['postgresql_pw'] = os.environ.get('POSTGRES_PW', 'passw0rd')
 

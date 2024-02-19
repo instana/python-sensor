@@ -150,6 +150,9 @@ jobs:
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
       - image: cimg/mariadb:10.11.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -175,6 +178,9 @@ jobs:
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
       - image: cimg/mariadb:10.11.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -200,6 +206,9 @@ jobs:
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
       - image: cimg/mariadb:10.11.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -226,6 +235,9 @@ jobs:
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
       - image: cimg/mariadb:10.11.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
@@ -252,6 +264,9 @@ jobs:
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
       - image: cimg/mariadb:10.11.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3

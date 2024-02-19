@@ -25,7 +25,7 @@ services:
     ports:
       - 3306:3306
     environment:
-      MYSQL_DATABASE: 'circle_test'
+      MYSQL_DATABASE: 'instana_test_db'
       MYSQL_USER: 'root'
       MYSQL_ROOT_PASSWORD: passw0rd
       MYSQL_ROOT_HOST: '%'
@@ -44,7 +44,7 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: passw0rd
-      POSTGRES_DB: circle_test
+      POSTGRES_DB: instana_test_db
 
   rabbitmq:
     image: docker.io/library/rabbitmq

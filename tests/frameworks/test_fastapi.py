@@ -7,7 +7,7 @@ import multiprocessing
 
 import requests
 
-from instana.singletons import tracer
+from instana.singletons import async_tracer
 from tests.apps.fastapi_app import launch_fastapi
 from ..helpers import testenv
 from ..helpers import get_first_span_by_filter
@@ -33,19 +33,19 @@ class TestFastAPI(unittest.TestCase):
         self.assertEqual(result.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", result.headers)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         # FastAPI instrumentation (like all instrumentation) _always_ traces unless told otherwise
         self.assertEqual(len(spans), 1)
         self.assertEqual(spans[0].n, "asgi")
 
     def test_basic_get(self):
         result = None
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(testenv["fastapi_server"] + "/")
 
         self.assertEqual(result.status_code, 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -95,12 +95,12 @@ class TestFastAPI(unittest.TestCase):
 
     def test_400(self):
         result = None
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(testenv["fastapi_server"] + "/400")
 
         self.assertEqual(result.status_code, 400)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -150,12 +150,12 @@ class TestFastAPI(unittest.TestCase):
 
     def test_500(self):
         result = None
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(testenv["fastapi_server"] + "/500")
 
         self.assertEqual(result.status_code, 500)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -205,12 +205,12 @@ class TestFastAPI(unittest.TestCase):
 
     def test_path_templates(self):
         result = None
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(testenv["fastapi_server"] + "/users/1")
 
         self.assertEqual(result.status_code, 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -260,12 +260,12 @@ class TestFastAPI(unittest.TestCase):
 
     def test_secret_scrubbing(self):
         result = None
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(testenv["fastapi_server"] + "/?secret=shhh")
 
         self.assertEqual(result.status_code, 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -315,14 +315,14 @@ class TestFastAPI(unittest.TestCase):
 
     def test_synthetic_request(self):
         request_headers = {"X-INSTANA-SYNTHETIC": "1"}
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(
                 testenv["fastapi_server"] + "/", headers=request_headers
             )
 
         self.assertEqual(result.status_code, 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -381,14 +381,14 @@ class TestFastAPI(unittest.TestCase):
 
         request_headers = {"X-Capture-This": "this", "X-Capture-That": "that"}
 
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(
                 testenv["fastapi_server"] + "/", headers=request_headers
             )
 
         self.assertEqual(result.status_code, 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -446,12 +446,12 @@ class TestFastAPI(unittest.TestCase):
 
         # The background FastAPI server is pre-configured with custom headers to capture
 
-        with tracer.start_active_span("test"):
+        with async_tracer.start_active_span("test"):
             result = requests.get(testenv["fastapi_server"] + "/response_headers")
 
         self.assertEqual(result.status_code, 200)
 
-        spans = tracer.recorder.queued_spans()
+        spans = async_tracer.recorder.queued_spans()
         self.assertEqual(len(spans), 3)
 
         span_filter = (
@@ -503,3 +503,72 @@ class TestFastAPI(unittest.TestCase):
         self.assertEqual("this too", asgi_span.data["http"]["header"]["X-Capture-This-Too"])
         self.assertIn("X-Capture-That-Too", asgi_span.data["http"]["header"])
         self.assertEqual("that too", asgi_span.data["http"]["header"]["X-Capture-That-Too"])
+
+    def test_non_async_function(self):
+        with async_tracer.start_active_span("test"):
+            result = requests.get(testenv["fastapi_server"] + "/non_async")
+
+        self.assertEqual(result.status_code, 200)
+
+        spans = async_tracer.recorder.queued_spans()
+        self.assertEqual(5, len(spans))
+
+        span_filter = (
+            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
+        )
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
+
+        span_filter = (
+            lambda span: span.n == "urllib3" and span.p == test_span.s
+        )
+        urllib3_span1 = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span1)
+
+        span_filter = (
+            lambda span: span.n == "asgi" and span.p == urllib3_span1.s
+        )
+        asgi_span1 = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span1)
+
+        span_filter = (
+            lambda span: span.n == "urllib3" and span.p == asgi_span1.s
+        )
+        urllib3_span2 = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span2)
+
+        span_filter = (
+            lambda span: span.n == "asgi" and span.p == urllib3_span2.s
+        )
+        asgi_span2 = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span2)
+
+        # Same traceId
+        traceId = test_span.t
+        self.assertEqual(traceId, urllib3_span1.t)
+        self.assertEqual(traceId, asgi_span1.t)
+        self.assertEqual(traceId, urllib3_span2.t)
+        self.assertEqual(traceId, asgi_span2.t)
+
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span1.t)
+
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span1.s)
+
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+
+        self.assertIn("Server-Timing", result.headers)
+        server_timing_value = "intid;desc=%s" % asgi_span1.t
+        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+
+        self.assertIsNone(asgi_span1.ec)
+        self.assertEqual(asgi_span1.data["http"]["host"], "127.0.0.1")
+        self.assertEqual(asgi_span1.data["http"]["path"], "/non_async")
+        self.assertEqual(asgi_span1.data["http"]["path_tpl"], "/non_async")
+        self.assertEqual(asgi_span1.data["http"]["method"], "GET")
+        self.assertEqual(asgi_span1.data["http"]["status"], 200)
+
+        self.assertIsNone(asgi_span1.data["http"]["error"])
+        self.assertIsNone(asgi_span1.data["http"]["params"])

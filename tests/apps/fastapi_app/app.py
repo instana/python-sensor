@@ -1,10 +1,13 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+from ...helpers import testenv
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import requests
 
 fastapi_server = FastAPI()
 
@@ -47,3 +50,12 @@ async def five_hundred():
 @fastapi_server.get("/starlette_exception")
 async def starlette_exception():
     raise StarletteHTTPException(status_code=500, detail="500 response")
+
+def trigger_outgoing_call():
+    response = requests.get(testenv["fastapi_server"]+"/users/1")
+    return response.json()
+
+@fastapi_server.get("/non_async")
+def non_async_complex_call():
+    response = trigger_outgoing_call()
+    return response

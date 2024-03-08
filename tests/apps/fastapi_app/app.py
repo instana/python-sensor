@@ -6,6 +6,7 @@ from ...helpers import testenv
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse
+from fastapi.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import requests
 
@@ -55,7 +56,12 @@ def trigger_outgoing_call():
     response = requests.get(testenv["fastapi_server"]+"/users/1")
     return response.json()
 
-@fastapi_server.get("/non_async")
+@fastapi_server.get("/non_async_simple")
 def non_async_complex_call():
     response = trigger_outgoing_call()
     return response
+
+@fastapi_server.get("/non_async_threadpool")
+def non_async_threadpool():
+    run_in_threadpool(trigger_outgoing_call)
+    return {"message": "non async functions executed on a thread pool can't be followed through thread boundaries"}

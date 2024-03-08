@@ -504,9 +504,9 @@ class TestFastAPI(unittest.TestCase):
         self.assertIn("X-Capture-That-Too", asgi_span.data["http"]["header"])
         self.assertEqual("that too", asgi_span.data["http"]["header"]["X-Capture-That-Too"])
 
-    def test_non_async_function(self):
+    def test_non_async_simple(self):
         with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/non_async")
+            result = requests.get(testenv["fastapi_server"] + "/non_async_simple")
 
         self.assertEqual(result.status_code, 200)
 
@@ -565,10 +565,64 @@ class TestFastAPI(unittest.TestCase):
 
         self.assertIsNone(asgi_span1.ec)
         self.assertEqual(asgi_span1.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span1.data["http"]["path"], "/non_async")
-        self.assertEqual(asgi_span1.data["http"]["path_tpl"], "/non_async")
+        self.assertEqual(asgi_span1.data["http"]["path"], "/non_async_simple")
+        self.assertEqual(asgi_span1.data["http"]["path_tpl"], "/non_async_simple")
         self.assertEqual(asgi_span1.data["http"]["method"], "GET")
         self.assertEqual(asgi_span1.data["http"]["status"], 200)
 
         self.assertIsNone(asgi_span1.data["http"]["error"])
         self.assertIsNone(asgi_span1.data["http"]["params"])
+
+    def test_non_async_threadpool(self):
+        with async_tracer.start_active_span("test"):
+            result = requests.get(testenv["fastapi_server"] + "/non_async_threadpool")
+
+        self.assertEqual(result.status_code, 200)
+
+        spans = async_tracer.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        span_filter = (
+            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
+        )
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
+
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span)
+
+        span_filter = lambda span: span.n == "asgi"
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span)
+
+        # Same traceId
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, asgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(asgi_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
+
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+
+        self.assertIn("Server-Timing", result.headers)
+        server_timing_value = "intid;desc=%s" % asgi_span.t
+        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+
+        self.assertIsNone(asgi_span.ec)
+        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
+        self.assertEqual(asgi_span.data["http"]["path"], "/non_async_threadpool")
+        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/non_async_threadpool")
+        self.assertEqual(asgi_span.data["http"]["method"], "GET")
+        self.assertEqual(asgi_span.data["http"]["status"], 200)
+
+        self.assertIsNone(asgi_span.data["http"]["error"])
+        self.assertIsNone(asgi_span.data["http"]["params"])

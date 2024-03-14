@@ -13,7 +13,7 @@ requires-python = ">=3.8"
 license = "MIT"
 keywords = [
     "performance",
-    "opentracing",
+    "opentelemetry",
     "metrics",
     "monitoring",
     "tracing",
@@ -44,13 +44,12 @@ classifiers = [
 ]
 dependencies = [
     "autowrapt>=1.0",
-    "basictracer>=3.1.0",
     "fysom>=2.1.2",
-    "opentracing>=2.3.0",
     "protobuf<5.0.0",
     "requests>=2.6.0",
     "six>=1.12.0",
     "urllib3>=1.26.5",
+    "opentelemetry-api>=1.23.0",
 ]
 
 [project.optional-dependencies]

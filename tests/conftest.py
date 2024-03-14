@@ -12,7 +12,7 @@ os.environ["INSTANA_TEST"] = "true"
 # Make sure the instana package is fully loaded
 import instana
 
-collect_ignore_glob = []
+collect_ignore_glob = ['*propagators*', '*platforms*','*frameworks*', '*opentracing*', '*clients*', '*autoprofile*', '*w3c_trace_context*']
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # be run explicitly.  (So always exclude them here)

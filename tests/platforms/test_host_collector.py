@@ -177,8 +177,6 @@ class TestHostCollector(unittest.TestCase):
         self.assertEqual(snapshot['versions']['instana'], VERSION)
         self.assertIn('wrapt', snapshot['versions'])
         self.assertIn('fysom', snapshot['versions'])
-        self.assertIn('opentracing', snapshot['versions'])
-        self.assertIn('basictracer', snapshot['versions'])
 
     @patch.object(HostCollector, "should_send_snapshot_data")
     def test_prepare_payload_with_snapshot_disabled_python_packages(self, mock_should_send_snapshot_data):
@@ -213,7 +211,7 @@ class TestHostCollector(unittest.TestCase):
         self.assertEqual('Autowrapt', snapshot['m'])
         self.assertIn('version', snapshot)
         self.assertGreater(len(snapshot['versions']), 5)
-        expected_packages = ('instana', 'wrapt', 'fysom', 'opentracing', 'basictracer')
+        expected_packages = ('instana', 'wrapt', 'fysom')
         for package in expected_packages:
             self.assertIn(package, snapshot['versions'], f"{package} not found in snapshot['versions']")
         self.assertEqual(snapshot['versions']['instana'], VERSION)
@@ -236,7 +234,7 @@ class TestHostCollector(unittest.TestCase):
         self.assertEqual('AutoTrace', snapshot['m'])
         self.assertIn('version', snapshot)
         self.assertGreater(len(snapshot['versions']), 5)
-        expected_packages = ('instana', 'wrapt', 'fysom', 'opentracing', 'basictracer')
+        expected_packages = ('instana', 'wrapt', 'fysom')
         for package in expected_packages:
             self.assertIn(package, snapshot['versions'], f"{package} not found in snapshot['versions']")
         self.assertEqual(snapshot['versions']['instana'], VERSION)

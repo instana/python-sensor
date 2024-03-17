@@ -5,46 +5,70 @@
 
 import os
 import queue
-import sys
 
 from .span import RegisteredSpan, SDKSpan
-
 
 
 class StanRecorder(object):
     THREAD_NAME = "Instana Span Reporting"
 
-    REGISTERED_SPANS = ("aiohttp-client", "aiohttp-server", "aws.lambda.entry",
-                        "boto3", "cassandra", "celery-client", "celery-worker",
-                        "couchbase", "django", "gcs", "gcps-producer",
-                        "gcps-consumer", "log", "memcache", "mongo", "mysql",
-                        "postgres", "pymongo", "rabbitmq", "redis","render",
-                        "rpc-client", "rpc-server", "sqlalchemy", "tornado-client",
-                        "tornado-server", "urllib3", "wsgi", "asgi")
+    REGISTERED_SPANS = (
+        "aiohttp-client",
+        "aiohttp-server",
+        "aws.lambda.entry",
+        "boto3",
+        "cassandra",
+        "celery-client",
+        "celery-worker",
+        "couchbase",
+        "django",
+        "gcs",
+        "gcps-producer",
+        "gcps-consumer",
+        "log",
+        "memcache",
+        "mongo",
+        "mysql",
+        "postgres",
+        "pymongo",
+        "rabbitmq",
+        "redis",
+        "render",
+        "rpc-client",
+        "rpc-server",
+        "sqlalchemy",
+        "tornado-client",
+        "tornado-server",
+        "urllib3",
+        "wsgi",
+        "asgi",
+    )
 
     # Recorder thread for collection/reporting of spans
     thread = None
 
-    def __init__(self, agent = None):
+    def __init__(self, agent=None):
         if agent is None:
             # Late import to avoid circular import
             # pylint: disable=import-outside-toplevel
             from .singletons import get_agent
+
             self.agent = get_agent()
         else:
             self.agent = agent
 
     def queue_size(self):
-        """ Return the size of the queue; how may spans are queued, """
+        """Return the size of the queue; how may spans are queued,"""
         return self.agent.collector.span_queue.qsize()
 
     def queued_spans(self):
-        """ Get all of the spans in the queue """
+        """Get all of the spans in the queue"""
         span = None
         spans = []
 
         import time
         from .singletons import env_is_test
+
         if env_is_test is True:
             time.sleep(1)
 
@@ -61,8 +85,8 @@ class StanRecorder(object):
         return spans
 
     def clear_spans(self):
-        """ Clear the queue of spans """
-        if self.agent.collector.span_queue.empty() == False:
+        """Clear the queue of spans"""
+        if not self.agent.collector.span_queue.empty():
             self.queued_spans()
 
     def record_span(self, span):
@@ -91,7 +115,7 @@ class StanRecorder(object):
 class InstanaSampler(object):
     def __init__(self) -> None:
         pass
-        
+
     def sampled(self, _):
         # We never sample
         return False

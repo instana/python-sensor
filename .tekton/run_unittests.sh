@@ -36,13 +36,13 @@ couchbase)
   export REQUIREMENTS='requirements-couchbase.txt'
   export TESTS='tests/clients/test_couchbase.py'
   export COUCHBASE_TEST='true' ;;
-gevent)
-  export REQUIREMENTS='requirements-gevent.txt'
-  export TESTS='tests/frameworks/test_gevent.py'
-  export GEVENT_TEST='true' ;;
+gevent_starlette)
+  export REQUIREMENTS='requirements-gevent-starlette.txt'
+  export TESTS='tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py'
+  export GEVENT_STARLETTE_TEST='true' ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
-       "not in (default|cassandra|couchbase|gevent)" >&2
+       "not in (default|cassandra|couchbase|gevent_starlette)" >&2
   exit 3 ;;
 esac
 

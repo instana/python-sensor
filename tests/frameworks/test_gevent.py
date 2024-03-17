@@ -15,7 +15,7 @@ from instana.singletons import tracer
 from ..helpers import testenv, get_spans_by_filter
 
 
-@unittest.skipIf(not os.environ.get("GEVENT_TEST"), reason="")
+@unittest.skipIf(not os.environ.get("GEVENT_STARLETTE_TEST"), reason="")
 class TestGEvent(unittest.TestCase):
     def setUp(self):
         self.http = urllib3.HTTPConnectionPool('127.0.0.1', port=testenv["wsgi_port"], maxsize=20)

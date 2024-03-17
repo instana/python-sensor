@@ -7,8 +7,6 @@ import os
 import queue
 import sys
 
-from basictracer import Sampler
-
 from .span import RegisteredSpan, SDKSpan
 
 
@@ -90,7 +88,10 @@ class StanRecorder(object):
             self.agent.collector.span_queue.put(json_span)
 
 
-class InstanaSampler(Sampler):
+class InstanaSampler(object):
+    def __init__(self) -> None:
+        pass
+        
     def sampled(self, _):
         # We never sample
         return False

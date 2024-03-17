@@ -70,7 +70,7 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
-    - name: unittest-gevent
+    - name: unittest-gevent-starlette
       runAfter:
         - clone
       matrix:
@@ -80,7 +80,7 @@ spec:
               # 3.9.18-bookworm
               - "sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
       taskRef:
-        name: python-tracer-unittest-gevent-task
+        name: python-tracer-unittest-gevent-starlette-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc

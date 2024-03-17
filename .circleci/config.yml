@@ -56,7 +56,7 @@ commands:
             INSTANA_TEST: "true"
             CASSANDRA_TEST: "<<parameters.cassandra>>"
             COUCHBASE_TEST: "<<parameters.couchbase>>"
-            GEVENT_TEST: "<<parameters.gevent>>"
+            GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
           command: |
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
@@ -329,17 +329,17 @@ jobs:
       - store-pytest-results
       - run_sonarqube
 
-  py39gevent:
+  py39gevent_starlette:
     docker:
       - image: cimg/python:3.9.17
     working_directory: ~/repo
     steps:
       - checkout
       - pip-install-deps:
-          requirements: "tests/requirements-gevent.txt"
+          requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:
           gevent: "true"
-          tests: "tests/frameworks/test_gevent.py"
+          tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -355,7 +355,7 @@ workflows:
       - python312
       - py39cassandra
       - py39couchbase
-      - py39gevent
+      - py39gevent_starlette
       - final_job:
           requires:
             - python37
@@ -366,4 +366,4 @@ workflows:
             - python312
             - py39cassandra
             - py39couchbase
-            - py39gevent
+            - py39gevent_starlette

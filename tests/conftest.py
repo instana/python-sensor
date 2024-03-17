@@ -22,8 +22,9 @@ if not os.environ.get("CASSANDRA_TEST" ):
 if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
-if not os.environ.get("GEVENT_TEST"):
+if not os.environ.get("GEVENT_STARLETTE_TEST"):
     collect_ignore_glob.append("*test_gevent*")
+    collect_ignore_glob.append("*test_starlette*")
 
 # Python 3.10 support is incomplete yet
 # TODO: Remove this once we start supporting Tornado >= 6.0

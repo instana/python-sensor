@@ -94,7 +94,7 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: python-tracer-unittest-gevent-task
+  name: python-tracer-unittest-gevent-starlette-task
 spec:
   params:
   - name: imageDigest
@@ -107,7 +107,7 @@ spec:
       image: python@$(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
-          value: gevent
+          value: gevent_starlette
       workingDir: /workspace/python-sensor/
       command:
       - /workspace/python-sensor/.tekton/run_unittests.sh

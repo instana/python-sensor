@@ -27,18 +27,18 @@ default)
     *)
       export REQUIREMENTS='requirements.txt' ;;
   esac
-  export TESTS='tests' ;;
+  export TESTS=('tests') ;;
 cassandra)
   export REQUIREMENTS='requirements-cassandra.txt'
-  export TESTS='tests/clients/test_cassandra-driver.py'
+  export TESTS=('tests/clients/test_cassandra-driver.py')
   export CASSANDRA_TEST='true' ;;
 couchbase)
   export REQUIREMENTS='requirements-couchbase.txt'
-  export TESTS='tests/clients/test_couchbase.py'
+  export TESTS=('tests/clients/test_couchbase.py')
   export COUCHBASE_TEST='true' ;;
 gevent_starlette)
   export REQUIREMENTS='requirements-gevent-starlette.txt'
-  export TESTS='tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py'
+  export TESTS=('tests/frameworks/test_gevent.py' 'tests/frameworks/test_starlette.py')
   export GEVENT_STARLETTE_TEST='true' ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
@@ -73,4 +73,4 @@ coverage run \
   --data-file=".coverage-${PYTHON_VERSION}-${TEST_CONFIGURATION}" \
   --module \
   pytest \
-    --verbose --junitxml=test-results "${TESTS}" # pytest options (not coverage options anymore)
+    --verbose --junitxml=test-results "${TESTS[@]}" # pytest options (not coverage options anymore)

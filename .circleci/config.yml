@@ -74,6 +74,7 @@ commands:
     steps:
       - store_test_results:
           path: test-results
+  
   run_sonarqube:
     steps:
       - attach_workspace:
@@ -103,8 +104,8 @@ commands:
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
-          store_artifacts:
-            path: htmlcov
+      - store_artifacts:
+          path: htmlcov
 
   store-coverage-report:
     steps:
@@ -114,7 +115,7 @@ commands:
 jobs:
   python38:
     docker:
-      - image: cimg/python:3.8.17
+      - image: cimg/python:3.8
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -138,7 +139,7 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -162,7 +163,7 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10.12
+      - image: cimg/python:3.10
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -187,7 +188,7 @@ jobs:
 
   python311:
     docker:
-      - image: cimg/python:3.11.4
+      - image: cimg/python:3.11
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -212,7 +213,7 @@ jobs:
 
   python312:
     docker:
-      - image: cimg/python:3.12.0
+      - image: cimg/python:3.12
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -262,7 +263,7 @@ jobs:
 
   py39couchbase:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -278,7 +279,7 @@ jobs:
 
   py39cassandra:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -343,3 +344,6 @@ workflows:
             - py39cassandra
             - py39couchbase
             - py39gevent_starlette
+          filters:
+            branches:
+              only: master

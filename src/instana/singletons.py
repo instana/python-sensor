@@ -10,7 +10,6 @@ from instana.tracer import InstanaTracerProvider
 
 agent = None
 tracer = None
-async_tracer = None
 profiler = None
 span_recorder = None
 
@@ -104,13 +103,6 @@ trace.set_tracer_provider(provider)
 
 # Creates a tracer from the global tracer provider
 tracer = trace.get_tracer("instana.tracer")
-async_tracer = trace.get_tracer("instana.async.tracer")
-tornado_tracer = None
-
-
-def setup_tornado_tracer():
-    global tornado_tracer
-    tornado_tracer = trace.get_tracer("instana.tornado.tracer")
 
 
 def get_tracer():

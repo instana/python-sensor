@@ -74,6 +74,7 @@ commands:
     steps:
       - store_test_results:
           path: test-results
+  
   run_sonarqube:
     steps:
       - attach_workspace:
@@ -103,8 +104,8 @@ commands:
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
-          store_artifacts:
-            path: htmlcov
+      - store_artifacts:
+          path: htmlcov
 
   store-coverage-report:
     steps:
@@ -112,38 +113,9 @@ commands:
           path: htmlcov
 
 jobs:
-  python37:
-    docker:
-      - image: cimg/python:3.7.17
-      - image: cimg/postgres:9.6.24
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps:
-          requirements: "tests/requirements-307.txt"
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
   python38:
     docker:
-      - image: cimg/python:3.8.17
+      - image: cimg/python:3.8
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -171,7 +143,7 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -199,7 +171,7 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10.12
+      - image: cimg/python:3.10
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -228,7 +200,7 @@ jobs:
 
   python311:
     docker:
-      - image: cimg/python:3.11.4
+      - image: cimg/python:3.11
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -257,7 +229,7 @@ jobs:
 
   python312:
     docker:
-      - image: cimg/python:3.12.0
+      - image: cimg/python:3.12
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -286,7 +258,7 @@ jobs:
 
   py39couchbase:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -302,7 +274,7 @@ jobs:
 
   py39cassandra:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -347,18 +319,40 @@ workflows:
   version: 2
   build:
     jobs:
-      - python37
-      - python38
-      - python39
-      - python310
-      - python311
-      - python312
-      - py39cassandra
-      - py39couchbase
-      - py39gevent_starlette
+      - python38:
+          filters:
+            branches:
+              only: master
+      - python39:
+          filters:
+            branches:
+              only: master
+      - python310:
+          filters:
+            branches:
+              only: master
+      - python311:
+          filters:
+            branches:
+              only: master
+      - python312:
+          filters:
+            branches:
+              only: master
+      - py39cassandra:
+          filters:
+            branches:
+              only: master
+      - py39couchbase:
+          filters:
+            branches:
+              only: master
+      - py39gevent_starlette:
+          filters:
+            branches:
+              only: master
       - final_job:
           requires:
-            - python37
             - python38
             - python39
             - python310
@@ -367,3 +361,6 @@ workflows:
             - py39cassandra
             - py39couchbase
             - py39gevent_starlette
+          filters:
+            branches:
+              only: master

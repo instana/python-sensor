@@ -4,7 +4,7 @@
 from typing import Optional, Tuple
 
 from instana.log import logger
-from instana.singletons import agent, tracer, async_tracer, tornado_tracer
+from instana.singletons import agent, tracer
 from instana.span.span import InstanaSpan, get_current_span
 from instana.tracer import InstanaTracer
 

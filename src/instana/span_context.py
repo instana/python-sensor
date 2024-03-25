@@ -1,24 +1,25 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2019
 
+from opentelemetry.trace import SpanContext as OtelSpanContext
 
-class SpanContext():
+class SpanContext(OtelSpanContext):
     def __init__(
-            self,
-            trace_id=None,
-            span_id=None,
-            baggage=None,
-            sampled=True,
-            level=1,
-            synthetic=False
-    ):
+        self,
+        trace_id=None,
+        span_id=None,
+        # baggage=None,
+        sampled=True,
+        level=1,
+        synthetic=False,
+    ) -> None:
 
         self.level = level
         self.trace_id = trace_id
         self.span_id = span_id
         self.sampled = sampled
         self.synthetic = synthetic
-        self._baggage = baggage or {}
+        # self._baggage = baggage or {}
 
         self.trace_parent = None  # true/false flag
         self.instana_ancestor = None
@@ -84,20 +85,21 @@ class SpanContext():
     def correlation_id(self, value):
         self._correlation_id = value
 
-    @property
-    def baggage(self):
-        return self._baggage
+    # @property
+    # def baggage(self):
+    #     return self._baggage
 
     @property
     def suppression(self):
         return self.level == 0
 
-    def with_baggage_item(self, key, value):
-        new_baggage = self._baggage.copy()
-        new_baggage[key] = value
-        return SpanContext(
-            trace_id=self.trace_id,
-            span_id=self.span_id,
-            sampled=self.sampled,
-            level=self.level,
-            baggage=new_baggage)
+    # def with_baggage_item(self, key, value):
+    #     new_baggage = self._baggage.copy()
+    #     new_baggage[key] = value
+    #     return SpanContext(
+    #         trace_id=self.trace_id,
+    #         span_id=self.span_id,
+    #         sampled=self.sampled,
+    #         level=self.level,
+    #         baggage=new_baggage,
+    #     )

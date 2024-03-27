@@ -14,14 +14,9 @@ BaseSpan: Base class containing the commonalities for the two descendants
   - RegisteredSpan: Class that represents a Registered type span
 """
 import six
-from typing import (
-    Dict,
-    Optional,
-    Union,
-    Sequence,
-)
+from typing import Dict, Optional, Union, Sequence, Tuple
 from threading import Lock
-from time import time
+from time import time_ns
 
 from opentelemetry.trace import Span  # , SpanContext
 from opentelemetry.util import types
@@ -42,7 +37,7 @@ class Event:
         self._name = name
         self._attributes = attributes
         if timestamp is None:
-            self._timestamp = time()
+            self._timestamp = time_ns()
         else:
             self._timestamp = timestamp
 
@@ -216,10 +211,10 @@ class InstanaSpan(Span):
 
     def end(self, end_time: Optional[int] = None) -> None:
         with self._lock:
-            self._end_time = end_time if end_time is not None else time()
+            self._end_time = end_time if end_time is not None else time_ns()
             self.duration = self._end_time - self._start_time
 
-    def mark_as_errored(self, attributes: types.Attributes = None):
+    def mark_as_errored(self, attributes: types.Attributes = None) -> None:
         """
         Mark this span as errored.
 
@@ -235,7 +230,7 @@ class InstanaSpan(Span):
         except Exception:
             logger.debug("span.mark_as_errored", exc_info=True)
 
-    def assure_errored(self):
+    def assure_errored(self) -> None:
         """
         Make sure that this span is marked as errored.
         @return: None
@@ -251,22 +246,21 @@ class InstanaSpan(Span):
 class BaseSpan(object):
     sy = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "BaseSpan(%s)" % self.__dict__.__str__()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__dict__.__str__()
 
-    def __init__(self, span, source, service_name, **kwargs):
+    def __init__(self, span, source, service_name, **kwargs) -> None:
         # pylint: disable=invalid-name
-        # context: SpanContext = span.context
         self.t = span.context.trace_id
         self.p = span.parent_id
         # self.p = span.context.span_id if span.context.is_remote else None
         self.s = span.span_id
-        # self.l = span.context.level
-        self.ts = int(round(span.start_time * 1000))
-        self.d = int(round(span.duration * 1000))
+        self.l = span.context.level
+        self.ts = round(span.start_time / 10**6)
+        self.d = round(span.duration / 10**6)
         self.f = source
         self.ec = span.attributes.pop("ec", None)
         self.data = DictionaryOfStan()
@@ -277,7 +271,7 @@ class BaseSpan(object):
 
         self.__dict__.update(kwargs)
 
-    def _populate_extra_span_attributes(self, span):
+    def _populate_extra_span_attributes(self, span) -> None:
         if span.context.trace_parent:
             self.tp = span.context.trace_parent
         if span.context.instana_ancestor:
@@ -362,7 +356,7 @@ class SDKSpan(BaseSpan):
     ENTRY_KIND = ["entry", "server", "consumer"]
     EXIT_KIND = ["exit", "client", "producer"]
 
-    def __init__(self, span, source, service_name, **kwargs):
+    def __init__(self, span, source, service_name, **kwargs) -> None:
         # pylint: disable=invalid-name
         super(SDKSpan, self).__init__(span, source, service_name, **kwargs)
 
@@ -397,7 +391,7 @@ class SDKSpan(BaseSpan):
         # if len(span.context.baggage) > 0:
         #     self.data["baggage"] = span.context.baggage
 
-    def get_span_kind(self, span):
+    def get_span_kind(self, span) -> Tuple[str, int]:
         """
         Will retrieve the `span.kind` attribute and return a tuple containing the appropriate string and integer
         values for the Instana backend
@@ -464,7 +458,7 @@ class RegisteredSpan(BaseSpan):
 
     LOCAL_SPANS = "render"
 
-    def __init__(self, span, source, service_name, **kwargs):
+    def __init__(self, span, source, service_name, **kwargs) -> None:
         # pylint: disable=invalid-name
         super(RegisteredSpan, self).__init__(span, source, service_name, **kwargs)
         self.n = span.name
@@ -495,7 +489,7 @@ class RegisteredSpan(BaseSpan):
                 span.attributes
             )
 
-    def _populate_entry_span_data(self, span):
+    def _populate_entry_span_data(self, span) -> None:
         if span.name in self.HTTP_SPANS:
             self._collect_http_attributes(span)
 
@@ -585,7 +579,7 @@ class RegisteredSpan(BaseSpan):
         else:
             logger.debug("SpanRecorder: Unknown entry span: %s" % span.name)
 
-    def _populate_local_span_data(self, span):
+    def _populate_local_span_data(self, span) -> None:
         if span.name == "render":
             self.data["render"]["name"] = span.attributes.pop("name", None)
             self.data["render"]["type"] = span.attributes.pop("type", None)
@@ -594,7 +588,7 @@ class RegisteredSpan(BaseSpan):
         else:
             logger.debug("SpanRecorder: Unknown local span: %s" % span.name)
 
-    def _populate_exit_span_data(self, span):
+    def _populate_exit_span_data(self, span) -> None:
         if span.name in self.HTTP_SPANS:
             self._collect_http_attributes(span)
 
@@ -769,7 +763,7 @@ class RegisteredSpan(BaseSpan):
         else:
             logger.debug("SpanRecorder: Unknown exit span: %s" % span.name)
 
-    def _collect_http_attributes(self, span):
+    def _collect_http_attributes(self, span) -> None:
         self.data["http"]["host"] = span.attributes.pop("http.host", None)
         self.data["http"]["url"] = span.attributes.pop("http.url", None)
         self.data["http"]["path"] = span.attributes.pop("http.path", None)

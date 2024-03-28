@@ -40,9 +40,7 @@ class InstanaTracerProvider(TracerProvider):
         recorder: Optional[StanRecorder] = None,
         span_processor: Optional[Union[HostAgent, TestAgent]] = None,
     ) -> None:
-        self._span_processor = (
-            span_processor or HostAgent()
-        )
+        self._span_processor = span_processor or HostAgent()
 
         self.sampler = InstanaSampler() if sampler is None else sampler
         self.recorder = StanRecorder() if recorder is None else recorder
@@ -50,7 +48,7 @@ class InstanaTracerProvider(TracerProvider):
         self._propagators[Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[Format.TEXT_MAP] = TextPropagator()
         self._propagators[Format.BINARY] = BinaryPropagator()
-    
+
     def get_tracer(
         self,
         instrumenting_module_name: str,
@@ -68,18 +66,22 @@ class InstanaTracerProvider(TracerProvider):
             self._propagators,
         )
 
+
 class InstanaTracer(Tracer):
     """Handles :class:`InstanaSpan` creation and in-process context propagation.
 
     This class provides methods for manipulating the context, creating spans,
     and controlling spans' lifecycles.
     """
+
     def __init__(
         self,
         sampler: Optional[Sampler] = None,
         recorder: Optional[StanRecorder] = None,
         span_processor: Optional[Union[HostAgent, TestAgent]] = None,
-        propagators: Optional[Mapping[str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]]] = None,
+        propagators: Optional[
+            Mapping[str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]]
+        ] = None,
     ) -> None:
         self._tracer_id = generate_id()
         self._sampler = sampler
@@ -106,12 +108,9 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
-
         parent_context = get_current_span(context).get_span_context()
         if parent_context is not None and not isinstance(parent_context, SpanContext):
-            raise TypeError(
-                "parent_context must be a SpanContext or None."
-            )
+            raise TypeError("parent_context must be a SpanContext or None.")
 
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(
@@ -132,18 +131,18 @@ class InstanaTracer(Tracer):
         return span
 
     def start_as_current_span(
-            self,
-            name: str,
-            context: Optional[Context] = None,
-            kind: SpanKind = SpanKind.INTERNAL,
-            attributes: types.Attributes = None,
-            links: _Links = None,
-            start_time: Optional[int] = None,
-            record_exception: bool = True,
-            set_status_on_exception: bool = True,
-            end_on_exit: bool = True,
-        ) -> Iterator[InstanaSpan]:
-        span = self.start_span(        
+        self,
+        name: str,
+        context: Optional[Context] = None,
+        kind: SpanKind = SpanKind.INTERNAL,
+        attributes: types.Attributes = None,
+        links: _Links = None,
+        start_time: Optional[int] = None,
+        record_exception: bool = True,
+        set_status_on_exception: bool = True,
+        end_on_exit: bool = True,
+    ) -> Iterator[InstanaSpan]:
+        span = self.start_span(
             name=name,
             context=context,
             kind=kind,
@@ -182,16 +181,12 @@ class InstanaTracer(Tracer):
                     if re_with_stan_frame.search(frame[2]) is not None:
                         continue
 
-                sanitized_stack.append({
-                    "c": frame[0],
-                    "n": frame[1],
-                    "m": frame[2]
-                })
+                sanitized_stack.append({"c": frame[0], "n": frame[1], "m": frame[2]})
 
             if len(sanitized_stack) > limit:
                 # (limit * -1) gives us negative form of <limit> used for
                 # slicing from the end of the list. e.g. stack[-30:]
-                span.stack = sanitized_stack[(limit*-1):]
+                span.stack = sanitized_stack[(limit * -1) :]
             else:
                 span.stack = sanitized_stack
         except Exception:
@@ -215,7 +210,7 @@ class InstanaTracer(Tracer):
             span_id=span_id,
             sampled=sampled,
             level=(parent_context.level if parent_context is not None else 1),
-            synthetic=False
+            synthetic=False,
         )
 
         if parent_context is not None:
@@ -229,6 +224,7 @@ class InstanaTracer(Tracer):
 
         return span_context
 
+
 # Used by __add_stack
 re_tracer_frame = re.compile(r"/instana/.*\.py$")
-re_with_stan_frame = re.compile('with_instana')
+re_with_stan_frame = re.compile("with_instana")

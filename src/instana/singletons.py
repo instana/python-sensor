@@ -3,11 +3,11 @@
 
 import os
 
-import opentracing
+from opentelemetry import trace
 
 from .autoprofile.profiler import Profiler
 from .log import logger
-from .tracer import InstanaTracer
+from .tracer import InstanaTracerProvider
 
 agent = None
 tracer = None
@@ -96,34 +96,23 @@ def set_agent(new_agent):
     agent = new_agent
 
 
-# The global OpenTracing compatible tracer used internally by
+# The global OpenTelemetry compatible tracer used internally by
 # this package.
-tracer = InstanaTracer(recorder=span_recorder)
+provider = InstanaTracerProvider(recorder=span_recorder)
+provider.add_span_processor(agent)
 
-try:
-    from opentracing.scope_managers.contextvars import ContextVarsScopeManager
+# Sets the global default tracer provider
+trace.set_tracer_provider(provider)
 
-    async_tracer = InstanaTracer(
-        scope_manager=ContextVarsScopeManager(), recorder=span_recorder
-    )
-except Exception:
-    logger.debug("Error setting up async_tracer:", exc_info=True)
-
-# Mock the tornado tracer until tornado is detected and instrumented first
-tornado_tracer = tracer
+# Creates a tracer from the global tracer provider
+tracer = trace.get_tracer("instana.tracer")
+async_tracer = trace.get_tracer("instana.async.tracer")
+tornado_tracer = None
 
 
 def setup_tornado_tracer():
     global tornado_tracer
-    from opentracing.scope_managers.tornado import TornadoScopeManager
-
-    tornado_tracer = InstanaTracer(
-        scope_manager=TornadoScopeManager(), recorder=span_recorder
-    )
-
-
-# Set ourselves as the tracer.
-opentracing.tracer = tracer
+    tornado_tracer = trace.get_tracer("instana.tornado.tracer")
 
 
 def get_tracer():

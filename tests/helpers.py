@@ -146,7 +146,7 @@ def launch_traced_request(url):
 
     logger.warn("Launching request with a root SDK span name of 'launch_traced_request'")
 
-    with tracer.start_active_span('launch_traced_request'):
+    with tracer.start_as_current_span('launch_traced_request'):
         response = requests.get(url)
 
     return response

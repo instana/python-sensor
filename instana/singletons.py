@@ -6,7 +6,6 @@ import os
 from opentelemetry import trace
 
 from .autoprofile.profiler import Profiler
-from .log import logger
 from .tracer import InstanaTracerProvider
 
 agent = None

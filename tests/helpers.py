@@ -9,51 +9,51 @@ testenv = {}
 """
 Cassandra Environment
 """
-testenv['cassandra_host'] = os.environ.get('CASSANDRA_HOST', '127.0.0.1')
-testenv['cassandra_username'] = os.environ.get('CASSANDRA_USERNAME', 'Administrator')
-testenv['cassandra_password'] = os.environ.get('CASSANDRA_PASSWORD', 'password')
+testenv["cassandra_host"] = os.environ.get("CASSANDRA_HOST", "127.0.0.1")
+testenv["cassandra_username"] = os.environ.get("CASSANDRA_USERNAME", "Administrator")
+testenv["cassandra_password"] = os.environ.get("CASSANDRA_PASSWORD", "password")
 
 """
 CouchDB Environment
 """
-testenv['couchdb_host'] = os.environ.get('COUCHDB_HOST', '127.0.0.1')
-testenv['couchdb_username'] = os.environ.get('COUCHDB_USERNAME', 'Administrator')
-testenv['couchdb_password'] = os.environ.get('COUCHDB_PASSWORD', 'password')
+testenv["couchdb_host"] = os.environ.get("COUCHDB_HOST", "127.0.0.1")
+testenv["couchdb_username"] = os.environ.get("COUCHDB_USERNAME", "Administrator")
+testenv["couchdb_password"] = os.environ.get("COUCHDB_PASSWORD", "password")
 
 """
 MySQL Environment
 """
-if 'MYSQL_HOST' in os.environ:
-    testenv['mysql_host'] = os.environ['MYSQL_HOST']
+if "MYSQL_HOST" in os.environ:
+    testenv["mysql_host"] = os.environ["MYSQL_HOST"]
 else:
-    testenv['mysql_host'] = '127.0.0.1'
+    testenv["mysql_host"] = "127.0.0.1"
 
-testenv['mysql_port'] = int(os.environ.get('MYSQL_PORT', '3306'))
-testenv['mysql_db'] = os.environ.get('MYSQL_DATABASE', 'instana_test_db')
-testenv['mysql_user'] = os.environ.get('MYSQL_USER', 'root')
-testenv['mysql_pw'] = os.environ.get('MYSQL_ROOT_PASSWORD', 'passw0rd')
+testenv["mysql_port"] = int(os.environ.get("MYSQL_PORT", "3306"))
+testenv["mysql_db"] = os.environ.get("MYSQL_DATABASE", "instana_test_db")
+testenv["mysql_user"] = os.environ.get("MYSQL_USER", "root")
+testenv["mysql_pw"] = os.environ.get("MYSQL_ROOT_PASSWORD", "passw0rd")
 
 """
 PostgreSQL Environment
 """
-testenv['postgresql_host'] = os.environ.get('POSTGRES_HOST', '127.0.0.1')
-testenv['postgresql_port'] = int(os.environ.get('POSTGRES_PORT', '5432'))
-testenv['postgresql_db'] = os.environ.get('POSTGRES_DB', 'instana_test_db')
-testenv['postgresql_user'] = os.environ.get('POSTGRES_USER', 'root')
-testenv['postgresql_pw'] = os.environ.get('POSTGRES_PW', 'passw0rd')
+testenv["postgresql_host"] = os.environ.get("POSTGRES_HOST", "127.0.0.1")
+testenv["postgresql_port"] = int(os.environ.get("POSTGRES_PORT", "5432"))
+testenv["postgresql_db"] = os.environ.get("POSTGRES_DB", "instana_test_db")
+testenv["postgresql_user"] = os.environ.get("POSTGRES_USER", "root")
+testenv["postgresql_pw"] = os.environ.get("POSTGRES_PW", "passw0rd")
 
 """
 Redis Environment
 """
-testenv['redis_host'] = os.environ.get('REDIS_HOST', '127.0.0.1')
+testenv["redis_host"] = os.environ.get("REDIS_HOST", "127.0.0.1")
 
 """
 MongoDB Environment
 """
-testenv['mongodb_host'] = os.environ.get('MONGO_HOST', '127.0.0.1')
-testenv['mongodb_port'] = os.environ.get('MONGO_PORT', '27017')
-testenv['mongodb_user'] = os.environ.get('MONGO_USER', None)
-testenv['mongodb_pw'] = os.environ.get('MONGO_PW', None)
+testenv["mongodb_host"] = os.environ.get("MONGO_HOST", "127.0.0.1")
+testenv["mongodb_port"] = os.environ.get("MONGO_PORT", "27017")
+testenv["mongodb_user"] = os.environ.get("MONGO_USER", None)
+testenv["mongodb_pw"] = os.environ.get("MONGO_PW", None)
 
 
 def drop_log_spans_from_list(spans):
@@ -66,7 +66,7 @@ def drop_log_spans_from_list(spans):
     """
     new_list = []
     for span in spans:
-        if span.n != 'log':
+        if span.n != "log":
             new_list.append(span)
     return new_list
 
@@ -84,8 +84,8 @@ def fail_with_message_and_span_dump(msg, spans):
     span_dump = "\nDumping all collected spans (%d) -->\n" % span_count
     if span_count > 0:
         for span in spans:
-            span.stack = '<snipped>'
-            span_dump += repr(span) + '\n'
+            span.stack = "<snipped>"
+            span_dump += repr(span) + "\n"
     pytest.fail(msg + span_dump, True)
 
 
@@ -144,9 +144,11 @@ def launch_traced_request(url):
     from instana.log import logger
     from instana.singletons import tracer
 
-    logger.warn("Launching request with a root SDK span name of 'launch_traced_request'")
+    logger.warn(
+        "Launching request with a root SDK span name of 'launch_traced_request'"
+    )
 
-    with tracer.start_as_current_span('launch_traced_request'):
+    with tracer.start_as_current_span("launch_traced_request"):
         response = requests.get(url)
 
     return response

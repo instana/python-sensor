@@ -110,12 +110,3 @@ class StanRecorder(object):
 
             # logger.debug("Recorded span: %s", json_span)
             self.agent.collector.span_queue.put(json_span)
-
-
-class InstanaSampler(object):
-    def __init__(self) -> None:
-        pass
-
-    def sampled(self, _):
-        # We never sample
-        return False

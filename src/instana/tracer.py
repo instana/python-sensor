@@ -6,135 +6,162 @@ import os
 import re
 import time
 import traceback
+from typing import Iterator, Mapping, Optional, Union
 
-import opentracing as ot
-from basictracer import BasicTracer
+from opentelemetry.context.context import Context
+from opentelemetry.trace import (
+    SpanKind,
+    Tracer,
+    TracerProvider,
+    _Links,
+    get_current_span,
+    use_span,
+)
+from opentelemetry.util import types
 
-from .util.ids import generate_id
-from .span_context import SpanContext
-from .span import InstanaSpan, RegisteredSpan
-from .recorder import StanRecorder, InstanaSampler
-from .propagators.http_propagator import HTTPPropagator
-from .propagators.text_propagator import TextPropagator
-from .propagators.binary_propagator import BinaryPropagator
+from instana.agent.host import HostAgent
+from instana.agent.test import TestAgent
+from instana.log import logger
+from instana.propagators.binary_propagator import BinaryPropagator
+from instana.propagators.format import Format
+from instana.propagators.http_propagator import HTTPPropagator
+from instana.propagators.text_propagator import TextPropagator
+from instana.recorder import StanRecorder
+from instana.sampling import InstanaSampler, Sampler
+from instana.span import InstanaSpan, RegisteredSpan
+from instana.span_context import SpanContext
+from instana.util.ids import generate_id
 
 
-class InstanaTracer(BasicTracer):
-    def __init__(self, scope_manager=None, recorder=None):
-
-        if recorder is None:
-            recorder = StanRecorder()
-
-        super(InstanaTracer, self).__init__(
-            recorder, InstanaSampler(), scope_manager)
-
-        self._propagators[ot.Format.HTTP_HEADERS] = HTTPPropagator()
-        self._propagators[ot.Format.TEXT_MAP] = TextPropagator()
-        self._propagators[ot.Format.BINARY] = BinaryPropagator()
-
-    def start_active_span(self,
-                          operation_name,
-                          child_of=None,
-                          references=None,
-                          tags=None,
-                          start_time=None,
-                          ignore_active_span=False,
-                          finish_on_close=True):
-
-        # create a new Span
-        span = self.start_span(
-            operation_name=operation_name,
-            child_of=child_of,
-            references=references,
-            tags=tags,
-            start_time=start_time,
-            ignore_active_span=ignore_active_span,
+class InstanaTracerProvider(TracerProvider):
+    def __init__(
+        self,
+        sampler: Optional[Sampler] = None,
+        recorder: Optional[StanRecorder] = None,
+        span_processor: Optional[Union[HostAgent, TestAgent]] = None,
+    ) -> None:
+        self._span_processor = (
+            span_processor or HostAgent()
         )
 
-        return self.scope_manager.activate(span, finish_on_close)
+        self.sampler = InstanaSampler() if sampler is None else sampler
+        self.recorder = StanRecorder() if recorder is None else recorder
+        self._propagators = {}
+        self._propagators[Format.HTTP_HEADERS] = HTTPPropagator()
+        self._propagators[Format.TEXT_MAP] = TextPropagator()
+        self._propagators[Format.BINARY] = BinaryPropagator()
+    
+    def get_tracer(
+        self,
+        instrumenting_module_name: str,
+        instrumenting_library_version: Optional[str] = None,
+        schema_url: Optional[str] = None,
+    ) -> Tracer:
+        if not instrumenting_module_name:  # Reject empty strings too.
+            instrumenting_module_name = ""
+            logger.error("get_tracer called with missing module name.")
 
-    def start_span(self,
-                   operation_name=None,
-                   child_of=None,
-                   references=None,
-                   tags=None,
-                   start_time=None,
-                   ignore_active_span=False):
-        "Taken from BasicTracer so we can override generate_id calls to ours"
+        return InstanaTracer(
+            self.sampler,
+            self.recorder,
+            self._span_processor,
+            self._propagators,
+        )
 
-        start_time = time.time() if start_time is None else start_time
+class InstanaTracer(Tracer):
+    """Handles :class:`InstanaSpan` creation and in-process context propagation.
 
-        # See if we have a parent_ctx in `references`
-        parent_ctx = None
-        if child_of is not None:
-            parent_ctx = (
-                child_of if isinstance(child_of, SpanContext)
-                else child_of.context)
-        elif references is not None and len(references) > 0:
-            # TODO only the first reference is currently used
-            parent_ctx = references[0].referenced_context
+    This class provides methods for manipulating the context, creating spans,
+    and controlling spans' lifecycles.
+    """
+    def __init__(
+        self,
+        sampler: Optional[Sampler] = None,
+        recorder: Optional[StanRecorder] = None,
+        span_processor: Optional[Union[HostAgent, TestAgent]] = None,
+        propagators: Optional[Mapping[str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]]] = None,
+    ) -> None:
+        self._tracer_id = generate_id()
+        self._sampler = sampler
+        self._recorder = recorder
+        self._span_processor = span_processor
+        self._propagators = propagators
 
-        # retrieve the active SpanContext
-        if not ignore_active_span and parent_ctx is None:
-            scope = self.scope_manager.active
-            if scope is not None:
-                parent_ctx = scope.span.context
+    @property
+    def tracer_id(self) -> str:
+        return self._tracer_id
 
-        # Assemble the child ctx
-        gid = generate_id()
-        ctx = SpanContext(span_id=gid)
-        if parent_ctx is not None and parent_ctx.trace_id is not None:
-            if hasattr(parent_ctx, '_baggage') and parent_ctx._baggage is not None:
-                ctx._baggage = parent_ctx._baggage.copy()
-            ctx.trace_id = parent_ctx.trace_id
-            ctx.sampled = parent_ctx.sampled
-            ctx.long_trace_id = parent_ctx.long_trace_id
-            ctx.trace_parent = parent_ctx.trace_parent
-            ctx.instana_ancestor = parent_ctx.instana_ancestor
-            ctx.level = parent_ctx.level
-            ctx.correlation_type = parent_ctx.correlation_type
-            ctx.correlation_id = parent_ctx.correlation_id
-            ctx.traceparent = parent_ctx.traceparent
-            ctx.tracestate = parent_ctx.tracestate
-        else:
-            ctx.trace_id = gid
-            ctx.sampled = self.sampler.sampled(ctx.trace_id)
-            if parent_ctx is not None:
-                ctx.level = parent_ctx.level
-                ctx.correlation_type = parent_ctx.correlation_type
-                ctx.correlation_id = parent_ctx.correlation_id
-                ctx.traceparent = parent_ctx.traceparent
-                ctx.tracestate = parent_ctx.tracestate
+    @property
+    def recorder(self) -> Optional[StanRecorder]:
+        return self._recorder
 
-        # Tie it all together
-        span = InstanaSpan(self,
-                           operation_name=operation_name,
-                           context=ctx,
-                           parent_id=(None if parent_ctx is None else parent_ctx.span_id),
-                           tags=tags,
-                           start_time=start_time)
+    def start_span(
+        self,
+        name: str,
+        context: Optional[Context] = None,
+        kind: SpanKind = SpanKind.INTERNAL,
+        attributes: types.Attributes = None,
+        links: _Links = None,
+        start_time: Optional[int] = None,
+        record_exception: bool = True,
+        set_status_on_exception: bool = True,
+    ) -> InstanaSpan:
 
-        if parent_ctx is not None:
-            span.synthetic = parent_ctx.synthetic
+        parent_context = get_current_span(context).get_span_context()
+        if parent_context is not None and not isinstance(parent_context, SpanContext):
+            raise TypeError(
+                "parent_context must be a SpanContext or None."
+            )
 
-        if operation_name in RegisteredSpan.EXIT_SPANS:
-            self.__add_stack(span)
+        span_context = self._create_span_context(parent_context)
+        span = InstanaSpan(
+            name,
+            span_context,
+            parent_id=(None if parent_context is None else parent_context.span_id),
+            start_time=(time.time_ns() if start_time is None else start_time),
+            attributes=attributes,
+            # events: Sequence[Event] = None,
+        )
+
+        if parent_context is not None:
+            span.synthetic = parent_context.synthetic
+
+        if name in RegisteredSpan.EXIT_SPANS:
+            self._add_stack(span)
 
         return span
 
-    def inject(self, span_context, format, carrier, disable_w3c_trace_context=False):
-        if format in self._propagators:
-            return self._propagators[format].inject(span_context, carrier, disable_w3c_trace_context)
+    def start_as_current_span(
+            self,
+            name: str,
+            context: Optional[Context] = None,
+            kind: SpanKind = SpanKind.INTERNAL,
+            attributes: types.Attributes = None,
+            links: _Links = None,
+            start_time: Optional[int] = None,
+            record_exception: bool = True,
+            set_status_on_exception: bool = True,
+            end_on_exit: bool = True,
+        ) -> Iterator[InstanaSpan]:
+        span = self.start_span(        
+            name=name,
+            context=context,
+            kind=kind,
+            attributes=attributes,
+            links=links,
+            start_time=start_time,
+            record_exception=record_exception,
+            set_status_on_exception=set_status_on_exception,
+        )
+        with use_span(
+            span,
+            end_on_exit=end_on_exit,
+            record_exception=record_exception,
+            set_status_on_exception=set_status_on_exception,
+        ) as span:
+            yield span
 
-        raise ot.UnsupportedFormatException()
-
-    def extract(self, format, carrier, disable_w3c_trace_context=False):
-        if format in self._propagators:
-            return self._propagators[format].extract(carrier, disable_w3c_trace_context)
-
-        raise ot.UnsupportedFormatException()
-
-    def __add_stack(self, span, limit=30):
+    def _add_stack(self, span: InstanaSpan, limit: Optional[int] = 30) -> None:
         """
         Adds a backtrace to <span>.  The default length limit for
         stack traces is 30 frames.  A hard limit of 40 frames is enforced.
@@ -171,6 +198,36 @@ class InstanaTracer(BasicTracer):
             # No fail
             pass
 
+    def _create_span_context(self, parent_context: SpanContext) -> SpanContext:
+        """Creates a new SpanContext based on the given parent context."""
+
+        if parent_context is not None and parent_context.trace_id is not None:
+            trace_id = parent_context.trace_id
+            span_id = generate_id()
+            sampled = parent_context.sampled
+        else:
+            trace_id = self.tracer_id
+            span_id = self.tracer_id
+            sampled = self._tracer_provider.sampler.sampled()
+
+        span_context = SpanContext(
+            trace_id=trace_id,
+            span_id=span_id,
+            sampled=sampled,
+            level=(parent_context.level if parent_context is not None else 1),
+            synthetic=False
+        )
+
+        if parent_context is not None:
+            span_context.long_trace_id = parent_context.long_trace_id
+            span_context.trace_parent = parent_context.trace_parent
+            span_context.instana_ancestor = parent_context.instana_ancestor
+            span_context.correlation_type = parent_context.correlation_type
+            span_context.correlation_id = parent_context.correlation_id
+            span_context.traceparent = parent_context.traceparent
+            span_context.tracestate = parent_context.tracestate
+
+        return span_context
 
 # Used by __add_stack
 re_tracer_frame = re.compile(r"/instana/.*\.py$")

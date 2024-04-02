@@ -5,16 +5,17 @@
 A Collector launches a background thread and continually collects & reports data.  The data
 can be any combination of metrics, snapshot data and spans.
 """
-import sys
 import threading
+from os import environ
 
 from ..log import logger
-from ..singletons import env_is_test
 from ..util import every, DictionaryOfStan
 
 
 import queue # pylint: disable=import-error
 
+# TODO: Use mock.patch() or unittest.mock to mock the testing env
+env_is_test = "INSTANA_TEST" in environ
 
 class BaseCollector(object):
     """

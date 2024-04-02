@@ -93,6 +93,10 @@ class InstanaTracer(Tracer):
     def tracer_id(self) -> str:
         return self._tracer_id
 
+    @property
+    def recorder(self) -> Optional[StanRecorder]:
+        return self._recorder
+
     def start_span(
         self,
         name: str,

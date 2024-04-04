@@ -7,6 +7,7 @@ import re
 import time
 import traceback
 from typing import Iterator, Mapping, Optional, Union
+from contextlib import contextmanager
 
 from opentelemetry.context.context import Context
 from opentelemetry.trace import (
@@ -14,7 +15,6 @@ from opentelemetry.trace import (
     Tracer,
     TracerProvider,
     _Links,
-    get_current_span,
     use_span,
 )
 from opentelemetry.util import types
@@ -28,7 +28,7 @@ from instana.propagators.http_propagator import HTTPPropagator
 from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
-from instana.span import InstanaSpan, RegisteredSpan
+from instana.span import InstanaSpan, RegisteredSpan, get_current_span
 from instana.span_context import SpanContext
 from instana.util.ids import generate_id
 
@@ -110,7 +110,7 @@ class InstanaTracer(Tracer):
     ) -> InstanaSpan:
         parent_context = get_current_span(context).get_span_context()
         if parent_context is not None and not isinstance(parent_context, SpanContext):
-            raise TypeError("parent_context must be a SpanContext or None.")
+            raise TypeError("parent_context must be an Instana SpanContext or None.")
 
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(
@@ -130,6 +130,7 @@ class InstanaTracer(Tracer):
 
         return span
 
+    @contextmanager
     def start_as_current_span(
         self,
         name: str,
@@ -199,16 +200,18 @@ class InstanaTracer(Tracer):
         if parent_context is not None and parent_context.trace_id is not None:
             trace_id = parent_context.trace_id
             span_id = generate_id()
-            sampled = parent_context.sampled
+            trace_flags = parent_context.trace_flags.sampled
+            is_remote = parent_context.is_remote
         else:
             trace_id = self.tracer_id
             span_id = self.tracer_id
-            sampled = self._tracer_provider.sampler.sampled()
+            trace_flags = self._tracer_provider.sampler.sampled()
 
         span_context = SpanContext(
             trace_id=trace_id,
             span_id=span_id,
-            sampled=sampled,
+            trace_flags=trace_flags,
+            is_remote=is_remote,
             level=(parent_context.level if parent_context is not None else 1),
             synthetic=False,
         )

@@ -18,9 +18,19 @@ from typing import Dict, Optional, Union, Sequence, Tuple
 from threading import Lock
 from time import time_ns
 
-from opentelemetry.trace import Span  # , SpanContext
+from opentelemetry.trace import (
+    Span,
+    DEFAULT_TRACE_OPTIONS,
+    DEFAULT_TRACE_STATE,
+    INVALID_SPAN_ID,
+    INVALID_TRACE_ID,
+    _SPAN_KEY,
+)
 from opentelemetry.util import types
 from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.trace.span import NonRecordingSpan
+from opentelemetry.context import get_value
+from opentelemetry.context.context import Context
 
 from .span_context import SpanContext
 from .log import logger
@@ -263,6 +273,32 @@ class InstanaSpan(Span):
                 self.set_attribute("ec", 1)
         except Exception:
             logger.debug("span.assure_errored", exc_info=True)
+
+
+INVALID_SPAN_CONTEXT = SpanContext(
+    trace_id=INVALID_TRACE_ID,
+    span_id=INVALID_SPAN_ID,
+    is_remote=False,
+    trace_flags=DEFAULT_TRACE_OPTIONS,
+    trace_state=DEFAULT_TRACE_STATE,
+)
+INVALID_SPAN = NonRecordingSpan(INVALID_SPAN_CONTEXT)
+
+
+def get_current_span(context: Optional[Context] = None) -> InstanaSpan:
+    """Retrieve the current span.
+
+    Args:
+        context: A Context object. If one is not passed, the
+            default current context is used instead.
+
+    Returns:
+        The Span set in the context if it exists. INVALID_SPAN otherwise.
+    """
+    span = get_value(_SPAN_KEY, context=context)
+    if span is None or not isinstance(span, InstanaSpan):
+        return INVALID_SPAN
+    return span
 
 
 class BaseSpan(object):

@@ -1,105 +1,130 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2019
 
+
+import typing
+
 from opentelemetry.trace import SpanContext as OtelSpanContext
+from opentelemetry.trace.span import (
+    DEFAULT_TRACE_OPTIONS,
+    DEFAULT_TRACE_STATE,
+    TraceFlags,
+    TraceState,
+    format_span_id,
+)
+
 
 class SpanContext(OtelSpanContext):
-    def __init__(
-        self,
-        trace_id=None,
-        span_id=None,
-        # baggage=None,
-        sampled=True,
+    """The state of a Span to propagate between processes.
+
+    This class includes the immutable attributes of a :class:`.Span` that must
+    be propagated to a span's children and across process boundaries.
+
+    Required Args:
+        trace_id: The ID of the trace that this span belongs to.
+        span_id: This span's ID.
+        is_remote: True if propagated from a remote parent.
+    """
+
+    def __new__(
+        cls,
+        trace_id: int,
+        span_id: int,
+        is_remote: bool,
+        trace_flags: typing.Optional[TraceFlags] = DEFAULT_TRACE_OPTIONS,
+        trace_state: typing.Optional[TraceState] = DEFAULT_TRACE_STATE,
         level=1,
         synthetic=False,
-    ) -> None:
+        trace_parent=None,  # true/false flag,
+        instana_ancestor=None,
+        long_trace_id=None,
+        correlation_type=None,
+        correlation_id=None,
+        traceparent=None,  # temporary storage of the validated traceparent header of the incoming request
+        tracestate=None,  # temporary storage of the tracestate header
+        **kwargs,
+    ) -> "SpanContext":
+        instance = super().__new__(cls, trace_id, span_id, is_remote, trace_flags, trace_state)
+        return tuple.__new__(
+            cls,
+            (
+                instance.trace_id,
+                instance.span_id,
+                instance.is_remote,
+                instance.trace_flags,
+                instance.trace_state,
+                instance.is_valid,
+                level,
+                synthetic,
+                trace_parent,  # true/false flag,
+                instana_ancestor,
+                long_trace_id,
+                correlation_type,
+                correlation_id,
+                traceparent,  # temporary storage of the validated traceparent header of the incoming request
+                tracestate,  # temporary storage of the tracestate header
+            ),
+        )
 
-        self.level = level
-        self.trace_id = trace_id
-        self.span_id = span_id
-        self.sampled = sampled
-        self.synthetic = synthetic
-        # self._baggage = baggage or {}
-
-        self.trace_parent = None  # true/false flag
-        self.instana_ancestor = None
-        self.long_trace_id = None
-        self.correlation_type = None
-        self.correlation_id = None
-        self.traceparent = None  # temporary storage of the validated traceparent header of the incoming request
-        self.tracestate = None  # temporary storage of the tracestate header
+    def __getnewargs__(
+        self,
+    ):  # -> typing.Tuple[int, int, bool, "TraceFlags", "TraceState", int, bool, bool]:
+        return (
+            self.trace_id,
+            self.span_id,
+            self.is_remote,
+            self.trace_flags,
+            self.trace_state,
+            self.level,
+            self.synthetic,
+            self.trace_parent,
+            self.instana_ancestor,
+            self.long_trace_id,
+            self.correlation_type,
+            self.correlation_id,
+            self.traceparent,
+            self.tracestate,
+        )
 
     @property
-    def traceparent(self):
-        return self._traceparent
-
-    @traceparent.setter
-    def traceparent(self, value):
-        self._traceparent = value
+    def level(self) -> int:
+        return self[6]
 
     @property
-    def tracestate(self):
-        return self._tracestate
-
-    @tracestate.setter
-    def tracestate(self, value):
-        self._tracestate = value
+    def synthetic(self) -> bool:
+        return self[7]
 
     @property
-    def trace_parent(self):
-        return self._trace_parent
-
-    @trace_parent.setter
-    def trace_parent(self, value):
-        self._trace_parent = value
+    def trace_parent(self) -> bool:
+        return self[8]
 
     @property
     def instana_ancestor(self):
-        return self._instana_ancestor
-
-    @instana_ancestor.setter
-    def instana_ancestor(self, value):
-        self._instana_ancestor = value
+        return self[9]
 
     @property
     def long_trace_id(self):
-        return self._long_trace_id
-
-    @long_trace_id.setter
-    def long_trace_id(self, value):
-        self._long_trace_id = value
+        return self[10]
 
     @property
     def correlation_type(self):
-        return self._correlation_type
-
-    @correlation_type.setter
-    def correlation_type(self, value):
-        self._correlation_type = value
+        return self[11]
 
     @property
     def correlation_id(self):
-        return self._correlation_id
-
-    @correlation_id.setter
-    def correlation_id(self, value):
-        self._correlation_id = value
-
-    # @property
-    # def baggage(self):
-    #     return self._baggage
+        return self[12]
 
     @property
-    def suppression(self):
+    def traceparent(self):
+        return self[13]
+
+    @property
+    def tracestate(self):
+        return self[14]
+
+    @property
+    def suppression(self) -> bool:
         return self.level == 0
 
-    # def with_baggage_item(self, key, value):
-    #     new_baggage = self._baggage.copy()
-    #     new_baggage[key] = value
-    #     return SpanContext(
-    #         trace_id=self.trace_id,
-    #         span_id=self.span_id,
-    #         sampled=self.sampled,
-    #         level=self.level,
-    #         baggage=new_baggage,
-    #     )
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(trace_id=0x{format_span_id(self.trace_id)}, span_id=0x{format_span_id(self.span_id)}, trace_flags=0x{self.trace_flags:02x}, trace_state={self.trace_state!r}, is_remote={self.is_remote}, synthetic={self.synthetic})"

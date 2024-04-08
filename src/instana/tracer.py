@@ -6,12 +6,13 @@ import os
 import re
 import time
 import traceback
-from typing import Iterator, Mapping, Optional, Union
 from contextlib import contextmanager
+from typing import Iterator, Mapping, Optional, Union
 
 from opentelemetry.context.context import Context
 from opentelemetry.trace import (
     SpanKind,
+    TraceFlags,
     Tracer,
     TracerProvider,
     _Links,
@@ -40,10 +41,9 @@ class InstanaTracerProvider(TracerProvider):
         recorder: Optional[StanRecorder] = None,
         span_processor: Optional[Union[HostAgent, TestAgent]] = None,
     ) -> None:
+        self.sampler = sampler or InstanaSampler()
+        self.recorder = recorder or StanRecorder()
         self._span_processor = span_processor or HostAgent()
-
-        self.sampler = InstanaSampler() if sampler is None else sampler
-        self.recorder = StanRecorder() if recorder is None else recorder
         self._propagators = {}
         self._propagators[Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[Format.TEXT_MAP] = TextPropagator()
@@ -66,6 +66,13 @@ class InstanaTracerProvider(TracerProvider):
             self._propagators,
         )
 
+    def add_span_processor(
+        self,
+        span_processor: Union[HostAgent, TestAgent],
+    ) -> None:
+        """Registers a new SpanProcessor for the TracerProvider."""
+        self._span_processor = span_processor
+
 
 class InstanaTracer(Tracer):
     """Handles :class:`InstanaSpan` creation and in-process context propagation.
@@ -76,12 +83,11 @@ class InstanaTracer(Tracer):
 
     def __init__(
         self,
-        sampler: Optional[Sampler] = None,
-        recorder: Optional[StanRecorder] = None,
-        span_processor: Optional[Union[HostAgent, TestAgent]] = None,
-        propagators: Optional[
-            Mapping[str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]]
-        ] = None,
+        sampler: Sampler,
+        recorder: StanRecorder,
+        span_processor: Union[HostAgent, TestAgent],
+        propagators: 
+            Mapping[str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]],
     ) -> None:
         self._tracer_id = generate_id()
         self._sampler = sampler
@@ -109,8 +115,13 @@ class InstanaTracer(Tracer):
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
         parent_context = get_current_span(context).get_span_context()
+
         if parent_context is not None and not isinstance(parent_context, SpanContext):
             raise TypeError("parent_context must be an Instana SpanContext or None.")
+
+        if parent_context is not None and not parent_context.is_valid:
+            # We probably have a INVALID_SPAN_CONTEXT.
+            parent_context = None
 
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(
@@ -200,12 +211,12 @@ class InstanaTracer(Tracer):
         if parent_context is not None and parent_context.trace_id is not None:
             trace_id = parent_context.trace_id
             span_id = generate_id()
-            trace_flags = parent_context.trace_flags.sampled
+            trace_flags = parent_context.trace_flags
             is_remote = parent_context.is_remote
         else:
             trace_id = self.tracer_id
             span_id = self.tracer_id
-            trace_flags = self._tracer_provider.sampler.sampled()
+            trace_flags = TraceFlags(self._sampler.sampled())
 
         span_context = SpanContext(
             trace_id=trace_id,

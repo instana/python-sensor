@@ -32,6 +32,7 @@ class TestS3(unittest.TestCase):
     def tearDown(self):
         # Stop Moto after each test
         self.mock.stop()
+        agent.options.allow_exit_as_root = False
 
 
     def test_vanilla_create_bucket(self):
@@ -65,6 +66,32 @@ class TestS3(unittest.TestCase):
         self.assertEqual(boto_span.p, test_span.s)
 
         self.assertIsNone(test_span.ec)
+        self.assertIsNone(boto_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'CreateBucket')
+        self.assertEqual(boto_span.data['boto3']['ep'], 'https://s3.amazonaws.com')
+        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        self.assertDictEqual(boto_span.data['boto3']['payload'], {'Bucket': 'aws_bucket_name'})
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], 'https://s3.amazonaws.com:443/CreateBucket')
+
+
+    def test_s3_create_bucket_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        self.s3.create_bucket(Bucket="aws_bucket_name")
+
+        agent.options.allow_exit_as_root = False
+        result = self.s3.list_buckets()
+        self.assertEqual(1, len(result['Buckets']))
+        self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+        boto_span = spans[0]
+        self.assertTrue(boto_span)
+        self.assertEqual(boto_span.n, "boto3")
+        self.assertIsNone(boto_span.p)
         self.assertIsNone(boto_span.ec)
 
         self.assertEqual(boto_span.data['boto3']['op'], 'CreateBucket')
@@ -282,7 +309,7 @@ class TestS3(unittest.TestCase):
 
         with tracer.start_active_span('test'):
             self.s3.create_bucket(Bucket="aws_bucket_name")
-    
+
         result = self.s3.list_buckets()
         self.assertEqual(1, len(result['Buckets']))
         self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
@@ -316,7 +343,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
         self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
         self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
-            
+
         agent.options.extra_http_headers = original_extra_http_headers
 
 
@@ -343,7 +370,7 @@ class TestS3(unittest.TestCase):
 
         with tracer.start_active_span('test'):
             self.s3.create_bucket(Bucket="aws_bucket_name")
-    
+
         result = self.s3.list_buckets()
         self.assertEqual(1, len(result['Buckets']))
         self.assertEqual(result['Buckets'][0]['Name'], 'aws_bucket_name')
@@ -377,7 +404,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual("Value1", boto_span.data["http"]["header"]["X-Custom-1"])
         self.assertIn("X-Custom-2", boto_span.data["http"]["header"])
         self.assertEqual("Value2", boto_span.data["http"]["header"]["X-Custom-2"])
-            
+
         agent.options.extra_http_headers = original_extra_http_headers
 
 
@@ -388,7 +415,7 @@ class TestS3(unittest.TestCase):
 
         # Access the event system on the S3 client
         event_system = self.s3.meta.events
-        
+
         response_headers = {
             "X-Capture-This-Too": "this too",
             "X-Capture-That-Too": "that too",
@@ -437,5 +464,5 @@ class TestS3(unittest.TestCase):
         self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
         self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
         self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
-            
+
         agent.options.extra_http_headers = original_extra_http_headers

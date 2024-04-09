@@ -31,7 +31,8 @@ class TestAiohttp(unittest.TestCase):
         asyncio.set_event_loop(None)
 
     def tearDown(self):
-        pass
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     def test_client_get(self):
         async def test():
@@ -61,6 +62,56 @@ class TestAiohttp(unittest.TestCase):
 
         # Error logging
         self.assertIsNone(test_span.ec)
+        self.assertIsNone(aiohttp_span.ec)
+        self.assertIsNone(wsgi_span.ec)
+
+        self.assertEqual("aiohttp-client", aiohttp_span.n)
+        self.assertEqual(200, aiohttp_span.data["http"]["status"])
+        self.assertEqual(testenv["wsgi_server"] + "/",
+                         aiohttp_span.data["http"]["url"])
+        self.assertEqual("GET", aiohttp_span.data["http"]["method"])
+        self.assertIsNotNone(aiohttp_span.stack)
+        self.assertTrue(type(aiohttp_span.stack) is list)
+        self.assertTrue(len(aiohttp_span.stack) > 1)
+
+        self.assertIn("X-INSTANA-T", response.headers)
+        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
+        self.assertIn("X-INSTANA-S", response.headers)
+        self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
+        self.assertIn("X-INSTANA-L", response.headers)
+        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", response.headers)
+        self.assertEqual(
+            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+
+    def test_client_get_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        async def test():
+            async with aiohttp.ClientSession() as session:
+                return await self.fetch(session, testenv["wsgi_server"] + "/")
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        wsgi_span = spans[0]
+        aiohttp_span = spans[1]
+
+        self.assertIsNone(async_tracer.active_span)
+
+        self.assertEqual(aiohttp_span.t, wsgi_span.t)
+
+        # Same traceId
+        traceId = aiohttp_span.t
+        self.assertEqual(traceId, aiohttp_span.t)
+        self.assertEqual(traceId, wsgi_span.t)
+
+        # Parent relationships
+        self.assertIsNone(aiohttp_span.p)
+        self.assertEqual(wsgi_span.p, aiohttp_span.s)
+
+        # Error logging
         self.assertIsNone(aiohttp_span.ec)
         self.assertIsNone(wsgi_span.ec)
 

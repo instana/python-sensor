@@ -133,6 +133,7 @@ Create the service account with the needed role bindings:
 
 In order to authorize the incoming webhooks into our cluster, we need to share
 a secret between our webhook listener, and the GitHub repo.
+This resource can be shared across multiple tekton Tri
 Generate a long, strong and random generated token, put it into `github-interceptor-secret.yaml`.
 Create the secret resource:
 ````bash
@@ -270,3 +271,21 @@ a simple ping event does not trigger any `PipelineRun` unnecessarily.
 eventlistener_pod=$(kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep el-github-pr-python-eventlistener-)
 kubectl logs -f "${eventlistener_pod}" | grep 'event type ping is not allowed'
 ````
+
+## Setup Scheduled PipelineRuns
+
+PipelineRuns can be scheduled with a Kubernetes `CronJob` resource,
+which calls a Tekton `EventListener`, that triggers
+an appropriate PipelineRun. The needed resources can be created
+with the following command:
+
+````bash
+   kubectl apply --filename scheduled-eventlistener.yaml
+````
+
+The current schedule is `"5 0 * * Mon-Fri`,
+whic means every weekday 00:05 in the pod's timezone.
+This can be adjusted by editing the `schedule` attribute.
+Currently this triggers the `github-pr-python-tracer-ci-pipeline`
+on the head of the `master` branch.
+These can also be changed on demand.

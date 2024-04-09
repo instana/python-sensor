@@ -1,0 +1,108 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: python-tracer-scheduled-ci-pipeline-template
+spec:
+  params:
+    - description: The ISO-8601 date and time converted to RFC 1123 subdomain names
+      name: date-time-normalized
+    - description: The full sha of the git commit
+      name: git-commit-sha
+    - description: The short 7 digit sha of the git commit
+      name: git-commit-short-sha
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        # After variable resolution, this has to be maximum 63 character long,
+        # lower case, RFC 1123 subdomain name. The regex used for validation is
+        # '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
+        name: python-tracer-scheduled-ci-pipeline-$(tt.params.date-time-normalized)-$(tt.params.git-commit-short-sha)
+      spec:
+        params:
+        - name: revision
+          value: master
+        - name: git-commit-sha
+          value: $(tt.params.git-commit-sha)
+        pipelineRef:
+          name: github-pr-python-tracer-ci-pipeline
+        workspaces:
+        - name: python-tracer-ci-pipeline-pvc
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 100Mi
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: python-tracer-scheduled-binding
+spec:
+  params:
+    - name: date-time-normalized
+      value: $(extensions.normalized_date_time)
+    - name: git-commit-sha
+      value: $(body.git_master_head_commit_sha)
+    - name: git-commit-short-sha
+      value: $(extensions.truncated_sha)
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: python-tracer-scheduled-ci-cronjob
+spec:
+  schedule: "5 0 * * Mon-Fri"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: git
+            # alpine/git:2.43.0
+            image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+            command:
+            - sh
+            - -c
+            - |
+              wget -O- \
+                   --header 'Content-Type: application/json' \
+                   --post-data '{
+                                 "git_master_head_commit_sha":"'"$(git ls-remote https://github.com/instana/python-sensor master | cut -f1)"'",
+                                 "date_time":"'"$(date -u -Iminutes )"'"
+                                }' \
+                  'http://el-python-tracer-scheduled-pipeline-listener.default.svc.cluster.local:8080'
+          restartPolicy: OnFailure
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: python-tracer-scheduled-pipeline-listener
+spec:
+  serviceAccountName: tekton-triggers-eventlistener-serviceaccount
+  triggers:
+    - name: python-tracer-scheduled-pipeline-triggger
+      interceptors:
+        - name: add-truncated-sha
+          ref:
+            name: "cel"
+          params:
+            - name: "overlays"
+              value:
+              - key: truncated_sha
+                expression: "body.git_master_head_commit_sha.truncate(7)"
+        - name: add-normalized-date-time
+          ref:
+            name: "cel"
+          params:
+            - name: "overlays"
+              value:
+              - key: normalized_date_time
+                # The date-time converted to RFC 1123 subdomain names
+                expression: 'body.date_time.split("+")[0].lowerAscii().translate(":", "-")'
+      bindings:
+        - ref: python-tracer-scheduled-binding
+      template:
+        ref: python-tracer-scheduled-ci-pipeline-template

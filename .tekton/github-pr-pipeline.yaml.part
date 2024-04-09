@@ -20,6 +20,8 @@ spec:
         value: $(params.git-commit-sha)
       - name: STATE
         value: pending
+      - name: REPO
+        value: instana/python-sensor
     - name: github-set-check-status-to-success-or-failure
       runAfter:
       - github-set-check-status-to-pending
@@ -35,3 +37,5 @@ spec:
         value: $(params.git-commit-sha)
       - name: STATE
         value: success
+      - name: REPO
+        value: instana/python-sensor

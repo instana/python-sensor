@@ -8,7 +8,7 @@ import inspect
 
 from ..log import logger
 from ..singletons import tracer, agent
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import opentracing as ot
@@ -47,28 +47,20 @@ try:
 
     @wrapt.patch_function_wrapper("botocore.auth", "SigV4Auth.add_auth")
     def emit_add_auth_with_instana(wrapped, instance, args, kwargs):
-        active_tracer = get_active_tracer()
-
-        # If we're not tracing, just return;
-        if active_tracer is None:
-            return wrapped(*args, **kwargs)
-        
-        span = active_tracer.active_span
-        extract_custom_headers(span, args[0].headers)
-
+        if not tracing_is_off() and tracer.active_span:
+            extract_custom_headers(tracer.active_span, args[0].headers)
         return wrapped(*args, **kwargs)
 
 
     @wrapt.patch_function_wrapper('botocore.client', 'BaseClient._make_api_call')
     def make_api_call_with_instana(wrapped, instance, arg_list, kwargs):
-        # pylint: disable=protected-access
-        active_tracer = get_active_tracer()
-
         # If we're not tracing, just return
-        if active_tracer is None:
+        if tracing_is_off():
             return wrapped(*arg_list, **kwargs)
 
-        with active_tracer.start_active_span("boto3", child_of=active_tracer.active_span) as scope:
+        tracer, parent_span, _ = get_tracer_tuple()
+
+        with tracer.start_active_span("boto3", child_of=parent_span) as scope:
             try:
                 operation = arg_list[0]
                 payload = arg_list[1]
@@ -110,18 +102,17 @@ try:
 
 
     def s3_inject_method_with_instana(wrapped, instance, arg_list, kwargs):
+        # If we're not tracing, just return
+        if tracing_is_off():
+            return wrapped(*arg_list, **kwargs)
+
         fas = inspect.getfullargspec(wrapped)
         fas_args = fas.args
         fas_args.remove('self')
 
-        # pylint: disable=protected-access
-        active_tracer = get_active_tracer()
+        tracer, parent_span, _ = get_tracer_tuple()
 
-        # If we're not tracing, just return
-        if active_tracer is None:
-            return wrapped(*arg_list, **kwargs)
-
-        with active_tracer.start_active_span("boto3", child_of=active_tracer.active_span) as scope:
+        with tracer.start_active_span("boto3", child_of=parent_span) as scope:
             try:
                 operation = wrapped.__name__
                 scope.span.set_tag('op', operation)

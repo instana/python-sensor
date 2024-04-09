@@ -28,7 +28,7 @@ class TestLambda(unittest.TestCase):
     def tearDown(self):
         # Stop Moto after each test
         self.mock.stop()
-
+        agent.options.allow_exit_as_root = False
 
     def test_lambda_invoke(self):
         with tracer.start_active_span('test'):
@@ -66,6 +66,32 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(boto_span.data['http']['method'], 'POST')
         self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
 
+    def test_lambda_invoke_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        result = self.aws_lambda.invoke(FunctionName=self.function_name, Payload=json.dumps({"message": "success"}))
+
+        self.assertEqual(result["StatusCode"], 200)
+        result_payload = json.loads(result["Payload"].read().decode("utf-8"))
+        self.assertIn("message", result_payload)
+        self.assertEqual("success", result_payload["message"])
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+        boto_span = spans[0]
+        self.assertTrue(boto_span)
+        self.assertEqual(boto_span.n, "boto3")
+        self.assertIsNone(boto_span.p)
+        self.assertIsNone(boto_span.ec)
+
+        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
+        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
+        self.assertEqual(boto_span.data['boto3']['reg'], self.lambda_region)
+        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
+        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
+        self.assertEqual(boto_span.data['http']['status'], 200)
+        self.assertEqual(boto_span.data['http']['method'], 'POST')
+        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
 
     def test_request_header_capture_before_call(self):
         original_extra_http_headers = agent.options.extra_http_headers
@@ -125,7 +151,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
         self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
         self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
-            
+
         agent.options.extra_http_headers = original_extra_http_headers
 
 
@@ -188,7 +214,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual("Value1", boto_span.data["http"]["header"]["X-Custom-1"])
         self.assertIn("X-Custom-2", boto_span.data["http"]["header"])
         self.assertEqual("Value2", boto_span.data["http"]["header"]["X-Custom-2"])
-            
+
         agent.options.extra_http_headers = original_extra_http_headers
 
 
@@ -198,7 +224,7 @@ class TestLambda(unittest.TestCase):
 
         # Access the event system on the S3 client
         event_system = self.aws_lambda.meta.events
-        
+
         response_headers = {
             "X-Capture-This-Too": "this too",
             "X-Capture-That-Too": "that too",
@@ -250,5 +276,5 @@ class TestLambda(unittest.TestCase):
         self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
         self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
         self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
-            
+
         agent.options.extra_http_headers = original_extra_http_headers

@@ -8,6 +8,7 @@ import wrapt
 from ...log import logger
 from ...singletons import agent, async_tracer
 from ...util.secrets import strip_secrets_from_query
+from ...util.traceutils import tracing_is_off
 
 try:
     import aiohttp
@@ -16,14 +17,12 @@ try:
 
     async def stan_request_start(session, trace_config_ctx, params):
         try:
-            parent_span = async_tracer.active_span
-
             # If we're not tracing, just return
-            if parent_span is None:
+            if tracing_is_off():
                 trace_config_ctx.scope = None
                 return
 
-            scope = async_tracer.start_active_span("aiohttp-client", child_of=parent_span)
+            scope = async_tracer.start_active_span("aiohttp-client", child_of=async_tracer.active_span)
             trace_config_ctx.scope = scope
 
             async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, params.headers)

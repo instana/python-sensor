@@ -7,6 +7,7 @@ spec:
   params:
   - name: SHA
   - name: STATE
+  - name: REPO
   volumes:
   - name: githubtoken
     secret:
@@ -20,6 +21,8 @@ spec:
         value: $(params.SHA)
       - name: STATE
         value: $(params.STATE)
+      - name: REPO
+        value: $(params.REPO)
       volumeMounts:
         - name: githubtoken
           mountPath: /etc/github-set-status
@@ -31,7 +34,7 @@ spec:
              -H "Authorization: Bearer $(cat /etc/github-set-status/token)" \
              -H "Content-Type: application/json" \
              -H "X-GitHub-Api-Version: 2022-11-28" \
-             "https://api.github.com/repos/instana/python-sensor/statuses/${SHA}" \
+             "https://api.github.com/repos/${REPO}/statuses/${SHA}" \
              -d '{
                    "state":"'${STATE}'",
                    "target_url":"http://localhost:8001/api/v1/namespaces/tekton-pipelines/services/tekton-dashboard:http/proxy/#/namespaces/default/pipelineruns/",

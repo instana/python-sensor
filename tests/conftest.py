@@ -4,6 +4,7 @@
 import importlib.util
 import os
 import sys
+
 import pytest
 
 if importlib.util.find_spec('celery'):
@@ -24,7 +25,7 @@ collect_ignore_glob = [
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # be run explicitly.  (So always exclude them here)
-if not os.environ.get("CASSANDRA_TEST" ):
+if not os.environ.get("CASSANDRA_TEST"):
     collect_ignore_glob.append("*test_cassandra*")
 
 if not os.environ.get("COUCHBASE_TEST"):
@@ -50,22 +51,20 @@ if sys.version_info >= (3, 12):
     # The asyncio also depends on aiohttp
     collect_ignore_glob.append("*test_asyncio*")
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def celery_config():
     return {
-        'broker_connection_retry_on_startup': True,
-        'broker_url': 'redis://localhost:6379',
-        'result_backend': 'redis://localhost:6379'
+        "broker_url": "redis://localhost:6379",
+        "result_backend": "redis://localhost:6379",
     }
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def celery_enable_logging():
     return True
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def celery_includes():
-    return {
-        'tests.frameworks.test_celery'
-    }
+    return {"tests.frameworks.test_celery"}

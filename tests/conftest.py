@@ -11,10 +11,7 @@ if importlib.util.find_spec("celery"):
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"
-# os.environ["INSTANA_DEBUG"] = "true"
-
-# Make sure the instana package is fully loaded
-import instana
+os.environ["INSTANA_DISABLE_AUTO_INSTR"] = "true"
 
 collect_ignore_glob = [
     "*autoprofile*",

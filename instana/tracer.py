@@ -217,6 +217,7 @@ class InstanaTracer(Tracer):
             trace_id = self.tracer_id
             span_id = self.tracer_id
             trace_flags = TraceFlags(self._sampler.sampled())
+            is_remote = False
 
         span_context = SpanContext(
             trace_id=trace_id,

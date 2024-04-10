@@ -9,6 +9,8 @@ import json
 from time import time
 import requests
 
+from instana.collector.utils import format_trace_and_span_ids
+
 from ..log import logger
 from .base import BaseCollector
 from ..util import DictionaryOfStan, validate_url
@@ -137,7 +139,7 @@ class AWSFargateCollector(BaseCollector):
 
         try:
             if not self.span_queue.empty():
-                payload["spans"] = self.queued_spans()
+                payload["spans"] = format_trace_and_span_ids(self.queued_spans())
 
             with_snapshot = self.should_send_snapshot_data()
 

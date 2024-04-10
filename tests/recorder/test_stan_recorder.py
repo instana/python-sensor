@@ -1,9 +1,17 @@
-from instana.recorder import StanRecorder
-
 from multiprocessing import Queue
+import sys
 from unittest import TestCase
 from unittest.mock import NonCallableMagicMock, PropertyMock
 
+import pytest
+
+from instana.recorder import StanRecorder
+
+
+@pytest.mark.skipif(
+    sys.platform == "darwin",
+    reason="Avoiding NotImplementedError when calling multiprocessing.Queue.qsize()",
+)
 class TestStanRecorderTC(TestCase):
     def setUp(self):
         mock_agent = NonCallableMagicMock()
@@ -13,7 +21,9 @@ class TestStanRecorderTC(TestCase):
         self.mock_suppressed_span = NonCallableMagicMock()
         self.mock_suppressed_span.context = NonCallableMagicMock()
         self.mock_suppressed_property = PropertyMock(return_value=True)
-        type(self.mock_suppressed_span.context).suppression = self.mock_suppressed_property
+        type(
+            self.mock_suppressed_span.context
+        ).suppression = self.mock_suppressed_property
 
     def test_record_span_with_suppression(self):
         # Ensure that the queue is empty

@@ -8,6 +8,7 @@ import os
 from time import time
 import requests
 
+from instana.collector.utils import format_trace_and_span_ids
 from instana.log import logger
 from instana.collector.base import BaseCollector
 from instana.util import DictionaryOfStan, validate_url
@@ -102,7 +103,7 @@ class GCRCollector(BaseCollector):
         try:
 
             if not self.span_queue.empty():
-                payload["spans"] = self.queued_spans()
+                payload["spans"] = format_trace_and_span_ids(self.queued_spans())
 
             self.fetching_start_time = int(time())
             delta = self.fetching_start_time - self.__last_gcr_md_full_fetch

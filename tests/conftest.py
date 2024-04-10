@@ -4,6 +4,7 @@
 import importlib.util
 import os
 import sys
+
 import pytest
 
 if importlib.util.find_spec("celery"):

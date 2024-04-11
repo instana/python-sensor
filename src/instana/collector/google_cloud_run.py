@@ -4,20 +4,24 @@
 """
 Google Cloud Run Collector: Manages the periodic collection of metrics & snapshot data
 """
+
 import os
 from time import time
+
 import requests
 
+from instana.collector.base import BaseCollector
+from instana.collector.helpers.google_cloud_run.instance_entity import (
+    InstanceEntityHelper,
+)
+from instana.collector.helpers.google_cloud_run.process import GCRProcessHelper
 from instana.collector.utils import format_trace_and_span_ids
 from instana.log import logger
-from instana.collector.base import BaseCollector
 from instana.util import DictionaryOfStan, validate_url
-from instana.collector.helpers.google_cloud_run.process import GCRProcessHelper
-from instana.collector.helpers.google_cloud_run.instance_entity import InstanceEntityHelper
 
 
 class GCRCollector(BaseCollector):
-    """ Collector for Google Cloud Run """
+    """Collector for Google Cloud Run"""
 
     def __init__(self, agent, service, configuration, revision):
         super(GCRCollector, self).__init__(agent)
@@ -30,15 +34,23 @@ class GCRCollector(BaseCollector):
         self.service = service
         self.configuration = configuration
         # Prepare the URLS that we will collect data from
-        self._gcr_md_uri = os.environ.get("GOOGLE_CLOUD_RUN_METADATA_ENDPOINT", "http://metadata.google.internal")
+        self._gcr_md_uri = os.environ.get(
+            "GOOGLE_CLOUD_RUN_METADATA_ENDPOINT", "http://metadata.google.internal"
+        )
 
         if self._gcr_md_uri == "" or validate_url(self._gcr_md_uri) is False:
-            logger.warning("GCRCollector: GOOGLE_CLOUD_RUN_METADATA_ENDPOINT not in environment or invalid URL.  "
-                           "Instana will not be able to monitor this environment")
+            logger.warning(
+                "GCRCollector: GOOGLE_CLOUD_RUN_METADATA_ENDPOINT not in environment or invalid URL.  "
+                "Instana will not be able to monitor this environment"
+            )
             self.ready_to_start = False
 
-        self._gcr_md_project_uri = self._gcr_md_uri + '/computeMetadata/v1/project/?recursive=true'
-        self._gcr_md_instance_uri = self._gcr_md_uri + '/computeMetadata/v1/instance/?recursive=true'
+        self._gcr_md_project_uri = (
+            self._gcr_md_uri + "/computeMetadata/v1/project/?recursive=true"
+        )
+        self._gcr_md_instance_uri = (
+            self._gcr_md_uri + "/computeMetadata/v1/instance/?recursive=true"
+        )
 
         # Timestamp in seconds of the last time we fetched all GCR metadata
         self.__last_gcr_md_full_fetch = 0
@@ -66,7 +78,9 @@ class GCRCollector(BaseCollector):
 
     def start(self):
         if self.ready_to_start is False:
-            logger.warning("Google Cloud Run Collector is missing requirements and cannot monitor this environment.")
+            logger.warning(
+                "Google Cloud Run Collector is missing requirements and cannot monitor this environment."
+            )
             return
 
         super(GCRCollector, self).start()
@@ -82,15 +96,19 @@ class GCRCollector(BaseCollector):
             headers = {"Metadata-Flavor": "Google"}
             # Response from the last call to
             # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/project/?recursive=true
-            self.project_metadata = self._http_client.get(self._gcr_md_project_uri, timeout=1,
-                                                          headers=headers).json()
+            self.project_metadata = self._http_client.get(
+                self._gcr_md_project_uri, timeout=1, headers=headers
+            ).json()
 
             # Response from the last call to
             # ${GOOGLE_CLOUD_RUN_METADATA_ENDPOINT}/computeMetadata/v1/instance/?recursive=true
-            self.instance_metadata = self._http_client.get(self._gcr_md_instance_uri, timeout=1,
-                                                           headers=headers).json()
+            self.instance_metadata = self._http_client.get(
+                self._gcr_md_instance_uri, timeout=1, headers=headers
+            ).json()
         except Exception:
-            logger.debug("GoogleCloudRunCollector.get_project_instance_metadata", exc_info=True)
+            logger.debug(
+                "GoogleCloudRunCollector.get_project_instance_metadata", exc_info=True
+            )
 
     def should_send_snapshot_data(self):
         return int(time()) - self.snapshot_data_last_sent > self.snapshot_data_interval
@@ -101,7 +119,6 @@ class GCRCollector(BaseCollector):
         payload["metrics"]["plugins"] = []
 
         try:
-
             if not self.span_queue.empty():
                 payload["spans"] = format_trace_and_span_ids(self.queued_spans())
 
@@ -120,8 +137,12 @@ class GCRCollector(BaseCollector):
             plugins = []
             for helper in self.helpers:
                 plugins.extend(
-                    helper.collect_metrics(with_snapshot=with_snapshot, instance_metadata=self.instance_metadata,
-                                           project_metadata=self.project_metadata))
+                    helper.collect_metrics(
+                        with_snapshot=with_snapshot,
+                        instance_metadata=self.instance_metadata,
+                        project_metadata=self.project_metadata,
+                    )
+                )
 
             payload["metrics"]["plugins"] = plugins
 

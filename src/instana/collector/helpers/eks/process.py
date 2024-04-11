@@ -1,13 +1,15 @@
 # (c) Copyright IBM Corp. 2024
 
-""" Module to handle the collection of containerized process metrics for EKS Pods on AWS Fargate """
+"""Module to handle the collection of containerized process metrics for EKS Pods on AWS Fargate"""
+
 import os
+
 from instana.collector.helpers.process import ProcessHelper
 from instana.log import logger
 
 
 def get_pod_name():
-    podname = os.environ.get('HOSTNAME', '')
+    podname = os.environ.get("HOSTNAME", "")
 
     if not podname:
         logger.warning("Failed to determine podname from EKS hostname.")
@@ -15,7 +17,7 @@ def get_pod_name():
 
 
 class EKSFargateProcessHelper(ProcessHelper):
-    """ Helper class to extend the generic process helper class with the corresponding fargate attributes """
+    """Helper class to extend the generic process helper class with the corresponding fargate attributes"""
 
     def collect_metrics(self, **kwargs):
         plugin_data = dict()

@@ -6,13 +6,15 @@ Base class for the various helpers that can be used by Collectors.  Helpers assi
 in the data collection for various entities such as host, hardware, AWS Task, ec2,
 memory, cpu, docker etc etc..
 """
-from ...log import logger
+
+from instana.log import logger
 
 
 class BaseHelper(object):
     """
     Base class for all helpers.  Descendants must override and implement `self.collect_metrics`.
     """
+
     def __init__(self, collector):
         self.collector = collector
 
@@ -73,6 +75,6 @@ class BaseHelper(object):
 
         if previous_value != new_value or with_snapshot is True:
             previous[dst_metric] = new[dst_metric] = new_value
-    
+
     def collect_metrics(self, **kwargs):
         logger.debug("BaseHelper.collect_metrics must be overridden")

@@ -4,27 +4,27 @@
 """
 AWS Fargate Collector: Manages the periodic collection of metrics & snapshot data
 """
-import os
+
 import json
+import os
 from time import time
+
 import requests
 
+from instana.collector.base import BaseCollector
+from instana.collector.helpers.fargate.container import ContainerHelper
+from instana.collector.helpers.fargate.docker import DockerHelper
+from instana.collector.helpers.fargate.process import FargateProcessHelper
+from instana.collector.helpers.fargate.task import TaskHelper
+from instana.collector.helpers.runtime import RuntimeHelper
 from instana.collector.utils import format_trace_and_span_ids
-
-from ..log import logger
-from .base import BaseCollector
-from ..util import DictionaryOfStan, validate_url
-from ..singletons import env_is_test
-
-from .helpers.fargate.process import FargateProcessHelper
-from .helpers.runtime import RuntimeHelper
-from .helpers.fargate.task import TaskHelper
-from .helpers.fargate.docker import DockerHelper
-from .helpers.fargate.container import ContainerHelper
+from instana.log import logger
+from instana.singletons import env_is_test
+from instana.util import DictionaryOfStan, validate_url
 
 
 class AWSFargateCollector(BaseCollector):
-    """ Collector for AWS Fargate """
+    """Collector for AWS Fargate"""
 
     def __init__(self, agent):
         super(AWSFargateCollector, self).__init__(agent)
@@ -37,14 +37,16 @@ class AWSFargateCollector(BaseCollector):
         self.ecmu = os.environ.get("ECS_CONTAINER_METADATA_URI", "")
 
         if self.ecmu == "" or validate_url(self.ecmu) is False:
-            logger.warning("AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
-                           "Instana will not be able to monitor this environment")
+            logger.warning(
+                "AWSFargateCollector: ECS_CONTAINER_METADATA_URI not in environment or invalid URL.  "
+                "Instana will not be able to monitor this environment"
+            )
             self.ready_to_start = False
 
         self.ecmu_url_root = self.ecmu
-        self.ecmu_url_task = self.ecmu + '/task'
-        self.ecmu_url_stats = self.ecmu + '/stats'
-        self.ecmu_url_task_stats = self.ecmu + '/task/stats'
+        self.ecmu_url_task = self.ecmu + "/task"
+        self.ecmu_url_stats = self.ecmu + "/stats"
+        self.ecmu_url_task_stats = self.ecmu + "/task/stats"
 
         # Timestamp in seconds of the last time we fetched all ECMU data
         self.last_ecmu_full_fetch = 0
@@ -86,7 +88,9 @@ class AWSFargateCollector(BaseCollector):
 
     def start(self):
         if self.ready_to_start is False:
-            logger.warning("AWS Fargate Collector is missing requirements and cannot monitor this environment.")
+            logger.warning(
+                "AWS Fargate Collector is missing requirements and cannot monitor this environment."
+            )
             return
 
         super(AWSFargateCollector, self).start()
@@ -124,7 +128,9 @@ class AWSFargateCollector(BaseCollector):
 
             # Response from the last call to
             # ${ECS_CONTAINER_METADATA_URI}/task/stats
-            json_body = self.http_client.get(self.ecmu_url_task_stats, timeout=1).content
+            json_body = self.http_client.get(
+                self.ecmu_url_task_stats, timeout=1
+            ).content
             self.task_stats_metadata = json.loads(json_body)
         except Exception:
             logger.debug("AWSFargateCollector.get_ecs_metadata", exc_info=True)

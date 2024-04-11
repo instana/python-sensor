@@ -4,15 +4,17 @@
 """
 AWS Lambda Collector: Manages the periodic collection of metrics & snapshot data
 """
+
+from instana.collector.base import BaseCollector
 from instana.collector.utils import format_trace_and_span_ids
-from ..log import logger
-from .base import BaseCollector
-from ..util import DictionaryOfStan
-from ..util.aws import normalize_aws_lambda_arn
+from instana.log import logger
+from instana.util import DictionaryOfStan
+from instana.util.aws import normalize_aws_lambda_arn
 
 
 class AWSLambdaCollector(BaseCollector):
-    """ Collector for AWS Lambda """
+    """Collector for AWS Lambda"""
+
     def __init__(self, agent):
         super(AWSLambdaCollector, self).__init__(agent)
         logger.debug("Loading AWS Lambda Collector")
@@ -61,8 +63,10 @@ class AWSLambdaCollector(BaseCollector):
             return self._fq_arn
 
         if self.context is None:
-            logger.debug("Attempt to get qualified ARN before the context object is available")
-            return ''
+            logger.debug(
+                "Attempt to get qualified ARN before the context object is available"
+            )
+            return ""
 
         self._fq_arn = normalize_aws_lambda_arn(self.context)
         return self._fq_arn

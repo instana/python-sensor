@@ -1,19 +1,21 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-""" Collection helper for the process """
+"""Collection helper for the process"""
+
+import grp
 import os
 import pwd
-import grp
+
+from instana.collector.helpers.base import BaseHelper
 from instana.log import logger
 from instana.util import DictionaryOfStan
 from instana.util.runtime import get_proc_cmdline
 from instana.util.secrets import contains_secret
-from .base import BaseHelper
 
 
 class ProcessHelper(BaseHelper):
-    """ Helper class to collect metrics for this process """
+    """Helper class to collect metrics for this process"""
 
     def collect_metrics(self, **kwargs):
         plugin_data = dict()
@@ -33,9 +35,11 @@ class ProcessHelper(BaseHelper):
         try:
             env = dict()
             for key in os.environ:
-                if contains_secret(key,
-                                   self.collector.agent.options.secrets_matcher,
-                                   self.collector.agent.options.secrets_list):
+                if contains_secret(
+                    key,
+                    self.collector.agent.options.secrets_matcher,
+                    self.collector.agent.options.secrets_list,
+                ):
                     env[key] = "<ignored>"
                 else:
                     env[key] = os.environ[key]

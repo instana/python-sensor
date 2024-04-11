@@ -4,6 +4,7 @@
 """
 Host Collector: Manages the periodic collection of metrics & snapshot data
 """
+
 from time import time
 
 from instana.collector.base import BaseCollector
@@ -14,8 +15,9 @@ from instana.util import DictionaryOfStan
 
 
 class HostCollector(BaseCollector):
-    """ Collector for host agent """
-    def __init__(self, agent):
+    """Collector for host agent"""
+
+    def __init__(self, agent) -> None:
         super(HostCollector, self).__init__(agent)
         logger.debug("Loading Host Collector")
 
@@ -25,14 +27,16 @@ class HostCollector(BaseCollector):
         # Populate the collection helpers
         self.helpers.append(RuntimeHelper(self))
 
-    def start(self):
+    def start(self) -> None:
         if self.ready_to_start is False:
-            logger.warning("Host Collector is missing requirements and cannot monitor this environment.")
+            logger.warning(
+                "Host Collector is missing requirements and cannot monitor this environment."
+            )
             return
 
         super(HostCollector, self).start()
 
-    def prepare_and_report_data(self):
+    def prepare_and_report_data(self) -> None:
         """
         We override this method from the base class so that we can handle the wait4init
         state machine case.
@@ -47,21 +51,28 @@ class HostCollector(BaseCollector):
                 else:
                     return
 
-            if self.agent.machine.fsm.current == "good2go" and self.agent.is_timed_out():
-                logger.info("The Instana host agent has gone offline or is no longer reachable for > 1 min.  Will retry periodically.")
+            if (
+                self.agent.machine.fsm.current == "good2go"
+                and self.agent.is_timed_out()
+            ):
+                logger.info(
+                    "The Instana host agent has gone offline or is no longer reachable for > 1 min.  Will retry periodically."
+                )
                 self.agent.reset()
         except Exception:
-            logger.debug('Harmless state machine thread disagreement.  Will self-correct on next timer cycle.')
+            logger.debug(
+                "Harmless state machine thread disagreement.  Will self-correct on next timer cycle."
+            )
 
         super(HostCollector, self).prepare_and_report_data()
 
-    def should_send_snapshot_data(self):
+    def should_send_snapshot_data(self) -> bool:
         delta = int(time()) - self.snapshot_data_last_sent
         if delta > self.snapshot_data_interval:
             return True
         return False
 
-    def prepare_payload(self):
+    def prepare_payload(self) -> DictionaryOfStan:
         payload = DictionaryOfStan()
         payload["spans"] = []
         payload["profiles"] = []

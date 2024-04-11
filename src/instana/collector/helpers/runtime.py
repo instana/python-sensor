@@ -3,6 +3,7 @@
 
 """ Collection helper for the Python runtime """
 import importlib.metadata
+import gc
 import os
 import platform
 import resource

@@ -267,6 +267,6 @@ Ensure that the ping is received from GitHub, and that it is filtered out so
 a simple ping event does not trigger any `PipelineRun` unnecessarily.
 
 ````bash
-eventlistener_pod=$(kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep el-github-pr)
-kubectl logs "${eventlistener_pod}" | grep 'event type ping is not allowed'
+eventlistener_pod=$(kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep el-github-pr-python-eventlistener-)
+kubectl logs -f "${eventlistener_pod}" | grep 'event type ping is not allowed'
 ````

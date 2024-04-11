@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: github-webhook-ingress
+  name: github-pr-python-webhook-ingress
 spec:
   ingressClassName: public-iks-k8s-nginx
   tls:
@@ -11,10 +11,10 @@ spec:
     - host: <ENTER_YOUR_DOMAIN_NAME_HERE>
       http:
         paths:
-          - path: /hooks
+          - path: /github-pr-python-hooks
             pathType: Exact
             backend:
               service:
-                name: el-github-pr-eventlistener
+                name: el-github-pr-python-eventlistener
                 port:
                   number: 8080

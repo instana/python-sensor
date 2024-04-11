@@ -1,7 +1,7 @@
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerTemplate
 metadata:
-  name: github-pr-pipeline-template
+  name: github-pr-python-tracer-pipeline-template
 spec:
   params:
     - description: The git branch name
@@ -41,7 +41,7 @@ spec:
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerBinding
 metadata:
-  name: github-pr-binding
+  name: github-pr-python-tracer-binding
 spec:
   params:
     - name: git-branch
@@ -56,7 +56,7 @@ spec:
 apiVersion: triggers.tekton.dev/v1beta1
 kind: EventListener
 metadata:
-  name: github-pr-eventlistener
+  name: github-pr-python-eventlistener
 spec:
   serviceAccountName: tekton-triggers-eventlistener-serviceaccount
   triggers:
@@ -97,6 +97,6 @@ spec:
                 # The git branch name shortened and converted to RFC 1123 subdomain names
                 expression: 'body.pull_request.head.ref.truncate(38).lowerAscii().translate("_", "-")'
       bindings:
-        - ref: github-pr-binding
+        - ref: github-pr-python-tracer-binding
       template:
-        ref: github-pr-pipeline-template
+        ref: github-pr-python-tracer-pipeline-template

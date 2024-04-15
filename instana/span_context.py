@@ -1,15 +1,18 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2019
 
+
 import typing
 
 from opentelemetry.trace import SpanContext as OtelSpanContext
 from opentelemetry.trace.span import (
+    DEFAULT_TRACE_OPTIONS,
+    DEFAULT_TRACE_STATE,
     TraceFlags,
     TraceState,
     format_span_id,
-    format_trace_id,
 )
+
 
 class SpanContext(OtelSpanContext):
     """The state of a Span to propagate between processes.
@@ -25,6 +28,11 @@ class SpanContext(OtelSpanContext):
 
     def __new__(
         cls,
+        trace_id: int,
+        span_id: int,
+        is_remote: bool,
+        trace_flags: typing.Optional[TraceFlags] = DEFAULT_TRACE_OPTIONS,
+        trace_state: typing.Optional[TraceState] = DEFAULT_TRACE_STATE,
         level=1,
         synthetic=False,
         trace_parent=None,  # true/false flag,
@@ -36,7 +44,7 @@ class SpanContext(OtelSpanContext):
         tracestate=None,  # temporary storage of the tracestate header
         **kwargs,
     ) -> "SpanContext":
-        instance = super().__new__(cls, **kwargs)
+        instance = super().__new__(cls, trace_id, span_id, is_remote, trace_flags, trace_state)
         return tuple.__new__(
             cls,
             (
@@ -119,4 +127,4 @@ class SpanContext(OtelSpanContext):
         return self.level == 0
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(trace_id=0x{format_trace_id(self.trace_id)}, span_id=0x{format_span_id(self.span_id)}, trace_flags=0x{self.trace_flags:02x}, trace_state={self.trace_state!r}, is_remote={self.is_remote}, synthetic={self.synthetic})"
+        return f"{type(self).__name__}(trace_id=0x{format_span_id(self.trace_id)}, span_id=0x{format_span_id(self.span_id)}, trace_flags=0x{self.trace_flags:02x}, trace_state={self.trace_state!r}, is_remote={self.is_remote}, synthetic={self.synthetic})"

@@ -1,10 +1,13 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import importlib.util
 import os
 import sys
 import pytest
-pytest_plugins = ("celery.contrib.pytest", )
+
+if importlib.util.find_spec('celery'):
+    pytest_plugins = ("celery.contrib.pytest", )
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"

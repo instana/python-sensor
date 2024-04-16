@@ -46,6 +46,7 @@ if sys.version_info >= (3, 12):
 @pytest.fixture(scope='session')
 def celery_config():
     return {
+        'broker_connection_retry_on_startup': True,
         'broker_url': 'redis://localhost:6379',
         'result_backend': 'redis://localhost:6379'
     }

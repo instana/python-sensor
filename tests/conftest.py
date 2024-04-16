@@ -4,6 +4,7 @@
 import os
 import sys
 import pytest
+pytest_plugins = ("celery.contrib.pytest", )
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"

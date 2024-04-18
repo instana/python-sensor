@@ -75,17 +75,24 @@ class InstanaSpan(Span):
         parent_id: Optional[str] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
-        attributes: types.Attributes = None,
-        events: Sequence[Event] = None,
+        attributes: types.Attributes = {},
+        events: Sequence[Event] = [],
+        status: Optional[Status] = Status(StatusCode.UNSET),
     ) -> None:
         self._name = name
         self._context = context
         self._lock = Lock()
-        self._start_time = start_time
+        self._start_time = start_time or time_ns()
         self._end_time = end_time
+        self._duration = 0
         self._attributes = attributes
         self._events = events
         self._parent_id = parent_id
+        self._status = status
+
+        if context.synthetic:
+            self.synthetic = True
+
 
     @property
     def name(self) -> str:
@@ -105,12 +112,19 @@ class InstanaSpan(Span):
     @property
     def end_time(self) -> Optional[int]:
         return self._end_time
+    
+    @property
+    def duration(self) -> int:
+        return self._duration
 
     @property
     def attributes(self) -> types.Attributes:
         return self._attributes
 
     def set_attributes(self, attributes: Dict[str, types.AttributeValue]) -> None:
+        if not self._attributes:
+            self._attributes = {}
+
         with self._lock:
             for key, value in attributes.items():
                 self._attributes[key] = value
@@ -121,6 +135,14 @@ class InstanaSpan(Span):
     @property
     def events(self) -> Sequence[Event]:
         return self._events
+
+    @property
+    def status(self) -> Status:
+        return self._status
+    
+    @property
+    def parent_id(self) -> int:
+        return self._parent_id
 
     def update_name(self, name: str) -> None:
         with self._lock:
@@ -222,7 +244,7 @@ class InstanaSpan(Span):
     def end(self, end_time: Optional[int] = None) -> None:
         with self._lock:
             self._end_time = end_time if end_time is not None else time_ns()
-            self.duration = self._end_time - self._start_time
+            self._duration = self._end_time - self._start_time
 
     def mark_as_errored(self, attributes: types.Attributes = None) -> None:
         """
@@ -293,7 +315,7 @@ class BaseSpan(object):
         self.t = span.context.trace_id
         self.p = span.parent_id
         # self.p = span.context.span_id if span.context.is_remote else None
-        self.s = span.span_id
+        self.s = span.context.span_id
         self.l = span.context.level
         self.ts = round(span.start_time / 10**6)
         self.d = round(span.duration / 10**6)
@@ -754,7 +776,7 @@ class RegisteredSpan(BaseSpan):
             self.data["mongo"]["error"] = span.attributes.pop("error", None)
 
         elif span.name == "gcs":
-            self.data["gcs"]["op"] = span.attributes.pop("gcs.op")
+            self.data["gcs"]["op"] = span.attributes.pop("gcs.op", None)
             self.data["gcs"]["bucket"] = span.attributes.pop("gcs.bucket", None)
             self.data["gcs"]["object"] = span.attributes.pop("gcs.object", None)
             self.data["gcs"]["entity"] = span.attributes.pop("gcs.entity", None)

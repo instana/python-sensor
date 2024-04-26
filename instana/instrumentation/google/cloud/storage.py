@@ -6,8 +6,8 @@ import wrapt
 import re
 
 from ....log import logger
-from ....singletons import tracer
 from .collectors import _storage_api
+from ....util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     from google.cloud import storage
@@ -50,15 +50,11 @@ try:
 
     def execute_with_instana(wrapped, instance, args, kwargs):
         # batch requests are traced with finish_batch_with_instana()
-        if isinstance(instance, storage.Batch):
+        # also return early if we're not tracing
+        if isinstance(instance, storage.Batch) or tracing_is_off():
             return wrapped(*args, **kwargs)
 
-        parent_span = tracer.active_span
-
-        # return early if we're not tracing
-        if parent_span is None:
-            return wrapped(*args, **kwargs)
-
+        tracer, parent_span, _ = get_tracer_tuple()
         tags = _collect_tags(kwargs)
 
         # don't trace if the call is not instrumented
@@ -79,11 +75,11 @@ try:
                 return kv
 
     def download_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
-
         # return early if we're not tracing
-        if parent_span is None:
+        if tracing_is_off():
             return wrapped(*args, **kwargs)
+
+        tracer, parent_span, _ = get_tracer_tuple()
 
         with tracer.start_active_span('gcs', child_of=parent_span) as scope:
             scope.span.set_tag('gcs.op', 'objects.get')
@@ -110,11 +106,11 @@ try:
                 return kv
 
     def upload_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
-
         # return early if we're not tracing
-        if parent_span is None:
+        if tracing_is_off():
             return wrapped(*args, **kwargs)
+
+        tracer, parent_span, _ = get_tracer_tuple()
 
         with tracer.start_active_span('gcs', child_of=parent_span) as scope:
             scope.span.set_tag('gcs.op', 'objects.insert')
@@ -130,11 +126,11 @@ try:
                 return kv
 
     def finish_batch_with_instana(wrapped, instance, args, kwargs):
-        parent_span = tracer.active_span
-
         # return early if we're not tracing
-        if parent_span is None:
+        if tracing_is_off():
             return wrapped(*args, **kwargs)
+
+        tracer, parent_span, _ = get_tracer_tuple()
 
         with tracer.start_active_span('gcs', child_of=parent_span) as scope:
             scope.span.set_tag('gcs.op', 'batch')

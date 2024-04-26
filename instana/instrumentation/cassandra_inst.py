@@ -8,7 +8,7 @@ https://github.com/datastax/python-driver
 """
 import wrapt
 from ..log import logger
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import cassandra
@@ -51,9 +51,9 @@ try:
 
 
     def request_init_with_instana(fn):
-        active_tracer = get_active_tracer()
+        tracer, parent_span, _ = get_tracer_tuple()
 
-        if active_tracer is None:
+        if tracing_is_off():
             return
 
         ctags = {}
@@ -65,8 +65,8 @@ try:
         ctags["cassandra.keyspace"] = fn.session.keyspace
         ctags["cassandra.cluster"] = fn.session.cluster.metadata.cluster_name
 
-        with active_tracer.start_active_span("cassandra", child_of=active_tracer.active_span,
-                                             tags=ctags, finish_on_close=False) as scope:
+        with tracer.start_active_span("cassandra", child_of=parent_span,
+                                      tags=ctags, finish_on_close=False) as scope:
             fn.add_callback(cb_request_finish, scope.span, fn)
             fn.add_errback(cb_request_error, scope.span, fn)
 

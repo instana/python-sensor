@@ -4,7 +4,7 @@
 import unittest
 
 from ..helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
@@ -31,6 +31,7 @@ class StanUser(Base):
 Base.metadata.create_all(engine)
 
 stan_user = StanUser(name='IAmStan', fullname='Stan Robot', password='3X}vP66ADoCFT2g?HPvoem2eJh,zWXgd36Rb/{aRq/>7EYy6@EEH4BP(oeXac@mR')
+stan_user2 = StanUser(name='IAmStanToo', fullname='Stan Robot 2', password='3X}vP66ADoCFT2g?HPvoem2eJh,zWXgd36Rb/{aRq/>7EYy6@EEH4BP(oeXac@mR')
 
 Session = sessionmaker(bind=engine)
 Session.configure(bind=engine)
@@ -46,7 +47,8 @@ class TestSQLAlchemy(unittest.TestCase):
         self.session = Session()
 
     def tearDown(self):
-        pass
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     def test_session_add(self):
         with tracer.start_active_span('test'):
@@ -69,6 +71,38 @@ class TestSQLAlchemy(unittest.TestCase):
 
         # Error logging
         self.assertIsNone(test_span.ec)
+        self.assertIsNone(sql_span.ec)
+
+        # SQLAlchemy span
+        self.assertEqual('sqlalchemy', sql_span.n)
+        self.assertFalse('custom' in sql_span.data)
+        self.assertTrue('sqlalchemy' in sql_span.data)
+
+        self.assertEqual('postgresql', sql_span.data["sqlalchemy"]["eng"])
+        self.assertEqual(sqlalchemy_url, sql_span.data["sqlalchemy"]["url"])
+        self.assertEqual('INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id', sql_span.data["sqlalchemy"]["sql"])
+        self.assertIsNone(sql_span.data["sqlalchemy"]["err"])
+
+        self.assertIsNotNone(sql_span.stack)
+        self.assertTrue(type(sql_span.stack) is list)
+        self.assertGreater(len(sql_span.stack), 0)
+
+    def test_session_add_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        self.session.add(stan_user2)
+        self.session.commit()
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        sql_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Parent relationships
+        self.assertEqual(sql_span.p, None)
+
+        # Error logging
         self.assertIsNone(sql_span.ec)
 
         # SQLAlchemy span

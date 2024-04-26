@@ -6,7 +6,7 @@ import re
 from operator import attrgetter
 
 from ..log import logger
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import sqlalchemy
@@ -19,13 +19,12 @@ try:
     @event.listens_for(Engine, 'before_cursor_execute', named=True)
     def receive_before_cursor_execute(**kw):
         try:
-            active_tracer = get_active_tracer()
-
             # If we're not tracing, just return
-            if active_tracer is None:
+            if tracing_is_off():
                 return
 
-            scope = active_tracer.start_active_span("sqlalchemy", child_of=active_tracer.active_span)
+            tracer, parent_span, _ = get_tracer_tuple()
+            scope = tracer.start_active_span("sqlalchemy", child_of=parent_span)
             context = kw['context']
             if context:
                 context._stan_scope = scope
@@ -72,7 +71,7 @@ try:
     @event.listens_for(Engine, error_event, named=True)
     def receive_handle_db_error(**kw):
 
-        if get_active_tracer() is None:
+        if tracing_is_off():
             return
 
         # support older db error event

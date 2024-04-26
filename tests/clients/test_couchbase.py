@@ -5,7 +5,7 @@ import os
 import time
 import unittest
 
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 from ..helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 from couchbase.admin import Admin
@@ -34,6 +34,10 @@ class TestStandardCouchDB(unittest.TestCase):
         self.cluster = Cluster('couchbase://%s' % testenv['couchdb_host'])
         self.bucket = Bucket('couchbase://%s/travel-sample' % testenv['couchdb_host'],
                              username=testenv['couchdb_username'], password=testenv['couchdb_password'])
+
+    def tearDown(self):
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     def setup_method(self, _):
         self.bucket.upsert('test-key', 1)
@@ -68,6 +72,28 @@ class TestStandardCouchDB(unittest.TestCase):
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
+
+        assert(cb_span.stack)
+        self.assertIsNone(cb_span.ec)
+
+        self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
+        self.assertEqual(cb_span.data["couchbase"]["bucket"], 'travel-sample')
+        self.assertEqual(cb_span.data["couchbase"]["type"], 'upsert')
+
+    def test_upsert_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        res = self.bucket.upsert("test_upsert", 1)
+
+        self.assertTrue(res)
+        self.assertTrue(res.success)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        cb_span = get_first_span_by_name(spans, 'couchbase')
+        assert(cb_span)
+
+        self.assertEqual(cb_span.p, None)
 
         assert(cb_span.stack)
         self.assertIsNone(cb_span.ec)

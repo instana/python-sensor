@@ -7,7 +7,7 @@ import unittest
 import pymysql
 
 from ..helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class TestPyMySQL(unittest.TestCase):
           self.cursor.close()
         if self.db and self.db.open:
           self.db.close()
+        agent.options.allow_exit_as_root = False
 
     def test_vanilla_query(self):
         affected_rows = self.cursor.execute("""SELECT * from users""")
@@ -78,6 +79,28 @@ class TestPyMySQL(unittest.TestCase):
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "mysql")
+        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
+        self.assertEqual(db_span.data["mysql"]["stmt"], 'SELECT * from users')
+        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+
+    def test_basic_query_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        affected_rows = self.cursor.execute("""SELECT * from users""")
+        result = self.cursor.fetchone()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(3, len(result))
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        db_span = spans[0]
 
         self.assertIsNone(db_span.ec)
 

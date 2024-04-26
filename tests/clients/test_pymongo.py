@@ -6,7 +6,7 @@ import unittest
 import logging
 
 from ..helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 import pymongo
 import bson
@@ -29,6 +29,7 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def tearDown(self):
         self.client.close()
+        agent.options.allow_exit_as_root = False
 
     def test_successful_find_query(self):
         with tracer.start_active_span("test"):
@@ -44,6 +45,29 @@ class TestPyMongoTracer(unittest.TestCase):
 
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "mongo")
+        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
+        self.assertEqual(db_span.data["mongo"]["command"], "find")
+
+        self.assertEqual(db_span.data["mongo"]["filter"], '{"type": "string"}')
+        self.assertIsNone(db_span.data["mongo"]["json"])
+
+    def test_successful_find_query_as_root_span(self):
+        agent.options.allow_exit_as_root = True
+        self.client.test.records.find_one({"type": "string"})
+
+        self.assertIsNone(tracer.active_span)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(len(spans), 1)
+
+        db_span = spans[0]
+
+        self.assertEqual(db_span.p, None)
 
         self.assertIsNone(db_span.ec)
 

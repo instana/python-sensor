@@ -10,7 +10,7 @@ import unittest
 from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.pubsub_v1.publisher import exceptions
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8085
@@ -39,6 +39,7 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
 
     def tearDown(self):
         self.publisher.delete_topic(request={"topic": self.topic_path})
+        agent.options.allow_exit_as_root = False
 
     def test_publish(self):
         # publish a single message
@@ -63,6 +64,30 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
 
         # Trace Context Propagation
         self.assertTraceContextPropagated(test_span, gcps_span)
+
+        # Error logging
+        self.assertErrorLogging(spans)
+
+    def test_publish_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        # publish a single message
+        future = self.publisher.publish(self.topic_path,
+                                        b'Test Message',
+                                        origin="instana")
+        time.sleep(2.0)  # for sanity
+        result = future.result()
+        assert isinstance(result, six.string_types)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+        gcps_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+        self.assertEqual('gcps', gcps_span.n)
+        self.assertEqual(2, gcps_span.k)  # EXIT
+
+        self.assertEqual('publish', gcps_span.data['gcps']['op'])
+        self.assertEqual(self.topic_name, gcps_span.data['gcps']['top'])
 
         # Error logging
         self.assertErrorLogging(spans)

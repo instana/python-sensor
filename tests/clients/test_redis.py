@@ -7,7 +7,7 @@ import redis
 from redis.sentinel import Sentinel
 
 from ..helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 
 class TestRedis(unittest.TestCase):
@@ -23,7 +23,8 @@ class TestRedis(unittest.TestCase):
         self.client = redis.Redis(host=testenv['redis_host'])
 
     def tearDown(self):
-        pass
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     def test_vanilla(self):
         self.client.set('instrument', 'piano')
@@ -60,6 +61,76 @@ class TestRedis(unittest.TestCase):
 
         # Error logging
         self.assertIsNone(test_span.ec)
+        self.assertIsNone(rs1_span.ec)
+        self.assertIsNone(rs2_span.ec)
+        self.assertIsNone(rs3_span.ec)
+
+        # Redis span 1
+        self.assertEqual('redis', rs1_span.n)
+        self.assertFalse('custom' in rs1_span.data)
+        self.assertTrue('redis' in rs1_span.data)
+
+        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs1_span.data["redis"]["command"])
+        self.assertIsNone(rs1_span.data["redis"]["error"])
+
+        self.assertIsNotNone(rs1_span.stack)
+        self.assertTrue(type(rs1_span.stack) is list)
+        self.assertGreater(len(rs1_span.stack), 0)
+
+        # Redis span 2
+        self.assertEqual('redis', rs2_span.n)
+        self.assertFalse('custom' in rs2_span.data)
+        self.assertTrue('redis' in rs2_span.data)
+
+        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("SET", rs2_span.data["redis"]["command"])
+        self.assertIsNone(rs2_span.data["redis"]["error"])
+
+        self.assertIsNotNone(rs2_span.stack)
+        self.assertTrue(type(rs2_span.stack) is list)
+        self.assertGreater(len(rs2_span.stack), 0)
+
+        # Redis span 3
+        self.assertEqual('redis', rs3_span.n)
+        self.assertFalse('custom' in rs3_span.data)
+        self.assertTrue('redis' in rs3_span.data)
+
+        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
+        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("GET", rs3_span.data["redis"]["command"])
+        self.assertIsNone(rs3_span.data["redis"]["error"])
+
+        self.assertIsNotNone(rs3_span.stack)
+        self.assertTrue(type(rs3_span.stack) is list)
+        self.assertGreater(len(rs3_span.stack), 0)
+
+    def test_set_get_as_root_span(self):
+        agent.options.allow_exit_as_root = True
+
+        self.client.set('foox', 'barX')
+        self.client.set('fooy', 'barY')
+        result = self.client.get('foox')
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        self.assertEqual(b'barX', result)
+
+        rs1_span = spans[0]
+        rs2_span = spans[1]
+        rs3_span = spans[2]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Parent relationships
+        self.assertEqual(rs1_span.p, None)
+        self.assertEqual(rs2_span.p, None)
+        self.assertEqual(rs3_span.p, None)
+
+        # Error logging
         self.assertIsNone(rs1_span.ec)
         self.assertIsNone(rs2_span.ec)
         self.assertIsNone(rs3_span.ec)

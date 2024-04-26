@@ -5,7 +5,7 @@
 import wrapt
 
 from ..log import logger
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 
 try:
@@ -36,13 +36,13 @@ try:
 
 
     def execute_command_with_instana(wrapped, instance, args, kwargs):
-        active_tracer = get_active_tracer()
+        tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If we're not tracing, just return
-        if active_tracer is None or active_tracer.active_span.operation_name in EXCLUDED_PARENT_SPANS:
+        if (tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS)):
             return wrapped(*args, **kwargs)
 
-        with active_tracer.start_active_span("redis", child_of=active_tracer.active_span) as scope:
+        with tracer.start_active_span("redis", child_of=parent_span) as scope:
             try:
                 collect_tags(scope.span, instance, args, kwargs)
                 if (len(args) > 0):
@@ -57,13 +57,13 @@ try:
 
 
     def execute_with_instana(wrapped, instance, args, kwargs):
-        active_tracer = get_active_tracer()
+        tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If we're not tracing, just return
-        if active_tracer is None or active_tracer.active_span.operation_name in EXCLUDED_PARENT_SPANS:
+        if (tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS)):
             return wrapped(*args, **kwargs)
 
-        with active_tracer.start_active_span("redis", child_of=active_tracer.active_span) as scope:
+        with tracer.start_active_span("redis", child_of=parent_span) as scope:
             try:
                 collect_tags(scope.span, instance, args, kwargs)
                 scope.span.set_tag("command", 'PIPELINE')

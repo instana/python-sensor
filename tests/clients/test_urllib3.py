@@ -21,8 +21,8 @@ class TestUrllib3(unittest.TestCase):
         self.recorder.clear_spans()
 
     def tearDown(self):
-        """ Do nothing for now """
-        return None
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     def test_vanilla_requests(self):
         r = self.http.request('GET', testenv["wsgi_server"] + '/')
@@ -106,6 +106,49 @@ class TestUrllib3(unittest.TestCase):
 
         # urllib3
         self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual(200, urllib3_span.data["http"]["status"])
+        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
+        self.assertEqual("GET", urllib3_span.data["http"]["method"])
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
+
+    def test_get_request_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        r = self.http.request('GET', testenv["wsgi_server"] + '/')
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+
+        self.assertTrue(r)
+        self.assertEqual(200, r.status)
+        self.assertIsNone(tracer.active_span)
+
+        # Same traceId
+        self.assertEqual(urllib3_span.t, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(urllib3_span.p, None)
+        self.assertEqual(wsgi_span.p, urllib3_span.s)
+
+        # Error logging
+        self.assertIsNone(urllib3_span.ec)
+        self.assertIsNone(wsgi_span.ec)
+
+        # wsgi
+        self.assertEqual("wsgi", wsgi_span.n)
+        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
+        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('GET', wsgi_span.data["http"]["method"])
+        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertIsNone(wsgi_span.data["http"]["error"])
+        self.assertIsNone(wsgi_span.stack)
+
+        # urllib3
         self.assertEqual("urllib3", urllib3_span.n)
         self.assertEqual(200, urllib3_span.data["http"]["status"])
         self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])

@@ -28,6 +28,7 @@ class BaseOptions(object):
         self.log_level = logging.WARN
         self.service_name = determine_service_name()
         self.extra_http_headers = None
+        self.allow_exit_as_root = False
 
         if "INSTANA_DEBUG" in os.environ:
             self.log_level = logging.DEBUG
@@ -35,6 +36,9 @@ class BaseOptions(object):
 
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
             self.extra_http_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
+
+        if os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None) == '1':
+            self.allow_exit_as_root = True
 
         # Defaults
         self.secrets_matcher = 'contains-ignore-case'

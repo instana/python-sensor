@@ -9,7 +9,7 @@ https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 import wrapt
 
 from ..log import logger
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import couchbase
@@ -53,13 +53,13 @@ try:
 
     def make_wrapper(op):
         def wrapper(wrapped, instance, args, kwargs):
-            active_tracer = get_active_tracer()
+            tracer, parent_span, _ = get_tracer_tuple()
 
             # If we're not tracing, just return
-            if active_tracer is None:
+            if tracing_is_off():
                 return wrapped(*args, **kwargs)
 
-            with active_tracer.start_active_span("couchbase", child_of=active_tracer.active_span) as scope:
+            with tracer.start_active_span("couchbase", child_of=parent_span) as scope:
                 capture_kvs(scope, instance, None, op)
                 try:
                     return wrapped(*args, **kwargs)
@@ -70,13 +70,13 @@ try:
         return wrapper
 
     def query_with_instana(wrapped, instance, args, kwargs):
-        active_tracer = get_active_tracer()
+        tracer, parent_span, _ = get_tracer_tuple()
 
         # If we're not tracing, just return
-        if active_tracer is None:
+        if tracing_is_off():
             return wrapped(*args, **kwargs)
 
-        with active_tracer.start_active_span("couchbase", child_of=active_tracer.active_span) as scope:
+        with tracer.start_active_span("couchbase", child_of=parent_span) as scope:
             capture_kvs(scope, instance, args[0], 'n1ql_query')
             try:
                 return wrapped(*args, **kwargs)

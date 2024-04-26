@@ -5,7 +5,7 @@ import logging
 import unittest
 
 from ..helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 import psycopg2
 import psycopg2.extras
@@ -61,6 +61,7 @@ class TestPsycoPG2(unittest.TestCase):
           self.cursor.close()
         if self.db and not self.db.closed:
           self.db.close()
+        agent.options.allow_exit_as_root = False
 
     def test_vanilla_query(self):
         self.assertTrue(psycopg2.extras.register_uuid(None, self.db))
@@ -94,6 +95,30 @@ class TestPsycoPG2(unittest.TestCase):
         self.assertEqual("test", test_span.data["sdk"]["name"])
         self.assertEqual(test_span.t, db_span.t)
         self.assertEqual(db_span.p, test_span.s)
+
+        self.assertIsNone(db_span.ec)
+
+        self.assertEqual(db_span.n, "postgres")
+        self.assertEqual(db_span.data["pg"]["db"], testenv['postgresql_db'])
+        self.assertEqual(db_span.data["pg"]["user"], testenv['postgresql_user'])
+        self.assertEqual(db_span.data["pg"]["stmt"], 'SELECT * from users')
+        self.assertEqual(db_span.data["pg"]["host"], testenv['postgresql_host'])
+        self.assertEqual(db_span.data["pg"]["port"], testenv['postgresql_port'])
+
+    def test_basic_query_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        self.cursor.execute("""SELECT * from users""")
+        affected_rows = self.cursor.rowcount
+        result = self.cursor.fetchone()
+        self.db.commit()
+
+        self.assertEqual(1, affected_rows)
+        self.assertEqual(6, len(result))
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        db_span = spans[0]
 
         self.assertIsNone(db_span.ec)
 

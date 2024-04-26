@@ -30,3 +30,16 @@ def get_active_tracer():
         # Do not try to log this with instana, as there is no active tracer and there will be an infinite loop at least
         # for PY2
         return None
+
+
+def get_tracer_tuple():
+    active_tracer = get_active_tracer()
+    if active_tracer:
+        return (active_tracer, active_tracer.active_span, active_tracer.active_span.operation_name)
+    elif agent.options.allow_exit_as_root:
+        return (tracer, None, None)
+    return (None, None, None)
+
+
+def tracing_is_off():
+    return not (bool(get_active_tracer()) or agent.options.allow_exit_as_root)

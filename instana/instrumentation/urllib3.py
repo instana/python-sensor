@@ -8,7 +8,7 @@ import wrapt
 
 from ..log import logger
 from ..singletons import agent
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 from ..util.secrets import strip_secrets_from_query
 
 try:
@@ -76,13 +76,12 @@ try:
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        active_tracer = get_active_tracer()
-
+        tracer, parent_span, operation_name = get_tracer_tuple()
         # If we're not tracing, just return; boto3 has it's own visibility
-        if active_tracer is None or active_tracer.active_span.operation_name == 'boto3':
+        if (tracing_is_off() or (operation_name == 'boto3')):
             return wrapped(*args, **kwargs)
 
-        with active_tracer.start_active_span("urllib3", child_of=active_tracer.active_span) as scope:
+        with tracer.start_active_span("urllib3", child_of=parent_span) as scope:
             try:
                 kvs = collect(instance, args, kwargs)
                 if 'url' in kvs:
@@ -94,7 +93,7 @@ try:
 
                 if 'headers' in kwargs:
                     extract_custom_headers(scope.span, kwargs['headers'])
-                    active_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
+                    tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
 
                 response = wrapped(*args, **kwargs)
 

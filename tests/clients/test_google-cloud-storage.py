@@ -7,7 +7,7 @@ import json
 import requests
 import io
 
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 from ..test_utils import _TraceContextMixin
 
 from mock import patch, Mock
@@ -20,6 +20,10 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
     def setUp(self):
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
+
+    def tearDown(self):
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     @unittest.skipIf(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
     @patch('requests.Session.request')
@@ -48,6 +52,39 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
         test_span = spans[1]
 
         self.assertTraceContextPropagated(test_span, gcs_span)
+
+        self.assertEqual('gcs',gcs_span.n)
+        self.assertEqual(2, gcs_span.k)
+        self.assertIsNone(gcs_span.ec)
+
+        self.assertEqual('buckets.list', gcs_span.data["gcs"]["op"])
+        self.assertEqual('test-project', gcs_span.data["gcs"]["projectId"])
+
+
+    @unittest.skipIf(sys.platform == "darwin", reason="Raises not Implemented exception in OSX")
+    @patch('requests.Session.request')
+    def test_buckets_list_as_root_exit_span(self, mock_requests):
+        agent.options.allow_exit_as_root = True
+        mock_requests.return_value = self._mock_response(
+            json_content={"kind": "storage#buckets", "items": []},
+            status_code=http_client.OK
+        )
+
+        client = self._client(project='test-project')
+
+        buckets = client.list_buckets()
+        self.assertEqual(0, self.recorder.queue_size(), msg='span has been created before the actual request')
+
+        # trigger the iterator
+        for b in buckets:
+            pass
+
+        spans = self.recorder.queued_spans()
+
+        self.assertEqual(1, len(spans))
+        self.assertIsNone(tracer.active_span)
+
+        gcs_span = spans[0]
 
         self.assertEqual('gcs',gcs_span.n)
         self.assertEqual(2, gcs_span.k)

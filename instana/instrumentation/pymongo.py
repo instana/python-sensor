@@ -3,7 +3,7 @@
 
 
 from ..log import logger
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import pymongo
@@ -16,12 +16,12 @@ try:
             self.__active_commands = {}
 
         def started(self, event):
-            active_tracer = get_active_tracer()
+            tracer, parent_span, _ = get_tracer_tuple()
             # return early if we're not tracing
-            if active_tracer is None:
+            if tracing_is_off():
                 return
 
-            with active_tracer.start_active_span("mongo", child_of=active_tracer.active_span) as scope:
+            with tracer.start_active_span("mongo", child_of=parent_span) as scope:
                 self._collect_connection_tags(scope.span, event)
                 self._collect_command_tags(scope.span, event)
 

@@ -8,6 +8,7 @@ from opentracing import Format
 
 from ....log import logger
 from ....singletons import tracer
+from ....util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     from google.cloud import pubsub_v1
@@ -36,12 +37,11 @@ try:
         """References:
         - PublisherClient.publish(topic_path, messages, metadata)
         """
-        # check if active
-        parent_span = tracer.active_span
-
         # return early if we're not tracing
-        if parent_span is None:
+        if tracing_is_off():
             return wrapped(*args, **kwargs)
+
+        tracer, parent_span, _ = get_tracer_tuple()
 
         with tracer.start_active_span('gcps-producer', child_of=parent_span) as scope:
             # trace continuity, inject to the span context

@@ -10,7 +10,7 @@ import types
 
 from ..log import logger
 from ..singletons import tracer
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import pika
@@ -40,14 +40,14 @@ try:
         def _bind_args(exchange, routing_key, body, properties=None, *args, **kwargs):
             return (exchange, routing_key, body, properties, args, kwargs)
 
-        active_tracer = get_active_tracer()
+        tracer, parent_span, _  = get_tracer_tuple()
 
-        if active_tracer is None:
+        if tracing_is_off():
             return wrapped(*args, **kwargs)
 
         (exchange, routing_key, body, properties, args, kwargs) = (_bind_args(*args, **kwargs))
 
-        with tracer.start_active_span("rabbitmq", child_of=active_tracer.active_span) as scope:
+        with tracer.start_active_span("rabbitmq", child_of=parent_span) as scope:
             try:
                 _extract_publisher_tags(scope.span,
                                         conn=instance.connection,

@@ -8,7 +8,7 @@ import time
 import pika
 import mock
 
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 
 
 class _TestPika(unittest.TestCase):
@@ -32,6 +32,7 @@ class _TestPika(unittest.TestCase):
         del self.connection
         del self._on_openok_callback
         del self.obj
+        agent.options.allow_exit_as_root = False
 
 
 class TestPikaChannel(_TestPika):
@@ -62,6 +63,44 @@ class TestPikaChannel(_TestPika):
 
         # Error logging
         self.assertIsNone(test_span.ec)
+        self.assertIsNone(rabbitmq_span.ec)
+
+        # Span tags
+        self.assertEqual("test.exchange", rabbitmq_span.data["rabbitmq"]["exchange"])
+        self.assertEqual('publish', rabbitmq_span.data["rabbitmq"]["sort"])
+        self.assertIsNotNone(rabbitmq_span.data["rabbitmq"]["address"])
+        self.assertEqual("test.queue", rabbitmq_span.data["rabbitmq"]["key"])
+        self.assertIsNotNone(rabbitmq_span.stack)
+        self.assertTrue(type(rabbitmq_span.stack) is list)
+        self.assertGreater(len(rabbitmq_span.stack), 0)
+
+        send_method.assert_called_once_with(
+            pika.spec.Basic.Publish(
+                exchange="test.exchange",
+                routing_key="test.queue"), (pika.spec.BasicProperties(headers={
+                "X-INSTANA-T": rabbitmq_span.t,
+                "X-INSTANA-S": rabbitmq_span.s,
+                "X-INSTANA-L": "1"
+            }), b"Hello!"))
+
+    @mock.patch('pika.spec.Basic.Publish')
+    @mock.patch('pika.channel.Channel._send_method')
+    def test_basic_publish_as_root_exit_span(self, send_method, _unused):
+        agent.options.allow_exit_as_root = True
+        self.obj._set_state(self.obj.OPEN)
+        self.obj.basic_publish("test.exchange", "test.queue", "Hello!")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        rabbitmq_span = spans[0]
+
+        self.assertIsNone(tracer.active_span)
+
+        # Parent relationships
+        self.assertIsNone(rabbitmq_span.p, None)
+
+        # Error logging
         self.assertIsNone(rabbitmq_span.ec)
 
         # Span tags

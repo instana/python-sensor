@@ -6,7 +6,7 @@ import time
 import random
 import unittest
 
-from instana.singletons import tracer
+from instana.singletons import agent, tracer
 from ..helpers import testenv, get_first_span_by_name
 
 from cassandra.cluster import Cluster
@@ -36,8 +36,8 @@ class TestCassandra(unittest.TestCase):
         self.recorder.clear_spans()
 
     def tearDown(self):
-        """ Do nothing for now """
-        return None
+        """ Ensure that allow_exit_as_root has the default value """
+        agent.options.allow_exit_as_root = False
 
     def test_untraced_execute(self):
         res = session.execute('SELECT name, age, email FROM users')
@@ -85,6 +85,32 @@ class TestCassandra(unittest.TestCase):
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cspan.t)
         self.assertEqual(cspan.p, test_span.s)
+
+        self.assertIsNotNone(cspan.stack)
+        self.assertIsNone(cspan.ec)
+
+        self.assertEqual(cspan.data["cassandra"]["cluster"], 'Test Cluster')
+        self.assertEqual(cspan.data["cassandra"]["query"], 'SELECT name, age, email FROM users')
+        self.assertEqual(cspan.data["cassandra"]["keyspace"], 'instana_tests')
+        self.assertIsNone(cspan.data["cassandra"]["achievedConsistency"])
+        self.assertIsNotNone(cspan.data["cassandra"]["triedHosts"])
+        self.assertIsNone(cspan.data["cassandra"]["error"])
+
+    def test_execute_as_root_exit_span(self):
+        agent.options.allow_exit_as_root = True
+        res = session.execute('SELECT name, age, email FROM users')
+
+        self.assertIsNotNone(res)
+
+        time.sleep(0.5)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(1, len(spans))
+
+        cspan = get_first_span_by_name(spans, 'cassandra')
+        self.assertIsNotNone(cspan)
+
+        self.assertIsNone(cspan.p)
 
         self.assertIsNotNone(cspan.stack)
         self.assertIsNone(cspan.ec)

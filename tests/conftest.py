@@ -14,6 +14,13 @@ if importlib.util.find_spec('celery'):
 os.environ["INSTANA_TEST"] = "true"
 os.environ["INSTANA_DISABLE_AUTO_INSTR"] = "true"
 
+# TODO: remove all "noqa: E402" from instana package imports and move the
+# block of env variables setting to below the imports after finishing the
+# migration of instrumentation codes.
+from instana.span import BaseSpan, InstanaSpan  # noqa: E402
+from instana.span_context import SpanContext  # noqa: E402
+
+
 collect_ignore_glob = [
     "*autoprofile*",
     "*clients*",
@@ -86,3 +93,33 @@ def celery_enable_logging():
 @pytest.fixture(scope="session")
 def celery_includes():
     return {"tests.frameworks.test_celery"}
+
+
+@pytest.fixture
+def trace_id() -> int:
+    return 1812338823475918251
+
+
+@pytest.fixture
+def span_id() -> int:
+    return 6895521157646639861
+
+
+@pytest.fixture
+def span_context(trace_id: int, span_id: int) -> SpanContext:
+    return SpanContext(
+        trace_id=trace_id,
+        span_id=span_id,
+        is_remote=False,
+    )
+
+
+@pytest.fixture
+def span(span_context: SpanContext) -> InstanaSpan:
+    span_name = "test-span"
+    return InstanaSpan(span_name, span_context)
+
+
+@pytest.fixture
+def base_span(span: InstanaSpan) -> BaseSpan:
+    return BaseSpan(span, None, "test")

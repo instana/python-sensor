@@ -9,10 +9,10 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 
-JSON_FILE = "python/utils/table.json"
-REPORT_FILE = "python/docs/report.md"
-TEKTON_CI_OUT_FILE = "python/utils/tekton-ci-output.txt"
-TEKTON_CI_OUT_SCRIPT = "python/scripts/get-tekton-ci-output.sh"
+JSON_FILE = "utils/table.json"
+REPORT_FILE = "docs/report.md"
+TEKTON_CI_OUT_FILE = "utils/tekton-ci-output.txt"
+TEKTON_CI_OUT_SCRIPT = "scripts/get-tekton-ci-output.sh"
 PIP_INDEX_URL = "https://pypi.org/pypi"
 
 SPEC_MAP = {
@@ -54,7 +54,7 @@ def get_upstream_version(dependency):
         return latest_version
 
 
-## Get the tekton ci outout of the installed python dependencies
+## Get the tekton ci output of the installed python dependencies
 system("bash " + TEKTON_CI_OUT_SCRIPT)
 
 with open(TEKTON_CI_OUT_FILE) as file:

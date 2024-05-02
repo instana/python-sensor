@@ -35,6 +35,8 @@ try:
 
             span.set_tag('rpc.call', method)
 
+            if ':///' in target:
+                _, target, *_ =  target.split(':///')
             parts = target.split(':')
             if len(parts) == 2:
                 span.set_tag('rpc.host', parts[0])

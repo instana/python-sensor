@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "instana"
+dynamic = [
+    "version",
+]
+description = "Python Distributed Tracing & Metrics Sensor for Instana."
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+keywords = [
+    "performance",
+    "opentracing",
+    "metrics",
+    "monitoring",
+    "tracing",
+    "distributed-tracing",
+]
+authors = [
+    { name = "Instana Team Python Tracer Engineers" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Networking :: Monitoring",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "autowrapt>=1.0",
+    "basictracer>=3.1.0",
+    "fysom>=2.1.2",
+    "opentracing>=2.3.0",
+    "protobuf<5.0.0",
+    "requests>=2.6.0",
+    "six>=1.12.0",
+    "urllib3>=1.26.5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+]
+
+[project.urls]
+Documentation = "https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package"
+Issues = "https://github.com/instana/python-sensor/issues"
+Source = "https://github.com/instana/python-sensor"
+
+[tool.hatch.version]
+path = "src/instana/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/instana"]

@@ -49,7 +49,7 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
                                             origin="instana")
         time.sleep(2.0)  # for sanity
         result = future.result()
-        assert isinstance(result, six.string_types)
+        self.assertIsInstance(result, six.string_types)
 
         spans = self.recorder.queued_spans()
         gcps_span, test_span = spans[0], spans[1]
@@ -76,7 +76,7 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
                                         origin="instana")
         time.sleep(2.0)  # for sanity
         result = future.result()
-        assert isinstance(result, six.string_types)
+        self.assertIsInstance(result, six.string_types)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))

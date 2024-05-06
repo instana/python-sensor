@@ -135,7 +135,7 @@ class TestLambda(unittest.TestCase):
         self.create_agent_and_setup_tracer()
         self.assertTrue(hasattr(self.agent, 'options'))
         self.assertTrue(isinstance(self.agent.options, AWSLambdaOptions))
-        assert(self.agent.options.endpoint_proxy == { })
+        self.assertDictEqual(self.agent.options.endpoint_proxy, { })
 
     def test_get_handler(self):
         os.environ["LAMBDA_HANDLER"] = "tests.lambda_handler"
@@ -174,7 +174,7 @@ class TestLambda(unittest.TestCase):
     def test_custom_proxy(self):
         os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
         self.create_agent_and_setup_tracer()
-        assert(self.agent.options.endpoint_proxy == { 'https': "http://myproxy.123" })
+        self.assertDictEqual(self.agent.options.endpoint_proxy, { 'https': "http://myproxy.123" })
 
     def test_custom_service_name(self):
         os.environ['INSTANA_SERVICE_NAME'] = "Legion"
@@ -189,9 +189,9 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
         os.environ.pop('INSTANA_SERVICE_NAME')
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -218,7 +218,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -254,9 +254,9 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -283,7 +283,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -359,9 +359,9 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -388,7 +388,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -422,9 +422,9 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -451,7 +451,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -487,9 +487,9 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -516,7 +516,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -554,9 +554,9 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -583,7 +583,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -620,9 +620,9 @@ class TestLambda(unittest.TestCase):
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
 
-        assert isinstance(result, dict)
-        assert 'headers' in result
-        assert 'Server-Timing' in result['headers']
+        self.assertIsInstance(result, dict)
+        self.assertIn('headers', result)
+        self.assertIn('Server-Timing', result['headers'])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -649,7 +649,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)
@@ -693,24 +693,24 @@ class TestLambda(unittest.TestCase):
     def test_arn_parsing(self):
         ctx = MockContext()
 
-        assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
+        self.assertEqual(normalize_aws_lambda_arn(ctx), "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
 
         # Without version should return a fully qualified ARN (with version)
         ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython"
-        assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
+        self.assertEqual(normalize_aws_lambda_arn(ctx), "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
 
         # Fully qualified already with the '$LATEST' special tag
         ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST"
-        assert(normalize_aws_lambda_arn(ctx) == "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST")
+        self.assertEqual(normalize_aws_lambda_arn(ctx), "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST")
 
     def test_agent_default_log_level(self):
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.log_level == logging.WARNING
+        self.assertEqual(self.agent.options.log_level, logging.WARNING)
 
     def test_agent_custom_log_level(self):
         os.environ['INSTANA_LOG_LEVEL'] = "eRror"
         self.create_agent_and_setup_tracer()
-        assert self.agent.options.log_level == logging.ERROR
+        self.assertEqual(self.agent.options.log_level, logging.ERROR)
 
     def __validate_result_and_payload_for_gateway_v2_trace(self, result, payload):
         self.assertIsInstance(result, dict)
@@ -740,7 +740,7 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        assert result['headers']['Server-Timing'] == server_timing_value
+        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
 
         self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
                          span.f)

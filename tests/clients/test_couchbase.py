@@ -46,7 +46,7 @@ class TestStandardCouchDB(unittest.TestCase):
 
     def test_vanilla_get(self):
         res = self.bucket.get("test-key")
-        assert(res)
+        self.assertTrue(res)
 
     def test_pipeline(self):
         pass
@@ -56,24 +56,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.upsert("test_upsert", 1)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -91,11 +91,11 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(1, len(spans))
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         self.assertEqual(cb_span.p, None)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -112,7 +112,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.upsert_multi(kvs)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_upsert_multi'].success)
         self.assertTrue(res['second_test_upsert_multi'].success)
 
@@ -120,17 +120,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -147,24 +147,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.insert("test_insert_new", 1)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -190,17 +190,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("_KeyExistsError")
@@ -226,7 +226,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.insert_multi(kvs)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_upsert_multi'].success)
         self.assertTrue(res['second_test_upsert_multi'].success)
 
@@ -234,17 +234,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -261,24 +261,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.replace("test_replace", 2)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -305,17 +305,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("NotFoundError")
@@ -338,7 +338,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.replace_multi(kvs)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_replace_multi'].success)
         self.assertTrue(res['second_test_replace_multi'].success)
 
@@ -346,17 +346,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -370,24 +370,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.append("test_append", "two")
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -407,7 +407,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.append_multi(kvs)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_append_multi'].success)
         self.assertTrue(res['second_test_append_multi'].success)
 
@@ -415,17 +415,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -439,24 +439,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.prepend("test_prepend", "two")
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -476,7 +476,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.prepend_multi(kvs)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_prepend_multi'].success)
         self.assertTrue(res['second_test_prepend_multi'].success)
 
@@ -484,17 +484,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -507,24 +507,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.get("test-key")
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -546,17 +546,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("CouchbaseTransientError")
@@ -585,17 +585,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertEqual(cb_span.ec, 1)
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("NotFoundError")
@@ -614,7 +614,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.get_multi(['first_test_get_multi', 'second_test_get_multi'])
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_get_multi'].success)
         self.assertTrue(res['second_test_get_multi'].success)
 
@@ -622,17 +622,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -646,24 +646,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.touch("test_touch")
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -679,7 +679,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.touch_multi(['first_test_touch_multi', 'second_test_touch_multi'])
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_touch_multi'].success)
         self.assertTrue(res['second_test_touch_multi'].success)
 
@@ -687,17 +687,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -710,28 +710,28 @@ class TestStandardCouchDB(unittest.TestCase):
 
         with tracer.start_active_span('test'):
             rv = self.bucket.lock("test_lock_unlock", ttl=5)
-            assert(rv)
+            self.assertTrue(rv)
             self.assertTrue(rv.success)
 
             # upsert automatically unlocks the key
             res = self.bucket.upsert("test_lock_unlock", "updated", rv.cas)
-            assert(res)
+            self.assertTrue(res)
             self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "lock"
         cb_lock_span = get_first_span_by_filter(spans, filter)
-        assert(cb_lock_span)
+        self.assertTrue(cb_lock_span)
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "upsert"
         cb_upsert_span = get_first_span_by_filter(spans, filter)
-        assert(cb_upsert_span)
+        self.assertTrue(cb_upsert_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_lock_span.t)
@@ -740,9 +740,9 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_lock_span.p, test_span.s)
         self.assertEqual(cb_upsert_span.p, test_span.s)
 
-        assert(cb_lock_span.stack)
+        self.assertTrue(cb_lock_span.stack)
         self.assertIsNone(cb_lock_span.ec)
-        assert(cb_upsert_span.stack)
+        self.assertTrue(cb_upsert_span.stack)
         self.assertIsNone(cb_upsert_span.ec)
 
         self.assertEqual(cb_lock_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -758,28 +758,28 @@ class TestStandardCouchDB(unittest.TestCase):
 
         with tracer.start_active_span('test'):
             rv = self.bucket.lock("test_lock_unlock", ttl=5)
-            assert(rv)
+            self.assertTrue(rv)
             self.assertTrue(rv.success)
 
             # upsert automatically unlocks the key
             res = self.bucket.unlock("test_lock_unlock", rv.cas)
-            assert(res)
+            self.assertTrue(res)
             self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "lock"
         cb_lock_span = get_first_span_by_filter(spans, filter)
-        assert(cb_lock_span)
+        self.assertTrue(cb_lock_span)
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "unlock"
         cb_unlock_span = get_first_span_by_filter(spans, filter)
-        assert(cb_unlock_span)
+        self.assertTrue(cb_unlock_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_lock_span.t)
@@ -788,9 +788,9 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_lock_span.p, test_span.s)
         self.assertEqual(cb_unlock_span.p, test_span.s)
 
-        assert(cb_lock_span.stack)
+        self.assertTrue(cb_lock_span.stack)
         self.assertIsNone(cb_lock_span.ec)
-        assert(cb_unlock_span.stack)
+        self.assertTrue(cb_unlock_span.stack)
         self.assertIsNone(cb_unlock_span.ec)
 
         self.assertEqual(cb_lock_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -809,27 +809,27 @@ class TestStandardCouchDB(unittest.TestCase):
 
         with tracer.start_active_span('test'):
             rv = self.bucket.lock_multi(keys_to_lock, ttl=5)
-            assert(rv)
+            self.assertTrue(rv)
             self.assertTrue(rv['test_lock_unlock_multi_1'].success)
             self.assertTrue(rv['test_lock_unlock_multi_2'].success)
 
             res = self.bucket.unlock_multi(rv)
-            assert(res)
+            self.assertTrue(res)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "lock_multi"
         cb_lock_span = get_first_span_by_filter(spans, filter)
-        assert(cb_lock_span)
+        self.assertTrue(cb_lock_span)
 
         filter = lambda span: span.n == "couchbase" and span.data["couchbase"]["type"] == "unlock_multi"
         cb_unlock_span = get_first_span_by_filter(spans, filter)
-        assert(cb_unlock_span)
+        self.assertTrue(cb_unlock_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_lock_span.t)
@@ -838,9 +838,9 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(cb_lock_span.p, test_span.s)
         self.assertEqual(cb_unlock_span.p, test_span.s)
 
-        assert(cb_lock_span.stack)
+        self.assertTrue(cb_lock_span.stack)
         self.assertIsNone(cb_lock_span.ec)
-        assert(cb_unlock_span.stack)
+        self.assertTrue(cb_unlock_span.stack)
         self.assertIsNone(cb_unlock_span.ec)
 
         self.assertEqual(cb_lock_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -857,24 +857,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.remove("test_remove")
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -891,7 +891,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.remove_multi(keys_to_remove)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['test_remove_multi_1'].success)
         self.assertTrue(res['test_remove_multi_2'].success)
 
@@ -899,17 +899,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -923,24 +923,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.counter("test_counter", delta=10)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -955,7 +955,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.counter_multi(("first_test_counter", "second_test_counter"))
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['first_test_counter'].success)
         self.assertTrue(res['second_test_counter'].success)
 
@@ -963,17 +963,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -990,24 +990,24 @@ class TestStandardCouchDB(unittest.TestCase):
                                     SD.array_addunique('interests', 'Cats'),
                                     SD.counter('updates', 1))
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1024,24 +1024,24 @@ class TestStandardCouchDB(unittest.TestCase):
                                         SD.get('email'),
                                         SD.get('interests'))
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1054,23 +1054,23 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.stats()
 
-        assert(res)
+        self.assertTrue(res)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1083,23 +1083,23 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.ping()
 
-        assert(res)
+        self.assertTrue(res)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1112,23 +1112,23 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.diagnostics()
 
-        assert(res)
+        self.assertTrue(res)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1142,24 +1142,24 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.observe('test_observe')
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res.success)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1176,7 +1176,7 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.observe_multi(keys_to_observe)
 
-        assert(res)
+        self.assertTrue(res)
         self.assertTrue(res['test_observe_multi_1'].success)
         self.assertTrue(res['test_observe_multi_2'].success)
 
@@ -1184,17 +1184,17 @@ class TestStandardCouchDB(unittest.TestCase):
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1207,23 +1207,23 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.n1ql_query("SELECT 1")
 
-        assert(res)
+        self.assertTrue(res)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])
@@ -1237,23 +1237,23 @@ class TestStandardCouchDB(unittest.TestCase):
         with tracer.start_active_span('test'):
             res = self.bucket.n1ql_query(N1QLQuery('SELECT name FROM `travel-sample` WHERE brewery_id ="mishawaka_brewing"'))
 
-        assert(res)
+        self.assertTrue(res)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
         test_span = get_first_span_by_name(spans, 'sdk')
-        assert(test_span)
+        self.assertTrue(test_span)
         self.assertEqual(test_span.data["sdk"]["name"], 'test')
 
         cb_span = get_first_span_by_name(spans, 'couchbase')
-        assert(cb_span)
+        self.assertTrue(cb_span)
 
         # Same traceId and parent relationship
         self.assertEqual(test_span.t, cb_span.t)
         self.assertEqual(cb_span.p, test_span.s)
 
-        assert(cb_span.stack)
+        self.assertTrue(cb_span.stack)
         self.assertIsNone(cb_span.ec)
 
         self.assertEqual(cb_span.data["couchbase"]["hostname"], "%s:8091" % testenv['couchdb_host'])

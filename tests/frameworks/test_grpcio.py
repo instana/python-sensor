@@ -66,9 +66,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -126,9 +126,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -189,9 +189,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -251,9 +251,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -309,9 +309,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -368,9 +368,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -431,9 +431,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -496,9 +496,9 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)
@@ -557,10 +557,10 @@ class TestGRPCIO(unittest.TestCase):
         client_span = get_first_span_by_name(spans, 'rpc-client')
         test_span = get_first_span_by_name(spans, 'sdk')
 
-        assert(log_span)
-        assert(server_span)
-        assert(client_span)
-        assert(test_span)
+        self.assertTrue(log_span)
+        self.assertTrue(server_span)
+        self.assertTrue(client_span)
+        self.assertTrue(test_span)
 
         # Same traceId
         self.assertEqual(server_span.t, client_span.t)

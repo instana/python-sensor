@@ -37,7 +37,7 @@ class TestTornadoClient(unittest.TestCase):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -81,13 +81,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_post(self):
@@ -96,7 +96,7 @@ class TestTornadoClient(unittest.TestCase):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/", method="POST", body='asdf')
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -139,13 +139,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_301(self):
@@ -154,7 +154,7 @@ class TestTornadoClient(unittest.TestCase):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/301")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -209,13 +209,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_405(self):
@@ -227,7 +227,7 @@ class TestTornadoClient(unittest.TestCase):
                     return e.response
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -270,13 +270,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_500(self):
@@ -288,7 +288,7 @@ class TestTornadoClient(unittest.TestCase):
                     return e.response
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -331,13 +331,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_504(self):
@@ -349,7 +349,7 @@ class TestTornadoClient(unittest.TestCase):
                     return e.response
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -392,13 +392,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_with_params_to_scrub(self):
@@ -407,7 +407,7 @@ class TestTornadoClient(unittest.TestCase):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/?secret=yeah")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        assert isinstance(response, tornado.httpclient.HTTPResponse)
+        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
@@ -451,11 +451,11 @@ class TestTornadoClient(unittest.TestCase):
         self.assertTrue(type(client_span.stack) is list)
         self.assertTrue(len(client_span.stack) > 1)
 
-        assert("X-INSTANA-T" in response.headers)
+        self.assertIn("X-INSTANA-T", response.headers)
         self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        assert("X-INSTANA-S" in response.headers)
+        self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        assert("X-INSTANA-L" in response.headers)
+        self.assertIn("X-INSTANA-L", response.headers)
         self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        assert("Server-Timing" in response.headers)
+        self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)

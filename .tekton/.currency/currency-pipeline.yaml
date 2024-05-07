@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: currency-pipeline
+spec:
+  params:
+  - name: revision
+    type: string
+  workspaces:
+    - name: currency-pvc
+  tasks:
+    - name: clone-repo
+      params:
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        name: git-clone-task
+      workspaces:
+        - name: task-pvc
+          workspace: currency-pvc
+    - name: generate-currency-report
+      runAfter:
+        - clone-repo
+      taskRef:
+        name: generate-currency-report-task
+      workspaces:
+        - name: task-pvc
+          workspace: currency-pvc
+    - name: upload-currency-report
+      runAfter:
+        - generate-currency-report
+      taskRef:
+        name: upload-currency-report-task
+      workspaces:
+        - name: task-pvc
+          workspace: currency-pvc

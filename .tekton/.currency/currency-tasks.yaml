@@ -1,0 +1,89 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-clone-task
+spec:
+  params:
+  - name: revision
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: clone-repo
+      # alpine/git:2.43.0
+      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      script: |
+        #!/bin/sh
+        echo "Cloning repo"
+        cd /workspace && git clone --filter=blob:none --sparse --depth 1 https://github.com/instana/python-sensor -b $(params.revision)
+        cd python-sensor
+        git sparse-checkout add .tekton/.currency
+        ls -lah /workspace/python-sensor
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: generate-currency-report-task
+spec:
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: generate-currency-report
+      # 3.10.13-bookworm
+      image: python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc
+      script: |
+        #!/bin/bash
+        /usr/bin/curl -LO https://storage.googleapis.com/kubernetes-release/release/$(/usr/bin/curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
+        chmod +x ./kubectl && \
+        mv ./kubectl /usr/local/bin/kubectl
+        kubectl version
+
+        cd /workspace/python-sensor/.tekton/.currency
+
+        python -m venv /tmp/venv
+        source /tmp/venv/bin/activate
+        pip install -r utils/requirements.txt
+
+        python scripts/generate_report.py
+        echo "Generated report..."
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: upload-currency-report-task
+spec:
+  params:
+    - name: github-token-secret
+      default: instanacd-github-api-token
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: upload-currency-report
+      # alpine/git:2.43.0
+      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      env:
+        - name: GH_ENTERPRISE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.github-token-secret)
+              key: "GH_ENTERPRISE_TOKEN"
+      script: |
+        #!/bin/sh
+
+        cd /workspace        
+        git clone https://oauth2:$GH_ENTERPRISE_TOKEN@github.ibm.com/instana/tracer-reports.git tracer-reports
+        cd tracer-reports
+        git pull origin main
+
+        cp ../python-sensor/.tekton/.currency/docs/report.md ./automated/currency/python/report.md
+
+        git config user.name "Instanacd PAT for GitHub Enterprise"
+        git config user.email instana.ibm.github.enterprise@ibm.com
+        
+        git add .
+        
+        git commit -m "Updated python currency report"
+        git push origin main

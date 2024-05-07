@@ -1,13 +1,13 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: currency-pipelinerun
+  name: python-currency-pipelinerun
 spec:
   params:
   - name: revision
     value: "currency-update"
   pipelineRef:
-    name: currency-pipeline
+    name: python-currency-pipeline
   serviceAccountName: currency-serviceaccount
   workspaces:
   - name: currency-pvc

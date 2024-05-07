@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: currency-pipeline
+  name: python-currency-pipeline
 spec:
   params:
   - name: revision

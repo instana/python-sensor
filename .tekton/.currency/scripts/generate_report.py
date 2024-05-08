@@ -2,6 +2,7 @@
 import re
 import json
 from os import system
+from datetime import date
 
 # Third Party
 import requests
@@ -122,5 +123,16 @@ df.columns = [
     "Cloud Native",
 ]
 
-# Save the DataFrame as Markdown
-df.to_markdown(REPORT_FILE, index=False)
+# Convert dataframe to markdown
+markdown_table = df.to_markdown(index=False)
+
+current_date = date.today().strftime("%b %d, %Y")
+
+disclaimer = f"<sup>This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [python tracer](https://github.com/instana/python-sensor) repo. Last updated on **{current_date}**.</sup>"
+title = "## Python supported packages and versions"
+
+# Combine disclaimer, title, and markdown table with line breaks
+final_markdown = disclaimer + "\n" + title + "\n" + markdown_table
+
+with open(REPORT_FILE, "w") as file:
+    file.write(final_markdown)

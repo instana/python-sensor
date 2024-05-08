@@ -1,0 +1,56 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: python-currency-cron-listener
+spec:
+  serviceAccountName: tekton-triggers-eventlistener-serviceaccount
+  triggers:
+    - name: currency-cron-trigger
+      template:
+        ref: python-currency-trigger-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: python-currency-trigger-template
+spec:
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: python-currency-
+    spec:
+      pipelineRef:
+        name: python-currency-pipeline
+      serviceAccountName: currency-serviceaccount
+      params:
+      - name: revision
+        value: "currency-update"
+      workspaces:
+      - name: currency-pvc
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 100Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: python-currency-cronjob
+spec:
+  schedule: "5 2 * * Mon-Fri"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: http-request-to-el-svc
+            # curlimages/curl:8.6.0
+            image: curlimages/curl@sha256:f2237028bed58de91f62aea74260bb2a299cf12fbcabc23cfaf125fef276c884
+            imagePullPolicy: IfNotPresent
+            args: ["curl", "-X", "POST", "--data", "{}", "el-python-currency-cron-listener.default.svc.cluster.local:8080"]
+          restartPolicy: OnFailure
+---

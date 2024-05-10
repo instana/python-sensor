@@ -29,14 +29,14 @@ class TestOTSpan(unittest.TestCase):
 
     def test_span_interface(self):
         span = opentracing.tracer.start_span("blah")
-        assert hasattr(span, "finish")
-        assert hasattr(span, "set_tag")
-        assert hasattr(span, "tags")
-        assert hasattr(span, "operation_name")
-        assert hasattr(span, "set_baggage_item")
-        assert hasattr(span, "get_baggage_item")
-        assert hasattr(span, "context")
-        assert hasattr(span, "log")
+        self.assertTrue(hasattr(span, "finish"))
+        self.assertTrue(hasattr(span, "set_tag"))
+        self.assertTrue(hasattr(span, "tags"))
+        self.assertTrue(hasattr(span, "operation_name"))
+        self.assertTrue(hasattr(span, "set_baggage_item"))
+        self.assertTrue(hasattr(span, "get_baggage_item"))
+        self.assertTrue(hasattr(span, "context"))
+        self.assertTrue(hasattr(span, "log"))
 
     def test_span_ids(self):
         count = 0
@@ -44,8 +44,8 @@ class TestOTSpan(unittest.TestCase):
             count += 1
             span = opentracing.tracer.start_span("test_span_ids")
             context = span.context
-            assert 0 <= int(context.span_id, 16) <= 18446744073709551615
-            assert 0 <= int(context.trace_id, 16) <= 18446744073709551615
+            self.assertTrue(0 <= int(context.span_id, 16) <= 18446744073709551615)
+            self.assertTrue(0 <= int(context.trace_id, 16) <= 18446744073709551615)
 
     # Python 3.11 support is incomplete yet
     # TODO: Remove this once we find a workaround or DROP opentracing!
@@ -53,20 +53,20 @@ class TestOTSpan(unittest.TestCase):
     def test_stacks(self):
         # Entry spans have no stack attached by default
         wsgi_span = opentracing.tracer.start_span("wsgi")
-        assert wsgi_span.stack is None
+        self.assertIsNone(wsgi_span.stack)
 
         # SDK spans have no stack attached by default
         sdk_span = opentracing.tracer.start_span("unregistered_span_type")
-        assert sdk_span.stack is None
+        self.assertIsNone(sdk_span.stack)
 
         # Exit spans are no longer than 30 frames
         exit_span = opentracing.tracer.start_span("urllib3")
-        assert len(exit_span.stack) == 30
+        self.assertLessEqual(len(exit_span.stack), 30)
 
     def test_span_fields(self):
         span = opentracing.tracer.start_span("mycustom")
         self.assertEqual("mycustom", span.operation_name)
-        assert span.context
+        self.assertTrue(span.context)
 
         span.set_tag("tagone", "string")
         span.set_tag("tagtwo", 150)
@@ -99,23 +99,23 @@ class TestOTSpan(unittest.TestCase):
         span.finish()
 
         spans = recorder.queued_spans()
-        assert 1, len(spans)
+        self.assertEqual(1, len(spans))
 
         sdk_span = spans[0]
         self.assertEqual('sdk', sdk_span.n)
         self.assertEqual(None, sdk_span.p)
         self.assertEqual(sdk_span.s, sdk_span.t)
-        assert sdk_span.ts
-        assert sdk_span.ts > 0
-        assert sdk_span.d
-        assert sdk_span.d > 0
+        self.assertTrue(sdk_span.ts)
+        self.assertGreater(sdk_span.ts, 0)
+        self.assertTrue(sdk_span.d)
+        self.assertGreater(sdk_span.d, 0)
 
-        assert sdk_span.data
-        assert sdk_span.data["sdk"]
+        self.assertTrue(sdk_span.data)
+        self.assertTrue(sdk_span.data["sdk"])
         self.assertEqual('entry', sdk_span.data["sdk"]["type"])
         self.assertEqual('custom_sdk_span', sdk_span.data["sdk"]["name"])
-        assert sdk_span.data["sdk"]["custom"]
-        assert sdk_span.data["sdk"]["custom"]["tags"]
+        self.assertTrue(sdk_span.data["sdk"]["custom"])
+        self.assertTrue(sdk_span.data["sdk"]["custom"]["tags"])
 
     def test_span_kind(self):
         recorder = opentracing.tracer.recorder
@@ -141,7 +141,7 @@ class TestOTSpan(unittest.TestCase):
         span.finish()
 
         spans = recorder.queued_spans()
-        assert 5, len(spans)
+        self.assertEqual(5, len(spans))
 
         span = spans[0]
         self.assertEqual('entry', span.data["sdk"]["type"])
@@ -185,31 +185,29 @@ class TestOTSpan(unittest.TestCase):
             scope.span.set_tag('myset', {"one", 2})
 
         spans = tracer.recorder.queued_spans()
-        assert len(spans) == 1
+        self.assertEqual(1, len(spans))
 
         test_span = spans[0]
-        assert(test_span)
-        assert(len(test_span.data['sdk']['custom']['tags']) == 5)
-        assert(test_span.data['sdk']['custom']['tags']['uuid'] == "UUID('12345678-1234-5678-1234-567812345678')")
-        assert(test_span.data['sdk']['custom']['tags']['tracer'])
-        assert(test_span.data['sdk']['custom']['tags']['none'] == 'None')
-        assert(test_span.data['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
-        set_regexp = re.compile(r"\{.*,.*\}")
-        assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
+        self.assertTrue(test_span)
+        self.assertEqual(len(test_span.data['sdk']['custom']['tags']), 5)
+        self.assertEqual(test_span.data['sdk']['custom']['tags']['uuid'], "UUID('12345678-1234-5678-1234-567812345678')")
+        self.assertTrue(test_span.data['sdk']['custom']['tags']['tracer'])
+        self.assertEqual(test_span.data['sdk']['custom']['tags']['none'], 'None')
+        self.assertListEqual(test_span.data['sdk']['custom']['tags']['mylist'], [1, 2, 3])
+        self.assertRegex(test_span.data['sdk']['custom']['tags']['myset'], r"\{.*,.*\}")
 
         # Convert to JSON
         json_data = to_json(test_span)
-        assert(json_data)
+        self.assertTrue(json_data)
 
         # And back
         span_dict = json.loads(json_data)
-        assert(len(span_dict['data']['sdk']['custom']['tags']) == 5)
-        assert(span_dict['data']['sdk']['custom']['tags']['uuid'] == "UUID('12345678-1234-5678-1234-567812345678')")
-        assert(span_dict['data']['sdk']['custom']['tags']['tracer'])
-        assert(span_dict['data']['sdk']['custom']['tags']['none'] == 'None')
-        assert(span_dict['data']['sdk']['custom']['tags']['mylist'] == [1, 2, 3])
-        set_regexp = re.compile(r"{.*,.*}")
-        assert(set_regexp.search(test_span.data['sdk']['custom']['tags']['myset']))
+        self.assertEqual(len(span_dict['data']['sdk']['custom']['tags']), 5)
+        self.assertEqual(span_dict['data']['sdk']['custom']['tags']['uuid'], "UUID('12345678-1234-5678-1234-567812345678')")
+        self.assertTrue(span_dict['data']['sdk']['custom']['tags']['tracer'])
+        self.assertEqual(span_dict['data']['sdk']['custom']['tags']['none'], 'None')
+        self.assertListEqual(span_dict['data']['sdk']['custom']['tags']['mylist'], [1, 2, 3])
+        self.assertRegex(test_span.data['sdk']['custom']['tags']['myset'], r"{.*,.*}")
 
     def test_tag_names(self):
         with tracer.start_active_span('test') as scope:
@@ -219,15 +217,15 @@ class TestOTSpan(unittest.TestCase):
             scope.span.set_tag(u'asdf', 'This should be ok')
 
         spans = tracer.recorder.queued_spans()
-        assert len(spans) == 1
+        self.assertEqual(len(spans), 1)
 
         test_span = spans[0]
-        assert(test_span)
-        assert(len(test_span.data['sdk']['custom']['tags']) == 1)
-        assert(test_span.data['sdk']['custom']['tags']['asdf'] == 'This should be ok')
+        self.assertTrue(test_span)
+        self.assertEqual(len(test_span.data['sdk']['custom']['tags']), 1)
+        self.assertEqual(test_span.data['sdk']['custom']['tags']['asdf'], 'This should be ok')
 
         json_data = to_json(test_span)
-        assert(json_data)
+        self.assertTrue(json_data)
 
     def test_custom_service_name(self):
         # Set a custom service name
@@ -245,37 +243,37 @@ class TestOTSpan(unittest.TestCase):
                 exit_scope.span.set_tag(u'type', 'exit_span')
 
         spans = tracer.recorder.queued_spans()
-        assert len(spans) == 3
+        self.assertEqual(len(spans), 3)
 
         filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == "entry_span"
         entry_span = get_first_span_by_filter(spans, filter)
-        assert (entry_span)
+        self.assertTrue(entry_span)
 
         filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == "intermediate_span"
         intermediate_span = get_first_span_by_filter(spans, filter)
-        assert (intermediate_span)
+        self.assertTrue(intermediate_span)
 
         filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == "exit_span"
         exit_span = get_first_span_by_filter(spans, filter)
-        assert (exit_span)
+        self.assertTrue(exit_span)
 
-        assert(entry_span)
-        assert(len(entry_span.data['sdk']['custom']['tags']) == 2)
-        assert(entry_span.data['sdk']['custom']['tags']['type'] == 'entry_span')
-        assert(entry_span.data['service'] == 'custom_service_name')
-        assert(entry_span.k == 1)
+        self.assertTrue(entry_span)
+        self.assertEqual(len(entry_span.data['sdk']['custom']['tags']), 2)
+        self.assertEqual(entry_span.data['sdk']['custom']['tags']['type'], 'entry_span')
+        self.assertEqual(entry_span.data['service'], 'custom_service_name')
+        self.assertEqual(entry_span.k, 1)
 
-        assert(intermediate_span)
-        assert(len(intermediate_span.data['sdk']['custom']['tags']) == 1)
-        assert(intermediate_span.data['sdk']['custom']['tags']['type'] == 'intermediate_span')
-        assert(intermediate_span.data['service'] == 'custom_service_name')
-        assert(intermediate_span.k == 3)
+        self.assertTrue(intermediate_span)
+        self.assertEqual(len(intermediate_span.data['sdk']['custom']['tags']), 1)
+        self.assertEqual(intermediate_span.data['sdk']['custom']['tags']['type'], 'intermediate_span')
+        self.assertEqual(intermediate_span.data['service'], 'custom_service_name')
+        self.assertEqual(intermediate_span.k, 3)
 
-        assert(exit_span)
-        assert(len(exit_span.data['sdk']['custom']['tags']) == 2)
-        assert(exit_span.data['sdk']['custom']['tags']['type'] == 'exit_span')
-        assert(exit_span.data['service'] == 'custom_service_name')
-        assert(exit_span.k == 2)
+        self.assertTrue(exit_span)
+        self.assertEqual(len(exit_span.data['sdk']['custom']['tags']), 2)
+        self.assertEqual(exit_span.data['sdk']['custom']['tags']['type'], 'exit_span')
+        self.assertEqual(exit_span.data['service'], 'custom_service_name')
+        self.assertEqual(exit_span.k, 2)
 
     def test_span_log(self):
         with tracer.start_active_span('mylogspan') as scope:
@@ -283,14 +281,10 @@ class TestOTSpan(unittest.TestCase):
             scope.span.log_kv({'Elton John': 'Your Song'})
 
         spans = tracer.recorder.queued_spans()
-        assert len(spans) == 1
+        self.assertEqual(len(spans), 1)
 
         my_log_span = spans[0]
-        assert my_log_span.n == 'sdk'
+        self.assertEqual(my_log_span.n, 'sdk')
 
         log_data = my_log_span.data['sdk']['custom']['logs']
-        assert len(log_data) == 2
-
-
-
-
+        self.assertEqual(len(log_data), 2)

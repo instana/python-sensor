@@ -1,272 +1,275 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import multiprocessing
 import time
 import pytest
 import requests
-import multiprocessing
+import unittest
 
 from ..helpers import testenv
 from instana.singletons import tracer
 from ..helpers import get_first_span_by_filter
 
-@pytest.fixture(scope="module")
-def server():
-    from tests.apps.starlette_app import launch_starlette
-    proc = multiprocessing.Process(target=launch_starlette, args=(), daemon=True)
-    proc.start()
-    time.sleep(2)
-    yield
-    proc.kill() # Kill server after tests
 
-def test_vanilla_get(server):
-    result = requests.get(testenv["starlette_server"] + '/')
-    assert(result)
-    spans = tracer.recorder.queued_spans()
-    # Starlette instrumentation (like all instrumentation) _always_ traces unless told otherwise
-    assert len(spans) == 1
-    assert spans[0].n == 'asgi'
+class TestStarlette(unittest.TestCase):
+    def setUp(self):
+        from tests.apps.starlette_app import launch_starlette
+        self.proc = multiprocessing.Process(target=launch_starlette, args=(), daemon=True)
+        self.proc.start()
+        time.sleep(2)
 
-    assert "X-INSTANA-T" in result.headers
-    assert "X-INSTANA-S" in result.headers
-    assert "X-INSTANA-L" in result.headers
-    assert result.headers["X-INSTANA-L"] == '1'
-    assert "Server-Timing" in result.headers
+    def tearDown(self):
+        self.proc.kill() # Kill server after tests
 
-def test_basic_get(server):
-    result = None
-    with tracer.start_active_span('test'):
+    def test_vanilla_get(self):
         result = requests.get(testenv["starlette_server"] + '/')
+        self.assertTrue(result)
+        spans = tracer.recorder.queued_spans()
+        # Starlette instrumentation (like all instrumentation) _always_ traces unless told otherwise
+        self.assertEqual(len(spans), 1)
+        self.assertEqual(spans[0].n, 'asgi')
 
-    assert(result)
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 3
+    def test_basic_get(self):
+        result = None
+        with tracer.start_active_span('test'):
+            result = requests.get(testenv["starlette_server"] + '/')
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
-    test_span = get_first_span_by_filter(spans, span_filter)
-    assert(test_span)
+        self.assertTrue(result)
 
-    span_filter = lambda span: span.n == "urllib3"
-    urllib3_span = get_first_span_by_filter(spans, span_filter)
-    assert(urllib3_span)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(len(spans), 3)
 
-    span_filter = lambda span: span.n == 'asgi'
-    asgi_span = get_first_span_by_filter(spans, span_filter)
-    assert(asgi_span)
+        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
 
-    assert(test_span.t == urllib3_span.t == asgi_span.t)
-    assert(asgi_span.p == urllib3_span.s)
-    assert(urllib3_span.p == test_span.s)
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span)
 
-    assert "X-INSTANA-T" in result.headers
-    assert result.headers["X-INSTANA-T"] == asgi_span.t
-    assert "X-INSTANA-S" in result.headers
-    assert result.headers["X-INSTANA-S"] == asgi_span.s
-    assert "X-INSTANA-L" in result.headers
-    assert result.headers["X-INSTANA-L"] == '1'
-    assert "Server-Timing" in result.headers
-    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        span_filter = lambda span: span.n == 'asgi'
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span)
 
-    assert(asgi_span.ec == None)
-    assert (asgi_span.data['http']['host'] == '127.0.0.1')
-    assert (asgi_span.data['http']['path'] == '/')
-    assert (asgi_span.data['http']['path_tpl'] == '/')
-    assert (asgi_span.data['http']['method'] == 'GET')
-    assert (asgi_span.data['http']['status'] == 200)
-    assert (asgi_span.data['http']['error'] is None)
-    assert (asgi_span.data['http']['params'] is None)
+        self.assertTrue(test_span.t == urllib3_span.t == asgi_span.t)
+        self.assertEqual(asgi_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
 
-def test_path_templates(server):
-    result = None
-    with tracer.start_active_span('test'):
-        result = requests.get(testenv["starlette_server"] + '/users/1')
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
+        self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
-    assert(result)
+        self.assertIsNone(asgi_span.ec)
+        self.assertEqual(asgi_span.data['http']['host'], '127.0.0.1')
+        self.assertEqual(asgi_span.data['http']['path'], '/')
+        self.assertEqual(asgi_span.data['http']['path_tpl'], '/')
+        self.assertEqual(asgi_span.data['http']['method'], 'GET')
+        self.assertEqual(asgi_span.data['http']['status'], 200)
+        self.assertIsNone(asgi_span.data['http']['error'])
+        self.assertIsNone(asgi_span.data['http']['params'])
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 3
+    def test_path_templates(self):
+        result = None
+        with tracer.start_active_span('test'):
+            result = requests.get(testenv["starlette_server"] + '/users/1')
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
-    test_span = get_first_span_by_filter(spans, span_filter)
-    assert(test_span)
+        self.assertTrue(result)
 
-    span_filter = lambda span: span.n == "urllib3"
-    urllib3_span = get_first_span_by_filter(spans, span_filter)
-    assert(urllib3_span)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(len(spans), 3)
 
-    span_filter = lambda span: span.n == 'asgi'
-    asgi_span = get_first_span_by_filter(spans, span_filter)
-    assert(asgi_span)
+        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
 
-    assert(test_span.t == urllib3_span.t == asgi_span.t)
-    assert(asgi_span.p == urllib3_span.s)
-    assert(urllib3_span.p == test_span.s)
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span)
 
-    assert "X-INSTANA-T" in result.headers
-    assert result.headers["X-INSTANA-T"] == asgi_span.t
-    assert "X-INSTANA-S" in result.headers
-    assert result.headers["X-INSTANA-S"] == asgi_span.s
-    assert "X-INSTANA-L" in result.headers
-    assert result.headers["X-INSTANA-L"] == '1'
-    assert "Server-Timing" in result.headers
-    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        span_filter = lambda span: span.n == 'asgi'
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span)
 
-    assert(asgi_span.ec == None)
-    assert (asgi_span.data['http']['host'] == '127.0.0.1')
-    assert (asgi_span.data['http']['path'] == '/users/1')
-    assert (asgi_span.data['http']['path_tpl'] == '/users/{user_id}')
-    assert (asgi_span.data['http']['method'] == 'GET')
-    assert (asgi_span.data['http']['status'] == 200)
-    assert (asgi_span.data['http']['error'] is None)
-    assert (asgi_span.data['http']['params'] is None)
+        self.assertTrue(test_span.t == urllib3_span.t == asgi_span.t)
+        self.assertEqual(asgi_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
 
-def test_secret_scrubbing(server):
-    result = None
-    with tracer.start_active_span('test'):
-        result = requests.get(testenv["starlette_server"] + '/?secret=shhh')
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual( result.headers["X-INSTANA-S"], asgi_span.s)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
+        self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
-    assert(result)
+        self.assertIsNone(asgi_span.ec)
+        self.assertEqual(asgi_span.data['http']['host'], '127.0.0.1')
+        self.assertEqual(asgi_span.data['http']['path'], '/users/1')
+        self.assertEqual(asgi_span.data['http']['path_tpl'], '/users/{user_id}')
+        self.assertEqual(asgi_span.data['http']['method'], 'GET')
+        self.assertEqual(asgi_span.data['http']['status'], 200)
+        self.assertIsNone(asgi_span.data['http']['error'])
+        self.assertIsNone(asgi_span.data['http']['params'])
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 3
+    def test_secret_scrubbing(self):
+        result = None
+        with tracer.start_active_span('test'):
+            result = requests.get(testenv["starlette_server"] + '/?secret=shhh')
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
-    test_span = get_first_span_by_filter(spans, span_filter)
-    assert(test_span)
+        self.assertTrue(result)
 
-    span_filter = lambda span: span.n == "urllib3"
-    urllib3_span = get_first_span_by_filter(spans, span_filter)
-    assert(urllib3_span)
+        spans = tracer.recorder.queued_spans()
+        assert len(spans) == 3
 
-    span_filter = lambda span: span.n == 'asgi'
-    asgi_span = get_first_span_by_filter(spans, span_filter)
-    assert(asgi_span)
+        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
 
-    assert(test_span.t == urllib3_span.t == asgi_span.t)
-    assert(asgi_span.p == urllib3_span.s)
-    assert(urllib3_span.p == test_span.s)
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span)
 
-    assert "X-INSTANA-T" in result.headers
-    assert result.headers["X-INSTANA-T"] == asgi_span.t
-    assert "X-INSTANA-S" in result.headers
-    assert result.headers["X-INSTANA-S"] == asgi_span.s
-    assert "X-INSTANA-L" in result.headers
-    assert result.headers["X-INSTANA-L"] == '1'
-    assert "Server-Timing" in result.headers
-    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        span_filter = lambda span: span.n == 'asgi'
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span)
 
-    assert(asgi_span.ec == None)
-    assert (asgi_span.data['http']['host'] == '127.0.0.1')
-    assert (asgi_span.data['http']['path'] == '/')
-    assert (asgi_span.data['http']['path_tpl'] == '/')
-    assert (asgi_span.data['http']['method'] == 'GET')
-    assert (asgi_span.data['http']['status'] == 200)
-    assert (asgi_span.data['http']['error'] is None)
-    assert (asgi_span.data['http']['params'] == 'secret=<redacted>')
+        self.assertTrue(test_span.t == urllib3_span.t == asgi_span.t)
+        self.assertEqual(asgi_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
 
-def test_synthetic_request(server):
-    request_headers = {
-        'X-INSTANA-SYNTHETIC': '1'
-    }
-    with tracer.start_active_span('test'):
-        result = requests.get(testenv["starlette_server"] + '/', headers=request_headers)
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
+        self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
-    assert(result)
+        self.assertIsNone(asgi_span.ec)
+        self.assertEqual(asgi_span.data['http']['host'], '127.0.0.1')
+        self.assertEqual(asgi_span.data['http']['path'], '/')
+        self.assertEqual(asgi_span.data['http']['path_tpl'], '/')
+        self.assertEqual(asgi_span.data['http']['method'], 'GET')
+        self.assertEqual(asgi_span.data['http']['status'], 200)
+        self.assertIsNone(asgi_span.data['http']['error'])
+        self.assertEqual(asgi_span.data['http']['params'], 'secret=<redacted>')
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 3
+    def test_synthetic_request(self):
+        request_headers = {
+            'X-INSTANA-SYNTHETIC': '1'
+        }
+        with tracer.start_active_span('test'):
+            result = requests.get(testenv["starlette_server"] + '/', headers=request_headers)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
-    test_span = get_first_span_by_filter(spans, span_filter)
-    assert(test_span)
+        self.assertTrue(result)
 
-    span_filter = lambda span: span.n == "urllib3"
-    urllib3_span = get_first_span_by_filter(spans, span_filter)
-    assert(urllib3_span)
+        spans = tracer.recorder.queued_spans()
+        assert len(spans) == 3
 
-    span_filter = lambda span: span.n == 'asgi'
-    asgi_span = get_first_span_by_filter(spans, span_filter)
-    assert(asgi_span)
+        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
 
-    assert(test_span.t == urllib3_span.t == asgi_span.t)
-    assert(asgi_span.p == urllib3_span.s)
-    assert(urllib3_span.p == test_span.s)
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span)
 
-    assert "X-INSTANA-T" in result.headers
-    assert result.headers["X-INSTANA-T"] == asgi_span.t
-    assert "X-INSTANA-S" in result.headers
-    assert result.headers["X-INSTANA-S"] == asgi_span.s
-    assert "X-INSTANA-L" in result.headers
-    assert result.headers["X-INSTANA-L"] == '1'
-    assert "Server-Timing" in result.headers
-    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        span_filter = lambda span: span.n == 'asgi'
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span)
 
-    assert(asgi_span.ec == None)
-    assert (asgi_span.data['http']['host'] == '127.0.0.1')
-    assert (asgi_span.data['http']['path'] == '/')
-    assert (asgi_span.data['http']['path_tpl'] == '/')
-    assert (asgi_span.data['http']['method'] == 'GET')
-    assert (asgi_span.data['http']['status'] == 200)
-    assert (asgi_span.data['http']['error'] is None)
-    assert (asgi_span.data['http']['params'] is None)
+        self.assertTrue(test_span.t == urllib3_span.t == asgi_span.t)
+        self.assertEqual(asgi_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
 
-    assert(asgi_span.sy)
-    assert(urllib3_span.sy is None)
-    assert(test_span.sy is None)
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
+        self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
 
-def test_custom_header_capture(server):
-    from instana.singletons import agent
+        self.assertIsNone(asgi_span.ec)
+        self.assertEqual(asgi_span.data['http']['host'], '127.0.0.1')
+        self.assertEqual(asgi_span.data['http']['path'], '/')
+        self.assertEqual(asgi_span.data['http']['path_tpl'], '/')
+        self.assertEqual(asgi_span.data['http']['method'], 'GET')
+        self.assertEqual(asgi_span.data['http']['status'], 200)
+        self.assertIsNone(asgi_span.data['http']['error'])
+        self.assertIsNone(asgi_span.data['http']['params'])
 
-    # The background Starlette server is pre-configured with custom headers to capture
+        self.assertTrue(asgi_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
 
-    request_headers = {
-        'X-Capture-This': 'this',
-        'X-Capture-That': 'that'
-    }
-    with tracer.start_active_span('test'):
-        result = requests.get(testenv["starlette_server"] + '/', headers=request_headers)
+    def test_custom_header_capture(self):
+        from instana.singletons import agent
 
-    assert(result)
+        # The background Starlette server is pre-configured with custom headers to capture
 
-    spans = tracer.recorder.queued_spans()
-    assert len(spans) == 3
+        request_headers = {
+            'X-Capture-This': 'this',
+            'X-Capture-That': 'that'
+        }
+        with tracer.start_active_span('test'):
+            result = requests.get(testenv["starlette_server"] + '/', headers=request_headers)
 
-    span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
-    test_span = get_first_span_by_filter(spans, span_filter)
-    assert(test_span)
+        self.assertTrue(result)
 
-    span_filter = lambda span: span.n == "urllib3"
-    urllib3_span = get_first_span_by_filter(spans, span_filter)
-    assert(urllib3_span)
+        spans = tracer.recorder.queued_spans()
+        self.assertEqual(len(spans), 3)
 
-    span_filter = lambda span: span.n == 'asgi'
-    asgi_span = get_first_span_by_filter(spans, span_filter)
-    assert(asgi_span)
+        span_filter = lambda span: span.n == "sdk" and span.data['sdk']['name'] == 'test'
+        test_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(test_span)
 
-    assert(test_span.t == urllib3_span.t == asgi_span.t)
-    assert(asgi_span.p == urllib3_span.s)
-    assert(urllib3_span.p == test_span.s)
+        span_filter = lambda span: span.n == "urllib3"
+        urllib3_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(urllib3_span)
 
-    assert "X-INSTANA-T" in result.headers
-    assert result.headers["X-INSTANA-T"] == asgi_span.t
-    assert "X-INSTANA-S" in result.headers
-    assert result.headers["X-INSTANA-S"] == asgi_span.s
-    assert "X-INSTANA-L" in result.headers
-    assert result.headers["X-INSTANA-L"] == '1'
-    assert "Server-Timing" in result.headers
-    assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        span_filter = lambda span: span.n == 'asgi'
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        self.assertTrue(asgi_span)
 
-    assert(asgi_span.ec == None)
-    assert (asgi_span.data['http']['host'] == '127.0.0.1')
-    assert (asgi_span.data['http']['path'] == '/')
-    assert (asgi_span.data['http']['path_tpl'] == '/')
-    assert (asgi_span.data['http']['method'] == 'GET')
-    assert (asgi_span.data['http']['status'] == 200)
-    assert (asgi_span.data['http']['error'] is None)
-    assert (asgi_span.data['http']['params'] is None)
+        self.assertTrue(test_span.t == urllib3_span.t == asgi_span.t)
+        self.assertEqual(asgi_span.p, urllib3_span.s)
+        self.assertEqual(urllib3_span.p, test_span.s)
 
-    assert ("X-Capture-This" in asgi_span.data["http"]["header"])
-    assert ("this" == asgi_span.data["http"]["header"]["X-Capture-This"])
-    assert ("X-Capture-That" in asgi_span.data["http"]["header"])
-    assert ("that" == asgi_span.data["http"]["header"]["X-Capture-That"])
+        self.assertIn("X-INSTANA-T", result.headers)
+        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        self.assertIn("X-INSTANA-S", result.headers)
+        self.assertEqual( result.headers["X-INSTANA-S"], asgi_span.s)
+        self.assertIn("X-INSTANA-L", result.headers)
+        self.assertEqual( result.headers["X-INSTANA-L"], '1')
+        self.assertIn("Server-Timing", result.headers)
+        self.assertEqual(result.headers["Server-Timing"], ("intid;desc=%s" % asgi_span.t))
+
+        self.assertIsNone(asgi_span.ec)
+        self.assertEqual(asgi_span.data['http']['host'], '127.0.0.1')
+        self.assertEqual(asgi_span.data['http']['path'], '/')
+        self.assertEqual(asgi_span.data['http']['path_tpl'], '/')
+        self.assertEqual(asgi_span.data['http']['method'], 'GET')
+        self.assertEqual(asgi_span.data['http']['status'], 200)
+        self.assertIsNone(asgi_span.data['http']['error'])
+        self.assertIsNone(asgi_span.data['http']['params'])
+
+        self.assertIn("X-Capture-This", asgi_span.data["http"]["header"])
+        self.assertEqual("this", asgi_span.data["http"]["header"]["X-Capture-This"])
+        self.assertIn("X-Capture-That", asgi_span.data["http"]["header"])
+        self.assertEqual("that", asgi_span.data["http"]["header"]["X-Capture-That"])

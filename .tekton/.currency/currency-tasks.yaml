@@ -35,11 +35,6 @@ spec:
       image: python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc
       script: |
         #!/usr/bin/env bash
-        /usr/bin/curl -LO https://storage.googleapis.com/kubernetes-release/release/$(/usr/bin/curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
-        chmod +x ./kubectl && \
-        mv ./kubectl /usr/local/bin/kubectl
-        kubectl version
-
         cd /workspace/python-sensor/.tekton/.currency
 
         python -m venv /tmp/venv

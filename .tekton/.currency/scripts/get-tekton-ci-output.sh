@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEKTON_CI_OUT_FILE=utils/tekton-ci-output.txt
+TEKTON_CI_OUT_FILE=resources/tekton-ci-output.txt
 
 successful_taskruns=( $(kubectl get taskrun --sort-by=.metadata.creationTimestamp | grep "^python-trace\w*-unittest-default-3" | grep -v "pr\|Failed" | awk '{print $1}') )
 

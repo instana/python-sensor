@@ -10,7 +10,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 
-JSON_FILE = "utils/table.json"
+JSON_FILE = "resources/table.json"
 REPORT_FILE = "docs/report.md"
 TEKTON_CI_OUT_FILE = "utils/tekton-ci-output.txt"
 TEKTON_CI_OUT_SCRIPT = "scripts/get-tekton-ci-output.sh"

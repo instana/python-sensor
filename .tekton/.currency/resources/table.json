@@ -1,0 +1,165 @@
+{
+    "table": [
+      {
+        "Package name": "ASGI",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Last Supported Version": "3.0",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Celery",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Django",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "FastAPI",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Flask",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Pyramid",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Sanic",
+        "Support Policy": "On demand",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Starlette",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Tornado",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Last Supported Version": "5.1.1",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Webapp2",
+        "Support Policy": "On demand",
+        "Beta version": "No",
+        "Last Supported Version": "2.5.2",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "WSGI",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Last Supported Version": "1.0.1",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Aiohttp",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Asynqp",
+        "Support Policy": "Deprecated",
+        "Beta version": "No",
+        "Last Supported Version": "0.6",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Boto3",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Google-cloud-pubsub",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Google-cloud-storage",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Grpcio",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Mysqlclient",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Pika",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "PyMySQL",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Pymongo",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Psycopg2",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Redis",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Requests",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "SQLAlchemy",
+        "Support Policy": "30-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Urllib3",
+        "Support Policy": "0-day",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      }
+    ]
+  }

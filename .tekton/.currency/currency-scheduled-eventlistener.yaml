@@ -25,7 +25,7 @@ spec:
       serviceAccountName: currency-serviceaccount
       params:
       - name: revision
-        value: "currency-update"
+        value: "master"
       workspaces:
       - name: currency-pvc
         volumeClaimTemplate:

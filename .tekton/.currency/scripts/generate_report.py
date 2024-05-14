@@ -1,7 +1,6 @@
 # Standard Libraries
 import re
 import json
-from datetime import date
 
 # Third Party
 import requests
@@ -75,13 +74,9 @@ def isUptodate(last_supported_version, latest_version):
     return up_to_date
 
 
-def get_tekton_ci_output():
-    # config.load_kube_config()
-    config.load_incluster_config()
-
+def get_taskruns(namespace, task):
     group = "tekton.dev"
     version = "v1"
-    namespace = "default"
     plural = "taskruns"
 
     # access the custom resource from tekton
@@ -91,16 +86,44 @@ def get_tekton_ci_output():
         version,
         namespace,
         plural,
-        label_selector=f"{group}/task=python-tracer-unittest-default-task",
+        label_selector=f"{group}/task={task}, triggers.tekton.dev/trigger=python-tracer-scheduled-pipeline-triggger",
     )["items"]
 
     taskruns.sort(key=lambda tr: tr["metadata"]["creationTimestamp"], reverse=True)
 
+    return taskruns
+
+
+def get_tekton_ci_output():
+    # config.load_kube_config()
+    config.load_incluster_config()
+
+    namespace = "default"
+
+    starlette_taskruns = get_taskruns(
+        namespace, task="python-tracer-unittest-gevent-starlette-task"
+    )
+
     coreV1 = client.CoreV1Api()
     tekton_ci_output = ""
-    for tr in taskruns:
+    for tr in starlette_taskruns:
+        if tr["status"]["conditions"][0]["type"] == "Succeeded":
+            pod = tr["status"]["podName"]
+            logs = coreV1.read_namespaced_pod_log(
+                pod, namespace, container="step-unittest"
+            )
+            if "Successfully installed" in logs:
+                match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
+                tekton_ci_output += f"{match[1]}\n"
+                break
+
+    default_taskruns = get_taskruns(
+        namespace, task="python-tracer-unittest-default-task"
+    )
+
+    for tr in default_taskruns:
         if (
-            re.match("python-trace\w+-unittest-default-3", tr["metadata"]["name"])
+            tr["metadata"]["name"].endswith("unittest-default-3")
             and tr["status"]["conditions"][0]["type"] == "Succeeded"
         ):
             pod = tr["status"]["podName"]
@@ -144,23 +167,10 @@ def main():
     df = pd.DataFrame(items)
     df.insert(len(df.columns) - 1, "Cloud Native", df.pop("Cloud Native"))
 
-    # Rename Columns
-    df.columns = [
-        "Package name",
-        "Support Policy",
-        "Beta version",
-        "Last Supported Version",
-        "Latest version",
-        "Up-to-date",
-        "Cloud Native",
-    ]
-
     # Convert dataframe to markdown
     markdown_table = df.to_markdown(index=False)
 
-    current_date = date.today().strftime("%b %d, %Y")
-
-    disclaimer = f"##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [python tracer](https://github.com/instana/python-sensor) repo. Last updated on **{current_date}**."
+    disclaimer = f"##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [python tracer](https://github.com/instana/python-sensor) repo."
     title = "## Python supported packages and versions"
 
     # Combine disclaimer, title, and markdown table with line breaks

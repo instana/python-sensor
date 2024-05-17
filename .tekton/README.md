@@ -106,6 +106,12 @@ tkn pipelinerun delete <selected-pipelinerun-here>
 
 Install and configure resources from https://github.com/3scale-ops/tekton-pipelinerun-cleaner
 
+#### Preventing image pull failures with a prepuller
+
+Maintain, and install the list of used images in the `python-tracer-prepuller.yaml`:
+````bash
+   kubectl apply --filename python-tracer-prepuller.yaml
+````
 
 ## Integrate with GitHub
 

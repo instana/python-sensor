@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: python-tracer-prepuller
+spec:
+  selector:
+    matchLabels:
+      name: python-tracer-prepuller
+  template:
+    metadata:
+      labels:
+        name: python-tracer-prepuller
+    spec:
+      # Configure an init container for each image you want to pull
+      initContainers:
+        - name: prepuller-git
+          # alpine/git:2.43.0
+          image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-google-cloud-pubsub
+          # egymgmbh/pubsub-emulator:gh-mb117
+          image: egymgmbh/pubsub-emulator@sha256:88897fa72337b22a8edabf17a8b30bf9d9c6388b7c7e6d8c2b5e5c96d73fede1
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-cassandra
+          # cassandra:3.11.16-jammy
+          image: cassandra@sha256:7d32a79e9adb4ca8c26f798e4a44ec8438da99c6bda2969410ea46cbdb0b4b94
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-rabbitmq
+          # rabbitmq:3.13.0
+          image: rabbitmq@sha256:27819d7be883b8aea04b9a244460181ef97427a98f8323b39402d65e6eb2ce6f
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-couchbase
+          # couchbase/server-sandbox:5.5.1
+          image: couchbase/server-sandbox@sha256:d04302ea7782a0f53c3f371971138b339097d5e41f4154def5bdecc5bbb2e1da
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-redis
+          # redis:7.2.4-bookworm
+          image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-mongo
+          # mongo:7.0.6
+          image: mongo@sha256:125bda8abe859bcebc47e4a7e0921508d3bcb47725d261f0a2bcf4ea5c837dd5
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-mariadb
+          # mariadb:11.3.2
+          image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-postgres
+          # postgres:16.2-bookworm
+          image: postgres@sha256:3bfb87432e26badf72d727a0c5f5bb7b81438cd9baec5be8531c70a42b07adc6
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-30
+          # 3.0.6-bullseye
+          image: ruby@sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-31
+          # 3.1.4-bookworm
+          image: ruby@sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-32
+          # 3.2.3-bookworm
+          image: ruby@sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-33
+          # 3.3.1-bookworm
+          image: ruby@sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-37
+          # 3.7.17-bookworm
+          image: "python@sha256:2011a37d2a08fe83dd9ff923e0f83bfd7290152e2e6afe359bde1453170d9bdc"
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-38
+          # 3.8.18-bookworm
+          image: "python@sha256:625008535504ab68868ca06d1bdd868dee92a9878d5b55fc240af7ceb38b7183"
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-39
+          # 3.9.18-bookworm
+          image: "python@sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-310
+          # 3.10.13-bookworm
+          image: "python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc"
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-311
+          # 3.11.8-bookworm
+          image: "python@sha256:72afb375030b13c8c9cb72ba1d8c410f25307c2dbbd7d59f9c6ccea5cb152ff9"
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-312
+          # 3.12.2-bookworm
+          image: "python@sha256:35eff340c0acd837b7962f77ee4b8869385dd6fe7d3928375a08f0a3bdd18beb"
+          command: ["sh", "-c", "'true'"]
+
+      # Use the pause container to ensure the Pod goes into a `Running` phase
+      # but doesn't take up resource on the cluster
+      containers:
+        - name: pause
+          image: gcr.io/google_containers/pause:3.2
+          resources:
+            limits:
+              cpu: 1m
+              memory: 8Mi
+            requests:
+              cpu: 1m
+              memory: 8Mi

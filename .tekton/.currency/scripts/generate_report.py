@@ -74,7 +74,7 @@ def isUptodate(last_supported_version, latest_version):
     return up_to_date
 
 
-def get_taskruns(namespace, task):
+def get_taskruns(namespace, task_name, taskrun_filter):
     group = "tekton.dev"
     version = "v1"
     plural = "taskruns"
@@ -86,12 +86,15 @@ def get_taskruns(namespace, task):
         version,
         namespace,
         plural,
-        label_selector=f"{group}/task={task}, triggers.tekton.dev/trigger=python-tracer-scheduled-pipeline-triggger",
+        label_selector=f"{group}/task={task_name}, triggers.tekton.dev/trigger=python-tracer-scheduled-pipeline-triggger",
     )["items"]
 
-    taskruns.sort(key=lambda tr: tr["metadata"]["creationTimestamp"], reverse=True)
+    filtered_taskruns = list(filter(taskrun_filter, taskruns))
+    filtered_taskruns.sort(
+        key=lambda tr: tr["metadata"]["creationTimestamp"], reverse=True
+    )
 
-    return taskruns
+    return filtered_taskruns
 
 
 def get_tekton_ci_output():
@@ -100,41 +103,56 @@ def get_tekton_ci_output():
 
     namespace = "default"
 
-    starlette_taskruns = get_taskruns(
-        namespace, task="python-tracer-unittest-gevent-starlette-task"
-    )
+    task_name = "python-tracer-unittest-gevent-starlette-task"
+    taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"
+
+    starlette_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     coreV1 = client.CoreV1Api()
     tekton_ci_output = ""
     for tr in starlette_taskruns:
-        if tr["status"]["conditions"][0]["type"] == "Succeeded":
-            pod = tr["status"]["podName"]
-            logs = coreV1.read_namespaced_pod_log(
-                pod, namespace, container="step-unittest"
+        pod_name = tr["status"]["podName"]
+        taskrun_name = tr["metadata"]["name"]
+        logs = coreV1.read_namespaced_pod_log(
+            pod_name, namespace, container="step-unittest"
+        )
+        if "Successfully installed" in logs:
+            print(
+                f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
             )
-            if "Successfully installed" in logs:
-                match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
-                tekton_ci_output += f"{match[1]}\n"
-                break
+            match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
+            tekton_ci_output += f"{match[1]}\n"
+            break
+        else:
+            print(
+                f"Unable to retrieve container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}."
+            )
 
-    default_taskruns = get_taskruns(
-        namespace, task="python-tracer-unittest-default-task"
+    task_name = "python-tracer-unittest-default-task"
+    taskrun_filter = (
+        lambda tr: tr["metadata"]["name"].endswith("unittest-default-3")
+        and tr["status"]["conditions"][0]["type"] == "Succeeded"
     )
+    default_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     for tr in default_taskruns:
-        if (
-            tr["metadata"]["name"].endswith("unittest-default-3")
-            and tr["status"]["conditions"][0]["type"] == "Succeeded"
-        ):
-            pod = tr["status"]["podName"]
-            logs = coreV1.read_namespaced_pod_log(
-                pod, namespace, container="step-unittest"
+        pod_name = tr["status"]["podName"]
+        taskrun_name = tr["metadata"]["name"]
+        logs = coreV1.read_namespaced_pod_log(
+            pod_name, namespace, container="step-unittest"
+        )
+        if "Successfully installed" in logs:
+            print(
+                f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
             )
-            if "Successfully installed" in logs:
-                for line in logs.splitlines():
-                    if "Successfully installed" in line:
-                        tekton_ci_output += line
-                break
+            for line in logs.splitlines():
+                if "Successfully installed" in line:
+                    tekton_ci_output += line
+            break
+        else:
+            print(
+                f"Unable to retrieve container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}."
+            )
     return tekton_ci_output
 
 

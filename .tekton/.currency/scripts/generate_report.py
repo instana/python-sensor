@@ -97,36 +97,48 @@ def get_taskruns(namespace, task_name, taskrun_filter):
     return filtered_taskruns
 
 
-def get_tekton_ci_output():
-    # config.load_kube_config()
-    config.load_incluster_config()
-
-    namespace = "default"
-
-    task_name = "python-tracer-unittest-gevent-starlette-task"
-    taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"
-
-    starlette_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
-
-    coreV1 = client.CoreV1Api()
-    tekton_ci_output = ""
-    for tr in starlette_taskruns:
+def process_taskrun_logs(
+    taskruns, core_v1_client, namespace, task_name, tekton_ci_output
+):
+    for tr in taskruns:
         pod_name = tr["status"]["podName"]
         taskrun_name = tr["metadata"]["name"]
-        logs = coreV1.read_namespaced_pod_log(
+        logs = core_v1_client.read_namespaced_pod_log(
             pod_name, namespace, container="step-unittest"
         )
         if "Successfully installed" in logs:
             print(
                 f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
             )
-            match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
-            tekton_ci_output += f"{match[1]}\n"
+            if task_name == "python-tracer-unittest-gevent-starlette-task":
+                match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
+                tekton_ci_output += f"{match[1]}\n"
+            elif task_name == "python-tracer-unittest-default-task":
+                for line in logs.splitlines():
+                    if "Successfully installed" in line:
+                        tekton_ci_output += line
             break
         else:
             print(
                 f"Unable to retrieve container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}."
             )
+    return tekton_ci_output
+
+
+def get_tekton_ci_output():
+    # config.load_kube_config()
+    config.load_incluster_config()
+
+    namespace = "default"
+    core_v1_client = client.CoreV1Api()
+
+    task_name = "python-tracer-unittest-gevent-starlette-task"
+    taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"
+    starlette_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+
+    tekton_ci_output = process_taskrun_logs(
+        starlette_taskruns, core_v1_client, namespace, task_name, ""
+    )
 
     task_name = "python-tracer-unittest-default-task"
     taskrun_filter = (
@@ -135,24 +147,10 @@ def get_tekton_ci_output():
     )
     default_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
-    for tr in default_taskruns:
-        pod_name = tr["status"]["podName"]
-        taskrun_name = tr["metadata"]["name"]
-        logs = coreV1.read_namespaced_pod_log(
-            pod_name, namespace, container="step-unittest"
-        )
-        if "Successfully installed" in logs:
-            print(
-                f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
-            )
-            for line in logs.splitlines():
-                if "Successfully installed" in line:
-                    tekton_ci_output += line
-            break
-        else:
-            print(
-                f"Unable to retrieve container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}."
-            )
+    tekton_ci_output = process_taskrun_logs(
+        default_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
+    )
+
     return tekton_ci_output
 
 

@@ -8,7 +8,7 @@ import logging
 from collections.abc import Mapping
 
 from ..log import logger
-from ..util.traceutils import get_active_tracer
+from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 
 @wrapt.patch_function_wrapper('logging', 'Logger._log')
@@ -17,33 +17,34 @@ def log_with_instana(wrapped, instance, argv, kwargs):
     # argv[1] = message
     # argv[2] = args for message
     try:
-        active_tracer = get_active_tracer()
+        tracer, parent_span, _ = get_tracer_tuple()
 
         # Only needed if we're tracing and serious log
-        if active_tracer and argv[0] >= logging.WARN:
+        if tracing_is_off() or argv[0] < logging.WARN:
+            return wrapped(*argv, **kwargs)
 
-            msg = str(argv[1])
-            args = argv[2]
-            if args and len(args) == 1 and isinstance(args[0], Mapping) and args[0]:
-                args = args[0]
+        msg = str(argv[1])
+        args = argv[2]
+        if args and len(args) == 1 and isinstance(args[0], Mapping) and args[0]:
+            args = args[0]
 
-            # get the formatted log message
-            msg = msg % args
+        # get the formatted log message
+        msg = msg % args
 
-            # get additional information if an exception is being handled
-            parameters = None
-            (t, v, tb) = sys.exc_info()
-            if t is not None and v is not None:
-                parameters = '{} {}'.format(t , v)
+        # get additional information if an exception is being handled
+        parameters = None
+        (t, v, tb) = sys.exc_info()
+        if t is not None and v is not None:
+            parameters = '{} {}'.format(t , v)
 
-            # create logging span
-            with active_tracer.start_active_span('log', child_of=active_tracer.active_span) as scope:
-                scope.span.log_kv({ 'message': msg })
-                if parameters is not None:
-                    scope.span.log_kv({ 'parameters': parameters })
-                # extra tags for an error
-                if argv[0] >= logging.ERROR:
-                    scope.span.mark_as_errored()
+        # create logging span
+        with tracer.start_active_span('log', child_of=parent_span) as scope:
+            scope.span.log_kv({ 'message': msg })
+            if parameters is not None:
+                scope.span.log_kv({ 'parameters': parameters })
+            # extra tags for an error
+            if argv[0] >= logging.ERROR:
+                scope.span.mark_as_errored()
     except Exception:
         logger.debug('log_with_instana:', exc_info=True)
 

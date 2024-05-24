@@ -19,7 +19,7 @@ SPEC_MAP = {
 
 
 def get_upstream_version(dependency):
-    """get the latest version available upstream"""
+    """Get the latest version available upstream"""
     if dependency in SPEC_MAP:
         # webscrape info from official website
         pattern = "(\d+\.\d+\.?\d*)"
@@ -52,7 +52,7 @@ def get_upstream_version(dependency):
 
 
 def get_last_supported_version(tekton_ci_output, dependency):
-    """get up-to-date supported version"""
+    """Get up-to-date supported version"""
     pattern = r"-([^\s]+)"
 
     if dependency == "Psycopg2":
@@ -66,6 +66,7 @@ def get_last_supported_version(tekton_ci_output, dependency):
 
 
 def isUptodate(last_supported_version, latest_version):
+    """Check if the supported package is up-to-date"""
     if last_supported_version == latest_version:
         up_to_date = "Yes"
     else:
@@ -75,6 +76,7 @@ def isUptodate(last_supported_version, latest_version):
 
 
 def get_taskruns(namespace, task_name, taskrun_filter):
+    """Get sorted taskruns filtered based on label_selector"""
     group = "tekton.dev"
     version = "v1"
     plural = "taskruns"
@@ -100,6 +102,7 @@ def get_taskruns(namespace, task_name, taskrun_filter):
 def process_taskrun_logs(
     taskruns, core_v1_client, namespace, task_name, tekton_ci_output
 ):
+    """Process taskrun logs"""
     for tr in taskruns:
         pod_name = tr["status"]["podName"]
         taskrun_name = tr["metadata"]["name"]
@@ -126,6 +129,7 @@ def process_taskrun_logs(
 
 
 def get_tekton_ci_output():
+    """Get the latest successful scheduled tekton pipeline output"""
     # config.load_kube_config()
     config.load_incluster_config()
 

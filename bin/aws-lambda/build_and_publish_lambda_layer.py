@@ -62,7 +62,7 @@ call(["pip", "install", "-q", "-U", "-t", os.getcwd() + '/build/lambda/python', 
 
 print("===> Manually copying in local dev code")
 shutil.rmtree(build_directory + "/instana")
-shutil.copytree(os.getcwd() + '/instana', build_directory + "/instana")
+shutil.copytree(os.getcwd() + "/src/instana", build_directory + "/instana")
 
 print("===> Creating Lambda ZIP file")
 timestamp = time.strftime("%Y-%m-%d_%H:%M:%S")

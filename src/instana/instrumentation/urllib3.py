@@ -2,33 +2,33 @@
 # (c) Copyright Instana Inc. 2017
 
 
-import opentracing
-import opentracing.ext.tags as ext
+from typing import Dict
 import wrapt
+from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import set_span_in_context
 
-from ..log import logger
-from ..singletons import agent
-from ..util.traceutils import get_tracer_tuple, tracing_is_off
-from ..util.secrets import strip_secrets_from_query
+from instana.log import logger
+from instana.propagators.format import Format
+from instana.singletons import agent
+from instana.span import InstanaSpan
+from instana.util.secrets import strip_secrets_from_query
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import urllib3
 
-
-    def extract_custom_headers(span, headers):
+    def _extract_custom_headers(span: InstanaSpan, headers: Dict) -> None:
         if agent.options.extra_http_headers is None:
             return
+
         try:
             for custom_header in agent.options.extra_http_headers:
                 if custom_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
-
+                    span.set_attribute(f"http.header.{custom_header}", headers[custom_header])
         except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
+            logger.debug("urllib3 _extract_custom_headers error: ", exc_info=True)
 
-
-    def collect(instance, args, kwargs):
-        """ Build and return a fully qualified URL for this request """
+    def _collect_kvs(instance, args, kwargs) -> Dict:
         kvs = dict()
         try:
             kvs['host'] = instance.host
@@ -56,54 +56,54 @@ try:
             else:
                 kvs['url'] = 'http://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
         except Exception:
-            logger.debug("urllib3 collect error", exc_info=True)
+            logger.debug("urllib3 _collect_kvs error: ", exc_info=True)
             return kvs
         else:
             return kvs
 
-
-    def collect_response(scope, response):
+    def collect_response(span, response):
         try:
-            scope.span.set_tag(ext.HTTP_STATUS_CODE, response.status)
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)
 
-            extract_custom_headers(scope.span, response.headers)
+            _extract_custom_headers(span, response.headers)
 
             if 500 <= response.status:
-                scope.span.mark_as_errored()
+                span.mark_as_errored()
         except Exception:
-            logger.debug("collect_response", exc_info=True)
+            logger.debug("urllib3 collect_response error: ", exc_info=True)
 
 
     @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
     def urlopen_with_instana(wrapped, instance, args, kwargs):
-        tracer, parent_span, operation_name = get_tracer_tuple()
+        tracer, parent_span, span_name = get_tracer_tuple()
+
         # If we're not tracing, just return; boto3 has it's own visibility
-        if (tracing_is_off() or (operation_name == 'boto3')):
+        if tracing_is_off() or (span_name == 'boto3'):
             return wrapped(*args, **kwargs)
 
-        with tracer.start_active_span("urllib3", child_of=parent_span) as scope:
+        parent_context = set_span_in_context(parent_span)
+        
+        with tracer.start_as_current_span("urllib3", context=parent_context) as span:
             try:
-                kvs = collect(instance, args, kwargs)
+                kvs = _collect_kvs(instance, args, kwargs)
                 if 'url' in kvs:
-                    scope.span.set_tag(ext.HTTP_URL, kvs['url'])
+                    span.set_attribute(SpanAttributes.HTTP_URL, kvs['url'])
                 if 'query' in kvs:
-                    scope.span.set_tag("http.params", kvs['query'])
+                    span.set_attribute("http.params", kvs['query'])
                 if 'method' in kvs:
-                    scope.span.set_tag(ext.HTTP_METHOD, kvs['method'])
-
+                    span.set_attribute(SpanAttributes.HTTP_METHOD, kvs['method'])
                 if 'headers' in kwargs:
-                    extract_custom_headers(scope.span, kwargs['headers'])
-                    tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, kwargs['headers'])
+                    _extract_custom_headers(span, kwargs['headers'])
+                    tracer.inject(span.context, Format.HTTP_HEADERS, kwargs['headers'])
 
                 response = wrapped(*args, **kwargs)
 
-                collect_response(scope, response)
+                collect_response(span, response)
 
                 return response
             except Exception as e:
-                scope.span.mark_as_errored({'message': e})
+                span.record_exception({'message': e})
                 raise
-
 
     logger.debug("Instrumenting urllib3")
 except ImportError:

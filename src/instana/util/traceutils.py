@@ -9,7 +9,7 @@ from instana.span.span import InstanaSpan, get_current_span
 from instana.tracer import InstanaTracer
 
 
-def extract_custom_headers(tracing_span, headers):
+def extract_custom_headers(tracing_span, headers) -> None:
     try:
         for custom_header in agent.options.extra_http_headers:
             # Headers are in the following format: b'x-header-1'
@@ -46,5 +46,5 @@ def get_tracer_tuple() -> (
     return (None, None, None)
 
 
-def tracing_is_off():
+def tracing_is_off() -> bool:
     return not (bool(get_active_tracer()) or agent.options.allow_exit_as_root)

@@ -18,8 +18,8 @@ spec:
           image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
           command: ["sh", "-c", "'true'"]
         - name: prepuller-google-cloud-pubsub
-          # egymgmbh/pubsub-emulator:gh-mb117
-          image: egymgmbh/pubsub-emulator@sha256:88897fa72337b22a8edabf17a8b30bf9d9c6388b7c7e6d8c2b5e5c96d73fede1
+          # vanmoof/pubsub-emulator:latest
+          image: vanmoof/pubsub-emulator@sha256:ff71206d65589b58a8b6928c35349a58dbfd7f20eb2dc7822e0f32e5c40791c8
           command: ["sh", "-c", "'true'"]
         - name: prepuller-cassandra
           # cassandra:3.11.16-jammy

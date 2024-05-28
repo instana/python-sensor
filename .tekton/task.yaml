@@ -119,13 +119,8 @@ metadata:
 spec:
   sidecars:
     - name: google-cloud-pubsub
-      # egymgmbh/pubsub-emulator:gh-mb117
-      image: egymgmbh/pubsub-emulator@sha256:88897fa72337b22a8edabf17a8b30bf9d9c6388b7c7e6d8c2b5e5c96d73fede1
-      command:
-        - /init.sh
-        - test-project
-        - test-topic
-        - test-subscription
+      # vanmoof/pubsub-emulator:latest
+      image: vanmoof/pubsub-emulator@sha256:ff71206d65589b58a8b6928c35349a58dbfd7f20eb2dc7822e0f32e5c40791c8
     - name: mariadb
       # mariadb:11.3.2
       image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65

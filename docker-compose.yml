@@ -55,7 +55,7 @@ services:
       - 5672:5672
 
   pubsub:
-    image: docker.io/egymgmbh/pubsub-emulator
+    image: docker.io/vanmoof/pubsub-emulator
     environment:
       - PUBSUB_EMULATOR_HOST=0.0.0.0:8085
     command:

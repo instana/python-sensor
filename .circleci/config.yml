@@ -127,11 +127,7 @@ jobs:
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
+      - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
       - checkout
@@ -156,11 +152,7 @@ jobs:
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
+      - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
       - checkout
@@ -184,11 +176,7 @@ jobs:
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
+      - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
       - checkout
@@ -212,11 +200,7 @@ jobs:
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
+      - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
       - checkout
@@ -241,11 +225,7 @@ jobs:
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
+      - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
       - checkout
@@ -270,11 +250,7 @@ jobs:
       - image: cimg/redis:5.0.14
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
-      - image: egymgmbh/pubsub-emulator
-        command:
-          - test-project
-          - test-topic
-          - test-subscription
+      - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
       - checkout

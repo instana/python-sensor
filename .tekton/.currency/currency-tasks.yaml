@@ -42,6 +42,10 @@ spec:
         pip install -r resources/requirements.txt
 
         python scripts/generate_report.py
+        if [ $? -ne 0 ]; then
+            echo "Error occured while generating the python tracer currency report." >&2
+            exit 1
+        fi
         cat docs/report.md
 ---
 apiVersion: tekton.dev/v1beta1

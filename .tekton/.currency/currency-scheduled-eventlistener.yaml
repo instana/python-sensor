@@ -41,7 +41,7 @@ kind: CronJob
 metadata:
   name: python-currency-cronjob
 spec:
-  schedule: "5 2 * * Mon-Fri"
+  schedule: "35 0 * * Mon-Fri"
   jobTemplate:
     spec:
       template:

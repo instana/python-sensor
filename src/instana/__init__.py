@@ -58,6 +58,18 @@ def load(_):
     return None
 
 
+def apply_gevent_monkey_patch():
+  from gevent import monkey
+
+  if os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
+      all_accepted_patch_all_args = getter(monkey.patch_all)[0]
+      provided_options = os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS").replace("  ","").replace("--","")
+      args = {((k[3:] if k.startswith('no-') else k), k.startswith('no-')) for k in provided_options if (k in all_accepted_patch_all_args)}
+      monkey.patch_all(**args)
+  else:
+      monkey.patch_all()
+
+
 def get_lambda_handler_or_default():
     """
     For instrumenting AWS Lambda, users specify their original lambda handler in the LAMBDA_HANDLER environment
@@ -166,6 +178,12 @@ if 'INSTANA_DISABLE' not in os.environ:
             print("Instana: No use in monitoring this process type (%s).  "
                   "Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
     else:
+        # Automatic gevent monkey patching
+        # unless auto instrumentation is off, then the customer should do manual gevent monkey patching
+        if ("instana" in os.environ.get("AUTOWRAPT_BOOTSTRAP", "") and
+            "INSTANA_DISABLE_AUTO_INSTR" not in os.environ and
+            importlib.util.find_spec("gevent")):
+            apply_gevent_monkey_patch()
         # AutoProfile
         if "INSTANA_AUTOPROFILE" in os.environ:
             from .singletons import get_profiler

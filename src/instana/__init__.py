@@ -18,8 +18,6 @@ Source Code: https://github.com/instana/python-sensor
 import os
 import sys
 import importlib
-from threading import Timer
-import pkg_resources
 
 from .version import VERSION
 

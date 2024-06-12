@@ -37,10 +37,11 @@ def instrument_gevent():
         logger.debug("instrument_gevent: ", exc_info=True)
 
 
-if 'gevent' in sys.modules:
-    if sys.modules['gevent'].version_info < (1, 4):
-        logger.debug("gevent < 1.4 detected.  The Instana package supports gevent versions 1.4 and greater.")
-    else:
-        instrument_gevent()
-else:
+if not 'gevent' in sys.modules:
     logger.debug("Instrumenting gevent: gevent not detected or loaded.  Nothing done.")
+elif not hasattr(sys.modules['gevent'], 'version_info'):
+    logger.debug("gevent module has no 'version_info'. Skipping instrumentation.")
+elif sys.modules['gevent'].version_info < (1, 4):
+    logger.debug("gevent < 1.4 detected.  The Instana package supports gevent versions 1.4 and greater.")
+else:
+    instrument_gevent()

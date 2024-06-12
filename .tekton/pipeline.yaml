@@ -25,8 +25,6 @@ spec:
         params:
           - name: imageDigest
             value:
-              # 3.7.17-bookworm
-              - "sha256:2011a37d2a08fe83dd9ff923e0f83bfd7290152e2e6afe359bde1453170d9bdc"
               # 3.8.18-bookworm
               - "sha256:625008535504ab68868ca06d1bdd868dee92a9878d5b55fc240af7ceb38b7183"
               # 3.9.18-bookworm

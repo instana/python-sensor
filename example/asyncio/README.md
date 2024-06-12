@@ -4,7 +4,7 @@ This directory includes an example asyncio application and client with aiohttp a
 
 # Requirements
 
-* Python 3.7 or greater
+* Python 3.8 or greater
 * instana, aiohttp and aio-pika Python packages installed
 * A RabbitMQ server with it's location specified in the `RABBITMQ_HOST` environment variable
 

@@ -18,8 +18,6 @@ PYTHON_MINOR_VERSION="$(echo "${PYTHON_VERSION}" | cut -d'.' -f 2)"
 case "${TEST_CONFIGURATION}" in
 default)
   case "${PYTHON_MINOR_VERSION}" in
-    7)
-      export REQUIREMENTS='requirements-307.txt' ;;
     10 | 11)
       export REQUIREMENTS='requirements-310.txt' ;;
     12)

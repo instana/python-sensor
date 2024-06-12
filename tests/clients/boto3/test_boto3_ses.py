@@ -5,12 +5,7 @@ import os
 import boto3
 import unittest
 
-# TODO: Remove branching when we drop support for Python 3.7
-import sys
-if sys.version_info >= (3, 8):
-  from moto import mock_aws
-else:
-  from moto import mock_ses as mock_aws
+from moto import mock_aws
 
 from instana.singletons import tracer, agent
 from ...helpers import get_first_span_by_filter

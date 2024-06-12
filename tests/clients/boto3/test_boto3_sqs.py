@@ -6,12 +6,7 @@ import boto3
 import unittest
 import urllib3
 
-# TODO: Remove branching when we drop support for Python 3.7
-import sys
-if sys.version_info >= (3, 8):
-  from moto import mock_aws
-else:
-  from moto import mock_sqs as mock_aws
+from moto import mock_aws
 
 import tests.apps.flask_app
 from instana.singletons import tracer, agent

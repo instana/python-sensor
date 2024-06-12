@@ -65,10 +65,6 @@ spec:
           # 3.3.1-bookworm
           image: ruby@sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d
           command: ["sh", "-c", "'true'"]
-        - name: prepuller-37
-          # 3.7.17-bookworm
-          image: "python@sha256:2011a37d2a08fe83dd9ff923e0f83bfd7290152e2e6afe359bde1453170d9bdc"
-          command: ["sh", "-c", "'true'"]
         - name: prepuller-38
           # 3.8.18-bookworm
           image: "python@sha256:625008535504ab68868ca06d1bdd868dee92a9878d5b55fc240af7ceb38b7183"

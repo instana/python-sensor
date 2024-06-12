@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 """ Collection helper for the Python runtime """
+import importlib.metadata
 import os
 import gc
 import sys
@@ -9,7 +10,6 @@ import platform
 import resource
 import threading
 from types import ModuleType
-from pkg_resources import DistributionNotFound, get_distribution
 
 from instana.log import logger
 from instana.version import VERSION
@@ -230,8 +230,8 @@ class RuntimeHelper(BaseHelper):
                         elif "version" in pkg_info:
                             versions[pkg_name] = self.jsonable(pkg_info["version"])
                         else:
-                            versions[pkg_name] = get_distribution(pkg_name).version
-                    except DistributionNotFound:
+                            versions[pkg_name] = importlib.metadata.version(pkg_name)
+                    except importlib.metadata.PackageNotFoundError:
                         pass
                     except Exception:
                         logger.debug("gather_python_packages: could not process module: %s", pkg_name)

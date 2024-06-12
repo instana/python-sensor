@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from urllib import parse
 
-import pkg_resources
+import importlib.metadata
 
 from ..log import logger
 
@@ -65,8 +65,8 @@ def package_version():
     """
     version = ""
     try:
-        version = pkg_resources.get_distribution('instana').version
-    except pkg_resources.DistributionNotFound:
+        version = importlib.metadata.version('instana')
+    except importlib.metadata.PackageNotFoundError:
         version = 'unknown'
 
     return version

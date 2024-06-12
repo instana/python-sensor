@@ -2,7 +2,7 @@
 
 The `instana` Python package collects key metrics and distributed traces for [Instana].
 
-This package supports Python 3.7 or greater.
+This package supports Python 3.8 or greater.
 
 Any feedback is welcome.  Happy Python visibility.
 

@@ -55,17 +55,25 @@ def load(_):
         sys.argv = ['']
     return None
 
-
 def apply_gevent_monkey_patch():
-  from gevent import monkey
+    from gevent import monkey
 
-  if os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
-      all_accepted_patch_all_args = getter(monkey.patch_all)[0]
-      provided_options = os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS").replace("  ","").replace("--","")
-      args = {((k[3:] if k.startswith('no-') else k), k.startswith('no-')) for k in provided_options if (k in all_accepted_patch_all_args)}
-      monkey.patch_all(**args)
-  else:
-      monkey.patch_all()
+    if os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
+        def short_key(k):
+            return k[3:] if k.startswith('no-') else k
+        
+        def key_to_bool(k):
+            return not k.startswith('no-')
+
+        import inspect
+        all_accepted_patch_all_args = inspect.getfullargspec(monkey.patch_all)[0]
+        provided_options = os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS").replace(" ","").replace("--","").split(',')
+        provided_options = [k for k in provided_options if short_key(k) in all_accepted_patch_all_args]
+
+        fargs = {short_key(k): key_to_bool(k) for (k,v) in zip(provided_options, [True]*len(provided_options))}
+        monkey.patch_all(**fargs)
+    else:
+        monkey.patch_all()
 
 
 def get_lambda_handler_or_default():

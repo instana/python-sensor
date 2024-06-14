@@ -38,13 +38,13 @@ def log_with_instana(wrapped, instance, argv, kwargs):
             parameters = '{} {}'.format(t , v)
 
         # create logging span
-        with tracer.start_active_span('log', child_of=parent_span) as scope:
-            scope.span.log_kv({ 'message': msg })
+        with tracer.start_as_current_span("log", context=parent_span) as span:
+            span.log_kv({"message": msg})
             if parameters is not None:
-                scope.span.log_kv({ 'parameters': parameters })
+                span.log_kv({"parameters": parameters})
             # extra tags for an error
             if argv[0] >= logging.ERROR:
-                scope.span.mark_as_errored()
+                span.mark_as_errored()
     except Exception:
         logger.debug('log_with_instana:', exc_info=True)
 
@@ -52,4 +52,3 @@ def log_with_instana(wrapped, instance, argv, kwargs):
 
 
 logger.debug('Instrumenting logging')
-

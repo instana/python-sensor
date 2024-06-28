@@ -20,6 +20,7 @@ import sys
 import importlib
 
 from .version import VERSION
+from instana.collector.helpers.runtime import is_autowrapt_instrumented, is_webhook_instrumented
 
 __author__ = 'Instana Inc.'
 __copyright__ = 'Copyright 2020 Instana Inc.'
@@ -186,7 +187,7 @@ if 'INSTANA_DISABLE' not in os.environ:
     else:
         # Automatic gevent monkey patching
         # unless auto instrumentation is off, then the customer should do manual gevent monkey patching
-        if ("instana" in os.environ.get("AUTOWRAPT_BOOTSTRAP", "") and
+        if ((is_autowrapt_instrumented() or is_webhook_instrumented()) and
             "INSTANA_DISABLE_AUTO_INSTR" not in os.environ and
             importlib.util.find_spec("gevent")):
             apply_gevent_monkey_patch()

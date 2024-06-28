@@ -18,7 +18,15 @@ from instana.util.runtime import determine_service_name
 
 from .base import BaseHelper
 
-PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT = '/tmp/.instana/python'
+PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = '/opt/instana/instrumentation/python/'
+
+def is_autowrapt_instrumented():
+    return 'instana' in os.environ.get('AUTOWRAPT_BOOTSTRAP', ())
+
+
+def is_webhook_instrumented():
+    return any(map(lambda p: PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR in p, sys.path))
+
 
 class RuntimeHelper(BaseHelper):
     """ Helper class to collect snapshot and metrics for this Python runtime """
@@ -180,9 +188,9 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload['versions'] = self.gather_python_packages()
             snapshot_payload['iv'] = VERSION
 
-            if 'AUTOWRAPT_BOOTSTRAP' in os.environ:
+            if is_autowrapt_instrumented():
                 snapshot_payload['m'] = 'Autowrapt'
-            elif PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT in sys.path:
+            elif is_webhook_instrumented():
                 snapshot_payload['m'] = 'AutoTrace'
             else:
                 snapshot_payload['m'] = 'Manual'

@@ -10,7 +10,7 @@ from mock import patch
 from instana.tracer import InstanaTracer
 from instana.recorder import StanRecorder
 from instana.agent.host import HostAgent
-from instana.collector.helpers.runtime import PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT
+from instana.collector.helpers.runtime import PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR
 from instana.collector.host import HostCollector
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.version import VERSION
@@ -26,7 +26,7 @@ class TestHostCollector(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
-        pass
+        self.webhook_sitedir_path = PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR + '3.8.0'
 
     def tearDown(self):
         """ Reset all environment variables of consequence """
@@ -44,8 +44,8 @@ class TestHostCollector(unittest.TestCase):
 
         set_agent(self.original_agent)
         set_tracer(self.original_tracer)
-        if PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT in sys.path:
-            sys.path.remove(PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT)
+        if self.webhook_sitedir_path in sys.path:
+            sys.path.remove(self.webhook_sitedir_path)
 
     def create_agent_and_setup_tracer(self):
         self.agent = HostAgent()
@@ -223,7 +223,7 @@ class TestHostCollector(unittest.TestCase):
     def test_prepare_payload_with_autotrace(self, mock_should_send_snapshot_data):
         mock_should_send_snapshot_data.return_value = True
 
-        sys.path.append(PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT)
+        sys.path.append(self.webhook_sitedir_path)
 
         self.create_agent_and_setup_tracer()
 

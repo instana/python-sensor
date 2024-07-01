@@ -4,12 +4,17 @@ boto3>=1.17.74
 celery>=5.2.7
 coverage>=5.5
 Django>=5.0a1 --pre
-fastapi>=0.92.0
+# Dependency orjson has no 3.13 support yet:
+# https://github.com/matyasrichter/fastapi-injector/pull/31
+#fastapi>=0.92.0
 flask>=2.3.2
 markupsafe>=2.1.0
-grpcio>=1.37.1
-google-cloud-pubsub<=2.1.0
-google-cloud-storage>=1.24.0
+# grpc is not supported on 3.13 yet:
+# https://github.com/grpc/grpc/issues/34922
+#grpcio>=1.37.1
+# Depends on grpcio
+#google-cloud-pubsub<=2.1.0
+#google-cloud-storage>=1.24.0
 lxml>=4.9.2
 mock>=4.0.3
 moto>=4.1.2
@@ -32,7 +37,10 @@ pytest>=6.2.4
 redis>=3.5.3
 requests-mock
 responses<=0.17.0
-sanic==21.6.2
+# Newer versions of sanic are not supported
+# And this old version is not installable on 3.13 because of the `httptools` dependency fails to compile:
+# `too few arguments to function ‘_PyLong_AsByteArray’`
+#sanic==21.6.2
 sqlalchemy>=2.0.0
 spyne>=2.14.0
 

@@ -49,41 +49,29 @@ spec:
           # postgres:16.2-bookworm
           image: postgres@sha256:3bfb87432e26badf72d727a0c5f5bb7b81438cd9baec5be8531c70a42b07adc6
           command: ["sh", "-c", "'true'"]
-        - name: prepuller-30
-          # 3.0.6-bullseye
-          image: ruby@sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35
-          command: ["sh", "-c", "'true'"]
-        - name: prepuller-31
-          # 3.1.4-bookworm
-          image: ruby@sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4
-          command: ["sh", "-c", "'true'"]
-        - name: prepuller-32
-          # 3.2.3-bookworm
-          image: ruby@sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed
-          command: ["sh", "-c", "'true'"]
-        - name: prepuller-33
-          # 3.3.1-bookworm
-          image: ruby@sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d
-          command: ["sh", "-c", "'true'"]
         - name: prepuller-38
-          # 3.8.18-bookworm
-          image: "python@sha256:625008535504ab68868ca06d1bdd868dee92a9878d5b55fc240af7ceb38b7183"
+          # 3.8.19-bookworm
+          image: "python@sha256:4d3590657cf443010b58ae94a09c59505a750744ed70d2028b35dac101df5e3a"
           command: ["sh", "-c", "'true'"]
         - name: prepuller-39
-          # 3.9.18-bookworm
-          image: "python@sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+          # 3.9.19-bookworm
+          image: "python@sha256:e298e2e898691a938073f670dac8ef1a551c83344b67b5d8e32d1fbc8e0b57f8"
           command: ["sh", "-c", "'true'"]
         - name: prepuller-310
-          # 3.10.13-bookworm
-          image: "python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc"
+          # 3.10.14-bookworm
+          image: "python@sha256:c0352a2c64efe4cc08b198e90b97ed7e08897518c4bee99647e3eaf676e84951"
           command: ["sh", "-c", "'true'"]
         - name: prepuller-311
-          # 3.11.8-bookworm
-          image: "python@sha256:72afb375030b13c8c9cb72ba1d8c410f25307c2dbbd7d59f9c6ccea5cb152ff9"
+          # 3.11.9-bookworm
+          image: "python@sha256:0c2928128a96e544a1ee248e50ee8ecbe840bf48ef5a49065812e3d06b6e1bcc"
           command: ["sh", "-c", "'true'"]
         - name: prepuller-312
-          # 3.12.2-bookworm
-          image: "python@sha256:35eff340c0acd837b7962f77ee4b8869385dd6fe7d3928375a08f0a3bdd18beb"
+          # 3.12.4-bookworm
+          image: "python@sha256:83f5f8714b6881d3e0e91023d9fe9e43aa6ad5a04e9f9a94ee180b18b021c72a"
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-313
+          # 3.13.0b2-bookworm
+          image: "python@sha256:6502f02f8a02313f582928ec7159623b54d7c3d627a7e355ca46f4aace406a6a"
           command: ["sh", "-c", "'true'"]
 
       # Use the pause container to ensure the Pod goes into a `Running` phase

@@ -22,6 +22,8 @@ default)
       export REQUIREMENTS='requirements-310.txt' ;;
     12)
       export REQUIREMENTS='requirements-312.txt' ;;
+    13)
+      export REQUIREMENTS='requirements-313.txt' ;;
     *)
       export REQUIREMENTS='requirements.txt' ;;
   esac
@@ -59,6 +61,7 @@ if [[ -n "${COUCHBASE_TEST}" ]]; then
   apt update
   apt install libcouchbase-dev -y
 fi
+
 python -m venv /tmp/venv
 # shellcheck disable=SC1091
 source /tmp/venv/bin/activate

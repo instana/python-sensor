@@ -2,7 +2,7 @@
     "table": [
       {
         "Package name": "ASGI",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Last Supported Version": "3.0",
         "Cloud Native": "No"
@@ -21,13 +21,13 @@
       },
       {
         "Package name": "FastAPI",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Flask",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
@@ -66,7 +66,7 @@
       {
         "Package name": "WSGI",
         "Support Policy": "0-day",
-        "Beta version": "No",
+        "Beta version": "Yes",
         "Last Supported Version": "1.0.1",
         "Cloud Native": "No"
       },
@@ -85,7 +85,7 @@
       },
       {
         "Package name": "Boto3",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       },
@@ -145,7 +145,7 @@
       },
       {
         "Package name": "Requests",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       },
@@ -157,7 +157,7 @@
       },
       {
         "Package name": "Urllib3",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Cloud Native": "No"
       }

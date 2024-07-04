@@ -6,6 +6,7 @@ Host Collector: Manages the periodic collection of metrics & snapshot data
 """
 
 from time import time
+from typing import DefaultDict, Any
 
 from instana.collector.base import BaseCollector
 from instana.collector.helpers.runtime import RuntimeHelper
@@ -72,7 +73,7 @@ class HostCollector(BaseCollector):
             return True
         return False
 
-    def prepare_payload(self) -> DictionaryOfStan:
+    def prepare_payload(self) -> DefaultDict[Any, Any]:
         payload = DictionaryOfStan()
         payload["spans"] = []
         payload["profiles"] = []

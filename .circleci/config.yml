@@ -364,9 +364,9 @@ workflows:
       - python311
       - python312
       - python313
-      - py39cassandra
-      - py39couchbase
-      - py39gevent_starlette
+      # - py39cassandra
+      # - py39couchbase
+      # - py39gevent_starlette
       - py311googlecloud
       - py312googlecloud
       - final_job:
@@ -377,8 +377,8 @@ workflows:
             - python311
             - python312
             - python313
-            - py39cassandra
-            - py39couchbase
-            - py39gevent_starlette
+            # - py39cassandra
+            # - py39couchbase
+            # - py39gevent_starlette
             - py311googlecloud
             - py312googlecloud

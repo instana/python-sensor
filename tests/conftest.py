@@ -20,6 +20,8 @@ os.environ["INSTANA_DISABLE_AUTO_INSTR"] = "true"
 from instana.span import BaseSpan, InstanaSpan  # noqa: E402
 from instana.span_context import SpanContext  # noqa: E402
 
+from opentelemetry.trace import set_span_in_context
+from opentelemetry.context.context import Context
 
 collect_ignore_glob = [
     "*autoprofile*",
@@ -105,3 +107,8 @@ def span(span_context: SpanContext) -> InstanaSpan:
 @pytest.fixture
 def base_span(span: InstanaSpan) -> BaseSpan:
     return BaseSpan(span, None, "test")
+
+
+@pytest.fixture
+def context(span: InstanaSpan) -> Context:
+    return set_span_in_context(span)

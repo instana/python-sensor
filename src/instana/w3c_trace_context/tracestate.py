@@ -42,8 +42,10 @@ class Tracestate:
         :return: tracestate updated
         """
         try:
-            span_id = in_span_id.zfill(16)  # if span_id is shorter than 16 characters we prepend zeros
-            instana_tracestate = "in={};{}".format(in_trace_id, span_id)
+            span_id = (
+                in_span_id.zfill(16) if not isinstance(in_span_id, int) else in_span_id
+            )
+            instana_tracestate = f"in={in_trace_id};{span_id}"
             if tracestate is None or tracestate == "":
                 tracestate = instana_tracestate
             else:

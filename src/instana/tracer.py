@@ -23,7 +23,9 @@ from opentelemetry.util import types
 from instana.agent.host import HostAgent
 from instana.agent.test import TestAgent
 from instana.log import logger
+from instana.propagators.base_propagator import CarrierT
 from instana.propagators.binary_propagator import BinaryPropagator
+from instana.propagators.exceptions import UnsupportedFormatException
 from instana.propagators.format import Format
 from instana.propagators.http_propagator import HTTPPropagator
 from instana.propagators.text_propagator import TextPropagator
@@ -86,8 +88,9 @@ class InstanaTracer(Tracer):
         sampler: Sampler,
         recorder: StanRecorder,
         span_processor: Union[HostAgent, TestAgent],
-        propagators: 
-            Mapping[str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]],
+        propagators: Mapping[
+            str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]
+        ],
     ) -> None:
         self._tracer_id = generate_id()
         self._sampler = sampler
@@ -238,6 +241,31 @@ class InstanaTracer(Tracer):
             span_context.tracestate = parent_context.tracestate
 
         return span_context
+
+    def inject(
+        self,
+        span_context: SpanContext,
+        format: Union[Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP],
+        carrier: CarrierT,
+        disable_w3c_trace_context: bool = False,
+    ) -> Optional[CarrierT]:
+        if format in self._propagators:
+            return self._propagators[format].inject(
+                span_context, carrier, disable_w3c_trace_context
+            )
+
+        raise UnsupportedFormatException()
+
+    def extract(
+        self,
+        format: Union[Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP],
+        carrier: CarrierT,
+        disable_w3c_trace_context: bool = False,
+    ) -> Optional[Context]:
+        if format in self._propagators:
+            return self._propagators[format].extract(carrier, disable_w3c_trace_context)
+
+        raise UnsupportedFormatException()
 
 
 # Used by __add_stack

@@ -1,5 +1,7 @@
 # (c) Copyright IBM Corp. 2024
 
+from opentelemetry.trace import set_span_in_context
+from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 import pytest
 from instana.agent.test import TestAgent
 from instana.recorder import StanRecorder

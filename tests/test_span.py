@@ -44,6 +44,7 @@ def test_span_get_span_context(
     trace_id: int,
     span_id: int,
 ) -> None:
+
     span_name = "test-span"
     span = InstanaSpan(span_name, span_context)
 
@@ -714,10 +715,9 @@ def test_span_assure_errored_exception(span_context: SpanContext) -> None:
         assert not span.attributes
 
 
-def test_get_current_span(span_context) -> None:
-    # span = get_current_span(span_context)
-    # assert span
-    pass
+def test_get_current_span(context) -> None:
+    span = get_current_span(context)
+    assert isinstance(span, InstanaSpan)
 
 
 def test_get_current_span_INVALID_SPAN() -> None:

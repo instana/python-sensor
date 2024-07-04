@@ -27,6 +27,7 @@ protobuf<4.0.0
 pymongo>=3.11.4
 pyramid>=2.0.1
 pytest>=6.2.4
+pytest-mock>=3.12.0
 pytz>=2024.1
 redis>=3.5.3
 requests-mock

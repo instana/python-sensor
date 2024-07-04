@@ -1,8 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from ..singletons import agent, tracer, async_tracer, tornado_tracer
-from ..log import logger
+from typing import Optional, Tuple
+
+from instana.log import logger
+from instana.singletons import agent, tracer, async_tracer, tornado_tracer
+from instana.span import InstanaSpan, get_current_span
+from instana.tracer import InstanaTracer
 
 
 def extract_custom_headers(tracing_span, headers):
@@ -16,14 +20,12 @@ def extract_custom_headers(tracing_span, headers):
         logger.debug("extract_custom_headers: ", exc_info=True)
 
 
-def get_active_tracer():
+def get_active_tracer() -> Optional[InstanaTracer]:
     try:
-        if tracer.active_span:
+        # ToDo: Might have to add additional stuff when testing with async and tornado tracer
+        current_span = get_current_span()
+        if current_span and current_span.is_recording():
             return tracer
-        elif async_tracer.active_span:
-            return async_tracer
-        elif tornado_tracer.active_span:
-            return tornado_tracer
         else:
             return None
     except Exception:
@@ -32,10 +34,13 @@ def get_active_tracer():
         return None
 
 
-def get_tracer_tuple():
+def get_tracer_tuple() -> (
+    Tuple[Optional[InstanaTracer], Optional[InstanaSpan], Optional[str]]
+):
     active_tracer = get_active_tracer()
+    current_span = get_current_span()
     if active_tracer:
-        return (active_tracer, active_tracer.active_span, active_tracer.active_span.operation_name)
+        return (active_tracer, current_span, current_span.name)
     elif agent.options.allow_exit_as_root:
         return (tracer, None, None)
     return (None, None, None)

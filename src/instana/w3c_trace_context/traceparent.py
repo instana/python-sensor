@@ -3,6 +3,7 @@
 
 from ..log import logger
 import re
+from typing import Optional
 
 # See https://www.w3.org/TR/trace-context-2/#trace-flags for details on the bitmasks.
 SAMPLED_BITMASK = 0b1;
@@ -45,7 +46,13 @@ class Traceparent:
             logger.debug("Parsing the traceparent failed: {}".format(err))
             return None, None, None, None
 
-    def update_traceparent(self, traceparent, in_trace_id, in_span_id, level):
+    def update_traceparent(
+        self,
+        traceparent: Optional[str],
+        in_trace_id: int,
+        in_span_id: int,
+        level: int,
+    ) -> str:
         """
         This method updates the traceparent header or generates one if there was no traceparent incoming header or it
         was invalid
@@ -56,7 +63,11 @@ class Traceparent:
         :return: the updated traceparent header
         """
         if traceparent is None:  # modify the trace_id part only when it was not present at all
-            trace_id = in_trace_id.zfill(32)
+            trace_id = (
+                in_trace_id.zfill(32)
+                if not isinstance(in_trace_id, int)
+                else in_trace_id
+            )
         else:
             # - We do not need the incoming upstream parent span ID for the header we sent downstream.
             # - We also do not care about the incoming version: The version field we sent downstream needs to match the
@@ -67,12 +78,11 @@ class Traceparent:
             #   downstream.
             _, trace_id, _, _ = self.get_traceparent_fields(traceparent)
 
-        parent_id = in_span_id.zfill(16)
+        parent_id = (
+            in_span_id.zfill(16) if not isinstance(in_span_id, int) else in_span_id
+        )
         flags = level & SAMPLED_BITMASK
         flags = format(flags, '0>2x')
 
-        traceparent = "{version}-{traceid}-{parentid}-{flags}".format(version=self.SPECIFICATION_VERSION,
-                                                                        traceid=trace_id,
-                                                                        parentid=parent_id,
-                                                                        flags=flags)
+        traceparent = f"{self.SPECIFICATION_VERSION}-{trace_id}-{parent_id}-{flags}"
         return traceparent

@@ -2,8 +2,8 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import sys
 import os
+import typing
 
 from instana.log import logger
 from instana.util.ids import header_to_id, header_to_long_id
@@ -19,7 +19,7 @@ from opentelemetry.trace import (
 )
 from opentelemetry.context.context import Context
 
-# The carrier can be a dict or a list.
+# The carrier, typed here as CarrierT, can be a dict, a list, or a tuple.
 # Using the trace header as an example, it can be in the following forms
 # for extraction:
 #   X-Instana-T
@@ -30,6 +30,7 @@ from opentelemetry.context.context import Context
 #
 # For injection, we only support the standard format:
 #   X-Instana-T
+CarrierT = typing.TypeVar("CarrierT", typing.Dict, typing.List, typing.Tuple)
 
 
 class BasePropagator(object):

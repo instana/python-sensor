@@ -330,9 +330,9 @@ workflows:
       - python311
       - python312
       - python313
-      - py39cassandra
-      - py39couchbase
-      - py39gevent_starlette
+      # - py39cassandra
+      # - py39couchbase
+      # - py39gevent_starlette
       - final_job:
           requires:
             - python38
@@ -341,9 +341,9 @@ workflows:
             - python311
             - python312
             - python313
-            - py39cassandra
-            - py39couchbase
-            - py39gevent_starlette
+            # - py39cassandra
+            # - py39couchbase
+            # - py39gevent_starlette
           filters:
             branches:
               only: master

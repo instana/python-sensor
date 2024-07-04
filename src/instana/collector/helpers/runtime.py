@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 """ Collection helper for the Python runtime """
+import gc
 import importlib.metadata
 import os
 import platform

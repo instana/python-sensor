@@ -11,6 +11,13 @@ from instana.span_context import SpanContext
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
 
+from opentelemetry.trace import (
+    INVALID_SPAN_ID,
+    INVALID_TRACE_ID,
+    NonRecordingSpan,
+    set_span_in_context,
+)
+from opentelemetry.context.context import Context
 
 # The carrier can be a dict or a list.
 # Using the trace header as an example, it can be in the following forms
@@ -154,7 +161,7 @@ class BasePropagator(object):
         correlation = False
         disable_traceparent = os.environ.get("INSTANA_DISABLE_W3C_TRACE_CORRELATION", "")
         instana_ancestor = None
-        ctx = SpanContext()
+        ctx = SpanContext(trace_id=trace_id, span_id=span_id, is_remote=False)
         if level and "correlationType" in level:
             trace_id, span_id = [None] * 2
             correlation = True
@@ -166,7 +173,12 @@ class BasePropagator(object):
             ctx.correlation_type = None
             ctx.correlation_id = None
 
-        if trace_id and span_id:
+        if (
+            trace_id
+            and span_id
+            and trace_id != INVALID_TRACE_ID
+            and span_id != INVALID_SPAN_ID
+        ):
             ctx.trace_id = trace_id[-16:]  # only the last 16 chars
             ctx.span_id = span_id[-16:]  # only the last 16 chars
             ctx.synthetic = synthetic is not None
@@ -290,9 +302,22 @@ class BasePropagator(object):
             if traceparent:
                 traceparent = self._tp.validate(traceparent)
 
-            ctx = self.__determine_span_context(trace_id, span_id, level, synthetic, traceparent, tracestate,
-                                                disable_w3c_trace_context)
+            if trace_id is None:
+                trace_id = INVALID_TRACE_ID
+            if span_id is None:
+                span_id = INVALID_SPAN_ID
 
+            span_context = self.__determine_span_context(
+                trace_id,
+                span_id,
+                level,
+                synthetic,
+                traceparent,
+                tracestate,
+                disable_w3c_trace_context,
+            )
+            ctx = set_span_in_context(NonRecordingSpan(span_context), Context())
             return ctx
+
         except Exception:
             logger.debug("extract error:", exc_info=True)

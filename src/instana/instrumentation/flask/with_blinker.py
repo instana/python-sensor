@@ -4,44 +4,53 @@
 
 import re
 import wrapt
-import opentracing
-import opentracing.ext.tags as ext
+from opentelemetry.semconv.trace import SpanAttributes as ext
+from opentelemetry import context, trace
 
 from ...log import logger
 from ...util.secrets import strip_secrets_from_query
 from ...singletons import agent, tracer
 from .common import extract_custom_headers
+from instana.propagators.format import Format
 
 import flask
 from flask import request_started, request_finished, got_request_exception
 
-path_tpl_re = re.compile('<.*>')
+path_tpl_re = re.compile("<.*>")
 
 
 def request_started_with_instana(sender, **extra):
     try:
         env = flask.request.environ
-        ctx = None
 
         ctx = tracer.extract(opentracing.Format.HTTP_HEADERS, env)
 
-        flask.g.scope = tracer.start_active_span('wsgi', child_of=ctx)
+        flask.g.scope = tracer.start_active_span("wsgi", child_of=ctx)
         span = flask.g.scope.span
+
+        ctx = trace.set_span_in_context(span)
+        token = context.attach(ctx)
+        flask.g.token = token
 
         extract_custom_headers(span, env, format=True)
 
         span.set_tag(ext.HTTP_METHOD, flask.request.method)
-        if 'PATH_INFO' in env:
-            span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
-        if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
-            scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher,
-                                                       agent.options.secrets_list)
+        if "PATH_INFO" in env:
+            span.set_tag(ext.HTTP_URL, env["PATH_INFO"])
+        if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
+            scrubbed_params = strip_secrets_from_query(
+                env["QUERY_STRING"],
+                agent.options.secrets_matcher,
+                agent.options.secrets_list,
+            )
             span.set_tag("http.params", scrubbed_params)
-        if 'HTTP_HOST' in env:
-            span.set_tag("http.host", env['HTTP_HOST'])
+        if "HTTP_HOST" in env:
+            span.set_tag("http.host", env["HTTP_HOST"])
 
-        if hasattr(flask.request.url_rule, 'rule') and \
-                path_tpl_re.search(flask.request.url_rule.rule) is not None:
+        if (
+            hasattr(flask.request.url_rule, "rule")
+            and path_tpl_re.search(flask.request.url_rule.rule) is not None
+        ):
             path_tpl = flask.request.url_rule.rule.replace("<", "{")
             path_tpl = path_tpl.replace(">", "}")
             span.set_tag("http.path_tpl", path_tpl)
@@ -52,7 +61,7 @@ def request_started_with_instana(sender, **extra):
 def request_finished_with_instana(sender, response, **extra):
     scope = None
     try:
-        if not hasattr(flask.g, 'scope'):
+        if not hasattr(flask.g, "scope"):
             return
 
         scope = flask.g.scope
@@ -65,8 +74,12 @@ def request_finished_with_instana(sender, response, **extra):
             span.set_tag(ext.HTTP_STATUS_CODE, int(response.status_code))
             extract_custom_headers(span, response.headers, format=False)
 
-            tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
-            response.headers.add('Server-Timing', "intid;desc=%s" % scope.span.context.trace_id)
+            tracer.inject(
+                scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers
+            )
+            response.headers.add(
+                "Server-Timing", "intid;desc=%s" % scope.span.context.trace_id
+            )
     except:
         logger.debug("Flask after_request", exc_info=True)
     finally:
@@ -75,7 +88,7 @@ def request_finished_with_instana(sender, response, **extra):
 
 
 def log_exception_with_instana(sender, exception, **extra):
-    if hasattr(flask.g, 'scope') and flask.g.scope is not None:
+    if hasattr(flask.g, "scope") and flask.g.scope is not None:
         scope = flask.g.scope
         if scope.span is not None:
             scope.span.log_exception(exception)
@@ -93,7 +106,7 @@ def teardown_request_with_instana(*argv, **kwargs):
     In the case of exceptions, after_request_with_instana isn't called
     so we capture those cases here.
     """
-    if hasattr(flask.g, 'scope') and flask.g.scope is not None:
+    if hasattr(flask.g, "scope") and flask.g.scope is not None:
         if len(argv) > 0 and argv[0] is not None:
             scope = flask.g.scope
             scope.span.log_exception(argv[0])
@@ -102,11 +115,17 @@ def teardown_request_with_instana(*argv, **kwargs):
         flask.g.scope.close()
         flask.g.scope = None
 
+    if hasattr(flask.g, "token") and flask.g.token is not None:
+        context.detach(flask.g.token)
+        flask.g.token = None
 
-@wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
+
+@wrapt.patch_function_wrapper("flask", "Flask.full_dispatch_request")
 def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
-    if not hasattr(instance, '_stan_wuz_here'):
-        logger.debug("Flask(blinker): Applying flask before/after instrumentation funcs")
+    if not hasattr(instance, "_stan_wuz_here"):
+        logger.debug(
+            "Flask(blinker): Applying flask before/after instrumentation funcs"
+        )
         setattr(instance, "_stan_wuz_here", True)
         got_request_exception.connect(log_exception_with_instana, instance)
         request_started.connect(request_started_with_instana, instance)

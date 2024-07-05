@@ -131,7 +131,7 @@ for region in target_regions:
                              "Provides Instana tracing and monitoring of AWS Lambda functions built with Python",
                              "--license-info", "MIT", "--output", "json",
                              "--layer-name", LAYER_NAME, "--zip-file", aws_zip_filename,
-                             "--compatible-runtimes", "python3.8", "python3.9",
+                             "--compatible-runtimes", "python3.8", "python3.9", "python3.10", "python3.11", "python3.12",
                              "--profile", profile])
 
     json_data = json.loads(response)

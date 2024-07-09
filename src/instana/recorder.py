@@ -5,8 +5,10 @@
 
 import os
 import queue
+from typing import List, Optional
 
-from .span import RegisteredSpan, SDKSpan
+from instana.agent.base import BaseAgent
+from instana.span import InstanaSpan, RegisteredSpan, SDKSpan
 
 
 class StanRecorder(object):
@@ -47,21 +49,21 @@ class StanRecorder(object):
     # Recorder thread for collection/reporting of spans
     thread = None
 
-    def __init__(self, agent=None):
+    def __init__(self, agent: Optional[BaseAgent] = None) -> None:
         if agent is None:
             # Late import to avoid circular import
             # pylint: disable=import-outside-toplevel
-            from .singletons import get_agent
+            from instana.singletons import get_agent
 
             self.agent = get_agent()
         else:
             self.agent = agent
 
-    def queue_size(self):
+    def queue_size(self) -> int:
         """Return the size of the queue; how may spans are queued,"""
         return self.agent.collector.span_queue.qsize()
 
-    def queued_spans(self):
+    def queued_spans(self) -> List[InstanaSpan]:
         """Get all of the spans in the queue"""
         span = None
         spans = []
@@ -89,9 +91,9 @@ class StanRecorder(object):
         if not self.agent.collector.span_queue.empty():
             self.queued_spans()
 
-    def record_span(self, span):
+    def record_span(self, span: InstanaSpan) -> None:
         """
-        Convert the passed BasicSpan into and add it to the span queue
+        Convert the passed Span into JSON and add it to the span queue
         """
         if span.context.suppression:
             return
@@ -102,7 +104,7 @@ class StanRecorder(object):
             if "INSTANA_SERVICE_NAME" in os.environ:
                 service_name = self.agent.options.service_name
 
-            if span.operation_name in self.REGISTERED_SPANS:
+            if span.name in self.REGISTERED_SPANS:
                 json_span = RegisteredSpan(span, source, service_name)
             else:
                 service_name = self.agent.options.service_name

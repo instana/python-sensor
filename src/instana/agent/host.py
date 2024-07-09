@@ -280,11 +280,13 @@ class HostAgent(BaseAgent):
                 self.last_seen = datetime.now()
 
             # Report metrics
-            metric_bundle = payload["metrics"]["plugins"][0]["data"]
-            response = self.client.post(self.__data_url(),
-                                        data=to_json(metric_bundle),
-                                        headers={"Content-Type": "application/json"},
-                                        timeout=0.8)
+            metric_count = len(payload['metrics'])
+            if metric_count > 0:
+                metric_bundle = payload["metrics"]["plugins"][0]["data"]
+                response = self.client.post(self.__data_url(),
+                                            data=to_json(metric_bundle),
+                                            headers={"Content-Type": "application/json"},
+                                            timeout=0.8)
 
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()

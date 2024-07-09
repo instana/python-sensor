@@ -40,12 +40,12 @@ class InstanaTracerProvider(TracerProvider):
     def __init__(
         self,
         sampler: Optional[Sampler] = None,
-        recorder: Optional[StanRecorder] = None,
-        span_processor: Optional[Union[HostAgent, TestAgent]] = None,
+        span_processor: Optional[StanRecorder] = None,
+        exporter: Optional[Union[HostAgent, TestAgent]] = None,
     ) -> None:
         self.sampler = sampler or InstanaSampler()
-        self.recorder = recorder or StanRecorder()
-        self._span_processor = span_processor or HostAgent()
+        self._span_processor = span_processor or StanRecorder()
+        self._exporter = exporter or HostAgent()
         self._propagators = {}
         self._propagators[Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[Format.TEXT_MAP] = TextPropagator()
@@ -63,14 +63,14 @@ class InstanaTracerProvider(TracerProvider):
 
         return InstanaTracer(
             self.sampler,
-            self.recorder,
+            self._exporter,
             self._span_processor,
             self._propagators,
         )
 
     def add_span_processor(
         self,
-        span_processor: Union[HostAgent, TestAgent],
+        span_processor: StanRecorder,
     ) -> None:
         """Registers a new SpanProcessor for the TracerProvider."""
         self._span_processor = span_processor
@@ -86,16 +86,16 @@ class InstanaTracer(Tracer):
     def __init__(
         self,
         sampler: Sampler,
-        recorder: StanRecorder,
-        span_processor: Union[HostAgent, TestAgent],
+        span_processor: StanRecorder,
+        exporter: Union[HostAgent, TestAgent],
         propagators: Mapping[
             str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]
         ],
     ) -> None:
         self._tracer_id = generate_id()
         self._sampler = sampler
-        self._recorder = recorder
         self._span_processor = span_processor
+        self._exporter = exporter
         self._propagators = propagators
 
     @property
@@ -103,8 +103,12 @@ class InstanaTracer(Tracer):
         return self._tracer_id
 
     @property
-    def recorder(self) -> Optional[StanRecorder]:
-        return self._recorder
+    def span_processor(self) -> Optional[StanRecorder]:
+        return self._span_processor
+
+    @property
+    def exporter(self) -> Optional[Union[HostAgent, TestAgent]]:
+        return self._exporter
 
     def start_span(
         self,
@@ -130,6 +134,7 @@ class InstanaTracer(Tracer):
         span = InstanaSpan(
             name,
             span_context,
+            self._span_processor,
             parent_id=(None if parent_context is None else parent_context.span_id),
             start_time=(time.time_ns() if start_time is None else start_time),
             attributes=attributes,

@@ -13,28 +13,29 @@ BaseSpan: Base class containing the commonalities for the two descendants
   - SDKSpan: Class that represents an SDK type span
   - RegisteredSpan: Class that represents a Registered type span
 """
-import six
-from typing import Dict, Optional, Union, Sequence, Tuple
 from threading import Lock
 from time import time_ns
+from typing import Dict, Optional, Sequence, Tuple, Union
 
+import six
+from opentelemetry.context import get_value
+from opentelemetry.context.context import Context
 from opentelemetry.trace import (
-    Span,
+    _SPAN_KEY,
     DEFAULT_TRACE_OPTIONS,
     DEFAULT_TRACE_STATE,
     INVALID_SPAN_ID,
     INVALID_TRACE_ID,
-    _SPAN_KEY,
+    Span,
 )
-from opentelemetry.util import types
-from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.trace.span import NonRecordingSpan
-from opentelemetry.context import get_value
-from opentelemetry.context.context import Context
+from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.util import types
 
-from .span_context import SpanContext
-from .log import logger
-from .util import DictionaryOfStan
+from instana.log import logger
+from instana.recorder import StanRecorder
+from instana.span_context import SpanContext
+from instana.util import DictionaryOfStan
 
 
 class Event:
@@ -72,6 +73,7 @@ class InstanaSpan(Span):
         self,
         name: str,
         context: SpanContext,
+        span_processor: StanRecorder,
         parent_id: Optional[str] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
@@ -81,6 +83,7 @@ class InstanaSpan(Span):
     ) -> None:
         self._name = name
         self._context = context
+        self._span_processor = span_processor
         self._lock = Lock()
         self._start_time = start_time or time_ns()
         self._end_time = end_time
@@ -245,6 +248,8 @@ class InstanaSpan(Span):
         with self._lock:
             self._end_time = end_time if end_time is not None else time_ns()
             self._duration = self._end_time - self._start_time
+        
+        self._span_processor.record_span(self)
 
     def mark_as_errored(self, attributes: types.Attributes = None) -> None:
         """

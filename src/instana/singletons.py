@@ -5,8 +5,8 @@ import os
 
 from opentelemetry import trace
 
-from .autoprofile.profiler import Profiler
-from .tracer import InstanaTracerProvider
+from instana.autoprofile.profiler import Profiler
+from instana.tracer import InstanaTracerProvider
 
 agent = None
 tracer = None
@@ -97,8 +97,7 @@ def set_agent(new_agent):
 
 # The global OpenTelemetry compatible tracer used internally by
 # this package.
-provider = InstanaTracerProvider(recorder=span_recorder)
-provider.add_span_processor(agent)
+provider = InstanaTracerProvider(span_processor=span_recorder, exporter=agent)
 
 # Sets the global default tracer provider
 trace.set_tracer_provider(provider)

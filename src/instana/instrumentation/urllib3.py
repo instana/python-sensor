@@ -2,67 +2,83 @@
 # (c) Copyright Instana Inc. 2017
 
 
-from typing import Dict
-import wrapt
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
+import wrapt
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import set_span_in_context
 
 from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
-from instana.span.span import InstanaSpan
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
 
 try:
     import urllib3
 
-    def _extract_custom_headers(span: InstanaSpan, headers: Dict) -> None:
+    def _extract_custom_headers(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
         if agent.options.extra_http_headers is None:
             return
 
         try:
             for custom_header in agent.options.extra_http_headers:
                 if custom_header in headers:
-                    span.set_attribute(f"http.header.{custom_header}", headers[custom_header])
+                    span.set_attribute(
+                        f"http.header.{custom_header}", headers[custom_header]
+                    )
         except Exception:
             logger.debug("urllib3 _extract_custom_headers error: ", exc_info=True)
 
-    def _collect_kvs(instance, args, kwargs) -> Dict:
+    def _collect_kvs(
+        instance: Union[
+            urllib3.connectionpool.HTTPConnectionPool,
+            urllib3.connectionpool.HTTPSConnectionPool,
+        ],
+        args: Tuple[int, str, Tuple[Any, ...]],
+        kwargs: Dict[str, Any],
+    ) -> Dict[str, Any]:
         kvs = dict()
         try:
-            kvs['host'] = instance.host
-            kvs['port'] = instance.port
+            kvs["host"] = instance.host
+            kvs["port"] = instance.port
 
-            if args is not None and len(args) == 2:
-                kvs['method'] = args[0]
-                kvs['path'] = args[1]
+            if args and len(args) == 2:
+                kvs["method"] = args[0]
+                kvs["path"] = args[1]
             else:
-                kvs['method'] = kwargs.get('method')
-                kvs['path'] = kwargs.get('path')
-                if kvs['path'] is None:
-                    kvs['path'] = kwargs.get('url')
+                kvs["method"] = kwargs.get("method")
+                kvs["path"] = (
+                    kwargs.get("path") if kwargs.get("path") else kwargs.get("url")
+                )
 
             # Strip any secrets from potential query params
-            if kvs.get('path') is not None and ('?' in kvs['path']):
-                parts = kvs['path'].split('?')
-                kvs['path'] = parts[0]
+            if kvs.get("path") and ("?" in kvs["path"]):
+                parts = kvs["path"].split("?")
+                kvs["path"] = parts[0]
                 if len(parts) == 2:
-                    kvs['query'] = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
-                                                            agent.options.secrets_list)
+                    kvs["query"] = strip_secrets_from_query(
+                        parts[1],
+                        agent.options.secrets_matcher,
+                        agent.options.secrets_list,
+                    )
 
-            if type(instance) is urllib3.connectionpool.HTTPSConnectionPool:
-                kvs['url'] = 'https://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
+            url = kvs["host"] + ":" + str(kvs["port"]) + kvs["path"]
+            if isinstance(instance, urllib3.connectionpool.HTTPSConnectionPool):
+                kvs["url"] = f"https://{url}"
             else:
-                kvs['url'] = 'http://%s:%d%s' % (kvs['host'], kvs['port'], kvs['path'])
+                kvs["url"] = f"http://{url}"
         except Exception:
             logger.debug("urllib3 _collect_kvs error: ", exc_info=True)
             return kvs
         else:
             return kvs
 
-    def collect_response(span, response):
+    def collect_response(
+        span: "InstanaSpan", response: urllib3.response.HTTPResponse
+    ) -> None:
         try:
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)
 
@@ -73,31 +89,40 @@ try:
         except Exception:
             logger.debug("urllib3 collect_response error: ", exc_info=True)
 
-
-    @wrapt.patch_function_wrapper('urllib3', 'HTTPConnectionPool.urlopen')
-    def urlopen_with_instana(wrapped, instance, args, kwargs):
+    @wrapt.patch_function_wrapper("urllib3", "HTTPConnectionPool.urlopen")
+    def urlopen_with_instana(
+        wrapped: Callable[
+            ..., Union[urllib3.HTTPConnectionPool, urllib3.HTTPSConnectionPool]
+        ],
+        instance: Union[
+            urllib3.connectionpool.HTTPConnectionPool,
+            urllib3.connectionpool.HTTPSConnectionPool,
+        ],
+        args: Tuple[int, str, Tuple[Any, ...]],
+        kwargs: Dict[str, Any],
+    ) -> urllib3.response.HTTPResponse:
         tracer, parent_span, span_name = get_tracer_tuple()
 
         # If we're not tracing, just return; boto3 has it's own visibility
-        if tracing_is_off() or (span_name == 'boto3'):
+        if tracing_is_off() or (span_name == "boto3"):
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context()
+        parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
             "urllib3", span_context=parent_context
         ) as span:
             try:
                 kvs = _collect_kvs(instance, args, kwargs)
-                if 'url' in kvs:
-                    span.set_attribute(SpanAttributes.HTTP_URL, kvs['url'])
-                if 'query' in kvs:
-                    span.set_attribute("http.params", kvs['query'])
-                if 'method' in kvs:
-                    span.set_attribute(SpanAttributes.HTTP_METHOD, kvs['method'])
-                if 'headers' in kwargs:
-                    _extract_custom_headers(span, kwargs['headers'])
-                    tracer.inject(span.context, Format.HTTP_HEADERS, kwargs['headers'])
+                if "url" in kvs:
+                    span.set_attribute(SpanAttributes.HTTP_URL, kvs["url"])
+                if "query" in kvs:
+                    span.set_attribute("http.params", kvs["query"])
+                if "method" in kvs:
+                    span.set_attribute(SpanAttributes.HTTP_METHOD, kvs["method"])
+                if "headers" in kwargs:
+                    _extract_custom_headers(span, kwargs["headers"])
+                    tracer.inject(span.context, Format.HTTP_HEADERS, kwargs["headers"])
 
                 response = wrapped(*args, **kwargs)
 
@@ -105,7 +130,7 @@ try:
 
                 return response
             except Exception as e:
-                span.record_exception({'message': e})
+                span.record_exception(e)
                 raise
 
     logger.debug("Instrumenting urllib3")

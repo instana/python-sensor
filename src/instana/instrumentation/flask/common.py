@@ -4,35 +4,37 @@
 
 import wrapt
 import flask
-import opentracing
-import opentracing.ext.tags as ext
+
+from opentelemetry.semconv.trace import SpanAttributes as ext
+from opentelemetry.trace import set_span_in_context
 
 from ...log import logger
 from ...singletons import tracer, agent
-
+from instana.propagators.format import Format
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')
 def render_with_instana(wrapped, instance, argv, kwargs):
     # If we're not tracing, just return
-    if not (hasattr(flask, 'g') and hasattr(flask.g, 'scope')):
+    if not (hasattr(flask, "g") and hasattr(flask.g, "span")):
         return wrapped(*argv, **kwargs)
 
-    parent_span = flask.g.scope.span
+    parent_span = flask.g.span
+    parent_context = set_span_in_context(parent_span)
 
-    with tracer.start_active_span("render", child_of=parent_span) as rscope:
+    with tracer.start_as_current_span("render", context=parent_context) as span:
         try:
             flask_version = tuple(map(int, flask.__version__.split('.')))
             template = argv[1] if flask_version >= (2, 2, 0) else argv[0]
 
-            rscope.span.set_tag("type", "template")
+            span.set_attribute("type", "template")
             if template.name is None:
-                rscope.span.set_tag("name", '(from string)')
+                span.set_attribute("name", "(from string)")
             else:
-                rscope.span.set_tag("name", template.name)
+                span.set_attribute("name", template.name)
 
             return wrapped(*argv, **kwargs)
         except Exception as e:
-            rscope.span.log_exception(e)
+            span.record_exception(e)
             raise
 
 
@@ -44,9 +46,8 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
     try:
         exc = argv[0]
 
-        if hasattr(flask.g, 'scope') and flask.g.scope is not None:
-            scope = flask.g.scope
-            span = scope.span
+        if hasattr(flask.g, "span") and flask.g.span is not None:
+            span = flask.g.span
 
             if response is not None:
                 if isinstance(response, tuple):
@@ -60,18 +61,18 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
                 if 500 <= status_code:
                     span.log_exception(exc)
 
-                span.set_tag(ext.HTTP_STATUS_CODE, int(status_code))
+                span.set_attribute(ext.HTTP_STATUS_CODE, int(status_code))
 
                 if hasattr(response, 'headers'):
-                    tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, response.headers)
-                    value = "intid;desc=%s" % scope.span.context.trace_id
+                    tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
+                    value = "intid;desc=%s" % span.context.trace_id
                     if hasattr(response.headers, 'add'):
                         response.headers.add('Server-Timing', value)
                     elif type(response.headers) is dict or hasattr(response.headers, "__dict__"):
                         response.headers['Server-Timing'] = value
 
-            scope.close()
-            flask.g.scope = None
+            span.end()
+            flask.g.span = None
     except:
         logger.debug("handle_user_exception_with_instana:", exc_info=True)
 
@@ -86,7 +87,9 @@ def extract_custom_headers(span, headers, format):
             # Headers are available in this format: HTTP_X_CAPTURE_THIS
             flask_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
             if flask_header in headers:
-                span.set_tag("http.header.%s" % custom_header, headers[flask_header])
+                span.set_attribute(
+                    "http.header.%s" % custom_header, headers[flask_header]
+                )
 
     except Exception:
         logger.debug("extract_custom_headers: ", exc_info=True)

@@ -5,51 +5,24 @@
 
 import os
 import queue
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, Type
 
-from instana.agent.base import BaseAgent
-from instana.span import InstanaSpan, RegisteredSpan, SDKSpan
+from instana.span.kind import REGISTERED_SPANS
+from instana.span.readable_span import ReadableSpan
+from instana.span.registered_span import RegisteredSpan
+from instana.span.sdk_span import SDKSpan
+
+if TYPE_CHECKING:
+    from instana.agent.base import BaseAgent
 
 
 class StanRecorder(object):
-    THREAD_NAME = "Instana Span Reporting"
-
-    REGISTERED_SPANS = (
-        "aiohttp-client",
-        "aiohttp-server",
-        "aws.lambda.entry",
-        "boto3",
-        "cassandra",
-        "celery-client",
-        "celery-worker",
-        "couchbase",
-        "django",
-        "gcs",
-        "gcps-producer",
-        "gcps-consumer",
-        "log",
-        "memcache",
-        "mongo",
-        "mysql",
-        "postgres",
-        "pymongo",
-        "rabbitmq",
-        "redis",
-        "render",
-        "rpc-client",
-        "rpc-server",
-        "sqlalchemy",
-        "tornado-client",
-        "tornado-server",
-        "urllib3",
-        "wsgi",
-        "asgi",
-    )
+    THREAD_NAME = "InstanaSpan Recorder"
 
     # Recorder thread for collection/reporting of spans
     thread = None
 
-    def __init__(self, agent: Optional[BaseAgent] = None) -> None:
+    def __init__(self, agent: Optional[Type["BaseAgent"]] = None) -> None:
         if agent is None:
             # Late import to avoid circular import
             # pylint: disable=import-outside-toplevel
@@ -63,12 +36,13 @@ class StanRecorder(object):
         """Return the size of the queue; how may spans are queued,"""
         return self.agent.collector.span_queue.qsize()
 
-    def queued_spans(self) -> List[InstanaSpan]:
-        """Get all of the spans in the queue"""
+    def queued_spans(self) -> List[ReadableSpan]:
+        """Get all of the spans in the queue."""
         span = None
         spans = []
 
         import time
+
         from .singletons import env_is_test
 
         if env_is_test is True:
@@ -87,13 +61,13 @@ class StanRecorder(object):
         return spans
 
     def clear_spans(self):
-        """Clear the queue of spans"""
+        """Clear the queue of spans."""
         if not self.agent.collector.span_queue.empty():
             self.queued_spans()
 
-    def record_span(self, span: InstanaSpan) -> None:
+    def record_span(self, span: ReadableSpan) -> None:
         """
-        Convert the passed Span into JSON and add it to the span queue
+        Convert the passed span into JSON and add it to the span queue.
         """
         if span.context.suppression:
             return
@@ -104,7 +78,7 @@ class StanRecorder(object):
             if "INSTANA_SERVICE_NAME" in os.environ:
                 service_name = self.agent.options.service_name
 
-            if span.name in self.REGISTERED_SPANS:
+            if span.name in REGISTERED_SPANS:
                 json_span = RegisteredSpan(span, source, service_name)
             else:
                 service_name = self.agent.options.service_name

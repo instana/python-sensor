@@ -31,7 +31,8 @@ from instana.propagators.http_propagator import HTTPPropagator
 from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
-from instana.span import InstanaSpan, RegisteredSpan, get_current_span
+from instana.span.kind import EXIT_SPANS
+from instana.span.span import InstanaSpan, get_current_span
 from instana.span_context import SpanContext
 from instana.util.ids import generate_id
 
@@ -63,8 +64,8 @@ class InstanaTracerProvider(TracerProvider):
 
         return InstanaTracer(
             self.sampler,
-            self._exporter,
             self._span_processor,
+            self._exporter,
             self._propagators,
         )
 
@@ -144,7 +145,7 @@ class InstanaTracer(Tracer):
         if parent_context is not None:
             span.synthetic = parent_context.synthetic
 
-        if name in RegisteredSpan.EXIT_SPANS:
+        if name in EXIT_SPANS:
             self._add_stack(span)
 
         return span

@@ -55,7 +55,7 @@ def request_started_with_instana(sender, **extra):
             path_tpl = path_tpl.replace(">", "}")
             span.set_attribute("http.path_tpl", path_tpl)
     except:
-        logger.debug("Flask before_request", exc_info=True)
+        logger.debug("Flask request_started_with_instana", exc_info=True)
 
 
 def request_finished_with_instana(sender, response, **extra):
@@ -77,9 +77,9 @@ def request_finished_with_instana(sender, response, **extra):
                 "Server-Timing", "intid;desc=%s" % span.context.trace_id
             )
     except:
-        logger.debug("Flask after_request", exc_info=True)
+        logger.debug("Flask request_finished_with_instana", exc_info=True)
     finally:
-        if span is not None:
+        if span and span.is_recording():
             span.end()
 
 
@@ -94,12 +94,13 @@ def log_exception_with_instana(sender, exception, **extra):
             # The `got_request_exception` signal, is only sent by
             # the `handle_exception` method which "always causes a 500"
             span.set_attribute(ext.HTTP_STATUS_CODE, 500)
-        span.end()
+            if span.is_recording():
+                span.end()
 
 
 def teardown_request_with_instana(*argv, **kwargs):
     """
-    In the case of exceptions, after_request_with_instana isn't called
+    In the case of exceptions, request_finished_with_instana isn't called
     so we capture those cases here.
     """
     if hasattr(flask.g, "span") and flask.g.span is not None:
@@ -108,7 +109,8 @@ def teardown_request_with_instana(*argv, **kwargs):
             span.record_exception(argv[0])
             if ext.HTTP_STATUS_CODE not in span.attributes:
                 span.set_attribute(ext.HTTP_STATUS_CODE, 500)
-        flask.g.span.end()
+        if flask.g.span.is_recording():
+            flask.g.span.end()
         flask.g.span = None
 
     if hasattr(flask.g, "token") and flask.g.token is not None:

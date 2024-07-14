@@ -1,7 +1,8 @@
 # (c) Copyright IBM Corp. 2024
 
 import time
-from instana.span import Event
+
+from instana.span.readable_span import Event
 
 
 def test_span_event_defaults():

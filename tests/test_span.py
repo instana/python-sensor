@@ -6,18 +6,20 @@ from unittest.mock import patch
 import pytest
 from opentelemetry.trace.status import Status, StatusCode
 
-from instana.span import INVALID_SPAN, Event, InstanaSpan, get_current_span
+from instana.recorder import StanRecorder
+from instana.span.span import INVALID_SPAN, Event, InstanaSpan, get_current_span
 from instana.span_context import SpanContext
 
 
 def test_span_default(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     trace_id: int,
     span_id: int,
 ) -> None:
     span_name = "test-span"
     timestamp = time.time_ns()
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert span is not None
     assert isinstance(span, InstanaSpan)
@@ -41,12 +43,12 @@ def test_span_default(
 
 def test_span_get_span_context(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     trace_id: int,
     span_id: int,
 ) -> None:
-
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     context = span.get_span_context()
     assert isinstance(context, SpanContext)
@@ -55,9 +57,11 @@ def test_span_get_span_context(
     assert context == span.context
 
 
-def test_span_set_attributes_default(span_context: SpanContext) -> None:
+def test_span_set_attributes_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert not span.attributes
 
@@ -73,13 +77,15 @@ def test_span_set_attributes_default(span_context: SpanContext) -> None:
     assert "two" == span.attributes.get("field2")
 
 
-def test_span_set_attributes(span_context: SpanContext) -> None:
+def test_span_set_attributes(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     attributes = {
         "field1": 1,
         "field2": "two",
     }
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
 
     assert span.attributes
     assert len(span.attributes) == 2
@@ -97,9 +103,11 @@ def test_span_set_attributes(span_context: SpanContext) -> None:
     assert "vier" in span.attributes.get("field4")
 
 
-def test_span_set_attribute_default(span_context: SpanContext) -> None:
+def test_span_set_attribute_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert not span.attributes
 
@@ -116,13 +124,15 @@ def test_span_set_attribute_default(span_context: SpanContext) -> None:
     assert "two" == span.attributes.get("field2")
 
 
-def test_span_set_attribute(span_context: SpanContext) -> None:
+def test_span_set_attribute(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     attributes = {
         "field1": 1,
         "field2": "two",
     }
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
 
     assert span.attributes
     assert len(span.attributes) == 2
@@ -141,9 +151,11 @@ def test_span_set_attribute(span_context: SpanContext) -> None:
     assert "vier" in span.attributes.get("field4")
 
 
-def test_span_update_name(span_context: SpanContext) -> None:
+def test_span_update_name(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span-1"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert span is not None
     assert isinstance(span, InstanaSpan)
@@ -156,9 +168,11 @@ def test_span_update_name(span_context: SpanContext) -> None:
     assert span.name == new_span_name
 
 
-def test_span_set_status_with_Status_default(span_context, caplog) -> None:
+def test_span_set_status_with_Status_default(
+    span_context: SpanContext, span_processor: StanRecorder, caplog
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert span.status
     assert span.status.is_unset
@@ -187,9 +201,11 @@ def test_span_set_status_with_Status_default(span_context, caplog) -> None:
     assert span.status.status_code != StatusCode.ERROR
 
 
-def test_span_set_status_with_Status_and_desc(span_context, caplog) -> None:
+def test_span_set_status_with_Status_and_desc(
+    span_context: SpanContext, span_processor: StanRecorder, caplog
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert span.status
     assert span.status.is_unset
@@ -221,7 +237,9 @@ def test_span_set_status_with_Status_and_desc(span_context, caplog) -> None:
     assert span.status.status_code != StatusCode.ERROR
 
 
-def test_span_set_status_with_StatusUNSET_to_StatusERROR(span_context, caplog) -> None:
+def test_span_set_status_with_StatusUNSET_to_StatusERROR(
+    span_context: SpanContext, span_processor: StanRecorder, caplog
+) -> None:
     span_name = "test-span"
     status_desc = "Status is UNSET."
     span_status = Status(status_code=StatusCode.UNSET, description=status_desc)
@@ -231,7 +249,7 @@ def test_span_set_status_with_StatusUNSET_to_StatusERROR(span_context, caplog) -
         == caplog.record_tuples[0][2]
     )
 
-    span = InstanaSpan(span_name, span_context, status=span_status)
+    span = InstanaSpan(span_name, span_context, span_processor, status=span_status)
 
     assert span.status
     assert span.status.is_unset
@@ -254,7 +272,9 @@ def test_span_set_status_with_StatusUNSET_to_StatusERROR(span_context, caplog) -
     assert span.status.status_code == StatusCode.ERROR
 
 
-def test_span_set_status_with_StatusOK_to_StatusERROR(span_context, caplog) -> None:
+def test_span_set_status_with_StatusOK_to_StatusERROR(
+    span_context: SpanContext, span_processor: StanRecorder, caplog
+) -> None:
     span_name = "test-span"
     status_desc = "Status is OK."
     span_status = Status(status_code=StatusCode.OK, description=status_desc)
@@ -264,7 +284,7 @@ def test_span_set_status_with_StatusOK_to_StatusERROR(span_context, caplog) -> N
         == caplog.record_tuples[0][2]
     )
 
-    span = InstanaSpan(span_name, span_context, status=span_status)
+    span = InstanaSpan(span_name, span_context, span_processor, status=span_status)
 
     assert span.status
     assert not span.status.is_unset
@@ -287,9 +307,11 @@ def test_span_set_status_with_StatusOK_to_StatusERROR(span_context, caplog) -> N
     assert span.status.status_code != StatusCode.ERROR
 
 
-def test_span_set_status_with_StatusCode_default(span_context: SpanContext) -> None:
+def test_span_set_status_with_StatusCode_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert span.status
     assert span.status.is_unset
@@ -312,9 +334,11 @@ def test_span_set_status_with_StatusCode_default(span_context: SpanContext) -> N
     assert span.status.status_code != StatusCode.ERROR
 
 
-def test_span_set_status_with_StatusCode_and_desc(span_context, caplog) -> None:
+def test_span_set_status_with_StatusCode_and_desc(
+    span_context: SpanContext, span_processor: StanRecorder, caplog
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert span.status
     assert span.status.is_unset
@@ -342,7 +366,7 @@ def test_span_set_status_with_StatusCode_and_desc(span_context, caplog) -> None:
 
 
 def test_span_set_status_with_StatusCodeUNSET_to_StatusCodeERROR(
-    span_context, caplog
+    span_context: SpanContext, span_processor: StanRecorder, caplog
 ) -> None:
     span_name = "test-span"
     status_desc = "Status is UNSET."
@@ -353,7 +377,7 @@ def test_span_set_status_with_StatusCodeUNSET_to_StatusCodeERROR(
         == caplog.record_tuples[0][2]
     )
 
-    span = InstanaSpan(span_name, span_context, status=span_status)
+    span = InstanaSpan(span_name, span_context, span_processor, status=span_status)
 
     assert span.status
     assert span.status.is_unset
@@ -377,7 +401,7 @@ def test_span_set_status_with_StatusCodeUNSET_to_StatusCodeERROR(
 
 
 def test_span_set_status_with_StatusCodeOK_to_StatusCodeERROR(
-    span_context, caplog
+    span_context: SpanContext, span_processor: StanRecorder, caplog
 ) -> None:
     span_name = "test-span"
     status_desc = "Status is OK."
@@ -388,7 +412,7 @@ def test_span_set_status_with_StatusCodeOK_to_StatusCodeERROR(
         == caplog.record_tuples[0][2]
     )
 
-    span = InstanaSpan(span_name, span_context, status=span_status)
+    span = InstanaSpan(span_name, span_context, span_processor, status=span_status)
 
     assert span.status
     assert not span.status.is_unset
@@ -411,9 +435,11 @@ def test_span_set_status_with_StatusCodeOK_to_StatusCodeERROR(
     assert span.status.status_code != StatusCode.ERROR
 
 
-def test_span_add_event_default(span_context: SpanContext) -> None:
+def test_span_add_event_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert not span.events
 
@@ -434,7 +460,9 @@ def test_span_add_event_default(span_context: SpanContext) -> None:
         assert len(event.attributes) == 2
 
 
-def test_span_add_event(span_context: SpanContext) -> None:
+def test_span_add_event(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     event_name1 = "event1"
     attributes = {
@@ -443,7 +471,7 @@ def test_span_add_event(span_context: SpanContext) -> None:
     }
     timestamp1 = time.time_ns()
     event = Event(event_name1, attributes, timestamp1)
-    span = InstanaSpan(span_name, span_context, events=[event])
+    span = InstanaSpan(span_name, span_context, span_processor, events=[event])
 
     assert span.events
     assert len(span.events) == 1
@@ -490,13 +518,14 @@ def test_span_add_event(span_context: SpanContext) -> None:
 )
 def test_span_record_exception_default(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     span_name: str,
     span_attribute: str,
 ) -> None:
     exception_msg = "Test Exception"
 
     exception = Exception(exception_msg)
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     span.record_exception(exception)
 
@@ -512,7 +541,9 @@ def test_span_record_exception_default(
         assert exception_msg == event.attributes.get("message", None)
 
 
-def test_span_record_exception_with_attribute(span_context: SpanContext) -> None:
+def test_span_record_exception_with_attribute(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     exception_msg = "Test Exception"
     attributes = {
@@ -520,7 +551,7 @@ def test_span_record_exception_with_attribute(span_context: SpanContext) -> None
     }
 
     exception = Exception(exception_msg)
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     span.record_exception(exception, attributes)
 
@@ -534,14 +565,16 @@ def test_span_record_exception_with_attribute(span_context: SpanContext) -> None
     assert 0 == event.attributes.get("custom_attr", None)
 
 
-def test_span_record_exception_with_Exception_msg(span_context: SpanContext) -> None:
+def test_span_record_exception_with_Exception_msg(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "wsgi"
     span_attribute = "http.error"
     exception_msg = "Test Exception"
 
     exception = Exception()
     exception.message = exception_msg
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     span.record_exception(exception)
 
@@ -553,13 +586,14 @@ def test_span_record_exception_with_Exception_msg(span_context: SpanContext) -> 
 
 def test_span_record_exception_with_Exception_none_msg(
     span_context: SpanContext,
+    span_processor: StanRecorder,
 ) -> None:
     span_name = "wsgi"
     span_attribute = "http.error"
 
     exception = Exception()
     exception.message = None
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     span.record_exception(exception)
 
@@ -569,22 +603,26 @@ def test_span_record_exception_with_Exception_none_msg(
     assert "Exception()" == span.attributes.get(span_attribute, None)
 
 
-def test_span_record_exception_with_Exception_raised(span_context: SpanContext) -> None:
+def test_span_record_exception_with_Exception_raised(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
 
     exception = None
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     with patch(
-        "instana.span.InstanaSpan.add_event", side_effect=Exception("mocked error")
+        "instana.span.span.InstanaSpan.add_event", side_effect=Exception("mocked error")
     ):
         with pytest.raises(Exception):
             span.record_exception(exception)
 
 
-def test_span_end_default(span_context: SpanContext) -> None:
+def test_span_end_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert not span.end_time
 
@@ -597,9 +635,9 @@ def test_span_end_default(span_context: SpanContext) -> None:
     assert span.duration > 0
 
 
-def test_span_end(span_context: SpanContext) -> None:
+def test_span_end(span_context: SpanContext, span_processor: StanRecorder) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     assert not span.end_time
 
@@ -614,12 +652,14 @@ def test_span_end(span_context: SpanContext) -> None:
     assert span.duration == (timestamp_end - span.start_time)
 
 
-def test_span_mark_as_errored_default(span_context: SpanContext) -> None:
+def test_span_mark_as_errored_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     attributes = {
         "ec": 0,
     }
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
 
     assert span.attributes
     assert len(span.attributes) == 1
@@ -632,12 +672,14 @@ def test_span_mark_as_errored_default(span_context: SpanContext) -> None:
     assert span.attributes.get("ec") == 1
 
 
-def test_span_mark_as_errored(span_context: SpanContext) -> None:
+def test_span_mark_as_errored(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     attributes = {
         "ec": 0,
     }
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
 
     assert span.attributes
     assert len(span.attributes) == 1
@@ -664,20 +706,25 @@ def test_span_mark_as_errored(span_context: SpanContext) -> None:
     assert span.attributes.get("field2") == "two"
 
 
-def test_span_mark_as_errored_exception(span_context: SpanContext) -> None:
+def test_span_mark_as_errored_exception(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     with patch(
-        "instana.span.InstanaSpan.set_attribute", side_effect=Exception("mocked error")
+        "instana.span.span.InstanaSpan.set_attribute",
+        side_effect=Exception("mocked error"),
     ):
         span.mark_as_errored()
         assert not span.attributes
 
 
-def test_span_assure_errored_default(span_context: SpanContext) -> None:
+def test_span_assure_errored_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     span.assure_errored()
 
@@ -686,12 +733,14 @@ def test_span_assure_errored_default(span_context: SpanContext) -> None:
     assert span.attributes.get("ec") == 1
 
 
-def test_span_assure_errored(span_context: SpanContext) -> None:
+def test_span_assure_errored(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
     attributes = {
         "ec": 0,
     }
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
 
     assert span.attributes
     assert len(span.attributes) == 1
@@ -704,12 +753,15 @@ def test_span_assure_errored(span_context: SpanContext) -> None:
     assert span.attributes.get("ec") == 1
 
 
-def test_span_assure_errored_exception(span_context: SpanContext) -> None:
+def test_span_assure_errored_exception(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-span"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
 
     with patch(
-        "instana.span.InstanaSpan.set_attribute", side_effect=Exception("mocked error")
+        "instana.span.span.InstanaSpan.set_attribute",
+        side_effect=Exception("mocked error"),
     ):
         span.assure_errored()
         assert not span.attributes

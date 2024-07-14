@@ -9,8 +9,8 @@ import pytest
 from opentelemetry.context.context import Context
 from opentelemetry.trace import set_span_in_context
 
-if importlib.util.find_spec('celery'):
-    pytest_plugins = ("celery.contrib.pytest", )
+if importlib.util.find_spec("celery"):
+    pytest_plugins = ("celery.contrib.pytest",)
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"
@@ -19,8 +19,12 @@ os.environ["INSTANA_DISABLE_AUTO_INSTR"] = "true"
 # TODO: remove all "noqa: E402" from instana package imports and move the
 # block of env variables setting to below the imports after finishing the
 # migration of instrumentation codes.
-from instana.span import BaseSpan, InstanaSpan  # noqa: E402
+from instana.agent.test import TestAgent  # noqa: E402
+from instana.recorder import StanRecorder  # noqa: E402
+from instana.span.base_span import BaseSpan  # noqa: E402
+from instana.span.span import InstanaSpan  # noqa: E402
 from instana.span_context import SpanContext  # noqa: E402
+from instana.tracer import InstanaTracerProvider  # noqa: E402
 
 collect_ignore_glob = [
     "*autoprofile*",
@@ -107,6 +111,18 @@ def span_id() -> int:
 
 
 @pytest.fixture
+def span_processor() -> StanRecorder:
+    rec = StanRecorder(TestAgent())
+    rec.THREAD_NAME = "InstanaSpan Recorder Test"
+    return rec
+
+
+@pytest.fixture
+def tracer_provider(span_processor: StanRecorder) -> InstanaTracerProvider:
+    return InstanaTracerProvider(span_processor=span_processor, exporter=TestAgent())
+
+
+@pytest.fixture
 def span_context(trace_id: int, span_id: int) -> SpanContext:
     return SpanContext(
         trace_id=trace_id,
@@ -116,14 +132,14 @@ def span_context(trace_id: int, span_id: int) -> SpanContext:
 
 
 @pytest.fixture
-def span(span_context: SpanContext) -> InstanaSpan:
+def span(span_context: SpanContext, span_processor: StanRecorder) -> InstanaSpan:
     span_name = "test-span"
-    return InstanaSpan(span_name, span_context)
+    return InstanaSpan(span_name, span_context, span_processor)
 
 
 @pytest.fixture
 def base_span(span: InstanaSpan) -> BaseSpan:
-    return BaseSpan(span, None, "test")
+    return BaseSpan(span, None)
 
 
 @pytest.fixture

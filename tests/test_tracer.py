@@ -7,9 +7,16 @@ from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE
 from instana.agent.test import TestAgent
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler
-from instana.span.span import InstanaSpan, get_current_span, INVALID_SPAN_ID, INVALID_SPAN
+from instana.span.span import (
+    InstanaSpan,
+    get_current_span,
+    INVALID_SPAN_ID,
+    INVALID_SPAN,
+)
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer, InstanaTracerProvider
+from opentelemetry.context.context import Context
+from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 
 
 def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:

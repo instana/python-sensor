@@ -1,41 +1,43 @@
 # (c) Copyright IBM Corp. 2024
 
-from opentelemetry.trace import set_span_in_context
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 import pytest
-
-from instana.span import InstanaSpan
+from instana.agent.test import TestAgent
+from instana.recorder import StanRecorder
+from instana.sampling import InstanaSampler
+from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer, InstanaTracerProvider
+from opentelemetry.context.context import Context
+from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 
 
-def test_tracer_defaults() -> None:
-    provider = InstanaTracerProvider()
+def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
 
     assert tracer.tracer_id > INVALID_SPAN_ID
     assert tracer.tracer_id <= _SPAN_ID_MAX_VALUE
-    assert tracer.recorder == provider.recorder
-    assert tracer._sampler == provider.sampler
-    assert tracer._span_processor == provider._span_processor
-    assert tracer._propagators == provider._propagators
+    assert isinstance(tracer._sampler, InstanaSampler)
+    assert isinstance(tracer.span_processor, StanRecorder)
+    assert isinstance(tracer.exporter, TestAgent)
+    assert len(tracer._propagators) == 3
 
-def test_tracer_start_span(span) -> None:
+
+def test_tracer_start_span(
+    tracer_provider: InstanaTracerProvider, context: Context
+) -> None:
     span_name = "test-span"
-    provider = InstanaTracerProvider()
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
-    parent_context = set_span_in_context(span)
-    span = tracer.start_span(name=span_name, context=parent_context)
+    span = tracer.start_span(name=span_name, context=context)
 
     assert span
     assert isinstance(span, InstanaSpan)
@@ -43,14 +45,13 @@ def test_tracer_start_span(span) -> None:
     assert not span.stack
 
 
-def test_tracer_start_span_with_stack(span: InstanaSpan) -> None:
+def test_tracer_start_span_with_stack(tracer_provider: InstanaTracerProvider) -> None:
     span_name = "log"
-    provider = InstanaTracerProvider()
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
     span = tracer.start_span(name=span_name)
 
@@ -66,31 +67,31 @@ def test_tracer_start_span_with_stack(span: InstanaSpan) -> None:
     assert "m" in stack_0.keys()
 
 
-def test_tracer_start_span_Exception(mocker, span) -> None:
+def test_tracer_start_span_Exception(
+    mocker, tracer_provider: InstanaTracerProvider, context: Context
+) -> None:
     span_name = "test-span"
-    provider = InstanaTracerProvider()
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
 
-    parent_context = set_span_in_context(span)
-
-    mocker.patch("instana.span.InstanaSpan.get_span_context", return_value={"key": "value"})
+    mocker.patch(
+        "instana.span.span.InstanaSpan.get_span_context", return_value={"key": "value"}
+    )
     with pytest.raises(TypeError):
-        tracer.start_span(name=span_name, context=parent_context)
+        tracer.start_span(name=span_name, context=context)
 
 
-def test_tracer_start_as_current_span() -> None:
+def test_tracer_start_as_current_span(tracer_provider: InstanaTracerProvider) -> None:
     span_name = "test-span"
-    provider = InstanaTracerProvider()
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
     with tracer.start_as_current_span(name=span_name) as span:
         assert span is not None
@@ -98,13 +99,14 @@ def test_tracer_start_as_current_span() -> None:
         assert span.name == span_name
 
 
-def test_tracer_create_span_context(span_context: SpanContext) -> None:
-    provider = InstanaTracerProvider()
+def test_tracer_create_span_context(
+    span_context: SpanContext, tracer_provider: InstanaTracerProvider
+) -> None:
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
     new_span_context = tracer._create_span_context(span_context)
 
@@ -113,13 +115,14 @@ def test_tracer_create_span_context(span_context: SpanContext) -> None:
     assert span_context.long_trace_id == new_span_context.long_trace_id
 
 
-def test_tracer_add_stack_high_limit(span: InstanaSpan) -> None:
-    provider = InstanaTracerProvider()
+def test_tracer_add_stack_high_limit(
+    span: InstanaSpan, tracer_provider: InstanaTracerProvider
+) -> None:
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
     tracer._add_stack(span, 50)
 
@@ -133,13 +136,14 @@ def test_tracer_add_stack_high_limit(span: InstanaSpan) -> None:
     assert "m" in stack_0.keys()
 
 
-def test_tracer_add_stack_low_limit(span: InstanaSpan) -> None:
-    provider = InstanaTracerProvider()
+def test_tracer_add_stack_low_limit(
+    span: InstanaSpan, tracer_provider: InstanaTracerProvider
+) -> None:
     tracer = InstanaTracer(
-        provider.sampler,
-        provider.recorder,
-        provider._span_processor,
-        provider._propagators,
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
     )
     tracer._add_stack(span, 5)
 

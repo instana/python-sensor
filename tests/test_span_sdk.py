@@ -4,11 +4,13 @@ from typing import Tuple
 
 import pytest
 
-from instana.span import InstanaSpan, SDKSpan
+from instana.recorder import StanRecorder
+from instana.span.sdk_span import SDKSpan
+from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 
 
-def test_sdkspan(span_context: SpanContext) -> None:
+def test_sdkspan(span_context: SpanContext, span_processor: StanRecorder) -> None:
     span_name = "test-sdk-span"
     service_name = "test-sdk"
     attributes = {
@@ -16,7 +18,7 @@ def test_sdkspan(span_context: SpanContext) -> None:
         "arguments": "--quiet",
         "return": "True",
     }
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
     sdk_span = SDKSpan(span, None, service_name)
 
     expected_result = {
@@ -63,13 +65,16 @@ def test_sdkspan(span_context: SpanContext) -> None:
 )
 def test_sdkspan_get_span_kind(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     span_kind: str,
     expected_result: Tuple[str, int],
 ) -> None:
     attributes = {
         "span.kind": span_kind,
     }
-    span = InstanaSpan("test-sdk-span", span_context, attributes=attributes)
+    span = InstanaSpan(
+        "test-sdk-span", span_context, span_processor, attributes=attributes
+    )
     sdk_span = SDKSpan(span, None, "test")
 
     kind = sdk_span.get_span_kind(span)

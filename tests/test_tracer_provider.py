@@ -1,8 +1,5 @@
 # (c) Copyright IBM Corp. 2024
 
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
-from pytest import LogCaptureFixture
-
 from instana.agent.host import HostAgent
 from instana.agent.test import TestAgent
 from instana.propagators.binary_propagator import BinaryPropagator
@@ -12,13 +9,15 @@ from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler
 from instana.tracer import InstanaTracer, InstanaTracerProvider
+from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
+from pytest import LogCaptureFixture
 
 
 def test_tracer_provider_defaults() -> None:
     provider = InstanaTracerProvider()
     assert isinstance(provider.sampler, InstanaSampler)
-    assert isinstance(provider.recorder, StanRecorder)
-    assert isinstance(provider._span_processor, HostAgent)
+    assert isinstance(provider._span_processor, StanRecorder)
+    assert isinstance(provider._exporter, HostAgent)
     assert len(provider._propagators) == 3
     assert isinstance(provider._propagators[Format.HTTP_HEADERS], HTTPPropagator)
     assert isinstance(provider._propagators[Format.TEXT_MAP], TextPropagator)
@@ -46,9 +45,13 @@ def test_tracer_provider_get_tracer_empty_instrumenting_module_name(
     assert tracer.tracer_id <= _SPAN_ID_MAX_VALUE
 
 
-def test_tracer_provider_add_span_processor() -> None:
+def test_tracer_provider_add_span_processor(span_processor: StanRecorder) -> None:
     provider = InstanaTracerProvider()
-    assert isinstance(provider._span_processor, HostAgent)
+    assert isinstance(provider._span_processor, StanRecorder)
+    assert isinstance(provider._span_processor.agent, HostAgent)
+    assert provider._span_processor.THREAD_NAME == "InstanaSpan Recorder"
 
-    provider.add_span_processor(TestAgent())
-    assert isinstance(provider._span_processor, TestAgent)
+    provider.add_span_processor(span_processor)
+    assert isinstance(provider._span_processor, StanRecorder)
+    assert isinstance(provider._span_processor.agent, TestAgent)
+    assert provider._span_processor.THREAD_NAME == "InstanaSpan Recorder Test"

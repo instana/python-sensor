@@ -2,7 +2,9 @@
 
 from unittest.mock import Mock, patch
 
-from instana.span import BaseSpan, InstanaSpan
+from instana.recorder import StanRecorder
+from instana.span.base_span import BaseSpan
+from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.util import DictionaryOfStan
 
@@ -12,7 +14,7 @@ def test_basespan(
     trace_id: int,
     span_id: int,
 ) -> None:
-    base_span = BaseSpan(span, None, "test")
+    base_span = BaseSpan(span, None)
 
     expected_dict = {
         "t": trace_id,
@@ -52,7 +54,7 @@ def test_basespan_with_synthetic_source_and_kwargs(
     span.synthetic = True
     source = "source test"
     _kwarg1 = "value1"
-    base_span = BaseSpan(span, source, "test", arg1=_kwarg1)
+    base_span = BaseSpan(span, source, arg1=_kwarg1)
 
     assert trace_id == base_span.t
     assert span_id == base_span.s
@@ -62,7 +64,7 @@ def test_basespan_with_synthetic_source_and_kwargs(
 
 
 def test_populate_extra_span_attributes(span: InstanaSpan) -> None:
-    base_span = BaseSpan(span, None, "test")
+    base_span = BaseSpan(span, None)
     base_span._populate_extra_span_attributes(span)
 
     assert not hasattr(base_span, "tp")
@@ -76,6 +78,7 @@ def test_populate_extra_span_attributes(span: InstanaSpan) -> None:
 def test_populate_extra_span_attributes_with_values(
     trace_id: int,
     span_id: int,
+    span_processor: StanRecorder,
 ) -> None:
     long_id = 1512366075204170929049582354406559215
     span_context = SpanContext(
@@ -89,8 +92,8 @@ def test_populate_extra_span_attributes_with_values(
         correlation_type="IDK",
         correlation_id=long_id,
     )
-    span = InstanaSpan("test-base-span", span_context)
-    base_span = BaseSpan(span, None, "test")
+    span = InstanaSpan("test-base-span", span_context, span_processor)
+    base_span = BaseSpan(span, None)
     base_span._populate_extra_span_attributes(span)
 
     assert trace_id == base_span.t
@@ -128,12 +131,12 @@ def test_validate_attribute_with_invalid_key_type(base_span: BaseSpan) -> None:
 
 
 def test_validate_attribute_exception(span: InstanaSpan) -> None:
-    base_span = BaseSpan(span, None, "test")
+    base_span = BaseSpan(span, None)
     key = "field1"
     value = span
 
     with patch(
-        "instana.span.BaseSpan._convert_attribute_value",
+        "instana.span.base_span.BaseSpan._convert_attribute_value",
         side_effect=Exception("mocked error"),
     ):
         (validated_key, validated_value) = base_span._validate_attribute(key, value)
@@ -142,11 +145,11 @@ def test_validate_attribute_exception(span: InstanaSpan) -> None:
 
 
 def test_convert_attribute_value(span: InstanaSpan) -> None:
-    base_span = BaseSpan(span, None, "test")
+    base_span = BaseSpan(span, None)
     value = span
 
     converted_value = base_span._convert_attribute_value(value)
-    assert "<instana.span.InstanaSpan object" in converted_value
+    assert "<instana.span.span.InstanaSpan object" in converted_value
 
 
 def test_convert_attribute_value_exception(base_span: BaseSpan) -> None:

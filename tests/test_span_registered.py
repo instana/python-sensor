@@ -4,30 +4,34 @@ import time
 from typing import Any, Dict, Tuple
 
 import pytest
+from opentelemetry.trace import SpanKind
 
-from instana.span import InstanaSpan, RegisteredSpan
+from instana.recorder import StanRecorder
+from instana.span.registered_span import RegisteredSpan
+from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 
 
 @pytest.mark.parametrize(
     "span_name, expected_result, attributes",
     [
-        ("wsgi", ("wsgi", 1, "http"), {}),
-        ("rabbitmq", ("rabbitmq", 1, "rabbitmq"), {}),
-        ("gcps-producer", ("gcps", 2, "gcps"), {}),
-        ("urllib3", ("urllib3", 2, "http"), {}),
-        ("rabbitmq", ("rabbitmq", 2, "rabbitmq"), {"sort": "publish"}),
+        ("wsgi", ("wsgi", SpanKind.SERVER, "http"), {}),
+        ("rabbitmq", ("rabbitmq", SpanKind.SERVER, "rabbitmq"), {}),
+        ("gcps-producer", ("gcps", SpanKind.CLIENT, "gcps"), {}),
+        ("urllib3", ("urllib3", SpanKind.CLIENT, "http"), {}),
+        ("rabbitmq", ("rabbitmq", SpanKind.CLIENT, "rabbitmq"), {"sort": "publish"}),
         ("render", ("render", 3, "render"), {"arguments": "--quiet"}),
     ],
 )
 def test_registered_span(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     span_name: str,
     expected_result: Tuple[str, int, str],
-    attributes: Dict[str, Any]
+    attributes: Dict[str, Any],
 ) -> None:
     service_name = "test-registered-service"
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
     reg_span = RegisteredSpan(span, None, service_name)
 
     assert expected_result[0] == reg_span.n
@@ -36,7 +40,9 @@ def test_registered_span(
     assert expected_result[2] in reg_span.data.keys()
 
 
-def test_collect_http_attributes_with_attributes(span_context: SpanContext) -> None:
+def test_collect_http_attributes_with_attributes(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = "test-registered-span"
     attributes = {
         "span.kind": "entry",
@@ -45,7 +51,7 @@ def test_collect_http_attributes_with_attributes(span_context: SpanContext) -> N
         "http.header.test": "one more test",
     }
     service_name = "test-registered-service"
-    span = InstanaSpan(span_name, span_context, attributes=attributes)
+    span = InstanaSpan(span_name, span_context, span_processor, attributes=attributes)
     reg_span = RegisteredSpan(span, None, service_name)
 
     excepted_result = {
@@ -53,20 +59,24 @@ def test_collect_http_attributes_with_attributes(span_context: SpanContext) -> N
         "http.url": attributes["http.url"],
         "http.header.test": attributes["http.header.test"],
     }
-    
+
     reg_span._collect_http_attributes(span)
 
     assert excepted_result["http.host"] == reg_span.data["http"]["host"]
     assert excepted_result["http.url"] == reg_span.data["http"]["url"]
-    assert excepted_result["http.header.test"] == reg_span.data["http"]["header"]["test"]
+    assert (
+        excepted_result["http.header.test"] == reg_span.data["http"]["header"]["test"]
+    )
 
 
-def test_populate_local_span_data_with_other_name(span_context: SpanContext, caplog) -> None:
+def test_populate_local_span_data_with_other_name(
+    span_context: SpanContext, caplog
+) -> None:
     # span_name = "test-registered-span"
     # service_name = "test-registered-service"
     # span = InstanaSpan(span_name, span_context)
     # reg_span = RegisteredSpan(span, None, service_name)
-    
+
     # expected_msg = f"SpanRecorder: Unknown local span: {span_name}"
 
     # reg_span._populate_local_span_data(span)
@@ -80,7 +90,7 @@ def test_populate_local_span_data_with_other_name(span_context: SpanContext, cap
     [
         (
             "aws.lambda.entry",
-            "lambda", 
+            "lambda",
             {
                 "lambda.arn": "test",
                 "lambda.trigger": None,
@@ -100,7 +110,7 @@ def test_populate_local_span_data_with_other_name(span_context: SpanContext, cap
             {
                 "gcps.op": "consume",
                 "gcps.projid": "MY_PROJECT",
-                "gcps.sub": "MY_SUBSCRIPTION_NAME", 
+                "gcps.sub": "MY_SUBSCRIPTION_NAME",
             },
         ),
         (
@@ -116,11 +126,12 @@ def test_populate_local_span_data_with_other_name(span_context: SpanContext, cap
 )
 def test_populate_entry_span_data(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     span_name: str,
     service_name: str,
-    attributes: Dict[str, Any]
+    attributes: Dict[str, Any],
 ) -> None:
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
     reg_span = RegisteredSpan(span, None, service_name)
 
     expected_result = {}
@@ -144,7 +155,6 @@ def test_populate_entry_span_data(
             "lambda.trigger": "aws:api.gateway",
             "http.host": "localhost",
             "http.url": "https://www.instana.com",
-
         },
         {
             "lambda.arn": "test",
@@ -169,14 +179,13 @@ def test_populate_entry_span_data(
     ],
 )
 def test_populate_entry_span_data_AWSlambda(
-    span_context: SpanContext,
-    attributes: Dict[str, Any]
+    span_context: SpanContext, span_processor: StanRecorder, attributes: Dict[str, Any]
 ) -> None:
     span_name = "aws.lambda.entry"
     service_name = "lambda"
     expected_result = attributes.copy()
 
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
     reg_span = RegisteredSpan(span, None, service_name)
 
     span.set_attributes(attributes)
@@ -192,13 +201,26 @@ def test_populate_entry_span_data_AWSlambda(
         assert expected_result["http.url"] == reg_span.data["http"]["url"]
 
     elif expected_result["lambda.trigger"] == "aws:cloudwatch.events":
-        assert expected_result["lambda.cw.events.resources"] == reg_span.data["lambda"]["cw"]["events"]["resources"]
+        assert (
+            expected_result["lambda.cw.events.resources"]
+            == reg_span.data["lambda"]["cw"]["events"]["resources"]
+        )
     elif expected_result["lambda.trigger"] == "aws:cloudwatch.logs":
-        assert expected_result["lambda.cw.logs.group"] == reg_span.data["lambda"]["cw"]["logs"]["group"]
+        assert (
+            expected_result["lambda.cw.logs.group"]
+            == reg_span.data["lambda"]["cw"]["logs"]["group"]
+        )
     elif expected_result["lambda.trigger"] == "aws:s3":
-        assert expected_result["lambda.s3.events"] == reg_span.data["lambda"]["s3"]["events"]
+        assert (
+            expected_result["lambda.s3.events"]
+            == reg_span.data["lambda"]["s3"]["events"]
+        )
     elif expected_result["lambda.trigger"] == "aws:sqs":
-        assert expected_result["lambda.sqs.messages"] == reg_span.data["lambda"]["sqs"]["messages"]
+        assert (
+            expected_result["lambda.sqs.messages"]
+            == reg_span.data["lambda"]["sqs"]["messages"]
+        )
+
 
 @pytest.mark.parametrize(
     "span_name, service_name, attributes",
@@ -290,7 +312,7 @@ def test_populate_entry_span_data_AWSlambda(
             {
                 "gcs.op": "produce",
                 "gcs.projectId": "MY_PROJECT",
-                "gcs.accessId": "Can not tell you!", 
+                "gcs.accessId": "Can not tell you!",
             },
         ),
         (
@@ -299,18 +321,19 @@ def test_populate_entry_span_data_AWSlambda(
             {
                 "gcps.op": "produce",
                 "gcps.projid": "MY_PROJECT",
-                "gcps.top": "MY_SUBSCRIPTION_NAME", 
+                "gcps.top": "MY_SUBSCRIPTION_NAME",
             },
         ),
     ],
 )
 def test_populate_exit_span_data(
     span_context: SpanContext,
+    span_processor: StanRecorder,
     span_name: str,
     service_name: str,
-    attributes: Dict[str, Any]
+    attributes: Dict[str, Any],
 ) -> None:
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
     reg_span = RegisteredSpan(span, None, service_name)
 
     expected_result = {}
@@ -345,14 +368,12 @@ def test_populate_exit_span_data(
     ],
 )
 def test_populate_exit_span_data_boto3(
-    span_context: SpanContext,
-    attributes: Dict[str, Any]
+    span_context: SpanContext, span_processor: StanRecorder, attributes: Dict[str, Any]
 ) -> None:
     span_name = service_name = "boto3"
     expected_result = attributes.copy()
 
-
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
     reg_span = RegisteredSpan(span, None, service_name)
 
     # expected_result = {}
@@ -371,10 +392,11 @@ def test_populate_exit_span_data_boto3(
         assert value == reg_span.data[service_name][attr]
 
 
-
-def test_populate_exit_span_data_log(span_context: SpanContext) -> None:
+def test_populate_exit_span_data_log(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
     span_name = service_name = "log"
-    span = InstanaSpan(span_name, span_context)
+    span = InstanaSpan(span_name, span_context, span_processor)
     reg_span = RegisteredSpan(span, None, service_name)
 
     excepted_text = "Houston, we have a problem!"
@@ -398,8 +420,8 @@ def test_populate_exit_span_data_log(span_context: SpanContext) -> None:
             time.time_ns(),
         ),
     ]
-    
-    for (event_name, attributes, timestamp) in events:
+
+    for event_name, attributes, timestamp in events:
         span.add_event(event_name, attributes, timestamp)
 
     reg_span._populate_exit_span_data(span)

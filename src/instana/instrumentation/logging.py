@@ -7,8 +7,10 @@ import wrapt
 import logging
 from collections.abc import Mapping
 
-from ..log import logger
-from ..util.traceutils import get_tracer_tuple, tracing_is_off
+from opentelemetry.trace import set_span_in_context
+
+from instana.log import logger
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 
 @wrapt.patch_function_wrapper('logging', 'Logger._log')
@@ -37,19 +39,22 @@ def log_with_instana(wrapped, instance, argv, kwargs):
         if t is not None and v is not None:
             parameters = '{} {}'.format(t , v)
 
+        parent_context = set_span_in_context(parent_span)
+
         # create logging span
-        with tracer.start_active_span('log', child_of=parent_span) as scope:
-            scope.span.log_kv({ 'message': msg })
+        with tracer.start_as_current_span("log", context=parent_context) as span:
+            event_attributes = {"message": msg}
             if parameters is not None:
-                scope.span.log_kv({ 'parameters': parameters })
+                event_attributes.update({"parameters": parameters})
+            span.add_event(name="log_with_instana", attributes=event_attributes)
             # extra tags for an error
             if argv[0] >= logging.ERROR:
-                scope.span.mark_as_errored()
+                span.mark_as_errored()
+
     except Exception:
         logger.debug('log_with_instana:', exc_info=True)
 
     return wrapped(*argv, **kwargs)
 
 
-logger.debug('Instrumenting logging')
-
+logger.debug("Instrumenting logging")

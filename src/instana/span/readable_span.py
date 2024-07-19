@@ -61,7 +61,11 @@ class ReadableSpan:
         self._context = context
         self._start_time = start_time or time_ns()
         self._end_time = end_time
-        self._duration = 0
+        self._duration = (
+            self._end_time - self._start_time
+            if self._start_time and self._end_time
+            else None
+        )
         self._attributes = attributes if attributes else {}
         self._events = events
         self._parent_id = parent_id

@@ -7,7 +7,6 @@ from instana.sampling import InstanaSampler
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer, InstanaTracerProvider
-from opentelemetry.context.context import Context
 from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 
 
@@ -28,7 +27,7 @@ def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
 
 
 def test_tracer_start_span(
-    tracer_provider: InstanaTracerProvider, context: Context
+    tracer_provider: InstanaTracerProvider, span_context: SpanContext
 ) -> None:
     span_name = "test-span"
     tracer = InstanaTracer(
@@ -37,7 +36,7 @@ def test_tracer_start_span(
         tracer_provider._exporter,
         tracer_provider._propagators,
     )
-    span = tracer.start_span(name=span_name, context=context)
+    span = tracer.start_span(name=span_name, span_context=span_context)
 
     assert span
     assert isinstance(span, InstanaSpan)
@@ -68,7 +67,7 @@ def test_tracer_start_span_with_stack(tracer_provider: InstanaTracerProvider) ->
 
 
 def test_tracer_start_span_Exception(
-    mocker, tracer_provider: InstanaTracerProvider, context: Context
+    mocker, tracer_provider: InstanaTracerProvider, span_context: SpanContext
 ) -> None:
     span_name = "test-span"
     tracer = InstanaTracer(
@@ -79,10 +78,11 @@ def test_tracer_start_span_Exception(
     )
 
     mocker.patch(
-        "instana.span.span.InstanaSpan.get_span_context", return_value={"key": "value"}
+        "instana.tracer.InstanaTracer._create_span_context",
+        return_value={"key": "value"},
     )
-    with pytest.raises(TypeError):
-        tracer.start_span(name=span_name, context=context)
+    with pytest.raises(AttributeError):
+        tracer.start_span(name=span_name, span_context=span_context)
 
 
 def test_tracer_start_as_current_span(tracer_provider: InstanaTracerProvider) -> None:

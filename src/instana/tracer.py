@@ -114,7 +114,7 @@ class InstanaTracer(Tracer):
     def start_span(
         self,
         name: str,
-        context: Optional[Context] = None,
+        span_context: Optional[SpanContext] = None,
         kind: SpanKind = SpanKind.INTERNAL,
         attributes: types.Attributes = None,
         links: _Links = None,
@@ -122,7 +122,7 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
-        parent_context = get_current_span(context).get_span_context()
+        parent_context = span_context
 
         if parent_context is not None and not isinstance(parent_context, SpanContext):
             raise TypeError("parent_context must be an Instana SpanContext or None.")
@@ -154,7 +154,7 @@ class InstanaTracer(Tracer):
     def start_as_current_span(
         self,
         name: str,
-        context: Optional[Context] = None,
+        span_context: Optional[SpanContext] = None,
         kind: SpanKind = SpanKind.INTERNAL,
         attributes: types.Attributes = None,
         links: _Links = None,
@@ -165,7 +165,7 @@ class InstanaTracer(Tracer):
     ) -> Iterator[InstanaSpan]:
         span = self.start_span(
             name=name,
-            context=context,
+            span_context=span_context,
             kind=kind,
             attributes=attributes,
             links=links,

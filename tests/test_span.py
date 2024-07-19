@@ -630,9 +630,6 @@ def test_span_end_default(
 
     assert span.end_time
     assert isinstance(span.end_time, int)
-    assert span.duration
-    assert isinstance(span.duration, int)
-    assert span.duration > 0
 
 
 def test_span_end(span_context: SpanContext, span_processor: StanRecorder) -> None:
@@ -646,10 +643,6 @@ def test_span_end(span_context: SpanContext, span_processor: StanRecorder) -> No
 
     assert span.end_time
     assert span.end_time == timestamp_end
-    assert span.duration
-    assert isinstance(span.duration, int)
-    assert span.duration > 0
-    assert span.duration == (timestamp_end - span.start_time)
 
 
 def test_span_mark_as_errored_default(

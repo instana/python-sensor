@@ -186,6 +186,7 @@ class InstanaSpan(Span, ReadableSpan):
             attributes=self.attributes,
             events=self.events,
             status=self.status,
+            stack=self.stack,
             # kind=self.kind,
         )
 

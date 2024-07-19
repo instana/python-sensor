@@ -14,10 +14,7 @@ from instana.w3c_trace_context.tracestate import Tracestate
 from opentelemetry.trace import (
     INVALID_SPAN_ID,
     INVALID_TRACE_ID,
-    NonRecordingSpan,
-    set_span_in_context,
 )
-from opentelemetry.context.context import Context
 
 # The carrier, typed here as CarrierT, can be a dict, a list, or a tuple.
 # Using the trace header as an example, it can be in the following forms
@@ -180,12 +177,14 @@ class BasePropagator(object):
             and trace_id != INVALID_TRACE_ID
             and span_id != INVALID_SPAN_ID
         ):
-            ctx.trace_id = trace_id[-16:]  # only the last 16 chars
-            ctx.span_id = span_id[-16:]  # only the last 16 chars
+            # ctx.trace_id = trace_id[-16:]  # only the last 16 chars
+            # ctx.span_id = span_id[-16:]  # only the last 16 chars
+            ctx.trace_id = trace_id
+            ctx.span_id = span_id
             ctx.synthetic = synthetic is not None
 
-            if len(trace_id) > 16:
-                ctx.long_trace_id = trace_id
+            # if len(trace_id) > 16:
+            ctx.long_trace_id = trace_id
 
         elif not disable_w3c_trace_context and traceparent and trace_id is None and span_id is None:
             _, tp_trace_id, tp_parent_id, _ = self._tp.get_traceparent_fields(traceparent)
@@ -234,12 +233,14 @@ class BasePropagator(object):
             trace_id = dc.get(self.LC_HEADER_KEY_T) or dc.get(self.ALT_LC_HEADER_KEY_T) or dc.get(
                 self.B_HEADER_KEY_T) or dc.get(self.B_ALT_LC_HEADER_KEY_T)
             if trace_id:
-                trace_id = header_to_long_id(trace_id)
+                # trace_id = header_to_long_id(trace_id)
+                trace_id = int(trace_id)
 
             span_id = dc.get(self.LC_HEADER_KEY_S) or dc.get(self.ALT_LC_HEADER_KEY_S) or dc.get(
                 self.B_HEADER_KEY_S) or dc.get(self.B_ALT_LC_HEADER_KEY_S)
             if span_id:
-                span_id = header_to_id(span_id)
+                # span_id = header_to_id(span_id)
+                span_id = int(span_id)
 
             level = dc.get(self.LC_HEADER_KEY_L) or dc.get(self.ALT_LC_HEADER_KEY_L) or dc.get(
                 self.B_HEADER_KEY_L) or dc.get(self.B_ALT_LC_HEADER_KEY_L)
@@ -317,8 +318,7 @@ class BasePropagator(object):
                 tracestate,
                 disable_w3c_trace_context,
             )
-            ctx = set_span_in_context(NonRecordingSpan(span_context), Context())
-            return ctx
+            return span_context
 
         except Exception:
             logger.debug("extract error:", exc_info=True)

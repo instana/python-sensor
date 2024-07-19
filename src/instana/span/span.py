@@ -193,7 +193,6 @@ class InstanaSpan(Span, ReadableSpan):
     def end(self, end_time: Optional[int] = None) -> None:
         with self._lock:
             self._end_time = end_time if end_time is not None else time_ns()
-            self._duration = self._end_time - self._start_time
 
         self._span_processor.record_span(self._readable_span())
 

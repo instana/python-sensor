@@ -22,7 +22,7 @@ def test_basespan(
         "s": span_id,
         "l": 1,
         "ts": round(span.start_time / 10**6),
-        "d": round(span.duration / 10**6),
+        "d": None,
         "f": None,
         "ec": None,
         "data": DictionaryOfStan(),

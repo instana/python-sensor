@@ -27,7 +27,7 @@ class BaseSpan(object):
         self.s = span.context.span_id
         self.l = span.context.level
         self.ts = round(span.start_time / 10**6)
-        self.d = round(span.duration / 10**6) if span.duration is not None else None
+        self.d = round(span.duration / 10**6) if span.duration else None
         self.f = source
         self.ec = span.attributes.pop("ec", None)
         self.data = DictionaryOfStan()

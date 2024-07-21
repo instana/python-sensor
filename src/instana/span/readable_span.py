@@ -92,7 +92,7 @@ class ReadableSpan:
         return self._end_time
 
     @property
-    def duration(self) -> int:
+    def duration(self) -> Optional[int]:
         return self._duration
 
     @property

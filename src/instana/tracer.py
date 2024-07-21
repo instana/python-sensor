@@ -7,7 +7,7 @@ import re
 import time
 import traceback
 from contextlib import contextmanager
-from typing import Iterator, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Iterator, Mapping, Optional, Type, Union
 
 from opentelemetry.context.context import Context
 from opentelemetry.trace import (
@@ -21,9 +21,7 @@ from opentelemetry.trace import (
 from opentelemetry.util import types
 
 from instana.agent.host import HostAgent
-from instana.agent.test import TestAgent
 from instana.log import logger
-from instana.propagators.base_propagator import CarrierT
 from instana.propagators.binary_propagator import BinaryPropagator
 from instana.propagators.exceptions import UnsupportedFormatException
 from instana.propagators.format import Format
@@ -32,9 +30,13 @@ from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
 from instana.span.kind import EXIT_SPANS
-from instana.span.span import InstanaSpan, get_current_span
+from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.util.ids import generate_id
+
+if TYPE_CHECKING:
+    from instana.agent.base import BaseAgent
+    from instana.propagators.base_propagator import BasePropagator, CarrierT
 
 
 class InstanaTracerProvider(TracerProvider):
@@ -42,7 +44,7 @@ class InstanaTracerProvider(TracerProvider):
         self,
         sampler: Optional[Sampler] = None,
         span_processor: Optional[StanRecorder] = None,
-        exporter: Optional[Union[HostAgent, TestAgent]] = None,
+        exporter: Optional[Type["BaseAgent"]] = None,
     ) -> None:
         self.sampler = sampler or InstanaSampler()
         self._span_processor = span_processor or StanRecorder()
@@ -88,10 +90,8 @@ class InstanaTracer(Tracer):
         self,
         sampler: Sampler,
         span_processor: StanRecorder,
-        exporter: Union[HostAgent, TestAgent],
-        propagators: Mapping[
-            str, Union[BinaryPropagator, HTTPPropagator, TextPropagator]
-        ],
+        exporter: Type["BaseAgent"],
+        propagators: Mapping[str, Type["BasePropagator"]],
     ) -> None:
         self._tracer_id = generate_id()
         self._sampler = sampler
@@ -108,7 +108,7 @@ class InstanaTracer(Tracer):
         return self._span_processor
 
     @property
-    def exporter(self) -> Optional[Union[HostAgent, TestAgent]]:
+    def exporter(self) -> Optional[Type["BaseAgent"]]:
         return self._exporter
 
     def start_span(
@@ -252,9 +252,9 @@ class InstanaTracer(Tracer):
         self,
         span_context: SpanContext,
         format: Union[Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP],
-        carrier: CarrierT,
+        carrier: "CarrierT",
         disable_w3c_trace_context: bool = False,
-    ) -> Optional[CarrierT]:
+    ) -> Optional["CarrierT"]:
         if format in self._propagators:
             return self._propagators[format].inject(
                 span_context, carrier, disable_w3c_trace_context
@@ -265,7 +265,7 @@ class InstanaTracer(Tracer):
     def extract(
         self,
         format: Union[Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP],
-        carrier: CarrierT,
+        carrier: "CarrierT",
         disable_w3c_trace_context: bool = False,
     ) -> Optional[Context]:
         if format in self._propagators:

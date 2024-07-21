@@ -770,3 +770,38 @@ def test_get_current_span_INVALID_SPAN() -> None:
 
     assert span
     assert span == INVALID_SPAN
+
+
+def test_span_duration_default(
+    span_context: SpanContext, span_processor: StanRecorder
+) -> None:
+    span_name = "test-span"
+    span = InstanaSpan(span_name, span_context, span_processor)
+
+    assert not span.end_time
+    assert not span.duration
+
+    span.end()
+
+    assert span.end_time
+    assert span.duration
+    assert isinstance(span.duration, int)
+    assert span.duration > 0
+
+
+def test_span_duration(span_context: SpanContext, span_processor: StanRecorder) -> None:
+    span_name = "test-span"
+    span = InstanaSpan(span_name, span_context, span_processor)
+
+    assert not span.end_time
+    assert not span.duration
+
+    timestamp_end = time.time_ns()
+    span.end(timestamp_end)
+
+    assert span.end_time
+    assert span.end_time == timestamp_end
+    assert span.duration
+    assert isinstance(span.duration, int)
+    assert span.duration > 0
+    assert span.duration == (timestamp_end - span.start_time)

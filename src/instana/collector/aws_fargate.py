@@ -17,7 +17,7 @@ from instana.collector.helpers.fargate.docker import DockerHelper
 from instana.collector.helpers.fargate.process import FargateProcessHelper
 from instana.collector.helpers.fargate.task import TaskHelper
 from instana.collector.helpers.runtime import RuntimeHelper
-from instana.collector.utils import format_trace_and_span_ids
+from instana.collector.utils import format_span
 from instana.log import logger
 from instana.singletons import env_is_test
 from instana.util import DictionaryOfStan, validate_url
@@ -145,7 +145,7 @@ class AWSFargateCollector(BaseCollector):
 
         try:
             if not self.span_queue.empty():
-                payload["spans"] = format_trace_and_span_ids(self.queued_spans())
+                payload["spans"] = format_span(self.queued_spans())
 
             with_snapshot = self.should_send_snapshot_data()
 

@@ -4,13 +4,14 @@
 
 from typing import Dict
 import wrapt
+
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import set_span_in_context
 
 from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
-from instana.span import InstanaSpan
+from instana.span.span import InstanaSpan
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
@@ -81,9 +82,11 @@ try:
         if tracing_is_off() or (span_name == 'boto3'):
             return wrapped(*args, **kwargs)
 
-        parent_context = set_span_in_context(parent_span)
-        
-        with tracer.start_as_current_span("urllib3", context=parent_context) as span:
+        parent_context = parent_span.get_span_context()
+
+        with tracer.start_as_current_span(
+            "urllib3", span_context=parent_context
+        ) as span:
             try:
                 kvs = _collect_kvs(instance, args, kwargs)
                 if 'url' in kvs:

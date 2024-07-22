@@ -23,7 +23,7 @@ class RegisteredSpan(BaseSpan):
             self.k = SpanKind.CLIENT  # exit
             self._populate_exit_span_data(span)
         elif span.name in LOCAL_SPANS:
-            self.k = 3  # intermediate span
+            self.k = SpanKind.INTERNAL  # intermediate span
             self._populate_local_span_data(span)
 
         if "rabbitmq" in self.data and self.data["rabbitmq"]["sort"] == "publish":

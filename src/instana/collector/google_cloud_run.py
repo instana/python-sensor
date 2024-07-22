@@ -15,7 +15,7 @@ from instana.collector.helpers.google_cloud_run.instance_entity import (
     InstanceEntityHelper,
 )
 from instana.collector.helpers.google_cloud_run.process import GCRProcessHelper
-from instana.collector.utils import format_trace_and_span_ids
+from instana.collector.utils import format_span
 from instana.log import logger
 from instana.util import DictionaryOfStan, validate_url
 
@@ -120,7 +120,7 @@ class GCRCollector(BaseCollector):
 
         try:
             if not self.span_queue.empty():
-                payload["spans"] = format_trace_and_span_ids(self.queued_spans())
+                payload["spans"] = format_span(self.queued_spans())
 
             self.fetching_start_time = int(time())
             delta = self.fetching_start_time - self.__last_gcr_md_full_fetch

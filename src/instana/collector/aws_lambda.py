@@ -6,7 +6,7 @@ AWS Lambda Collector: Manages the periodic collection of metrics & snapshot data
 """
 
 from instana.collector.base import BaseCollector
-from instana.collector.utils import format_trace_and_span_ids
+from instana.collector.utils import format_span
 from instana.log import logger
 from instana.util import DictionaryOfStan
 from instana.util.aws import normalize_aws_lambda_arn
@@ -50,7 +50,7 @@ class AWSLambdaCollector(BaseCollector):
         payload["metrics"] = None
 
         if not self.span_queue.empty():
-            payload["spans"] = format_trace_and_span_ids(self.queued_spans())
+            payload["spans"] = format_span(self.queued_spans())
 
         if self.should_send_snapshot_data():
             payload["metrics"] = self.snapshot_data

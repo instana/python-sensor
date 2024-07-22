@@ -9,7 +9,7 @@ from time import time
 from instana.collector.base import BaseCollector
 from instana.collector.helpers.eks.process import EKSFargateProcessHelper
 from instana.collector.helpers.runtime import RuntimeHelper
-from instana.collector.utils import format_trace_and_span_ids
+from instana.collector.utils import format_span
 from instana.log import logger
 from instana.util import DictionaryOfStan
 
@@ -37,7 +37,7 @@ class EKSFargateCollector(BaseCollector):
 
         try:
             if not self.span_queue.empty():
-                payload["spans"] = format_trace_and_span_ids(self.queued_spans())
+                payload["spans"] = format_span(self.queued_spans())
 
             with_snapshot = self.should_send_snapshot_data()
 

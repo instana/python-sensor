@@ -35,8 +35,8 @@ spec:
               - "sha256:0c2928128a96e544a1ee248e50ee8ecbe840bf48ef5a49065812e3d06b6e1bcc"
               # 3.12.4-bookworm
               - "sha256:83f5f8714b6881d3e0e91023d9fe9e43aa6ad5a04e9f9a94ee180b18b021c72a"
-              # 3.13.0b2-bookworm
-              - "sha256:6502f02f8a02313f582928ec7159623b54d7c3d627a7e355ca46f4aace406a6a"
+              # 3.13.0b4-bookworm
+              - "sha256:3c93668a53b8bc526d08e1247a30da0f594caa036d814c7a50bcf6812bd30fbe"
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:

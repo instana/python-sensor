@@ -20,7 +20,7 @@ from instana.span_context import SpanContext
         ("gcps-producer", ("gcps", SpanKind.CLIENT, "gcps"), {}),
         ("urllib3", ("urllib3", SpanKind.CLIENT, "http"), {}),
         ("rabbitmq", ("rabbitmq", SpanKind.CLIENT, "rabbitmq"), {"sort": "publish"}),
-        ("render", ("render", 3, "render"), {"arguments": "--quiet"}),
+        ("render", ("render", SpanKind.INTERNAL, "render"), {"arguments": "--quiet"}),
     ],
 )
 def test_registered_span(

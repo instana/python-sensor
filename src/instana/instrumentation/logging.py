@@ -7,13 +7,11 @@ import wrapt
 import logging
 from collections.abc import Mapping
 
-from opentelemetry.trace import set_span_in_context
-
 from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 
-@wrapt.patch_function_wrapper('logging', 'Logger._log')
+@wrapt.patch_function_wrapper("logging", "Logger._log")
 def log_with_instana(wrapped, instance, argv, kwargs):
     # argv[0] = level
     # argv[1] = message
@@ -41,12 +39,12 @@ def log_with_instana(wrapped, instance, argv, kwargs):
         parameters = None
         (t, v, tb) = sys.exc_info()
         if t is not None and v is not None:
-            parameters = '{} {}'.format(t , v)
+            parameters = "{} {}".format(t, v)
 
-        parent_context = set_span_in_context(parent_span)
+        parent_context = parent_span.get_span_context() if parent_span else None
 
         # create logging span
-        with tracer.start_as_current_span("log", context=parent_context) as span:
+        with tracer.start_as_current_span("log", span_context=parent_context) as span:
             event_attributes = {"message": msg}
             if parameters is not None:
                 event_attributes.update({"parameters": parameters})
@@ -56,7 +54,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
                 span.mark_as_errored()
 
     except Exception:
-        logger.debug('log_with_instana:', exc_info=True)
+        logger.debug("log_with_instana:", exc_info=True)
 
     return wrapped(*argv, **kwargs, stacklevel=stacklevel)
 

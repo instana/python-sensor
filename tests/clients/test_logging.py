@@ -10,6 +10,10 @@ from opentelemetry.trace import SpanKind
 
 from instana.singletons import agent, tracer
 
+from opentelemetry.trace import SpanKind
+
+from instana.singletons import agent, tracer
+
 
 class TestLogging:
     @pytest.fixture(autouse=True)

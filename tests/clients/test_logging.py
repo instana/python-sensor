@@ -35,7 +35,6 @@ class TestLogging:
             self.logger.info("info message")
 
         spans = self.recorder.queued_spans()
-
         assert len(spans) == 1
 
     def test_extra_span(self) -> None:
@@ -73,10 +72,10 @@ class TestLogging:
             self.logger.warning("foo %s", {"bar": 18})
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
-        self.assertIs(SpanKind.CLIENT, spans[0].k)
+        assert len(spans) == 2
+        assert spans[0].k is SpanKind.CLIENT
 
-        self.assertEqual("foo {'bar': 18}", spans[0].data["event"].get("message"))
+        assert spans[0].data["event"].get("message") == "foo {'bar': 18}"
 
     def test_parameters(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -97,7 +96,6 @@ class TestLogging:
         self.logger.info("info message")
 
         spans = self.recorder.queued_spans()
-
         assert len(spans) == 0
 
     def test_root_exit_span(self) -> None:

@@ -6,13 +6,19 @@ import sys
 import wrapt
 import logging
 from collections.abc import Mapping
+from typing import Any, Tuple, Dict, Callable
 
 from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 
 @wrapt.patch_function_wrapper("logging", "Logger._log")
-def log_with_instana(wrapped, instance, argv, kwargs):
+def log_with_instana(
+    wrapped: Callable[..., None],
+    instance: logging.Logger,
+    argv: Tuple[int, str, Tuple[Any, ...]],
+    kwargs: Dict[str, Any],
+) -> Callable[..., None]:
     # argv[0] = level
     # argv[1] = message
     # argv[2] = args for message

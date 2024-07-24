@@ -32,37 +32,37 @@ class TestLogging(unittest.TestCase):
             self.logger.info("info message")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
+        assert len(spans) == 1
 
     def test_extra_span(self) -> None:
         with tracer.start_as_current_span("test"):
             self.logger.warning("foo %s", "bar")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
-        self.assertIs(SpanKind.CLIENT, spans[0].k)
+        assert len(spans) == 2
+        assert spans[0].k is SpanKind.CLIENT
 
-        self.assertEqual("foo bar", spans[0].data["event"].get("message"))
+        assert spans[0].data["event"].get("message") == "foo bar"
 
     def test_log_with_tuple(self) -> None:
         with tracer.start_as_current_span("test"):
             self.logger.warning("foo %s", ("bar",))
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
-        self.assertIs(SpanKind.CLIENT, spans[0].k)
+        assert len(spans) == 2
+        assert spans[0].k is SpanKind.CLIENT
 
-        self.assertEqual("foo ('bar',)", spans[0].data["event"].get("message"))
+        assert spans[0].data["event"].get("message") == "foo ('bar',)"
 
     def test_log_with_dict(self) -> None:
         with tracer.start_as_current_span("test"):
             self.logger.warning("foo %s", {"bar": 18})
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
-        self.assertIs(SpanKind.CLIENT, spans[0].k)
+        assert len(spans) == 2
+        assert spans[0].k is SpanKind.CLIENT
 
-        self.assertEqual("foo {'bar': 18}", spans[0].data["event"].get("message"))
+        assert spans[0].data["event"].get("message") == "foo {'bar': 18}"
 
     def test_parameters(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -74,26 +74,26 @@ class TestLogging(unittest.TestCase):
                 self.logger.exception("Exception: %s", str(e))
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert len(spans) == 2
 
-        self.assertIsNotNone(spans[0].data["event"].get("parameters"))
+        assert spans[0].data["event"].get("parameters") is not None
 
     def test_no_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True
         self.logger.info("info message")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(0, len(spans))
+        assert len(spans) == 0
 
     def test_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True
         self.logger.warning("foo %s", "bar")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
-        self.assertIs(SpanKind.CLIENT, spans[0].k)
+        assert len(spans) == 1
+        assert spans[0].k is SpanKind.CLIENT
 
-        self.assertEqual("foo bar", spans[0].data["event"].get("message"))
+        assert spans[0].data["event"].get("message") == "foo bar"
 
     def test_exception(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -104,10 +104,10 @@ class TestLogging(unittest.TestCase):
                 self.logger.warning("foo %s", "bar")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
-        self.assertIs(SpanKind.CLIENT, spans[0].k)
+        assert len(spans) == 2
+        assert spans[0].k is SpanKind.CLIENT
 
-        self.assertEqual({}, spans[0].data["event"])
+        assert spans[0].data["event"] == {}
 
     @pytest.mark.usefixtures("capture_log")
     def test_log_caller(self):

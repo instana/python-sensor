@@ -3,6 +3,7 @@
 
 import logging
 import unittest
+from unittest.mock import patch
 
 from opentelemetry.trace import SpanKind
 
@@ -26,6 +27,7 @@ class TestLogging(unittest.TestCase):
         agent.options.allow_exit_as_root = False
 
     def test_no_span(self) -> None:
+        self.logger.setLevel(logging.INFO)
         with tracer.start_as_current_span("test"):
             self.logger.info("info message")
 
@@ -51,6 +53,16 @@ class TestLogging(unittest.TestCase):
         self.assertIs(SpanKind.CLIENT, spans[0].k)
 
         self.assertEqual("foo ('bar',)", spans[0].data["event"].get("message"))
+
+    def test_log_with_dict(self) -> None:
+        with tracer.start_as_current_span("test"):
+            self.logger.warning("foo %s", {"bar": 18})
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+        self.assertIs(SpanKind.CLIENT, spans[0].k)
+
+        self.assertEqual("foo {'bar': 18}", spans[0].data["event"].get("message"))
 
     def test_parameters(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -82,6 +94,20 @@ class TestLogging(unittest.TestCase):
         self.assertIs(SpanKind.CLIENT, spans[0].k)
 
         self.assertEqual("foo bar", spans[0].data["event"].get("message"))
+
+    def test_exception(self) -> None:
+        with tracer.start_as_current_span("test"):
+            with patch(
+                "instana.span.span.InstanaSpan.add_event",
+                side_effect=Exception("mocked error"),
+            ):
+                self.logger.warning("foo %s", "bar")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+        self.assertIs(SpanKind.CLIENT, spans[0].k)
+
+        self.assertEqual({}, spans[0].data["event"])
 
     @pytest.mark.usefixtures("capture_log")
     def test_log_caller(self):

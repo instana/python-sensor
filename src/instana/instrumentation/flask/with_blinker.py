@@ -23,9 +23,9 @@ def request_started_with_instana(sender, **extra):
     try:
         env = flask.request.environ
 
-        ctx = tracer.extract(Format.HTTP_HEADERS, env)
+        span_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-        span = tracer.start_span("wsgi", context=ctx)
+        span = tracer.start_span("wsgi", span_context=span_context)
         flask.g.span = span
 
         ctx = trace.set_span_in_context(span)

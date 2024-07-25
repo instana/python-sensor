@@ -59,6 +59,7 @@ class InstanaTracerProvider(TracerProvider):
         instrumenting_module_name: str,
         instrumenting_library_version: Optional[str] = None,
         schema_url: Optional[str] = None,
+        attributes: Optional[types.Attributes] = None,
     ) -> Tracer:
         if not instrumenting_module_name:  # Reject empty strings too.
             instrumenting_module_name = ""

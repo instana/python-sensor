@@ -6,7 +6,6 @@ import wrapt
 import flask
 
 from opentelemetry.semconv.trace import SpanAttributes as ext
-from opentelemetry.trace import set_span_in_context
 
 from ...log import logger
 from ...singletons import tracer, agent
@@ -19,9 +18,9 @@ def render_with_instana(wrapped, instance, argv, kwargs):
         return wrapped(*argv, **kwargs)
 
     parent_span = flask.g.span
-    parent_context = set_span_in_context(parent_span)
+    parent_context = parent_span.get_span_context()
 
-    with tracer.start_as_current_span("render", context=parent_context) as span:
+    with tracer.start_as_current_span("render", span_context=parent_context) as span:
         try:
             flask_version = tuple(map(int, flask.__version__.split('.')))
             template = argv[1] if flask_version >= (2, 2, 0) else argv[0]
@@ -59,7 +58,7 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
                         status_code = response.status_code
 
                 if 500 <= status_code:
-                    span.log_exception(exc)
+                    span.record_exception(exc)
 
                 span.set_attribute(ext.HTTP_STATUS_CODE, int(status_code))
 
@@ -70,8 +69,8 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
                         response.headers.add('Server-Timing', value)
                     elif type(response.headers) is dict or hasattr(response.headers, "__dict__"):
                         response.headers['Server-Timing'] = value
-
-            span.end()
+            if span and span.is_recording():
+                span.end()
             flask.g.span = None
     except:
         logger.debug("handle_user_exception_with_instana:", exc_info=True)

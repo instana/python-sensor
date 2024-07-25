@@ -6,7 +6,9 @@
 
 import os
 import logging
-import opentracing.ext.tags as ext
+
+from opentelemetry.semconv.trace import SpanAttributes
+
 from flask import jsonify, Response
 from wsgiref.simple_server import make_server
 from flask import Flask, redirect, render_template, render_template_string
@@ -78,23 +80,29 @@ def username_hello(username):
 
 
 @app.route("/complex")
-def gen_opentracing():
-    with tracer.start_active_span('asteroid') as pscope:
-        pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
-        pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
-        pscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
-        pscope.span.set_tag(ext.HTTP_URL, "/python/simple/one")
-        pscope.span.set_tag(ext.HTTP_METHOD, "GET")
-        pscope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
-        pscope.span.log_kv({"foo": "bar"})
+def gen_opentelemetry():
+    with tracer.start_as_current_span("asteroid") as pspan:
+        pspan.set_attribute(SpanAttributes.COMPONENT, "Python simple example app")
+        pspan.set_attribute(
+            SpanAttributes.SPAN_KIND, SpanAttributes.SPAN_KIND_RPC_SERVER
+        )
+        pspan.set_attribute(SpanAttributes.PEER_HOSTNAME, "localhost")
+        pspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/one")
+        pspan.set_attribute(SpanAttributes.HTTP_METHOD, "GET")
+        pspan.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 200)
+        pspan.add_event(name="gen_opentelemetry", attributes={"foo": "bar"})
 
-        with tracer.start_active_span('spacedust', child_of=pscope.span) as cscope:
-            cscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
-            cscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
-            cscope.span.set_tag(ext.HTTP_URL, "/python/simple/two")
-            cscope.span.set_tag(ext.HTTP_METHOD, "POST")
-            cscope.span.set_tag(ext.HTTP_STATUS_CODE, 204)
-            cscope.span.set_baggage_item("someBaggage", "someValue")
+        span_context = pspan.get_span_context()
+
+        with tracer.start_active_span("spacedust", span_context=span_context) as cspan:
+            cspan.set_attribute(
+                SpanAttributes.SPAN_KIND, SpanAttributes.SPAN_KIND_RPC_CLIENT
+            )
+            cspan.set_attribute(SpanAttributes.PEER_HOSTNAME, "localhost")
+            cspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/two")
+            cspan.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
+            cspan.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 204)
+            cspan.set_baggage_item("someBaggage", "someValue")
 
     return "<center><h1>🐍 Generated some OT spans... 🦄</h1></center>"
 

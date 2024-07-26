@@ -19,7 +19,7 @@ try:
         # The signals_available attribute is deprecated. #5056"
         signals_available = True
 
-    from . import common
+    from instana.instrumentation.flask import common
 
     if signals_available is True:
         import instana.instrumentation.flask.with_blinker

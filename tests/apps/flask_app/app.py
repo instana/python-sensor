@@ -147,6 +147,11 @@ def exception():
     raise Exception('fake error')
 
 
+@app.route("/got_request_exception")
+def got_request_exception():
+    raise RuntimeError()
+
+
 @app.route("/exception-invalid-usage")
 def exception_invalid_usage():
     raise InvalidUsage("Simulated custom exception", status_code=502)

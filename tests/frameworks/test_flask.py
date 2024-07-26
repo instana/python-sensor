@@ -20,7 +20,7 @@ from opentelemetry.trace import SpanKind
 import tests.apps.flask_app
 from instana.singletons import tracer
 from instana.span.span import get_current_span
-from ..helpers import testenv
+from tests.helpers import testenv
 
 
 class TestFlask(unittest.TestCase):

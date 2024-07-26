@@ -4,6 +4,7 @@
 
 import wrapt
 import flask
+from importlib.metadata import version
 
 from opentelemetry.semconv.trace import SpanAttributes as ext
 
@@ -22,7 +23,7 @@ def render_with_instana(wrapped, instance, argv, kwargs):
 
     with tracer.start_as_current_span("render", span_context=parent_context) as span:
         try:
-            flask_version = tuple(map(int, flask.__version__.split('.')))
+            flask_version = tuple(map(int, version("flask").split(".")))
             template = argv[1] if flask_version >= (2, 2, 0) else argv[0]
 
             span.set_attribute("type", "template")

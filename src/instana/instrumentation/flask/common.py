@@ -7,8 +7,8 @@ import flask
 
 from opentelemetry.semconv.trace import SpanAttributes as ext
 
-from ...log import logger
-from ...singletons import tracer, agent
+from instana.log import logger
+from instana.singletons import tracer, agent
 from instana.propagators.format import Format
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')

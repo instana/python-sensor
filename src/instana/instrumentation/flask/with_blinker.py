@@ -9,10 +9,10 @@ from typing import Any, Tuple, Dict, Callable
 from opentelemetry.semconv.trace import SpanAttributes as ext
 from opentelemetry import context, trace
 
-from ...log import logger
-from ...util.secrets import strip_secrets_from_query
-from ...singletons import agent, tracer
-from .common import extract_custom_headers
+from instana.log import logger
+from instana.util.secrets import strip_secrets_from_query
+from instana.singletons import agent, tracer
+from instana.instrumentation.flask.common import extract_custom_headers
 from instana.propagators.format import Format
 
 import flask

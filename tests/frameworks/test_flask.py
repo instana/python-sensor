@@ -4,6 +4,7 @@
 import unittest
 import urllib3
 import flask
+from unittest.mock import patch
 
 if hasattr(flask.signals, 'signals_available'):
     from flask.signals import signals_available
@@ -23,26 +24,102 @@ from ..helpers import testenv
 
 
 class TestFlask(unittest.TestCase):
-    def setUp(self):
+
+    def setUp(self) -> None:
         """ Clear all spans before a test run """
         self.http = urllib3.PoolManager()
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """ Do nothing for now """
         return None
 
-    def test_vanilla_requests(self):
+    def test_vanilla_requests(self) -> None:
         r = self.http.request('GET', testenv["wsgi_server"] + '/')
         self.assertEqual(r.status, 200)
 
         spans = self.recorder.queued_spans()
         self.assertEqual(1, len(spans))
 
-    def test_get_request(self):
+    def test_get_request(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/')
+            response = self.http.request("GET", testenv["wsgi_server"] + "/")
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(3, len(spans))
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        self.assertTrue(response)
+        self.assertEqual(200, response.status)
+
+        self.assertIn("X-INSTANA-T", response.headers)
+        self.assertTrue(int(response.headers["X-INSTANA-T"], 16))
+        self.assertEqual(response.headers["X-INSTANA-T"], str(wsgi_span.t))
+
+        self.assertIn("X-INSTANA-S", response.headers)
+        self.assertTrue(int(response.headers["X-INSTANA-S"], 16))
+        self.assertEqual(response.headers["X-INSTANA-S"], str(wsgi_span.s))
+
+        self.assertIn("X-INSTANA-L", response.headers)
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
+
+        self.assertIn("Server-Timing", response.headers)
+        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        self.assertEqual(response.headers["Server-Timing"], server_timing_value)
+
+        self.assertFalse(get_current_span().is_recording())
+
+        # Same traceId
+        self.assertEqual(test_span.t, urllib3_span.t)
+        self.assertEqual(urllib3_span.t, wsgi_span.t)
+
+        # Parent relationships
+        self.assertEqual(urllib3_span.p, test_span.s)
+        self.assertEqual(wsgi_span.p, urllib3_span.s)
+
+        # Synthetic
+        self.assertIsNone(wsgi_span.sy)
+        self.assertIsNone(urllib3_span.sy)
+        self.assertIsNone(test_span.sy)
+
+        # Error logging
+        self.assertIsNone(test_span.ec)
+        self.assertIsNone(urllib3_span.ec)
+        self.assertIsNone(wsgi_span.ec)
+
+        # wsgi
+        self.assertEqual("wsgi", wsgi_span.n)
+        self.assertEqual(
+            "127.0.0.1:" + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"]
+        )
+        self.assertEqual("/", wsgi_span.data["http"]["url"])
+        self.assertEqual("GET", wsgi_span.data["http"]["method"])
+        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertIsNone(wsgi_span.data["http"]["error"])
+        self.assertIsNone(wsgi_span.stack)
+
+        # urllib3
+        self.assertEqual("test", test_span.data["sdk"]["name"])
+        self.assertEqual("urllib3", urllib3_span.n)
+        self.assertEqual(200, urllib3_span.data["http"]["status"])
+        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
+        self.assertEqual("GET", urllib3_span.data["http"]["method"])
+        self.assertIsNotNone(urllib3_span.stack)
+        self.assertTrue(type(urllib3_span.stack) is list)
+        self.assertTrue(len(urllib3_span.stack) > 1)
+
+        # We should NOT have a path template for this route
+        self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
+
+    def test_get_request_with_query_params(self) -> None:
+        with tracer.start_as_current_span("test"):
+            response = self.http.request(
+                "GET", testenv["wsgi_server"] + "/" + "?key1=val1&key2=val2"
+            )
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
@@ -93,6 +170,9 @@ class TestFlask(unittest.TestCase):
         self.assertEqual("wsgi", wsgi_span.n)
         self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
         self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual(
+            "key1=<redacted>&key2=<redacted>", wsgi_span.data["http"]["params"]
+        )
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
         self.assertEqual(200, wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
@@ -112,7 +192,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
     @unittest.skip("Suppression is not yet handled")
-    def test_get_request_with_suppression(self):
+    def test_get_request_with_suppression(self) -> None:
         headers = {'X-INSTANA-L':'0'}
         response = self.http.urlopen('GET', testenv["wsgi_server"] + '/', headers=headers)
 
@@ -134,7 +214,7 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(spans, [])
 
     @unittest.skip("Suppression is not yet handled")
-    def test_get_request_with_suppression_and_w3c(self):
+    def test_get_request_with_suppression_and_w3c(self) -> None:
         headers = {
                 'X-INSTANA-L':'0',
                 'traceparent': '00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01',
@@ -160,7 +240,7 @@ class TestFlask(unittest.TestCase):
         self.assertEqual(spans, [])
 
     @unittest.skip("Synthetic requests are not yet handled")
-    def test_synthetic_request(self):
+    def test_synthetic_request(self) -> None:
         headers = {
             'X-INSTANA-SYNTHETIC': '1'
         }
@@ -179,7 +259,7 @@ class TestFlask(unittest.TestCase):
         self.assertIsNone(urllib3_span.sy)
         self.assertIsNone(test_span.sy)
 
-    def test_render_template(self):
+    def test_render_template(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/render')
 
@@ -257,7 +337,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_render_template_string(self):
+    def test_render_template_string(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/render_string')
 
@@ -335,7 +415,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_301(self):
+    def test_301(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/301', redirect=False)
 
@@ -402,7 +482,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_custom_404(self):
+    def test_custom_404(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/custom-404')
 
@@ -469,7 +549,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_404(self):
+    def test_404(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/11111111111')
 
@@ -536,7 +616,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_500(self):
+    def test_500(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/500')
 
@@ -603,7 +683,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_render_error(self):
+    def test_render_error(self) -> None:
         if signals_available is True:
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
 
@@ -684,7 +764,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_exception(self):
+    def test_exception(self) -> None:
         if signals_available is True:
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
 
@@ -751,7 +831,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_custom_exception_with_log(self):
+    def test_custom_exception_with_log(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/exception-invalid-usage')
 
@@ -830,7 +910,7 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         self.assertIsNone(wsgi_span.data["http"]["path_tpl"])
 
-    def test_path_templates(self):
+    def test_path_templates(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/users/Ricky/sayhello')
 
@@ -896,7 +976,7 @@ class TestFlask(unittest.TestCase):
         # We should have a reported path template for this route
         self.assertEqual("/users/{username}/sayhello", wsgi_span.data["http"]["path_tpl"])
 
-    def test_response_header_capture(self):
+    def test_response_header_capture(self) -> None:
         # Hack together a manual custom headers list
         from instana.singletons import agent
         original_extra_http_headers = agent.options.extra_http_headers
@@ -974,3 +1054,14 @@ class TestFlask(unittest.TestCase):
         self.assertEqual("Ok too", wsgi_span.data["http"]["header"]["X-Capture-That"])
 
         agent.options.extra_http_headers = original_extra_http_headers
+
+    def test_request_started_exception(self) -> None:
+        with tracer.start_as_current_span("test"):
+            with patch(
+                "instana.singletons.tracer.extract",
+                side_effect=Exception("mocked error"),
+            ):
+                self.http.request("GET", testenv["wsgi_server"] + "/")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2

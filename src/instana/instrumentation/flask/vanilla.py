@@ -21,9 +21,9 @@ path_tpl_re = re.compile('<.*>')
 def before_request_with_instana(*argv, **kwargs):
     try:
         env = flask.request.environ
-        ctx = tracer.extract(Format.HTTP_HEADERS, env)
+        span_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-        span = tracer.start_span("wsgi", context=ctx)
+        span = tracer.start_span("wsgi", span_context=span_context)
         flask.g.span = span
 
         ctx = trace.set_span_in_context(span)
@@ -59,7 +59,7 @@ def before_request_with_instana(*argv, **kwargs):
 
 
 def after_request_with_instana(response):
-    scope = None
+    span = None
     try:
         # If we're not tracing, just return
         if not hasattr(flask.g, "span"):
@@ -112,8 +112,8 @@ def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
     if not hasattr(instance, '_stan_wuz_here'):
         logger.debug("Flask(vanilla): Applying flask before/after instrumentation funcs")
         setattr(instance, "_stan_wuz_here", True)
-        instance.after_request(after_request_with_instana)
         instance.before_request(before_request_with_instana)
+        instance.after_request(after_request_with_instana)
         instance.teardown_request(teardown_request_with_instana)
     return wrapped(*argv, **kwargs)
 

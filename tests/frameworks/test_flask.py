@@ -57,11 +57,11 @@ class TestFlask(unittest.TestCase):
         assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -132,11 +132,11 @@ class TestFlask(unittest.TestCase):
         assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -275,11 +275,11 @@ class TestFlask(unittest.TestCase):
         assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -355,11 +355,11 @@ class TestFlask(unittest.TestCase):
         assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -438,11 +438,11 @@ class TestFlask(unittest.TestCase):
         assert 301 == response.status
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -649,11 +649,11 @@ class TestFlask(unittest.TestCase):
         assert 500 == response.status
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -867,11 +867,11 @@ class TestFlask(unittest.TestCase):
         assert 502 == response.status
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -947,11 +947,11 @@ class TestFlask(unittest.TestCase):
         assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -1022,11 +1022,11 @@ class TestFlask(unittest.TestCase):
         assert response
         assert response.status == 200
         assert "X-INSTANA-T" in response.headers
-        assert (int(response.headers["X-INSTANA-T"]), 16)
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
-        assert (int(response.headers["X-INSTANA-S"]), 16)
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
@@ -1098,3 +1098,32 @@ class TestFlask(unittest.TestCase):
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
+
+    def test_got_request_exception(self) -> None:
+        response = self.http.request(
+            "GET", testenv["wsgi_server"] + "/got_request_exception"
+        )
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 1
+
+        wsgi_span = spans[0]
+
+        assert response
+        assert 500 == response.status
+
+        assert get_current_span().is_recording() is False
+
+        # Error logging
+        assert wsgi_span.ec == 1
+
+        # wsgi
+        assert wsgi_span.n == "wsgi"
+        assert (
+            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+        )
+        assert "/got_request_exception" == wsgi_span.data["http"]["url"]
+        assert "GET" == wsgi_span.data["http"]["method"]
+        assert wsgi_span.data["http"]["status"] == 500
+        assert wsgi_span.data["http"]["error"] == "RuntimeError()"
+        assert wsgi_span.stack is None

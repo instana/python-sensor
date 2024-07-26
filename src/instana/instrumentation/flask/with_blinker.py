@@ -4,6 +4,8 @@
 
 import re
 import wrapt
+from typing import Any, Tuple, Dict, Callable
+
 from opentelemetry.semconv.trace import SpanAttributes as ext
 from opentelemetry import context, trace
 
@@ -19,7 +21,7 @@ from flask import request_started, request_finished, got_request_exception
 path_tpl_re = re.compile("<.*>")
 
 
-def request_started_with_instana(sender, **extra):
+def request_started_with_instana(sender: flask.app.Flask, **extra: Any) -> None:
     try:
         env = flask.request.environ
 
@@ -58,7 +60,10 @@ def request_started_with_instana(sender, **extra):
         logger.debug("Flask request_started_with_instana", exc_info=True)
 
 
-def request_finished_with_instana(sender, response, **extra):
+def request_finished_with_instana(
+    sender: flask.app.Flask, response: flask.wrappers.Response, **extra: Any
+) -> None:
+    span = None
     try:
         if not hasattr(flask.g, "span"):
             return
@@ -83,7 +88,9 @@ def request_finished_with_instana(sender, response, **extra):
             span.end()
 
 
-def log_exception_with_instana(sender, exception, **extra):
+def log_exception_with_instana(
+    sender: flask.app.Flask, exception: Any, **extra: Any
+) -> None:
     if hasattr(flask.g, "span") and flask.g.span is not None:
         span = flask.g.span
         if span is not None:
@@ -98,7 +105,7 @@ def log_exception_with_instana(sender, exception, **extra):
                 span.end()
 
 
-def teardown_request_with_instana(*argv, **kwargs):
+def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
     """
     In the case of exceptions, request_finished_with_instana isn't called
     so we capture those cases here.
@@ -119,7 +126,12 @@ def teardown_request_with_instana(*argv, **kwargs):
 
 
 @wrapt.patch_function_wrapper("flask", "Flask.full_dispatch_request")
-def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
+def full_dispatch_request_with_instana(
+    wrapped: Callable[..., flask.wrappers.Response],
+    instance: flask.app.Flask,
+    argv: Tuple,
+    kwargs: Dict,
+) -> flask.wrappers.Response:
     if not hasattr(instance, "_stan_wuz_here"):
         logger.debug(
             "Flask(blinker): Applying flask before/after instrumentation funcs"

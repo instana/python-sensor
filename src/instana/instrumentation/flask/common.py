@@ -5,15 +5,31 @@
 import wrapt
 import flask
 from importlib.metadata import version
+from typing import Callable, Tuple, Dict, Any, TYPE_CHECKING, Union
 
 from opentelemetry.semconv.trace import SpanAttributes as ext
 
 from instana.log import logger
 from instana.singletons import tracer, agent
 from instana.propagators.format import Format
+from instana.instrumentation.flask import signals_available
+
+
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
+    from werkzeug.exceptions import HTTPException
+    from flask.typing import ResponseReturnValue
+
+    if signals_available:
+        from werkzeug.datastructures.headers import Headers
+    else:
+        from werkzeug.datastructures import Headers
+
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')
-def render_with_instana(wrapped, instance, argv, kwargs):
+def render_with_instana(
+    wrapped: Callable[..., str], instance: Any, argv: Tuple, kwargs: Dict
+) -> str:
     # If we're not tracing, just return
     if not (hasattr(flask, "g") and hasattr(flask.g, "span")):
         return wrapped(*argv, **kwargs)
@@ -39,7 +55,12 @@ def render_with_instana(wrapped, instance, argv, kwargs):
 
 
 @wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
-def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
+def handle_user_exception_with_instana(
+    wrapped: Callable[..., Union["HTTPException", "ResponseReturnValue"]],
+    instance: flask.app.Flask,
+    argv: Tuple,
+    kwargs: Dict,
+) -> Union["HTTPException", "ResponseReturnValue"]:
     # Call original and then try to do post processing
     response = wrapped(*argv, **kwargs)
 
@@ -79,7 +100,9 @@ def handle_user_exception_with_instana(wrapped, instance, argv, kwargs):
     return response
 
 
-def extract_custom_headers(span, headers, format):
+def extract_custom_headers(
+    span: "InstanaSpan", headers: Union[dict[str, Any], "Headers"], format: bool
+) -> None:
     if agent.options.extra_http_headers is None:
         return
     try:

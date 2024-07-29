@@ -5,6 +5,7 @@
 import re
 import flask
 import wrapt
+from typing import Any, Callable, Tuple, Dict
 
 from opentelemetry.semconv.trace import SpanAttributes as ext
 from opentelemetry import context, trace
@@ -18,7 +19,7 @@ from instana.propagators.format import Format
 path_tpl_re = re.compile('<.*>')
 
 
-def before_request_with_instana(*argv, **kwargs):
+def before_request_with_instana(*argv: Any, **kwargs: Any) -> None:
     try:
         env = flask.request.environ
         span_context = tracer.extract(Format.HTTP_HEADERS, env)
@@ -58,7 +59,9 @@ def before_request_with_instana(*argv, **kwargs):
     return None
 
 
-def after_request_with_instana(response):
+def after_request_with_instana(
+    response: flask.wrappers.Response,
+) -> flask.wrappers.Response:
     span = None
     try:
         # If we're not tracing, just return
@@ -87,7 +90,7 @@ def after_request_with_instana(response):
     return response
 
 
-def teardown_request_with_instana(*argv, **kwargs):
+def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
     """
     In the case of exceptions, after_request_with_instana isn't called
     so we capture those cases here.
@@ -108,7 +111,12 @@ def teardown_request_with_instana(*argv, **kwargs):
 
 
 @wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
-def full_dispatch_request_with_instana(wrapped, instance, argv, kwargs):
+def full_dispatch_request_with_instana(
+    wrapped: Callable[..., flask.wrappers.Response],
+    instance: flask.app.Flask,
+    argv: Tuple,
+    kwargs: Dict,
+) -> flask.wrappers.Response:
     if not hasattr(instance, '_stan_wuz_here'):
         logger.debug("Flask(vanilla): Applying flask before/after instrumentation funcs")
         setattr(instance, "_stan_wuz_here", True)

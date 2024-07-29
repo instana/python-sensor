@@ -42,7 +42,7 @@ class TestLogging(unittest.TestCase):
         assert len(spans) == 2
         assert spans[0].k is SpanKind.CLIENT
 
-        assert spans[0].data["event"].get("message") == "foo bar"
+        assert spans[0].data["log"].get("message") == "foo bar"
 
     def test_log_with_tuple(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -52,7 +52,7 @@ class TestLogging(unittest.TestCase):
         assert len(spans) == 2
         assert spans[0].k is SpanKind.CLIENT
 
-        assert spans[0].data["event"].get("message") == "foo ('bar',)"
+        assert spans[0].data["log"].get("message") == "foo ('bar',)"
 
     def test_log_with_dict(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -62,7 +62,7 @@ class TestLogging(unittest.TestCase):
         assert len(spans) == 2
         assert spans[0].k is SpanKind.CLIENT
 
-        assert spans[0].data["event"].get("message") == "foo {'bar': 18}"
+        assert spans[0].data["log"].get("message") == "foo {'bar': 18}"
 
     def test_parameters(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -76,7 +76,7 @@ class TestLogging(unittest.TestCase):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        assert spans[0].data["event"].get("parameters") is not None
+        assert spans[0].data["log"].get("parameters") is not None
 
     def test_no_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True
@@ -93,7 +93,7 @@ class TestLogging(unittest.TestCase):
         assert len(spans) == 1
         assert spans[0].k is SpanKind.CLIENT
 
-        assert spans[0].data["event"].get("message") == "foo bar"
+        assert spans[0].data["log"].get("message") == "foo bar"
 
     def test_exception(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -107,7 +107,7 @@ class TestLogging(unittest.TestCase):
         assert len(spans) == 2
         assert spans[0].k is SpanKind.CLIENT
 
-        assert spans[0].data["event"] == {}
+        assert spans[0].data["log"] == {}
 
     @pytest.mark.usefixtures("capture_log")
     def test_log_caller(self):

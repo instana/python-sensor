@@ -207,7 +207,7 @@ class BasePropagator(object):
 
         return ctx
 
-    def __extract_instana_headers(self, dc):
+    def extract_instana_headers(self, dc):
         """
         Search carrier for the *HEADER* keys and return the tracing key-values
 
@@ -283,7 +283,7 @@ class BasePropagator(object):
                 return None
             headers = {k.lower(): v for k, v in headers.items()}
 
-            trace_id, span_id, level, synthetic = self.__extract_instana_headers(dc=headers)
+            trace_id, span_id, level, synthetic = self.extract_instana_headers(dc=headers)
             if not disable_w3c_trace_context:
                 traceparent, tracestate = self.__extract_w3c_trace_context_headers(dc=headers)
 

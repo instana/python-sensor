@@ -75,7 +75,7 @@ class TestLogging:
         assert len(spans) == 2
         assert spans[0].k is SpanKind.CLIENT
 
-        assert spans[0].data["event"].get("message") == "foo {'bar': 18}"
+        assert spans[0].data["log"].get("message") == "foo {'bar': 18}"
 
     def test_parameters(self) -> None:
         with tracer.start_as_current_span("test"):

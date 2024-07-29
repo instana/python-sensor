@@ -139,8 +139,8 @@ class RegisteredSpan(BaseSpan):
         if span.name == "render":
             self.data["render"]["name"] = span.attributes.pop("name", None)
             self.data["render"]["type"] = span.attributes.pop("type", None)
-            self.data["event"]["message"] = span.attributes.pop("message", None)
-            self.data["event"]["parameters"] = span.attributes.pop("parameters", None)
+            self.data["log"]["message"] = span.attributes.pop("message", None)
+            self.data["log"]["parameters"] = span.attributes.pop("parameters", None)
         else:
             logger.debug("SpanRecorder: Unknown local span: %s" % span.name)
 
@@ -309,11 +309,9 @@ class RegisteredSpan(BaseSpan):
             # use last special key values
             for event in span.events:
                 if "message" in event.attributes:
-                    self.data["event"]["message"] = event.attributes.pop(
-                        "message", None
-                    )
+                    self.data["log"]["message"] = event.attributes.pop("message", None)
                 if "parameters" in event.attributes:
-                    self.data["event"]["parameters"] = event.attributes.pop(
+                    self.data["log"]["parameters"] = event.attributes.pop(
                         "parameters", None
                     )
         else:

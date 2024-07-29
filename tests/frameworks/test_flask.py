@@ -1099,6 +1099,10 @@ class TestFlask(unittest.TestCase):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
+    @unittest.skipIf(
+        not signals_available,
+        "log_exception_with_instana needs to be covered only with blinker",
+    )
     def test_got_request_exception(self) -> None:
         response = self.http.request(
             "GET", testenv["wsgi_server"] + "/got_request_exception"

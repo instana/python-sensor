@@ -312,8 +312,8 @@ class TestFlask(unittest.TestCase):
         assert SpanKind.INTERNAL == render_span.k
         assert "flask_render_template.html" == render_span.data["render"]["name"]
         assert "template" == render_span.data["render"]["type"]
-        assert render_span.data["event"]["message"] is None
-        assert render_span.data["event"]["parameters"] is None
+        assert render_span.data["log"]["message"] is None
+        assert render_span.data["log"]["parameters"] is None
 
         # wsgi
         assert "wsgi" == wsgi_span.n
@@ -392,8 +392,8 @@ class TestFlask(unittest.TestCase):
         assert SpanKind.INTERNAL == render_span.k
         assert "(from string)" == render_span.data["render"]["name"]
         assert "template" == render_span.data["render"]["type"]
-        assert render_span.data["event"]["message"] is None
-        assert render_span.data["event"]["parameters"] is None
+        assert render_span.data["log"]["message"] is None
+        assert render_span.data["log"]["parameters"] is None
 
         # wsgi
         assert "wsgi" == wsgi_span.n
@@ -753,9 +753,9 @@ class TestFlask(unittest.TestCase):
 
         # error log
         assert "log" == log_span.n
-        assert log_span.data["event"]["message"] == "Exception on /render_error [GET]"
+        assert log_span.data["log"]["message"] == "Exception on /render_error [GET]"
         assert (
-            log_span.data["event"]["parameters"]
+            log_span.data["log"]["parameters"]
             == "<class 'jinja2.exceptions.TemplateSyntaxError'> unexpected '}'"
         )
 
@@ -823,8 +823,8 @@ class TestFlask(unittest.TestCase):
 
         # error log
         assert "log" == log_span.n
-        assert log_span.data["event"]["message"] == "Exception on /exception [GET]"
-        assert log_span.data["event"]["parameters"] == "<class 'Exception'> fake error"
+        assert log_span.data["log"]["message"] == "Exception on /exception [GET]"
+        assert log_span.data["log"]["parameters"] == "<class 'Exception'> fake error"
 
         # wsgi
         assert "wsgi" == wsgi_span.n
@@ -899,9 +899,9 @@ class TestFlask(unittest.TestCase):
 
         # error log
         assert "log" == log_span.n
-        assert log_span.data["event"]["message"] == "InvalidUsage error handler invoked"
+        assert log_span.data["log"]["message"] == "InvalidUsage error handler invoked"
         assert (
-            log_span.data["event"]["parameters"]
+            log_span.data["log"]["parameters"]
             == "<class 'tests.apps.flask_app.app.InvalidUsage'> "
         )
 

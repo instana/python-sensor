@@ -426,5 +426,5 @@ def test_populate_exit_span_data_log(
 
     reg_span._populate_exit_span_data(span)
 
-    assert excepted_text == reg_span.data["event"]["message"]
-    assert excepted_text == reg_span.data["event"]["parameters"]
+    assert excepted_text == reg_span.data["log"]["message"]
+    assert excepted_text == reg_span.data["log"]["parameters"]

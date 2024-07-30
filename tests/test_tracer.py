@@ -112,6 +112,29 @@ def test_tracer_create_span_context(
     assert span_context.span_id != new_span_context.span_id
     assert span_context.long_trace_id == new_span_context.long_trace_id
 
+    assert span_context.trace_id > INVALID_SPAN_ID
+    assert span_context.trace_id <= _SPAN_ID_MAX_VALUE
+
+    assert span_context.span_id > INVALID_SPAN_ID
+    assert span_context.span_id <= _SPAN_ID_MAX_VALUE
+
+
+def test_tracer_create_span_context_root(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    tracer = InstanaTracer(
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
+    )
+    new_span_context = tracer._create_span_context(parent_context=None)
+
+    assert new_span_context.trace_id > INVALID_SPAN_ID
+    assert new_span_context.trace_id <= _SPAN_ID_MAX_VALUE
+
+    assert new_span_context.trace_id == new_span_context.span_id
+
 
 def test_tracer_add_stack_high_limit(
     span: InstanaSpan, tracer_provider: InstanaTracerProvider

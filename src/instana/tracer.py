@@ -124,7 +124,7 @@ class InstanaTracer(Tracer):
             raise TypeError("parent_context must be an Instana SpanContext or None.")
 
         if parent_context is not None and not parent_context.is_valid:
-            # We probably have a INVALID_SPAN_CONTEXT.
+            # We probably have an INVALID_SPAN_CONTEXT.
             parent_context = None
 
         span_context = self._create_span_context(parent_context)
@@ -213,17 +213,13 @@ class InstanaTracer(Tracer):
     def _create_span_context(self, parent_context: SpanContext) -> SpanContext:
         """Creates a new SpanContext based on the given parent context."""
 
-        generated_id = generate_id()
-
         if parent_context is not None and parent_context.trace_id is not None:
             trace_id = parent_context.trace_id
-            span_id = generated_id
+            span_id = generate_id()
             trace_flags = parent_context.trace_flags
             is_remote = parent_context.is_remote
         else:
-            # root span
-            trace_id = generated_id
-            span_id = generated_id
+            trace_id = span_id = generate_id()
             trace_flags = TraceFlags(self._sampler.sampled())
             is_remote = False
 

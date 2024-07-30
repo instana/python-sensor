@@ -94,15 +94,10 @@ class InstanaTracer(Tracer):
         exporter: Type["BaseAgent"],
         propagators: Mapping[str, Type["BasePropagator"]],
     ) -> None:
-        self._tracer_id = generate_id()
         self._sampler = sampler
         self._span_processor = span_processor
         self._exporter = exporter
         self._propagators = propagators
-
-    @property
-    def tracer_id(self) -> str:
-        return self._tracer_id
 
     @property
     def span_processor(self) -> Optional[StanRecorder]:
@@ -218,14 +213,17 @@ class InstanaTracer(Tracer):
     def _create_span_context(self, parent_context: SpanContext) -> SpanContext:
         """Creates a new SpanContext based on the given parent context."""
 
+        generated_id = generate_id()
+
         if parent_context is not None and parent_context.trace_id is not None:
             trace_id = parent_context.trace_id
-            span_id = generate_id()
+            span_id = generated_id
             trace_flags = parent_context.trace_flags
             is_remote = parent_context.is_remote
         else:
-            trace_id = self.tracer_id
-            span_id = self.tracer_id
+            # root span
+            trace_id = generated_id
+            span_id = generated_id
             trace_flags = TraceFlags(self._sampler.sampled())
             is_remote = False
 

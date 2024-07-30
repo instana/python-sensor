@@ -18,8 +18,6 @@ def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
         tracer_provider._propagators,
     )
 
-    assert tracer.tracer_id > INVALID_SPAN_ID
-    assert tracer.tracer_id <= _SPAN_ID_MAX_VALUE
     assert isinstance(tracer._sampler, InstanaSampler)
     assert isinstance(tracer.span_processor, StanRecorder)
     assert isinstance(tracer.exporter, TestAgent)

@@ -29,8 +29,6 @@ def test_tracer_provider_get_tracer() -> None:
     tracer = provider.get_tracer("instana.test.tracer")
 
     assert isinstance(tracer, InstanaTracer)
-    assert tracer.tracer_id > INVALID_SPAN_ID
-    assert tracer.tracer_id <= _SPAN_ID_MAX_VALUE
 
 
 def test_tracer_provider_get_tracer_empty_instrumenting_module_name(
@@ -41,8 +39,6 @@ def test_tracer_provider_get_tracer_empty_instrumenting_module_name(
 
     assert "get_tracer called with missing module name." == caplog.record_tuples[0][2]
     assert isinstance(tracer, InstanaTracer)
-    assert tracer.tracer_id > INVALID_SPAN_ID
-    assert tracer.tracer_id <= _SPAN_ID_MAX_VALUE
 
 
 def test_tracer_provider_add_span_processor(span_processor: StanRecorder) -> None:

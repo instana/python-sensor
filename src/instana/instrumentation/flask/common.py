@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
     from werkzeug.exceptions import HTTPException
     from flask.typing import ResponseReturnValue
+    from jinja2.environment import Template
 
     if signals_available:
         from werkzeug.datastructures.headers import Headers
@@ -28,7 +29,10 @@ if TYPE_CHECKING:
 
 @wrapt.patch_function_wrapper('flask', 'templating._render')
 def render_with_instana(
-    wrapped: Callable[..., str], instance: Any, argv: Tuple, kwargs: Dict
+    wrapped: Callable[..., str],
+    instance: object,
+    argv: Tuple[flask.app.Flask, "Template", Dict[str, Any]],
+    kwargs: Dict[str, Any],
 ) -> str:
     # If we're not tracing, just return
     if not (hasattr(flask, "g") and hasattr(flask.g, "span")):
@@ -58,8 +62,8 @@ def render_with_instana(
 def handle_user_exception_with_instana(
     wrapped: Callable[..., Union["HTTPException", "ResponseReturnValue"]],
     instance: flask.app.Flask,
-    argv: Tuple,
-    kwargs: Dict,
+    argv: Tuple[Exception],
+    kwargs: Dict[str, Any],
 ) -> Union["HTTPException", "ResponseReturnValue"]:
     # Call original and then try to do post processing
     response = wrapped(*argv, **kwargs)
@@ -101,7 +105,7 @@ def handle_user_exception_with_instana(
 
 
 def extract_custom_headers(
-    span: "InstanaSpan", headers: Union[dict[str, Any], "Headers"], format: bool
+    span: "InstanaSpan", headers: Union[Dict[str, Any], "Headers"], format: bool
 ) -> None:
     if agent.options.extra_http_headers is None:
         return

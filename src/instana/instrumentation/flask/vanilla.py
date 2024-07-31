@@ -46,9 +46,8 @@ def before_request_with_instana(*argv: Any, **kwargs: Any) -> None:
         if "HTTP_HOST" in env:
             span.set_attribute("http.host", env["HTTP_HOST"])
 
-        if (
-            hasattr(flask.request.url_rule, "rule")
-            and path_tpl_re.search(flask.request.url_rule.rule) is not None
+        if hasattr(flask.request.url_rule, "rule") and path_tpl_re.search(
+            flask.request.url_rule.rule
         ):
             path_tpl = flask.request.url_rule.rule.replace("<", "{")
             path_tpl = path_tpl.replace(">", "}")
@@ -69,7 +68,7 @@ def after_request_with_instana(
             return response
 
         span = flask.g.span
-        if span is not None:
+        if span:
 
             if 500 <= response.status_code:
                 span.mark_as_errored()
@@ -97,8 +96,8 @@ def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
     In the case of exceptions, after_request_with_instana isn't called
     so we capture those cases here.
     """
-    if hasattr(flask.g, "span") and flask.g.span is not None:
-        if len(argv) > 0 and argv[0] is not None:
+    if hasattr(flask.g, "span") and flask.g.span:
+        if len(argv) > 0 and argv[0]:
             span = flask.g.span
             span.record_exception(argv[0])
             if SpanAttributes.HTTP_STATUS_CODE not in span.attributes:
@@ -107,7 +106,7 @@ def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
             flask.g.span.end()
         flask.g.span = None
 
-    if hasattr(flask.g, "token") and flask.g.token is not None:
+    if hasattr(flask.g, "token") and flask.g.token:
         context.detach(flask.g.token)
         flask.g.token = None
 

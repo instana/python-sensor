@@ -67,10 +67,10 @@ def handle_user_exception_with_instana(
     try:
         exc = argv[0]
 
-        if hasattr(flask.g, "span") and flask.g.span is not None:
+        if hasattr(flask.g, "span") and flask.g.span:
             span = flask.g.span
 
-            if response is not None:
+            if response:
                 if isinstance(response, tuple):
                     status_code = response[1]
                 else:

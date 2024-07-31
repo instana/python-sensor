@@ -89,7 +89,7 @@ def request_finished_with_instana(
 
 
 def log_exception_with_instana(
-    sender: flask.app.Flask, exception: Any, **extra: Any
+    sender: flask.app.Flask, exception: Exception, **extra: Any
 ) -> None:
     if hasattr(flask.g, "span") and flask.g.span:
         span = flask.g.span

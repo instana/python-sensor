@@ -5,7 +5,7 @@
 import re
 import flask
 import wrapt
-from typing import Any, Callable, Tuple, Dict
+from typing import Callable, Tuple, Dict, Type, Union
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
@@ -19,7 +19,7 @@ from instana.propagators.format import Format
 path_tpl_re = re.compile('<.*>')
 
 
-def before_request_with_instana(*argv: Any, **kwargs: Any) -> None:
+def before_request_with_instana() -> None:
     try:
         env = flask.request.environ
         span_context = tracer.extract(Format.HTTP_HEADERS, env)
@@ -91,7 +91,7 @@ def after_request_with_instana(
     return response
 
 
-def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
+def teardown_request_with_instana(*argv: Union[Exception, Type[Exception]]) -> None:
     """
     In the case of exceptions, after_request_with_instana isn't called
     so we capture those cases here.

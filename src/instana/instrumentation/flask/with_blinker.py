@@ -6,7 +6,7 @@ import re
 import wrapt
 from typing import Any, Tuple, Dict, Callable
 
-from opentelemetry.semconv.trace import SpanAttributes as ext
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
 
 from instana.log import logger
@@ -36,9 +36,9 @@ def request_started_with_instana(sender: flask.app.Flask, **extra: Any) -> None:
 
         extract_custom_headers(span, env, format=True)
 
-        span.set_attribute(ext.HTTP_METHOD, flask.request.method)
+        span.set_attribute(SpanAttributes.HTTP_METHOD, flask.request.method)
         if "PATH_INFO" in env:
-            span.set_attribute(ext.HTTP_URL, env["PATH_INFO"])
+            span.set_attribute(SpanAttributes.HTTP_URL, env["PATH_INFO"])
         if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
             scrubbed_params = strip_secrets_from_query(
                 env["QUERY_STRING"],
@@ -74,7 +74,9 @@ def request_finished_with_instana(
             if 500 <= response.status_code:
                 span.mark_as_errored()
 
-            span.set_attribute(ext.HTTP_STATUS_CODE, int(response.status_code))
+            span.set_attribute(
+                SpanAttributes.HTTP_STATUS_CODE, int(response.status_code)
+            )
             extract_custom_headers(span, response.headers, format=False)
 
             tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
@@ -100,7 +102,7 @@ def log_exception_with_instana(
             # d0bf462866289ad8bfe29b6e4e1e0f531003ab34/src/flask/app.py#L1379
             # The `got_request_exception` signal, is only sent by
             # the `handle_exception` method which "always causes a 500"
-            span.set_attribute(ext.HTTP_STATUS_CODE, 500)
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 500)
             if span.is_recording():
                 span.end()
 
@@ -114,8 +116,8 @@ def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
         if len(argv) > 0 and argv[0] is not None:
             span = flask.g.span
             span.record_exception(argv[0])
-            if ext.HTTP_STATUS_CODE not in span.attributes:
-                span.set_attribute(ext.HTTP_STATUS_CODE, 500)
+            if SpanAttributes.HTTP_STATUS_CODE not in span.attributes:
+                span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 500)
         if flask.g.span.is_recording():
             flask.g.span.end()
         flask.g.span = None

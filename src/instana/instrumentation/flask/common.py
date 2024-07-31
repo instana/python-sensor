@@ -7,7 +7,7 @@ import flask
 from importlib.metadata import version
 from typing import Callable, Tuple, Dict, Any, TYPE_CHECKING, Union
 
-from opentelemetry.semconv.trace import SpanAttributes as ext
+from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
 from instana.singletons import tracer, agent
@@ -82,7 +82,7 @@ def handle_user_exception_with_instana(
                 if 500 <= status_code:
                     span.record_exception(exc)
 
-                span.set_attribute(ext.HTTP_STATUS_CODE, int(status_code))
+                span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(status_code))
 
                 if hasattr(response, 'headers'):
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)

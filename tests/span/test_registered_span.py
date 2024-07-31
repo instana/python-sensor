@@ -396,11 +396,11 @@ def test_populate_exit_span_data_log(
     span_context: SpanContext, span_processor: StanRecorder
 ) -> None:
     span_name = service_name = "log"
-    span = InstanaSpan(span_name, span_context, span_processor)
-    reg_span = RegisteredSpan(span, None, service_name)
+    sample_span = InstanaSpan(span_name, span_context, span_processor)
+    reg_span = RegisteredSpan(sample_span, None, service_name)
 
     excepted_text = "Houston, we have a problem!"
-    events = [
+    sample_events = [
         (
             "test_populate_exit_span_data_log_event_with_message",
             {
@@ -421,10 +421,13 @@ def test_populate_exit_span_data_log(
         ),
     ]
 
-    for event_name, attributes, timestamp in events:
-        span.add_event(event_name, attributes, timestamp)
+    for event_name, attributes, timestamp in sample_events:
+        sample_span.add_event(event_name, attributes, timestamp)
 
-    reg_span._populate_exit_span_data(span)
+    reg_span._populate_exit_span_data(sample_span)
 
     assert excepted_text == reg_span.data["log"]["message"]
     assert excepted_text == reg_span.data["log"]["parameters"]
+
+    while sample_span._events:
+        sample_span._events.pop()

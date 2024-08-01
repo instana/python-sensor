@@ -1,311 +1,376 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import logging
+import sys
 from multiprocessing.pool import ThreadPool
 from time import sleep
-import unittest
+from typing import TYPE_CHECKING, Generator
 
-import urllib3
+import pytest
 import requests
-
-import tests.apps.flask_app
-from ..helpers import testenv
+import urllib3
+from instana.instrumentation.urllib3 import (
+    _collect_kvs as collect_kvs,
+    _extract_custom_headers as extract_custom_headers,
+    collect_response,
+)
 from instana.singletons import agent, tracer
 
+import tests.apps.flask_app  # noqa: F401
+from tests.helpers import testenv
 
-class TestUrllib3(unittest.TestCase):
-    def setUp(self):
-        """ Clear all spans before a test run """
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
+    from pytest import LogCaptureFixture
+
+
+class TestUrllib3:
+    @pytest.fixture(autouse=True)
+    def _setup(self) -> Generator[None, None, None]:
+        """SetUp and TearDown"""
+        # setup
+        # Clear all spans before a test run
         self.http = urllib3.PoolManager()
-        self.recorder = tracer.recorder
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
-
-    def tearDown(self):
-        """ Ensure that allow_exit_as_root has the default value """
+        yield
+        # teardown
+        # Ensure that allow_exit_as_root has the default value"""
         agent.options.allow_exit_as_root = False
 
-    def test_vanilla_requests(self):
-        r = self.http.request('GET', testenv["wsgi_server"] + '/')
-        self.assertEqual(r.status, 200)
+    def test_vanilla_requests(self) -> None:
+        r = self.http.request("GET", testenv["wsgi_server"] + "/")
+        assert r.status == 200
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
+        assert len(spans) == 1
 
-    def test_parallel_requests(self):
+    def test_parallel_requests(self) -> None:
         http_pool_5 = urllib3.PoolManager(num_pools=5)
 
         def task(num):
-           r = http_pool_5.request('GET', testenv["wsgi_server"] + '/', fields={'num': num})
-           return r
+            r = http_pool_5.request(
+                "GET", testenv["wsgi_server"] + "/", fields={"num": num}
+            )
+            return r
 
         with ThreadPool(processes=5) as executor:
             # iterate over results as they become available
             for result in executor.map(task, (1, 2, 3, 4, 5)):
-                self.assertEqual(result.status, 200)
+                assert result.status == 200
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
-        nums = map(lambda s: s.data['http']['params'].split('=')[1], spans)
-        self.assertEqual(set(nums), set(('1', '2', '3', '4', '5')))
+        assert len(spans) == 5
+        nums = map(lambda s: s.data["http"]["params"].split("=")[1], spans)
+        assert set(nums) == set(("1", "2", "3", "4", "5"))
 
-    def test_customers_setup_zd_26466(self):
-        def make_request(u=None):
-          sleep(10)
-          x = requests.get(testenv["wsgi_server"] + '/')
-          sleep(10)
-          return x.status_code
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="Avoiding ConnectionError when calling multi processes of Flask app.",
+    )
+    def test_customers_setup_zd_26466(self) -> None:
+        def make_request(u=None) -> int:
+            sleep(10)
+            x = requests.get(testenv["wsgi_server"] + "/")
+            sleep(10)
+            return x.status_code
 
         status = make_request()
-        #print(f'request made outside threadpool, instana should instrument - status: {status}')
+        assert status == 200
+        # print(f'request made outside threadpool, instana should instrument - status: {status}')
 
         threadpool_size = 15
         pool = ThreadPool(processes=threadpool_size)
         res = pool.map(make_request, [u for u in range(threadpool_size)])
-        #print(f'requests made within threadpool, instana does not instrument - statuses: {res}')
+        # print(f'requests made within threadpool, instana does not instrument - statuses: {res}')
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(16, len(spans))
-
+        assert len(spans) == 16
 
     def test_get_request(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", testenv["wsgi_server"] + "/")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
+
+    def test_get_request_https(self):
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", "https://httpbin.org/robots.txt")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        urllib3_span = spans[0]
+        test_span = spans[1]
+
+        assert r
+        assert r.status == 200
+
+        # Same traceId
+        assert test_span.t == urllib3_span.t
+
+        # Parent relationships
+        assert urllib3_span.p == test_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not urllib3_span.ec
+
+        # urllib3
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == "https://httpbin.org:443/robots.txt"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_get_request_as_root_exit_span(self):
         agent.options.allow_exit_as_root = True
-        r = self.http.request('GET', testenv["wsgi_server"] + '/')
+        r = self.http.request("GET", testenv["wsgi_server"] + "/")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert len(spans) == 2
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, None)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert not urllib3_span.p
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_get_request_with_query(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/?one=1&two=2')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", testenv["wsgi_server"] + "/?one=1&two=2")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertTrue(urllib3_span.data["http"]["params"] in ["one=1&two=2", "two=2&one=1"] )
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["params"] in ["one=1&two=2", "two=2&one=1"]
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_get_request_with_alt_query(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/', fields={'one': '1', 'two': 2})
+        with tracer.start_as_current_span("test"):
+            r = self.http.request(
+                "GET", testenv["wsgi_server"] + "/", fields={"one": "1", "two": 2}
+            )
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertTrue(urllib3_span.data["http"]["params"] in ["one=1&two=2", "two=2&one=1"] )
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["params"] in ["one=1&two=2", "two=2&one=1"]
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_put_request(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('PUT', testenv["wsgi_server"] + '/notfound')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("PUT", testenv["wsgi_server"] + "/notfound")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(404, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 404
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/notfound', wsgi_span.data["http"]["url"])
-        self.assertEqual('PUT', wsgi_span.data["http"]["method"])
-        self.assertEqual(404, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/notfound"
+        assert wsgi_span.data["http"]["method"] == "PUT"
+        assert wsgi_span.data["http"]["status"] == 404
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(404, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/notfound", urllib3_span.data["http"]["url"])
-        self.assertEqual("PUT", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 404
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/notfound"
+        assert urllib3_span.data["http"]["method"] == "PUT"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_301_redirect(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/301')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", testenv["wsgi_server"] + "/301")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
+        assert len(spans) == 5
 
         wsgi_span2 = spans[0]
         urllib3_span2 = spans[1]
@@ -313,71 +378,75 @@ class TestUrllib3(unittest.TestCase):
         urllib3_span1 = spans[3]
         test_span = spans[4]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, urllib3_span1.t)
-        self.assertEqual(traceId, wsgi_span1.t)
-        self.assertEqual(traceId, urllib3_span2.t)
-        self.assertEqual(traceId, wsgi_span2.t)
+        assert urllib3_span1.t == traceId
+        assert wsgi_span1.t == traceId
+        assert urllib3_span2.t == traceId
+        assert wsgi_span2.t == traceId
 
         # Parent relationships
-        self.assertEqual(urllib3_span1.p, test_span.s)
-        self.assertEqual(wsgi_span1.p, urllib3_span1.s)
-        self.assertEqual(urllib3_span2.p, test_span.s)
-        self.assertEqual(wsgi_span2.p, urllib3_span2.s)
+        assert urllib3_span1.p == test_span.s
+        assert wsgi_span1.p == urllib3_span1.s
+        assert urllib3_span2.p == test_span.s
+        assert wsgi_span2.p == urllib3_span2.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span1.ec)
-        self.assertIsNone(wsgi_span1.ec)
-        self.assertIsNone(urllib3_span2.ec)
-        self.assertIsNone(wsgi_span2.ec)
+        assert not test_span.ec
+        assert not urllib3_span1.ec
+        assert not wsgi_span1.ec
+        assert not urllib3_span2.ec
+        assert not wsgi_span2.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span1.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span1.data["http"]["host"])
-        self.assertEqual('/', wsgi_span1.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span1.data["http"]["method"])
-        self.assertEqual(200, wsgi_span1.data["http"]["status"])
-        self.assertIsNone(wsgi_span1.data["http"]["error"])
-        self.assertIsNone(wsgi_span1.stack)
+        assert wsgi_span1.n == "wsgi"
+        assert wsgi_span1.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span1.data["http"]["url"] == "/"
+        assert wsgi_span1.data["http"]["method"] == "GET"
+        assert wsgi_span1.data["http"]["status"] == 200
+        assert not wsgi_span1.data["http"]["error"]
+        assert not wsgi_span1.stack
 
-        self.assertEqual("wsgi", wsgi_span2.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span2.data["http"]["host"])
-        self.assertEqual('/301', wsgi_span2.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span2.data["http"]["method"])
-        self.assertEqual(301, wsgi_span2.data["http"]["status"])
-        self.assertIsNone(wsgi_span2.data["http"]["error"])
-        self.assertIsNone(wsgi_span2.stack)
+        assert wsgi_span2.n == "wsgi"
+        assert wsgi_span2.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span2.data["http"]["url"] == "/301"
+        assert wsgi_span2.data["http"]["method"] == "GET"
+        assert wsgi_span2.data["http"]["status"] == 301
+        assert not wsgi_span2.data["http"]["error"]
+        assert not wsgi_span2.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span1.n)
-        self.assertEqual(200, urllib3_span1.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span1.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span1.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span1.stack)
-        self.assertTrue(type(urllib3_span1.stack) is list)
-        self.assertTrue(len(urllib3_span1.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span1.n == "urllib3"
+        assert urllib3_span1.data["http"]["status"] == 200
+        assert urllib3_span1.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span1.data["http"]["method"] == "GET"
+        assert urllib3_span1.stack
+        assert isinstance(urllib3_span1.stack, list)
+        assert len(urllib3_span1.stack) > 1
 
-        self.assertEqual("urllib3", urllib3_span2.n)
-        self.assertEqual(301, urllib3_span2.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/301", urllib3_span2.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span2.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span2.stack)
-        self.assertTrue(type(urllib3_span2.stack) is list)
-        self.assertTrue(len(urllib3_span2.stack) > 1)
+        assert urllib3_span2.n == "urllib3"
+        assert urllib3_span2.data["http"]["status"] == 301
+        assert urllib3_span2.data["http"]["url"] == testenv["wsgi_server"] + "/301"
+        assert urllib3_span2.data["http"]["method"] == "GET"
+        assert urllib3_span2.stack
+        assert isinstance(urllib3_span2.stack, list)
+        assert len(urllib3_span2.stack) > 1
 
     def test_302_redirect(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/302')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", testenv["wsgi_server"] + "/302")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
+        assert len(spans) == 5
 
         wsgi_span2 = spans[0]
         urllib3_span2 = spans[1]
@@ -385,117 +454,123 @@ class TestUrllib3(unittest.TestCase):
         urllib3_span1 = spans[3]
         test_span = spans[4]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, urllib3_span1.t)
-        self.assertEqual(traceId, wsgi_span1.t)
-        self.assertEqual(traceId, urllib3_span2.t)
-        self.assertEqual(traceId, wsgi_span2.t)
+        assert urllib3_span1.t == traceId
+        assert wsgi_span1.t == traceId
+        assert urllib3_span2.t == traceId
+        assert wsgi_span2.t == traceId
 
         # Parent relationships
-        self.assertEqual(urllib3_span1.p, test_span.s)
-        self.assertEqual(wsgi_span1.p, urllib3_span1.s)
-        self.assertEqual(urllib3_span2.p, test_span.s)
-        self.assertEqual(wsgi_span2.p, urllib3_span2.s)
+        assert urllib3_span1.p == test_span.s
+        assert wsgi_span1.p == urllib3_span1.s
+        assert urllib3_span2.p == test_span.s
+        assert wsgi_span2.p == urllib3_span2.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span1.ec)
-        self.assertIsNone(wsgi_span1.ec)
-        self.assertIsNone(urllib3_span2.ec)
-        self.assertIsNone(wsgi_span2.ec)
+        assert not test_span.ec
+        assert not urllib3_span1.ec
+        assert not wsgi_span1.ec
+        assert not urllib3_span2.ec
+        assert not wsgi_span2.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span1.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span1.data["http"]["host"])
-        self.assertEqual('/', wsgi_span1.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span1.data["http"]["method"])
-        self.assertEqual(200, wsgi_span1.data["http"]["status"])
-        self.assertIsNone(wsgi_span1.data["http"]["error"])
-        self.assertIsNone(wsgi_span1.stack)
+        assert wsgi_span1.n == "wsgi"
+        assert wsgi_span1.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span1.data["http"]["url"] == "/"
+        assert wsgi_span1.data["http"]["method"] == "GET"
+        assert wsgi_span1.data["http"]["status"] == 200
+        assert not wsgi_span1.data["http"]["error"]
+        assert not wsgi_span1.stack
 
-        self.assertEqual("wsgi", wsgi_span2.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span2.data["http"]["host"])
-        self.assertEqual('/302', wsgi_span2.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span2.data["http"]["method"])
-        self.assertEqual(302, wsgi_span2.data["http"]["status"])
-        self.assertIsNone(wsgi_span2.data["http"]["error"])
-        self.assertIsNone(wsgi_span2.stack)
+        assert wsgi_span2.n == "wsgi"
+        assert wsgi_span2.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span2.data["http"]["url"] == "/302"
+        assert wsgi_span2.data["http"]["method"] == "GET"
+        assert wsgi_span2.data["http"]["status"] == 302
+        assert not wsgi_span2.data["http"]["error"]
+        assert not wsgi_span2.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span1.n)
-        self.assertEqual(200, urllib3_span1.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span1.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span1.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span1.stack)
-        self.assertTrue(type(urllib3_span1.stack) is list)
-        self.assertTrue(len(urllib3_span1.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span1.n == "urllib3"
+        assert urllib3_span1.data["http"]["status"] == 200
+        assert urllib3_span1.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span1.data["http"]["method"] == "GET"
+        assert urllib3_span1.stack
+        assert isinstance(urllib3_span1.stack, list)
+        assert len(urllib3_span1.stack) > 1
 
-        self.assertEqual("urllib3", urllib3_span2.n)
-        self.assertEqual(302, urllib3_span2.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/302", urllib3_span2.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span2.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span2.stack)
-        self.assertTrue(type(urllib3_span2.stack) is list)
-        self.assertTrue(len(urllib3_span2.stack) > 1)
+        assert urllib3_span2.n == "urllib3"
+        assert urllib3_span2.data["http"]["status"] == 302
+        assert urllib3_span2.data["http"]["url"] == testenv["wsgi_server"] + "/302"
+        assert urllib3_span2.data["http"]["method"] == "GET"
+        assert urllib3_span2.stack
+        assert isinstance(urllib3_span2.stack, list)
+        assert len(urllib3_span2.stack) > 1
 
     def test_5xx_request(self):
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/504')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", testenv["wsgi_server"] + "/504")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(504, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 504
+        # assert not tracer.active_span
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, urllib3_span.t)
-        self.assertEqual(traceId, wsgi_span.t)
+        assert urllib3_span.t == traceId
+        assert wsgi_span.t == traceId
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertEqual(1, urllib3_span.ec)
-        self.assertEqual(1, wsgi_span.ec)
+        assert not test_span.ec
+        assert urllib3_span.ec == 1
+        assert wsgi_span.ec == 1
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/504', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(504, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/504"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 504
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(504, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/504", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 504
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/504"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_exception_logging(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             try:
-                r = self.http.request('GET', testenv["wsgi_server"] + '/exception')
+                r = self.http.request("GET", testenv["wsgi_server"] + "/exception")
             except Exception:
                 pass
 
@@ -511,352 +586,406 @@ class TestUrllib3(unittest.TestCase):
         # we will just discard the optional log span if present
         # Without blinker, our instrumentation logs roughly the same exception data onto the
         # already existing wsgi span. Which we validate in this TC if present.
-        self.assertIn(len(spans), (3, 4))
+        assert len(spans) in (3, 4)
+
         with_blinker = len(spans) == 3
         if not with_blinker:
             spans = spans[1:]
 
         wsgi_span, urllib3_span, test_span = spans
 
-        self.assertTrue(r)
-        self.assertEqual(500, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 500
+        # assert not tracer.active_span
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, urllib3_span.t)
-        self.assertEqual(traceId, wsgi_span.t)
+        assert urllib3_span.t == traceId
+        assert wsgi_span.t == traceId
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertEqual(1, urllib3_span.ec)
-        self.assertEqual(1, wsgi_span.ec)
+        assert not test_span.ec
+        assert urllib3_span.ec == 1
+        assert wsgi_span.ec == 1
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/exception', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(500, wsgi_span.data["http"]["status"])
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/exception"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 500
         if with_blinker:
-          self.assertEqual('fake error', wsgi_span.data["http"]["error"])
+            assert wsgi_span.data["http"]["error"] == "fake error"
         else:
-          self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+            assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(500, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/exception", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 500
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/exception"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_client_error(self):
         r = None
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             try:
-                r = self.http.request('GET', 'http://doesnotexist.asdf:5000/504',
-                                      retries=False,
-                                      timeout=urllib3.Timeout(connect=0.5, read=0.5))
+                r = self.http.request(
+                    "GET",
+                    "http://doesnotexist.asdf:5000/504",
+                    retries=False,
+                    timeout=urllib3.Timeout(connect=0.5, read=0.5),
+                )
             except Exception:
                 pass
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert len(spans) == 2
 
         urllib3_span = spans[0]
         test_span = spans[1]
 
-        self.assertIsNone(r)
+        assert not r
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert urllib3_span.p == test_span.s
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, urllib3_span.t)
+        assert urllib3_span.t == traceId
 
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertIsNone(urllib3_span.data["http"]["status"])
-        self.assertEqual("http://doesnotexist.asdf:5000/504", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert not urllib3_span.data["http"]["status"]
+        assert urllib3_span.data["http"]["url"] == "http://doesnotexist.asdf:5000/504"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertEqual(1, urllib3_span.ec)
+        assert not test_span.ec
+        assert urllib3_span.ec == 2
 
-    def test_requestspkg_get(self):
+    def test_requests_pkg_get(self):
         self.recorder.clear_spans()
 
-        with tracer.start_active_span('test'):
-            r = requests.get(testenv["wsgi_server"] + '/', timeout=2)
+        with tracer.start_as_current_span("test"):
+            r = requests.get(testenv["wsgi_server"] + "/", timeout=2)
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status_code)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status_code == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
-    def test_requestspkg_get_with_custom_headers(self):
+    def test_requests_pkg_get_with_custom_headers(self):
         my_custom_headers = dict()
-        my_custom_headers['X-PGL-1'] = '1'
+        my_custom_headers["X-PGL-1"] = "1"
 
-        with tracer.start_active_span('test'):
-            r = requests.get(testenv["wsgi_server"] + '/', timeout=2, headers=my_custom_headers)
+        with tracer.start_as_current_span("test"):
+            r = requests.get(
+                testenv["wsgi_server"] + "/", timeout=2, headers=my_custom_headers
+            )
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status_code)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status_code == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
-    def test_requestspkg_put(self):
-        with tracer.start_active_span('test'):
-            r = requests.put(testenv["wsgi_server"] + '/notfound')
+    def test_requests_pkg_put(self):
+        with tracer.start_as_current_span("test"):
+            r = requests.put(testenv["wsgi_server"] + "/notfound")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertEqual(404, r.status_code)
-        self.assertIsNone(tracer.active_span)
+        assert r.status_code == 404
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/notfound', wsgi_span.data["http"]["url"])
-        self.assertEqual('PUT', wsgi_span.data["http"]["method"])
-        self.assertEqual(404, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/notfound"
+        assert wsgi_span.data["http"]["method"] == "PUT"
+        assert wsgi_span.data["http"]["status"] == 404
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(404, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/notfound", urllib3_span.data["http"]["url"])
-        self.assertEqual("PUT", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 404
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/notfound"
+        assert urllib3_span.data["http"]["method"] == "PUT"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
     def test_response_header_capture(self):
         original_extra_http_headers = agent.options.extra_http_headers
-        agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
+        agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
-        with tracer.start_active_span('test'):
-            r = self.http.request('GET', testenv["wsgi_server"] + '/response_headers')
+        with tracer.start_as_current_span("test"):
+            r = self.http.request("GET", testenv["wsgi_server"] + "/response_headers")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/response_headers', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/response_headers"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/response_headers", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert (
+            urllib3_span.data["http"]["url"]
+            == testenv["wsgi_server"] + "/response_headers"
+        )
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
-        self.assertIn("X-Capture-This", urllib3_span.data["http"]["header"])
-        self.assertEqual("Ok", urllib3_span.data["http"]["header"]["X-Capture-This"])
-        self.assertIn("X-Capture-That", urllib3_span.data["http"]["header"])
-        self.assertEqual("Ok too", urllib3_span.data["http"]["header"]["X-Capture-That"])
+        assert "X-Capture-This" in urllib3_span.data["http"]["header"]
+        assert urllib3_span.data["http"]["header"]["X-Capture-This"] == "Ok"
+        assert "X-Capture-That" in urllib3_span.data["http"]["header"]
+        assert urllib3_span.data["http"]["header"]["X-Capture-That"] == "Ok too"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
     def test_request_header_capture(self):
         original_extra_http_headers = agent.options.extra_http_headers
-        agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
+        agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
 
         request_headers = {
             "X-Capture-This-Too": "this too",
             "X-Capture-That-Too": "that too",
         }
-        with tracer.start_active_span("test"):
+        with tracer.start_as_current_span("test"):
             r = self.http.request(
                 "GET", testenv["wsgi_server"] + "/", headers=request_headers
             )
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        self.assertTrue(r)
-        self.assertEqual(200, r.status)
-        self.assertIsNone(tracer.active_span)
+        assert r
+        assert r.status == 200
+        # assert not tracer.active_span
 
         # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, wsgi_span.t)
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
 
         # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
+        assert not test_span.ec
+        assert not urllib3_span.ec
+        assert not wsgi_span.ec
 
         # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv["wsgi_port"]), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
+        assert wsgi_span.n == "wsgi"
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
+        assert not wsgi_span.data["http"]["error"]
+        assert not wsgi_span.stack
 
         # urllib3
-        self.assertEqual("test", test_span.data["sdk"]["name"])
-        self.assertEqual("urllib3", urllib3_span.n)
-        self.assertEqual(200, urllib3_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/", urllib3_span.data["http"]["url"])
-        self.assertEqual("GET", urllib3_span.data["http"]["method"])
-        self.assertIsNotNone(urllib3_span.stack)
-        self.assertTrue(type(urllib3_span.stack) is list)
-        self.assertTrue(len(urllib3_span.stack) > 1)
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
+        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["method"] == "GET"
+        assert urllib3_span.stack
+        assert isinstance(urllib3_span.stack, list)
+        assert len(urllib3_span.stack) > 1
 
-        self.assertIn("X-Capture-This-Too", urllib3_span.data["http"]["header"])
-        self.assertEqual("this too", urllib3_span.data["http"]["header"]["X-Capture-This-Too"])
-        self.assertIn("X-Capture-That-Too", urllib3_span.data["http"]["header"])
-        self.assertEqual("that too", urllib3_span.data["http"]["header"]["X-Capture-That-Too"])
+        assert "X-Capture-This-Too" in urllib3_span.data["http"]["header"]
+        assert urllib3_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
+        assert "X-Capture-That-Too" in urllib3_span.data["http"]["header"]
+        assert urllib3_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
 
         agent.options.extra_http_headers = original_extra_http_headers
+
+    def test_extract_custom_headers_exception(
+        self, span: "InstanaSpan", caplog: "LogCaptureFixture", monkeypatch
+    ) -> None:
+        agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
+
+        request_headers = {
+            "X-Capture-This-Too": "this too",
+            "X-Capture-That-Too": "that too",
+        }
+
+        monkeypatch.setattr(span, "set_attribute", Exception("mocked error"))
+        caplog.set_level(logging.DEBUG, logger="instana")
+        extract_custom_headers(span, request_headers)
+        assert "urllib3 _extract_custom_headers error: " in caplog.messages
+
+    def test_collect_response_exception(
+        self, span: "InstanaSpan", caplog: "LogCaptureFixture", monkeypatch
+    ) -> None:
+        monkeypatch.setattr(span, "set_attribute", Exception("mocked error"))
+
+        caplog.set_level(logging.DEBUG, logger="instana")
+        collect_response(span, {})
+        assert "urllib3 collect_response error: " in caplog.messages
+
+    def test_collect_kvs_exception(
+        self, span: "InstanaSpan", caplog: "LogCaptureFixture", monkeypatch
+    ) -> None:
+        monkeypatch.setattr(span, "set_attribute", Exception("mocked error"))
+
+        caplog.set_level(logging.DEBUG, logger="instana")
+        collect_kvs({}, (), {})
+        assert "urllib3 _collect_kvs error: " in caplog.messages

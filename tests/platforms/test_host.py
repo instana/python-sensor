@@ -234,6 +234,38 @@ class TestHost(unittest.TestCase):
         self.assertEqual(len(log.records), 1)
         self.assertIn('response payload has no agentUuid', log.output[0])
 
+    @patch.object(requests.Session, "put")
+    def test_announce_is_suppressed(self, mock_requests_session_put):
+        test_pid = 4242
+        test_process_name = 'test_process'
+        test_process_args = ['-v', '-d']
+        test_agent_uuid = '83bf1e09-ab16-4203-abf5-34ee0977023a'
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = (
+                '{'
+                f'  "pid": {test_pid}, '
+                f'  "agentUuid": "{test_agent_uuid}"'
+                '}')
+
+        # This mocks the call to self.agent.client.put
+        mock_requests_session_put.return_value = mock_response
+
+        self.create_agent_and_setup_tracer()
+        d = Discovery(
+            pid=test_pid,
+            name=test_process_name, 
+            args=test_process_args
+        )
+        payload = self.agent.announce(d)
+
+        self.assertIn('pid', payload)
+        self.assertEqual(test_pid, payload['pid'])
+
+        spans = self.span_recorder.queued_spans()
+        self.assertEqual(len(spans), 0)
+
 
     @patch.object(requests.Session, "get")
     def test_agent_connection_attempt(self, mock_requests_session_get):

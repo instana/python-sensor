@@ -1,38 +1,36 @@
 # coding=utf-8
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
 """
-▀████▀███▄   ▀███▀▄█▀▀▀█▄███▀▀██▀▀███     ██     ▀███▄   ▀███▀     ██
-  ██   ███▄    █ ▄██    ▀█▀   ██   ▀█    ▄██▄      ███▄    █      ▄██▄
-  ██   █ ███   █ ▀███▄        ██        ▄█▀██▄     █ ███   █     ▄█▀██▄
-  ██   █  ▀██▄ █   ▀█████▄    ██       ▄█  ▀██     █  ▀██▄ █    ▄█  ▀██
-  ██   █   ▀██▄█ ▄     ▀██    ██       ████████    █   ▀██▄█    ████████
-  ██   █     ███ ██     ██    ██      █▀      ██   █     ███   █▀      ██
-▄████▄███▄    ██ █▀█████▀   ▄████▄  ▄███▄   ▄████▄███▄    ██ ▄███▄   ▄████▄
+Instana
 
-https://www.instana.com/
+https://www.ibm.com/products/instana
 
-Documentation: https://www.instana.com/docs/
+Documentation: https://www.ibm.com/docs/en/instana-observability/current
 Source Code: https://github.com/instana/python-sensor
 """
 
-
+import importlib
 import os
 import sys
-import importlib
 
-from .version import VERSION
-from instana.collector.helpers.runtime import is_autowrapt_instrumented, is_webhook_instrumented
+from instana.collector.helpers.runtime import (
+    is_autowrapt_instrumented,
+    is_webhook_instrumented,
+)
+from instana.version import VERSION
 
-__author__ = 'Instana Inc.'
-__copyright__ = 'Copyright 2020 Instana Inc.'
-__credits__ = ['Pavlo Baron', 'Peter Giacomo Lombardo', 'Andrey Slotin']
-__license__ = 'MIT'
-__maintainer__ = 'Peter Giacomo Lombardo'
-__email__ = 'peter.lombardo@instana.com'
+__author__ = "Instana Inc."
+__copyright__ = "Copyright 2020 Instana Inc."
+__credits__ = ["Pavlo Baron", "Peter Giacomo Lombardo", "Andrey Slotin"]
+__license__ = "MIT"
+__maintainer__ = "Peter Giacomo Lombardo"
+__email__ = "peter.lombardo@instana.com"
 __version__ = VERSION
 
 # User configurable EUM API key for instana.helpers.eum_snippet()
 # pylint: disable=invalid-name
-eum_api_key = ''
+eum_api_key = ""
 
 # This Python package can be loaded into Python processes one of three ways:
 #   1. manual import statement
@@ -42,8 +40,19 @@ eum_api_key = ''
 # With such magic, we may get pulled into Python processes that we have no interest being in.
 # As a safety measure, we maintain a "do not load list" and if this process matches something
 # in that list, then we go sit in a corner quietly and don't load anything at all.
-do_not_load_list = ["pip", "pip2", "pip3", "pipenv", "docker-compose", "easy_install", "easy_install-2.7",
-                    "smtpd.py", "twine", "ufw", "unattended-upgrade"]
+do_not_load_list = [
+    "pip",
+    "pip2",
+    "pip3",
+    "pipenv",
+    "docker-compose",
+    "easy_install",
+    "easy_install-2.7",
+    "smtpd.py",
+    "twine",
+    "ufw",
+    "unattended-upgrade",
+]
 
 
 def load(_):
@@ -53,25 +62,38 @@ def load(_):
     """
     # Work around https://bugs.python.org/issue32573
     if not hasattr(sys, "argv"):
-        sys.argv = ['']
+        sys.argv = [""]
     return None
+
 
 def apply_gevent_monkey_patch():
     from gevent import monkey
 
     if os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
+
         def short_key(k):
-            return k[3:] if k.startswith('no-') else k
-        
+            return k[3:] if k.startswith("no-") else k
+
         def key_to_bool(k):
-            return not k.startswith('no-')
+            return not k.startswith("no-")
 
         import inspect
-        all_accepted_patch_all_args = inspect.getfullargspec(monkey.patch_all)[0]
-        provided_options = os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS").replace(" ","").replace("--","").split(',')
-        provided_options = [k for k in provided_options if short_key(k) in all_accepted_patch_all_args]
 
-        fargs = {short_key(k): key_to_bool(k) for (k,v) in zip(provided_options, [True]*len(provided_options))}
+        all_accepted_patch_all_args = inspect.getfullargspec(monkey.patch_all)[0]
+        provided_options = (
+            os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS")
+            .replace(" ", "")
+            .replace("--", "")
+            .split(",")
+        )
+        provided_options = [
+            k for k in provided_options if short_key(k) in all_accepted_patch_all_args
+        ]
+
+        fargs = {
+            short_key(k): key_to_bool(k)
+            for (k, v) in zip(provided_options, [True] * len(provided_options))
+        }
         monkey.patch_all(**fargs)
     else:
         monkey.patch_all()
@@ -115,81 +137,92 @@ def lambda_handler(event, context):
         # Import the module specified in module_name
         handler_module = importlib.import_module(module_name)
     except ImportError:
-        print("Couldn't determine and locate default module handler: %s.%s" % (module_name, function_name))
+        print(
+            f"Couldn't determine and locate default module handler: {module_name}.{function_name}"
+        )
     else:
         # Now get the function and execute it
         if hasattr(handler_module, function_name):
             handler_function = getattr(handler_module, function_name)
             return handler_function(event, context)
         else:
-            print("Couldn't determine and locate default function handler: %s.%s" % (module_name, function_name))
+            print(
+                f"Couldn't determine and locate default function handler: {module_name}.{function_name}"
+            )
 
 
 def boot_agent():
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
-    # Disable all the unused-import violations in this function
-    # pylint: disable=unused-import
-    # pylint: disable=import-outside-toplevel
 
-    import instana.singletons
+    import instana.singletons  # noqa: F401
 
     # Instrumentation
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
+        # TODO: remove the following entries as the migration of the
+        # instrumentation codes are finalised.
+
         # Import & initialize instrumentation
-        from .instrumentation.aws import lambda_inst
-
-        from .instrumentation import sanic_inst
-
-        from .instrumentation import fastapi_inst
-        from .instrumentation import starlette_inst
-
-        from .instrumentation import asyncio
-        from .instrumentation.aiohttp import client
-        from .instrumentation.aiohttp import server
-        from .instrumentation import boto3_inst
-
-
-        from .instrumentation import mysqlclient
-
-        from .instrumentation.google.cloud import storage
-        from .instrumentation.google.cloud import pubsub
-
-        from .instrumentation.celery import hooks
-
-        from .instrumentation import cassandra_inst
-        from .instrumentation import couchbase_inst
-        from .instrumentation import flask
-        from .instrumentation import gevent_inst
-        from .instrumentation import grpcio
-        from .instrumentation.tornado import client
-        from .instrumentation.tornado import server
-        from .instrumentation import logging
-        from .instrumentation import pika
-        from .instrumentation import pymysql
-        from .instrumentation import psycopg2
-        from .instrumentation import redis
-        from .instrumentation import sqlalchemy
-        from .instrumentation import urllib3
-        from .instrumentation.django import middleware
-        from .instrumentation import pymongo
+        from instana.instrumentation import (
+            # asyncio,  # noqa: F401
+            # boto3_inst,  # noqa: F401
+            # cassandra_inst,  # noqa: F401
+            # couchbase_inst,  # noqa: F401
+            # fastapi_inst,  # noqa: F401
+            flask,  # noqa: F401
+            # gevent_inst,  # noqa: F401
+            # grpcio,  # noqa: F401
+            logging,  # noqa: F401
+            # mysqlclient,  # noqa: F401
+            # pika,  # noqa: F401
+            # psycopg2,  # noqa: F401
+            # pymongo,  # noqa: F401
+            # pymysql,  # noqa: F401
+            # redis,  # noqa: F401
+            # sqlalchemy,  # noqa: F401
+            # starlette_inst,  # noqa: F401
+            # sanic_inst,  # noqa: F401
+            urllib3,  # noqa: F401
+        )
+        # from instana.instrumentation.aiohttp import (
+        #     client,  # noqa: F401
+        #     server,  # noqa: F401
+        # )
+        # from instana.instrumentation.aws import lambda_inst  # noqa: F401
+        # from instana.instrumentation.celery import hooks  # noqa: F401
+        # from instana.instrumentation.django import middleware  # noqa: F401
+        # from instana.instrumentation.google.cloud import (
+        #     pubsub,  # noqa: F401
+        #     storage,  # noqa: F401
+        # )
+        # from instana.instrumentation.tornado import (
+        #     client,  # noqa: F401
+        #     server,  # noqa: F401
+        # )
 
     # Hooks
-    from .hooks import hook_uwsgi
+    # from instana.hooks import hook_uwsgi  # noqa: F401
 
 
-if 'INSTANA_DISABLE' not in os.environ:
+if "INSTANA_DISABLE" not in os.environ:
     # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
     # and some Pipenv installs.  If this is the case, it's best effort.
-    if hasattr(sys, 'argv') and len(sys.argv) > 0 and (os.path.basename(sys.argv[0]) in do_not_load_list):
+    if (
+        hasattr(sys, "argv")
+        and len(sys.argv) > 0
+        and (os.path.basename(sys.argv[0]) in do_not_load_list)
+    ):
         if "INSTANA_DEBUG" in os.environ:
-            print("Instana: No use in monitoring this process type (%s).  "
-                  "Will go sit in a corner quietly." % os.path.basename(sys.argv[0]))
+            print(
+                f"Instana: No use in monitoring this process type ({os.path.basename(sys.argv[0])}). Will go sit in a corner quietly."
+            )
     else:
         # Automatic gevent monkey patching
         # unless auto instrumentation is off, then the customer should do manual gevent monkey patching
-        if ((is_autowrapt_instrumented() or is_webhook_instrumented()) and
-            "INSTANA_DISABLE_AUTO_INSTR" not in os.environ and
-            importlib.util.find_spec("gevent")):
+        if (
+            (is_autowrapt_instrumented() or is_webhook_instrumented())
+            and "INSTANA_DISABLE_AUTO_INSTR" not in os.environ
+            and importlib.util.find_spec("gevent")
+        ):
             apply_gevent_monkey_patch()
         # AutoProfile
         if "INSTANA_AUTOPROFILE" in os.environ:

@@ -14,7 +14,6 @@ if importlib.util.find_spec("celery"):
 
 # Set our testing flags
 os.environ["INSTANA_TEST"] = "true"
-os.environ["INSTANA_DISABLE_AUTO_INSTR"] = "true"
 
 # TODO: remove all "noqa: E402" from instana package imports and move the
 # block of env variables setting to below the imports after finishing the
@@ -26,14 +25,41 @@ from instana.span.span import InstanaSpan  # noqa: E402
 from instana.span_context import SpanContext  # noqa: E402
 from instana.tracer import InstanaTracerProvider  # noqa: E402
 
+# Ignoring tests during OpenTelemetry migration.
 collect_ignore_glob = [
     "*autoprofile*",
-    "*clients*",
-    "*frameworks*",
+    # "*clients*",
+    # "*frameworks*",
     "*platforms*",
     "*propagators*",
     "*w3c_trace_context*",
 ]
+
+# TODO: remove the following entries as the migration of the instrumentation
+# codes are finalised.
+collect_ignore_glob.append("*clients/boto*")
+collect_ignore_glob.append("*clients/test_cassandra*")
+collect_ignore_glob.append("*clients/test_counchbase*")
+collect_ignore_glob.append("*clients/test_google*")
+collect_ignore_glob.append("*clients/test_mysql*")
+collect_ignore_glob.append("*clients/test_pika*")
+collect_ignore_glob.append("*clients/test_psycopg*")
+collect_ignore_glob.append("*clients/test_pym*")
+collect_ignore_glob.append("*clients/test_redis*")
+collect_ignore_glob.append("*clients/test_sql*")
+
+collect_ignore_glob.append("*frameworks/test_aiohttp*")
+collect_ignore_glob.append("*frameworks/test_asyncio*")
+collect_ignore_glob.append("*frameworks/test_celery*")
+collect_ignore_glob.append("*frameworks/test_django*")
+collect_ignore_glob.append("*frameworks/test_fastapi*")
+collect_ignore_glob.append("*frameworks/test_gevent*")
+collect_ignore_glob.append("*frameworks/test_grpcio*")
+collect_ignore_glob.append("*frameworks/test_pyramid*")
+collect_ignore_glob.append("*frameworks/test_sanic*")
+collect_ignore_glob.append("*frameworks/test_starlette*")
+collect_ignore_glob.append("*frameworks/test_tornado*")
+collect_ignore_glob.append("*frameworks/test_wsgi*")
 
 # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # be run explicitly.  (So always exclude them here)

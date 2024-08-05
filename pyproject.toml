@@ -59,6 +59,8 @@ string = "instana:load"
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "pytest-cov",
+  "pytest-mock",
 ]
 
 [project.urls]
@@ -77,3 +79,10 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/instana"]
+
+[tool.coverage.report]
+exclude_also = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "except ImportError:",
+    ]

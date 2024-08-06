@@ -64,7 +64,8 @@ class GCRAgent(BaseAgent):
                     "Content-Type": "application/json",
                     "X-Instana-Host": "gcp:cloud-run:revision:{revision}".format(
                         revision=self.collector.revision),
-                    "X-Instana-Key": self.options.agent_key
+                    "X-Instana-Key": self.options.agent_key,
+                    "X-Instana-L": "0",
                 }
 
             response = self.client.post(self.__data_bundle_url(),

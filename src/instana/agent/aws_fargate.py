@@ -63,6 +63,7 @@ class AWSFargateAgent(BaseAgent):
                 self.report_headers["Content-Type"] = "application/json"
                 self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
+                self.report_headers["X-Instana-L"] = "0"
 
             response = self.client.post(self.__data_bundle_url(),
                                         data=to_json(payload),

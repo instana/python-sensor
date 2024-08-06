@@ -40,6 +40,10 @@ class HostAgent(BaseAgent):
     """
     AGENT_DISCOVERY_PATH = "com.instana.plugin.python.discovery"
     AGENT_DATA_PATH = "com.instana.plugin.python.%d"
+    AGENT_REQUEST_HEADERS = {
+        "Content-Type": "application/json",
+        "X-INSTANA-L": "0",
+    }
 
     def __init__(self):
         super(HostAgent, self).__init__()
@@ -154,7 +158,7 @@ class HostAgent(BaseAgent):
         result = False
         try:
             url = "http://%s:%s/" % (host, port)
-            response = self.client.get(url, timeout=5)
+            response = self.client.get(url, timeout=5, headers={"X-INSTANA-L": "0"})
 
             if 200 <= response.status_code < 300:
                 logger.debug("Instana host agent found on %s:%d", host, port)
@@ -176,7 +180,7 @@ class HostAgent(BaseAgent):
             url = self.__discovery_url()
             response = self.client.put(url,
                                        data=to_json(discovery),
-                                       headers={"Content-Type": "application/json"},
+                                       headers=self.AGENT_REQUEST_HEADERS,
                                        timeout=0.8)
         except Exception as exc:
             logger.debug("announce: connection error (%s)", type(exc))
@@ -224,10 +228,11 @@ class HostAgent(BaseAgent):
             payload["m"] = message
 
             url = self.__agent_logger_url()
+            headers = self.AGENT_REQUEST_HEADERS
+            headers.update({"X-Log-Level": "INFO"})
             response = self.client.post(url,
                                        data=to_json(payload),
-                                       headers={"Content-Type": "application/json",
-                                                "X-Log-Level": "INFO"},
+                                       headers=headers,
                                        timeout=0.8)
 
             if 200 <= response.status_code <= 204:
@@ -241,7 +246,7 @@ class HostAgent(BaseAgent):
         """
         ready = False
         try:
-            response = self.client.head(self.__data_url(), timeout=0.8)
+            response = self.client.head(self.__data_url(), timeout=0.8, headers={"X-INSTANA-L": "0"})
 
             if response.status_code == 200:
                 ready = True
@@ -261,7 +266,7 @@ class HostAgent(BaseAgent):
                 logger.debug("Reporting %d spans", span_count)
                 response = self.client.post(self.__traces_url(),
                                             data=to_json(payload['spans']),
-                                            headers={"Content-Type": "application/json"},
+                                            headers=self.AGENT_REQUEST_HEADERS,
                                             timeout=0.8)
 
             if response is not None and 200 <= response.status_code <= 204:
@@ -273,7 +278,7 @@ class HostAgent(BaseAgent):
                 logger.debug("Reporting %d profiles", profile_count)
                 response = self.client.post(self.__profiles_url(),
                                             data=to_json(payload['profiles']),
-                                            headers={"Content-Type": "application/json"},
+                                            headers=self.AGENT_REQUEST_HEADERS,
                                             timeout=0.8)
 
             if response is not None and 200 <= response.status_code <= 204:
@@ -283,7 +288,7 @@ class HostAgent(BaseAgent):
             metric_bundle = payload["metrics"]["plugins"][0]["data"]
             response = self.client.post(self.__data_url(),
                                         data=to_json(metric_bundle),
-                                        headers={"Content-Type": "application/json"},
+                                        headers=self.AGENT_REQUEST_HEADERS,
                                         timeout=0.8)
 
             if response is not None and 200 <= response.status_code <= 204:
@@ -377,7 +382,7 @@ class HostAgent(BaseAgent):
 
             response = self.client.post(self.__response_url(message_id),
                                         data=payload,
-                                        headers={"Content-Type": "application/json"},
+                                        headers=self.AGENT_REQUEST_HEADERS,
                                         timeout=0.8)
         except Exception as exc:
             logger.debug("__task_response: Instana host agent connection error (%s)", type(exc))

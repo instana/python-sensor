@@ -120,7 +120,7 @@ jobs:
   python38:
     docker:
       - image: cimg/python:3.8
-      - image: cimg/postgres:9.6.24
+      - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
@@ -144,7 +144,7 @@ jobs:
   python39:
     docker:
       - image: cimg/python:3.9
-      - image: cimg/postgres:9.6.24
+      - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
@@ -168,7 +168,7 @@ jobs:
   python310:
     docker:
       - image: cimg/python:3.10
-      - image: cimg/postgres:9.6.24
+      - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
@@ -193,7 +193,7 @@ jobs:
   python311:
     docker:
       - image: cimg/python:3.11
-      - image: cimg/postgres:9.6.24
+      - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
@@ -233,7 +233,7 @@ jobs:
   python312:
     docker:
       - image: cimg/python:3.12
-      - image: cimg/postgres:9.6.24
+      - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
@@ -272,8 +272,8 @@ jobs:
 
   python313:
     docker:
-      - image: python:3.13.0rc1-bookworm
-      - image: cimg/postgres:9.6.24
+      - image: python:3.13.0b4-bookworm
+      - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd

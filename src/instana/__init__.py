@@ -138,8 +138,7 @@ def lambda_handler(event, context):
         handler_module = importlib.import_module(module_name)
     except ImportError:
         print(
-            "Couldn't determine and locate default module handler: %s.%s"
-            % (module_name, function_name)
+            f"Couldn't determine and locate default module handler: {module_name}.{function_name}"
         )
     else:
         # Now get the function and execute it
@@ -148,8 +147,7 @@ def lambda_handler(event, context):
             return handler_function(event, context)
         else:
             print(
-                "Couldn't determine and locate default function handler: %s.%s"
-                % (module_name, function_name)
+                f"Couldn't determine and locate default function handler: {module_name}.{function_name}"
             )
 
 
@@ -164,38 +162,42 @@ def boot_agent():
         # instrumentation codes are finalised.
 
         # Import & initialize instrumentation
-        # from instana.instrumentation.aws import lambda_inst  # noqa: F401
-
-        # from instana.instrumentation import sanic_inst  # noqa: F401
-
-        # from instana.instrumentation import starlette_inst  # noqa: F401
-        # from instana.instrumentation import asyncio  # noqa: F401
-        # from instana.instrumentation.aiohttp import client  # noqa: F401
-        # from instana.instrumentation.aiohttp import server  # noqa: F401
-        # from instana.instrumentation import boto3_inst  # noqa: F401
-        # from instana.instrumentation import mysqlclient  # noqa: F401
-        # from instana.instrumentation.google.cloud import storage  # noqa: F401
-        # from instana.instrumentation.google.cloud import pubsub  # noqa: F401
-        # from instana.instrumentation.celery import hooks  # noqa: F401
-        # from instana.instrumentation import cassandra_inst  # noqa: F401
-        # from instana.instrumentation import couchbase_inst  # noqa: F401
-        # from instana.instrumentation import gevent_inst  # noqa: F401
-        # from instana.instrumentation import grpcio  # noqa: F401
-        # from instana.instrumentation.tornado import client  # noqa: F401
-        # from instana.instrumentation.tornado import server  # noqa: F401
-        # from instana.instrumentation import pika  # noqa: F401
-        # from instana.instrumentation import pymysql  # noqa: F401
-        # from instana.instrumentation import psycopg2  # noqa: F401
-        # from instana.instrumentation import redis  # noqa: F401
-        # from instana.instrumentation import sqlalchemy  # noqa: F401
         from instana.instrumentation import (
-            fastapi_inst,  # noqa: F401
+            # asyncio,  # noqa: F401
+            # boto3_inst,  # noqa: F401
+            # cassandra_inst,  # noqa: F401
+            # couchbase_inst,  # noqa: F401
+            # fastapi_inst,  # noqa: F401
             flask,  # noqa: F401
+            # gevent_inst,  # noqa: F401
+            # grpcio,  # noqa: F401
             logging,  # noqa: F401
+            # mysqlclient,  # noqa: F401
+            # pika,  # noqa: F401
+            # psycopg2,  # noqa: F401
+            # pymongo,  # noqa: F401
+            # pymysql,  # noqa: F401
+            # redis,  # noqa: F401
+            # sqlalchemy,  # noqa: F401
+            # starlette_inst,  # noqa: F401
+            # sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
         )
+        # from instana.instrumentation.aiohttp import (
+        #     client,  # noqa: F401
+        #     server,  # noqa: F401
+        # )
+        # from instana.instrumentation.aws import lambda_inst  # noqa: F401
+        # from instana.instrumentation.celery import hooks  # noqa: F401
         # from instana.instrumentation.django import middleware  # noqa: F401
-        # from instana.instrumentation import pymongo  # noqa: F401
+        # from instana.instrumentation.google.cloud import (
+        #     pubsub,  # noqa: F401
+        #     storage,  # noqa: F401
+        # )
+        # from instana.instrumentation.tornado import (
+        #     client,  # noqa: F401
+        #     server,  # noqa: F401
+        # )
 
     # Hooks
     # from instana.hooks import hook_uwsgi  # noqa: F401
@@ -211,8 +213,7 @@ if "INSTANA_DISABLE" not in os.environ:
     ):
         if "INSTANA_DEBUG" in os.environ:
             print(
-                "Instana: No use in monitoring this process type (%s).  "
-                "Will go sit in a corner quietly." % os.path.basename(sys.argv[0])
+                f"Instana: No use in monitoring this process type ({os.path.basename(sys.argv[0])}). Will go sit in a corner quietly."
             )
     else:
         # Automatic gevent monkey patching

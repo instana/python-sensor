@@ -35,6 +35,7 @@ pymongo>=3.11.4
 pyramid>=2.0.1
 pytest>=6.2.4
 pytest-mock>=3.12.0
+pytz>=2024.1
 redis>=3.5.3
 requests-mock
 responses<=0.17.0
@@ -43,7 +44,6 @@ responses<=0.17.0
 # `too few arguments to function ‘_PyLong_AsByteArray’`
 #sanic==21.6.2
 sqlalchemy>=2.0.0
-spyne>=2.14.0
 
 uvicorn>=0.13.4
 urllib3>=1.26.5

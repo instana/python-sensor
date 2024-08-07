@@ -59,7 +59,8 @@ class TestCursorWrapper:
         )
         self.test_conn.commit()
         self.test_cursor.execute("""
-            CREATE OR REPLACE PROCEDURE insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR)
+            DROP PROCEDURE IF EXISTS insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR);
+            CREATE PROCEDURE insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR)
             LANGUAGE plpgsql
             AS $$
             BEGIN

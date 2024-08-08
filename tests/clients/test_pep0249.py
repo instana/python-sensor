@@ -128,7 +128,7 @@ class TestCursorWrapper:
             sample_sql = "select * from tests;"
             caplog.set_level(logging.DEBUG, logger="instana")
             sample_wrapper._collect_kvs(span, sample_sql)
-            assert "string indices must be integers" in caplog.messages
+            assert "string indices must be integers" in caplog.messages[0]
 
     def test_enter(self):
         response = self.test_wrapper.__enter__()

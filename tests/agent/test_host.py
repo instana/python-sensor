@@ -134,11 +134,11 @@ def test_is_agent_listening(
     mock_response = Mock()
     mock_response.status_code = 200
     with patch.object(requests.Session, "get", return_value=mock_response):
-        assert agent.is_agent_listening("sample", "1234")
+        assert agent.is_agent_listening("sample", 1234)
 
     mock_response.status_code = 404
     with patch.object(requests.Session, "get", return_value=mock_response, clear=True):
-        assert not agent.is_agent_listening("sample", "1234")
+        assert not agent.is_agent_listening("sample", 1234)
 
     host = "localhost"
     port = 123

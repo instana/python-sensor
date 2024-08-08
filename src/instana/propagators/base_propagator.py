@@ -66,7 +66,7 @@ class BasePropagator(object):
         self._ts = Tracestate()
 
     @staticmethod
-    def _extract_headers_dict(carrier):
+    def extract_headers_dict(carrier):
         """
         This method converts the incoming carrier into a dict
         :param carrier:
@@ -278,7 +278,7 @@ class BasePropagator(object):
         """
         try:
             traceparent, tracestate = [None] * 2
-            headers = self._extract_headers_dict(carrier=carrier)
+            headers = self.extract_headers_dict(carrier=carrier)
             if headers is None:
                 return None
             headers = {k.lower(): v for k, v in headers.items()}

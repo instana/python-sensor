@@ -237,7 +237,7 @@ jobs:
 
   python313:
     docker:
-      - image: python:3.13.0b4-bookworm
+      - image: python:3.13.0rc1-bookworm
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root

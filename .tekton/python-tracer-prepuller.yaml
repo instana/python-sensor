@@ -70,8 +70,8 @@ spec:
           image: "python@sha256:83f5f8714b6881d3e0e91023d9fe9e43aa6ad5a04e9f9a94ee180b18b021c72a"
           command: ["sh", "-c", "'true'"]
         - name: prepuller-313
-          # 3.13.0b4-bookworm
-          image: "python@sha256:3c93668a53b8bc526d08e1247a30da0f594caa036d814c7a50bcf6812bd30fbe"
+          # 3.13.0rc1-bookworm
+          image: "python@sha256:50446a4de6987bff979654da0a476746cdc2d5dfb8d0be2d99bac805f2f40281"
           command: ["sh", "-c", "'true'"]
 
       # Use the pause container to ensure the Pod goes into a `Running` phase

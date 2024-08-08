@@ -91,6 +91,7 @@ if sys.version_info >= (3, 13):
     # Currently there is a runtime incompatibility caused by the library:
     # `undefined symbol: _PyInterpreterState_Get`
     collect_ignore_glob.append("*test_psycopg2*")
+    collect_ignore_glob.append("*test_pep0249*")
     collect_ignore_glob.append("*test_sqlalchemy*")
 
     # Currently the latest version of pyramid depends on the `cgi` module

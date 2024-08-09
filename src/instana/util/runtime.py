@@ -1,11 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import re
 import os
+import re
 import sys
 
 from ..log import logger
+
 
 def get_py_source(filename):
     """
@@ -20,7 +21,7 @@ def get_py_source(filename):
             response = {"error": "Only Python source files are allowed. (*.py)"}
         else:
             pysource = ""
-            with open(filename, 'r') as pyfile:
+            with open(filename, "r") as pyfile:
                 pysource = pyfile.read()
 
             response = {"data": pysource}
@@ -36,7 +37,7 @@ regexp_py = re.compile(r"\.py$")
 
 
 def determine_service_name():
-    """ This function makes a best effort to name this application process. """
+    """This function makes a best effort to name this application process."""
 
     # One environment variable to rule them all
     if "INSTANA_SERVICE_NAME" in os.environ:
@@ -48,13 +49,13 @@ def determine_service_name():
     basename = None
 
     try:
-        if not hasattr(sys, 'argv'):
+        if not hasattr(sys, "argv"):
             proc_cmdline = get_proc_cmdline(as_string=False)
             return os.path.basename(proc_cmdline[0])
 
         # Get first argument that is not an CLI option
         for candidate in sys.argv:
-            if len(candidate) > 0 and candidate[0] != '-':
+            if len(candidate) > 0 and candidate[0] != "-":
                 basename = candidate
                 break
 
@@ -66,7 +67,7 @@ def determine_service_name():
             basename = os.path.basename(basename)
 
         if basename == "gunicorn":
-            if 'setproctitle' in sys.modules:
+            if "setproctitle" in sys.modules:
                 # With the setproctitle package, gunicorn renames their processes
                 # to pretty things - we use those by default
                 # gunicorn: master [djface.wsgi]
@@ -77,8 +78,8 @@ def determine_service_name():
         elif "FLASK_APP" in os.environ:
             app_name = os.environ["FLASK_APP"]
         elif "DJANGO_SETTINGS_MODULE" in os.environ:
-            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-        elif basename == '':
+            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split(".")[0]
+        elif basename == "":
             if sys.stdout.isatty():
                 app_name = "Interactive Console"
             else:
@@ -115,6 +116,7 @@ def determine_service_name():
 
     return app_name
 
+
 def get_proc_cmdline(as_string=False):
     """
     Parse the proc file system for the command line of this process.  If not available, then return a default.
@@ -134,7 +136,7 @@ def get_proc_cmdline(as_string=False):
 
     # /proc/self/command line will have strings with null bytes such as "/usr/bin/python\0-s\0-d\0".  This
     # bit will prep the return value and drop the trailing null byte
-    parts = name.split('\0')
+    parts = name.split("\0")
     parts.pop()
 
     if as_string is True:

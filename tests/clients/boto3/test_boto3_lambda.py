@@ -5,6 +5,7 @@ import pytest
 import json
 from typing import Generator
 import boto3
+from instana.singletons import agent, tracer
 from moto import mock_aws
 
 from instana.singletons import tracer, agent

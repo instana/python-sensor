@@ -25,23 +25,23 @@ def contains_secret(candidate, matcher, kwlist):
             logger.debug("contains_secret: bad keyword list")
             return False
 
-        if matcher == 'equals-ignore-case':
+        if matcher == "equals-ignore-case":
             for keyword in kwlist:
                 if candidate.lower() == keyword.lower():
                     return True
-        elif matcher == 'equals':
+        elif matcher == "equals":
             for keyword in kwlist:
                 if candidate == keyword:
                     return True
-        elif matcher == 'contains-ignore-case':
+        elif matcher == "contains-ignore-case":
             for keyword in kwlist:
                 if keyword.lower() in candidate:
                     return True
-        elif matcher == 'contains':
+        elif matcher == "contains":
             for keyword in kwlist:
                 if keyword in candidate:
                     return True
-        elif matcher == 'regex':
+        elif matcher == "regex":
             for regexp in kwlist:
                 if re.match(regexp, candidate):
                     return True
@@ -72,45 +72,45 @@ def strip_secrets_from_query(qp, matcher, kwlist):
 
     try:
         if qp is None:
-            return ''
+            return ""
 
         if not isinstance(kwlist, list):
             logger.debug("strip_secrets_from_query: bad keyword list")
             return qp
 
         # If there are no key=values, then just return
-        if not '=' in qp:
+        if "=" not in qp:
             return qp
 
-        if '?' in qp:
-            path, query = qp.split('?')
+        if "?" in qp:
+            path, query = qp.split("?")
         else:
             query = qp
 
         params = parse.parse_qsl(query, keep_blank_values=True)
-        redacted = ['<redacted>']
+        redacted = ["<redacted>"]
 
-        if matcher == 'equals-ignore-case':
+        if matcher == "equals-ignore-case":
             for keyword in kwlist:
                 for index, kv in enumerate(params):
                     if kv[0].lower() == keyword.lower():
                         params[index] = (kv[0], redacted)
-        elif matcher == 'equals':
+        elif matcher == "equals":
             for keyword in kwlist:
                 for index, kv in enumerate(params):
                     if kv[0] == keyword:
                         params[index] = (kv[0], redacted)
-        elif matcher == 'contains-ignore-case':
+        elif matcher == "contains-ignore-case":
             for keyword in kwlist:
                 for index, kv in enumerate(params):
                     if keyword.lower() in kv[0].lower():
                         params[index] = (kv[0], redacted)
-        elif matcher == 'contains':
+        elif matcher == "contains":
             for keyword in kwlist:
                 for index, kv in enumerate(params):
                     if keyword in kv[0]:
                         params[index] = (kv[0], redacted)
-        elif matcher == 'regex':
+        elif matcher == "regex":
             for regexp in kwlist:
                 for index, kv in enumerate(params):
                     if re.match(regexp, kv[0]):
@@ -123,7 +123,7 @@ def strip_secrets_from_query(qp, matcher, kwlist):
         query = parse.unquote(result)
 
         if path:
-            query = path + '?' + query
+            query = path + "?" + query
 
         return query
     except Exception:

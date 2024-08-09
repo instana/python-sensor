@@ -2,10 +2,8 @@ import datetime
 import json
 import logging
 import os
-
 from unittest.mock import Mock, patch
 
-import pytest
 import requests
 from instana.agent.host import AnnounceData, HostAgent
 from instana.collector.host import HostCollector

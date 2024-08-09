@@ -17,6 +17,7 @@ mysqlclient>=2.0.3
 PyMySQL[rsa]>=1.0.2
 psycopg2-binary>=2.8.6
 pika>=1.2.0
+pre-commit==3.5.0
 
 # protobuf is pulled in and also `basictracer`, a core instana dependency
 # and also by google-cloud-storage

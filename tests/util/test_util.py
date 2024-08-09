@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2024
 
 import unittest
+
 from instana.util import validate_url
 
 
@@ -15,7 +16,9 @@ class TestUtil(unittest.TestCase):
         self.assertTrue(validate_url("http://127.0.0.1"))
         self.assertTrue(validate_url("https://10.0.12.221/"))
         self.assertTrue(validate_url("http://[2001:db8:85a3:8d3:1319:8a2e:370:7348]/"))
-        self.assertTrue(validate_url("https://[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443/"))
+        self.assertTrue(
+            validate_url("https://[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443/")
+        )
         self.assertFalse(validate_url("boligrafo"))
         self.assertFalse(validate_url("http:boligrafo"))
         self.assertFalse(validate_url(None))

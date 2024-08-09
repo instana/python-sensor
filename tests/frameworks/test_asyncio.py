@@ -2,18 +2,18 @@
 # (c) Copyright Instana Inc. 2020
 
 import asyncio
-import aiohttp
 import unittest
 
-import tests.apps.flask_app
-from ..helpers import testenv
+import aiohttp
 from instana.configurator import config
 from instana.singletons import async_tracer
+
+from ..helpers import testenv
 
 
 class TestAsyncio(unittest.TestCase):
     def setUp(self):
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.recorder = async_tracer.recorder
         self.recorder.clear_spans()
 
@@ -22,10 +22,10 @@ class TestAsyncio(unittest.TestCase):
         asyncio.set_event_loop(None)
 
         # Restore default
-        config['asyncio_task_context_propagation']['enabled'] = False
+        config["asyncio_task_context_propagation"]["enabled"] = False
 
     def tearDown(self):
-        """ Purge the queue """
+        """Purge the queue"""
         pass
 
     async def fetch(self, session, url, headers=None):
@@ -42,12 +42,12 @@ class TestAsyncio(unittest.TestCase):
                 return await self.fetch(session, testenv["flask_server"] + "/")
 
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 asyncio.ensure_future(run_later("Hello"))
             await asyncio.sleep(0.5)
 
         # Override default task context propagation
-        config['asyncio_task_context_propagation']['enabled'] = True
+        config["asyncio_task_context_propagation"]["enabled"] = True
 
         self.loop.run_until_complete(test())
 
@@ -72,7 +72,7 @@ class TestAsyncio(unittest.TestCase):
                 return await self.fetch(session, testenv["flask_server"] + "/")
 
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 asyncio.ensure_future(run_later("Hello"))
             await asyncio.sleep(0.5)
 
@@ -88,6 +88,7 @@ class TestAsyncio(unittest.TestCase):
         self.assertNotEqual(spans[0].t, spans[1].t)
 
     if hasattr(asyncio, "create_task"):
+
         def test_create_task_with_context(self):
             async def run_later(msg="Hello"):
                 # print("run_later: %s" % async_tracer.active_span.operation_name)
@@ -95,12 +96,12 @@ class TestAsyncio(unittest.TestCase):
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
             async def test():
-                with async_tracer.start_active_span('test'):
+                with async_tracer.start_active_span("test"):
                     asyncio.create_task(run_later("Hello"))
                 await asyncio.sleep(0.5)
 
             # Override default task context propagation
-            config['asyncio_task_context_propagation']['enabled'] = True
+            config["asyncio_task_context_propagation"]["enabled"] = True
 
             self.loop.run_until_complete(test())
 
@@ -125,7 +126,7 @@ class TestAsyncio(unittest.TestCase):
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
             async def test():
-                with async_tracer.start_active_span('test'):
+                with async_tracer.start_active_span("test"):
                     asyncio.create_task(run_later("Hello"))
                 await asyncio.sleep(0.5)
 

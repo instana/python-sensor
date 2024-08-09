@@ -7,6 +7,9 @@ import pytest
 import urllib3
 from typing import Generator
 
+import boto3
+import urllib3
+from instana.singletons import agent, tracer
 from moto import mock_aws
 
 import tests.apps.flask_app

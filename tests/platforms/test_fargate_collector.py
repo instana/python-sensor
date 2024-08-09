@@ -1,14 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
 import json
+import os
 import unittest
 
-from instana.tracer import InstanaTracer
-from instana.recorder import StanRecorder
 from instana.agent.aws_fargate import AWSFargateAgent
-from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
+from instana.recorder import StanRecorder
+from instana.singletons import get_agent, get_tracer, set_agent, set_tracer
+from instana.tracer import InstanaTracer
 
 
 def get_docker_plugin(plugins):
@@ -17,13 +17,17 @@ def get_docker_plugin(plugins):
     """
     docker_plugin = None
     for plugin in plugins:
-        if plugin["name"] == "com.instana.plugin.docker" and plugin["entityId"] == "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82::docker-ssh-aws-fargate":
+        if (
+            plugin["name"] == "com.instana.plugin.docker"
+            and plugin["entityId"]
+            == "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82::docker-ssh-aws-fargate"
+        ):
             docker_plugin = plugin
     return docker_plugin
 
 
 class TestFargateCollector(unittest.TestCase):
-    def __init__(self, methodName='runTest'):
+    def __init__(self, methodName="runTest"):
         super(TestFargateCollector, self).__init__(methodName)
         self.agent = None
         self.span_recorder = None
@@ -44,7 +48,7 @@ class TestFargateCollector(unittest.TestCase):
             os.environ.pop("INSTANA_TAGS")
 
     def tearDown(self):
-        """ Reset all environment variables of consequence """
+        """Reset all environment variables of consequence"""
         if "AWS_EXECUTION_ENV" in os.environ:
             os.environ.pop("AWS_EXECUTION_ENV")
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
@@ -69,13 +73,21 @@ class TestFargateCollector(unittest.TestCase):
         set_tracer(self.tracer)
 
         # Manually set the ECS Metadata API results on the collector
-        with open(self.pwd + '/../data/fargate/1.3.0/root_metadata.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/fargate/1.3.0/root_metadata.json", "r"
+        ) as json_file:
             self.agent.collector.root_metadata = json.load(json_file)
-        with open(self.pwd + '/../data/fargate/1.3.0/task_metadata.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/fargate/1.3.0/task_metadata.json", "r"
+        ) as json_file:
             self.agent.collector.task_metadata = json.load(json_file)
-        with open(self.pwd + '/../data/fargate/1.3.0/stats_metadata.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/fargate/1.3.0/stats_metadata.json", "r"
+        ) as json_file:
             self.agent.collector.stats_metadata = json.load(json_file)
-        with open(self.pwd + '/../data/fargate/1.3.0/task_stats_metadata.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/fargate/1.3.0/task_stats_metadata.json", "r"
+        ) as json_file:
             self.agent.collector.task_stats_metadata = json.load(json_file)
 
     def test_prepare_payload_basics(self):
@@ -85,21 +97,21 @@ class TestFargateCollector(unittest.TestCase):
         self.assertTrue(payload)
 
         self.assertEqual(2, len(payload.keys()))
-        self.assertIn('spans',payload)
-        self.assertIsInstance(payload['spans'], list)
-        self.assertEqual(0, len(payload['spans']))
-        self.assertIn('metrics', payload)
-        self.assertEqual(1, len(payload['metrics'].keys()))
-        self.assertIn('plugins', payload['metrics'])
-        self.assertIsInstance(payload['metrics']['plugins'], list)
-        self.assertEqual(7, len(payload['metrics']['plugins']))
+        self.assertIn("spans", payload)
+        self.assertIsInstance(payload["spans"], list)
+        self.assertEqual(0, len(payload["spans"]))
+        self.assertIn("metrics", payload)
+        self.assertEqual(1, len(payload["metrics"].keys()))
+        self.assertIn("plugins", payload["metrics"])
+        self.assertIsInstance(payload["metrics"]["plugins"], list)
+        self.assertEqual(7, len(payload["metrics"]["plugins"]))
 
-        plugins = payload['metrics']['plugins']
+        plugins = payload["metrics"]["plugins"]
         for plugin in plugins:
             # print("%s - %s" % (plugin["name"], plugin["entityId"]))
-            self.assertIn('name', plugin)
-            self.assertIn('entityId', plugin)
-            self.assertIn('data', plugin)
+            self.assertIn("name", plugin)
+            self.assertIn("entityId", plugin)
+            self.assertIn("data", plugin)
 
     def test_docker_plugin_snapshot_data(self):
         self.create_agent_and_setup_tracer()
@@ -110,19 +122,34 @@ class TestFargateCollector(unittest.TestCase):
         self.assertTrue(first_payload)
         self.assertTrue(second_payload)
 
-        plugin_first_report = get_docker_plugin(first_payload['metrics']['plugins'])
-        plugin_second_report = get_docker_plugin(second_payload['metrics']['plugins'])
+        plugin_first_report = get_docker_plugin(first_payload["metrics"]["plugins"])
+        plugin_second_report = get_docker_plugin(second_payload["metrics"]["plugins"])
 
         self.assertTrue(plugin_first_report)
         self.assertIn("data", plugin_first_report)
 
         # First report should have snapshot data
         data = plugin_first_report["data"]
-        self.assertEqual(data["Id"], "63dc7ac9f3130bba35c785ed90ff12aad82087b5c5a0a45a922c45a64128eb45")
+        self.assertEqual(
+            data["Id"],
+            "63dc7ac9f3130bba35c785ed90ff12aad82087b5c5a0a45a922c45a64128eb45",
+        )
         self.assertEqual(data["Created"], "2020-07-27T12:14:12.583114444Z")
         self.assertEqual(data["Started"], "2020-07-27T12:14:13.545410186Z")
-        self.assertEqual(data["Image"], "410797082306.dkr.ecr.us-east-2.amazonaws.com/fargate-docker-ssh:latest")
-        self.assertEqual(data["Labels"], {'com.amazonaws.ecs.cluster': 'arn:aws:ecs:us-east-2:410797082306:cluster/lombardo-ssh-cluster', 'com.amazonaws.ecs.container-name': 'docker-ssh-aws-fargate', 'com.amazonaws.ecs.task-arn': 'arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82', 'com.amazonaws.ecs.task-definition-family': 'docker-ssh-aws-fargate', 'com.amazonaws.ecs.task-definition-version': '1'})
+        self.assertEqual(
+            data["Image"],
+            "410797082306.dkr.ecr.us-east-2.amazonaws.com/fargate-docker-ssh:latest",
+        )
+        self.assertEqual(
+            data["Labels"],
+            {
+                "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-east-2:410797082306:cluster/lombardo-ssh-cluster",
+                "com.amazonaws.ecs.container-name": "docker-ssh-aws-fargate",
+                "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-east-2:410797082306:task/2d60afb1-e7fd-4761-9430-a375293a9b82",
+                "com.amazonaws.ecs.task-definition-family": "docker-ssh-aws-fargate",
+                "com.amazonaws.ecs.task-definition-version": "1",
+            },
+        )
         self.assertIsNone(data["Ports"])
 
         # Second report should have no snapshot data
@@ -145,11 +172,11 @@ class TestFargateCollector(unittest.TestCase):
         self.assertTrue(first_payload)
         self.assertTrue(second_payload)
 
-        plugin_first_report = get_docker_plugin(first_payload['metrics']['plugins'])
+        plugin_first_report = get_docker_plugin(first_payload["metrics"]["plugins"])
         self.assertTrue(plugin_first_report)
         self.assertIn("data", plugin_first_report)
 
-        plugin_second_report = get_docker_plugin(second_payload['metrics']['plugins'])
+        plugin_second_report = get_docker_plugin(second_payload["metrics"]["plugins"])
         self.assertTrue(plugin_second_report)
         self.assertIn("data", plugin_second_report)
 
@@ -191,8 +218,8 @@ class TestFargateCollector(unittest.TestCase):
         self.assertEqual(len(data["memory"]), 0)
         self.assertIn("blkio", data)
         self.assertEqual(len(data["blkio"]), 1)
-        self.assertEqual(data["blkio"]['blk_write'], 0)
-        self.assertNotIn('blk_read', data["blkio"])
+        self.assertEqual(data["blkio"]["blk_write"], 0)
+        self.assertNotIn("blk_read", data["blkio"])
 
     def test_no_instana_zone(self):
         self.create_agent_and_setup_tracer()
@@ -207,7 +234,7 @@ class TestFargateCollector(unittest.TestCase):
         payload = self.agent.collector.prepare_payload()
         self.assertTrue(payload)
 
-        plugins = payload['metrics']['plugins']
+        plugins = payload["metrics"]["plugins"]
         self.assertIsInstance(plugins, list)
 
         task_plugin = None
@@ -223,14 +250,16 @@ class TestFargateCollector(unittest.TestCase):
     def test_custom_tags(self):
         os.environ["INSTANA_TAGS"] = "love,war=1,games"
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent.options, 'tags'))
-        self.assertDictEqual(self.agent.options.tags, {"love": None, "war": "1", "games": None})
+        self.assertTrue(hasattr(self.agent.options, "tags"))
+        self.assertDictEqual(
+            self.agent.options.tags, {"love": None, "war": "1", "games": None}
+        )
 
         payload = self.agent.collector.prepare_payload()
 
         self.assertTrue(payload)
         task_plugin = None
-        plugins = payload['metrics']['plugins']
+        plugins = payload["metrics"]["plugins"]
         for plugin in plugins:
             if plugin["name"] == "com.instana.plugin.aws.ecs.task":
                 task_plugin = plugin

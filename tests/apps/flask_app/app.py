@@ -4,14 +4,19 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
 import logging
-
-from opentelemetry.semconv.trace import SpanAttributes
-
-from flask import jsonify, Response
+import os
 from wsgiref.simple_server import make_server
-from flask import Flask, redirect, render_template, render_template_string
+
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+)
+from opentelemetry.semconv.trace import SpanAttributes
 
 try:
     import boto3
@@ -23,17 +28,19 @@ except ImportError:
 
 from tests.helpers import testenv
 
+from tests.helpers import testenv
+
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 testenv["flask_port"] = 10811
-testenv["flask_server"] = ("http://127.0.0.1:" + str(testenv["flask_port"]))
+testenv["flask_server"] = "http://127.0.0.1:" + str(testenv["flask_port"])
 
 app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
 
-flask_server = make_server('127.0.0.1', testenv["flask_port"], app.wsgi_app)
+flask_server = make_server("127.0.0.1", testenv["flask_port"], app.wsgi_app)
 
 
 class InvalidUsage(Exception):
@@ -48,7 +55,7 @@ class InvalidUsage(Exception):
 
     def to_dict(self):
         rv = dict(self.payload or ())
-        rv['message'] = self.message
+        rv["message"] = self.message
         return rv
 
 
@@ -64,7 +71,7 @@ class NotFound(Exception):
 
     def to_dict(self):
         rv = dict(self.payload or ())
-        rv['message'] = self.message
+        rv["message"] = self.message
         return rv
 
 
@@ -75,17 +82,17 @@ def hello():
 
 @app.route("/users/<username>/sayhello")
 def username_hello(username):
-    return u"<center><h1>🐍 Hello %s! 🦄</h1></center>" % username
+    return "<center><h1>🐍 Hello %s! 🦄</h1></center>" % username
 
 
 @app.route("/301")
 def threehundredone():
-    return redirect('/', code=301)
+    return redirect("/", code=301)
 
 
 @app.route("/302")
 def threehundredtwo():
-    return redirect('/', code=302)
+    return redirect("/", code=302)
 
 
 @app.route("/400")
@@ -115,7 +122,7 @@ def fivehundredfour():
 
 @app.route("/exception")
 def exception():
-    raise Exception('fake error')
+    raise Exception("fake error")
 
 
 @app.route("/got_request_exception")
@@ -130,58 +137,56 @@ def exception_invalid_usage():
 
 @app.route("/render")
 def render():
-    return render_template('flask_render_template.html', name="Peter")
+    return render_template("flask_render_template.html", name="Peter")
 
 
 @app.route("/render_string")
 def render_string():
-    return render_template_string('hello {{ what }}', what='world')
+    return render_template_string("hello {{ what }}", what="world")
 
 
 @app.route("/render_error")
 def render_error():
-    return render_template('flask_render_error.html', what='world')
+    return render_template("flask_render_error.html", what="world")
 
 
 @app.route("/response_headers")
 def response_headers():
-    headers = {
-        'X-Capture-This': 'Ok',
-        'X-Capture-That': 'Ok too'
-    }
+    headers = {"X-Capture-This": "Ok", "X-Capture-That": "Ok too"}
     return Response("Stan wuz here with headers!", headers=headers)
+
 
 @app.route("/boto3/sqs")
 def boto3_sqs():
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
 
     with mock_aws():
-        boto3_client = boto3.client('sqs', region_name='us-east-1')
+        boto3_client = boto3.client("sqs", region_name="us-east-1")
         response = boto3_client.create_queue(
-            QueueName='SQS_QUEUE_NAME',
-            Attributes={
-                'DelaySeconds': '60',
-                'MessageRetentionPeriod': '600'
-            }
+            QueueName="SQS_QUEUE_NAME",
+            Attributes={"DelaySeconds": "60", "MessageRetentionPeriod": "600"},
         )
 
-        queue_url = response['QueueUrl']
+        queue_url = response["QueueUrl"]
         response = boto3_client.send_message(
-                QueueUrl=queue_url,
-                DelaySeconds=10,
-                MessageAttributes={
-                    'Website': {
-                        'DataType': 'String',
-                        'StringValue': 'https://www.instana.com'
-                    },
+            QueueUrl=queue_url,
+            DelaySeconds=10,
+            MessageAttributes={
+                "Website": {
+                    "DataType": "String",
+                    "StringValue": "https://www.instana.com",
                 },
-                MessageBody=('Monitor any application, service, or request '
-                            'with Instana Application Performance Monitoring')
-            )
+            },
+            MessageBody=(
+                "Monitor any application, service, or request "
+                "with Instana Application Performance Monitoring"
+            ),
+        )
         return Response(response)
+
 
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
@@ -197,6 +202,6 @@ def handle_not_found(e):
     return "blah: %s" % str(e), 404
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     flask_server.request_queue_size = 20
     flask_server.serve_forever()

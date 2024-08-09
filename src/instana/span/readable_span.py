@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2024
 
 from time import time_ns
-from typing import Optional, Sequence, List
+from typing import List, Optional, Sequence
 
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
@@ -52,11 +52,15 @@ class ReadableSpan:
         parent_id: Optional[str] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
-        attributes: types.Attributes = {},
+        attributes: types.Attributes = None,
         events: Sequence[Event] = [],
-        status: Optional[Status] = Status(StatusCode.UNSET),
+        status: Optional[Status] = None,
         stack: Optional[List] = None,
     ) -> None:
+        if attributes is None:
+            attributes = {}
+        if status is None:
+            status = Status(StatusCode.UNSET)
         self._name = name
         self._context = context
         self._start_time = start_time or time_ns()

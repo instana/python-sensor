@@ -2,13 +2,12 @@
 # (c) Copyright Instana Inc. 2020
 
 
-from pyramid.httpexceptions import HTTPException
-
 import opentracing as ot
 import opentracing.ext.tags as ext
+from pyramid.httpexceptions import HTTPException
 
 from ...log import logger
-from ...singletons import tracer, agent
+from ...singletons import agent, tracer
 from ...util.secrets import strip_secrets_from_query
 
 
@@ -24,14 +23,16 @@ class InstanaTweenFactory(object):
         try:
             for custom_header in agent.options.extra_http_headers:
                 if custom_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+                    span.set_tag(
+                        "http.header.%s" % custom_header, headers[custom_header]
+                    )
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
 
     def __call__(self, request):
         ctx = tracer.extract(ot.Format.HTTP_HEADERS, dict(request.headers))
-        scope = tracer.start_active_span('http', child_of=ctx)
+        scope = tracer.start_active_span("http", child_of=ctx)
 
         scope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
         scope.span.set_tag("http.host", request.host)
@@ -42,10 +43,13 @@ class InstanaTweenFactory(object):
             scope.span.set_tag("http.path_tpl", request.matched_route.pattern)
 
         self._extract_custom_headers(scope.span, request.headers)
-        
+
         if len(request.query_string):
-            scrubbed_params = strip_secrets_from_query(request.query_string, agent.options.secrets_matcher,
-                                                       agent.options.secrets_list)
+            scrubbed_params = strip_secrets_from_query(
+                request.query_string,
+                agent.options.secrets_matcher,
+                agent.options.secrets_list,
+            )
             scope.span.set_tag("http.params", scrubbed_params)
 
         response = None
@@ -55,7 +59,9 @@ class InstanaTweenFactory(object):
             self._extract_custom_headers(scope.span, response.headers)
 
             tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, response.headers)
-            response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
+            response.headers["Server-Timing"] = (
+                "intid;desc=%s" % scope.span.context.trace_id
+            )
         except HTTPException as e:
             response = e
             raise
@@ -89,4 +95,4 @@ class InstanaTweenFactory(object):
 
 def includeme(config):
     logger.debug("Instrumenting pyramid")
-    config.add_tween(__name__ + '.InstanaTweenFactory')
+    config.add_tween(__name__ + ".InstanaTweenFactory")

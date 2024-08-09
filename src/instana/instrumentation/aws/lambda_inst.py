@@ -4,16 +4,17 @@
 """
 Instrumentation for AWS Lambda functions
 """
-import sys
-import wrapt
-import opentracing.ext.tags as ext
 
-from ...log import logger
-from ...singletons import env_is_aws_lambda
-from ... import get_lambda_handler_or_default
-from ...singletons import get_agent, get_tracer
-from .triggers import enrich_lambda_span, get_context
+import sys
 import traceback
+
+import opentracing.ext.tags as ext
+import wrapt
+
+from ... import get_lambda_handler_or_default
+from ...log import logger
+from ...singletons import env_is_aws_lambda, get_agent, get_tracer
+from .triggers import enrich_lambda_span, get_context
 
 
 def lambda_handler_with_instana(wrapped, instance, args, kwargs):
@@ -32,16 +33,16 @@ def lambda_handler_with_instana(wrapped, instance, args, kwargs):
 
             if isinstance(result, dict):
                 server_timing_value = "intid;desc=%s" % scope.span.context.trace_id
-                if 'headers' in result:
-                    result['headers']['Server-Timing'] = server_timing_value
-                elif 'multiValueHeaders' in result:
-                    result['multiValueHeaders']['Server-Timing'] = [server_timing_value]
-                if 'statusCode' in result and result.get('statusCode'):
-                    status_code = int(result['statusCode'])
+                if "headers" in result:
+                    result["headers"]["Server-Timing"] = server_timing_value
+                elif "multiValueHeaders" in result:
+                    result["multiValueHeaders"]["Server-Timing"] = [server_timing_value]
+                if "statusCode" in result and result.get("statusCode"):
+                    status_code = int(result["statusCode"])
                     scope.span.set_tag(ext.HTTP_STATUS_CODE, status_code)
                     if 500 <= status_code:
-                        scope.span.log_exception(f'HTTP status {status_code}')
-        except Exception as exc:
+                        scope.span.log_exception(f"HTTP status {status_code}")
+        except Exception:
             if scope.span:
                 exc = traceback.format_exc()
                 scope.span.log_exception(exc)
@@ -59,11 +60,20 @@ if env_is_aws_lambda is True:
 
     if handler_module is not None and handler_function is not None:
         try:
-            logger.debug("Instrumenting AWS Lambda handler (%s.%s)" % (handler_module, handler_function))
-            sys.path.insert(0, '/var/runtime')
-            sys.path.insert(0, '/var/task')
-            wrapt.wrap_function_wrapper(handler_module, handler_function, lambda_handler_with_instana)
-        except (ModuleNotFoundError, ImportError) as exc:
-            logger.warning("Instana: Couldn't instrument AWS Lambda handler. Not monitoring.")
+            logger.debug(
+                "Instrumenting AWS Lambda handler (%s.%s)"
+                % (handler_module, handler_function)
+            )
+            sys.path.insert(0, "/var/runtime")
+            sys.path.insert(0, "/var/task")
+            wrapt.wrap_function_wrapper(
+                handler_module, handler_function, lambda_handler_with_instana
+            )
+        except (ModuleNotFoundError, ImportError):
+            logger.warning(
+                "Instana: Couldn't instrument AWS Lambda handler. Not monitoring."
+            )
     else:
-        logger.warning("Instana: Couldn't determine AWS Lambda Handler.  Not monitoring.")
+        logger.warning(
+            "Instana: Couldn't determine AWS Lambda Handler.  Not monitoring."
+        )

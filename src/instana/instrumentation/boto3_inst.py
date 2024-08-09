@@ -2,9 +2,9 @@
 # (c) Copyright Instana Inc. 2020
 
 
+import inspect
 import json
 import wrapt
-import inspect
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Sequence, Type, Optional
 from opentelemetry.semconv.trace import SpanAttributes
 

@@ -9,7 +9,7 @@ https://www.starlette.io/
 from typing import Any, Callable, Dict, Tuple
 
 try:
-    import starlette
+    import starlette  # noqa: F401
     import wrapt
     from starlette.middleware import Middleware
     import starlette.applications

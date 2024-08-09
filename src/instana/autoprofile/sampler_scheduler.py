@@ -1,13 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import time
 import random
+import time
 
 from ..log import logger
-from .profile import Profile
-from .profile import CallSite
-from .schedule import schedule, delay
+from .schedule import delay, schedule
 
 
 class SamplerConfig(object):
@@ -49,12 +47,16 @@ class SamplerScheduler:
         self.reset()
 
         def random_delay():
-            timeout = random.randint(0, round(self.config.span_interval - self.config.max_span_duration))
+            timeout = random.randint(
+                0, round(self.config.span_interval - self.config.max_span_duration)
+            )
             self.random_timer = delay(timeout, self.start_profiling)
 
-        if not self.profiler.get_option('disable_timers'):
+        if not self.profiler.get_option("disable_timers"):
             self.span_timer = schedule(0, self.config.span_interval, random_delay)
-            self.report_timer = schedule(self.config.report_interval, self.config.report_interval, self.report)
+            self.report_timer = schedule(
+                self.config.report_interval, self.config.report_interval, self.report
+            )
 
     def stop(self):
         if not self.started:
@@ -90,28 +92,28 @@ class SamplerScheduler:
             return False
 
         if self.profile_duration > self.config.max_profile_duration:
-            logger.debug(self.config.log_prefix + ': max profiling duration reached.')
+            logger.debug(self.config.log_prefix + ": max profiling duration reached.")
             return False
 
         if self.span_count > self.config.max_span_count:
-            logger.debug(self.config.log_prefix + ': max recording count reached.')
+            logger.debug(self.config.log_prefix + ": max recording count reached.")
             return False
 
         if self.profiler.sampler_active:
-            logger.debug(self.config.log_prefix + ': sampler lock exists.')
+            logger.debug(self.config.log_prefix + ": sampler lock exists.")
             return False
         self.profiler.sampler_active = True
-        logger.debug(self.config.log_prefix + ': started.')
+        logger.debug(self.config.log_prefix + ": started.")
 
         try:
             self.sampler.start_sampler()
         except Exception:
             self.profiler.sampler_active = False
-            logger.error('Error starting profiling', exc_info=True)
+            logger.error("Error starting profiling", exc_info=True)
             return False
 
         self.span_timeout = delay(self.config.max_span_duration, self.stop_profiling)
-        
+
         self.span_active = True
         self.span_start_ts = time.time()
         self.span_count += 1
@@ -124,17 +126,19 @@ class SamplerScheduler:
         self.span_active = False
 
         try:
-            self.profile_duration = self.profile_duration + time.time() - self.span_start_ts
+            self.profile_duration = (
+                self.profile_duration + time.time() - self.span_start_ts
+            )
             self.sampler.stop_sampler()
         except Exception:
-            logger.error('Error stopping profiling', exc_info=True)
+            logger.error("Error stopping profiling", exc_info=True)
 
         self.profiler.sampler_active = False
 
         if self.span_timeout:
             self.span_timeout.cancel()
 
-        logger.debug(self.config.log_prefix + ': stopped.')
+        logger.debug(self.config.log_prefix + ": stopped.")
 
     def report(self):
         if not self.started:
@@ -150,8 +154,9 @@ class SamplerScheduler:
             return
 
         profile = self.sampler.build_profile(
-            to_millis(self.profile_duration), 
-            to_millis(time.time() - self.profile_start_ts))
+            to_millis(self.profile_duration),
+            to_millis(time.time() - self.profile_start_ts),
+        )
 
         if self.profiler.agent.can_send():
             if self.profiler.agent.announce_data.pid:
@@ -159,9 +164,11 @@ class SamplerScheduler:
 
             self.profiler.agent.collector.profile_queue.put(profile.to_dict())
 
-            logger.debug(self.config.log_prefix + ': reporting profile:')
+            logger.debug(self.config.log_prefix + ": reporting profile:")
         else:
-            logger.debug(self.config.log_prefix + ': not reporting profile, agent not ready')
+            logger.debug(
+                self.config.log_prefix + ": not reporting profile, agent not ready"
+            )
 
         self.reset()
 

@@ -5,17 +5,17 @@
 # (c) Copyright Instana Inc. 2020
 
 import asyncio
+
 from aiohttp import web
 
 from ...helpers import testenv
 
-
 testenv["aiohttp_port"] = 10810
-testenv["aiohttp_server"] = ("http://127.0.0.1:" + str(testenv["aiohttp_port"]))
+testenv["aiohttp_server"] = "http://127.0.0.1:" + str(testenv["aiohttp_port"])
 
 
 def say_hello(request):
-    return web.Response(text='Hello, world')
+    return web.Response(text="Hello, world")
 
 
 def two_hundred_four(request):
@@ -23,11 +23,15 @@ def two_hundred_four(request):
 
 
 def four_hundred_one(request):
-    raise web.HTTPUnauthorized(reason="I must simulate errors.", text="Simulated server error.")
+    raise web.HTTPUnauthorized(
+        reason="I must simulate errors.", text="Simulated server error."
+    )
 
 
 def five_hundred(request):
-    return web.HTTPInternalServerError(reason="I must simulate errors.", text="Simulated server error.")
+    return web.HTTPInternalServerError(
+        reason="I must simulate errors.", text="Simulated server error."
+    )
 
 
 def raise_exception(request):
@@ -39,15 +43,15 @@ def aiohttp_server():
     asyncio.set_event_loop(loop)
 
     app = web.Application()
-    app.add_routes([web.get('/', say_hello)])
-    app.add_routes([web.get('/204', two_hundred_four)])
-    app.add_routes([web.get('/401', four_hundred_one)])
-    app.add_routes([web.get('/500', five_hundred)])
-    app.add_routes([web.get('/exception', raise_exception)])
+    app.add_routes([web.get("/", say_hello)])
+    app.add_routes([web.get("/204", two_hundred_four)])
+    app.add_routes([web.get("/401", four_hundred_one)])
+    app.add_routes([web.get("/500", five_hundred)])
+    app.add_routes([web.get("/exception", raise_exception)])
 
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, '127.0.0.1', testenv["aiohttp_port"])
+    site = web.TCPSite(runner, "127.0.0.1", testenv["aiohttp_port"])
 
     loop.run_until_complete(site.start())
     loop.run_forever()

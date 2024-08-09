@@ -4,12 +4,11 @@ import time
 from typing import Any, Dict, Tuple
 
 import pytest
-from opentelemetry.trace import SpanKind
-
 from instana.recorder import StanRecorder
 from instana.span.registered_span import RegisteredSpan
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
+from opentelemetry.trace import SpanKind
 
 
 @pytest.mark.parametrize(

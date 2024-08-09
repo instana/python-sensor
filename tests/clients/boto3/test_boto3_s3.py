@@ -6,6 +6,8 @@ import pytest
 from typing import Generator
 from moto import mock_aws
 import boto3
+from instana.singletons import agent, tracer
+from moto import mock_aws
 
 from instana.singletons import tracer, agent
 from tests.helpers import get_first_span_by_filter

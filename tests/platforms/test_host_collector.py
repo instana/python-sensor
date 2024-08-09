@@ -2,20 +2,17 @@
 # (c) Copyright Instana Inc. 2020
 
 import os
-import unittest
 import sys
+import unittest
 
-from mock import patch
-
-from instana.tracer import InstanaTracer
-from instana.recorder import StanRecorder
 from instana.agent.host import HostAgent
-from instana.collector.helpers.runtime import (
-    PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT,
-)
+from instana.collector.helpers.runtime import PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR
 from instana.collector.host import HostCollector
-from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
+from instana.recorder import StanRecorder
+from instana.singletons import get_agent, get_tracer, set_agent, set_tracer
+from instana.tracer import InstanaTracer
 from instana.version import VERSION
+from mock import patch
 
 
 class TestHostCollector(unittest.TestCase):
@@ -29,7 +26,7 @@ class TestHostCollector(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
-        self.webhook_sitedir_path = PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR + '3.8.0'
+        self.webhook_sitedir_path = PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR + "3.8.0"
 
     def tearDown(self):
         """Reset all environment variables of consequence"""

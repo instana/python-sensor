@@ -1,12 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import io
+import json
 import sys
 import unittest
-import json
-import requests
-import io
 
+import requests
+from google.api_core import iam
+from google.cloud import storage
 from instana.singletons import agent, tracer
 from tests.test_utils import _TraceContextMixin
 
@@ -50,7 +52,7 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
             )
 
             # trigger the iterator
-            for b in buckets:
+            for _b in buckets:
                 pass
 
         spans = self.recorder.queued_spans()
@@ -93,7 +95,7 @@ class TestGoogleCloudStorage(unittest.TestCase, _TraceContextMixin):
         )
 
         # trigger the iterator
-        for b in buckets:
+        for _b in buckets:
             pass
 
         spans = self.recorder.queued_spans()

@@ -1,23 +1,21 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import threading
 import os
-import signal
-import atexit
 import platform
+import signal
+import threading
 
 from ..log import logger
-from .runtime import min_version, runtime_info, register_signal
 from .frame_cache import FrameCache
-from .sampler_scheduler import SamplerScheduler, SamplerConfig
-from .samplers.cpu_sampler import CPUSampler
+from .runtime import min_version, register_signal, runtime_info
+from .sampler_scheduler import SamplerConfig, SamplerScheduler
 from .samplers.allocation_sampler import AllocationSampler
 from .samplers.block_sampler import BlockSampler
+from .samplers.cpu_sampler import CPUSampler
 
 
 class Profiler(object):
-
     def __init__(self, agent):
         self.agent = agent
 
@@ -31,7 +29,7 @@ class Profiler(object):
         self.frame_cache = FrameCache(self)
 
         config = SamplerConfig()
-        config.log_prefix = 'CPU sampler'
+        config.log_prefix = "CPU sampler"
         config.max_profile_duration = 20
         config.max_span_duration = 5
         config.max_span_count = 30
@@ -40,22 +38,26 @@ class Profiler(object):
         self.cpu_sampler_scheduler = SamplerScheduler(self, CPUSampler(self), config)
 
         config = SamplerConfig()
-        config.log_prefix = 'Allocation sampler'
+        config.log_prefix = "Allocation sampler"
         config.max_profile_duration = 20
         config.max_span_duration = 5
         config.max_span_count = 30
         config.span_interval = 20
         config.report_interval = 120
-        self.allocation_sampler_scheduler = SamplerScheduler(self, AllocationSampler(self), config)
+        self.allocation_sampler_scheduler = SamplerScheduler(
+            self, AllocationSampler(self), config
+        )
 
         config = SamplerConfig()
-        config.log_prefix = 'Block sampler'
+        config.log_prefix = "Block sampler"
         config.max_profile_duration = 20
         config.max_span_duration = 5
         config.max_span_count = 30
         config.span_interval = 20
         config.report_interval = 120
-        self.block_sampler_scheduler = SamplerScheduler(self, BlockSampler(self), config)
+        self.block_sampler_scheduler = SamplerScheduler(
+            self, BlockSampler(self), config
+        )
 
         self.options = None
 
@@ -71,13 +73,15 @@ class Profiler(object):
 
         try:
             if not min_version(2, 7) and not min_version(3, 4):
-                raise Exception('Supported Python versions 2.6 or higher and 3.4 or higher')
+                raise Exception(
+                    "Supported Python versions 2.6 or higher and 3.4 or higher"
+                )
 
-            if platform.python_implementation() != 'CPython':
-                raise Exception('Supported Python interpreter is CPython')
+            if platform.python_implementation() != "CPython":
+                raise Exception("Supported Python interpreter is CPython")
 
             if self.profiler_destroyed:
-                logger.warning('Destroyed profiler cannot be started')
+                logger.warning("Destroyed profiler cannot be started")
                 return
 
             self.options = kwargs
@@ -90,13 +94,13 @@ class Profiler(object):
 
             # execute main_thread_func in main thread on signal
             def _signal_handler(signum, frame):
-                if(self.main_thread_func):
+                if self.main_thread_func:
                     func = self.main_thread_func
                     self.main_thread_func = None
                     try:
                         func()
                     except Exception:
-                        logger.error('Error in signal handler function', exc_info=True)
+                        logger.error("Error in signal handler function", exc_info=True)
 
                     return True
 
@@ -108,13 +112,13 @@ class Profiler(object):
             self.block_sampler_scheduler.start()
 
             self.profiler_started = True
-            logger.debug('Profiler started')
+            logger.debug("Profiler started")
         except Exception:
-            logger.error('Error starting profiler', exc_info=True)
+            logger.error("Error starting profiler", exc_info=True)
 
     def destroy(self):
         if not self.profiler_started:
-            logger.warning('Profiler has not been started')
+            logger.warning("Profiler has not been started")
             return
 
         if self.profiler_destroyed:
@@ -130,14 +134,14 @@ class Profiler(object):
         self.block_sampler_scheduler.destroy()
 
         self.profiler_destroyed = True
-        logger.debug('Profiler destroyed')
+        logger.debug("Profiler destroyed")
 
     def run_in_thread(self, func):
         def func_wrapper():
             try:
                 func()
             except Exception:
-                logger.error('Error in thread function', exc_info=True)
+                logger.error("Error in thread function", exc_info=True)
 
         t = threading.Thread(target=func_wrapper)
         t.start()

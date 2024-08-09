@@ -85,7 +85,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -136,7 +136,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -187,7 +187,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -237,7 +237,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -287,7 +287,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -338,7 +338,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -364,7 +364,7 @@ class TestFastAPI:
             headers = {
                 "X-INSTANA-T": str(span_context.trace_id),
                 "X-INSTANA-S": str(span_context.span_id),
-                "X-Capture-This": "this", 
+                "X-Capture-This": "this",
                 "X-Capture-That": "that",
             }
             result = self.client.get("/", headers=headers)
@@ -393,9 +393,9 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)        
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -414,7 +414,7 @@ class TestFastAPI:
         assert asgi_span.data["http"]["header"]["X-Capture-That"] == "that"
 
     def test_response_header_capture(self) -> None:
-        # The background FastAPI server is pre-configured with custom headers 
+        # The background FastAPI server is pre-configured with custom headers
         # to capture.
 
         with tracer.start_as_current_span("test") as span:
@@ -451,7 +451,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
@@ -569,7 +569,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"

@@ -13,15 +13,16 @@ BaseOptions - base class for all environments.  Holds settings common to all.
     - AWSFargateOptions - Options class for AWS Fargate.  Holds settings specific to AWS Fargate.
     - GCROptions - Options class for Google cloud Run.  Holds settings specific to GCR.
 """
-import os
+
 import logging
+import os
 
 from .log import logger
 from .util.runtime import determine_service_name
 
 
 class BaseOptions(object):
-    """ Base class for all option classes.  Holds items common to all """
+    """Base class for all option classes.  Holds items common to all"""
 
     def __init__(self, **kwds):
         self.debug = False
@@ -35,31 +36,36 @@ class BaseOptions(object):
             self.debug = True
 
         if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
-            self.extra_http_headers = str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(';')
+            self.extra_http_headers = (
+                str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(";")
+            )
 
-        if os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None) == '1':
+        if os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None) == "1":
             self.allow_exit_as_root = True
 
         # Defaults
-        self.secrets_matcher = 'contains-ignore-case'
-        self.secrets_list = ['key', 'pass', 'secret']
+        self.secrets_matcher = "contains-ignore-case"
+        self.secrets_list = ["key", "pass", "secret"]
 
         # Env var format: <matcher>:<secret>[,<secret>]
         self.secrets = os.environ.get("INSTANA_SECRETS", None)
 
         if self.secrets is not None:
-            parts = self.secrets.split(':')
+            parts = self.secrets.split(":")
             if len(parts) == 2:
                 self.secrets_matcher = parts[0]
-                self.secrets_list = parts[1].split(',')
+                self.secrets_list = parts[1].split(",")
             else:
-                logger.warning("Couldn't parse INSTANA_SECRETS env var: %s", self.secrets)
+                logger.warning(
+                    "Couldn't parse INSTANA_SECRETS env var: %s", self.secrets
+                )
 
         self.__dict__.update(kwds)
 
 
 class StandardOptions(BaseOptions):
-    """ The options class used when running directly on a host/node with an Instana agent """
+    """The options class used when running directly on a host/node with an Instana agent"""
+
     AGENT_DEFAULT_HOST = "localhost"
     AGENT_DEFAULT_PORT = 42699
 
@@ -74,7 +80,7 @@ class StandardOptions(BaseOptions):
 
 
 class ServerlessOptions(BaseOptions):
-    """ Base class for serverless environments.  Holds settings common to all serverless environments. """
+    """Base class for serverless environments.  Holds settings common to all serverless environments."""
 
     def __init__(self, **kwds):
         super(ServerlessOptions, self).__init__()
@@ -86,7 +92,7 @@ class ServerlessOptions(BaseOptions):
         if self.endpoint_url is not None and self.endpoint_url[-1] == "/":
             self.endpoint_url = self.endpoint_url[:-1]
 
-        if 'INSTANA_DISABLE_CA_CHECK' in os.environ:
+        if "INSTANA_DISABLE_CA_CHECK" in os.environ:
             self.ssl_verify = False
         else:
             self.ssl_verify = True
@@ -95,7 +101,7 @@ class ServerlessOptions(BaseOptions):
         if proxy is None:
             self.endpoint_proxy = {}
         else:
-            self.endpoint_proxy = {'https': proxy}
+            self.endpoint_proxy = {"https": proxy}
 
         timeout_in_ms = os.environ.get("INSTANA_TIMEOUT", None)
         if timeout_in_ms is None:
@@ -105,9 +111,14 @@ class ServerlessOptions(BaseOptions):
             try:
                 self.timeout = int(timeout_in_ms) / 1000
             except ValueError:
-                logger.warning("Likely invalid INSTANA_TIMEOUT=%s value.  Using default.", timeout_in_ms)
-                logger.warning("INSTANA_TIMEOUT should specify timeout in milliseconds.  See "
-                               "https://www.instana.com/docs/reference/environment_variables/#serverless-monitoring")
+                logger.warning(
+                    "Likely invalid INSTANA_TIMEOUT=%s value.  Using default.",
+                    timeout_in_ms,
+                )
+                logger.warning(
+                    "INSTANA_TIMEOUT should specify timeout in milliseconds.  See "
+                    "https://www.instana.com/docs/reference/environment_variables/#serverless-monitoring"
+                )
                 self.timeout = 0.8
 
         value = os.environ.get("INSTANA_LOG_LEVEL", None)
@@ -129,14 +140,14 @@ class ServerlessOptions(BaseOptions):
 
 
 class AWSLambdaOptions(ServerlessOptions):
-    """ Options class for AWS Lambda.  Holds settings specific to AWS Lambda. """
+    """Options class for AWS Lambda.  Holds settings specific to AWS Lambda."""
 
     def __init__(self, **kwds):
         super(AWSLambdaOptions, self).__init__()
 
 
 class AWSFargateOptions(ServerlessOptions):
-    """ Options class for AWS Fargate.  Holds settings specific to AWS Fargate. """
+    """Options class for AWS Fargate.  Holds settings specific to AWS Fargate."""
 
     def __init__(self, **kwds):
         super(AWSFargateOptions, self).__init__()
@@ -145,10 +156,10 @@ class AWSFargateOptions(ServerlessOptions):
         tag_list = os.environ.get("INSTANA_TAGS", None)
         if tag_list is not None:
             try:
-                self.tags = dict()
-                tags = tag_list.split(',')
+                self.tags = {}
+                tags = tag_list.split(",")
                 for tag_and_value in tags:
-                    parts = tag_and_value.split('=')
+                    parts = tag_and_value.split("=")
                     length = len(parts)
                     if length == 1:
                         self.tags[parts[0]] = None
@@ -159,13 +170,16 @@ class AWSFargateOptions(ServerlessOptions):
 
         self.zone = os.environ.get("INSTANA_ZONE", None)
 
+
 class EKSFargateOptions(AWSFargateOptions):
-    """ Options class for EKS Pods on AWS Fargate. Holds settings specific to EKS Pods on AWS Fargate. """
+    """Options class for EKS Pods on AWS Fargate. Holds settings specific to EKS Pods on AWS Fargate."""
+
     def __init__(self, **kwds):
         super(EKSFargateOptions, self).__init__()
 
+
 class GCROptions(ServerlessOptions):
-    """ Options class for Google Cloud Run.  Holds settings specific to Google Cloud Run. """
+    """Options class for Google Cloud Run.  Holds settings specific to Google Cloud Run."""
 
     def __init__(self, **kwds):
         super(GCROptions, self).__init__()

@@ -5,33 +5,34 @@ import os
 import unittest
 
 import gevent
-from gevent.pool import Group
 import urllib3
+from gevent.pool import Group
+from instana.singletons import tracer
+from instana.span import SDKSpan
 from opentracing.scope_managers.gevent import GeventScopeManager
 
-import tests.apps.flask_app
-from instana.span import SDKSpan
-from instana.singletons import tracer
-from ..helpers import testenv, get_spans_by_filter
+from ..helpers import get_spans_by_filter, testenv
 
 
 @unittest.skipIf(not os.environ.get("GEVENT_STARLETTE_TEST"), reason="")
 class TestGEvent(unittest.TestCase):
     def setUp(self):
-        self.http = urllib3.HTTPConnectionPool('127.0.0.1', port=testenv["flask_port"], maxsize=20)
+        self.http = urllib3.HTTPConnectionPool(
+            "127.0.0.1", port=testenv["flask_port"], maxsize=20
+        )
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
         tracer._scope_manager = GeventScopeManager()
 
     def tearDown(self):
-        """ Do nothing for now """
+        """Do nothing for now"""
         pass
 
     def make_http_call(self, n=None):
-        return self.http.request('GET', testenv["flask_server"] + '/')
+        return self.http.request("GET", testenv["flask_server"] + "/")
 
     def spawn_calls(self):
-        with tracer.start_active_span('spawn_calls'):
+        with tracer.start_active_span("spawn_calls"):
             jobs = []
             jobs.append(gevent.spawn(self.make_http_call))
             jobs.append(gevent.spawn(self.make_http_call))
@@ -41,12 +42,12 @@ class TestGEvent(unittest.TestCase):
     def spawn_imap_unordered(self):
         igroup = Group()
         result = []
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             for i in igroup.imap_unordered(self.make_http_call, range(3)):
                 result.append(i)
 
     def launch_gevent_chain(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             gevent.spawn(self.spawn_calls).join()
 
     def test_spawning(self):
@@ -58,8 +59,11 @@ class TestGEvent(unittest.TestCase):
 
         self.assertEqual(8, len(spans))
 
-        span_filter = lambda span: span.n == "sdk" \
-                                   and span.data['sdk']['name'] == 'test' and span.p == None
+        span_filter = (
+            lambda span: span.n == "sdk"
+            and span.data["sdk"]["name"] == "test"
+            and span.p is None
+        )
         test_spans = get_spans_by_filter(spans, span_filter)
         self.assertIsNotNone(test_spans)
         self.assertEqual(len(test_spans), 1)
@@ -67,8 +71,11 @@ class TestGEvent(unittest.TestCase):
         test_span = test_spans[0]
         self.assertTrue(type(test_spans[0]) is SDKSpan)
 
-        span_filter = lambda span: span.n == "sdk" \
-                                   and span.data['sdk']['name'] == 'spawn_calls' and span.p == test_span.s
+        span_filter = (
+            lambda span: span.n == "sdk"
+            and span.data["sdk"]["name"] == "spawn_calls"
+            and span.p == test_span.s
+        )
         spawn_spans = get_spans_by_filter(spans, span_filter)
         self.assertIsNotNone(spawn_spans)
         self.assertEqual(len(spawn_spans), 1)
@@ -98,8 +105,11 @@ class TestGEvent(unittest.TestCase):
         spans = self.recorder.queued_spans()
         self.assertEqual(7, len(spans))
 
-        span_filter = lambda span: span.n == "sdk" \
-                                   and span.data['sdk']['name'] == 'test' and span.p == None
+        span_filter = (
+            lambda span: span.n == "sdk"
+            and span.data["sdk"]["name"] == "test"
+            and span.p is None
+        )
         test_spans = get_spans_by_filter(spans, span_filter)
         self.assertIsNotNone(test_spans)
         self.assertEqual(len(test_spans), 1)
@@ -121,4 +131,3 @@ class TestGEvent(unittest.TestCase):
             wsgi_spans = get_spans_by_filter(spans, span_filter)
             self.assertIsNotNone(wsgi_spans)
             self.assertEqual(len(wsgi_spans), 1)
-

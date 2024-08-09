@@ -1,16 +1,16 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import time
-import threading
+import os
 import random
 import sys
-import os
+import threading
+import time
 
-sys.path.append('../..')
-os.environ['INSTANA_DEBUG'] = 'yes'
-os.environ['INSTANA_AUTOPROFILE'] = 'yes'
-import instana
+sys.path.append("../..")
+os.environ["INSTANA_DEBUG"] = "yes"
+os.environ["INSTANA_AUTOPROFILE"] = "yes"
+
 
 # Simulate CPU intensive work
 def simulate_cpu():
@@ -24,16 +24,17 @@ def simulate_mem_leak():
     while True:
         mem1 = []
 
-        for j in range(0, 1800):
+        for _j in range(0, 1800):
             mem2 = []
-            for i in range(0, 1000):
-                obj1 = {'v': random.randint(0, 1000000)}
+            for _i in range(0, 1000):
+                obj1 = {"v": random.randint(0, 1000000)}
                 mem1.append(obj1)
 
-                obj2 = {'v': random.randint(0, 1000000)}
+                obj2 = {"v": random.randint(0, 1000000)}
                 mem2.append(obj2)
 
             time.sleep(1)
+
 
 threading.Thread(target=simulate_mem_leak).start()
 
@@ -48,12 +49,13 @@ def simulate_lock():
 
     while True:
         lock.acquire()
-    
+
         threading.Thread(target=lock_wait).start()
 
         time.sleep(1)
         lock.release()
         time.sleep(1)
+
 
 threading.Thread(target=simulate_lock).start()
 

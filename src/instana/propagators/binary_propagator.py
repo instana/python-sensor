@@ -13,12 +13,12 @@ class BinaryPropagator(BasePropagator):
     """
 
     # ByteArray variations from base class
-    HEADER_KEY_T = b'x-instana-t'
-    HEADER_KEY_S = b'x-instana-s'
-    HEADER_KEY_L = b'x-instana-l'
-    HEADER_SERVER_TIMING = b'server-timing'
-    HEADER_KEY_TRACEPARENT = b'traceparent'
-    HEADER_KEY_TRACESTATE = b'tracestate'
+    HEADER_KEY_T = b"x-instana-t"
+    HEADER_KEY_S = b"x-instana-s"
+    HEADER_KEY_L = b"x-instana-l"
+    HEADER_SERVER_TIMING = b"server-timing"
+    HEADER_KEY_TRACEPARENT = b"traceparent"
+    HEADER_KEY_TRACESTATE = b"tracestate"
 
     def __init__(self):
         super(BinaryPropagator, self).__init__()
@@ -33,7 +33,9 @@ class BinaryPropagator(BasePropagator):
             if disable_w3c_trace_context:
                 traceparent, tracestate = [None] * 2
             else:
-                traceparent, tracestate = self._get_participating_trace_context(span_context)
+                traceparent, tracestate = self._get_participating_trace_context(
+                    span_context
+                )
                 try:
                     traceparent = str.encode(traceparent)
                     tracestate = str.encode(tracestate)
@@ -58,13 +60,17 @@ class BinaryPropagator(BasePropagator):
                 carrier.append((self.HEADER_SERVER_TIMING, server_timing))
             elif isinstance(carrier, tuple):
                 if traceparent and tracestate:
-                    carrier = carrier.__add__(((self.HEADER_KEY_TRACEPARENT, traceparent),))
-                    carrier = carrier.__add__(((self.HEADER_KEY_TRACESTATE, tracestate),))
+                    carrier = carrier.__add__(
+                        ((self.HEADER_KEY_TRACEPARENT, traceparent),)
+                    )
+                    carrier = carrier.__add__(
+                        ((self.HEADER_KEY_TRACESTATE, tracestate),)
+                    )
                 carrier = carrier.__add__(((self.HEADER_KEY_T, trace_id),))
                 carrier = carrier.__add__(((self.HEADER_KEY_S, span_id),))
                 carrier = carrier.__add__(((self.HEADER_KEY_L, level),))
                 carrier = carrier.__add__(((self.HEADER_SERVER_TIMING, server_timing),))
-            elif hasattr(carrier, '__setitem__'):
+            elif hasattr(carrier, "__setitem__"):
                 if traceparent and tracestate:
                     carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
                     carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
@@ -78,5 +84,3 @@ class BinaryPropagator(BasePropagator):
             return carrier
         except Exception:
             logger.debug("inject error:", exc_info=True)
-
-

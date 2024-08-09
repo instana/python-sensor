@@ -44,7 +44,9 @@ class SpanContext(OtelSpanContext):
         tracestate=None,  # temporary storage of the tracestate header
         **kwargs,
     ) -> "SpanContext":
-        instance = super().__new__(cls, trace_id, span_id, is_remote, trace_flags, trace_state)
+        instance = super().__new__(
+            cls, trace_id, span_id, is_remote, trace_flags, trace_state
+        )
         return tuple.__new__(
             cls,
             (

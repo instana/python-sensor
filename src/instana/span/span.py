@@ -48,10 +48,14 @@ class InstanaSpan(Span, ReadableSpan):
         parent_id: Optional[str] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
-        attributes: types.Attributes = {},
+        attributes: types.Attributes = None,
         events: Sequence[Event] = [],
-        status: Optional[Status] = Status(StatusCode.UNSET),
+        status: Optional[Status] = None,
     ) -> None:
+        if attributes is None:
+            attributes = {}
+        if status is None:
+            status = Status(StatusCode.UNSET)
         super().__init__(
             name=name,
             context=context,

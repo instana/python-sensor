@@ -2,11 +2,12 @@
 # (c) Copyright Instana Inc. 2019
 
 
-import sys
-import wrapt
 import logging
+import sys
 from collections.abc import Mapping
-from typing import Any, Tuple, Dict, Callable
+from typing import Any, Callable, Dict, Tuple
+
+import wrapt
 
 from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off

@@ -1,10 +1,9 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2017
 
+import instana
 import pytest
 from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
-
-import instana
 
 
 def test_id_generation():

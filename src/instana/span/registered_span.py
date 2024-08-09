@@ -1,10 +1,10 @@
 # (c) Copyright IBM Corp. 2024
 
+from opentelemetry.trace import SpanKind
+
 from instana.log import logger
 from instana.span.base_span import BaseSpan
 from instana.span.kind import ENTRY_SPANS, EXIT_SPANS, HTTP_SPANS, LOCAL_SPANS
-
-from opentelemetry.trace import SpanKind
 
 
 class RegisteredSpan(BaseSpan):

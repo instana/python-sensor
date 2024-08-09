@@ -250,8 +250,8 @@ try:
         if "/tmp/.instana/python" in sys.path:  # pragma: no cover
             # If we are instrumenting via AutoTrace (in an already running process), then the
             # WSGI middleware has to be live reloaded.
-            from django.core.servers.basehttp import get_internal_wsgi_application
             from django.core.exceptions import ImproperlyConfigured
+            from django.core.servers.basehttp import get_internal_wsgi_application
 
             try:
                 wsgiapp = get_internal_wsgi_application()

@@ -1,19 +1,16 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import aiohttp
 import asyncio
 import unittest
 
-from instana.singletons import async_tracer, agent
+import aiohttp
+from instana.singletons import agent, async_tracer
 
-import tests.apps.flask_app
-import tests.apps.aiohttp_app
 from ..helpers import testenv
 
 
 class TestAiohttp(unittest.TestCase):
-
     async def fetch(self, session, url, headers=None, params=None):
         try:
             async with session.get(url, headers=headers, params=params) as response:
@@ -22,7 +19,7 @@ class TestAiohttp(unittest.TestCase):
             pass
 
     def setUp(self):
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.recorder = async_tracer.recorder
         self.recorder.clear_spans()
 
@@ -31,12 +28,12 @@ class TestAiohttp(unittest.TestCase):
         asyncio.set_event_loop(None)
 
     def tearDown(self):
-        """ Ensure that allow_exit_as_root has the default value """
+        """Ensure that allow_exit_as_root has the default value"""
         agent.options.allow_exit_as_root = False
 
     def test_client_get(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
@@ -67,8 +64,9 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -79,13 +77,13 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_as_root_exit_span(self):
         agent.options.allow_exit_as_root = True
+
         async def test():
             async with aiohttp.ClientSession() as session:
                 return await self.fetch(session, testenv["flask_server"] + "/")
@@ -117,8 +115,9 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -129,14 +128,13 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_301(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/301")
 
@@ -171,8 +169,9 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/301",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/301", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -183,14 +182,13 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span2.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_405(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/405")
 
@@ -221,8 +219,9 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(405, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/405",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/405", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -233,14 +232,13 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_500(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/500")
 
@@ -271,11 +269,11 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(500, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/500",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/500", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
-        self.assertEqual('INTERNAL SERVER ERROR',
-                         aiohttp_span.data["http"]["error"])
+        self.assertEqual("INTERNAL SERVER ERROR", aiohttp_span.data["http"]["error"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
@@ -285,14 +283,13 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_504(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/504")
 
@@ -323,10 +320,11 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(504, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/504",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/504", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
-        self.assertEqual('GATEWAY TIMEOUT', aiohttp_span.data["http"]["error"])
+        self.assertEqual("GATEWAY TIMEOUT", aiohttp_span.data["http"]["error"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
@@ -336,16 +334,17 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_get_with_params_to_scrub(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["flask_server"], params={"secret": "yeah"})
+                    return await self.fetch(
+                        session, testenv["flask_server"], params={"secret": "yeah"}
+                    )
 
         response = self.loop.run_until_complete(test())
 
@@ -374,11 +373,11 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/", aiohttp_span.data["http"]["url"]
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
-        self.assertEqual("secret=<redacted>",
-                         aiohttp_span.data["http"]["params"])
+        self.assertEqual("secret=<redacted>", aiohttp_span.data["http"]["params"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
         self.assertTrue(len(aiohttp_span.stack) > 1)
@@ -388,19 +387,20 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(
-            response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_client_response_header_capture(self):
         original_extra_http_headers = agent.options.extra_http_headers
-        agent.options.extra_http_headers = ['X-Capture-This']
+        agent.options.extra_http_headers = ["X-Capture-This"]
 
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["flask_server"] + "/response_headers")
+                    return await self.fetch(
+                        session, testenv["flask_server"] + "/response_headers"
+                    )
 
         response = self.loop.run_until_complete(test())
 
@@ -429,7 +429,10 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["flask_server"] + "/response_headers", aiohttp_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["flask_server"] + "/response_headers",
+            aiohttp_span.data["http"]["url"],
+        )
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)
@@ -443,7 +446,7 @@ class TestAiohttp(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], wsgi_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
@@ -451,9 +454,9 @@ class TestAiohttp(unittest.TestCase):
 
     def test_client_error(self):
         async def test():
-            with async_tracer.start_active_span('test'):
+            with async_tracer.start_active_span("test"):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, 'http://doesnotexist:10/')
+                    return await self.fetch(session, "http://doesnotexist:10/")
 
         response = None
         try:
@@ -482,8 +485,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertIsNone(aiohttp_span.data["http"]["status"])
-        self.assertEqual("http://doesnotexist:10/",
-                         aiohttp_span.data["http"]["url"])
+        self.assertEqual("http://doesnotexist:10/", aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.data["http"]["error"])
         self.assertTrue(len(aiohttp_span.data["http"]["error"]))

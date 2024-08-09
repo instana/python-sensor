@@ -58,5 +58,3 @@ class SDKSpan(BaseSpan):
             elif span.attributes["span.kind"] in EXIT_KIND:
                 kind = ("exit", 2)
         return kind
-
-

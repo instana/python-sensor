@@ -1,10 +1,9 @@
-from multiprocessing import Queue
 import sys
+from multiprocessing import Queue
 from unittest import TestCase
 from unittest.mock import NonCallableMagicMock, PropertyMock
 
 import pytest
-
 from instana.recorder import StanRecorder
 
 

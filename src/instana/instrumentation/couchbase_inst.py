@@ -14,10 +14,14 @@ from ..util.traceutils import get_tracer_tuple, tracing_is_off
 try:
     import couchbase
 
-    if not (hasattr(couchbase, '__version__') and couchbase.__version__[0] == '2'
-            and (couchbase.__version__[2] > '3'
-                 or (couchbase.__version__[2] == '3' and couchbase.__version__[4] >= '4'))
-        ):
+    if not (
+        hasattr(couchbase, "__version__")
+        and couchbase.__version__[0] == "2"
+        and (
+            couchbase.__version__[2] > "3"
+            or (couchbase.__version__[2] == "3" and couchbase.__version__[4] >= "4")
+        )
+    ):
         logger.debug("Instana supports 2.3.4 <= couchbase_versions < 3.0.0. Skipping.")
         raise ImportError
 
@@ -25,19 +29,45 @@ try:
 
     # List of operations to instrument
     # incr, incr_multi, decr, decr_multi, retrieve_in are wrappers around operations above
-    operations = ['upsert', 'insert', 'replace', 'append', 'prepend', 'get', 'rget',
-                  'touch', 'lock', 'unlock', 'remove', 'counter', 'mutate_in', 'lookup_in',
-                  'stats', 'ping', 'diagnostics', 'observe',
-
-                  'upsert_multi', 'insert_multi', 'replace_multi', 'append_multi',
-                  'prepend_multi', 'get_multi', 'touch_multi', 'lock_multi', 'unlock_multi',
-                  'observe_multi', 'endure_multi', 'remove_multi', 'counter_multi']
+    operations = [
+        "upsert",
+        "insert",
+        "replace",
+        "append",
+        "prepend",
+        "get",
+        "rget",
+        "touch",
+        "lock",
+        "unlock",
+        "remove",
+        "counter",
+        "mutate_in",
+        "lookup_in",
+        "stats",
+        "ping",
+        "diagnostics",
+        "observe",
+        "upsert_multi",
+        "insert_multi",
+        "replace_multi",
+        "append_multi",
+        "prepend_multi",
+        "get_multi",
+        "touch_multi",
+        "lock_multi",
+        "unlock_multi",
+        "observe_multi",
+        "endure_multi",
+        "remove_multi",
+        "counter_multi",
+    ]
 
     def capture_kvs(scope, instance, query_arg, op):
         try:
-            scope.span.set_tag('couchbase.hostname', instance.server_nodes[0])
-            scope.span.set_tag('couchbase.bucket', instance.bucket)
-            scope.span.set_tag('couchbase.type', op)
+            scope.span.set_tag("couchbase.hostname", instance.server_nodes[0])
+            scope.span.set_tag("couchbase.bucket", instance.bucket)
+            scope.span.set_tag("couchbase.type", op)
 
             if query_arg is not None:
                 query = None
@@ -46,7 +76,7 @@ try:
                 else:
                     query = query_arg
 
-                scope.span.set_tag('couchbase.sql', query)
+                scope.span.set_tag("couchbase.sql", query)
         except:
             # No fail on key capture - best effort
             pass
@@ -65,8 +95,9 @@ try:
                     return wrapped(*args, **kwargs)
                 except Exception as e:
                     scope.span.log_exception(e)
-                    scope.span.set_tag('couchbase.error', repr(e))
+                    scope.span.set_tag("couchbase.error", repr(e))
                     raise
+
         return wrapper
 
     def query_with_instana(wrapped, instance, args, kwargs):
@@ -77,19 +108,21 @@ try:
             return wrapped(*args, **kwargs)
 
         with tracer.start_active_span("couchbase", child_of=parent_span) as scope:
-            capture_kvs(scope, instance, args[0], 'n1ql_query')
+            capture_kvs(scope, instance, args[0], "n1ql_query")
             try:
                 return wrapped(*args, **kwargs)
             except Exception as e:
                 scope.span.log_exception(e)
-                scope.span.set_tag('couchbase.error', repr(e))
+                scope.span.set_tag("couchbase.error", repr(e))
                 raise
 
     logger.debug("Instrumenting couchbase")
-    wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.n1ql_query', query_with_instana)
+    wrapt.wrap_function_wrapper(
+        "couchbase.bucket", "Bucket.n1ql_query", query_with_instana
+    )
     for op in operations:
         f = make_wrapper(op)
-        wrapt.wrap_function_wrapper('couchbase.bucket', 'Bucket.%s' % op, f)
+        wrapt.wrap_function_wrapper("couchbase.bucket", "Bucket.%s" % op, f)
 
 except ImportError:
     pass

@@ -1,4 +1,5 @@
 import time
+
 from instana.span.readable_span import Event, ReadableSpan
 from instana.span_context import SpanContext
 from opentelemetry.trace.status import Status, StatusCode

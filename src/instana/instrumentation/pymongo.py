@@ -6,10 +6,9 @@ from ..log import logger
 from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
-    import pymongo
-    from pymongo import monitoring
+    import pymongo  # noqa: F401
     from bson import json_util
-
+    from pymongo import monitoring
 
     class MongoCommandTracer(monitoring.CommandListener):
         def __init__(self):
@@ -27,7 +26,9 @@ try:
 
                 # include collection name into the namespace if provided
                 if event.command_name in event.command:
-                    scope.span.set_tag("collection", event.command.get(event.command_name))
+                    scope.span.set_tag(
+                        "collection", event.command.get(event.command_name)
+                    )
 
                 self.__active_commands[event.request_id] = scope
 
@@ -72,22 +73,23 @@ try:
                 "insert": "documents",
                 "update": "updates",
                 "delete": "deletes",
-                "aggregate": "pipeline"
+                "aggregate": "pipeline",
             }
 
             cmd_doc = None
             if cmd in cmd_doc_locations:
                 cmd_doc = event.command.get(cmd_doc_locations[cmd])
-            elif cmd.lower() == "mapreduce":  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
+            elif (
+                cmd.lower() == "mapreduce"
+            ):  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
                 # mapreduce command consists of two mandatory parts: map and reduce
                 cmd_doc = {
                     "map": event.command.get("map"),
-                    "reduce": event.command.get("reduce")
+                    "reduce": event.command.get("reduce"),
                 }
 
             if cmd_doc is not None:
                 span.set_tag("json", json_util.dumps(cmd_doc))
-
 
     monitoring.register(MongoCommandTracer())
 

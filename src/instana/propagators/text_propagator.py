@@ -31,7 +31,7 @@ class TextPropagator(BasePropagator):
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_T, trace_id),))
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_S, span_id),))
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_L, "1"),))
-            elif hasattr(carrier, '__setitem__'):
+            elif hasattr(carrier, "__setitem__"):
                 carrier.__setitem__(self.LC_HEADER_KEY_T, trace_id)
                 carrier.__setitem__(self.LC_HEADER_KEY_S, span_id)
                 carrier.__setitem__(self.LC_HEADER_KEY_L, "1")

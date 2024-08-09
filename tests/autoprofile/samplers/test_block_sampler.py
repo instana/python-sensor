@@ -1,11 +1,9 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
+import threading
 import time
 import unittest
-import random
-import threading
 
 from instana.autoprofile.profiler import Profiler
 from instana.autoprofile.runtime import runtime_info
@@ -35,11 +33,9 @@ class BlockSamplerTestCase(unittest.TestCase):
             lock.acquire()
             lock.release()
 
-
         def event_lock():
             time.sleep(0.5)
             event.set()
-
 
         def event_wait():
             event.wait()
@@ -69,11 +65,11 @@ class BlockSamplerTestCase(unittest.TestCase):
         record_t.join()
 
         profile = sampler.build_profile(2000, 120000).to_dict()
-        #print(profile)
+        # print(profile)
 
-        self.assertTrue('lock_wait' in str(profile))
-        self.assertTrue('event_wait' in str(profile))
+        self.assertTrue("lock_wait" in str(profile))
+        self.assertTrue("event_wait" in str(profile))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

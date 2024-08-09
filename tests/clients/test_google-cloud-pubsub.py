@@ -4,13 +4,14 @@
 import os
 import threading
 import time
-import six
 import unittest
 
-from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
+import six
 from google.api_core.exceptions import AlreadyExists
+from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from google.cloud.pubsub_v1.publisher import exceptions
 from instana.singletons import agent, tracer
+
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8085
@@ -26,8 +27,8 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
 
-        self.project_id = 'test-project'
-        self.topic_name = 'test-topic'
+        self.project_id = "test-project"
+        self.topic_name = "test-topic"
 
         # setup topic_path & topic
         self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
@@ -43,10 +44,10 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
 
     def test_publish(self):
         # publish a single message
-        with tracer.start_active_span('test'):
-            future = self.publisher.publish(self.topic_path,
-                                            b'Test Message',
-                                            origin="instana")
+        with tracer.start_active_span("test"):
+            future = self.publisher.publish(
+                self.topic_path, b"Test Message", origin="instana"
+            )
         time.sleep(2.0)  # for sanity
         result = future.result()
         self.assertIsInstance(result, six.string_types)
@@ -56,11 +57,11 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
 
         self.assertEqual(2, len(spans))
         self.assertIsNone(tracer.active_span)
-        self.assertEqual('gcps', gcps_span.n)
+        self.assertEqual("gcps", gcps_span.n)
         self.assertEqual(2, gcps_span.k)  # EXIT
 
-        self.assertEqual('publish', gcps_span.data['gcps']['op'])
-        self.assertEqual(self.topic_name, gcps_span.data['gcps']['top'])
+        self.assertEqual("publish", gcps_span.data["gcps"]["op"])
+        self.assertEqual(self.topic_name, gcps_span.data["gcps"]["top"])
 
         # Trace Context Propagation
         self.assertTraceContextPropagated(test_span, gcps_span)
@@ -71,9 +72,9 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
     def test_publish_as_root_exit_span(self):
         agent.options.allow_exit_as_root = True
         # publish a single message
-        future = self.publisher.publish(self.topic_path,
-                                        b'Test Message',
-                                        origin="instana")
+        future = self.publisher.publish(
+            self.topic_path, b"Test Message", origin="instana"
+        )
         time.sleep(2.0)  # for sanity
         result = future.result()
         self.assertIsInstance(result, six.string_types)
@@ -83,11 +84,11 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
         gcps_span = spans[0]
 
         self.assertIsNone(tracer.active_span)
-        self.assertEqual('gcps', gcps_span.n)
+        self.assertEqual("gcps", gcps_span.n)
         self.assertEqual(2, gcps_span.k)  # EXIT
 
-        self.assertEqual('publish', gcps_span.data['gcps']['op'])
-        self.assertEqual(self.topic_name, gcps_span.data['gcps']['top'])
+        self.assertEqual("publish", gcps_span.data["gcps"]["op"])
+        self.assertEqual(self.topic_name, gcps_span.data["gcps"]["top"])
 
         # Error logging
         self.assertErrorLogging(spans)
@@ -112,13 +113,12 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
         cls.subscriber = SubscriberClient()
 
     def setUp(self):
-
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
 
-        self.project_id = 'test-project'
-        self.topic_name = 'test-topic'
-        self.subscription_name = 'test-subscription'
+        self.project_id = "test-project"
+        self.topic_name = "test-topic"
+        self.subscription_name = "test-subscription"
 
         # setup topic_path & topic
         self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
@@ -130,28 +130,32 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
 
         # setup subscription path & attach subscription
         self.subscription_path = self.subscriber.subscription_path(
-            self.project_id, self.subscription_name)
+            self.project_id, self.subscription_name
+        )
         try:
             self.subscriber.create_subscription(
                 request={"name": self.subscription_path, "topic": self.topic_path}
             )
         except AlreadyExists:
-            self.subscriber.delete_subscription(request={"subscription": self.subscription_path})
+            self.subscriber.delete_subscription(
+                request={"subscription": self.subscription_path}
+            )
             self.subscriber.create_subscription(
                 request={"name": self.subscription_path, "topic": self.topic_path}
             )
 
     def tearDown(self):
         self.publisher.delete_topic(request={"topic": self.topic_path})
-        self.subscriber.delete_subscription(request={"subscription": self.subscription_path})
+        self.subscriber.delete_subscription(
+            request={"subscription": self.subscription_path}
+        )
 
     def test_subscribe(self):
-
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             # Publish a message
-            future = self.publisher.publish(self.topic_path,
-                                            b"Test Message to PubSub",
-                                            origin="instana")
+            future = self.publisher.publish(
+                self.topic_path, b"Test Message to PubSub", origin="instana"
+            )
             self.assertIsInstance(future.result(), six.string_types)
 
             time.sleep(2.0)  # for sanity
@@ -173,10 +177,10 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
 
         self.assertEqual(3, len(spans))
         self.assertIsNone(tracer.active_span)
-        self.assertEqual('publish', producer_span.data['gcps']['op'])
-        self.assertEqual('consume', consumer_span.data['gcps']['op'])
-        self.assertEqual(self.topic_name, producer_span.data['gcps']['top'])
-        self.assertEqual(self.subscription_name, consumer_span.data['gcps']['sub'])
+        self.assertEqual("publish", producer_span.data["gcps"]["op"])
+        self.assertEqual("consume", consumer_span.data["gcps"]["op"])
+        self.assertEqual(self.topic_name, producer_span.data["gcps"]["top"])
+        self.assertEqual(self.subscription_name, consumer_span.data["gcps"]["sub"])
 
         self.assertEqual(2, producer_span.k)  # EXIT
         self.assertEqual(1, consumer_span.k)  # ENTRY

@@ -8,6 +8,7 @@ import pytest
 from typing import Generator
 from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from instana.singletons import agent, tracer
 
 from tests.apps.app_django import INSTALLED_APPS
 from instana.singletons import agent, tracer

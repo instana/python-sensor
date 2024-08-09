@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2019
 
-import os
 import sys
-import grpc
 import time
+from concurrent import futures
+
+import grpc
+
 import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
-from concurrent import futures
 
 try:
     from ...helpers import testenv
@@ -24,42 +25,43 @@ class StanServicer(stan_pb2_grpc.StanServicer):
     """
     gRPC server for Stan Service
     """
+
     def __init__(self, *args, **kwargs):
-        self.server_port = testenv['grpc_port']
+        self.server_port = testenv["grpc_port"]
 
     def OneQuestionOneResponse(self, request, context):
         # print("😇:I was asked: %s" % request.question)
         response = """\
 Invention, my dear friends, is 93% perspiration, 6% electricity, \
 4% evaporation, and 2% butterscotch ripple. – Willy Wonka"""
-        result = {'answer': response, 'was_answered': True}
+        result = {"answer": response, "was_answered": True}
         return stan_pb2.QuestionResponse(**result)
 
     def ManyQuestionsOneResponse(self, request_iterator, context):
-        for request in request_iterator:
+        for _request in request_iterator:
             # print("😇:I was asked: %s" % request.question)
             pass
 
-        result = {'answer': 'Ok', 'was_answered': True}
+        result = {"answer": "Ok", "was_answered": True}
         return stan_pb2.QuestionResponse(**result)
 
     def OneQuestionManyResponses(self, request, context):
         # print("😇:I was asked: %s" % request.question)
-        for count in range(6):
-            result = {'answer': 'Ok', 'was_answered': True}
+        for _count in range(6):
+            result = {"answer": "Ok", "was_answered": True}
             yield stan_pb2.QuestionResponse(**result)
 
     def ManyQuestionsManyReponses(self, request_iterator, context):
-        for request in request_iterator:
+        for _request in request_iterator:
             # print("😇:I was asked: %s" % request.question)
-            result = {'answer': 'Ok', 'was_answered': True}
+            result = {"answer": "Ok", "was_answered": True}
             yield stan_pb2.QuestionResponse(**result)
 
     def OneQuestionOneErrorResponse(self, request, context):
-            # print("😇:I was asked: %s" % request.question)
-            raise Exception('Simulated error')
-            result = {'answer': "ThisError", 'was_answered': True}
-            return stan_pb2.QuestionResponse(**result)
+        # print("😇:I was asked: %s" % request.question)
+        raise Exception("Simulated error")
+        result = {"answer": "ThisError", "was_answered": True}
+        return stan_pb2.QuestionResponse(**result)
 
     def start_server(self):
         """
@@ -74,7 +76,7 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
         stan_pb2_grpc.add_StanServicer_to_server(StanServicer(), rpc_server)
 
         # bind the server to the port defined above
-        rpc_server.add_insecure_port('[::]:{}'.format(self.server_port))
+        rpc_server.add_insecure_port("[::]:{}".format(self.server_port))
 
         # start the server
         rpc_server.start()
@@ -84,14 +86,14 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
             # code is non blocking, and if I don't do this
             # the program will exit
             while True:
-                time.sleep(60*60*60)
+                time.sleep(60 * 60 * 60)
         except KeyboardInterrupt:
             rpc_server.stop(0)
-            print('Stan as a Service RPC Server Stopped ...')
+            print("Stan as a Service RPC Server Stopped ...")
 
 
 if __name__ == "__main__":
-    print ("Booting foreground GRPC application...")
+    print("Booting foreground GRPC application...")
     # os.environ["INSTANA_TEST"] = "true"
 
     if sys.version_info >= (3, 5, 3):

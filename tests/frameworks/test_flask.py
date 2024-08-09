@@ -2,11 +2,12 @@
 # (c) Copyright Instana Inc. 2020
 
 import unittest
-import urllib3
-import flask
 from unittest.mock import patch
 
-if hasattr(flask.signals, 'signals_available'):
+import flask
+import urllib3
+
+if hasattr(flask.signals, "signals_available"):
     from flask.signals import signals_available
 else:
     # Beginning from 2.3.0 as stated in the notes
@@ -15,28 +16,26 @@ else:
     # The signals_available attribute is deprecated. #5056"
     signals_available = True
 
-from opentelemetry.trace import SpanKind
-
-import tests.apps.flask_app
 from instana.singletons import tracer
 from instana.span.span import get_current_span
+from opentelemetry.trace import SpanKind
+
 from tests.helpers import testenv
 
 
 class TestFlask(unittest.TestCase):
-
     def setUp(self) -> None:
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.http = urllib3.PoolManager()
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
 
     def tearDown(self) -> None:
-        """ Do nothing for now """
+        """Do nothing for now"""
         return None
 
     def test_vanilla_requests(self) -> None:
-        r = self.http.request('GET', testenv["flask_server"] + '/')
+        r = self.http.request("GET", testenv["flask_server"] + "/")
         assert r.status == 200
 
         spans = self.recorder.queued_spans()
@@ -192,8 +191,10 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.data["http"]["path_tpl"] is None
 
     def test_get_request_with_suppression(self) -> None:
-        headers = {'X-INSTANA-L':'0'}
-        response = self.http.urlopen('GET', testenv["flask_server"] + '/', headers=headers)
+        headers = {"X-INSTANA-L": "0"}
+        response = self.http.urlopen(
+            "GET", testenv["flask_server"] + "/", headers=headers
+        )
 
         spans = self.recorder.queued_spans()
 
@@ -207,7 +208,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers.get("tracestate", None) is None
 
         # Assert that there isn't any span, where level is not 0!
-        assert any(map(lambda x: x.l != 0, spans)) is False
+        assert any((x.l != 0 for x in spans)) is False
 
         # Assert that there are no spans in the recorded list
         assert spans == []
@@ -215,11 +216,14 @@ class TestFlask(unittest.TestCase):
     @unittest.skip("Handled when type of trace and span ids are modified to str")
     def test_get_request_with_suppression_and_w3c(self) -> None:
         headers = {
-                'X-INSTANA-L':'0',
-                'traceparent': '00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01',
-                'tracestate': 'congo=ucfJifl5GOE,rojo=00f067aa0ba902b7'}
+            "X-INSTANA-L": "0",
+            "traceparent": "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01",
+            "tracestate": "congo=ucfJifl5GOE,rojo=00f067aa0ba902b7",
+        }
 
-        response = self.http.urlopen('GET', testenv["flask_server"] + '/', headers=headers)
+        response = self.http.urlopen(
+            "GET", testenv["flask_server"] + "/", headers=headers
+        )
 
         spans = self.recorder.queued_spans()
 
@@ -233,18 +237,18 @@ class TestFlask(unittest.TestCase):
         assert "in=" not in response.headers["tracestate"]
 
         # Assert that there isn't any span, where level is not 0!
-        assert any(map(lambda x: x.l != 0, spans)) is False
+        assert any((x.l != 0 for x in spans)) is False
 
         # Assert that there are no spans in the recorded list
         assert spans == []
 
     def test_synthetic_request(self) -> None:
-        headers = {
-            'X-INSTANA-SYNTHETIC': '1'
-        }
+        headers = {"X-INSTANA-SYNTHETIC": "1"}
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/', headers=headers)
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/", headers=headers
+            )
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -259,7 +263,7 @@ class TestFlask(unittest.TestCase):
 
     def test_render_template(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/render')
+            response = self.http.request("GET", testenv["flask_server"] + "/render")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
@@ -339,7 +343,9 @@ class TestFlask(unittest.TestCase):
 
     def test_render_template_string(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/render_string')
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/render_string"
+            )
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
@@ -422,7 +428,9 @@ class TestFlask(unittest.TestCase):
 
     def test_301(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/301', redirect=False)
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/301", redirect=False
+            )
 
         spans = self.recorder.queued_spans()
 
@@ -462,8 +470,8 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert None == urllib3_span.ec
-        assert None == wsgi_span.ec
+        assert None is urllib3_span.ec
+        assert None is wsgi_span.ec
 
         # wsgi
         assert "wsgi" == wsgi_span.n
@@ -491,7 +499,7 @@ class TestFlask(unittest.TestCase):
 
     def test_custom_404(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/custom-404')
+            response = self.http.request("GET", testenv["flask_server"] + "/custom-404")
 
         spans = self.recorder.queued_spans()
 
@@ -531,8 +539,8 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert None == urllib3_span.ec
-        assert None == wsgi_span.ec
+        assert None is urllib3_span.ec
+        assert None is wsgi_span.ec
 
         # wsgi
         assert "wsgi" == wsgi_span.n
@@ -562,7 +570,9 @@ class TestFlask(unittest.TestCase):
 
     def test_404(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/11111111111')
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/11111111111"
+            )
 
         spans = self.recorder.queued_spans()
 
@@ -602,8 +612,8 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert None == urllib3_span.ec
-        assert None == wsgi_span.ec
+        assert None is urllib3_span.ec
+        assert None is wsgi_span.ec
 
         # wsgi
         assert "wsgi" == wsgi_span.n
@@ -633,7 +643,7 @@ class TestFlask(unittest.TestCase):
 
     def test_500(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/500')
+            response = self.http.request("GET", testenv["flask_server"] + "/500")
 
         spans = self.recorder.queued_spans()
 
@@ -705,7 +715,9 @@ class TestFlask(unittest.TestCase):
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/render_error')
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/render_error"
+            )
 
         spans = self.recorder.queued_spans()
 
@@ -773,7 +785,8 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 500 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["flask_server"] + "/render_error" == urllib3_span.data["http"]["url"]
+            testenv["flask_server"] + "/render_error"
+            == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
@@ -788,7 +801,7 @@ class TestFlask(unittest.TestCase):
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/exception')
+            response = self.http.request("GET", testenv["flask_server"] + "/exception")
 
         spans = self.recorder.queued_spans()
 
@@ -839,7 +852,9 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 500 == urllib3_span.data["http"]["status"]
-        assert testenv["flask_server"] + "/exception" == urllib3_span.data["http"]["url"]
+        assert (
+            testenv["flask_server"] + "/exception" == urllib3_span.data["http"]["url"]
+        )
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -850,7 +865,9 @@ class TestFlask(unittest.TestCase):
 
     def test_custom_exception_with_log(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/exception-invalid-usage')
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/exception-invalid-usage"
+            )
 
         spans = self.recorder.queued_spans()
 
@@ -932,7 +949,9 @@ class TestFlask(unittest.TestCase):
 
     def test_path_templates(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/users/Ricky/sayhello')
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/users/Ricky/sayhello"
+            )
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -1004,11 +1023,14 @@ class TestFlask(unittest.TestCase):
     def test_response_header_capture(self) -> None:
         # Hack together a manual custom headers list
         from instana.singletons import agent
+
         original_extra_http_headers = agent.options.extra_http_headers
-        agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
+        agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["flask_server"] + '/response_headers')
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/response_headers"
+            )
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3

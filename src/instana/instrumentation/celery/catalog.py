@@ -18,9 +18,9 @@ def get_task_id(headers, body):
     """
     Across Celery versions, the task id can exist in a couple of places.
     """
-    id = headers.get('id', None)
+    id = headers.get("id", None)
     if id is None:
-        id = body.get('id', None)
+        id = body.get("id", None)
     return id
 
 
@@ -33,11 +33,11 @@ def task_catalog_push(task, task_id, scope, is_consumer):
     @return: scope
     """
     catalog = None
-    if not hasattr(task, '_instana_scopes'):
+    if not hasattr(task, "_instana_scopes"):
         catalog = WeakValueDictionary()
-        setattr(task, '_instana_scopes', catalog)
+        task._instana_scopes = catalog
     else:
-        catalog = getattr(task, '_instana_scopes')
+        catalog = task._instana_scopes
 
     key = (task_id, is_consumer)
     catalog[key] = scope
@@ -51,7 +51,7 @@ def task_catalog_pop(task, task_id, is_consumer):
     @param is_consumer: Boolean
     @return: scope
     """
-    catalog = getattr(task, '_instana_scopes', None)
+    catalog = getattr(task, "_instana_scopes", None)
     if catalog is None:
         return None
 
@@ -67,10 +67,9 @@ def task_catalog_get(task, task_id, is_consumer):
     @param is_consumer: Boolean
     @return: scope
     """
-    catalog = getattr(task, '_instana_scopes', None)
+    catalog = getattr(task, "_instana_scopes", None)
     if catalog is None:
         return None
 
     key = (task_id, is_consumer)
     return catalog.get(key, None)
-

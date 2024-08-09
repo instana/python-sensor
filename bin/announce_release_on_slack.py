@@ -3,15 +3,19 @@
 import json
 import logging
 import os
-import requests
 import sys
 
+import requests
 from github import Github
 
 
 def ensure_environment_variables_are_present():
-    required_env_vars = ('GITHUB_RELEASE_TAG', 'GITHUB_TOKEN',
-                         'SLACK_BOT_TOKEN', 'SLACK_CHANNEL_ID_RELEASES')
+    required_env_vars = (
+        "GITHUB_RELEASE_TAG",
+        "GITHUB_TOKEN",
+        "SLACK_BOT_TOKEN",
+        "SLACK_CHANNEL_ID_RELEASES",
+    )
 
     for v in required_env_vars:
         if not os.environ.get(v):
@@ -33,7 +37,8 @@ def get_gh_release_info_text_with_token(release_tag, access_token):
         f"Tag: {release.tag_name}\n"
         f"Created at: {release.created_at}\n"
         f"Published at: {release.published_at}\n"
-        f"{release.body}\n")
+        f"{release.body}\n"
+    )
 
     logging.info(msg)
     return msg
@@ -42,8 +47,10 @@ def get_gh_release_info_text_with_token(release_tag, access_token):
 def post_on_slack_channel(slack_token, slack_channel_id, message_text):
     api_url = "https://slack.com/api/chat.postMessage"
 
-    headers = {"Authorization": f"Bearer {slack_token}",
-               "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {slack_token}",
+        "Content-Type": "application/json",
+    }
     body = {"channel": slack_channel_id, "text": message_text}
 
     response = requests.post(api_url, headers=headers, data=json.dumps(body))
@@ -52,7 +59,7 @@ def post_on_slack_channel(slack_token, slack_channel_id, message_text):
     if response_data["ok"]:
         logging.info("Message sent successfully!")
     else:
-        logging.fatal("Error sending message: %s", response_data['error'])
+        logging.fatal("Error sending message: %s", response_data["error"])
 
 
 def main():
@@ -61,12 +68,13 @@ def main():
     logging.basicConfig(level=logging.INFO)
     ensure_environment_variables_are_present()
 
-    msg = get_gh_release_info_text_with_token(os.environ['GITHUB_RELEASE_TAG'],
-                                              os.environ['GITHUB_TOKEN'])
+    msg = get_gh_release_info_text_with_token(
+        os.environ["GITHUB_RELEASE_TAG"], os.environ["GITHUB_TOKEN"]
+    )
 
-    post_on_slack_channel(os.environ['SLACK_BOT_TOKEN'],
-                          os.environ['SLACK_CHANNEL_ID_RELEASES'],
-                          msg)
+    post_on_slack_channel(
+        os.environ["SLACK_BOT_TOKEN"], os.environ["SLACK_CHANNEL_ID_RELEASES"], msg
+    )
 
 
 if __name__ == "__main__":

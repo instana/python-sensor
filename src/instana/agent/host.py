@@ -6,25 +6,26 @@ The in-process Instana agent (for host based processes) that manages
 monitoring state and reporting that data.
 """
 
-import os
 import json
+import os
 from datetime import datetime
 
-import urllib3
 import requests
+import urllib3
 
-from ..log import logger
-from .base import BaseAgent
-from ..fsm import TheMachine
-from ..version import VERSION
-from ..options import StandardOptions
 from ..collector.host import HostCollector
+from ..fsm import TheMachine
+from ..log import logger
+from ..options import StandardOptions
 from ..util import to_json
 from ..util.runtime import get_py_source
+from ..version import VERSION
+from .base import BaseAgent
 
 
 class AnnounceData(object):
-    """ The Announce Payload """
+    """The Announce Payload"""
+
     pid = 0
     agentUuid = ""
 
@@ -38,6 +39,7 @@ class HostAgent(BaseAgent):
     parts it handles are the announce state and the collection and reporting of metrics and spans to the
     Instana Host agent.
     """
+
     AGENT_DISCOVERY_PATH = "com.instana.plugin.python.discovery"
     AGENT_DATA_PATH = "com.instana.plugin.python.%d"
 
@@ -54,7 +56,10 @@ class HostAgent(BaseAgent):
         # Update log level from what Options detected
         self.update_log_level()
 
-        logger.info("Stan is on the scene.  Starting Instana instrumentation version: %s", VERSION)
+        logger.info(
+            "Stan is on the scene.  Starting Instana instrumentation version: %s",
+            VERSION,
+        )
 
         self.collector = HostCollector(self)
         self.machine = TheMachine(self)
@@ -127,24 +132,29 @@ class HostAgent(BaseAgent):
         @return: None
         """
         if "secrets" in res_data:
-            self.options.secrets_matcher = res_data['secrets']['matcher']
-            self.options.secrets_list = res_data['secrets']['list']
+            self.options.secrets_matcher = res_data["secrets"]["matcher"]
+            self.options.secrets_list = res_data["secrets"]["list"]
 
         if "extraHeaders" in res_data:
             if self.options.extra_http_headers is None:
-                self.options.extra_http_headers = res_data['extraHeaders']
+                self.options.extra_http_headers = res_data["extraHeaders"]
             else:
-                self.options.extra_http_headers.extend(res_data['extraHeaders'])
-            logger.info("Will also capture these custom headers: %s", self.options.extra_http_headers)
+                self.options.extra_http_headers.extend(res_data["extraHeaders"])
+            logger.info(
+                "Will also capture these custom headers: %s",
+                self.options.extra_http_headers,
+            )
 
-        self.announce_data = AnnounceData(pid=res_data['pid'], agentUuid=res_data['agentUuid'])
+        self.announce_data = AnnounceData(
+            pid=res_data["pid"], agentUuid=res_data["agentUuid"]
+        )
 
     def get_from_structure(self):
         """
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        return {'e': self.announce_data.pid, 'h': self.announce_data.agentUuid}
+        return {"e": self.announce_data.pid, "h": self.announce_data.agentUuid}
 
     def is_agent_listening(self, host, port):
         """
@@ -160,10 +170,14 @@ class HostAgent(BaseAgent):
                 logger.debug("Instana host agent found on %s:%d", host, port)
                 result = True
             else:
-                logger.debug("The attempt to connect to the Instana host "\
-                             "agent on %s:%d has failed with an unexpected " \
-                             "status code. Expected HTTP 200 but received: %d",
-                             host, port, response.status_code)
+                logger.debug(
+                    "The attempt to connect to the Instana host "
+                    "agent on %s:%d has failed with an unexpected "
+                    "status code. Expected HTTP 200 but received: %d",
+                    host,
+                    port,
+                    response.status_code,
+                )
         except Exception:
             logger.debug("Instana Host Agent not found on %s:%d", host, port)
         return result
@@ -174,10 +188,12 @@ class HostAgent(BaseAgent):
         """
         try:
             url = self.__discovery_url()
-            response = self.client.put(url,
-                                       data=to_json(discovery),
-                                       headers={"Content-Type": "application/json"},
-                                       timeout=0.8)
+            response = self.client.put(
+                url,
+                data=to_json(discovery),
+                headers={"Content-Type": "application/json"},
+                timeout=0.8,
+            )
         except Exception as exc:
             logger.debug("announce: connection error (%s)", type(exc))
             return None
@@ -186,7 +202,9 @@ class HostAgent(BaseAgent):
             self.last_seen = datetime.now()
 
         if response.status_code != 200:
-            logger.debug("announce: response status code (%s) is NOT 200", response.status_code)
+            logger.debug(
+                "announce: response status code (%s) is NOT 200", response.status_code
+            )
             return None
 
         if isinstance(response.content, bytes):
@@ -196,19 +214,19 @@ class HostAgent(BaseAgent):
 
         try:
             payload = json.loads(raw_json)
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             logger.debug("announce: response is not JSON: (%s)", raw_json)
             return None
 
-        if not hasattr(payload, 'get'):
+        if not hasattr(payload, "get"):
             logger.debug("announce: response payload has no fields: (%s)", payload)
             return None
 
-        if not payload.get('pid'):
+        if not payload.get("pid"):
             logger.debug("announce: response payload has no pid: (%s)", payload)
             return None
 
-        if not payload.get('agentUuid'):
+        if not payload.get("agentUuid"):
             logger.debug("announce: response payload has no agentUuid: (%s)", payload)
             return None
 
@@ -220,15 +238,16 @@ class HostAgent(BaseAgent):
         """
         response = None
         try:
-            payload = dict()
+            payload = {}
             payload["m"] = message
 
             url = self.__agent_logger_url()
-            response = self.client.post(url,
-                                       data=to_json(payload),
-                                       headers={"Content-Type": "application/json",
-                                                "X-Log-Level": "INFO"},
-                                       timeout=0.8)
+            response = self.client.post(
+                url,
+                data=to_json(payload),
+                headers={"Content-Type": "application/json", "X-Log-Level": "INFO"},
+                timeout=0.8,
+            )
 
             if 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
@@ -256,37 +275,43 @@ class HostAgent(BaseAgent):
         response = None
         try:
             # Report spans (if any)
-            span_count = len(payload['spans'])
+            span_count = len(payload["spans"])
             if span_count > 0:
                 logger.debug("Reporting %d spans", span_count)
-                response = self.client.post(self.__traces_url(),
-                                            data=to_json(payload['spans']),
-                                            headers={"Content-Type": "application/json"},
-                                            timeout=0.8)
+                response = self.client.post(
+                    self.__traces_url(),
+                    data=to_json(payload["spans"]),
+                    headers={"Content-Type": "application/json"},
+                    timeout=0.8,
+                )
 
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
 
             # Report profiles (if any)
-            profile_count = len(payload['profiles'])
+            profile_count = len(payload["profiles"])
             if profile_count > 0:
                 logger.debug("Reporting %d profiles", profile_count)
-                response = self.client.post(self.__profiles_url(),
-                                            data=to_json(payload['profiles']),
-                                            headers={"Content-Type": "application/json"},
-                                            timeout=0.8)
+                response = self.client.post(
+                    self.__profiles_url(),
+                    data=to_json(payload["profiles"]),
+                    headers={"Content-Type": "application/json"},
+                    timeout=0.8,
+                )
 
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
 
             # Report metrics
-            metric_count = len(payload['metrics'])
+            metric_count = len(payload["metrics"])
             if metric_count > 0:
                 metric_bundle = payload["metrics"]["plugins"][0]["data"]
-                response = self.client.post(self.__data_url(),
-                                            data=to_json(metric_bundle),
-                                            headers={"Content-Type": "application/json"},
-                                            timeout=0.8)
+                response = self.client.post(
+                    self.__data_url(),
+                    data=to_json(metric_bundle),
+                    headers={"Content-Type": "application/json"},
+                    timeout=0.8,
+                )
 
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
@@ -300,7 +325,11 @@ class HostAgent(BaseAgent):
         except urllib3.exceptions.MaxRetryError:
             pass
         except Exception as exc:
-            logger.debug("report_data_payload: Instana host agent connection error (%s)", type(exc), exc_info=True)
+            logger.debug(
+                "report_data_payload: Instana host agent connection error (%s)",
+                type(exc),
+                exc_info=True,
+            )
         return response
 
     def handle_agent_tasks(self, task):
@@ -313,14 +342,15 @@ class HostAgent(BaseAgent):
             if task["action"] == "python.source":
                 payload = get_py_source(task["args"]["file"])
             else:
-                message = "Unrecognized action: %s. An newer Instana package may be required " \
-                          "for this. Current version: %s" % (task["action"], VERSION)
+                message = (
+                    "Unrecognized action: %s. An newer Instana package may be required "
+                    "for this. Current version: %s" % (task["action"], VERSION)
+                )
                 payload = {"error": message}
         else:
             payload = {"error": "Instana Python: No action specified in request."}
 
         self.__task_response(task["messageId"], payload)
-
 
     def diagnostics(self):
         """
@@ -328,6 +358,7 @@ class HostAgent(BaseAgent):
         """
         try:
             import threading
+
             dt_format = "%Y-%m-%d %H:%M:%S"
 
             logger.warning("====> Instana Python Language Agent Diagnostics <====")
@@ -352,14 +383,25 @@ class HostAgent(BaseAgent):
 
             logger.warning("----> Collector <----")
             logger.warning("Collector: %s", self.collector)
-            logger.warning("is_collector_thread_running?: %s", self.collector.is_reporting_thread_running())
-            logger.warning("background_report_lock.locked?: %s", self.collector.background_report_lock.locked())
+            logger.warning(
+                "is_collector_thread_running?: %s",
+                self.collector.is_reporting_thread_running(),
+            )
+            logger.warning(
+                "background_report_lock.locked?: %s",
+                self.collector.background_report_lock.locked(),
+            )
             logger.warning("ready_to_start: %s", self.collector.ready_to_start)
             logger.warning("reporting_thread: %s", self.collector.reporting_thread)
             logger.warning("report_interval: %s", self.collector.report_interval)
-            logger.warning("should_send_snapshot_data: %s", self.collector.should_send_snapshot_data())
+            logger.warning(
+                "should_send_snapshot_data: %s",
+                self.collector.should_send_snapshot_data(),
+            )
             logger.warning("spans in queue: %s", self.collector.span_queue.qsize())
-            logger.warning("thread_shutdown is_set: %s", self.collector.thread_shutdown.is_set())
+            logger.warning(
+                "thread_shutdown is_set: %s", self.collector.thread_shutdown.is_set()
+            )
 
             logger.warning("----> Threads <----")
             logger.warning("Threads: %s", threading.enumerate())
@@ -375,52 +417,85 @@ class HostAgent(BaseAgent):
         try:
             payload = json.dumps(data)
 
-            logger.debug("Task response is %s: %s", self.__response_url(message_id), payload)
+            logger.debug(
+                "Task response is %s: %s", self.__response_url(message_id), payload
+            )
 
-            response = self.client.post(self.__response_url(message_id),
-                                        data=payload,
-                                        headers={"Content-Type": "application/json"},
-                                        timeout=0.8)
+            response = self.client.post(
+                self.__response_url(message_id),
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=0.8,
+            )
         except Exception as exc:
-            logger.debug("__task_response: Instana host agent connection error (%s)", type(exc))
+            logger.debug(
+                "__task_response: Instana host agent connection error (%s)", type(exc)
+            )
         return response
 
     def __discovery_url(self):
         """
         URL for announcing to the host agent
         """
-        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, self.AGENT_DISCOVERY_PATH)
+        return "http://%s:%s/%s" % (
+            self.options.agent_host,
+            self.options.agent_port,
+            self.AGENT_DISCOVERY_PATH,
+        )
 
     def __data_url(self):
         """
         URL for posting metrics to the host agent.  Only valid when announced.
         """
         path = self.AGENT_DATA_PATH % self.announce_data.pid
-        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
+        return "http://%s:%s/%s" % (
+            self.options.agent_host,
+            self.options.agent_port,
+            path,
+        )
 
     def __traces_url(self):
         """
         URL for posting traces to the host agent.  Only valid when announced.
         """
         path = "com.instana.plugin.python/traces.%d" % self.announce_data.pid
-        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
+        return "http://%s:%s/%s" % (
+            self.options.agent_host,
+            self.options.agent_port,
+            path,
+        )
 
     def __profiles_url(self):
         """
         URL for posting profiles to the host agent.  Only valid when announced.
         """
         path = "com.instana.plugin.python/profiles.%d" % self.announce_data.pid
-        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
+        return "http://%s:%s/%s" % (
+            self.options.agent_host,
+            self.options.agent_port,
+            path,
+        )
 
     def __response_url(self, message_id):
         """
         URL for responding to agent requests.
         """
-        path = "com.instana.plugin.python/response.%d?messageId=%s" % (int(self.announce_data.pid), message_id)
-        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, path)
+        path = "com.instana.plugin.python/response.%d?messageId=%s" % (
+            int(self.announce_data.pid),
+            message_id,
+        )
+        return "http://%s:%s/%s" % (
+            self.options.agent_host,
+            self.options.agent_port,
+            path,
+        )
 
     def __agent_logger_url(self):
         """
         URL for logging messages to the discovered host agent.
         """
-        return "http://%s:%s/%s" % (self.options.agent_host, self.options.agent_port, "com.instana.agent.logger")
+        return "http://%s:%s/%s" % (
+            self.options.agent_host,
+            self.options.agent_port,
+            "com.instana.agent.logger",
+        )

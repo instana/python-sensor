@@ -24,7 +24,7 @@ def delay(timeout, func, *args):
         try:
             func(*args)
         except Exception:
-            logger.error('Error in delayed function', exc_info=True)
+            logger.error("Error in delayed function", exc_info=True)
 
     t = threading.Timer(timeout, func_wrapper, ())
     t.start()
@@ -32,7 +32,7 @@ def delay(timeout, func, *args):
     return t
 
 
-def schedule( timeout, interval, func, *args):
+def schedule(timeout, interval, func, *args):
     tw = TimerWraper()
 
     def func_wrapper():
@@ -41,11 +41,13 @@ def schedule( timeout, interval, func, *args):
         try:
             func(*args)
         except Exception:
-            logger.error('Error in scheduled function', exc_info=True)
+            logger.error("Error in scheduled function", exc_info=True)
 
         with tw.cancel_lock:
             if not tw.canceled:
-                tw.timer = threading.Timer(abs(interval - (time.time() - start)), func_wrapper, ())
+                tw.timer = threading.Timer(
+                    abs(interval - (time.time() - start)), func_wrapper, ()
+                )
                 tw.timer.start()
 
     tw.timer = threading.Timer(timeout, func_wrapper, ())

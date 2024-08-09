@@ -1,23 +1,22 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import time
 import asyncio
+import time
 import unittest
 
 import tornado
-from tornado.httpclient import AsyncHTTPClient
 from instana.singletons import tornado_tracer
+from tornado.httpclient import AsyncHTTPClient
 
-import tests.apps.tornado_server
 from ..helpers import testenv
 
 raise unittest.SkipTest("Non deterministic tests TBR")
 
-class TestTornadoClient(unittest.TestCase):
 
+class TestTornadoClient(unittest.TestCase):
     def setUp(self):
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.recorder = tornado_tracer.recorder
         self.recorder.clear_spans()
 
@@ -33,7 +32,7 @@ class TestTornadoClient(unittest.TestCase):
 
     def test_get(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tornado_tracer.start_active_span("test"):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
@@ -66,7 +65,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", server_span.data["http"]["url"]
+        )
         self.assertIsNone(server_span.data["http"]["params"])
         self.assertEqual("GET", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
@@ -75,7 +76,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", client_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", client_span.data["http"]["url"]
+        )
         self.assertEqual("GET", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -86,14 +89,16 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_post(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
-                return await self.http_client.fetch(testenv["tornado_server"] + "/", method="POST", body='asdf')
+            with tornado_tracer.start_active_span("test"):
+                return await self.http_client.fetch(
+                    testenv["tornado_server"] + "/", method="POST", body="asdf"
+                )
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
@@ -124,7 +129,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", server_span.data["http"]["url"]
+        )
         self.assertIsNone(server_span.data["http"]["params"])
         self.assertEqual("POST", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
@@ -133,7 +140,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", client_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", client_span.data["http"]["url"]
+        )
         self.assertEqual("POST", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -144,13 +153,13 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_301(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tornado_tracer.start_active_span("test"):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/301")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
@@ -185,7 +194,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", server_span.data["http"]["url"]
+        )
         self.assertIsNone(server_span.data["http"]["params"])
         self.assertEqual("GET", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
@@ -194,7 +205,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server301_span.n)
         self.assertEqual(301, server301_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/301", server301_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/301", server301_span.data["http"]["url"]
+        )
         self.assertIsNone(server301_span.data["http"]["params"])
         self.assertEqual("GET", server301_span.data["http"]["method"])
         self.assertIsNotNone(server301_span.stack)
@@ -203,7 +216,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/301", client_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/301", client_span.data["http"]["url"]
+        )
         self.assertEqual("GET", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -214,15 +229,17 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_405(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tornado_tracer.start_active_span("test"):
                 try:
-                    return await self.http_client.fetch(testenv["tornado_server"] + "/405")
+                    return await self.http_client.fetch(
+                        testenv["tornado_server"] + "/405"
+                    )
                 except tornado.httpclient.HTTPClientError as e:
                     return e.response
 
@@ -255,7 +272,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(405, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/405", server_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/405", server_span.data["http"]["url"]
+        )
         self.assertIsNone(server_span.data["http"]["params"])
         self.assertEqual("GET", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
@@ -264,7 +283,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(405, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/405", client_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/405", client_span.data["http"]["url"]
+        )
         self.assertEqual("GET", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -275,15 +296,17 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_500(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tornado_tracer.start_active_span("test"):
                 try:
-                    return await self.http_client.fetch(testenv["tornado_server"] + "/500")
+                    return await self.http_client.fetch(
+                        testenv["tornado_server"] + "/500"
+                    )
                 except tornado.httpclient.HTTPClientError as e:
                     return e.response
 
@@ -316,7 +339,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(500, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/500", server_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/500", server_span.data["http"]["url"]
+        )
         self.assertIsNone(server_span.data["http"]["params"])
         self.assertEqual("GET", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
@@ -325,7 +350,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(500, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/500", client_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/500", client_span.data["http"]["url"]
+        )
         self.assertEqual("GET", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -336,15 +363,17 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_504(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tornado_tracer.start_active_span("test"):
                 try:
-                    return await self.http_client.fetch(testenv["tornado_server"] + "/504")
+                    return await self.http_client.fetch(
+                        testenv["tornado_server"] + "/504"
+                    )
                 except tornado.httpclient.HTTPClientError as e:
                     return e.response
 
@@ -377,7 +406,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(504, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/504", server_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/504", server_span.data["http"]["url"]
+        )
         self.assertIsNone(server_span.data["http"]["params"])
         self.assertEqual("GET", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
@@ -386,7 +417,9 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(504, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/504", client_span.data["http"]["url"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/504", client_span.data["http"]["url"]
+        )
         self.assertEqual("GET", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -397,14 +430,16 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
 
     def test_get_with_params_to_scrub(self):
         async def test():
-            with tornado_tracer.start_active_span('test'):
-                return await self.http_client.fetch(testenv["tornado_server"] + "/?secret=yeah")
+            with tornado_tracer.start_active_span("test"):
+                return await self.http_client.fetch(
+                    testenv["tornado_server"] + "/?secret=yeah"
+                )
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
         self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
@@ -435,8 +470,10 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-server", server_span.n)
         self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
-        self.assertEqual('secret=<redacted>', server_span.data["http"]["params"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", server_span.data["http"]["url"]
+        )
+        self.assertEqual("secret=<redacted>", server_span.data["http"]["params"])
         self.assertEqual("GET", server_span.data["http"]["method"])
         self.assertIsNotNone(server_span.stack)
         self.assertTrue(type(server_span.stack) is list)
@@ -444,8 +481,10 @@ class TestTornadoClient(unittest.TestCase):
 
         self.assertEqual("tornado-client", client_span.n)
         self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", client_span.data["http"]["url"])
-        self.assertEqual('secret=<redacted>', client_span.data["http"]["params"])
+        self.assertEqual(
+            testenv["tornado_server"] + "/", client_span.data["http"]["url"]
+        )
+        self.assertEqual("secret=<redacted>", client_span.data["http"]["params"])
         self.assertEqual("GET", client_span.data["http"]["method"])
         self.assertIsNotNone(client_span.stack)
         self.assertTrue(type(client_span.stack) is list)
@@ -456,6 +495,6 @@ class TestTornadoClient(unittest.TestCase):
         self.assertIn("X-INSTANA-S", response.headers)
         self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
         self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
+        self.assertEqual(response.headers["X-INSTANA-L"], "1")
         self.assertIn("Server-Timing", response.headers)
         self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)

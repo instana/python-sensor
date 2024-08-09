@@ -4,11 +4,10 @@ import time
 from unittest.mock import patch
 
 import pytest
-from opentelemetry.trace.status import Status, StatusCode
-
 from instana.recorder import StanRecorder
 from instana.span.span import INVALID_SPAN, Event, InstanaSpan, get_current_span
 from instana.span_context import SpanContext
+from opentelemetry.trace.status import Status, StatusCode
 
 
 def test_span_default(
@@ -614,7 +613,7 @@ def test_span_record_exception_with_Exception_raised(
     with patch(
         "instana.span.span.InstanaSpan.add_event", side_effect=Exception("mocked error")
     ):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             span.record_exception(exception)
 
 

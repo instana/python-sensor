@@ -4,15 +4,14 @@
 import unittest
 
 import redis
-from redis.sentinel import Sentinel
+from instana.singletons import agent, tracer
 
 from ..helpers import testenv
-from instana.singletons import agent, tracer
 
 
 class TestRedis(unittest.TestCase):
     def setUp(self):
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
 
@@ -20,27 +19,27 @@ class TestRedis(unittest.TestCase):
         # self.sentinel_master = self.sentinel.discover_master('mymaster')
         # self.client = redis.Redis(host=self.sentinel_master[0])
 
-        self.client = redis.Redis(host=testenv['redis_host'])
+        self.client = redis.Redis(host=testenv["redis_host"])
 
     def tearDown(self):
-        """ Ensure that allow_exit_as_root has the default value """
+        """Ensure that allow_exit_as_root has the default value"""
         agent.options.allow_exit_as_root = False
 
     def test_vanilla(self):
-        self.client.set('instrument', 'piano')
-        result = self.client.get('instrument')
+        self.client.set("instrument", "piano")
+        self.client.get("instrument")
 
     def test_set_get(self):
         result = None
-        with tracer.start_active_span('test'):
-            self.client.set('foox', 'barX')
-            self.client.set('fooy', 'barY')
-            result = self.client.get('foox')
+        with tracer.start_active_span("test"):
+            self.client.set("foox", "barX")
+            self.client.set("fooy", "barY")
+            result = self.client.get("foox")
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
 
-        self.assertEqual(b'barX', result)
+        self.assertEqual(b"barX", result)
 
         rs1_span = spans[0]
         rs2_span = spans[1]
@@ -66,12 +65,15 @@ class TestRedis(unittest.TestCase):
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        self.assertEqual("redis", rs1_span.n)
+        self.assertFalse("custom" in rs1_span.data)
+        self.assertTrue("redis" in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs1_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs1_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs1_span.data["redis"]["command"])
         self.assertIsNone(rs1_span.data["redis"]["error"])
 
@@ -80,12 +82,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs1_span.stack), 0)
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        self.assertEqual("redis", rs2_span.n)
+        self.assertFalse("custom" in rs2_span.data)
+        self.assertTrue("redis" in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs2_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs2_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs2_span.data["redis"]["command"])
         self.assertIsNone(rs2_span.data["redis"]["error"])
 
@@ -94,12 +99,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs2_span.stack), 0)
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        self.assertEqual("redis", rs3_span.n)
+        self.assertFalse("custom" in rs3_span.data)
+        self.assertTrue("redis" in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs3_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs3_span.data["redis"]["connection"],
+        )
         self.assertEqual("GET", rs3_span.data["redis"]["command"])
         self.assertIsNone(rs3_span.data["redis"]["error"])
 
@@ -110,14 +118,14 @@ class TestRedis(unittest.TestCase):
     def test_set_get_as_root_span(self):
         agent.options.allow_exit_as_root = True
 
-        self.client.set('foox', 'barX')
-        self.client.set('fooy', 'barY')
-        result = self.client.get('foox')
+        self.client.set("foox", "barX")
+        self.client.set("fooy", "barY")
+        result = self.client.get("foox")
 
         spans = self.recorder.queued_spans()
         self.assertEqual(3, len(spans))
 
-        self.assertEqual(b'barX', result)
+        self.assertEqual(b"barX", result)
 
         rs1_span = spans[0]
         rs2_span = spans[1]
@@ -136,12 +144,15 @@ class TestRedis(unittest.TestCase):
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        self.assertEqual("redis", rs1_span.n)
+        self.assertFalse("custom" in rs1_span.data)
+        self.assertTrue("redis" in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs1_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs1_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs1_span.data["redis"]["command"])
         self.assertIsNone(rs1_span.data["redis"]["error"])
 
@@ -150,12 +161,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs1_span.stack), 0)
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        self.assertEqual("redis", rs2_span.n)
+        self.assertFalse("custom" in rs2_span.data)
+        self.assertTrue("redis" in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs2_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs2_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs2_span.data["redis"]["command"])
         self.assertIsNone(rs2_span.data["redis"]["error"])
 
@@ -164,12 +178,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs2_span.stack), 0)
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        self.assertEqual("redis", rs3_span.n)
+        self.assertFalse("custom" in rs3_span.data)
+        self.assertTrue("redis" in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs3_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs3_span.data["redis"]["connection"],
+        )
         self.assertEqual("GET", rs3_span.data["redis"]["command"])
         self.assertIsNone(rs3_span.data["redis"]["error"])
 
@@ -179,15 +196,15 @@ class TestRedis(unittest.TestCase):
 
     def test_set_incr_get(self):
         result = None
-        with tracer.start_active_span('test'):
-            self.client.set('counter', '10')
-            self.client.incr('counter')
-            result = self.client.get('counter')
+        with tracer.start_active_span("test"):
+            self.client.set("counter", "10")
+            self.client.incr("counter")
+            result = self.client.get("counter")
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
 
-        self.assertEqual(b'11', result)
+        self.assertEqual(b"11", result)
 
         rs1_span = spans[0]
         rs2_span = spans[1]
@@ -213,12 +230,15 @@ class TestRedis(unittest.TestCase):
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        self.assertEqual("redis", rs1_span.n)
+        self.assertFalse("custom" in rs1_span.data)
+        self.assertTrue("redis" in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs1_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs1_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs1_span.data["redis"]["command"])
         self.assertIsNone(rs1_span.data["redis"]["error"])
 
@@ -227,12 +247,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs1_span.stack), 0)
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        self.assertEqual("redis", rs2_span.n)
+        self.assertFalse("custom" in rs2_span.data)
+        self.assertTrue("redis" in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs2_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs2_span.data["redis"]["connection"],
+        )
         self.assertEqual("INCRBY", rs2_span.data["redis"]["command"])
         self.assertIsNone(rs2_span.data["redis"]["error"])
 
@@ -241,12 +264,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs2_span.stack), 0)
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        self.assertEqual("redis", rs3_span.n)
+        self.assertFalse("custom" in rs3_span.data)
+        self.assertTrue("redis" in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs3_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs3_span.data["redis"]["connection"],
+        )
         self.assertEqual("GET", rs3_span.data["redis"]["command"])
         self.assertIsNone(rs3_span.data["redis"]["error"])
 
@@ -256,15 +282,15 @@ class TestRedis(unittest.TestCase):
 
     def test_old_redis_client(self):
         result = None
-        with tracer.start_active_span('test'):
-            self.client.set('foox', 'barX')
-            self.client.set('fooy', 'barY')
-            result = self.client.get('foox')
+        with tracer.start_active_span("test"):
+            self.client.set("foox", "barX")
+            self.client.set("fooy", "barY")
+            result = self.client.get("foox")
 
         spans = self.recorder.queued_spans()
         self.assertEqual(4, len(spans))
 
-        self.assertEqual(b'barX', result)
+        self.assertEqual(b"barX", result)
 
         rs1_span = spans[0]
         rs2_span = spans[1]
@@ -290,12 +316,15 @@ class TestRedis(unittest.TestCase):
         self.assertIsNone(rs3_span.ec)
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        self.assertEqual("redis", rs1_span.n)
+        self.assertFalse("custom" in rs1_span.data)
+        self.assertTrue("redis" in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs1_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs1_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs1_span.data["redis"]["command"])
         self.assertIsNone(rs1_span.data["redis"]["error"])
 
@@ -304,12 +333,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs1_span.stack), 0)
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        self.assertEqual("redis", rs2_span.n)
+        self.assertFalse("custom" in rs2_span.data)
+        self.assertTrue("redis" in rs2_span.data)
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs2_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs2_span.data["redis"]["connection"],
+        )
         self.assertEqual("SET", rs2_span.data["redis"]["command"])
         self.assertIsNone(rs2_span.data["redis"]["error"])
 
@@ -318,12 +350,15 @@ class TestRedis(unittest.TestCase):
         self.assertGreater(len(rs2_span.stack), 0)
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        self.assertEqual("redis", rs3_span.n)
+        self.assertFalse("custom" in rs3_span.data)
+        self.assertTrue("redis" in rs3_span.data)
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs3_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs3_span.data["redis"]["connection"],
+        )
         self.assertEqual("GET", rs3_span.data["redis"]["command"])
         self.assertIsNone(rs3_span.data["redis"]["error"])
 
@@ -333,17 +368,17 @@ class TestRedis(unittest.TestCase):
 
     def test_pipelined_requests(self):
         result = None
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             pipe = self.client.pipeline()
-            pipe.set('foox', 'barX')
-            pipe.set('fooy', 'barY')
-            pipe.get('foox')
+            pipe.set("foox", "barX")
+            pipe.set("fooy", "barY")
+            pipe.get("foox")
             result = pipe.execute()
 
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
-        self.assertEqual([True, True, b'barX'], result)
+        self.assertEqual([True, True, b"barX"], result)
 
         rs1_span = spans[0]
         test_span = spans[1]
@@ -361,14 +396,17 @@ class TestRedis(unittest.TestCase):
         self.assertIsNone(rs1_span.ec)
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        self.assertEqual("redis", rs1_span.n)
+        self.assertFalse("custom" in rs1_span.data)
+        self.assertTrue("redis" in rs1_span.data)
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
+        self.assertEqual("redis-py", rs1_span.data["redis"]["driver"])
+        self.assertEqual(
+            "redis://%s:6379/0" % testenv["redis_host"],
+            rs1_span.data["redis"]["connection"],
+        )
         self.assertEqual("PIPELINE", rs1_span.data["redis"]["command"])
-        self.assertEqual(['SET', 'SET', 'GET'], rs1_span.data["redis"]["subCommands"])
+        self.assertEqual(["SET", "SET", "GET"], rs1_span.data["redis"]["subCommands"])
         self.assertIsNone(rs1_span.data["redis"]["error"])
 
         self.assertIsNotNone(rs1_span.stack)

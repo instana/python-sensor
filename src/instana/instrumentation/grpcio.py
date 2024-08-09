@@ -2,26 +2,31 @@
 # (c) Copyright Instana Inc. 2019
 
 
-import wrapt
 import opentracing
+import wrapt
 
 from ..log import logger
 from ..singletons import tracer
 
 try:
     import grpc
-    from grpc._channel import _UnaryUnaryMultiCallable, _StreamUnaryMultiCallable, \
-        _UnaryStreamMultiCallable, _StreamStreamMultiCallable
+    from grpc._channel import (
+        _StreamStreamMultiCallable,
+        _StreamUnaryMultiCallable,
+        _UnaryStreamMultiCallable,
+        _UnaryUnaryMultiCallable,
+    )
 
-    SUPPORTED_TYPES = [_UnaryUnaryMultiCallable,
-                       _StreamUnaryMultiCallable,
-                       _UnaryStreamMultiCallable,
-                       _StreamStreamMultiCallable]
-
+    SUPPORTED_TYPES = [
+        _UnaryUnaryMultiCallable,
+        _StreamUnaryMultiCallable,
+        _UnaryStreamMultiCallable,
+        _StreamStreamMultiCallable,
+    ]
 
     def collect_tags(span, instance, argv, kwargs):
         try:
-            span.set_tag('rpc.flavor', 'grpc')
+            span.set_tag("rpc.flavor", "grpc")
 
             if type(instance) in SUPPORTED_TYPES:
                 method = instance._method.decode()
@@ -33,20 +38,19 @@ try:
                 method = argv[2][2][1]._method.decode()
                 target = argv[2][2][1]._channel.target().decode()
 
-            span.set_tag('rpc.call', method)
+            span.set_tag("rpc.call", method)
 
-            if ':///' in target:
-                _, target, *_ =  target.split(':///')
-            parts = target.split(':')
+            if ":///" in target:
+                _, target, *_ = target.split(":///")
+            parts = target.split(":")
             if len(parts) == 2:
-                span.set_tag('rpc.host', parts[0])
-                span.set_tag('rpc.port', parts[1])
+                span.set_tag("rpc.host", parts[0])
+                span.set_tag("rpc.port", parts[1])
         except:
             logger.debug("grpc.collect_tags non-fatal error", exc_info=True)
         return span
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_UnaryUnaryMultiCallable.with_call')
+    @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.with_call")
     def unary_unary_with_call_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -59,10 +63,14 @@ try:
                 if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'unary')
+                scope.span.set_tag("rpc.call_type", "unary")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -71,8 +79,7 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_UnaryUnaryMultiCallable.future')
+    @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.future")
     def unary_unary_future_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -85,10 +92,14 @@ try:
                 if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'unary')
+                scope.span.set_tag("rpc.call_type", "unary")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -97,8 +108,7 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_UnaryUnaryMultiCallable.__call__')
+    @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.__call__")
     def unary_unary_call_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -108,13 +118,17 @@ try:
 
         with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
             try:
-                if not "metadata" in kwargs:
+                if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'unary')
+                scope.span.set_tag("rpc.call_type", "unary")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -123,8 +137,7 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_StreamUnaryMultiCallable.__call__')
+    @wrapt.patch_function_wrapper("grpc._channel", "_StreamUnaryMultiCallable.__call__")
     def stream_unary_call_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -134,13 +147,17 @@ try:
 
         with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
             try:
-                if not "metadata" in kwargs:
+                if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'stream')
+                scope.span.set_tag("rpc.call_type", "stream")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -149,8 +166,9 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_StreamUnaryMultiCallable.with_call')
+    @wrapt.patch_function_wrapper(
+        "grpc._channel", "_StreamUnaryMultiCallable.with_call"
+    )
     def stream_unary_with_call_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -160,13 +178,17 @@ try:
 
         with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
             try:
-                if not "metadata" in kwargs:
+                if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'stream')
+                scope.span.set_tag("rpc.call_type", "stream")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -175,8 +197,7 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_StreamUnaryMultiCallable.future')
+    @wrapt.patch_function_wrapper("grpc._channel", "_StreamUnaryMultiCallable.future")
     def stream_unary_future_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -186,13 +207,17 @@ try:
 
         with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
             try:
-                if not "metadata" in kwargs:
+                if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'stream')
+                scope.span.set_tag("rpc.call_type", "stream")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -201,8 +226,7 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_UnaryStreamMultiCallable.__call__')
+    @wrapt.patch_function_wrapper("grpc._channel", "_UnaryStreamMultiCallable.__call__")
     def unary_stream_call_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -212,13 +236,17 @@ try:
 
         with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
             try:
-                if not "metadata" in kwargs:
+                if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'stream')
+                scope.span.set_tag("rpc.call_type", "stream")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -227,8 +255,9 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._channel', '_StreamStreamMultiCallable.__call__')
+    @wrapt.patch_function_wrapper(
+        "grpc._channel", "_StreamStreamMultiCallable.__call__"
+    )
     def stream_stream_call_with_instana(wrapped, instance, argv, kwargs):
         parent_span = tracer.active_span
 
@@ -238,13 +267,17 @@ try:
 
         with tracer.start_active_span("rpc-client", child_of=parent_span) as scope:
             try:
-                if not "metadata" in kwargs:
+                if "metadata" not in kwargs:
                     kwargs["metadata"] = []
 
-                kwargs["metadata"] = tracer.inject(scope.span.context, opentracing.Format.BINARY, kwargs['metadata'],
-                                                   disable_w3c_trace_context=True)
+                kwargs["metadata"] = tracer.inject(
+                    scope.span.context,
+                    opentracing.Format.BINARY,
+                    kwargs["metadata"],
+                    disable_w3c_trace_context=True,
+                )
                 collect_tags(scope.span, instance, argv, kwargs)
-                scope.span.set_tag('rpc.call_type', 'stream')
+                scope.span.set_tag("rpc.call_type", "stream")
 
                 rv = wrapped(*argv, **kwargs)
             except Exception as e:
@@ -253,8 +286,7 @@ try:
             else:
                 return rv
 
-
-    @wrapt.patch_function_wrapper('grpc._server', '_call_behavior')
+    @wrapt.patch_function_wrapper("grpc._server", "_call_behavior")
     def call_behavior_with_instana(wrapped, instance, argv, kwargs):
         # Prep any incoming context headers
         metadata = argv[0].invocation_metadata
@@ -262,7 +294,9 @@ try:
         for c in metadata:
             metadata_dict[c.key] = c.value
 
-        ctx = tracer.extract(opentracing.Format.BINARY, metadata_dict, disable_w3c_trace_context=True)
+        ctx = tracer.extract(
+            opentracing.Format.BINARY, metadata_dict, disable_w3c_trace_context=True
+        )
 
         with tracer.start_active_span("rpc-server", child_of=ctx) as scope:
             try:
@@ -273,7 +307,6 @@ try:
                 raise
             else:
                 return rv
-
 
     logger.debug("Instrumenting grpcio")
 except ImportError:

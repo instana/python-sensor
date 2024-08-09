@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 class _TraceContextMixin:
     def assertTraceContextPropagated(self, parent_span, child_span):
         self.assertEqual(parent_span.t, child_span.t)

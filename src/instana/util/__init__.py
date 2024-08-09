@@ -1,12 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import importlib.metadata
 import json
 import time
 from collections import defaultdict
 from urllib import parse
-
-import importlib.metadata
 
 from ..log import logger
 

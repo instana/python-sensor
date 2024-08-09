@@ -3,20 +3,20 @@
 
 
 import re
+from typing import Callable, Dict, Tuple, Type, Union
+
 import flask
 import wrapt
-from typing import Callable, Tuple, Dict, Type, Union
-
-from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
+from opentelemetry.semconv.trace import SpanAttributes
 
+from instana.instrumentation.flask.common import extract_custom_headers
 from instana.log import logger
+from instana.propagators.format import Format
 from instana.singletons import agent, tracer
 from instana.util.secrets import strip_secrets_from_query
-from instana.instrumentation.flask.common import extract_custom_headers
-from instana.propagators.format import Format
 
-path_tpl_re = re.compile('<.*>')
+path_tpl_re = re.compile("<.*>")
 
 
 def before_request_with_instana() -> None:
@@ -69,7 +69,6 @@ def after_request_with_instana(
 
         span = flask.g.span
         if span:
-
             if 500 <= response.status_code:
                 span.mark_as_errored()
 
@@ -111,16 +110,18 @@ def teardown_request_with_instana(*argv: Union[Exception, Type[Exception]]) -> N
         flask.g.token = None
 
 
-@wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
+@wrapt.patch_function_wrapper("flask", "Flask.full_dispatch_request")
 def full_dispatch_request_with_instana(
     wrapped: Callable[..., flask.wrappers.Response],
     instance: flask.app.Flask,
     argv: Tuple,
     kwargs: Dict,
 ) -> flask.wrappers.Response:
-    if not hasattr(instance, '_stan_wuz_here'):
-        logger.debug("Flask(vanilla): Applying flask before/after instrumentation funcs")
-        setattr(instance, "_stan_wuz_here", True)
+    if not hasattr(instance, "_stan_wuz_here"):
+        logger.debug(
+            "Flask(vanilla): Applying flask before/after instrumentation funcs"
+        )
+        instance._stan_wuz_here = True
         instance.before_request(before_request_with_instana)
         instance.after_request(after_request_with_instana)
         instance.teardown_request(teardown_request_with_instana)

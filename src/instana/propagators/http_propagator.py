@@ -24,7 +24,9 @@ class HTTPPropagator(BasePropagator):
         if dictionary_carrier:
             # Suppression `level` made in the child context or in the parent context
             # has priority over any non-suppressed `level` setting
-            child_level = int(self.extract_instana_headers(dictionary_carrier)[2] or "1")
+            child_level = int(
+                self.extract_instana_headers(dictionary_carrier)[2] or "1"
+            )
             span_context.level = min(child_level, span_context.level)
 
         serializable_level = str(span_context.level)
@@ -32,12 +34,14 @@ class HTTPPropagator(BasePropagator):
         if disable_w3c_trace_context:
             traceparent, tracestate = [None] * 2
         else:
-            traceparent, tracestate = self._get_participating_trace_context(span_context)
+            traceparent, tracestate = self._get_participating_trace_context(
+                span_context
+            )
 
         def inject_key_value(carrier, key, value):
             if isinstance(carrier, list):
                 carrier.append((key, value))
-            elif isinstance(carrier, dict) or '__setitem__' in dir(carrier):
+            elif isinstance(carrier, dict) or "__setitem__" in dir(carrier):
                 carrier[key] = value
             else:
                 raise Exception("Unsupported carrier type", type(carrier))

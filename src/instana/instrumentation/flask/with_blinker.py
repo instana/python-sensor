@@ -3,20 +3,19 @@
 
 
 import re
-import wrapt
-from typing import Any, Tuple, Dict, Callable
-
-from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry import context, trace
-
-from instana.log import logger
-from instana.util.secrets import strip_secrets_from_query
-from instana.singletons import agent, tracer
-from instana.instrumentation.flask.common import extract_custom_headers
-from instana.propagators.format import Format
+from typing import Any, Callable, Dict, Tuple
 
 import flask
-from flask import request_started, request_finished, got_request_exception
+import wrapt
+from flask import got_request_exception, request_finished, request_started
+from opentelemetry import context, trace
+from opentelemetry.semconv.trace import SpanAttributes
+
+from instana.instrumentation.flask.common import extract_custom_headers
+from instana.log import logger
+from instana.propagators.format import Format
+from instana.singletons import agent, tracer
+from instana.util.secrets import strip_secrets_from_query
 
 path_tpl_re = re.compile("<.*>")
 
@@ -136,7 +135,7 @@ def full_dispatch_request_with_instana(
         logger.debug(
             "Flask(blinker): Applying flask before/after instrumentation funcs"
         )
-        setattr(instance, "_stan_wuz_here", True)
+        instance._stan_wuz_here = True
         got_request_exception.connect(log_exception_with_instana, instance)
         request_started.connect(request_started_with_instana, instance)
         request_finished.connect(request_finished_with_instana, instance)

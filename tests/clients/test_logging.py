@@ -12,8 +12,6 @@ from instana.singletons import agent, tracer
 
 from opentelemetry.trace import SpanKind
 
-from instana.singletons import agent, tracer
-
 
 class TestLogging:
     @pytest.fixture(autouse=True)
@@ -82,7 +80,7 @@ class TestLogging:
             try:
                 a = 42
                 b = 0
-                c = a / b
+                a / b
             except Exception as e:
                 self.logger.exception("Exception: %s", str(e))
 

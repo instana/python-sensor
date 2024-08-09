@@ -2,14 +2,14 @@
 # (c) Copyright Instana Inc. 2020
 
 import json
-import unittest
 import logging
+import unittest
 
-from ..helpers import testenv
+import bson
+import pymongo
 from instana.singletons import agent, tracer
 
-import pymongo
-import bson
+from ..helpers import testenv
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,12 @@ pymongoversion = unittest.skipIf(
 
 class TestPyMongoTracer(unittest.TestCase):
     def setUp(self):
-        self.client = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),
-                                          username=testenv['mongodb_user'], password=testenv['mongodb_pw'])
+        self.client = pymongo.MongoClient(
+            host=testenv["mongodb_host"],
+            port=int(testenv["mongodb_port"]),
+            username=testenv["mongodb_user"],
+            password=testenv["mongodb_pw"],
+        )
         self.client.test.records.delete_many(filter={})
 
         self.recorder = tracer.recorder
@@ -49,7 +53,10 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
         self.assertEqual(db_span.data["mongo"]["command"], "find")
 
@@ -72,7 +79,10 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
         self.assertEqual(db_span.data["mongo"]["command"], "find")
 
@@ -97,7 +107,10 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
         self.assertEqual(db_span.data["mongo"]["command"], "insert")
 
@@ -105,7 +118,9 @@ class TestPyMongoTracer(unittest.TestCase):
 
     def test_successful_update_query(self):
         with tracer.start_active_span("test"):
-            self.client.test.records.update_one({"type": "string"}, {"$set": {"type": "int"}})
+            self.client.test.records.update_one(
+                {"type": "string"}, {"$set": {"type": "int"}}
+            )
 
         self.assertIsNone(tracer.active_span)
 
@@ -121,7 +136,10 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
         self.assertEqual(db_span.data["mongo"]["command"], "update")
 
@@ -129,12 +147,15 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNotNone(db_span.data["mongo"]["json"])
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        self.assertIn({
-                        "q": {"type": "string"},
-                        "u": {"$set": {"type": "int"}},
-                        "multi": False,
-                        "upsert": False
-                       }, payload)
+        self.assertIn(
+            {
+                "q": {"type": "string"},
+                "u": {"$set": {"type": "int"}},
+                "multi": False,
+                "upsert": False,
+            },
+            payload,
+        )
 
     def test_successful_delete_query(self):
         with tracer.start_active_span("test"):
@@ -154,7 +175,10 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
         self.assertEqual(db_span.data["mongo"]["command"], "delete")
 
@@ -182,7 +206,10 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
         self.assertEqual(db_span.data["mongo"]["command"], "aggregate")
 
@@ -198,8 +225,12 @@ class TestPyMongoTracer(unittest.TestCase):
         reducer = "function (key, values) { return len(values); }"
 
         with tracer.start_active_span("test"):
-            self.client.test.records.map_reduce(bson.code.Code(mapper), bson.code.Code(reducer), "results",
-                                              query={"x": {"$lt": 2}})
+            self.client.test.records.map_reduce(
+                bson.code.Code(mapper),
+                bson.code.Code(reducer),
+                "results",
+                query={"x": {"$lt": 2}},
+            )
 
         self.assertIsNone(tracer.active_span)
 
@@ -215,23 +246,35 @@ class TestPyMongoTracer(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
+        self.assertEqual(
+            db_span.data["mongo"]["service"],
+            "%s:%s" % (testenv["mongodb_host"], testenv["mongodb_port"]),
+        )
         self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"].lower(),
-                         "mapreduce")  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
+        self.assertEqual(
+            db_span.data["mongo"]["command"].lower(), "mapreduce"
+        )  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
 
         self.assertEqual(db_span.data["mongo"]["filter"], '{"x": {"$lt": 2}}')
         self.assertIsNotNone(db_span.data["mongo"]["json"])
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        self.assertEqual(payload["map"], {"$code": mapper}, db_span.data["mongo"]["json"])
-        self.assertEqual(payload["reduce"], {"$code": reducer}, db_span.data["mongo"]["json"])
+        self.assertEqual(
+            payload["map"], {"$code": mapper}, db_span.data["mongo"]["json"]
+        )
+        self.assertEqual(
+            payload["reduce"], {"$code": reducer}, db_span.data["mongo"]["json"]
+        )
 
     def test_successful_mutiple_queries(self):
         with tracer.start_active_span("test"):
-            self.client.test.records.bulk_write([pymongo.InsertOne({"type": "string"}),
-                                                 pymongo.UpdateOne({"type": "string"}, {"$set": {"type": "int"}}),
-                                                 pymongo.DeleteOne({"type": "string"})])
+            self.client.test.records.bulk_write(
+                [
+                    pymongo.InsertOne({"type": "string"}),
+                    pymongo.UpdateOne({"type": "string"}, {"$set": {"type": "int"}}),
+                    pymongo.DeleteOne({"type": "string"}),
+                ]
+            )
 
         self.assertIsNone(tracer.active_span)
 
@@ -254,4 +297,3 @@ class TestPyMongoTracer(unittest.TestCase):
 
         # ensure spans are ordered the same way as commands
         self.assertListEqual(commands, ["insert", "update", "delete"])
-

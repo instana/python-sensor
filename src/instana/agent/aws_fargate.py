@@ -5,17 +5,19 @@
 The Instana agent (for AWS Fargate) that manages
 monitoring state and reporting that data.
 """
-import time
-from instana.options import AWSFargateOptions
+
 from instana.collector.aws_fargate import AWSFargateCollector
+from instana.options import AWSFargateOptions
+
 from ..log import logger
 from ..util import to_json
-from .base import BaseAgent
 from ..version import VERSION
+from .base import BaseAgent
 
 
 class AWSFargateAgent(BaseAgent):
-    """ In-process agent for AWS Fargate """
+    """In-process agent for AWS Fargate"""
+
     def __init__(self):
         super(AWSFargateAgent, self).__init__()
 
@@ -27,15 +29,20 @@ class AWSFargateAgent(BaseAgent):
         # Update log level (if INSTANA_LOG_LEVEL was set)
         self.update_log_level()
 
-        logger.info("Stan is on the AWS Fargate scene.  Starting Instana instrumentation version: %s", VERSION)
+        logger.info(
+            "Stan is on the AWS Fargate scene.  Starting Instana instrumentation version: %s",
+            VERSION,
+        )
 
         if self._validate_options():
             self._can_send = True
             self.collector = AWSFargateCollector(self)
             self.collector.start()
         else:
-            logger.warning("Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
-                           "We will not be able monitor this AWS Fargate cluster.")
+            logger.warning(
+                "Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  "
+                "We will not be able monitor this AWS Fargate cluster."
+            )
 
     def can_send(self):
         """
@@ -49,7 +56,7 @@ class AWSFargateAgent(BaseAgent):
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        return {'hl': True, 'cp': 'aws', 'e': self.collector.get_fq_arn()}
+        return {"hl": True, "cp": "aws", "e": self.collector.get_fq_arn()}
 
     def report_data_payload(self, payload):
         """
@@ -59,20 +66,25 @@ class AWSFargateAgent(BaseAgent):
         try:
             if self.report_headers is None:
                 # Prepare request headers
-                self.report_headers = dict()
+                self.report_headers = {}
                 self.report_headers["Content-Type"] = "application/json"
                 self.report_headers["X-Instana-Host"] = self.collector.get_fq_arn()
                 self.report_headers["X-Instana-Key"] = self.options.agent_key
 
-            response = self.client.post(self.__data_bundle_url(),
-                                        data=to_json(payload),
-                                        headers=self.report_headers,
-                                        timeout=self.options.timeout,
-                                        verify=self.options.ssl_verify,
-                                        proxies=self.options.endpoint_proxy)
+            response = self.client.post(
+                self.__data_bundle_url(),
+                data=to_json(payload),
+                headers=self.report_headers,
+                timeout=self.options.timeout,
+                verify=self.options.ssl_verify,
+                proxies=self.options.endpoint_proxy,
+            )
 
             if not 200 <= response.status_code < 300:
-                logger.info("report_data_payload: Instana responded with status code %s", response.status_code)
+                logger.info(
+                    "report_data_payload: Instana responded with status code %s",
+                    response.status_code,
+                )
         except Exception as exc:
             logger.debug("report_data_payload: connection error (%s)", type(exc))
         return response
@@ -81,7 +93,9 @@ class AWSFargateAgent(BaseAgent):
         """
         Validate that the options used by this Agent are valid.  e.g. can we report data?
         """
-        return self.options.endpoint_url is not None and self.options.agent_key is not None
+        return (
+            self.options.endpoint_url is not None and self.options.agent_key is not None
+        )
 
     def __data_bundle_url(self):
         """

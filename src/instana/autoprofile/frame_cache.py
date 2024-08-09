@@ -2,12 +2,8 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import threading
 import os
-import re
-import importlib
 
-from .runtime import runtime_info
 
 class FrameCache(object):
     MAX_CACHE_SIZE = 2500
@@ -21,9 +17,11 @@ class FrameCache(object):
         self.profiler_dir = os.path.dirname(os.path.realpath(__file__))
 
     def start(self):
-        self.profiler_frame_cache = dict()
+        self.profiler_frame_cache = {}
 
-        self.include_profiler_frames = self.profiler.get_option('include_profiler_frames', False)
+        self.include_profiler_frames = self.profiler.get_option(
+            "include_profiler_frames", False
+        )
 
     def stop(self):
         pass

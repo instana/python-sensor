@@ -14,4 +14,4 @@ class TestRedis(unittest.TestCase):
         pass
 
     def test_has_default_config(self):
-        self.assertEqual(config['asyncio_task_context_propagation']['enabled'], False)
+        self.assertEqual(config["asyncio_task_context_propagation"]["enabled"], False)

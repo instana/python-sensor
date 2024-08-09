@@ -2,24 +2,24 @@
 # (c) Copyright Instana Inc. 2019
 
 
-import wrapt
-import flask
 from importlib.metadata import version
-from typing import Callable, Tuple, Dict, Any, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
+import flask
+import wrapt
 from opentelemetry.semconv.trace import SpanAttributes
 
-from instana.log import logger
-from instana.singletons import tracer, agent
-from instana.propagators.format import Format
 from instana.instrumentation.flask import signals_available
-
+from instana.log import logger
+from instana.propagators.format import Format
+from instana.singletons import agent, tracer
 
 if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
-    from werkzeug.exceptions import HTTPException
     from flask.typing import ResponseReturnValue
     from jinja2.environment import Template
+    from werkzeug.exceptions import HTTPException
+
+    from instana.span.span import InstanaSpan
 
     if signals_available:
         from werkzeug.datastructures.headers import Headers
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
         from werkzeug.datastructures import Headers
 
 
-@wrapt.patch_function_wrapper('flask', 'templating._render')
+@wrapt.patch_function_wrapper("flask", "templating._render")
 def render_with_instana(
     wrapped: Callable[..., str],
     instance: object,
@@ -58,7 +58,7 @@ def render_with_instana(
             raise
 
 
-@wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
+@wrapt.patch_function_wrapper("flask", "Flask.handle_user_exception")
 def handle_user_exception_with_instana(
     wrapped: Callable[..., Union["HTTPException", "ResponseReturnValue"]],
     instance: flask.app.Flask,
@@ -78,7 +78,7 @@ def handle_user_exception_with_instana(
                 if isinstance(response, tuple):
                     status_code = response[1]
                 else:
-                    if hasattr(response, 'code'):
+                    if hasattr(response, "code"):
                         status_code = response.code
                     else:
                         status_code = response.status_code
@@ -88,13 +88,15 @@ def handle_user_exception_with_instana(
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(status_code))
 
-                if hasattr(response, 'headers'):
+                if hasattr(response, "headers"):
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
                     value = "intid;desc=%s" % span.context.trace_id
-                    if hasattr(response.headers, 'add'):
-                        response.headers.add('Server-Timing', value)
-                    elif type(response.headers) is dict or hasattr(response.headers, "__dict__"):
-                        response.headers['Server-Timing'] = value
+                    if hasattr(response.headers, "add"):
+                        response.headers.add("Server-Timing", value)
+                    elif type(response.headers) is dict or hasattr(
+                        response.headers, "__dict__"
+                    ):
+                        response.headers["Server-Timing"] = value
             if span and span.is_recording():
                 span.end()
             flask.g.span = None
@@ -112,7 +114,11 @@ def extract_custom_headers(
     try:
         for custom_header in agent.options.extra_http_headers:
             # Headers are available in this format: HTTP_X_CAPTURE_THIS
-            flask_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+            flask_header = (
+                ("HTTP_" + custom_header.upper()).replace("-", "_")
+                if format
+                else custom_header
+            )
             if flask_header in headers:
                 span.set_attribute(
                     "http.header.%s" % custom_header, headers[flask_header]

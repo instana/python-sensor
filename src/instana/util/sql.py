@@ -3,6 +3,7 @@
 
 import re
 
+
 def sql_sanitizer(sql):
     """
     Removes values from valid SQL statements and returns a stripped version.
@@ -10,7 +11,7 @@ def sql_sanitizer(sql):
     :param sql: The SQL statement to be sanitized
     :return: String - A sanitized SQL statement without values.
     """
-    return regexp_sql_values.sub('?', sql)
+    return regexp_sql_values.sub("?", sql)
 
 
 # Used by sql_sanitizer

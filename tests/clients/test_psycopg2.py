@@ -9,9 +9,7 @@ from instana.instrumentation.psycopg2 import register_json_with_instana
 from tests.helpers import testenv
 from instana.singletons import agent, tracer
 
-import psycopg2
-import psycopg2.extras
-import psycopg2.extensions as ext
+from ..helpers import testenv
 
 logger = logging.getLogger(__name__)
 

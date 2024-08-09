@@ -12,7 +12,11 @@ import requests
 import urllib3
 from instana.instrumentation.urllib3 import (
     _collect_kvs as collect_kvs,
+)
+from instana.instrumentation.urllib3 import (
     _extract_custom_headers as extract_custom_headers,
+)
+from instana.instrumentation.urllib3 import (
     collect_response,
 )
 from instana.singletons import agent, tracer
@@ -62,8 +66,8 @@ class TestUrllib3:
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 5
-        nums = map(lambda s: s.data["http"]["params"].split("=")[1], spans)
-        assert set(nums) == set(("1", "2", "3", "4", "5"))
+        nums = (s.data["http"]["params"].split("=")[1] for s in spans)
+        assert set(nums) == {"1", "2", "3", "4", "5"}
 
     @pytest.mark.skipif(
         sys.platform == "darwin",
@@ -82,7 +86,7 @@ class TestUrllib3:
 
         threadpool_size = 15
         pool = ThreadPool(processes=threadpool_size)
-        res = pool.map(make_request, [u for u in range(threadpool_size)])
+        pool.map(make_request, list(range(threadpool_size)))
         # print(f'requests made within threadpool, instana does not instrument - statuses: {res}')
 
         spans = self.recorder.queued_spans()
@@ -730,7 +734,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_requests_pkg_get_with_custom_headers(self):
-        my_custom_headers = dict()
+        my_custom_headers = {}
         my_custom_headers["X-PGL-1"] = "1"
 
         with tracer.start_as_current_span("test"):

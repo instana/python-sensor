@@ -18,7 +18,7 @@ class ProcessHelper(BaseHelper):
     """Helper class to collect metrics for this process"""
 
     def collect_metrics(self, **kwargs):
-        plugin_data = dict()
+        plugin_data = {}
         try:
             plugin_data["name"] = "com.instana.plugin.process"
             plugin_data["entityId"] = str(os.getpid())
@@ -33,7 +33,7 @@ class ProcessHelper(BaseHelper):
 
     def _collect_process_snapshot(self, plugin_data):
         try:
-            env = dict()
+            env = {}
             for key in os.environ:
                 if contains_secret(
                     key,

@@ -40,7 +40,7 @@ try:
         args: Tuple[int, str, Tuple[Any, ...]],
         kwargs: Dict[str, Any],
     ) -> Dict[str, Any]:
-        kvs = dict()
+        kvs = {}
         try:
             kvs["host"] = instance.host
             kvs["port"] = instance.port

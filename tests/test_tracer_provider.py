@@ -9,7 +9,6 @@ from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler
 from instana.tracer import InstanaTracer, InstanaTracerProvider
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 from pytest import LogCaptureFixture
 
 

@@ -22,7 +22,7 @@ class ContainerHelper(BaseHelper):
             if self.collector.task_metadata is not None:
                 containers = self.collector.task_metadata.get("Containers", [])
                 for container in containers:
-                    plugin_data = dict()
+                    plugin_data = {}
                     plugin_data["name"] = "com.instana.plugin.aws.ecs.container"
                     try:
                         labels = container.get("Labels", {})

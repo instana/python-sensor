@@ -2,9 +2,10 @@
 # (c) Copyright Instana Inc. 2019
 
 
+import functools
+
 import opentracing
 import wrapt
-import functools
 
 from ...log import logger
 from ...singletons import agent, setup_tornado_tracer, tornado_tracer
@@ -16,19 +17,21 @@ try:
     # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
     # scope managers which we will tackle soon.
     # Limit Tornado version for the time being.
-    if not (hasattr(tornado, 'version') and tornado.version[0] < '6'):
-        logger.debug('Instana supports Tornado package versions < 6.0.  Skipping.')
+    if not (hasattr(tornado, "version") and tornado.version[0] < "6"):
+        logger.debug("Instana supports Tornado package versions < 6.0.  Skipping.")
         raise ImportError
 
     setup_tornado_tracer()
 
-    @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
+    @wrapt.patch_function_wrapper("tornado.httpclient", "AsyncHTTPClient.fetch")
     def fetch_with_instana(wrapped, instance, argv, kwargs):
         try:
             parent_span = tornado_tracer.active_span
 
             # If we're not tracing, just return
-            if (parent_span is None) or (parent_span.operation_name == "tornado-client"):
+            if (parent_span is None) or (
+                parent_span.operation_name == "tornado-client"
+            ):
                 return wrapped(*argv, **kwargs)
 
             request = argv[0]
@@ -39,20 +42,25 @@ try:
                 request = tornado.httpclient.HTTPRequest(url=request, **kwargs)
 
                 new_kwargs = {}
-                for param in ('callback', 'raise_error'):
+                for param in ("callback", "raise_error"):
                     # if not in instead and pop
                     if param in kwargs:
                         new_kwargs[param] = kwargs.pop(param)
                 kwargs = new_kwargs
 
-            scope = tornado_tracer.start_active_span('tornado-client', child_of=parent_span)
-            tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers)
+            scope = tornado_tracer.start_active_span(
+                "tornado-client", child_of=parent_span
+            )
+            tornado_tracer.inject(
+                scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers
+            )
 
             # Query param scrubbing
-            parts = request.url.split('?')
+            parts = request.url.split("?")
             if len(parts) > 1:
-                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
-                                                      agent.options.secrets_list)
+                cleaned_qp = strip_secrets_from_query(
+                    parts[1], agent.options.secrets_matcher, agent.options.secrets_list
+                )
                 scope.span.set_tag("http.params", cleaned_qp)
 
             scope.span.set_tag("http.url", parts[0])
@@ -69,7 +77,6 @@ try:
             logger.debug("tornado fetch", exc_info=True)
             raise
 
-
     def finish_tracing(future, scope):
         try:
             response = future.result()
@@ -80,7 +87,6 @@ try:
             raise
         finally:
             scope.close()
-
 
     logger.debug("Instrumenting tornado client")
 except ImportError:

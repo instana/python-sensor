@@ -5,18 +5,22 @@ import logging
 import unittest
 
 import MySQLdb
+from instana.singletons import agent, tracer
 
 from ..helpers import testenv
-from instana.singletons import  agent, tracer
 
 logger = logging.getLogger(__name__)
 
 
 class TestMySQLPython(unittest.TestCase):
     def setUp(self):
-        self.db = MySQLdb.connect(host=testenv['mysql_host'], port=testenv['mysql_port'],
-                                  user=testenv['mysql_user'], passwd=testenv['mysql_pw'],
-                                  db=testenv['mysql_db'])
+        self.db = MySQLdb.connect(
+            host=testenv["mysql_host"],
+            port=testenv["mysql_port"],
+            user=testenv["mysql_user"],
+            passwd=testenv["mysql_pw"],
+            db=testenv["mysql_db"],
+        )
         database_setup_query = """
         DROP TABLE IF EXISTS users;
         CREATE TABLE users(
@@ -42,9 +46,9 @@ class TestMySQLPython(unittest.TestCase):
 
     def tearDown(self):
         if self.cursor and self.cursor.connection.open:
-          self.cursor.close()
+            self.cursor.close()
         if self.db and self.db.open:
-          self.db.close()
+            self.db.close()
         agent.options.allow_exit_as_root = False
 
     def test_vanilla_query(self):
@@ -57,7 +61,7 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(0, len(spans))
 
     def test_basic_query(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             affected_rows = self.cursor.execute("""SELECT * from users""")
             result = self.cursor.fetchone()
 
@@ -76,11 +80,11 @@ class TestMySQLPython(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
-        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
-        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
-        self.assertEqual(db_span.data["mysql"]["stmt"], 'SELECT * from users')
-        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
-        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
 
     def test_basic_query_as_root_exit_span(self):
         agent.options.allow_exit_as_root = True
@@ -98,17 +102,18 @@ class TestMySQLPython(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
-        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
-        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
-        self.assertEqual(db_span.data["mysql"]["stmt"], 'SELECT * from users')
-        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
-        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from users")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
 
     def test_basic_insert(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_active_span("test"):
             affected_rows = self.cursor.execute(
-                        """INSERT INTO users(name, email) VALUES(%s, %s)""",
-                        ('beaker', 'beaker@muppets.com'))
+                """INSERT INTO users(name, email) VALUES(%s, %s)""",
+                ("beaker", "beaker@muppets.com"),
+            )
 
         self.assertEqual(1, affected_rows)
 
@@ -124,16 +129,21 @@ class TestMySQLPython(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
-        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
-        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
-        self.assertEqual(db_span.data["mysql"]["stmt"], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
-        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(
+            db_span.data["mysql"]["stmt"],
+            "INSERT INTO users(name, email) VALUES(%s, %s)",
+        )
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
 
     def test_executemany(self):
-        with tracer.start_active_span('test'):
-            affected_rows = self.cursor.executemany("INSERT INTO users(name, email) VALUES(%s, %s)",
-                                             [('beaker', 'beaker@muppets.com'), ('beaker', 'beaker@muppets.com')])
+        with tracer.start_active_span("test"):
+            affected_rows = self.cursor.executemany(
+                "INSERT INTO users(name, email) VALUES(%s, %s)",
+                [("beaker", "beaker@muppets.com"), ("beaker", "beaker@muppets.com")],
+            )
             self.db.commit()
 
         self.assertEqual(2, affected_rows)
@@ -150,15 +160,18 @@ class TestMySQLPython(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
-        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
-        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
-        self.assertEqual(db_span.data["mysql"]["stmt"], 'INSERT INTO users(name, email) VALUES(%s, %s)')
-        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
-        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(
+            db_span.data["mysql"]["stmt"],
+            "INSERT INTO users(name, email) VALUES(%s, %s)",
+        )
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
 
     def test_call_proc(self):
-        with tracer.start_active_span('test'):
-            callproc_result = self.cursor.callproc('test_proc', ('beaker',))
+        with tracer.start_active_span("test"):
+            callproc_result = self.cursor.callproc("test_proc", ("beaker",))
 
         self.assertIsInstance(callproc_result, tuple)
 
@@ -174,16 +187,16 @@ class TestMySQLPython(unittest.TestCase):
         self.assertIsNone(db_span.ec)
 
         self.assertEqual(db_span.n, "mysql")
-        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
-        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
-        self.assertEqual(db_span.data["mysql"]["stmt"], 'test_proc')
-        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
-        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "test_proc")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
 
     def test_error_capture(self):
         affected_rows = None
         try:
-            with tracer.start_active_span('test'):
+            with tracer.start_active_span("test"):
                 affected_rows = self.cursor.execute("""SELECT * from blah""")
         except Exception:
             pass
@@ -200,14 +213,17 @@ class TestMySQLPython(unittest.TestCase):
         self.assertEqual(db_span.p, test_span.s)
 
         self.assertEqual(1, db_span.ec)
-        self.assertEqual(db_span.data["mysql"]["error"], '(1146, "Table \'%s.blah\' doesn\'t exist")' % testenv['mysql_db'])
+        self.assertEqual(
+            db_span.data["mysql"]["error"],
+            "(1146, \"Table '%s.blah' doesn't exist\")" % testenv["mysql_db"],
+        )
 
         self.assertEqual(db_span.n, "mysql")
-        self.assertEqual(db_span.data["mysql"]["db"], testenv['mysql_db'])
-        self.assertEqual(db_span.data["mysql"]["user"], testenv['mysql_user'])
-        self.assertEqual(db_span.data["mysql"]["stmt"], 'SELECT * from blah')
-        self.assertEqual(db_span.data["mysql"]["host"], testenv['mysql_host'])
-        self.assertEqual(db_span.data["mysql"]["port"], testenv['mysql_port'])
+        self.assertEqual(db_span.data["mysql"]["db"], testenv["mysql_db"])
+        self.assertEqual(db_span.data["mysql"]["user"], testenv["mysql_user"])
+        self.assertEqual(db_span.data["mysql"]["stmt"], "SELECT * from blah")
+        self.assertEqual(db_span.data["mysql"]["host"], testenv["mysql_host"])
+        self.assertEqual(db_span.data["mysql"]["port"], testenv["mysql_port"])
 
     def test_connect_cursor_ctx_mgr(self):
         with tracer.start_active_span("test"):
@@ -240,7 +256,6 @@ class TestMySQLPython(unittest.TestCase):
                 cursor = connection.cursor()
                 cursor.execute("""SELECT * from users""")
 
-
         spans = self.recorder.queued_spans()
         self.assertEqual(2, len(spans))
 
@@ -264,7 +279,6 @@ class TestMySQLPython(unittest.TestCase):
             connection = self.db
             with connection.cursor() as cursor:
                 affected_rows = cursor.execute("""SELECT * from users""")
-
 
         self.assertEqual(1, affected_rows)
         spans = self.recorder.queued_spans()

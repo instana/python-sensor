@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2018
 
 import os
+
 import pytest
 
 testenv = {}

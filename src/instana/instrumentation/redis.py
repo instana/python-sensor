@@ -7,7 +7,6 @@ import wrapt
 from ..log import logger
 from ..util.traceutils import get_tracer_tuple, tracing_is_off
 
-
 try:
     import redis
 
@@ -19,33 +18,32 @@ try:
 
             span.set_tag("driver", "redis-py")
 
-            host = ckw.get('host', None)
-            port = ckw.get('port', '6379')
-            db = ckw.get('db', None)
+            host = ckw.get("host", None)
+            port = ckw.get("port", "6379")
+            db = ckw.get("db", None)
 
             if host is not None:
                 url = "redis://%s:%s" % (host, port)
                 if db is not None:
                     url = url + "/%s" % db
-                span.set_tag('connection', url)
+                span.set_tag("connection", url)
 
         except:
             logger.debug("redis.collect_tags non-fatal error", exc_info=True)
 
         return span
 
-
     def execute_command_with_instana(wrapped, instance, args, kwargs):
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If we're not tracing, just return
-        if (tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS)):
+        if tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
 
         with tracer.start_active_span("redis", child_of=parent_span) as scope:
             try:
                 collect_tags(scope.span, instance, args, kwargs)
-                if (len(args) > 0):
+                if len(args) > 0:
                     scope.span.set_tag("command", args[0])
 
                 rv = wrapped(*args, **kwargs)
@@ -55,18 +53,17 @@ try:
             else:
                 return rv
 
-
     def execute_with_instana(wrapped, instance, args, kwargs):
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If we're not tracing, just return
-        if (tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS)):
+        if tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
 
         with tracer.start_active_span("redis", child_of=parent_span) as scope:
             try:
                 collect_tags(scope.span, instance, args, kwargs)
-                scope.span.set_tag("command", 'PIPELINE')
+                scope.span.set_tag("command", "PIPELINE")
 
                 pipe_cmds = []
                 for e in instance.command_stack:
@@ -84,12 +81,20 @@ try:
             else:
                 return rv
 
-    if redis.VERSION < (3,0,0):
-        wrapt.wrap_function_wrapper('redis.client', 'BasePipeline.execute', execute_with_instana)
-        wrapt.wrap_function_wrapper('redis.client', 'StrictRedis.execute_command', execute_command_with_instana)
+    if redis.VERSION < (3, 0, 0):
+        wrapt.wrap_function_wrapper(
+            "redis.client", "BasePipeline.execute", execute_with_instana
+        )
+        wrapt.wrap_function_wrapper(
+            "redis.client", "StrictRedis.execute_command", execute_command_with_instana
+        )
     else:
-        wrapt.wrap_function_wrapper('redis.client', 'Pipeline.execute', execute_with_instana)
-        wrapt.wrap_function_wrapper('redis.client', 'Redis.execute_command', execute_command_with_instana)
+        wrapt.wrap_function_wrapper(
+            "redis.client", "Pipeline.execute", execute_with_instana
+        )
+        wrapt.wrap_function_wrapper(
+            "redis.client", "Redis.execute_command", execute_command_with_instana
+        )
 
         logger.debug("Instrumenting redis")
 except ImportError:

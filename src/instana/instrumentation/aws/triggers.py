@@ -4,25 +4,33 @@
 """
 Module to handle the work related to the many AWS Lambda Triggers.
 """
+
+import base64
 import gzip
 import json
-import base64
 from io import BytesIO
+
 import opentracing as ot
 
 from ...log import logger
 
-STR_LAMBDA_TRIGGER = 'lambda.trigger'
+STR_LAMBDA_TRIGGER = "lambda.trigger"
 
 
 def get_context(tracer, event):
     # TODO: Search for more types of trigger context
-    is_proxy_event = is_api_gateway_proxy_trigger(event) or \
-        is_api_gateway_v2_proxy_trigger(event) or \
-        is_application_load_balancer_trigger(event)
+    is_proxy_event = (
+        is_api_gateway_proxy_trigger(event)
+        or is_api_gateway_v2_proxy_trigger(event)
+        or is_application_load_balancer_trigger(event)
+    )
 
     if is_proxy_event:
-        return tracer.extract(ot.Format.HTTP_HEADERS, event.get('headers', {}), disable_w3c_trace_context=True)
+        return tracer.extract(
+            ot.Format.HTTP_HEADERS,
+            event.get("headers", {}),
+            disable_w3c_trace_context=True,
+        )
 
     return tracer.extract(ot.Format.HTTP_HEADERS, event, disable_w3c_trace_context=True)
 
@@ -48,21 +56,25 @@ def is_api_gateway_v2_proxy_trigger(event):
 
     return True
 
+
 def is_application_load_balancer_trigger(event):
-    if 'requestContext' in event and 'elb' in event['requestContext']:
+    if "requestContext" in event and "elb" in event["requestContext"]:
         return True
     return False
 
 
 def is_cloudwatch_trigger(event):
-    if "source" in event and 'detail-type' in event:
-        if event["source"] == 'aws.events' and event['detail-type'] == 'Scheduled Event':
+    if "source" in event and "detail-type" in event:
+        if (
+            event["source"] == "aws.events"
+            and event["detail-type"] == "Scheduled Event"
+        ):
             return True
     return False
 
 
 def is_cloudwatch_logs_trigger(event):
-    if hasattr(event, 'get') and event.get("awslogs", False) is not False:
+    if hasattr(event, "get") and event.get("awslogs", False) is not False:
         return True
     else:
         return False
@@ -70,14 +82,17 @@ def is_cloudwatch_logs_trigger(event):
 
 def is_s3_trigger(event):
     if "Records" in event:
-        if len(event["Records"]) > 0 and event["Records"][0]["eventSource"] == 'aws:s3':
+        if len(event["Records"]) > 0 and event["Records"][0]["eventSource"] == "aws:s3":
             return True
     return False
 
 
 def is_sqs_trigger(event):
     if "Records" in event:
-        if len(event["Records"]) > 0 and event["Records"][0]["eventSource"] == 'aws:sqs':
+        if (
+            len(event["Records"]) > 0
+            and event["Records"][0]["eventSource"] == "aws:sqs"
+        ):
             return True
     return False
 
@@ -94,8 +109,8 @@ def read_http_query_params(event):
         if event is None or type(event) is not dict:
             return ""
 
-        mvqsp = event.get('multiValueQueryStringParameters', None)
-        qsp = event.get('queryStringParameters', None)
+        mvqsp = event.get("multiValueQueryStringParameters", None)
+        qsp = event.get("queryStringParameters", None)
 
         if mvqsp is not None and type(mvqsp) is dict:
             for key in mvqsp:
@@ -129,7 +144,9 @@ def capture_extra_headers(event, span, extra_headers):
             for custom_header in extra_headers:
                 for key in event_headers:
                     if key.lower() == custom_header.lower():
-                        span.set_tag("http.header.%s" % custom_header, event_headers[key])
+                        span.set_tag(
+                            "http.header.%s" % custom_header, event_headers[key]
+                        )
     except Exception:
         logger.debug("capture_extra_headers: ", exc_info=True)
 
@@ -146,9 +163,9 @@ def enrich_lambda_span(agent, span, event, context):
     @return: None
     """
     try:
-        span.set_tag('lambda.arn', agent.collector.get_fq_arn())
-        span.set_tag('lambda.name', context.function_name)
-        span.set_tag('lambda.version', context.function_version)
+        span.set_tag("lambda.arn", agent.collector.get_fq_arn())
+        span.set_tag("lambda.name", context.function_name)
+        span.set_tag("lambda.version", context.function_version)
 
         if event is None or type(event) is not dict:
             logger.debug("enrich_lambda_span: bad event %s", type(event))
@@ -156,11 +173,11 @@ def enrich_lambda_span(agent, span, event, context):
 
         if is_api_gateway_proxy_trigger(event):
             logger.debug("Detected as API Gateway Proxy Trigger")
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:api.gateway')
-            span.set_tag('http.method', event["httpMethod"])
-            span.set_tag('http.url', event["path"])
-            span.set_tag('http.path_tpl', event["resource"])
-            span.set_tag('http.params', read_http_query_params(event))
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:api.gateway")
+            span.set_tag("http.method", event["httpMethod"])
+            span.set_tag("http.url", event["path"])
+            span.set_tag("http.path_tpl", event["resource"])
+            span.set_tag("http.params", read_http_query_params(event))
 
             if agent.options.extra_http_headers is not None:
                 capture_extra_headers(event, span, agent.options.extra_http_headers)
@@ -173,76 +190,80 @@ def enrich_lambda_span(agent, span, event, context):
             # trim optional HTTP method prefix
             route_path = event["routeKey"].split(" ", 2)[-1]
 
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:api.gateway')
-            span.set_tag('http.method', reqCtx["http"]["method"])
-            span.set_tag('http.url', reqCtx["http"]["path"])
-            span.set_tag('http.path_tpl', route_path)
-            span.set_tag('http.params', read_http_query_params(event))
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:api.gateway")
+            span.set_tag("http.method", reqCtx["http"]["method"])
+            span.set_tag("http.url", reqCtx["http"]["path"])
+            span.set_tag("http.path_tpl", route_path)
+            span.set_tag("http.params", read_http_query_params(event))
 
             if agent.options.extra_http_headers is not None:
                 capture_extra_headers(event, span, agent.options.extra_http_headers)
 
         elif is_application_load_balancer_trigger(event):
             logger.debug("Detected as Application Load Balancer Trigger")
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:application.load.balancer')
-            span.set_tag('http.method', event["httpMethod"])
-            span.set_tag('http.url', event["path"])
-            span.set_tag('http.params', read_http_query_params(event))
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:application.load.balancer")
+            span.set_tag("http.method", event["httpMethod"])
+            span.set_tag("http.url", event["path"])
+            span.set_tag("http.params", read_http_query_params(event))
 
             if agent.options.extra_http_headers is not None:
                 capture_extra_headers(event, span, agent.options.extra_http_headers)
 
         elif is_cloudwatch_trigger(event):
             logger.debug("Detected as Cloudwatch Trigger")
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:cloudwatch.events')
-            span.set_tag('data.lambda.cw.events.id', event['id'])
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:cloudwatch.events")
+            span.set_tag("data.lambda.cw.events.id", event["id"])
 
-            resources = event['resources']
-            resource_count = len(event['resources'])
+            resources = event["resources"]
+            resource_count = len(event["resources"])
             if resource_count > 3:
-                resources = event['resources'][:3]
-                span.set_tag('lambda.cw.events.more', True)
+                resources = event["resources"][:3]
+                span.set_tag("lambda.cw.events.more", True)
             else:
-                span.set_tag('lambda.cw.events.more', False)
+                span.set_tag("lambda.cw.events.more", False)
 
             report = []
             for item in resources:
                 if len(item) > 200:
                     item = item[:200]
                 report.append(item)
-            span.set_tag('lambda.cw.events.resources', report)
+            span.set_tag("lambda.cw.events.resources", report)
 
         elif is_cloudwatch_logs_trigger(event):
             logger.debug("Detected as Cloudwatch Logs Trigger")
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:cloudwatch.logs')
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:cloudwatch.logs")
 
             try:
-                if 'awslogs' in event and 'data' in event['awslogs']:
-                    data = event['awslogs']['data']
+                if "awslogs" in event and "data" in event["awslogs"]:
+                    data = event["awslogs"]["data"]
                     decoded_data = base64.b64decode(data)
-                    decompressed_data = gzip.GzipFile(fileobj=BytesIO(decoded_data)).read()
-                    log_data = json.loads(decompressed_data.decode('utf-8'))
+                    decompressed_data = gzip.GzipFile(
+                        fileobj=BytesIO(decoded_data)
+                    ).read()
+                    log_data = json.loads(decompressed_data.decode("utf-8"))
 
-                    span.set_tag('lambda.cw.logs.group', log_data.get('logGroup', None))
-                    span.set_tag('lambda.cw.logs.stream', log_data.get('logStream', None))
-                    if len(log_data['logEvents']) > 3:
-                        span.set_tag('lambda.cw.logs.more', True)
-                        events = log_data['logEvents'][:3]
+                    span.set_tag("lambda.cw.logs.group", log_data.get("logGroup", None))
+                    span.set_tag(
+                        "lambda.cw.logs.stream", log_data.get("logStream", None)
+                    )
+                    if len(log_data["logEvents"]) > 3:
+                        span.set_tag("lambda.cw.logs.more", True)
+                        events = log_data["logEvents"][:3]
                     else:
-                        events = log_data['logEvents']
+                        events = log_data["logEvents"]
 
                     event_data = []
                     for item in events:
-                        msg = item.get('message', None)
+                        msg = item.get("message", None)
                         if len(msg) > 200:
                             msg = msg[:200]
                         event_data.append(msg)
-                    span.set_tag('lambda.cw.logs.events', event_data)
+                    span.set_tag("lambda.cw.logs.events", event_data)
             except Exception as e:
-                span.set_tag('lambda.cw.logs.decodingError', repr(e))
+                span.set_tag("lambda.cw.logs.decodingError", repr(e))
         elif is_s3_trigger(event):
             logger.debug("Detected as S3 Trigger")
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:s3')
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:s3")
 
             if "Records" in event:
                 events = []
@@ -258,23 +279,27 @@ def enrich_lambda_span(agent, span, event, context):
                     if len(object_name) > 200:
                         object_name = object_name[:200]
 
-                    events.append({"event": item['eventName'],
-                                   "bucket": bucket_name,
-                                   "object": object_name})
-                span.set_tag('lambda.s3.events', events)
+                    events.append(
+                        {
+                            "event": item["eventName"],
+                            "bucket": bucket_name,
+                            "object": object_name,
+                        }
+                    )
+                span.set_tag("lambda.s3.events", events)
 
         elif is_sqs_trigger(event):
             logger.debug("Detected as SQS Trigger")
-            span.set_tag(STR_LAMBDA_TRIGGER, 'aws:sqs')
+            span.set_tag(STR_LAMBDA_TRIGGER, "aws:sqs")
 
             if "Records" in event:
                 events = []
                 for item in event["Records"][:3]:
-                    events.append({'queue': item['eventSourceARN']})
-                span.set_tag('lambda.sqs.messages', events)
+                    events.append({"queue": item["eventSourceARN"]})
+                span.set_tag("lambda.sqs.messages", events)
         else:
             logger.debug("Detected as Unknown Trigger: %s" % event)
-            span.set_tag(STR_LAMBDA_TRIGGER, 'unknown')
+            span.set_tag(STR_LAMBDA_TRIGGER, "unknown")
 
     except Exception:
         logger.debug("enrich_lambda_span: ", exc_info=True)

@@ -3,7 +3,6 @@
 from typing import Tuple
 
 import pytest
-
 from instana.recorder import StanRecorder
 from instana.span.sdk_span import SDKSpan
 from instana.span.span import InstanaSpan

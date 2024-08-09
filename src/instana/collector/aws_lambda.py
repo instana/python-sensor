@@ -33,7 +33,7 @@ class AWSLambdaCollector(BaseCollector):
         self.event = event
 
         try:
-            plugin_data = dict()
+            plugin_data = {}
             plugin_data["name"] = "com.instana.plugin.aws.lambda"
             plugin_data["entityId"] = self.get_fq_arn()
             self.snapshot_data["plugins"] = [plugin_data]

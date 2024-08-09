@@ -3,12 +3,17 @@
 
 import os
 import sys
-from .app import aiohttp_server as server
+
 from ..utils import launch_background_thread
+from .app import aiohttp_server as server
 
 APP_THREAD = None
 
-if not any((os.environ.get('GEVENT_STARLETTE_TEST'),
-            os.environ.get('CASSANDRA_TEST'),
-            sys.version_info < (3, 5, 3))):
+if not any(
+    (
+        os.environ.get("GEVENT_STARLETTE_TEST"),
+        os.environ.get("CASSANDRA_TEST"),
+        sys.version_info < (3, 5, 3),
+    )
+):
     APP_THREAD = launch_background_thread(server, "AIOHTTP")

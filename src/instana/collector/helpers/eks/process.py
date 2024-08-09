@@ -20,7 +20,7 @@ class EKSFargateProcessHelper(ProcessHelper):
     """Helper class to extend the generic process helper class with the corresponding fargate attributes"""
 
     def collect_metrics(self, **kwargs):
-        plugin_data = dict()
+        plugin_data = {}
         try:
             plugin_data = super(EKSFargateProcessHelper, self).collect_metrics(**kwargs)
             plugin_data["data"]["containerType"] = "docker"

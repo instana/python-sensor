@@ -6,7 +6,7 @@ Host Collector: Manages the periodic collection of metrics & snapshot data
 """
 
 from time import time
-from typing import DefaultDict, Any
+from typing import Any, DefaultDict
 
 from instana.collector.base import BaseCollector
 from instana.collector.helpers.runtime import RuntimeHelper

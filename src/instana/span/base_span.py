@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2024
 
 from typing import TYPE_CHECKING, Type
+
 import six
 
 from instana.log import logger

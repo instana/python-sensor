@@ -1,23 +1,21 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
 import json
-import time
 import logging
+import os
+import time
 import unittest
 
 import wrapt
-
-from instana.tracer import InstanaTracer
+from instana import get_lambda_handler_or_default, lambda_handler
 from instana.agent.aws_lambda import AWSLambdaAgent
-from instana.options import AWSLambdaOptions
-from instana.recorder import StanRecorder
-from instana import lambda_handler
-from instana import get_lambda_handler_or_default
 from instana.instrumentation.aws.lambda_inst import lambda_handler_with_instana
 from instana.instrumentation.aws.triggers import read_http_query_params
-from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
+from instana.options import AWSLambdaOptions
+from instana.recorder import StanRecorder
+from instana.singletons import get_agent, get_tracer, set_agent, set_tracer
+from instana.tracer import InstanaTracer
 from instana.util.aws import normalize_aws_lambda_arn
 
 
@@ -25,7 +23,9 @@ from instana.util.aws import normalize_aws_lambda_arn
 class MockContext(dict):
     def __init__(self, **kwargs):
         super(MockContext, self).__init__(**kwargs)
-        self.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:1"
+        self.invoked_function_arn = (
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1"
+        )
         self.function_name = "TestPython"
         self.function_version = "1"
 
@@ -34,29 +34,33 @@ class MockContext(dict):
 def my_lambda_handler(event, context):
     # print("target_handler called")
     return {
-        'statusCode': 200,
-        'headers': {'Content-Type': 'application/json'},
-        'body': json.dumps({'site': 'pwpush.com', 'response': 204})
+        "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"site": "pwpush.com", "response": 204}),
     }
+
 
 # We only want to monkey patch the test handler once so do it here
 os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_lambda_handler"
 module_name, function_name = get_lambda_handler_or_default()
 wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 
+
 def my_errored_lambda_handler(event, context):
     return {
-        'statusCode': 500,
-        'headers': {'Content-Type': 'application/json'},
-        'body': json.dumps({'site': 'wikipedia.org', 'response': 500})
+        "statusCode": 500,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"site": "wikipedia.org", "response": 500}),
     }
+
 
 os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_errored_lambda_handler"
 module_name, function_name = get_lambda_handler_or_default()
 wrapt.wrap_function_wrapper(module_name, function_name, lambda_handler_with_instana)
 
+
 class TestLambda(unittest.TestCase):
-    def __init__(self, methodName='runTest'):
+    def __init__(self, methodName="runTest"):
         super(TestLambda, self).__init__(methodName)
         self.agent = None
         self.span_recorder = None
@@ -74,7 +78,7 @@ class TestLambda(unittest.TestCase):
         self.context = MockContext()
 
     def tearDown(self):
-        """ Reset all environment variables of consequence """
+        """Reset all environment variables of consequence"""
         if "AWS_EXECUTION_ENV" in os.environ:
             os.environ.pop("AWS_EXECUTION_ENV")
         if "LAMBDA_HANDLER" in os.environ:
@@ -121,21 +125,21 @@ class TestLambda(unittest.TestCase):
 
     def test_secrets(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent.options, 'secrets_matcher'))
-        self.assertEqual(self.agent.options.secrets_matcher, 'contains-ignore-case')
-        self.assertTrue(hasattr(self.agent.options, 'secrets_list'))
-        self.assertEqual(self.agent.options.secrets_list, ['key', 'pass', 'secret'])
+        self.assertTrue(hasattr(self.agent.options, "secrets_matcher"))
+        self.assertEqual(self.agent.options.secrets_matcher, "contains-ignore-case")
+        self.assertTrue(hasattr(self.agent.options, "secrets_list"))
+        self.assertEqual(self.agent.options.secrets_list, ["key", "pass", "secret"])
 
     def test_has_extra_http_headers(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'options'))
-        self.assertTrue(hasattr(self.agent.options, 'extra_http_headers'))
+        self.assertTrue(hasattr(self.agent, "options"))
+        self.assertTrue(hasattr(self.agent.options, "extra_http_headers"))
 
     def test_has_options(self):
         self.create_agent_and_setup_tracer()
-        self.assertTrue(hasattr(self.agent, 'options'))
+        self.assertTrue(hasattr(self.agent, "options"))
         self.assertTrue(isinstance(self.agent.options, AWSLambdaOptions))
-        self.assertDictEqual(self.agent.options.endpoint_proxy, { })
+        self.assertDictEqual(self.agent.options.endpoint_proxy, {})
 
     def test_get_handler(self):
         os.environ["LAMBDA_HANDLER"] = "tests.lambda_handler"
@@ -165,20 +169,26 @@ class TestLambda(unittest.TestCase):
         self.assertEqual("lambda_handler", handler_function)
 
     def test_agent_extra_http_headers(self):
-        os.environ['INSTANA_EXTRA_HTTP_HEADERS'] = "X-Test-Header;X-Another-Header;X-And-Another-Header"
+        os.environ["INSTANA_EXTRA_HTTP_HEADERS"] = (
+            "X-Test-Header;X-Another-Header;X-And-Another-Header"
+        )
         self.create_agent_and_setup_tracer()
         self.assertIsNotNone(self.agent.options.extra_http_headers)
-        should_headers = ['x-test-header', 'x-another-header', 'x-and-another-header']
+        should_headers = ["x-test-header", "x-another-header", "x-and-another-header"]
         self.assertEqual(should_headers, self.agent.options.extra_http_headers)
 
     def test_custom_proxy(self):
         os.environ["INSTANA_ENDPOINT_PROXY"] = "http://myproxy.123"
         self.create_agent_and_setup_tracer()
-        self.assertDictEqual(self.agent.options.endpoint_proxy, { 'https': "http://myproxy.123" })
+        self.assertDictEqual(
+            self.agent.options.endpoint_proxy, {"https": "http://myproxy.123"}
+        )
 
     def test_custom_service_name(self):
-        os.environ['INSTANA_SERVICE_NAME'] = "Legion"
-        with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
+        os.environ["INSTANA_SERVICE_NAME"] = "Legion"
+        with open(
+            self.pwd + "/../data/lambda/api_gateway_event.json", "r"
+        ) as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -187,11 +197,11 @@ class TestLambda(unittest.TestCase):
         # figure out the original (the users') Lambda Handler and execute it.
         # The original Lambda handler is set in os.environ["LAMBDA_HANDLER"]
         result = lambda_handler(event, self.context)
-        os.environ.pop('INSTANA_SERVICE_NAME')
+        os.environ.pop("INSTANA_SERVICE_NAME")
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -200,51 +210,65 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
-        self.assertEqual('d5cb361b256413a9', span.t)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
+        self.assertEqual("d5cb361b256413a9", span.t)
         self.assertIsNotNone(span.s)
-        self.assertEqual('0901d8ae4fbf1529', span.p)
+        self.assertEqual("0901d8ae4fbf1529", span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertTrue(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
 
-        self.assertEqual('Legion', span.data['service'])
+        self.assertEqual("Legion", span.data["service"])
 
-        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
-        self.assertEqual('POST', span.data['http']['method'])
-        self.assertEqual(200, span.data['http']['status'])
-        self.assertEqual('/path/to/resource', span.data['http']['url'])
-        self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
-        self.assertEqual("foo=['bar']", span.data['http']['params'])
+        self.assertEqual("aws:api.gateway", span.data["lambda"]["trigger"])
+        self.assertEqual("POST", span.data["http"]["method"])
+        self.assertEqual(200, span.data["http"]["status"])
+        self.assertEqual("/path/to/resource", span.data["http"]["url"])
+        self.assertEqual("/{proxy+}", span.data["http"]["path_tpl"])
+        self.assertEqual("foo=['bar']", span.data["http"]["params"])
 
     def test_api_gateway_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/lambda/api_gateway_event.json", "r"
+        ) as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -255,8 +279,8 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -265,50 +289,64 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
-        self.assertEqual('d5cb361b256413a9', span.t)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
+        self.assertEqual("d5cb361b256413a9", span.t)
         self.assertIsNotNone(span.s)
-        self.assertEqual('0901d8ae4fbf1529', span.p)
+        self.assertEqual("0901d8ae4fbf1529", span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertTrue(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
-        self.assertEqual('POST', span.data['http']['method'])
-        self.assertEqual(200, span.data['http']['status'])
-        self.assertEqual('/path/to/resource', span.data['http']['url'])
-        self.assertEqual('/{proxy+}', span.data['http']['path_tpl'])
-        self.assertEqual("foo=['bar']", span.data['http']['params'])
+        self.assertEqual("aws:api.gateway", span.data["lambda"]["trigger"])
+        self.assertEqual("POST", span.data["http"]["method"])
+        self.assertEqual(200, span.data["http"]["status"])
+        self.assertEqual("/path/to/resource", span.data["http"]["url"])
+        self.assertEqual("/{proxy+}", span.data["http"]["path_tpl"])
+        self.assertEqual("foo=['bar']", span.data["http"]["params"])
 
     def test_api_gateway_v2_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/api_gateway_v2_event.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/lambda/api_gateway_v2_event.json", "r"
+        ) as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -321,19 +359,21 @@ class TestLambda(unittest.TestCase):
         payload = self.agent.collector.prepare_payload()
         self.__validate_result_and_payload_for_gateway_v2_trace(result, payload)
 
-        self.assertEqual(200, result['statusCode'])
-        span = payload['spans'][0]
+        self.assertEqual(200, result["statusCode"])
+        span = payload["spans"][0]
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
-        self.assertEqual(200, span.data['http']['status'])
-
+        self.assertIsNone(span.data["lambda"]["error"])
+        self.assertEqual(200, span.data["http"]["status"])
 
     def test_api_gateway_v2_trigger_errored_tracing(self):
-
-        with open(self.pwd + '/../data/lambda/api_gateway_v2_event.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/lambda/api_gateway_v2_event.json", "r"
+        ) as json_file:
             event = json.load(json_file)
 
-        os.environ["LAMBDA_HANDLER"] = "tests.platforms.test_lambda.my_errored_lambda_handler"
+        os.environ["LAMBDA_HANDLER"] = (
+            "tests.platforms.test_lambda.my_errored_lambda_handler"
+        )
         self.create_agent_and_setup_tracer()
 
         result = lambda_handler(event, self.context)
@@ -341,15 +381,16 @@ class TestLambda(unittest.TestCase):
         payload = self.agent.collector.prepare_payload()
         self.__validate_result_and_payload_for_gateway_v2_trace(result, payload)
 
-        self.assertEqual(500, result['statusCode'])
-        span = payload['spans'][0]
+        self.assertEqual(500, result["statusCode"])
+        span = payload["spans"][0]
         self.assertEqual(1, span.ec)
-        self.assertEqual('HTTP status 500', span.data['lambda']['error'])
-        self.assertEqual(500, span.data['http']['status'])
-
+        self.assertEqual("HTTP status 500", span.data["lambda"]["error"])
+        self.assertEqual(500, span.data["http"]["status"])
 
     def test_application_lb_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/api_gateway_event.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/lambda/api_gateway_event.json", "r"
+        ) as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -360,8 +401,8 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -370,49 +411,61 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
-        self.assertEqual('d5cb361b256413a9', span.t)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
+        self.assertEqual("d5cb361b256413a9", span.t)
         self.assertIsNotNone(span.s)
-        self.assertEqual('0901d8ae4fbf1529', span.p)
+        self.assertEqual("0901d8ae4fbf1529", span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertTrue(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
-        self.assertEqual('POST', span.data['http']['method'])
-        self.assertEqual(200, span.data['http']['status'])
-        self.assertEqual('/path/to/resource', span.data['http']['url'])
-        self.assertEqual("foo=['bar']", span.data['http']['params'])
+        self.assertEqual("aws:api.gateway", span.data["lambda"]["trigger"])
+        self.assertEqual("POST", span.data["http"]["method"])
+        self.assertEqual(200, span.data["http"]["status"])
+        self.assertEqual("/path/to/resource", span.data["http"]["url"])
+        self.assertEqual("foo=['bar']", span.data["http"]["params"])
 
     def test_cloudwatch_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/cloudwatch_event.json', 'r') as json_file:
+        with open(self.pwd + "/../data/lambda/cloudwatch_event.json", "r") as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -423,8 +476,8 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -433,17 +486,20 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
         self.assertIsNotNone(span.t)
         self.assertIsNotNone(span.s)
         self.assertIsNone(span.p)
@@ -451,33 +507,51 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertIsNone(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('aws:cloudwatch.events', span.data['lambda']['trigger'])
-        self.assertEqual('cdc73f9d-aea9-11e3-9d5a-835b769c0d9c', span.data["lambda"]["cw"]["events"]["id"])
+        self.assertEqual("aws:cloudwatch.events", span.data["lambda"]["trigger"])
+        self.assertEqual(
+            "cdc73f9d-aea9-11e3-9d5a-835b769c0d9c",
+            span.data["lambda"]["cw"]["events"]["id"],
+        )
         self.assertEqual(False, span.data["lambda"]["cw"]["events"]["more"])
-        self.assertTrue(isinstance(span.data["lambda"]["cw"]["events"]["resources"], list))
+        self.assertTrue(
+            isinstance(span.data["lambda"]["cw"]["events"]["resources"], list)
+        )
         self.assertEqual(1, len(span.data["lambda"]["cw"]["events"]["resources"]))
-        self.assertEqual('arn:aws:events:eu-west-1:123456789012:rule/ExampleRule',
-                         span.data["lambda"]["cw"]["events"]["resources"][0])
+        self.assertEqual(
+            "arn:aws:events:eu-west-1:123456789012:rule/ExampleRule",
+            span.data["lambda"]["cw"]["events"]["resources"][0],
+        )
 
     def test_cloudwatch_logs_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/cloudwatch_logs_event.json', 'r') as json_file:
+        with open(
+            self.pwd + "/../data/lambda/cloudwatch_logs_event.json", "r"
+        ) as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -488,8 +562,8 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -498,17 +572,20 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
         self.assertIsNotNone(span.t)
         self.assertIsNotNone(span.s)
         self.assertIsNone(span.p)
@@ -516,35 +593,49 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertIsNone(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('aws:cloudwatch.logs', span.data['lambda']['trigger'])
-        self.assertFalse("decodingError" in span.data['lambda']['cw']['logs'])
-        self.assertEqual('testLogGroup', span.data['lambda']['cw']['logs']['group'])
-        self.assertEqual('testLogStream', span.data['lambda']['cw']['logs']['stream'])
-        self.assertEqual(None, span.data['lambda']['cw']['logs']['more'])
-        self.assertTrue(isinstance(span.data['lambda']['cw']['logs']['events'], list))
-        self.assertEqual(2, len(span.data['lambda']['cw']['logs']['events']))
-        self.assertEqual('[ERROR] First test message', span.data['lambda']['cw']['logs']['events'][0])
-        self.assertEqual('[ERROR] Second test message', span.data['lambda']['cw']['logs']['events'][1])
+        self.assertEqual("aws:cloudwatch.logs", span.data["lambda"]["trigger"])
+        self.assertFalse("decodingError" in span.data["lambda"]["cw"]["logs"])
+        self.assertEqual("testLogGroup", span.data["lambda"]["cw"]["logs"]["group"])
+        self.assertEqual("testLogStream", span.data["lambda"]["cw"]["logs"]["stream"])
+        self.assertEqual(None, span.data["lambda"]["cw"]["logs"]["more"])
+        self.assertTrue(isinstance(span.data["lambda"]["cw"]["logs"]["events"], list))
+        self.assertEqual(2, len(span.data["lambda"]["cw"]["logs"]["events"]))
+        self.assertEqual(
+            "[ERROR] First test message", span.data["lambda"]["cw"]["logs"]["events"][0]
+        )
+        self.assertEqual(
+            "[ERROR] Second test message",
+            span.data["lambda"]["cw"]["logs"]["events"][1],
+        )
 
     def test_s3_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/s3_event.json', 'r') as json_file:
+        with open(self.pwd + "/../data/lambda/s3_event.json", "r") as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -555,8 +646,8 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -565,17 +656,20 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
         self.assertIsNotNone(span.t)
         self.assertIsNotNone(span.s)
         self.assertIsNone(span.p)
@@ -583,34 +677,43 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertIsNone(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('aws:s3', span.data['lambda']['trigger'])
+        self.assertEqual("aws:s3", span.data["lambda"]["trigger"])
         self.assertTrue(isinstance(span.data["lambda"]["s3"]["events"], list))
         events = span.data["lambda"]["s3"]["events"]
         self.assertEqual(1, len(events))
         event = events[0]
-        self.assertEqual('ObjectCreated:Put', event['event'])
-        self.assertEqual('example-bucket', event['bucket'])
-        self.assertEqual('test/key', event['object'])
+        self.assertEqual("ObjectCreated:Put", event["event"])
+        self.assertEqual("example-bucket", event["bucket"])
+        self.assertEqual("test/key", event["object"])
 
     def test_sqs_trigger_tracing(self):
-        with open(self.pwd + '/../data/lambda/sqs_event.json', 'r') as json_file:
+        with open(self.pwd + "/../data/lambda/sqs_event.json", "r") as json_file:
             event = json.load(json_file)
 
         self.create_agent_and_setup_tracer()
@@ -621,8 +724,8 @@ class TestLambda(unittest.TestCase):
         result = lambda_handler(event, self.context)
 
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
 
         time.sleep(1)
         payload = self.agent.collector.prepare_payload()
@@ -631,17 +734,20 @@ class TestLambda(unittest.TestCase):
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
         self.assertIsNotNone(span.t)
         self.assertIsNotNone(span.s)
         self.assertIsNone(span.p)
@@ -649,39 +755,49 @@ class TestLambda(unittest.TestCase):
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertIsNone(span.sy)
 
         self.assertIsNone(span.ec)
-        self.assertIsNone(span.data['lambda']['error'])
+        self.assertIsNone(span.data["lambda"]["error"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('aws:sqs', span.data['lambda']['trigger'])
+        self.assertEqual("aws:sqs", span.data["lambda"]["trigger"])
         self.assertTrue(isinstance(span.data["lambda"]["sqs"]["messages"], list))
         messages = span.data["lambda"]["sqs"]["messages"]
         self.assertEqual(1, len(messages))
         message = messages[0]
-        self.assertEqual('arn:aws:sqs:us-west-1:123456789012:MyQueue', message['queue'])
+        self.assertEqual("arn:aws:sqs:us-west-1:123456789012:MyQueue", message["queue"])
 
     def test_read_query_params(self):
-        event = { "queryStringParameters": {"foo": "bar" },
-                  "multiValueQueryStringParameters": { "foo": ["bar"] } }
+        event = {
+            "queryStringParameters": {"foo": "bar"},
+            "multiValueQueryStringParameters": {"foo": ["bar"]},
+        }
         params = read_http_query_params(event)
         self.assertEqual("foo=['bar']", params)
 
     def test_read_query_params_with_none_data(self):
-        event = { "queryStringParameters": None,
-                  "multiValueQueryStringParameters": None }
+        event = {"queryStringParameters": None, "multiValueQueryStringParameters": None}
         params = read_http_query_params(event)
         self.assertEqual("", params)
 
@@ -693,70 +809,92 @@ class TestLambda(unittest.TestCase):
     def test_arn_parsing(self):
         ctx = MockContext()
 
-        self.assertEqual(normalize_aws_lambda_arn(ctx), "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
+        self.assertEqual(
+            normalize_aws_lambda_arn(ctx),
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+        )
 
         # Without version should return a fully qualified ARN (with version)
         ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython"
-        self.assertEqual(normalize_aws_lambda_arn(ctx), "arn:aws:lambda:us-east-2:12345:function:TestPython:1")
+        self.assertEqual(
+            normalize_aws_lambda_arn(ctx),
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+        )
 
         # Fully qualified already with the '$LATEST' special tag
-        ctx.invoked_function_arn = "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST"
-        self.assertEqual(normalize_aws_lambda_arn(ctx), "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST")
+        ctx.invoked_function_arn = (
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST"
+        )
+        self.assertEqual(
+            normalize_aws_lambda_arn(ctx),
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:$LATEST",
+        )
 
     def test_agent_default_log_level(self):
         self.create_agent_and_setup_tracer()
         self.assertEqual(self.agent.options.log_level, logging.WARNING)
 
     def test_agent_custom_log_level(self):
-        os.environ['INSTANA_LOG_LEVEL'] = "eRror"
+        os.environ["INSTANA_LOG_LEVEL"] = "eRror"
         self.create_agent_and_setup_tracer()
         self.assertEqual(self.agent.options.log_level, logging.ERROR)
 
     def __validate_result_and_payload_for_gateway_v2_trace(self, result, payload):
         self.assertIsInstance(result, dict)
-        self.assertIn('headers', result)
-        self.assertIn('Server-Timing', result['headers'])
-        self.assertIn('statusCode', result)
+        self.assertIn("headers", result)
+        self.assertIn("Server-Timing", result["headers"])
+        self.assertIn("statusCode", result)
 
         self.assertTrue("metrics" in payload)
         self.assertTrue("spans" in payload)
         self.assertEqual(2, len(payload.keys()))
 
-        self.assertTrue(isinstance(payload['metrics']['plugins'], list))
-        self.assertTrue(len(payload['metrics']['plugins']) == 1)
-        plugin_data = payload['metrics']['plugins'][0]
+        self.assertTrue(isinstance(payload["metrics"]["plugins"], list))
+        self.assertTrue(len(payload["metrics"]["plugins"]) == 1)
+        plugin_data = payload["metrics"]["plugins"][0]
 
-        self.assertEqual('com.instana.plugin.aws.lambda', plugin_data['name'])
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', plugin_data['entityId'])
+        self.assertEqual("com.instana.plugin.aws.lambda", plugin_data["name"])
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            plugin_data["entityId"],
+        )
 
-        self.assertEqual(1, len(payload['spans']))
+        self.assertEqual(1, len(payload["spans"]))
 
-        span = payload['spans'][0]
-        self.assertEqual('aws.lambda.entry', span.n)
-        self.assertEqual('0000000000001234', span.t)
+        span = payload["spans"][0]
+        self.assertEqual("aws.lambda.entry", span.n)
+        self.assertEqual("0000000000001234", span.t)
         self.assertIsNotNone(span.s)
-        self.assertEqual('0000000000004567', span.p)
+        self.assertEqual("0000000000004567", span.p)
         self.assertIsNotNone(span.ts)
         self.assertIsNotNone(span.d)
 
         server_timing_value = "intid;desc=%s" % span.t
-        self.assertEqual(result['headers']['Server-Timing'], server_timing_value)
+        self.assertEqual(result["headers"]["Server-Timing"], server_timing_value)
 
-        self.assertEqual({'hl': True, 'cp': 'aws', 'e': 'arn:aws:lambda:us-east-2:12345:function:TestPython:1'},
-                         span.f)
+        self.assertEqual(
+            {
+                "hl": True,
+                "cp": "aws",
+                "e": "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            },
+            span.f,
+        )
 
         self.assertTrue(span.sy)
 
+        self.assertEqual(
+            "arn:aws:lambda:us-east-2:12345:function:TestPython:1",
+            span.data["lambda"]["arn"],
+        )
+        self.assertEqual(None, span.data["lambda"]["alias"])
+        self.assertEqual("python", span.data["lambda"]["runtime"])
+        self.assertEqual("TestPython", span.data["lambda"]["functionName"])
+        self.assertEqual("1", span.data["lambda"]["functionVersion"])
+        self.assertIsNone(span.data["service"])
 
-        self.assertEqual('arn:aws:lambda:us-east-2:12345:function:TestPython:1', span.data['lambda']['arn'])
-        self.assertEqual(None, span.data['lambda']['alias'])
-        self.assertEqual('python', span.data['lambda']['runtime'])
-        self.assertEqual('TestPython', span.data['lambda']['functionName'])
-        self.assertEqual('1', span.data['lambda']['functionVersion'])
-        self.assertIsNone(span.data['service'])
-
-        self.assertEqual('aws:api.gateway', span.data['lambda']['trigger'])
-        self.assertEqual('POST', span.data['http']['method'])
-        self.assertEqual('/my/path', span.data['http']['url'])
-        self.assertEqual('/my/{resource}', span.data['http']['path_tpl'])
-        self.assertEqual("secret=key&q=term", span.data['http']['params'])
+        self.assertEqual("aws:api.gateway", span.data["lambda"]["trigger"])
+        self.assertEqual("POST", span.data["http"]["method"])
+        self.assertEqual("/my/path", span.data["http"]["url"])
+        self.assertEqual("/my/{resource}", span.data["http"]["path_tpl"])
+        self.assertEqual("secret=key&q=term", span.data["http"]["params"])

@@ -2,8 +2,8 @@
 # (c) Copyright Instana Inc. 2020
 
 import os
-import time
 import random
+import time
 from typing import Union
 
 from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
@@ -39,7 +39,7 @@ def header_to_long_id(header: Union[bytes, str]) -> int:
     :return: a valid ID to be used internal to the tracer
     """
     if isinstance(header, bytes):
-        header = header.decode('utf-8')
+        header = header.decode("utf-8")
 
     if not isinstance(header, str):
         return INVALID_SPAN_ID
@@ -64,7 +64,7 @@ def header_to_id(header: Union[bytes, str]) -> int:
     :return: a valid ID to be used internal to the tracer
     """
     if isinstance(header, bytes):
-        header = header.decode('utf-8')
+        header = header.decode("utf-8")
 
     if not isinstance(header, str):
         return INVALID_SPAN_ID

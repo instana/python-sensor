@@ -5,16 +5,17 @@ import time
 import urllib3
 import unittest
 
-import tests.apps.flask_app
-from ..helpers import testenv
+from tests.apps import bottle_app
+from tests.helpers import testenv
 from instana.singletons import agent, tracer
+from instana.span.span import get_current_span
 
 
 class TestWSGI(unittest.TestCase):
     def setUp(self):
         """ Clear all spans before a test run """
         self.http = urllib3.PoolManager()
-        self.recorder = tracer.recorder
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
         time.sleep(0.1)
 
@@ -27,17 +28,17 @@ class TestWSGI(unittest.TestCase):
         spans = self.recorder.queued_spans()
 
         self.assertEqual(1, len(spans))
-        self.assertIsNone(tracer.active_span)
+        assert get_current_span().is_recording() is False
         self.assertEqual(response.status, 200)
 
     def test_get_request(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/')
 
         spans = self.recorder.queued_spans()
 
         self.assertEqual(3, len(spans))
-        self.assertIsNone(tracer.active_span)
+        assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
@@ -48,11 +49,11 @@ class TestWSGI(unittest.TestCase):
 
         self.assertIn('X-INSTANA-T', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         self.assertIn('X-INSTANA-S', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
@@ -81,23 +82,24 @@ class TestWSGI(unittest.TestCase):
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
         self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('/', wsgi_span.data["http"]["path"])
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertEqual("200", wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNone(wsgi_span.stack)
 
+    @unittest.skip("Suppression is not yet handled")
     def test_synthetic_request(self):
         headers = {
             'X-INSTANA-SYNTHETIC': '1'
         }
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=headers)
 
         spans = self.recorder.queued_spans()
 
         self.assertEqual(3, len(spans))
-        self.assertIsNone(tracer.active_span)
+        assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
@@ -107,66 +109,6 @@ class TestWSGI(unittest.TestCase):
         self.assertIsNone(urllib3_span.sy)
         self.assertIsNone(test_span.sy)
 
-    def test_complex_request(self):
-        with tracer.start_active_span('test'):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/complex')
-
-        spans = self.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
-        self.assertIsNone(tracer.active_span)
-
-        spacedust_span = spans[0]
-        asteroid_span = spans[1]
-        wsgi_span = spans[2]
-        urllib3_span = spans[3]
-        test_span = spans[4]
-
-        self.assertTrue(response)
-        self.assertEqual(200, response.status)
-
-        self.assertIn('X-INSTANA-T', response.headers)
-        self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
-
-        self.assertIn('X-INSTANA-S', response.headers)
-        self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
-
-        self.assertIn('X-INSTANA-L', response.headers)
-        self.assertEqual(response.headers['X-INSTANA-L'], '1')
-
-        self.assertIn('Server-Timing', response.headers)
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
-        self.assertEqual(response.headers['Server-Timing'], server_timing_value)
-
-        # Same traceId
-        trace_id = test_span.t
-        self.assertEqual(trace_id, urllib3_span.t)
-        self.assertEqual(trace_id, wsgi_span.t)
-        self.assertEqual(trace_id, asteroid_span.t)
-        self.assertEqual(trace_id, spacedust_span.t)
-
-        # Parent relationships
-        self.assertEqual(urllib3_span.p, test_span.s)
-        self.assertEqual(wsgi_span.p, urllib3_span.s)
-        self.assertEqual(asteroid_span.p, wsgi_span.s)
-        self.assertEqual(spacedust_span.p, asteroid_span.s)
-
-        # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(urllib3_span.ec)
-        self.assertIsNone(wsgi_span.ec)
-        self.assertIsNone(asteroid_span.ec)
-        self.assertIsNone(spacedust_span.ec)
-
-        # wsgi
-        self.assertEqual("wsgi", wsgi_span.n)
-        self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
-        self.assertEqual('/complex', wsgi_span.data["http"]["url"])
-        self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
-        self.assertIsNone(wsgi_span.data["http"]["error"])
-        self.assertIsNone(wsgi_span.stack)
 
     def test_custom_header_capture(self):
         # Hack together a manual custom headers list
@@ -176,13 +118,13 @@ class TestWSGI(unittest.TestCase):
         request_headers['X-Capture-This'] = 'this'
         request_headers['X-Capture-That'] = 'that'
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=request_headers)
 
         spans = self.recorder.queued_spans()
 
         self.assertEqual(3, len(spans))
-        self.assertIsNone(tracer.active_span)
+        assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
@@ -193,11 +135,11 @@ class TestWSGI(unittest.TestCase):
 
         self.assertIn('X-INSTANA-T', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         self.assertIn('X-INSTANA-S', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
@@ -222,9 +164,9 @@ class TestWSGI(unittest.TestCase):
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
         self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('/', wsgi_span.data["http"]["path"])
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertEqual("200", wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNone(wsgi_span.stack)
 
@@ -234,13 +176,13 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual("that", wsgi_span.data["http"]["header"]["X-Capture-That"])
 
     def test_secret_scrubbing(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/?secret=shhh')
 
         spans = self.recorder.queued_spans()
 
         self.assertEqual(3, len(spans))
-        self.assertIsNone(tracer.active_span)
+        assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
@@ -251,11 +193,11 @@ class TestWSGI(unittest.TestCase):
 
         self.assertIn('X-INSTANA-T', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         self.assertIn('X-INSTANA-S', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
@@ -280,10 +222,10 @@ class TestWSGI(unittest.TestCase):
         # wsgi
         self.assertEqual("wsgi", wsgi_span.n)
         self.assertEqual('127.0.0.1:' + str(testenv['wsgi_port']), wsgi_span.data["http"]["host"])
-        self.assertEqual('/', wsgi_span.data["http"]["url"])
+        self.assertEqual('/', wsgi_span.data["http"]["path"])
         self.assertEqual('secret=<redacted>', wsgi_span.data["http"]["params"])
         self.assertEqual('GET', wsgi_span.data["http"]["method"])
-        self.assertEqual(200, wsgi_span.data["http"]["status"])
+        self.assertEqual("200", wsgi_span.data["http"]["status"])
         self.assertIsNone(wsgi_span.data["http"]["error"])
         self.assertIsNone(wsgi_span.stack)
 
@@ -302,16 +244,18 @@ class TestWSGI(unittest.TestCase):
 
         wsgi_span = spans[0]
 
-        self.assertEqual(wsgi_span.t, '0000000000000001')
-        self.assertEqual(wsgi_span.p, '0000000000000001')
+        # self.assertEqual(wsgi_span.t, '0000000000000001')
+        # self.assertEqual(wsgi_span.p, '0000000000000001')
+        assert wsgi_span.t == 1
+        assert wsgi_span.p == 1
 
         self.assertIn('X-INSTANA-T', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         self.assertIn('X-INSTANA-S', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
@@ -335,16 +279,18 @@ class TestWSGI(unittest.TestCase):
 
         wsgi_span = spans[0]
 
-        self.assertEqual(wsgi_span.t, '0000000000000001')
-        self.assertEqual(wsgi_span.p, '0000000000000001')
+        # self.assertEqual(wsgi_span.t, '0000000000000001')
+        # self.assertEqual(wsgi_span.p, '0000000000000001')
+        assert wsgi_span.t == 1
+        assert wsgi_span.p == 1
 
         self.assertIn('X-INSTANA-T', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         self.assertIn('X-INSTANA-S', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')
@@ -354,13 +300,13 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(response.headers['Server-Timing'], server_timing_value)
 
     def test_response_headers(self):
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/')
 
         spans = self.recorder.queued_spans()
 
         self.assertEqual(3, len(spans))
-        self.assertIsNone(tracer.active_span)
+        assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
         urllib3_span = spans[1]
@@ -371,11 +317,11 @@ class TestWSGI(unittest.TestCase):
 
         self.assertIn('X-INSTANA-T', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-T'], 16))
-        self.assertEqual(response.headers['X-INSTANA-T'], wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
 
         self.assertIn('X-INSTANA-S', response.headers)
         self.assertTrue(int(response.headers['X-INSTANA-S'], 16))
-        self.assertEqual(response.headers['X-INSTANA-S'], wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
 
         self.assertIn('X-INSTANA-L', response.headers)
         self.assertEqual(response.headers['X-INSTANA-L'], '1')

@@ -39,7 +39,7 @@ collect_ignore_glob = [
 # codes are finalised.
 collect_ignore_glob.append("*clients/boto*")
 collect_ignore_glob.append("*clients/test_cassandra*")
-collect_ignore_glob.append("*clients/test_counchbase*")
+collect_ignore_glob.append("*clients/test_couchbase*")
 collect_ignore_glob.append("*clients/test_google*")
 collect_ignore_glob.append("*clients/test_mysql*")
 collect_ignore_glob.append("*clients/test_pika*")
@@ -57,20 +57,19 @@ collect_ignore_glob.append("*frameworks/test_gevent*")
 collect_ignore_glob.append("*frameworks/test_grpcio*")
 collect_ignore_glob.append("*frameworks/test_pyramid*")
 collect_ignore_glob.append("*frameworks/test_sanic*")
-collect_ignore_glob.append("*frameworks/test_starlette*")
 collect_ignore_glob.append("*frameworks/test_tornado*")
 
-# Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
-# be run explicitly.  (So always exclude them here)
-if not os.environ.get("CASSANDRA_TEST"):
-    collect_ignore_glob.append("*test_cassandra*")
+# # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
+# # be run explicitly.  (So always exclude them here)
+# if not os.environ.get("CASSANDRA_TEST"):
+#     collect_ignore_glob.append("*test_cassandra*")
 
-if not os.environ.get("COUCHBASE_TEST"):
-    collect_ignore_glob.append("*test_couchbase*")
+# if not os.environ.get("COUCHBASE_TEST"):
+#     collect_ignore_glob.append("*test_couchbase*")
 
-if not os.environ.get("GEVENT_STARLETTE_TEST"):
-    collect_ignore_glob.append("*test_gevent*")
-    collect_ignore_glob.append("*test_starlette*")
+# if not os.environ.get("GEVENT_STARLETTE_TEST"):
+#     collect_ignore_glob.append("*test_gevent*")
+#     collect_ignore_glob.append("*test_starlette*")
 
 # Python 3.10 support is incomplete yet
 # TODO: Remove this once we start supporting Tornado >= 6.0

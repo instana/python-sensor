@@ -58,13 +58,16 @@ class CursorWrapper(wrapt.ObjectProxy):
         return self
 
     def execute(self, sql, params=None) -> None:
-        tracer, _, operation_name = get_tracer_tuple()
+        tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
         if tracing_is_off() or (operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(sql, params)
 
-        with tracer.start_as_current_span(self._module_name) as span:
+        parent_context = parent_span.get_span_context() if parent_span else None
+        with tracer.start_as_current_span(
+            self._module_name, span_context=parent_context
+        ) as span:
             try:
                 self._collect_kvs(span, sql)
                 result = self.__wrapped__.execute(sql, params)
@@ -76,13 +79,16 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return result
 
     def executemany(self, sql, seq_of_parameters) -> None:
-        tracer, _, operation_name = get_tracer_tuple()
+        tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
         if tracing_is_off() or (operation_name == "sqlalchemy"):
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
-        with tracer.start_as_current_span(self._module_name) as span:
+        parent_context = parent_span.get_span_context() if parent_span else None
+        with tracer.start_as_current_span(
+            self._module_name, span_context=parent_context
+        ) as span:
             try:
                 self._collect_kvs(span, sql)
                 result = self.__wrapped__.executemany(sql, seq_of_parameters)
@@ -94,13 +100,16 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return result
 
     def callproc(self, proc_name, params) -> None:
-        tracer, _, operation_name = get_tracer_tuple()
+        tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
         if tracing_is_off() or (operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(proc_name, params)
 
-        with tracer.start_as_current_span(self._module_name) as span:
+        parent_context = parent_span.get_span_context() if parent_span else None
+        with tracer.start_as_current_span(
+            self._module_name, span_context=parent_context
+        ) as span:
             try:
                 self._collect_kvs(span, proc_name)
                 result = self.__wrapped__.callproc(proc_name, params)

@@ -179,7 +179,7 @@ def boot_agent():
             # pymysql,  # noqa: F401
             # redis,  # noqa: F401
             # sqlalchemy,  # noqa: F401
-            # starlette_inst,  # noqa: F401
+            starlette_inst,  # noqa: F401
             # sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
         )

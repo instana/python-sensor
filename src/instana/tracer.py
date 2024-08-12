@@ -228,8 +228,8 @@ class InstanaTracer(Tracer):
             span_id=span_id,
             trace_flags=trace_flags,
             is_remote=is_remote,
-            level=(parent_context.level if parent_context is not None else 1),
-            synthetic=False,
+            level=(parent_context.level if parent_context else 1),
+            synthetic=(parent_context.synthetic if parent_context else False),
         )
 
         if parent_context is not None:

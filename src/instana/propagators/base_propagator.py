@@ -3,7 +3,8 @@
 
 
 import os
-import typing
+
+from typing import Any, Optional, TypeVar, Dict, List, Tuple
 
 from instana.log import logger
 from instana.util.ids import header_to_id, header_to_long_id
@@ -27,7 +28,7 @@ from opentelemetry.trace import (
 #
 # For injection, we only support the standard format:
 #   X-Instana-T
-CarrierT = typing.TypeVar("CarrierT", typing.Dict, typing.List, typing.Tuple)
+CarrierT = TypeVar("CarrierT", Dict, List, Tuple)
 
 
 class BasePropagator(object):
@@ -71,12 +72,14 @@ class BasePropagator(object):
         self._ts = Tracestate()
 
     @staticmethod
-    def extract_headers_dict(carrier):
+    def extract_headers_dict(carrier: CarrierT) -> Optional[Dict]:
         """
-        This method converts the incoming carrier into a dict
-        :param carrier:
-        :return: dc dictionary
+        This method converts the incoming carrier into a dict.
+
+        :param carrier: CarrierT
+        :return: Dict | None
         """
+        dc = None
         try:
             if isinstance(carrier, dict):
                 dc = carrier
@@ -85,17 +88,17 @@ class BasePropagator(object):
             else:
                 dc = dict(carrier)
         except Exception:
-            logger.debug("extract: Couldn't convert %s", carrier)
-            dc = None
+            logger.debug(f"base_propagator extract_headers_dict: Couldn't convert - {carrier}")
 
         return dc
 
     @staticmethod
-    def _get_ctx_level(level):
+    def _get_ctx_level(level: str) -> int:
         """
-        Extract the level value and return it, as it may include correlation values
-        :param level:
-        :return:
+        Extract the level value and return it, as it may include correlation values.
+
+        :param level: str
+        :return: int
         """
         try:
             ctx_level = int(level.split(",")[0]) if level else 1
@@ -104,24 +107,28 @@ class BasePropagator(object):
         return ctx_level
 
     @staticmethod
-    def _set_correlation_properties(level, ctx):
+    def _get_correlation_properties(level:str):
         """
-        Set the correlation values if they are present
-        :param level:
-        :param ctx:
-        :return:
+        Get the correlation values if they are present.
+
+        :param level: str
+        :return: Tuple[Any, Any] - correlation_type, correlation_id
         """
+        correlation_type, correlation_id = [None] * 2
         try:
-            ctx.correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
+            correlation_type = level.split(",")[1].split("correlationType=")[1].split(";")[0]
             if "correlationId" in level:
-                ctx.correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
+                correlation_id = level.split(",")[1].split("correlationId=")[1].split(";")[0]
         except Exception:
             logger.debug("extract instana correlation type/id error:", exc_info=True)
+        
+        return correlation_type, correlation_id
 
-    def _get_participating_trace_context(self, span_context):
+    def _get_participating_trace_context(self, span_context: SpanContext):
         """
-        This method is called for getting the updated traceparent and tracestate values
-        :param span_context:
+        This method is called for getting the updated traceparent and tracestate values.
+
+        :param span_context: SpanContext
         :return: traceparent, tracestate
         """
         if span_context.long_trace_id and not span_context.trace_parent:
@@ -141,35 +148,53 @@ class BasePropagator(object):
         tracestate = self._ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)
         return traceparent, tracestate
 
-    def __determine_span_context(self, trace_id, span_id, level, synthetic, traceparent, tracestate,
-                                 disable_w3c_trace_context):
+    def __determine_span_context(
+            self, 
+            trace_id: int, 
+            span_id: int, 
+            level: str, 
+            synthetic: bool, 
+            traceparent, 
+            tracestate,
+            disable_w3c_trace_context: bool,
+        ) -> SpanContext:
         """
         This method determines the span context depending on a set of conditions being met
         Detailed description of the conditions can be found in the instana internal technical-documentation,
-        under section http-processing-for-instana-tracers
-        :param trace_id: instana trace id
-        :param span_id: instana span id
-        :param level: instana level
-        :param synthetic: instana synthetic
+        under section http-processing-for-instana-tracers.
+
+        :param trace_id: int - instana trace id
+        :param span_id: int - instana span id
+        :param level: str - instana level
+        :param synthetic: bool - instana synthetic
         :param traceparent:
         :param tracestate:
-        :param disable_w3c_trace_context: flag used to enable w3c trace context only on HTTP requests
-        :return: ctx
+        :param disable_w3c_trace_context: bool - flag used to enable w3c trace context only on HTTP requests
+        :return: SpanContext
         """
         correlation = False
         disable_traceparent = os.environ.get("INSTANA_DISABLE_W3C_TRACE_CORRELATION", "")
         instana_ancestor = None
-        ctx = SpanContext(trace_id=trace_id, span_id=span_id, is_remote=False)
+
         if level and "correlationType" in level:
             trace_id, span_id = [None] * 2
             correlation = True
 
+        (
+            ctx_trace_id,
+            ctx_span_id,
+            ctx_level,
+            ctx_synthetic,
+            ctx_trace_parent, 
+            ctx_instana_ancestor,
+            ctx_long_trace_id,
+            ctx_correlation_type,
+            ctx_correlation_id,
+            ctx_traceparent,
+            ctx_tracestate,
+        ) = [None] * 11
+
         ctx_level = self._get_ctx_level(level)
-        if ctx_level == 0 or level == '0':
-            trace_id = ctx.trace_id = None
-            span_id = ctx.span_id = None
-            ctx.correlation_type = None
-            ctx.correlation_id = None
 
         if (
             trace_id
@@ -179,52 +204,64 @@ class BasePropagator(object):
         ):
             # ctx.trace_id = trace_id[-16:]  # only the last 16 chars
             # ctx.span_id = span_id[-16:]  # only the last 16 chars
-            ctx.trace_id = trace_id
-            ctx.span_id = span_id
-            ctx.synthetic = synthetic is not None
+            ctx_trace_id = trace_id
+            ctx_span_id = span_id
+            ctx_synthetic = synthetic
 
             # if len(trace_id) > 16:
-            ctx.long_trace_id = trace_id
+            ctx_long_trace_id = trace_id
 
-        elif not disable_w3c_trace_context and traceparent and trace_id is None and span_id is None:
+        elif not disable_w3c_trace_context and traceparent and not trace_id and not span_id:
             _, tp_trace_id, tp_parent_id, _ = self._tp.get_traceparent_fields(traceparent)
 
             if tracestate and "in=" in tracestate:
                 instana_ancestor = self._ts.get_instana_ancestor(tracestate)
 
             if disable_traceparent == "":
-                ctx.trace_id = tp_trace_id[-16:]
-                ctx.span_id = tp_parent_id
-                ctx.synthetic = synthetic is not None
-                ctx.trace_parent = True
-                ctx.instana_ancestor = instana_ancestor
-                ctx.long_trace_id = tp_trace_id
+                ctx_trace_id = tp_trace_id[-16:]
+                ctx_span_id = tp_parent_id
+                ctx_synthetic = synthetic
+                ctx_trace_parent = True
+                ctx_instana_ancestor = instana_ancestor
+                ctx_long_trace_id = tp_trace_id
             else:
                 if instana_ancestor:
-                    ctx.trace_id = instana_ancestor.t
-                    ctx.span_id = instana_ancestor.p
-                    ctx.synthetic = synthetic is not None
+                    ctx_trace_id = instana_ancestor.t
+                    ctx_span_id = instana_ancestor.p
+                    ctx_synthetic = synthetic
 
         elif synthetic:
-            ctx.synthetic = synthetic
+            ctx_synthetic = synthetic
 
         if correlation:
-            self._set_correlation_properties(level, ctx)
+            ctx_correlation_type, ctx_correlation_id = self._get_correlation_properties(level)
 
         if traceparent:
-            ctx.traceparent = traceparent
-            ctx.tracestate = tracestate
+            ctx_traceparent = traceparent
+            ctx_tracestate = tracestate
 
-        ctx.level = ctx_level
+        return SpanContext(
+            trace_id=ctx_trace_id,
+            span_id=ctx_span_id,
+            is_remote=False,
+            level=ctx_level,
+            synthetic=ctx_synthetic,
+            trace_parent=ctx_trace_parent,
+            instana_ancestor=ctx_instana_ancestor,
+            long_trace_id=ctx_long_trace_id,
+            correlation_type=ctx_correlation_type,
+            correlation_id=ctx_correlation_id,
+            traceparent=ctx_traceparent,
+            tracestate=ctx_tracestate,
+        )
 
-        return ctx
 
-    def extract_instana_headers(self, dc):
+    def extract_instana_headers(self, dc: Dict[str, Any]) -> Tuple[Optional[int], Optional[int], Optional[str], Optional[bool]]:
         """
-        Search carrier for the *HEADER* keys and return the tracing key-values
+        Search carrier for the *HEADER* keys and return the tracing key-values.
 
-        :param dc: The dict or list potentially containing context
-        :return: trace_id, span_id, level, synthetic
+        :param dc: Dict - The dict potentially containing context
+        :return: Tuple[Optional[int], Optional[int], Optional[str], Optional[bool]] - trace_id, span_id, level, synthetic
         """
         trace_id, span_id, level, synthetic = [None] * 4
 
@@ -282,10 +319,12 @@ class BasePropagator(object):
 
         return traceparent, tracestate
 
-    def extract(self, carrier, disable_w3c_trace_context=False):
+    def extract(self, carrier: CarrierT, disable_w3c_trace_context: bool = False) -> Optional[SpanContext]:
         """
-        This method overrides one of the Baseclasses as with the introduction of W3C trace context for the HTTP
-        requests more extracting steps and logic was required
+        This method overrides one of the Base classes as with the introduction 
+        of W3C trace context for the HTTP requests more extracting steps and 
+        logic was required.
+
         :param disable_w3c_trace_context:
         :param carrier:
         :return: the context or None
@@ -321,4 +360,4 @@ class BasePropagator(object):
             return span_context
 
         except Exception:
-            logger.debug("extract error:", exc_info=True)
+            logger.debug("base_propagator extract error:", exc_info=True)

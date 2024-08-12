@@ -25,10 +25,10 @@ class BinaryPropagator(BasePropagator):
 
     def inject(self, span_context, carrier, disable_w3c_trace_context=True):
         try:
-            trace_id = str.encode(span_context.trace_id)
-            span_id = str.encode(span_context.span_id)
-            level = str.encode(str(span_context.level))
-            server_timing = str.encode("intid;desc=%s" % span_context.trace_id)
+            trace_id = str(span_context.trace_id).encode()
+            span_id = str(span_context.span_id).encode()
+            level = str(span_context.level).encode()
+            server_timing = f"intid;desc={span_context.trace_id}".encode()
 
             if disable_w3c_trace_context:
                 traceparent, tracestate = [None] * 2

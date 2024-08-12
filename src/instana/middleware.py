@@ -3,4 +3,4 @@
 
 
 from .instrumentation.wsgi import InstanaWSGIMiddleware
-from .instrumentation.asgi import InstanaASGIMiddleware
+# from .instrumentation.asgi import InstanaASGIMiddleware

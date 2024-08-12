@@ -18,7 +18,7 @@ from instana.span.span import InstanaSpan
 
 class TestCursorWrapper:
     @pytest.fixture(autouse=True)
-    def _setup(self) -> Generator[None, None, None]:
+    def _resource(self) -> Generator[None, None, None]:
         self.connect_params = [
             "db",
             {
@@ -249,7 +249,7 @@ class TestCursorWrapper:
 
 class TestConnectionWrapper:
     @pytest.fixture(autouse=True)
-    def _setup(self) -> Generator[None, None, None]:
+    def _resource(self) -> Generator[None, None, None]:
         self.connect_params = [
             "db",
             {
@@ -301,7 +301,7 @@ class TestConnectionWrapper:
 
 class TestConnectionFactory:
     @pytest.fixture(autouse=True)
-    def _setup(self) -> Generator[None, None, None]:
+    def _resource(self) -> Generator[None, None, None]:
         self.test_conn_func = psycopg2.extras.LogicalReplicationConnection
         self.test_module_name = "test-factory"
         self.conn_fact = ConnectionFactory(self.test_conn_func, self.test_module_name)

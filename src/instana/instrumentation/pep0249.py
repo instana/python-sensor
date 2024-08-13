@@ -7,7 +7,6 @@ import wrapt
 from typing import TYPE_CHECKING
 
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
@@ -30,7 +29,7 @@ class CursorWrapper(wrapt.ObjectProxy):
 
     def _collect_kvs(self, span, sql) -> InstanaSpan:
         try:
-            span.set_attribute(SpanKind, "exit")
+            span.set_attribute("span.kind", "exit")
 
             db_parameter_name = next(
                 (

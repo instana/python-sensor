@@ -2,11 +2,11 @@
 # (c) Copyright Instana Inc. 2018
 
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
-from __future__ import annotations
 import wrapt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Any, List, Tuple
 
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
@@ -20,16 +20,24 @@ class CursorWrapper(wrapt.ObjectProxy):
     __slots__ = ("_module_name", "_connect_params", "_cursor_params")
 
     def __init__(
-        self, cursor, module_name, connect_params=None, cursor_params=None
+        self,
+        cursor: "CursorWrapper",
+        module_name: str,
+        connect_params: Dict[str, Any] = None,
+        cursor_params: Dict[str, Any] = None,
     ) -> None:
         super(CursorWrapper, self).__init__(wrapped=cursor)
         self._module_name = module_name
         self._connect_params = connect_params
         self._cursor_params = cursor_params
 
-    def _collect_kvs(self, span, sql) -> InstanaSpan:
+    def _collect_kvs(
+        self,
+        span: "InstanaSpan",
+        sql: str,
+    ) -> "InstanaSpan":
         try:
-            span.set_attribute("span.kind", "exit")
+            span.set_attribute("span.kind", SpanKind.CLIENT)
 
             db_parameter_name = next(
                 (
@@ -53,10 +61,14 @@ class CursorWrapper(wrapt.ObjectProxy):
             logger.debug(e)
         return span
 
-    def __enter__(self) -> CursorWrapper:
+    def __enter__(self) -> "CursorWrapper":
         return self
 
-    def execute(self, sql, params=None) -> None:
+    def execute(
+        self,
+        sql: str,
+        params: Dict[str, Any] = None,
+    ) -> None:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -77,7 +89,11 @@ class CursorWrapper(wrapt.ObjectProxy):
             else:
                 return result
 
-    def executemany(self, sql, seq_of_parameters) -> None:
+    def executemany(
+        self,
+        sql: str,
+        seq_of_parameters: List[Tuple],
+    ) -> None:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -98,7 +114,11 @@ class CursorWrapper(wrapt.ObjectProxy):
             else:
                 return result
 
-    def callproc(self, proc_name, params) -> None:
+    def callproc(
+        self,
+        proc_name: str,
+        params: Dict[str, Any],
+    ) -> None:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -128,7 +148,12 @@ class CursorWrapper(wrapt.ObjectProxy):
 class ConnectionWrapper(wrapt.ObjectProxy):
     __slots__ = ("_module_name", "_connect_params")
 
-    def __init__(self, connection, module_name, connect_params) -> None:
+    def __init__(
+        self,
+        connection: "ConnectionWrapper",
+        module_name: str,
+        connect_params: Dict[str, Any],
+    ) -> None:
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
         self._connect_params = connect_params
@@ -136,7 +161,11 @@ class ConnectionWrapper(wrapt.ObjectProxy):
     def __enter__(self):
         return self
 
-    def cursor(self, *args, **kwargs) -> CursorWrapper:
+    def cursor(
+        self,
+        *args: Tuple[int, str, Tuple[Any, ...]],
+        **kwargs: Dict[str, Any],
+    ) -> CursorWrapper:
         return CursorWrapper(
             cursor=self.__wrapped__.cursor(*args, **kwargs),
             module_name=self._module_name,
@@ -155,14 +184,17 @@ class ConnectionWrapper(wrapt.ObjectProxy):
 
 
 class ConnectionFactory(object):
-    def __init__(self, connect_func, module_name) -> None:
+    def __init__(self, connect_func: "CursorWrapper", module_name: str) -> None:
         self._connect_func = connect_func
         self._module_name = module_name
         self._wrapper_ctor = ConnectionWrapper
 
-    def __call__(self, *args, **kwargs) -> ConnectionWrapper:
+    def __call__(
+        self,
+        *args: Tuple[int, str, Tuple[Any, ...]],
+        **kwargs: Dict[str, Any],
+    ) -> ConnectionWrapper:
         connect_params = (args, kwargs) if args or kwargs else None
-
         return self._wrapper_ctor(
             connection=self._connect_func(*args, **kwargs),
             module_name=self._module_name,

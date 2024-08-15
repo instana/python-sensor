@@ -110,7 +110,7 @@ class TestCursorWrapper:
                 select * from tests;
             """
             self.test_wrapper._collect_kvs(span, sample_sql)
-            assert span.attributes["span.kind"] == "exit"
+            assert span.attributes["span.kind"] == SpanKind.CLIENT
             assert span.attributes["db.name"] == "instana_test_db"
             assert span.attributes["db.statement"] == sample_sql
             assert span.attributes["db.user"] == "root"
@@ -305,6 +305,7 @@ class TestConnectionFactory:
         self.test_conn_func = psycopg2.extras.LogicalReplicationConnection
         self.test_module_name = "test-factory"
         self.conn_fact = ConnectionFactory(self.test_conn_func, self.test_module_name)
+        print(type(self.test_conn_func))
         yield
         self.test_conn_func = None
         self.test_module_name = None

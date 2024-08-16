@@ -39,7 +39,7 @@ class TestAsyncio(unittest.TestCase):
         async def run_later(msg="Hello"):
             # print("run_later: %s" % async_tracer.active_span.operation_name)
             async with aiohttp.ClientSession() as session:
-                return await self.fetch(session, testenv["wsgi_server"] + "/")
+                return await self.fetch(session, testenv["flask_server"] + "/")
 
         async def test():
             with async_tracer.start_active_span('test'):
@@ -69,7 +69,7 @@ class TestAsyncio(unittest.TestCase):
         async def run_later(msg="Hello"):
             # print("run_later: %s" % async_tracer.active_span.operation_name)
             async with aiohttp.ClientSession() as session:
-                return await self.fetch(session, testenv["wsgi_server"] + "/")
+                return await self.fetch(session, testenv["flask_server"] + "/")
 
         async def test():
             with async_tracer.start_active_span('test'):
@@ -92,7 +92,7 @@ class TestAsyncio(unittest.TestCase):
             async def run_later(msg="Hello"):
                 # print("run_later: %s" % async_tracer.active_span.operation_name)
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/")
+                    return await self.fetch(session, testenv["flask_server"] + "/")
 
             async def test():
                 with async_tracer.start_active_span('test'):
@@ -122,7 +122,7 @@ class TestAsyncio(unittest.TestCase):
             async def run_later(msg="Hello"):
                 # print("run_later: %s" % async_tracer.active_span.operation_name)
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/")
+                    return await self.fetch(session, testenv["flask_server"] + "/")
 
             async def test():
                 with async_tracer.start_active_span('test'):

@@ -154,7 +154,7 @@ class TestSqs(unittest.TestCase):
 
     def test_app_boto3_sqs(self):
         with tracer.start_active_span('test'):
-            self.http_client.request('GET', testenv["wsgi_server"] + '/boto3/sqs')
+            self.http_client.request('GET', testenv["flask_server"] + '/boto3/sqs')
 
         spans = self.recorder.queued_spans()
         self.assertEqual(5, len(spans))

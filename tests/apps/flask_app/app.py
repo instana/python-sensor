@@ -22,19 +22,18 @@ except ImportError:
     pass
 
 from tests.helpers import testenv
-from instana.singletons import tracer
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-testenv["wsgi_port"] = 10811
-testenv["wsgi_server"] = ("http://127.0.0.1:" + str(testenv["wsgi_port"]))
+testenv["flask_port"] = 10811
+testenv["flask_server"] = ("http://127.0.0.1:" + str(testenv["flask_port"]))
 
 app = Flask(__name__)
 app.debug = False
 app.use_reloader = False
 
-flask_server = make_server('127.0.0.1', testenv["wsgi_port"], app.wsgi_app)
+flask_server = make_server('127.0.0.1', testenv["flask_port"], app.wsgi_app)
 
 
 class InvalidUsage(Exception):
@@ -77,34 +76,6 @@ def hello():
 @app.route("/users/<username>/sayhello")
 def username_hello(username):
     return u"<center><h1>🐍 Hello %s! 🦄</h1></center>" % username
-
-
-@app.route("/complex")
-def gen_opentelemetry():
-    with tracer.start_as_current_span("asteroid") as pspan:
-        pspan.set_attribute(SpanAttributes.COMPONENT, "Python simple example app")
-        pspan.set_attribute(
-            SpanAttributes.SPAN_KIND, SpanAttributes.SPAN_KIND_RPC_SERVER
-        )
-        pspan.set_attribute(SpanAttributes.PEER_HOSTNAME, "localhost")
-        pspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/one")
-        pspan.set_attribute(SpanAttributes.HTTP_METHOD, "GET")
-        pspan.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 200)
-        pspan.add_event(name="gen_opentelemetry", attributes={"foo": "bar"})
-
-        span_context = pspan.get_span_context()
-
-        with tracer.start_active_span("spacedust", span_context=span_context) as cspan:
-            cspan.set_attribute(
-                SpanAttributes.SPAN_KIND, SpanAttributes.SPAN_KIND_RPC_CLIENT
-            )
-            cspan.set_attribute(SpanAttributes.PEER_HOSTNAME, "localhost")
-            cspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/two")
-            cspan.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
-            cspan.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 204)
-            cspan.set_baggage_item("someBaggage", "someValue")
-
-    return "<center><h1>🐍 Generated some OT spans... 🦄</h1></center>"
 
 
 @app.route("/301")

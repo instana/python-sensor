@@ -79,7 +79,7 @@ class TestWSGI:
 
         # wsgi
         assert "wsgi" == wsgi_span.n
-        assert '127.0.0.1:' + str(testenv['wsgi_port']) == wsgi_span.data["http"]["host"]
+        assert '127.0.0.1:' + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
         assert '/' == wsgi_span.data["http"]["path"]
         assert 'GET' == wsgi_span.data["http"]["method"]
         assert "200" == wsgi_span.data["http"]["status"]
@@ -161,7 +161,7 @@ class TestWSGI:
 
         # wsgi
         assert "wsgi" == wsgi_span.n
-        assert '127.0.0.1:' + str(testenv['wsgi_port']) == wsgi_span.data["http"]["host"]
+        assert '127.0.0.1:' + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
         assert '/' == wsgi_span.data["http"]["path"]
         assert 'GET' == wsgi_span.data["http"]["method"]
         assert "200" == wsgi_span.data["http"]["status"]
@@ -219,7 +219,7 @@ class TestWSGI:
 
         # wsgi
         assert "wsgi" == wsgi_span.n
-        assert '127.0.0.1:' + str(testenv['wsgi_port']) == wsgi_span.data["http"]["host"]
+        assert '127.0.0.1:' + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
         assert '/' == wsgi_span.data["http"]["path"]
         assert 'secret=<redacted>' == wsgi_span.data["http"]["params"]
         assert 'GET' == wsgi_span.data["http"]["method"]

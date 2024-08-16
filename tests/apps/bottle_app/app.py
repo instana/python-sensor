@@ -14,7 +14,7 @@ from instana.middleware import InstanaWSGIMiddleware
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-testenv["wsgi_port"] = 10811
+testenv["wsgi_port"] = 10812
 testenv["wsgi_server"] = ("http://127.0.0.1:" + str(testenv["wsgi_port"]))
 
 app = default_app()

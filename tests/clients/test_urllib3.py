@@ -40,7 +40,7 @@ class TestUrllib3:
         agent.options.allow_exit_as_root = False
 
     def test_vanilla_requests(self) -> None:
-        r = self.http.request("GET", testenv["wsgi_server"] + "/")
+        r = self.http.request("GET", testenv["flask_server"] + "/")
         assert r.status == 200
 
         spans = self.recorder.queued_spans()
@@ -51,7 +51,7 @@ class TestUrllib3:
 
         def task(num):
             r = http_pool_5.request(
-                "GET", testenv["wsgi_server"] + "/", fields={"num": num}
+                "GET", testenv["flask_server"] + "/", fields={"num": num}
             )
             return r
 
@@ -72,7 +72,7 @@ class TestUrllib3:
     def test_customers_setup_zd_26466(self) -> None:
         def make_request(u=None) -> int:
             sleep(10)
-            x = requests.get(testenv["wsgi_server"] + "/")
+            x = requests.get(testenv["flask_server"] + "/")
             sleep(10)
             return x.status_code
 
@@ -90,7 +90,7 @@ class TestUrllib3:
 
     def test_get_request(self):
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", testenv["wsgi_server"] + "/")
+            r = self.http.request("GET", testenv["flask_server"] + "/")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -118,7 +118,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -130,7 +130,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -171,7 +171,7 @@ class TestUrllib3:
 
     def test_get_request_as_root_exit_span(self):
         agent.options.allow_exit_as_root = True
-        r = self.http.request("GET", testenv["wsgi_server"] + "/")
+        r = self.http.request("GET", testenv["flask_server"] + "/")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -197,7 +197,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -208,7 +208,7 @@ class TestUrllib3:
         # urllib3
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -216,7 +216,7 @@ class TestUrllib3:
 
     def test_get_request_with_query(self):
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", testenv["wsgi_server"] + "/?one=1&two=2")
+            r = self.http.request("GET", testenv["flask_server"] + "/?one=1&two=2")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -245,7 +245,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -257,7 +257,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["params"] in ["one=1&two=2", "two=2&one=1"]
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
@@ -267,7 +267,7 @@ class TestUrllib3:
     def test_get_request_with_alt_query(self):
         with tracer.start_as_current_span("test"):
             r = self.http.request(
-                "GET", testenv["wsgi_server"] + "/", fields={"one": "1", "two": 2}
+                "GET", testenv["flask_server"] + "/", fields={"one": "1", "two": 2}
             )
 
         spans = self.recorder.queued_spans()
@@ -297,7 +297,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -309,7 +309,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["params"] in ["one=1&two=2", "two=2&one=1"]
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
@@ -318,7 +318,7 @@ class TestUrllib3:
 
     def test_put_request(self):
         with tracer.start_as_current_span("test"):
-            r = self.http.request("PUT", testenv["wsgi_server"] + "/notfound")
+            r = self.http.request("PUT", testenv["flask_server"] + "/notfound")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -347,7 +347,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/notfound"
         assert wsgi_span.data["http"]["method"] == "PUT"
@@ -359,7 +359,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 404
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/notfound"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/notfound"
         assert urllib3_span.data["http"]["method"] == "PUT"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -367,7 +367,7 @@ class TestUrllib3:
 
     def test_301_redirect(self):
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", testenv["wsgi_server"] + "/301")
+            r = self.http.request("GET", testenv["flask_server"] + "/301")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 5
@@ -405,7 +405,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span1.n == "wsgi"
         assert wsgi_span1.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span1.data["http"]["url"] == "/"
         assert wsgi_span1.data["http"]["method"] == "GET"
@@ -415,7 +415,7 @@ class TestUrllib3:
 
         assert wsgi_span2.n == "wsgi"
         assert wsgi_span2.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span2.data["http"]["url"] == "/301"
         assert wsgi_span2.data["http"]["method"] == "GET"
@@ -427,7 +427,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span1.n == "urllib3"
         assert urllib3_span1.data["http"]["status"] == 200
-        assert urllib3_span1.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span1.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span1.data["http"]["method"] == "GET"
         assert urllib3_span1.stack
         assert isinstance(urllib3_span1.stack, list)
@@ -435,7 +435,7 @@ class TestUrllib3:
 
         assert urllib3_span2.n == "urllib3"
         assert urllib3_span2.data["http"]["status"] == 301
-        assert urllib3_span2.data["http"]["url"] == testenv["wsgi_server"] + "/301"
+        assert urllib3_span2.data["http"]["url"] == testenv["flask_server"] + "/301"
         assert urllib3_span2.data["http"]["method"] == "GET"
         assert urllib3_span2.stack
         assert isinstance(urllib3_span2.stack, list)
@@ -443,7 +443,7 @@ class TestUrllib3:
 
     def test_302_redirect(self):
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", testenv["wsgi_server"] + "/302")
+            r = self.http.request("GET", testenv["flask_server"] + "/302")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 5
@@ -481,7 +481,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span1.n == "wsgi"
         assert wsgi_span1.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span1.data["http"]["url"] == "/"
         assert wsgi_span1.data["http"]["method"] == "GET"
@@ -491,7 +491,7 @@ class TestUrllib3:
 
         assert wsgi_span2.n == "wsgi"
         assert wsgi_span2.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span2.data["http"]["url"] == "/302"
         assert wsgi_span2.data["http"]["method"] == "GET"
@@ -503,7 +503,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span1.n == "urllib3"
         assert urllib3_span1.data["http"]["status"] == 200
-        assert urllib3_span1.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span1.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span1.data["http"]["method"] == "GET"
         assert urllib3_span1.stack
         assert isinstance(urllib3_span1.stack, list)
@@ -511,7 +511,7 @@ class TestUrllib3:
 
         assert urllib3_span2.n == "urllib3"
         assert urllib3_span2.data["http"]["status"] == 302
-        assert urllib3_span2.data["http"]["url"] == testenv["wsgi_server"] + "/302"
+        assert urllib3_span2.data["http"]["url"] == testenv["flask_server"] + "/302"
         assert urllib3_span2.data["http"]["method"] == "GET"
         assert urllib3_span2.stack
         assert isinstance(urllib3_span2.stack, list)
@@ -519,7 +519,7 @@ class TestUrllib3:
 
     def test_5xx_request(self):
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", testenv["wsgi_server"] + "/504")
+            r = self.http.request("GET", testenv["flask_server"] + "/504")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -549,7 +549,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/504"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -561,7 +561,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 504
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/504"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/504"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -570,7 +570,7 @@ class TestUrllib3:
     def test_exception_logging(self):
         with tracer.start_as_current_span("test"):
             try:
-                r = self.http.request("GET", testenv["wsgi_server"] + "/exception")
+                r = self.http.request("GET", testenv["flask_server"] + "/exception")
             except Exception:
                 pass
 
@@ -615,7 +615,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/exception"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -630,7 +630,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 500
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/exception"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/exception"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -681,7 +681,7 @@ class TestUrllib3:
         self.recorder.clear_spans()
 
         with tracer.start_as_current_span("test"):
-            r = requests.get(testenv["wsgi_server"] + "/", timeout=2)
+            r = requests.get(testenv["flask_server"] + "/", timeout=2)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -710,7 +710,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -722,7 +722,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -734,7 +734,7 @@ class TestUrllib3:
 
         with tracer.start_as_current_span("test"):
             r = requests.get(
-                testenv["wsgi_server"] + "/", timeout=2, headers=my_custom_headers
+                testenv["flask_server"] + "/", timeout=2, headers=my_custom_headers
             )
 
         spans = self.recorder.queued_spans()
@@ -764,7 +764,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -776,7 +776,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -784,7 +784,7 @@ class TestUrllib3:
 
     def test_requests_pkg_put(self):
         with tracer.start_as_current_span("test"):
-            r = requests.put(testenv["wsgi_server"] + "/notfound")
+            r = requests.put(testenv["flask_server"] + "/notfound")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -812,7 +812,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/notfound"
         assert wsgi_span.data["http"]["method"] == "PUT"
@@ -824,7 +824,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 404
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/notfound"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/notfound"
         assert urllib3_span.data["http"]["method"] == "PUT"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)
@@ -835,7 +835,7 @@ class TestUrllib3:
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", testenv["wsgi_server"] + "/response_headers")
+            r = self.http.request("GET", testenv["flask_server"] + "/response_headers")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -864,7 +864,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/response_headers"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -878,7 +878,7 @@ class TestUrllib3:
         assert urllib3_span.data["http"]["status"] == 200
         assert (
             urllib3_span.data["http"]["url"]
-            == testenv["wsgi_server"] + "/response_headers"
+            == testenv["flask_server"] + "/response_headers"
         )
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
@@ -902,7 +902,7 @@ class TestUrllib3:
         }
         with tracer.start_as_current_span("test"):
             r = self.http.request(
-                "GET", testenv["wsgi_server"] + "/", headers=request_headers
+                "GET", testenv["flask_server"] + "/", headers=request_headers
             )
 
         spans = self.recorder.queued_spans()
@@ -932,7 +932,7 @@ class TestUrllib3:
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
@@ -944,7 +944,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == testenv["wsgi_server"] + "/"
+        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/"
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)

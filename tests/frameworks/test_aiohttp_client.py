@@ -38,7 +38,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/")
+                    return await self.fetch(session, testenv["flask_server"] + "/")
 
         response = self.loop.run_until_complete(test())
 
@@ -67,7 +67,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/",
+        self.assertEqual(testenv["flask_server"] + "/",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
@@ -88,7 +88,7 @@ class TestAiohttp(unittest.TestCase):
         agent.options.allow_exit_as_root = True
         async def test():
             async with aiohttp.ClientSession() as session:
-                return await self.fetch(session, testenv["wsgi_server"] + "/")
+                return await self.fetch(session, testenv["flask_server"] + "/")
 
         response = self.loop.run_until_complete(test())
 
@@ -117,7 +117,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/",
+        self.assertEqual(testenv["flask_server"] + "/",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
@@ -138,7 +138,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/301")
+                    return await self.fetch(session, testenv["flask_server"] + "/301")
 
         response = self.loop.run_until_complete(test())
 
@@ -171,7 +171,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/301",
+        self.assertEqual(testenv["flask_server"] + "/301",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
@@ -192,7 +192,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/405")
+                    return await self.fetch(session, testenv["flask_server"] + "/405")
 
         response = self.loop.run_until_complete(test())
 
@@ -221,7 +221,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(405, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/405",
+        self.assertEqual(testenv["flask_server"] + "/405",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
@@ -242,7 +242,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/500")
+                    return await self.fetch(session, testenv["flask_server"] + "/500")
 
         response = self.loop.run_until_complete(test())
 
@@ -271,7 +271,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(500, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/500",
+        self.assertEqual(testenv["flask_server"] + "/500",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertEqual('INTERNAL SERVER ERROR',
@@ -294,7 +294,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/504")
+                    return await self.fetch(session, testenv["flask_server"] + "/504")
 
         response = self.loop.run_until_complete(test())
 
@@ -323,7 +323,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(504, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/504",
+        self.assertEqual(testenv["flask_server"] + "/504",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertEqual('GATEWAY TIMEOUT', aiohttp_span.data["http"]["error"])
@@ -345,7 +345,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"], params={"secret": "yeah"})
+                    return await self.fetch(session, testenv["flask_server"], params={"secret": "yeah"})
 
         response = self.loop.run_until_complete(test())
 
@@ -374,7 +374,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/",
+        self.assertEqual(testenv["flask_server"] + "/",
                          aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertEqual("secret=<redacted>",
@@ -400,7 +400,7 @@ class TestAiohttp(unittest.TestCase):
         async def test():
             with async_tracer.start_active_span('test'):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["wsgi_server"] + "/response_headers")
+                    return await self.fetch(session, testenv["flask_server"] + "/response_headers")
 
         response = self.loop.run_until_complete(test())
 
@@ -429,7 +429,7 @@ class TestAiohttp(unittest.TestCase):
 
         self.assertEqual("aiohttp-client", aiohttp_span.n)
         self.assertEqual(200, aiohttp_span.data["http"]["status"])
-        self.assertEqual(testenv["wsgi_server"] + "/response_headers", aiohttp_span.data["http"]["url"])
+        self.assertEqual(testenv["flask_server"] + "/response_headers", aiohttp_span.data["http"]["url"])
         self.assertEqual("GET", aiohttp_span.data["http"]["method"])
         self.assertIsNotNone(aiohttp_span.stack)
         self.assertTrue(type(aiohttp_span.stack) is list)

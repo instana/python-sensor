@@ -4,6 +4,7 @@
 """
 Instana WSGI Middleware
 """
+from typing import Dict, Any, Callable, List, Tuple, Optional
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
@@ -16,13 +17,13 @@ from instana.util.secrets import strip_secrets_from_query
 class InstanaWSGIMiddleware(object):
     """Instana WSGI middleware"""
 
-    def __init__(self, app):
+    def __init__(self, app: object) -> None:
         self.app = app
 
-    def __call__(self, environ, start_response):
+    def __call__(self, environ: Dict[str, Any], start_response: Callable) -> object:
         env = environ
 
-        def new_start_response(status, headers, exc_info=None):
+        def new_start_response(status: str, headers: List[Tuple[object, ...]], exc_info: Optional[Exception] = None) -> object:
             """Modified start response with additional headers."""
             tracer.inject(self.span.context, Format.HTTP_HEADERS, headers)
             headers.append(

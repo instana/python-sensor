@@ -18,7 +18,7 @@ from ..helpers import testenv, get_spans_by_filter
 @unittest.skipIf(not os.environ.get("GEVENT_STARLETTE_TEST"), reason="")
 class TestGEvent(unittest.TestCase):
     def setUp(self):
-        self.http = urllib3.HTTPConnectionPool('127.0.0.1', port=testenv["wsgi_port"], maxsize=20)
+        self.http = urllib3.HTTPConnectionPool('127.0.0.1', port=testenv["flask_port"], maxsize=20)
         self.recorder = tracer.recorder
         self.recorder.clear_spans()
         tracer._scope_manager = GeventScopeManager()
@@ -28,7 +28,7 @@ class TestGEvent(unittest.TestCase):
         pass
 
     def make_http_call(self, n=None):
-        return self.http.request('GET', testenv["wsgi_server"] + '/')
+        return self.http.request('GET', testenv["flask_server"] + '/')
 
     def spawn_calls(self):
         with tracer.start_active_span('spawn_calls'):

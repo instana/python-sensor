@@ -1,6 +1,6 @@
 import os
-from .app import bottle_server as server
-from ..utils import launch_background_thread
+from tests.apps.bottle_app.app import bottle_server as server
+from tests.apps.utils import launch_background_thread
 
 app_thread = None
 

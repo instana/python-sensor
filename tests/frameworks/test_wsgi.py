@@ -3,7 +3,8 @@
 
 import time
 import urllib3
-import unittest
+import pytest
+from typing import Generator
 
 from tests.apps import bottle_app
 from tests.helpers import testenv
@@ -11,19 +12,16 @@ from instana.singletons import agent, tracer
 from instana.span.span import get_current_span
 
 
-class TestWSGI(unittest.TestCase):
-    def setUp(self):
+class TestWSGI:
+    @pytest.fixture(autouse=True)
+    def _setUp(self) -> Generator[None, None, None]:
         """ Clear all spans before a test run """
         self.http = urllib3.PoolManager()
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
         time.sleep(0.1)
 
-    def tearDown(self):
-        """ Do nothing for now """
-        return None
-
-    def test_vanilla_requests(self):
+    def test_vanilla_requests(self) -> None:
         response = self.http.request('GET', testenv["wsgi_server"] + '/')
         spans = self.recorder.queued_spans()
 
@@ -31,7 +29,7 @@ class TestWSGI(unittest.TestCase):
         assert get_current_span().is_recording() is False
         assert response.status == 200
 
-    def test_get_request(self):
+    def test_get_request(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/')
 
@@ -88,8 +86,8 @@ class TestWSGI(unittest.TestCase):
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
-    @unittest.skip("Suppression is not yet handled")
-    def test_synthetic_request(self):
+    @pytest.mark.skip("Suppression is not yet handled")
+    def test_synthetic_request(self) -> None:
         headers = {
             'X-INSTANA-SYNTHETIC': '1'
         }
@@ -110,7 +108,7 @@ class TestWSGI(unittest.TestCase):
         assert test_span.sy is None
 
 
-    def test_custom_header_capture(self):
+    def test_custom_header_capture(self) -> None:
         # Hack together a manual custom headers list
         agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
@@ -175,7 +173,7 @@ class TestWSGI(unittest.TestCase):
         assert "X-Capture-That" in wsgi_span.data["http"]["header"]
         assert "that" == wsgi_span.data["http"]["header"]["X-Capture-That"]
 
-    def test_secret_scrubbing(self):
+    def test_secret_scrubbing(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/?secret=shhh')
 
@@ -229,7 +227,7 @@ class TestWSGI(unittest.TestCase):
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
-    def test_with_incoming_context(self):
+    def test_with_incoming_context(self) -> None:
         request_headers = dict()
         request_headers['X-INSTANA-T'] = '0000000000000001'
         request_headers['X-INSTANA-S'] = '0000000000000001'
@@ -264,7 +262,7 @@ class TestWSGI(unittest.TestCase):
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         assert response.headers['Server-Timing'] == server_timing_value
 
-    def test_with_incoming_mixed_case_context(self):
+    def test_with_incoming_mixed_case_context(self) -> None:
         request_headers = dict()
         request_headers['X-InSTANa-T'] = '0000000000000001'
         request_headers['X-instana-S'] = '0000000000000001'
@@ -299,7 +297,7 @@ class TestWSGI(unittest.TestCase):
         server_timing_value = "intid;desc=%s" % wsgi_span.t
         assert response.headers['Server-Timing'] == server_timing_value
 
-    def test_response_headers(self):
+    def test_response_headers(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["wsgi_server"] + '/')
 

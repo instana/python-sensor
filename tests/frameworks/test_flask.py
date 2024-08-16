@@ -36,7 +36,7 @@ class TestFlask(unittest.TestCase):
         return None
 
     def test_vanilla_requests(self) -> None:
-        r = self.http.request('GET', testenv["wsgi_server"] + '/')
+        r = self.http.request('GET', testenv["flask_server"] + '/')
         assert r.status == 200
 
         spans = self.recorder.queued_spans()
@@ -44,7 +44,7 @@ class TestFlask(unittest.TestCase):
 
     def test_get_request(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request("GET", testenv["wsgi_server"] + "/")
+            response = self.http.request("GET", testenv["flask_server"] + "/")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -94,7 +94,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
-            testenv["wsgi_port"]
+            testenv["flask_port"]
         )
         assert "/" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -106,7 +106,7 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 200 == urllib3_span.data["http"]["status"]
-        assert testenv["wsgi_server"] + "/" == urllib3_span.data["http"]["url"]
+        assert testenv["flask_server"] + "/" == urllib3_span.data["http"]["url"]
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -118,7 +118,7 @@ class TestFlask(unittest.TestCase):
     def test_get_request_with_query_params(self) -> None:
         with tracer.start_as_current_span("test"):
             response = self.http.request(
-                "GET", testenv["wsgi_server"] + "/" + "?key1=val1&key2=val2"
+                "GET", testenv["flask_server"] + "/" + "?key1=val1&key2=val2"
             )
 
         spans = self.recorder.queued_spans()
@@ -169,7 +169,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/" == wsgi_span.data["http"]["url"]
         assert wsgi_span.data["http"]["params"] == "key1=<redacted>&key2=<redacted>"
@@ -182,7 +182,7 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 200 == urllib3_span.data["http"]["status"]
-        assert testenv["wsgi_server"] + "/" == urllib3_span.data["http"]["url"]
+        assert testenv["flask_server"] + "/" == urllib3_span.data["http"]["url"]
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -194,7 +194,7 @@ class TestFlask(unittest.TestCase):
     @unittest.skip("Suppression is not yet handled")
     def test_get_request_with_suppression(self) -> None:
         headers = {'X-INSTANA-L':'0'}
-        response = self.http.urlopen('GET', testenv["wsgi_server"] + '/', headers=headers)
+        response = self.http.urlopen('GET', testenv["flask_server"] + '/', headers=headers)
 
         spans = self.recorder.queued_spans()
 
@@ -220,7 +220,7 @@ class TestFlask(unittest.TestCase):
                 'traceparent': '00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01',
                 'tracestate': 'congo=ucfJifl5GOE,rojo=00f067aa0ba902b7'}
 
-        response = self.http.urlopen('GET', testenv["wsgi_server"] + '/', headers=headers)
+        response = self.http.urlopen('GET', testenv["flask_server"] + '/', headers=headers)
 
         spans = self.recorder.queued_spans()
 
@@ -246,7 +246,7 @@ class TestFlask(unittest.TestCase):
         }
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=headers)
+            response = self.http.request('GET', testenv["flask_server"] + '/', headers=headers)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -261,7 +261,7 @@ class TestFlask(unittest.TestCase):
 
     def test_render_template(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/render')
+            response = self.http.request('GET', testenv["flask_server"] + '/render')
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
@@ -318,7 +318,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/render" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -330,7 +330,7 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 200 == urllib3_span.data["http"]["status"]
-        assert testenv["wsgi_server"] + "/render" == urllib3_span.data["http"]["url"]
+        assert testenv["flask_server"] + "/render" == urllib3_span.data["http"]["url"]
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -341,7 +341,7 @@ class TestFlask(unittest.TestCase):
 
     def test_render_template_string(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/render_string')
+            response = self.http.request('GET', testenv["flask_server"] + '/render_string')
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
@@ -398,7 +398,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/render_string" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -411,7 +411,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 200 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/render_string"
+            testenv["flask_server"] + "/render_string"
             == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
@@ -424,7 +424,7 @@ class TestFlask(unittest.TestCase):
 
     def test_301(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/301', redirect=False)
+            response = self.http.request('GET', testenv["flask_server"] + '/301', redirect=False)
 
         spans = self.recorder.queued_spans()
 
@@ -470,7 +470,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/301" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -482,7 +482,7 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 301 == urllib3_span.data["http"]["status"]
-        assert testenv["wsgi_server"] + "/301" == urllib3_span.data["http"]["url"]
+        assert testenv["flask_server"] + "/301" == urllib3_span.data["http"]["url"]
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -493,7 +493,7 @@ class TestFlask(unittest.TestCase):
 
     def test_custom_404(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/custom-404')
+            response = self.http.request('GET', testenv["flask_server"] + '/custom-404')
 
         spans = self.recorder.queued_spans()
 
@@ -539,7 +539,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/custom-404" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -552,7 +552,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 404 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/custom-404" == urllib3_span.data["http"]["url"]
+            testenv["flask_server"] + "/custom-404" == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
@@ -564,7 +564,7 @@ class TestFlask(unittest.TestCase):
 
     def test_404(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/11111111111')
+            response = self.http.request('GET', testenv["flask_server"] + '/11111111111')
 
         spans = self.recorder.queued_spans()
 
@@ -610,7 +610,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/11111111111" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -623,7 +623,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 404 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/11111111111" == urllib3_span.data["http"]["url"]
+            testenv["flask_server"] + "/11111111111" == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
@@ -635,7 +635,7 @@ class TestFlask(unittest.TestCase):
 
     def test_500(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/500')
+            response = self.http.request('GET', testenv["flask_server"] + '/500')
 
         spans = self.recorder.queued_spans()
 
@@ -681,7 +681,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/500" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -693,7 +693,7 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 500 == urllib3_span.data["http"]["status"]
-        assert testenv["wsgi_server"] + "/500" == urllib3_span.data["http"]["url"]
+        assert testenv["flask_server"] + "/500" == urllib3_span.data["http"]["url"]
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -707,7 +707,7 @@ class TestFlask(unittest.TestCase):
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/render_error')
+            response = self.http.request('GET', testenv["flask_server"] + '/render_error')
 
         spans = self.recorder.queued_spans()
 
@@ -762,7 +762,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/render_error" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -775,7 +775,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 500 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/render_error" == urllib3_span.data["http"]["url"]
+            testenv["flask_server"] + "/render_error" == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
@@ -790,7 +790,7 @@ class TestFlask(unittest.TestCase):
             raise unittest.SkipTest("Exceptions without handlers vary with blinker")
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/exception')
+            response = self.http.request('GET', testenv["flask_server"] + '/exception')
 
         spans = self.recorder.queued_spans()
 
@@ -829,7 +829,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/exception" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -841,7 +841,7 @@ class TestFlask(unittest.TestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert 500 == urllib3_span.data["http"]["status"]
-        assert testenv["wsgi_server"] + "/exception" == urllib3_span.data["http"]["url"]
+        assert testenv["flask_server"] + "/exception" == urllib3_span.data["http"]["url"]
         assert "GET" == urllib3_span.data["http"]["method"]
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
@@ -852,7 +852,7 @@ class TestFlask(unittest.TestCase):
 
     def test_custom_exception_with_log(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/exception-invalid-usage')
+            response = self.http.request('GET', testenv["flask_server"] + '/exception-invalid-usage')
 
         spans = self.recorder.queued_spans()
 
@@ -908,7 +908,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/exception-invalid-usage" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -921,7 +921,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 502 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/exception-invalid-usage"
+            testenv["flask_server"] + "/exception-invalid-usage"
             == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
@@ -934,7 +934,7 @@ class TestFlask(unittest.TestCase):
 
     def test_path_templates(self) -> None:
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/users/Ricky/sayhello')
+            response = self.http.request('GET', testenv["flask_server"] + '/users/Ricky/sayhello')
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -979,7 +979,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/users/Ricky/sayhello" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -992,7 +992,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 200 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/users/Ricky/sayhello"
+            testenv["flask_server"] + "/users/Ricky/sayhello"
             == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
@@ -1010,7 +1010,7 @@ class TestFlask(unittest.TestCase):
         agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
 
         with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/response_headers')
+            response = self.http.request('GET', testenv["flask_server"] + '/response_headers')
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -1061,7 +1061,7 @@ class TestFlask(unittest.TestCase):
         assert "urllib3" == urllib3_span.n
         assert 200 == urllib3_span.data["http"]["status"]
         assert (
-            testenv["wsgi_server"] + "/response_headers"
+            testenv["flask_server"] + "/response_headers"
             == urllib3_span.data["http"]["url"]
         )
         assert "GET" == urllib3_span.data["http"]["method"]
@@ -1072,7 +1072,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert "wsgi" == wsgi_span.n
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/response_headers" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]
@@ -1094,7 +1094,7 @@ class TestFlask(unittest.TestCase):
                 "instana.singletons.tracer.extract",
                 side_effect=Exception("mocked error"),
             ):
-                self.http.request("GET", testenv["wsgi_server"] + "/")
+                self.http.request("GET", testenv["flask_server"] + "/")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -1105,7 +1105,7 @@ class TestFlask(unittest.TestCase):
     )
     def test_got_request_exception(self) -> None:
         response = self.http.request(
-            "GET", testenv["wsgi_server"] + "/got_request_exception"
+            "GET", testenv["flask_server"] + "/got_request_exception"
         )
 
         spans = self.recorder.queued_spans()
@@ -1124,7 +1124,7 @@ class TestFlask(unittest.TestCase):
         # wsgi
         assert wsgi_span.n == "wsgi"
         assert (
-            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+            "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
         assert "/got_request_exception" == wsgi_span.data["http"]["url"]
         assert "GET" == wsgi_span.data["http"]["method"]

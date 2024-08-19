@@ -14,7 +14,7 @@ from instana.span.span import get_current_span
 
 class TestWSGI:
     @pytest.fixture(autouse=True)
-    def _setUp(self) -> Generator[None, None, None]:
+    def _resource(self) -> Generator[None, None, None]:
         """ Clear all spans before a test run """
         self.http = urllib3.PoolManager()
         self.recorder = tracer.span_processor

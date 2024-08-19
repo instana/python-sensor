@@ -16,6 +16,8 @@ markupsafe>=2.1.0
 # Depends on grpcio
 #google-cloud-pubsub<=2.1.0
 #google-cloud-storage>=1.24.0
+# The `legacy-cgi` package is a drop-in replacement for the `cgi` package,
+# which was removed from Python 3.13 onwards. `Bottle` framework still uses `cgi`.
 legacy-cgi>=2.6.1
 lxml>=4.9.2
 mock>=4.0.3

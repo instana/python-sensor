@@ -3,7 +3,7 @@
 
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
 import wrapt
-from typing import TYPE_CHECKING, Dict, Any, List, Tuple
+from typing import TYPE_CHECKING, Dict, Any, List, Tuple, Callable
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind
@@ -68,7 +68,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         self,
         sql: str,
         params: Dict[str, Any] = None,
-    ) -> None:
+    ) -> Callable:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -93,7 +93,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         self,
         sql: str,
         seq_of_parameters: List[Tuple],
-    ) -> None:
+    ) -> Callable:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -118,7 +118,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         self,
         proc_name: str,
         params: Dict[str, Any],
-    ) -> None:
+    ) -> Callable:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -173,18 +173,22 @@ class ConnectionWrapper(wrapt.ObjectProxy):
             cursor_params=(args, kwargs) if args or kwargs else None,
         )
 
-    def close(self) -> None:
+    def close(self) -> Callable:
         return self.__wrapped__.close()
 
-    def commit(self) -> None:
+    def commit(self) -> Callable:
         return self.__wrapped__.commit()
 
-    def rollback(self) -> None:
+    def rollback(self) -> Callable:
         return self.__wrapped__.rollback()
 
 
 class ConnectionFactory(object):
-    def __init__(self, connect_func: "CursorWrapper", module_name: str) -> None:
+    def __init__(
+        self,
+        connect_func: "CursorWrapper",
+        module_name: str,
+    ) -> None:
         self._connect_func = connect_func
         self._module_name = module_name
         self._wrapper_ctor = ConnectionWrapper
@@ -193,7 +197,7 @@ class ConnectionFactory(object):
         self,
         *args: Tuple[int, str, Tuple[Any, ...]],
         **kwargs: Dict[str, Any],
-    ) -> ConnectionWrapper:
+    ) -> "ConnectionWrapper":
         connect_params = (args, kwargs) if args or kwargs else None
         return self._wrapper_ctor(
             connection=self._connect_func(*args, **kwargs),

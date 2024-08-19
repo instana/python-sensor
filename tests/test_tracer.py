@@ -1,15 +1,15 @@
 # (c) Copyright IBM Corp. 2024
 
-from opentelemetry.trace import set_span_in_context
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 import pytest
+
+from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE
+
 from instana.agent.test import TestAgent
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler
-from instana.span.span import InstanaSpan
+from instana.span.span import InstanaSpan, get_current_span, INVALID_SPAN_ID, INVALID_SPAN
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer, InstanaTracerProvider
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 
 
 def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
@@ -97,6 +97,28 @@ def test_tracer_start_as_current_span(tracer_provider: InstanaTracerProvider) ->
         assert span is not None
         assert isinstance(span, InstanaSpan)
         assert span.name == span_name
+
+
+def test_tracer_nested_span(tracer_provider: InstanaTracerProvider) -> None:
+    tracer = InstanaTracer(
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
+    )
+    parent_span_name = "parent-span"
+    child_span_name = "child-span"
+    with tracer.start_as_current_span(name=parent_span_name) as pspan:
+        assert get_current_span() is pspan
+        with tracer.start_as_current_span(name=child_span_name) as cspan:
+            assert get_current_span() is cspan
+            assert cspan.parent_id == pspan.context.span_id
+        # child span goes out of scope
+        assert cspan.end_time is not None
+        assert get_current_span() is pspan
+    # parent span goes out of scope
+    assert pspan.end_time is not None
+    assert get_current_span() is INVALID_SPAN
 
 
 def test_tracer_create_span_context(

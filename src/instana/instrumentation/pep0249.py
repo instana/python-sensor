@@ -3,7 +3,8 @@
 
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
 import wrapt
-from typing import TYPE_CHECKING, Dict, Any, List, Tuple, Callable
+from typing import TYPE_CHECKING, Dict, Any, List, Tuple, Union, Callable, Optional
+from typing_extensions import Self
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind
@@ -21,10 +22,10 @@ class CursorWrapper(wrapt.ObjectProxy):
 
     def __init__(
         self,
-        cursor: "CursorWrapper",
+        cursor: Any,
         module_name: str,
-        connect_params: Dict[str, Any] = None,
-        cursor_params: Dict[str, Any] = None,
+        connect_params: Optional[List[Union[str, Dict[str, Any]]]] = None,
+        cursor_params: Optional[Dict[str, Any]] = None,
     ) -> None:
         super(CursorWrapper, self).__init__(wrapped=cursor)
         self._module_name = module_name
@@ -35,7 +36,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         self,
         span: "InstanaSpan",
         sql: str,
-    ) -> "InstanaSpan":
+    ) -> None:
         try:
             span.set_attribute("span.kind", SpanKind.CLIENT)
 
@@ -59,16 +60,15 @@ class CursorWrapper(wrapt.ObjectProxy):
             span.set_attribute("port", self._connect_params[1]["port"])
         except Exception as e:
             logger.debug(e)
-        return span
 
-    def __enter__(self) -> "CursorWrapper":
+    def __enter__(self) -> Self:
         return self
 
     def execute(
         self,
         sql: str,
-        params: Dict[str, Any] = None,
-    ) -> Callable:
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Callable[[str, Dict[str, Any]], None]:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -92,8 +92,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def executemany(
         self,
         sql: str,
-        seq_of_parameters: List[Tuple],
-    ) -> Callable:
+        seq_of_parameters: List[Dict[str, Any]],
+    ) -> Callable[[str, List[Dict[str, Any]]], None]:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -118,7 +118,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         self,
         proc_name: str,
         params: Dict[str, Any],
-    ) -> Callable:
+    ) -> Callable[[str, Dict[str, Any]], None]:
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -152,18 +152,18 @@ class ConnectionWrapper(wrapt.ObjectProxy):
         self,
         connection: "ConnectionWrapper",
         module_name: str,
-        connect_params: Dict[str, Any],
+        connect_params: List[Union[str, Dict[str, Any]]],
     ) -> None:
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
         self._connect_params = connect_params
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
     def cursor(
         self,
-        *args: Tuple[int, str, Tuple[Any, ...]],
+        *args: Tuple[int, str, Dict[str, Any]],
         **kwargs: Dict[str, Any],
     ) -> CursorWrapper:
         return CursorWrapper(
@@ -173,20 +173,20 @@ class ConnectionWrapper(wrapt.ObjectProxy):
             cursor_params=(args, kwargs) if args or kwargs else None,
         )
 
-    def close(self) -> Callable:
+    def close(self) -> Callable[[], None]:
         return self.__wrapped__.close()
 
-    def commit(self) -> Callable:
+    def commit(self) -> Callable[[], None]:
         return self.__wrapped__.commit()
 
-    def rollback(self) -> Callable:
+    def rollback(self) -> Callable[[], None]:
         return self.__wrapped__.rollback()
 
 
 class ConnectionFactory(object):
     def __init__(
         self,
-        connect_func: "CursorWrapper",
+        connect_func: CursorWrapper,
         module_name: str,
     ) -> None:
         self._connect_func = connect_func
@@ -195,9 +195,9 @@ class ConnectionFactory(object):
 
     def __call__(
         self,
-        *args: Tuple[int, str, Tuple[Any, ...]],
+        *args: Tuple[int, str, Dict[str, Any]],
         **kwargs: Dict[str, Any],
-    ) -> "ConnectionWrapper":
+    ) -> ConnectionWrapper:
         connect_params = (args, kwargs) if args or kwargs else None
         return self._wrapper_ctor(
             connection=self._connect_func(*args, **kwargs),

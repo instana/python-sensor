@@ -45,19 +45,26 @@ class TestCursorWrapper:
             self.connect_params,
             self.cursor_params,
         )
+        self.reset_table()
+        yield
+        self.test_cursor.close()
+        self.test_conn.close()
+
+    def reset_table(self):
         self.test_cursor.execute(
             """
             DROP TABLE IF EXISTS tests;
             CREATE TABLE tests (id SERIAL PRIMARY KEY, name VARCHAR(50), email VARCHAR(100));
             """
         )
-        self.test_conn.commit()
         self.test_cursor.execute(
             """
             INSERT INTO tests (id, name, email) VALUES (1, 'test-name', 'testemail@mail.com');
             """
         )
         self.test_conn.commit()
+
+    def reset_procedure(self):
         self.test_cursor.execute("""
             DROP PROCEDURE IF EXISTS insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR);
             CREATE PROCEDURE insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR)
@@ -69,9 +76,6 @@ class TestCursorWrapper:
             $$;
             """)
         self.test_conn.commit()
-        yield
-        self.test_cursor.close()
-        self.test_conn.close()
 
     def test_cursor_wrapper_default(self):
         # CursorWrapper
@@ -215,6 +219,7 @@ class TestCursorWrapper:
             assert len(response) == 3
 
     def test_callproc_with_tracing_off(self):
+        self.reset_procedure()
         with tracer.start_as_current_span("sqlalchemy"):
             sample_proc_name = "call insert_user(%s, %s, %s);"
             sample_params = (8, "sample-name-8", "sample-email-8@mail.com")
@@ -226,6 +231,7 @@ class TestCursorWrapper:
             assert len(response) == 2
 
     def test_callproc_with_tracing(self):
+        self.reset_procedure()
         with tracer.start_as_current_span("test"):
             sample_proc_name = "call insert_user(%s, %s, %s);"
             sample_params = (9, "sample-name-9", "sample-email-9@mail.com")
@@ -305,7 +311,6 @@ class TestConnectionFactory:
         self.test_conn_func = psycopg2.extras.LogicalReplicationConnection
         self.test_module_name = "test-factory"
         self.conn_fact = ConnectionFactory(self.test_conn_func, self.test_module_name)
-        print(type(self.test_conn_func))
         yield
         self.test_conn_func = None
         self.test_module_name = None

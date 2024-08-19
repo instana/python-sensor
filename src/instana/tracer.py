@@ -30,7 +30,7 @@ from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
 from instana.span.kind import EXIT_SPANS
-from instana.span.span import InstanaSpan
+from instana.span.span import InstanaSpan, get_current_span
 from instana.span_context import SpanContext
 from instana.util.ids import generate_id
 
@@ -118,7 +118,7 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
-        parent_context = span_context
+        parent_context = span_context if span_context else get_current_span().get_span_context()
 
         if parent_context is not None and not isinstance(parent_context, SpanContext):
             raise TypeError("parent_context must be an Instana SpanContext or None.")

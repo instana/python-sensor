@@ -2,16 +2,22 @@
 # (c) Copyright Instana Inc. 2018
 
 
-import os
 import sys
 
-import opentracing as ot
-import opentracing.ext.tags as ext
+from opentelemetry import context, trace
+from opentelemetry.semconv.trace import SpanAttributes
 import wrapt
+from typing import TYPE_CHECKING, Dict, Any, Callable, Optional, List, Tuple
 
-from ...log import logger
-from ...singletons import agent, tracer
-from ...util.secrets import strip_secrets_from_query
+from instana.log import logger
+from instana.singletons import agent, tracer
+from instana.util.secrets import strip_secrets_from_query
+from instana.propagators.format import Format
+
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
+    from django.core.handlers.wsgi import WSGIRequest, WSGIHandler
+    from django.http import HttpRequest, HttpResponse
 
 DJ_INSTANA_MIDDLEWARE = 'instana.instrumentation.django.middleware.InstanaMiddleware'
 
@@ -24,11 +30,11 @@ except ImportError:
 class InstanaMiddleware(MiddlewareMixin):
     """ Django Middleware to provide request tracing for Instana """
 
-    def __init__(self, get_response=None):
+    def __init__(self, get_response: Optional[Callable[["HttpRequest"], "HttpResponse"]]=None) -> None:
         super(InstanaMiddleware, self).__init__(get_response)
         self.get_response = get_response
 
-    def _extract_custom_headers(self, span, headers, format):
+    def _extract_custom_headers(self, span: "InstanaSpan", headers: Dict[str, Any], format: bool) -> None:
         if agent.options.extra_http_headers is None:
             return
 
@@ -38,37 +44,43 @@ class InstanaMiddleware(MiddlewareMixin):
                 django_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
 
                 if django_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[django_header])
+                    span.set_attribute("http.header.%s" % custom_header, headers[django_header])
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
 
-    def process_request(self, request):
+    def process_request(self, request: "WSGIRequest") -> None:
         try:
             env = request.environ
 
-            ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
-            request.iscope = tracer.start_active_span('django', child_of=ctx)
+            span_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-            self._extract_custom_headers(request.iscope.span, env, format=True)
+            span = tracer.start_span("django", span_context=span_context)
+            request.span = span
 
-            request.iscope.span.set_tag(ext.HTTP_METHOD, request.method)
+            ctx = trace.set_span_in_context(span)
+            token = context.attach(ctx)
+            request.token = token
+
+            self._extract_custom_headers(span, env, format=True)
+
+            request.span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
             if 'PATH_INFO' in env:
-                request.iscope.span.set_tag(ext.HTTP_URL, env['PATH_INFO'])
+                request.span.set_attribute(SpanAttributes.HTTP_URL, env['PATH_INFO'])
             if 'QUERY_STRING' in env and len(env['QUERY_STRING']):
                 scrubbed_params = strip_secrets_from_query(env['QUERY_STRING'], agent.options.secrets_matcher,
                                                            agent.options.secrets_list)
-                request.iscope.span.set_tag("http.params", scrubbed_params)
+                request.span.set_attribute("http.params", scrubbed_params)
             if 'HTTP_HOST' in env:
-                request.iscope.span.set_tag("http.host", env['HTTP_HOST'])
+                request.span.set_attribute("http.host", env['HTTP_HOST'])
         except Exception:
             logger.debug("Django middleware @ process_request", exc_info=True)
 
-    def process_response(self, request, response):
+    def process_response(self, request: "WSGIRequest", response: "HttpResponse") -> "HttpResponse":
         try:
-            if request.iscope is not None:
+            if request.span:
                 if 500 <= response.status_code:
-                    request.iscope.span.assure_errored()
+                    request.span.assure_errored()
                 # for django >= 2.2
                 if request.resolver_match is not None and hasattr(request.resolver_match, 'route'):
                     path_tpl = request.resolver_match.route
@@ -83,36 +95,37 @@ class InstanaMiddleware(MiddlewareMixin):
                         # so the path_tpl is set to None in order not to be added as a tag
                         path_tpl = None
                 if path_tpl:
-                    request.iscope.span.set_tag("http.path_tpl", path_tpl)
+                    request.span.set_attribute("http.path_tpl", path_tpl)
 
-                request.iscope.span.set_tag(ext.HTTP_STATUS_CODE, response.status_code)
-                self._extract_custom_headers(request.iscope.span, response.headers, format=False)
-                tracer.inject(request.iscope.span.context, ot.Format.HTTP_HEADERS, response)
-                response['Server-Timing'] = "intid;desc=%s" % request.iscope.span.context.trace_id
+                request.span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status_code)
+                self._extract_custom_headers(request.span, response.headers, format=False)
+                tracer.inject(request.span.context, Format.HTTP_HEADERS, response)
+                response['Server-Timing'] = "intid;desc=%s" % request.span.context.trace_id
         except Exception:
             logger.debug("Instana middleware @ process_response", exc_info=True)
         finally:
-            if request.iscope is not None:
-                request.iscope.close()
-                request.iscope = None
+            if request.span:
+                if request.span.is_recording():
+                    request.span.end()
+                request.span = None
         return response
 
-    def process_exception(self, request, exception):
+    def process_exception(self, request: "WSGIRequest", exception: Exception) -> None:
         from django.http.response import Http404
 
         if isinstance(exception, Http404):
             return None
 
-        if request.iscope is not None:
-            request.iscope.span.log_exception(exception)
+        if request.span:
+            request.span.record_exception(exception)
 
-    def __url_pattern_route(self, view_name):
+    def __url_pattern_route(self, view_name: str) -> Callable[..., object]:
         from django.conf import settings
         from django.urls import RegexURLResolver as URLResolver
 
         urlconf = __import__(settings.ROOT_URLCONF, {}, {}, [''])
 
-        def list_urls(urlpatterns, parent_pattern=None):
+        def list_urls(urlpatterns: List[str], parent_pattern: Optional[List[str]]=None) -> Callable[..., object]:
             if not urlpatterns:
                 return
             if parent_pattern is None:
@@ -134,7 +147,7 @@ class InstanaMiddleware(MiddlewareMixin):
         return list_urls(urlconf.urlpatterns)
 
 
-def load_middleware_wrapper(wrapped, instance, args, kwargs):
+def load_middleware_wrapper(wrapped: Callable[..., None], instance: "WSGIHandler", args: Tuple[object, ...], kwargs: Dict[str, Any]) -> Callable[..., None]:
     try:
         from django.conf import settings
 

@@ -45,7 +45,6 @@ class TestCursorWrapper:
             self.connect_params,
             self.cursor_params,
         )
-        self.reset_table()
         yield
         self.test_cursor.close()
         self.test_conn.close()
@@ -109,6 +108,7 @@ class TestCursorWrapper:
         assert hasattr(self.test_cursor, "fetchall")
 
     def test_collect_kvs(self):
+        self.reset_table()
         with tracer.start_as_current_span("test") as span:
             sample_sql = """
                 select * from tests;
@@ -122,6 +122,7 @@ class TestCursorWrapper:
             assert span.attributes["port"] == "5432"
 
     def test_collect_kvs_error(self, caplog: LogCaptureFixture):
+        self.reset_table()
         with tracer.start_as_current_span("test") as span:
             connect_params = "sample"
             sample_wrapper = CursorWrapper(
@@ -140,6 +141,7 @@ class TestCursorWrapper:
         assert isinstance(response, CursorWrapper)
 
     def test_execute_with_tracing_off(self):
+        self.reset_table()
         with tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_params = (2, "sample-name", "sample-email@mail.com")
@@ -155,6 +157,7 @@ class TestCursorWrapper:
             assert len(response) == 2
 
     def test_execute_with_tracing(self):
+        self.reset_table()
         with tracer.start_as_current_span("test"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_params = (3, "sample-name", "sample-email@mail.com")
@@ -176,6 +179,7 @@ class TestCursorWrapper:
             assert len(response) == 2
 
     def test_executemany_with_tracing_off(self):
+        self.reset_table()
         with tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_seq_of_params = [
@@ -195,6 +199,7 @@ class TestCursorWrapper:
             assert len(response) == 3
 
     def test_executemany_with_tracing(self):
+        self.reset_table()
         with tracer.start_as_current_span("test"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_seq_of_params = [
@@ -219,6 +224,7 @@ class TestCursorWrapper:
             assert len(response) == 3
 
     def test_callproc_with_tracing_off(self):
+        self.reset_table()
         self.reset_procedure()
         with tracer.start_as_current_span("sqlalchemy"):
             sample_proc_name = "call insert_user(%s, %s, %s);"
@@ -231,6 +237,7 @@ class TestCursorWrapper:
             assert len(response) == 2
 
     def test_callproc_with_tracing(self):
+        self.reset_table()
         self.reset_procedure()
         with tracer.start_as_current_span("test"):
             sample_proc_name = "call insert_user(%s, %s, %s);"

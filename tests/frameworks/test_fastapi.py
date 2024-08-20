@@ -1,628 +1,585 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import time
-import unittest
-import multiprocessing
+from typing import Generator
 
-import requests
+from fastapi.testclient import TestClient
+import pytest
+from instana.singletons import tracer, agent
 
-from instana.singletons import async_tracer
-from tests.apps.fastapi_app import launch_fastapi
-from ..helpers import testenv
-from ..helpers import get_first_span_by_filter
+from tests.apps.fastapi_app.app import fastapi_server
+from tests.helpers import get_first_span_by_filter
 
 
-class TestFastAPI(unittest.TestCase):
-    def setUp(self):
-        self.proc = multiprocessing.Process(target=launch_fastapi, args=(), daemon=True)
-        self.proc.start()
-        time.sleep(2)
+class TestFastAPI:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        """SetUp and TearDown"""
+        # setup
+        # We are using the TestClient from Starlette/FastAPI to make it easier.
+        self.client = TestClient(fastapi_server)
 
-    def tearDown(self):
-        # Kill server after tests
-        self.proc.kill()
+        # Clear all spans before a test run
+        self.recorder = tracer.span_processor
+        self.recorder.clear_spans()
 
-    def test_vanilla_get(self):
-        result = requests.get(testenv["fastapi_server"] + "/")
+        # Hack together a manual custom headers list; We'll use this in tests
+        agent.options.extra_http_headers = [
+            "X-Capture-This",
+            "X-Capture-That",
+            "X-Capture-This-Too",
+            "X-Capture-That-Too",
+        ]
 
-        self.assertEqual(result.status_code, 200)
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
-        self.assertIn("Server-Timing", result.headers)
+    def test_vanilla_get(self) -> None:
+        result = self.client.get("/")
 
-        spans = async_tracer.recorder.queued_spans()
-        # FastAPI instrumentation (like all instrumentation) _always_ traces unless told otherwise
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].n, "asgi")
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-    def test_basic_get(self):
+        # FastAPI instrumentation (like all instrumentation) _always_ traces
+        # unless told otherwise
+        spans = self.recorder.queued_spans()
+
+        assert len(spans) == 1
+        assert spans[0].n == "asgi"
+
+    def test_basic_get(self) -> None:
         result = None
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/")
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/", headers=headers)
 
-        self.assertEqual(result.status_code, 200)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/"
+        assert asgi_span.data["http"]["path_tpl"] == "/"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
-
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
-
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
-
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
-
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
-
-    def test_400(self):
+    def test_400(self) -> None:
         result = None
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/400")
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/400", headers=headers)
 
-        self.assertEqual(result.status_code, 400)
+        assert result
+        assert result.status_code == 400
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/400"
+        assert asgi_span.data["http"]["path_tpl"] == "/400"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 400
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
-
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
-
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
-
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/400")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/400")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 400)
-
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
-
-    def test_500(self):
+    def test_500(self) -> None:
         result = None
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/500")
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/500", headers=headers)
 
-        self.assertEqual(result.status_code, 500)
+        assert result
+        assert result.status_code == 500
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert asgi_span.ec == 1
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/500"
+        assert asgi_span.data["http"]["path_tpl"] == "/500"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 500
+        assert asgi_span.data["http"]["error"] == "500 response"
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
-
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
-
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
-
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
-
-        self.assertEqual(asgi_span.ec, 1)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/500")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/500")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 500)
-        self.assertEqual(asgi_span.data["http"]["error"], "500 response")
-
-        self.assertIsNone(asgi_span.data["http"]["params"])
-
-    def test_path_templates(self):
+    def test_path_templates(self) -> None:
         result = None
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/users/1")
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/users/1", headers=headers)
 
-        self.assertEqual(result.status_code, 200)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/users/1"
+        assert asgi_span.data["http"]["path_tpl"] == "/users/{user_id}"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
-
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
-
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
-
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
-
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/users/1")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/users/{user_id}")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
-
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
-
-    def test_secret_scrubbing(self):
+    def test_secret_scrubbing(self) -> None:
         result = None
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/?secret=shhh")
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/?secret=shhh", headers=headers)
 
-        self.assertEqual(result.status_code, 200)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/"
+        assert asgi_span.data["http"]["path_tpl"] == "/"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        assert not asgi_span.data["http"]["error"]
+        assert asgi_span.data["http"]["params"] == "secret=<redacted>"
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+    def test_synthetic_request(self) -> None:
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-SYNTHETIC": "1",
+            }
+            result = self.client.get("/", headers=headers)
 
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
-
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertEqual(asgi_span.data["http"]["params"], "secret=<redacted>")
-
-    def test_synthetic_request(self):
-        request_headers = {"X-INSTANA-SYNTHETIC": "1"}
-        with async_tracer.start_active_span("test"):
-            result = requests.get(
-                testenv["fastapi_server"] + "/", headers=request_headers
-            )
-
-        self.assertEqual(result.status_code, 200)
-
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
-
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/"
+        assert asgi_span.data["http"]["path_tpl"] == "/"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        assert asgi_span.sy
+        assert not test_span.sy
 
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+    def test_request_header_capture(self) -> None:
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+                "X-Capture-This": "this", 
+                "X-Capture-That": "that",
+            }
+            result = self.client.get("/", headers=headers)
 
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
-
-        self.assertTrue(asgi_span.sy)
-        self.assertIsNone(urllib3_span.sy)
-        self.assertIsNone(test_span.sy)
-
-    def test_request_header_capture(self):
-        from instana.singletons import agent
-
-        # The background FastAPI server is pre-configured with custom headers to capture
-
-        request_headers = {"X-Capture-This": "this", "X-Capture-That": "that"}
-
-        with async_tracer.start_active_span("test"):
-            result = requests.get(
-                testenv["fastapi_server"] + "/", headers=request_headers
-            )
-
-        self.assertEqual(result.status_code, 200)
-
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
-
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)        
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/"
+        assert asgi_span.data["http"]["path_tpl"] == "/"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        assert "X-Capture-This" in asgi_span.data["http"]["header"]
+        assert asgi_span.data["http"]["header"]["X-Capture-This"] == "this"
+        assert "X-Capture-That" in asgi_span.data["http"]["header"]
+        assert asgi_span.data["http"]["header"]["X-Capture-That"] == "that"
 
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+    def test_response_header_capture(self) -> None:
+        # The background FastAPI server is pre-configured with custom headers 
+        # to capture.
 
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/response_headers", headers=headers)
 
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-        self.assertIn("X-Capture-This", asgi_span.data["http"]["header"])
-        self.assertEqual("this", asgi_span.data["http"]["header"]["X-Capture-This"])
-        self.assertIn("X-Capture-That", asgi_span.data["http"]["header"])
-        self.assertEqual("that", asgi_span.data["http"]["header"]["X-Capture-That"])
-
-    def test_response_header_capture(self):
-        from instana.singletons import agent
-
-        # The background FastAPI server is pre-configured with custom headers to capture
-
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/response_headers")
-
-        self.assertEqual(result.status_code, 200)
-
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(len(spans), 3)
-
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/response_headers"
+        assert asgi_span.data["http"]["path_tpl"] == "/response_headers"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
+        assert "X-Capture-This-Too" in asgi_span.data["http"]["header"]
+        assert asgi_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
+        assert "X-Capture-That-Too" in asgi_span.data["http"]["header"]
+        assert asgi_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
 
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+    def test_non_async_simple(self) -> None:
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/non_async_simple", headers=headers)
 
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/response_headers")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/response_headers")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
 
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
-
-        self.assertIn("X-Capture-This-Too", asgi_span.data["http"]["header"])
-        self.assertEqual("this too", asgi_span.data["http"]["header"]["X-Capture-This-Too"])
-        self.assertIn("X-Capture-That-Too", asgi_span.data["http"]["header"])
-        self.assertEqual("that too", asgi_span.data["http"]["header"]["X-Capture-That-Too"])
-
-    def test_non_async_simple(self):
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/non_async_simple")
-
-        self.assertEqual(result.status_code, 200)
-
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
-
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = (
-            lambda span: span.n == "urllib3" and span.p == test_span.s
-        )
-        urllib3_span1 = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span1)
-
-        span_filter = (
-            lambda span: span.n == "asgi" and span.p == urllib3_span1.s
-        )
+        span_filter = lambda span: span.n == "asgi" and span.p == test_span.s  # noqa: E731
         asgi_span1 = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span1)
+        assert asgi_span1
 
-        span_filter = (
-            lambda span: span.n == "urllib3" and span.p == asgi_span1.s
-        )
-        urllib3_span2 = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span2)
-
-        span_filter = (
-            lambda span: span.n == "asgi" and span.p == urllib3_span2.s
-        )
+        span_filter = lambda span: span.n == "asgi" and span.p == asgi_span1.s  # noqa: E731
         asgi_span2 = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span2)
+        assert asgi_span2
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, urllib3_span1.t)
-        self.assertEqual(traceId, asgi_span1.t)
-        self.assertEqual(traceId, urllib3_span2.t)
-        self.assertEqual(traceId, asgi_span2.t)
+        assert asgi_span1.t == traceId
+        assert asgi_span2.t == traceId
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span1.t)
+        assert result.headers["X-INSTANA-T"] == str(asgi_span1.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span1.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span1.t}"
 
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span1.s)
+        assert not asgi_span1.ec
+        assert asgi_span1.data["http"]["host"] == "testserver"
+        assert asgi_span1.data["http"]["path"] == "/non_async_simple"
+        assert asgi_span1.data["http"]["path_tpl"] == "/non_async_simple"
+        assert asgi_span1.data["http"]["method"] == "GET"
+        assert asgi_span1.data["http"]["status"] == 200
+        assert not asgi_span1.data["http"]["error"]
+        assert not asgi_span1.data["http"]["params"]
 
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
+        assert not asgi_span2.ec
+        assert asgi_span2.data["http"]["host"], "testserver"
+        assert asgi_span2.data["http"]["path"], "/users/1"
+        assert asgi_span2.data["http"]["path_tpl"], "/users/{user_id}"
+        assert asgi_span2.data["http"]["method"], "GET"
+        assert asgi_span2.data["http"]["status"], 200
+        assert not asgi_span2.data["http"]["error"]
+        assert not asgi_span2.data["http"]["params"]
 
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span1.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
+    def test_non_async_threadpool(self) -> None:
+        with tracer.start_as_current_span("test") as span:
+            # As TestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the ASGI server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            result = self.client.get("/non_async_threadpool", headers=headers)
 
-        self.assertIsNone(asgi_span1.ec)
-        self.assertEqual(asgi_span1.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span1.data["http"]["path"], "/non_async_simple")
-        self.assertEqual(asgi_span1.data["http"]["path_tpl"], "/non_async_simple")
-        self.assertEqual(asgi_span1.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span1.data["http"]["status"], 200)
+        assert result
+        assert result.status_code == 200
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "X-INSTANA-L" in result.headers
+        assert "Server-Timing" in result.headers
+        assert result.headers["X-INSTANA-L"] == "1"
 
-        self.assertIsNone(asgi_span1.data["http"]["error"])
-        self.assertIsNone(asgi_span1.data["http"]["params"])
+        spans = self.recorder.queued_spans()
+        # TODO: after support httpx, the expected value will be 3.
+        assert len(spans) == 2
 
-    def test_non_async_threadpool(self):
-        with async_tracer.start_active_span("test"):
-            result = requests.get(testenv["fastapi_server"] + "/non_async_threadpool")
-
-        self.assertEqual(result.status_code, 200)
-
-        spans = async_tracer.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
-
-        span_filter = (
+        span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
         )
         test_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(test_span)
+        assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(urllib3_span)
-
-        span_filter = lambda span: span.n == "asgi"
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
         asgi_span = get_first_span_by_filter(spans, span_filter)
-        self.assertTrue(asgi_span)
+        assert asgi_span
 
-        # Same traceId
-        self.assertEqual(test_span.t, urllib3_span.t)
-        self.assertEqual(urllib3_span.t, asgi_span.t)
+        assert test_span.t == asgi_span.t
+        assert test_span.s == asgi_span.p
+        
+        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
-        # Parent relationships
-        self.assertEqual(asgi_span.p, urllib3_span.s)
-        self.assertEqual(urllib3_span.p, test_span.s)
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["host"] == "testserver"
+        assert asgi_span.data["http"]["path"] == "/non_async_threadpool"
+        assert asgi_span.data["http"]["path_tpl"] == "/non_async_threadpool"
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
 
-        self.assertIn("X-INSTANA-T", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-T"], asgi_span.t)
-
-        self.assertIn("X-INSTANA-S", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-S"], asgi_span.s)
-
-        self.assertIn("X-INSTANA-L", result.headers)
-        self.assertEqual(result.headers["X-INSTANA-L"], "1")
-
-        self.assertIn("Server-Timing", result.headers)
-        server_timing_value = "intid;desc=%s" % asgi_span.t
-        self.assertEqual(result.headers["Server-Timing"], server_timing_value)
-
-        self.assertIsNone(asgi_span.ec)
-        self.assertEqual(asgi_span.data["http"]["host"], "127.0.0.1")
-        self.assertEqual(asgi_span.data["http"]["path"], "/non_async_threadpool")
-        self.assertEqual(asgi_span.data["http"]["path_tpl"], "/non_async_threadpool")
-        self.assertEqual(asgi_span.data["http"]["method"], "GET")
-        self.assertEqual(asgi_span.data["http"]["status"], 200)
-
-        self.assertIsNone(asgi_span.data["http"]["error"])
-        self.assertIsNone(asgi_span.data["http"]["params"])
+        assert not asgi_span.data["http"]["error"]
+        assert not asgi_span.data["http"]["params"]

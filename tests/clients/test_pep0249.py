@@ -1,6 +1,7 @@
 import logging
-from typing import Generator, TYPE_CHECKING
+from typing import Generator
 from unittest.mock import patch
+
 import psycopg2
 import psycopg2.extras
 import pytest
@@ -9,11 +10,13 @@ from instana.instrumentation.pep0249 import (
     ConnectionWrapper,
     CursorWrapper,
 )
-from opentelemetry.trace import SpanKind
 from instana.singletons import tracer
-from instana.util.traceutils import get_tracer_tuple
-from pytest import LogCaptureFixture
 from instana.span.span import InstanaSpan
+from instana.util.traceutils import get_tracer_tuple
+from opentelemetry.trace import SpanKind
+from pytest import LogCaptureFixture
+
+from tests.helpers import testenv
 
 
 class TestCursorWrapper:
@@ -22,11 +25,11 @@ class TestCursorWrapper:
         self.connect_params = [
             "db",
             {
-                "db": "instana_test_db",
-                "host": "localhost",
-                "port": "5432",
-                "user": "root",
-                "password": "passw0rd",
+                "db": testenv["postgresql_db"],
+                "host": testenv["postgresql_host"],
+                "port": testenv["postgresql_port"],
+                "user": testenv["postgresql_user"],
+                "password": testenv["postgresql_pw"],
             },
         ]
         self.test_conn = psycopg2.connect(
@@ -88,12 +91,12 @@ class TestCursorWrapper:
         # Test Connection
         assert (
             self.test_conn.dsn
-            == "user=root password=xxx dbname=instana_test_db host=localhost port=5432"
+            == "user=root password=xxx dbname=instana_test_db host=127.0.0.1 port=5432"
         )
         assert not self.test_conn.autocommit
         assert self.test_conn.status == 1
         assert self.test_conn.info.dbname == "instana_test_db"
-        assert self.test_conn.info.host == "localhost"
+        assert self.test_conn.info.host == "127.0.0.1"
         assert self.test_conn.info.user == "root"
         assert self.test_conn.info.port == 5432
 
@@ -118,8 +121,8 @@ class TestCursorWrapper:
             assert span.attributes["db.name"] == "instana_test_db"
             assert span.attributes["db.statement"] == sample_sql
             assert span.attributes["db.user"] == "root"
-            assert span.attributes["host"] == "localhost"
-            assert span.attributes["port"] == "5432"
+            assert span.attributes["host"] == "127.0.0.1"
+            assert span.attributes["port"] == 5432
 
     def test_collect_kvs_error(self, caplog: LogCaptureFixture):
         self.reset_table()
@@ -315,7 +318,7 @@ class TestConnectionWrapper:
 class TestConnectionFactory:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.test_conn_func = psycopg2.extras.LogicalReplicationConnection
+        self.test_conn_func = psycopg2.connect
         self.test_module_name = "test-factory"
         self.conn_fact = ConnectionFactory(self.test_conn_func, self.test_module_name)
         yield

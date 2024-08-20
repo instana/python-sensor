@@ -7,14 +7,16 @@
 import os
 import sys
 import time
-import opentracing
-import opentracing.ext.tags as ext
+
 try:
     from django.urls import re_path
 except ImportError:
     from django.conf.urls import url as re_path
 
 from django.http import HttpResponse, Http404
+from opentelemetry.semconv.trace import SpanAttributes
+
+from instana.singletons import tracer
 
 filepath, extension = os.path.splitext(__file__)
 os.environ['DJANGO_SETTINGS_MODULE'] = os.path.basename(filepath)
@@ -103,23 +105,22 @@ def not_found(request):
 
 
 def complex(request):
-    with opentracing.tracer.start_active_span('asteroid') as pscope:
-        pscope.span.set_tag(ext.COMPONENT, "Python simple example app")
-        pscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
-        pscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
-        pscope.span.set_tag(ext.HTTP_URL, "/python/simple/one")
-        pscope.span.set_tag(ext.HTTP_METHOD, "GET")
-        pscope.span.set_tag(ext.HTTP_STATUS_CODE, 200)
-        pscope.span.log_kv({"foo": "bar"})
+    with tracer.start_as_current_span("asteroid") as pspan:
+        pspan.set_attribute("component", "Python simple example app")
+        pspan.set_attribute("span.kind", "client")
+        pspan.set_attribute("peer.hostname", "localhost")
+        pspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/one")
+        pspan.set_attribute(SpanAttributes.HTTP_METHOD, "GET")
+        pspan.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 200)
+        pspan.add_event(name="complex_request", attributes={"foo": "bar"})
         time.sleep(.2)
 
-        with opentracing.tracer.start_active_span('spacedust', child_of=pscope.span) as cscope:
-            cscope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_CLIENT)
-            cscope.span.set_tag(ext.PEER_HOSTNAME, "localhost")
-            cscope.span.set_tag(ext.HTTP_URL, "/python/simple/two")
-            cscope.span.set_tag(ext.HTTP_METHOD, "POST")
-            cscope.span.set_tag(ext.HTTP_STATUS_CODE, 204)
-            cscope.span.set_baggage_item("someBaggage", "someValue")
+        with tracer.start_as_current_span("spacedust") as cspan:
+            cspan.set_attribute("span.kind", "client")
+            cspan.set_attribute("peer.hostname", "localhost")
+            cspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/two")
+            cspan.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
+            cspan.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 204)
             time.sleep(.1)
 
     return HttpResponse('Stan wuz here!')

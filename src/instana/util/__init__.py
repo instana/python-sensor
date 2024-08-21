@@ -10,8 +10,10 @@ import importlib.metadata
 
 from ..log import logger
 
+
 def nested_dictionary():
     return defaultdict(DictionaryOfStan)
+
 
 # Simple implementation of a nested dictionary.
 DictionaryOfStan = nested_dictionary
@@ -26,16 +28,20 @@ def to_json(obj):
     :return:  json string
     """
     try:
+
         def extractor(o):
-            if not hasattr(o, '__dict__'):
+            if not hasattr(o, "__dict__"):
                 logger.debug("Couldn't serialize non dict type: %s", type(o))
                 return {}
             else:
                 return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
 
-        return json.dumps(obj, default=extractor, sort_keys=False, separators=(',', ':')).encode()
+        return json.dumps(
+            obj, default=extractor, sort_keys=False, separators=(",", ":")
+        ).encode()
     except Exception:
         logger.debug("to_json non-fatal encoding issue: ", exc_info=True)
+
 
 def to_pretty_json(obj):
     """
@@ -45,14 +51,17 @@ def to_pretty_json(obj):
     :return:  json string
     """
     try:
+
         def extractor(o):
-            if not hasattr(o, '__dict__'):
+            if not hasattr(o, "__dict__"):
                 logger.debug("Couldn't serialize non dict type: %s", type(o))
                 return {}
             else:
                 return {k.lower(): v for k, v in o.__dict__.items() if v is not None}
 
-        return json.dumps(obj, default=extractor, sort_keys=True, indent=4, separators=(',', ':'))
+        return json.dumps(
+            obj, default=extractor, sort_keys=True, indent=4, separators=(",", ":")
+        )
     except Exception:
         logger.debug("to_pretty_json non-fatal encoding issue: ", exc_info=True)
 
@@ -65,9 +74,9 @@ def package_version():
     """
     version = ""
     try:
-        version = importlib.metadata.version('instana')
+        version = importlib.metadata.version("instana")
     except importlib.metadata.PackageNotFoundError:
-        version = 'unknown'
+        version = "unknown"
 
     return version
 
@@ -85,13 +94,18 @@ def get_default_gateway():
         # The Gateway IP is encoded backwards in hex.
         with open("/proc/self/net/route") as routes:
             for line in routes:
-                parts = line.split('\t')
-                if parts[1] == '00000000':
+                parts = line.split("\t")
+                if parts[1] == "00000000":
                     hip = parts[2]
 
         if hip is not None and len(hip) == 8:
             # Reverse order, convert hex to int
-            return "%i.%i.%i.%i" % (int(hip[6:8], 16), int(hip[4:6], 16), int(hip[2:4], 16), int(hip[0:2], 16))
+            return "%i.%i.%i.%i" % (
+                int(hip[6:8], 16),
+                int(hip[4:6], 16),
+                int(hip[2:4], 16),
+                int(hip[0:2], 16),
+            )
 
     except Exception:
         logger.warning("get_default_gateway: ", exc_info=True)
@@ -113,7 +127,9 @@ def every(delay, task, name):
             if task() is False:
                 break
         except Exception:
-            logger.debug("Problem while executing repetitive task: %s", name, exc_info=True)
+            logger.debug(
+                "Problem while executing repetitive task: %s", name, exc_info=True
+            )
 
         # skip tasks if we are behind schedule:
         next_time += (time.time() - next_time) // delay * delay + delay

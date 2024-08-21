@@ -6,12 +6,13 @@ import json
 import wrapt
 import inspect
 
-from ..log import logger
-from ..singletons import tracer, agent
-from ..util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.log import logger
+from instana.singletons import tracer, agent
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.propagators.format import Format
+from instana.span.span import get_current_span
 
 try:
-    import opentracing as ot
     import boto3
     from boto3.s3 import inject
 
@@ -21,13 +22,13 @@ try:
         try:
             for custom_header in agent.options.extra_http_headers:
                 if custom_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+                    span.set_attribute("http.header.%s" % custom_header, headers[custom_header])
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
 
 
-    def lambda_inject_context(payload, scope):
+    def lambda_inject_context(payload, span):
         """
         When boto3 lambda client 'Invoke' is called, we want to inject the tracing context.
         boto3/botocore has specific requirements:
@@ -39,7 +40,7 @@ try:
             if not isinstance(invoke_payload, dict):
                 invoke_payload = json.loads(invoke_payload)
 
-            tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, invoke_payload)
+            tracer.inject(span.context, Format.HTTP_HEADERS, invoke_payload)
             payload['Payload'] = json.dumps(invoke_payload)
         except Exception:
             logger.debug("non-fatal lambda_inject_context: ", exc_info=True)
@@ -47,8 +48,9 @@ try:
 
     @wrapt.patch_function_wrapper("botocore.auth", "SigV4Auth.add_auth")
     def emit_add_auth_with_instana(wrapped, instance, args, kwargs):
-        if not tracing_is_off() and tracer.active_span:
-            extract_custom_headers(tracer.active_span, args[0].headers)
+        current_span = get_current_span()
+        if not tracing_is_off() and current_span and current_span.is_recording():
+            extract_custom_headers(current_span, args[0].headers)
         return wrapped(*args, **kwargs)
 
 
@@ -60,25 +62,27 @@ try:
 
         tracer, parent_span, _ = get_tracer_tuple()
 
-        with tracer.start_active_span("boto3", child_of=parent_span) as scope:
+        parent_context = parent_span.get_span_context() if parent_span else None
+
+        with tracer.start_as_current_span("boto3", span_context=parent_context) as span:
             try:
                 operation = arg_list[0]
                 payload = arg_list[1]
 
-                scope.span.set_tag('op', operation)
-                scope.span.set_tag('ep', instance._endpoint.host)
-                scope.span.set_tag('reg', instance._client_config.region_name)
+                span.set_attribute('op', operation)
+                span.set_attribute('ep', instance._endpoint.host)
+                span.set_attribute('reg', instance._client_config.region_name)
 
-                scope.span.set_tag('http.url', instance._endpoint.host + ':443/' + arg_list[0])
-                scope.span.set_tag('http.method', 'POST')
+                span.set_attribute('http.url', instance._endpoint.host + ':443/' + arg_list[0])
+                span.set_attribute('http.method', 'POST')
 
                 # Don't collect payload for SecretsManager
                 if not hasattr(instance, 'get_secret_value'):
-                    scope.span.set_tag('payload', payload)
+                    span.set_attribute('payload', payload)
 
                 # Inject context when invoking lambdas
                 if 'lambda' in instance._endpoint.host and operation == 'Invoke':
-                    lambda_inject_context(payload, scope)
+                    lambda_inject_context(payload, span)
 
             except Exception as exc:
                 logger.debug("make_api_call_with_instana: collect error", exc_info=True)
@@ -91,13 +95,13 @@ try:
                     if isinstance(http_dict, dict):
                         status = http_dict.get('HTTPStatusCode')
                         if status is not None:
-                            scope.span.set_tag('http.status_code', status)
+                            span.set_attribute('http.status_code', status)
                         headers = http_dict.get('HTTPHeaders')
-                        extract_custom_headers(scope.span, headers)
+                        extract_custom_headers(span, headers)
 
                 return result
             except Exception as exc:
-                scope.span.mark_as_errored({'error': exc})
+                span.mark_as_errored({'error': exc})
                 raise
 
 
@@ -112,15 +116,17 @@ try:
 
         tracer, parent_span, _ = get_tracer_tuple()
 
-        with tracer.start_active_span("boto3", child_of=parent_span) as scope:
+        parent_context = parent_span.get_span_context() if parent_span else None
+
+        with tracer.start_as_current_span("boto3", span_context=parent_context) as span:
             try:
                 operation = wrapped.__name__
-                scope.span.set_tag('op', operation)
-                scope.span.set_tag('ep', instance._endpoint.host)
-                scope.span.set_tag('reg', instance._client_config.region_name)
+                span.set_attribute('op', operation)
+                span.set_attribute('ep', instance._endpoint.host)
+                span.set_attribute('reg', instance._client_config.region_name)
 
-                scope.span.set_tag('http.url', instance._endpoint.host + ':443/' + operation)
-                scope.span.set_tag('http.method', 'POST')
+                span.set_attribute('http.url', instance._endpoint.host + ':443/' + operation)
+                span.set_attribute('http.method', 'POST')
 
                 arg_length = len(arg_list)
                 if arg_length > 0:
@@ -128,14 +134,14 @@ try:
                     for index in range(arg_length):
                         if fas_args[index] in ['Filename', 'Bucket', 'Key']:
                             payload[fas_args[index]] = arg_list[index]
-                    scope.span.set_tag('payload', payload)
+                    span.set_attribute('payload', payload)
             except Exception as exc:
                 logger.debug("s3_inject_method_with_instana: collect error", exc_info=True)
 
             try:
                 return wrapped(*arg_list, **kwargs)
             except Exception as exc:
-                scope.span.mark_as_errored({'error': exc})
+                span.mark_as_errored({'error': exc})
                 raise
 
 

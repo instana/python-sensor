@@ -39,7 +39,7 @@ class InstanaASGIMiddleware:
                 for header_pair in headers:
                     if header_pair[0].decode("utf-8").lower() == custom_header.lower():
                         span.set_attribute(
-                            "http.header.%s" % custom_header,
+                            f"http.header.{custom_header}",
                             header_pair[1].decode("utf-8"),
                         )
         except Exception:
@@ -49,11 +49,11 @@ class InstanaASGIMiddleware:
         try:
             span.set_attribute("span.kind", SpanKind.SERVER)
             span.set_attribute("http.path", scope.get("path"))
-            span.set_attribute("http.method", scope.get("method"))
+            span.set_attribute(SpanAttributes.HTTP_METHOD, scope.get("method"))
 
             server = scope.get("server")
             if isinstance(server, tuple) or isinstance(server, list):
-                span.set_attribute("http.host", server[0])
+                span.set_attribute(SpanAttributes.HTTP_HOST, server[0])
 
             query = scope.get("query_string")
             if isinstance(query, (str, bytes)) and len(query):

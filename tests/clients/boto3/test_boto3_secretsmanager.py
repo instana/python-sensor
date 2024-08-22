@@ -3,36 +3,37 @@
 
 import os
 import boto3
-import unittest
-
+import pytest
+from typing import Generator
 from moto import mock_aws
 
 from instana.singletons import tracer, agent
-from ...helpers import get_first_span_by_filter
+from tests.helpers import get_first_span_by_filter
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 
-class TestSecretsManager(unittest.TestCase):
-    def setUp(self):
-        """ Clear all spans before a test run """
-        self.recorder = tracer.recorder
+class TestSecretsManager:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        """ Setup and Teardown """
+        # Clear all spans before a test run
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws()
         self.mock.start()
         self.secretsmanager = boto3.client('secretsmanager', region_name='us-east-1')
-
-    def tearDown(self):
+        yield
         # Stop Moto after each test
         self.mock.stop()
         agent.options.allow_exit_as_root = False
 
 
-    def test_vanilla_list_secrets(self):
+    def test_vanilla_list_secrets(self) -> None:
         result = self.secretsmanager.list_secrets(MaxResults=123)
-        self.assertListEqual(result['SecretList'], [])
+        assert result['SecretList'] == []
 
 
-    def test_get_secret_value(self):
+    def test_get_secret_value(self) -> None:
         secret_id = 'Uber_Password'
 
         response = self.secretsmanager.create_secret(
@@ -41,40 +42,40 @@ class TestSecretsManager(unittest.TestCase):
             SecretString='password1',
         )
 
-        self.assertEqual(response['Name'], secret_id)
+        assert response['Name'] == secret_id
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.secretsmanager.get_secret_value(SecretId=secret_id)
 
-        self.assertEqual(result['Name'], secret_id)
+        assert result['Name'] == secret_id
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
-        self.assertNotIn('payload', boto_span.data['boto3'])
+        assert boto_span.data['boto3']['op'] == 'GetSecretValue'
+        assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
+        assert 'payload' not in boto_span.data['boto3']
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'
 
 
-    def test_get_secret_value_as_root_exit_span(self):
+    def test_get_secret_value_as_root_exit_span(self) -> None:
         secret_id = 'Uber_Password'
 
         response = self.secretsmanager.create_secret(
@@ -83,33 +84,33 @@ class TestSecretsManager(unittest.TestCase):
             SecretString='password1',
         )
 
-        self.assertEqual(response['Name'], secret_id)
+        assert response['Name'] == secret_id
 
         agent.options.allow_exit_as_root = True
         result = self.secretsmanager.get_secret_value(SecretId=secret_id)
 
-        self.assertEqual(result['Name'], secret_id)
+        assert result['Name'] == secret_id
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
+        assert 1 == len(spans)
 
         boto_span = spans[0]
-        self.assertTrue(boto_span)
-        self.assertEqual(boto_span.n, "boto3")
-        self.assertIsNone(boto_span.p)
-        self.assertIsNone(boto_span.ec)
+        assert boto_span
+        assert boto_span.n == "boto3"
+        assert boto_span.p is None
+        assert boto_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
-        self.assertNotIn('payload', boto_span.data['boto3'])
+        assert boto_span.data['boto3']['op'] == 'GetSecretValue'
+        assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
+        assert 'payload' not in boto_span.data['boto3']
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'
 
 
-    def test_request_header_capture_before_call(self):
+    def test_request_header_capture_before_call(self) -> None:
         secret_id = 'Uber_Password'
 
         response = self.secretsmanager.create_secret(
@@ -118,7 +119,7 @@ class TestSecretsManager(unittest.TestCase):
             SecretString='password1',
         )
 
-        self.assertEqual(response['Name'], secret_id)
+        assert response['Name'] == secret_id
 
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
@@ -138,45 +139,45 @@ class TestSecretsManager(unittest.TestCase):
         # Register the function to before-call event.
         event_system.register('before-call.secrets-manager.GetSecretValue', add_custom_header_before_call)
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.secretsmanager.get_secret_value(SecretId=secret_id)
 
-        self.assertEqual(result['Name'], secret_id)
+        assert result['Name'] == secret_id
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
-        self.assertNotIn('payload', boto_span.data['boto3'])
+        assert boto_span.data['boto3']['op'] == 'GetSecretValue'
+        assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
+        assert 'payload' not in boto_span.data['boto3']
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'
 
-        self.assertIn("X-Capture-This", boto_span.data["http"]["header"])
-        self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
-        self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
-        self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
+        assert "X-Capture-This" in boto_span.data["http"]["header"]
+        assert "this" == boto_span.data["http"]["header"]["X-Capture-This"]
+        assert "X-Capture-That" in boto_span.data["http"]["header"]
+        assert "that" == boto_span.data["http"]["header"]["X-Capture-That"]
 
         agent.options.extra_http_headers = original_extra_http_headers
 
 
-    def test_request_header_capture_before_sign(self):
+    def test_request_header_capture_before_sign(self) -> None:
         secret_id = 'Uber_Password'
 
         response = self.secretsmanager.create_secret(
@@ -185,7 +186,7 @@ class TestSecretsManager(unittest.TestCase):
             SecretString='password1',
         )
 
-        self.assertEqual(response['Name'], secret_id)
+        assert response['Name'] == secret_id
 
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Custom-1', 'X-Custom-2']
@@ -206,45 +207,45 @@ class TestSecretsManager(unittest.TestCase):
         # Register the function to before-sign event.
         event_system.register_first('before-sign.secrets-manager.GetSecretValue', add_custom_header_before_sign)
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.secretsmanager.get_secret_value(SecretId=secret_id)
 
-        self.assertEqual(result['Name'], secret_id)
+        assert result['Name'] == secret_id
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
-        self.assertNotIn('payload', boto_span.data['boto3'])
+        assert boto_span.data['boto3']['op'] == 'GetSecretValue'
+        assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
+        assert 'payload' not in boto_span.data['boto3']
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'
 
-        self.assertIn("X-Custom-1", boto_span.data["http"]["header"])
-        self.assertEqual("Value1", boto_span.data["http"]["header"]["X-Custom-1"])
-        self.assertIn("X-Custom-2", boto_span.data["http"]["header"])
-        self.assertEqual("Value2", boto_span.data["http"]["header"]["X-Custom-2"])
+        assert "X-Custom-1" in boto_span.data["http"]["header"]
+        assert "Value1" == boto_span.data["http"]["header"]["X-Custom-1"]
+        assert "X-Custom-2" in boto_span.data["http"]["header"]
+        assert "Value2" == boto_span.data["http"]["header"]["X-Custom-2"]
 
         agent.options.extra_http_headers = original_extra_http_headers
 
 
-    def test_response_header_capture(self):
+    def test_response_header_capture(self) -> None:
         secret_id = 'Uber_Password'
 
         response = self.secretsmanager.create_secret(
@@ -253,7 +254,7 @@ class TestSecretsManager(unittest.TestCase):
             SecretString='password1',
         )
 
-        self.assertEqual(response['Name'], secret_id)
+        assert response['Name'] == secret_id
 
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
@@ -273,39 +274,39 @@ class TestSecretsManager(unittest.TestCase):
         # Register the function to an event
         event_system.register('after-call.secrets-manager.GetSecretValue', modify_after_call_args)
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.secretsmanager.get_secret_value(SecretId=secret_id)
 
-        self.assertEqual(result['Name'], secret_id)
+        assert result['Name'] == secret_id
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'GetSecretValue')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://secretsmanager.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
-        self.assertNotIn('payload', boto_span.data['boto3'])
+        assert boto_span.data['boto3']['op'] == 'GetSecretValue'
+        assert boto_span.data['boto3']['ep'] == 'https://secretsmanager.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
+        assert 'payload' not in boto_span.data['boto3']
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://secretsmanager.us-east-1.amazonaws.com:443/GetSecretValue'
 
-        self.assertIn("X-Capture-This-Too", boto_span.data["http"]["header"])
-        self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
-        self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
-        self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
+        assert "X-Capture-This-Too" in boto_span.data["http"]["header"]
+        assert "this too" == boto_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert "X-Capture-That-Too" in boto_span.data["http"]["header"]
+        assert "that too" == boto_span.data["http"]["header"]["X-Capture-That-Too"]
 
         agent.options.extra_http_headers = original_extra_http_headers

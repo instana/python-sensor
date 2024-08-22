@@ -89,7 +89,7 @@ class InstanaMiddleware(MiddlewareMixin):
                     try:
                         from django.urls import resolve
                         view_name = resolve(request.path)._func_path
-                        path_tpl = "".join(self.__url_pattern_route(view_name))
+                        path_tpl = "".join(url_pattern_route(view_name))
                     except Exception:
                         # the resolve method can fire a Resolver404 exception, in this case there is no matching route
                         # so the path_tpl is set to None in order not to be added as a tag
@@ -108,6 +108,9 @@ class InstanaMiddleware(MiddlewareMixin):
                 if request.span.is_recording():
                     request.span.end()
                 request.span = None
+            if request.token:
+                context.detach(request.token)
+                request.token = None
         return response
 
     def process_exception(self, request: "WSGIRequest", exception: Exception) -> None:
@@ -119,32 +122,35 @@ class InstanaMiddleware(MiddlewareMixin):
         if request.span:
             request.span.record_exception(exception)
 
-    def __url_pattern_route(self, view_name: str) -> Callable[..., object]:
-        from django.conf import settings
-        from django.urls import RegexURLResolver as URLResolver
+def url_pattern_route(view_name: str) -> Callable[..., object]:
+    from django.conf import settings
+    try:
+        from django.urls import (RegexURLPattern as URLPattern, RegexURLResolver as URLResolver)
+    except ImportError:
+        from django.urls import URLPattern, URLResolver
 
-        urlconf = __import__(settings.ROOT_URLCONF, {}, {}, [''])
+    urlconf = __import__(settings.ROOT_URLCONF, {}, {}, [''])
 
-        def list_urls(urlpatterns: List[str], parent_pattern: Optional[List[str]]=None) -> Callable[..., object]:
-            if not urlpatterns:
-                return
-            if parent_pattern is None:
-                parent_pattern = []
-            first = urlpatterns[0]
-            if isinstance(first, URLPattern):
-                if first.lookup_str == view_name:
-                    if hasattr(first, "regex"):
-                        return parent_pattern + [str(first.regex.pattern)]
-                    else:
-                        return parent_pattern + [str(first.pattern)]
-            elif isinstance(first, URLResolver):
+    def list_urls(urlpatterns: List[str], parent_pattern: Optional[List[str]]=None) -> Callable[..., object]:
+        if not urlpatterns:
+            return
+        if parent_pattern is None:
+            parent_pattern = []
+        first = urlpatterns[0]
+        if isinstance(first, URLPattern):
+            if first.lookup_str == view_name:
                 if hasattr(first, "regex"):
-                    return list_urls(first.url_patterns, parent_pattern + [str(first.regex.pattern)])
+                    return parent_pattern + [str(first.regex.pattern)]
                 else:
-                    return list_urls(first.url_patterns, parent_pattern + [str(first.pattern)])
-            return list_urls(urlpatterns[1:], parent_pattern)
+                    return parent_pattern + [str(first.pattern)]
+        elif isinstance(first, URLResolver):
+            if hasattr(first, "regex"):
+                return list_urls(first.url_patterns, parent_pattern + [str(first.regex.pattern)])
+            else:
+                return list_urls(first.url_patterns, parent_pattern + [str(first.pattern)])
+        return list_urls(urlpatterns[1:], parent_pattern)
 
-        return list_urls(urlconf.urlpatterns)
+    return list_urls(urlconf.urlpatterns)
 
 
 def load_middleware_wrapper(wrapped: Callable[..., None], instance: "WSGIHandler", args: Tuple[object, ...], kwargs: Dict[str, Any]) -> Callable[..., None]:
@@ -164,7 +170,7 @@ def load_middleware_wrapper(wrapped: Callable[..., None], instance: "WSGIHandler
             else:
                 logger.warning("Instana: Couldn't add InstanaMiddleware to Django")
 
-        elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None:
+        elif hasattr(settings, 'MIDDLEWARE_CLASSES') and settings.MIDDLEWARE_CLASSES is not None: # pragma: no cover
             if DJ_INSTANA_MIDDLEWARE in settings.MIDDLEWARE_CLASSES:
                 return wrapped(*args, **kwargs)
 
@@ -175,7 +181,7 @@ def load_middleware_wrapper(wrapped: Callable[..., None], instance: "WSGIHandler
             else:
                 logger.warning("Instana: Couldn't add InstanaMiddleware to Django")
 
-        else:
+        else: # pragma: no cover
             logger.warning("Instana: Couldn't find middleware settings")
 
         return wrapped(*args, **kwargs)
@@ -188,7 +194,7 @@ try:
         logger.debug("Instrumenting django")
         wrapt.wrap_function_wrapper('django.core.handlers.base', 'BaseHandler.load_middleware', load_middleware_wrapper)
 
-        if '/tmp/.instana/python' in sys.path:
+        if '/tmp/.instana/python' in sys.path: # pragma: no cover
             # If we are instrumenting via AutoTrace (in an already running process), then the
             # WSGI middleware has to be live reloaded.
             from django.core.servers.basehttp import get_internal_wsgi_application

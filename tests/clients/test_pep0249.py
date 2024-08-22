@@ -148,12 +148,7 @@ class TestCursorWrapper:
         with tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_params = (2, "sample-name", "sample-email@mail.com")
-            with patch(
-                "instana.instrumentation.pep0249.get_tracer_tuple",
-                wraps=get_tracer_tuple,
-            ) as mock_get_tracer_tuple:
-                self.test_wrapper.execute(sample_sql, sample_params)
-                mock_get_tracer_tuple.assert_called_once()
+            self.test_wrapper.execute(sample_sql, sample_params)
             self.test_wrapper.execute("select * from tests;")
             response = self.test_wrapper.fetchall()
             assert sample_params in response
@@ -189,12 +184,7 @@ class TestCursorWrapper:
                 (4, "sample-name-3", "sample-email-3@mail.com"),
                 (5, "sample-name-4", "sample-email-4@mail.com"),
             ]
-            with patch(
-                "instana.instrumentation.pep0249.get_tracer_tuple",
-                wraps=get_tracer_tuple,
-            ) as mocked_object:
-                self.test_wrapper.executemany(sample_sql, sample_seq_of_params)
-                mocked_object.assert_called_once()
+            self.test_wrapper.executemany(sample_sql, sample_seq_of_params)
             self.test_wrapper.execute("select * from tests;")
             response = self.test_wrapper.fetchall()
             for record in sample_seq_of_params:

@@ -3,45 +3,47 @@
 
 import os
 import boto3
-import unittest
+import pytest
 import urllib3
+from typing import Generator
 
 from moto import mock_aws
 
 import tests.apps.flask_app
 from instana.singletons import tracer, agent
-from ...helpers import get_first_span_by_filter, testenv
+from tests.helpers import get_first_span_by_filter, testenv
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 
 
-class TestSqs(unittest.TestCase):
-    def setUp(self):
-        """ Clear all spans before a test run """
-        self.recorder = tracer.recorder
+class TestSqs:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        """ Setup and Teardown """
+        # Clear all spans before a test run
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws()
         self.mock.start()
         self.sqs = boto3.client('sqs', region_name='us-east-1')
         self.http_client = urllib3.PoolManager()
-
-    def tearDown(self):
+        yield
         # Stop Moto after each test
         self.mock.stop()
         agent.options.allow_exit_as_root = False
 
 
-    def test_vanilla_create_queue(self):
+    def test_vanilla_create_queue(self) -> None:
         result = self.sqs.create_queue(
             QueueName='SQS_QUEUE_NAME',
             Attributes={
                 'DelaySeconds': '60',
                 'MessageRetentionPeriod': '86400'
             })
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        assert result['ResponseMetadata']['HTTPStatusCode'] == 200
 
 
-    def test_send_message(self):
+    def test_send_message(self) -> None:
         # Create the Queue:
         response = self.sqs.create_queue(
             QueueName='SQS_QUEUE_NAME',
@@ -51,10 +53,10 @@ class TestSqs(unittest.TestCase):
             }
         )
 
-        self.assertTrue(response['QueueUrl'])
+        assert response['QueueUrl']
         queue_url = response['QueueUrl']
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -68,39 +70,39 @@ class TestSqs(unittest.TestCase):
                             'with Instana Application Performance Monitoring')
             )
 
-        self.assertTrue(response['MessageId'])
+        assert response['MessageId']
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'SendMessage')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://sqs.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        assert boto_span.data['boto3']['op'] == 'SendMessage'
+        assert boto_span.data['boto3']['ep'] == 'https://sqs.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
         payload = {'QueueUrl': 'https://sqs.us-east-1.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
                 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
                 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
-        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        assert boto_span.data['boto3']['payload'] == payload
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://sqs.us-east-1.amazonaws.com:443/SendMessage')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
 
-    def test_send_message_as_root_exit_span(self):
+    def test_send_message_as_root_exit_span(self) -> None:
         # Create the Queue:
         response = self.sqs.create_queue(
             QueueName='SQS_QUEUE_NAME',
@@ -110,7 +112,7 @@ class TestSqs(unittest.TestCase):
             }
         )
 
-        self.assertTrue(response['QueueUrl'])
+        assert response['QueueUrl']
         agent.options.allow_exit_as_root = True
         queue_url = response['QueueUrl']
 
@@ -127,72 +129,72 @@ class TestSqs(unittest.TestCase):
                         'with Instana Application Performance Monitoring')
         )
 
-        self.assertTrue(response['MessageId'])
+        assert response['MessageId']
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
+        assert 1 == len(spans)
         boto_span = spans[0]
-        self.assertTrue(boto_span)
-        self.assertEqual(boto_span.n, "boto3")
-        self.assertIsNone(boto_span.p)
-        self.assertIsNone(boto_span.ec)
+        assert boto_span
+        assert boto_span.n == "boto3"
+        assert boto_span.p is None
+        assert boto_span.ec is None
 
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'SendMessage')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://sqs.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        assert boto_span.data['boto3']['op'] == 'SendMessage'
+        assert boto_span.data['boto3']['ep'] == 'https://sqs.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
         payload = {'QueueUrl': 'https://sqs.us-east-1.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
                 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
                 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
-        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        assert boto_span.data['boto3']['payload'] == payload
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://sqs.us-east-1.amazonaws.com:443/SendMessage')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
 
-    def test_app_boto3_sqs(self):
-        with tracer.start_active_span('test'):
+    def test_app_boto3_sqs(self) -> None:
+        with tracer.start_as_current_span("test"):
             self.http_client.request('GET', testenv["flask_server"] + '/boto3/sqs')
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(5, len(spans))
+        assert 5 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "urllib3"
         http_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(http_span)
+        assert http_span
 
         filter = lambda span: span.n == "wsgi"
         wsgi_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(wsgi_span)
+        assert wsgi_span
 
         filter = lambda span: span.n == "boto3" and span.data['boto3']['op'] == 'CreateQueue'
         bcq_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(bcq_span)
+        assert bcq_span
 
         filter = lambda span: span.n == "boto3" and span.data['boto3']['op'] == 'SendMessage'
         bsm_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(bsm_span)
+        assert bsm_span
 
-        self.assertEqual(http_span.t, test_span.t)
-        self.assertEqual(http_span.p, test_span.s)
+        assert http_span.t == test_span.t
+        assert http_span.p == test_span.s
 
-        self.assertEqual(wsgi_span.t, test_span.t)
-        self.assertEqual(wsgi_span.p, http_span.s)
+        assert wsgi_span.t == test_span.t
+        assert wsgi_span.p == http_span.s
 
-        self.assertEqual(bcq_span.t, test_span.t)
-        self.assertEqual(bcq_span.p, wsgi_span.s)
+        assert bcq_span.t == test_span.t
+        assert bcq_span.p == wsgi_span.s
 
-        self.assertEqual(bsm_span.t, test_span.t)
-        self.assertEqual(bsm_span.p, wsgi_span.s)
+        assert bsm_span.t == test_span.t
+        assert bsm_span.p == wsgi_span.s
 
 
-    def test_request_header_capture_before_call(self):
+    def test_request_header_capture_before_call(self) -> None:
         # Create the Queue:
         response = self.sqs.create_queue(
             QueueName='SQS_QUEUE_NAME',
@@ -202,7 +204,7 @@ class TestSqs(unittest.TestCase):
             }
         )
 
-        self.assertTrue(response['QueueUrl'])
+        assert response['QueueUrl']
 
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
@@ -223,7 +225,7 @@ class TestSqs(unittest.TestCase):
         event_system.register('before-call.sqs.SendMessage', add_custom_header_before_call)
 
         queue_url = response['QueueUrl']
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -237,46 +239,46 @@ class TestSqs(unittest.TestCase):
                             'with Instana Application Performance Monitoring')
             )
 
-        self.assertTrue(response['MessageId'])
+        assert response['MessageId']
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'SendMessage')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://sqs.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        assert boto_span.data['boto3']['op'] == 'SendMessage'
+        assert boto_span.data['boto3']['ep'] == 'https://sqs.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
         payload = {'QueueUrl': 'https://sqs.us-east-1.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
                 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
                 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
-        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        assert boto_span.data['boto3']['payload'] == payload
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://sqs.us-east-1.amazonaws.com:443/SendMessage')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
-        self.assertIn("X-Capture-This", boto_span.data["http"]["header"])
-        self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
-        self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
-        self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
+        assert "X-Capture-This" in boto_span.data["http"]["header"]
+        assert "this" == boto_span.data["http"]["header"]["X-Capture-This"]
+        assert "X-Capture-That" in boto_span.data["http"]["header"]
+        assert "that" == boto_span.data["http"]["header"]["X-Capture-That"]
 
         agent.options.extra_http_headers = original_extra_http_headers
 
 
-    def test_request_header_capture_before_sign(self):
+    def test_request_header_capture_before_sign(self) -> None:
         # Create the Queue:
         response = self.sqs.create_queue(
             QueueName='SQS_QUEUE_NAME',
@@ -286,7 +288,7 @@ class TestSqs(unittest.TestCase):
             }
         )
 
-        self.assertTrue(response['QueueUrl'])
+        assert response['QueueUrl']
 
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Custom-1', 'X-Custom-2']
@@ -308,7 +310,7 @@ class TestSqs(unittest.TestCase):
         event_system.register_first('before-sign.sqs.SendMessage', add_custom_header_before_sign)
 
         queue_url = response['QueueUrl']
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -322,46 +324,46 @@ class TestSqs(unittest.TestCase):
                             'with Instana Application Performance Monitoring')
             )
 
-        self.assertTrue(response['MessageId'])
+        assert response['MessageId']
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'SendMessage')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://sqs.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        assert boto_span.data['boto3']['op'] == 'SendMessage'
+        assert boto_span.data['boto3']['ep'] == 'https://sqs.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
         payload = {'QueueUrl': 'https://sqs.us-east-1.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
                 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
                 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
-        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        assert boto_span.data['boto3']['payload'] == payload
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://sqs.us-east-1.amazonaws.com:443/SendMessage')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
-        self.assertIn("X-Custom-1", boto_span.data["http"]["header"])
-        self.assertEqual("Value1", boto_span.data["http"]["header"]["X-Custom-1"])
-        self.assertIn("X-Custom-2", boto_span.data["http"]["header"])
-        self.assertEqual("Value2", boto_span.data["http"]["header"]["X-Custom-2"])
+        assert "X-Custom-1" in boto_span.data["http"]["header"]
+        assert "Value1" == boto_span.data["http"]["header"]["X-Custom-1"]
+        assert "X-Custom-2" in boto_span.data["http"]["header"]
+        assert "Value2" == boto_span.data["http"]["header"]["X-Custom-2"]
 
         agent.options.extra_http_headers = original_extra_http_headers
 
 
-    def test_response_header_capture(self):
+    def test_response_header_capture(self) -> None:
         # Create the Queue:
         response = self.sqs.create_queue(
             QueueName='SQS_QUEUE_NAME',
@@ -371,7 +373,7 @@ class TestSqs(unittest.TestCase):
             }
         )
 
-        self.assertTrue(response['QueueUrl'])
+        assert response['QueueUrl']
 
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
@@ -392,7 +394,7 @@ class TestSqs(unittest.TestCase):
         event_system.register('after-call.sqs.SendMessage', modify_after_call_args)
 
         queue_url = response['QueueUrl']
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -406,40 +408,40 @@ class TestSqs(unittest.TestCase):
                             'with Instana Application Performance Monitoring')
             )
 
-        self.assertTrue(response['MessageId'])
+        assert response['MessageId']
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
+        assert test_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'SendMessage')
-        self.assertEqual(boto_span.data['boto3']['ep'], 'https://sqs.us-east-1.amazonaws.com')
-        self.assertEqual(boto_span.data['boto3']['reg'], 'us-east-1')
+        assert boto_span.data['boto3']['op'] == 'SendMessage'
+        assert boto_span.data['boto3']['ep'] == 'https://sqs.us-east-1.amazonaws.com'
+        assert boto_span.data['boto3']['reg'] == 'us-east-1'
 
         payload = {'QueueUrl': 'https://sqs.us-east-1.amazonaws.com/123456789012/SQS_QUEUE_NAME', 'DelaySeconds': 10,
                 'MessageAttributes': {'Website': {'DataType': 'String', 'StringValue': 'https://www.instana.com'}},
                 'MessageBody': 'Monitor any application, service, or request with Instana Application Performance Monitoring'}
-        self.assertDictEqual(boto_span.data['boto3']['payload'], payload)
+        assert boto_span.data['boto3']['payload'] == payload
 
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], 'https://sqs.us-east-1.amazonaws.com:443/SendMessage')
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == 'https://sqs.us-east-1.amazonaws.com:443/SendMessage'
 
-        self.assertIn("X-Capture-This-Too", boto_span.data["http"]["header"])
-        self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
-        self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
-        self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
+        assert "X-Capture-This-Too" in boto_span.data["http"]["header"]
+        assert "this too" == boto_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert "X-Capture-That-Too" in boto_span.data["http"]["header"]
+        assert "that too" == boto_span.data["http"]["header"]["X-Capture-That-Too"]
 
         agent.options.extra_http_headers = original_extra_http_headers

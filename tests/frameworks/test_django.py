@@ -12,6 +12,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from tests.apps.app_django import INSTALLED_APPS
 from instana.singletons import agent, tracer
 from tests.helpers import fail_with_message_and_span_dump, get_first_span_by_filter, drop_log_spans_from_list
+from instana.instrumentation.django.middleware import url_pattern_route
 
 apps.populate(INSTALLED_APPS)
 
@@ -19,13 +20,13 @@ apps.populate(INSTALLED_APPS)
 class TestDjango(StaticLiveServerTestCase):
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        """ Clear all spans before a test run """
+        """ Setup and Teardown """
         self.http = urllib3.PoolManager()
         self.recorder = tracer.span_processor
+        # clear all spans before a test run
         self.recorder.clear_spans()
-
-    def tearDown(self) -> None:
-        """ Clear the INSTANA_DISABLE_W3C_TRACE_CORRELATION environment variable """
+        yield
+        # clear the INSTANA_DISABLE_W3C_TRACE_CORRELATION environment variable
         os.environ["INSTANA_DISABLE_W3C_TRACE_CORRELATION"] = ""
 
     def test_basic_request(self) -> None:
@@ -80,7 +81,6 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert django_span.stack is None
 
-    @pytest.mark.skip("Synthetic is not yet handled")
     def test_synthetic_request(self) -> None:
         headers = {
             'X-INSTANA-SYNTHETIC': '1'
@@ -573,3 +573,15 @@ class TestDjango(StaticLiveServerTestCase):
         assert 'Server-Timing' in response.headers
         server_timing_value = "intid;desc=%s" % django_span.t
         assert response.headers['Server-Timing'] == server_timing_value
+
+    def test_url_pattern_route(self) -> None:
+        view_name="app_django.another"
+        path_tpl = "".join(url_pattern_route(view_name))
+        assert path_tpl == "^another$"
+        
+        view_name="app_django.complex"
+        try:
+            path_tpl = "".join(url_pattern_route(view_name))
+        except Exception:
+            path_tpl = None
+        assert path_tpl is None

@@ -1,95 +1,96 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import unittest
+import pytest
 import json
-
+from typing import Generator
 import boto3
 from moto import mock_aws
 
 from instana.singletons import tracer, agent
-from ...helpers import get_first_span_by_filter
+from tests.helpers import get_first_span_by_filter
 
-class TestLambda(unittest.TestCase):
-    def setUp(self):
-        """ Clear all spans before a test run """
-        self.recorder = tracer.recorder
+class TestLambda:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        """ Setup and Teardown """
+        # Clear all spans before a test run
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws(config={"lambda": {"use_docker": False}})
         self.mock.start()
         self.lambda_region = "us-east-1"
         self.aws_lambda = boto3.client('lambda', region_name=self.lambda_region)
         self.function_name = "myfunc"
-
-    def tearDown(self):
+        yield
         # Stop Moto after each test
         self.mock.stop()
         agent.options.allow_exit_as_root = False
 
-    def test_lambda_invoke(self):
-        with tracer.start_active_span('test'):
+    def test_lambda_invoke(self) -> None:
+        with tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(FunctionName=self.function_name, Payload=json.dumps({"message": "success"}))
 
-        self.assertEqual(result["StatusCode"], 200)
+        assert result["StatusCode"] == 200
         result_payload = json.loads(result["Payload"].read().decode("utf-8"))
-        self.assertIn("message", result_payload)
-        self.assertEqual("success", result_payload["message"])
+        assert "message" in result_payload
+        assert "success" == result_payload["message"]
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(boto_span.ec)
+        assert test_span.ec is None
+        assert boto_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        assert boto_span.data['boto3']['op'] == 'Invoke'
         endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
-        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
-        self.assertEqual(boto_span.data['boto3']['reg'], self.lambda_region)
-        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
-        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
+        assert boto_span.data['boto3']['ep'] == endpoint
+        assert boto_span.data['boto3']['reg'] == self.lambda_region
+        assert 'FunctionName' in boto_span.data['boto3']['payload']
+        assert boto_span.data['boto3']['payload']['FunctionName'] == self.function_name
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == f'{endpoint}:443/Invoke'
 
-    def test_lambda_invoke_as_root_exit_span(self):
+    def test_lambda_invoke_as_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True
         result = self.aws_lambda.invoke(FunctionName=self.function_name, Payload=json.dumps({"message": "success"}))
 
-        self.assertEqual(result["StatusCode"], 200)
+        assert result["StatusCode"] == 200
         result_payload = json.loads(result["Payload"].read().decode("utf-8"))
-        self.assertIn("message", result_payload)
-        self.assertEqual("success", result_payload["message"])
+        assert "message" in result_payload
+        assert "success" == result_payload["message"]
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
+        assert 1 == len(spans)
         boto_span = spans[0]
-        self.assertTrue(boto_span)
-        self.assertEqual(boto_span.n, "boto3")
-        self.assertIsNone(boto_span.p)
-        self.assertIsNone(boto_span.ec)
+        assert boto_span
+        assert boto_span.n == "boto3"
+        assert boto_span.p is None
+        assert boto_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        assert boto_span.data['boto3']['op'] == 'Invoke'
         endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
-        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
-        self.assertEqual(boto_span.data['boto3']['reg'], self.lambda_region)
-        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
-        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
+        assert boto_span.data['boto3']['ep'] == endpoint
+        assert boto_span.data['boto3']['reg'] == self.lambda_region
+        assert 'FunctionName' in boto_span.data['boto3']['payload']
+        assert boto_span.data['boto3']['payload']['FunctionName'] == self.function_name
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == f'{endpoint}:443/Invoke'
 
-    def test_request_header_capture_before_call(self):
+    def test_request_header_capture_before_call(self) -> None:
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Capture-This', 'X-Capture-That']
 
@@ -108,50 +109,50 @@ class TestLambda(unittest.TestCase):
         # Register the function to before-call event.
         event_system.register('before-call.lambda.Invoke', add_custom_header_before_call)
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(FunctionName=self.function_name, Payload=json.dumps({"message": "success"}))
 
-        self.assertEqual(result["StatusCode"], 200)
+        assert result["StatusCode"] == 200
         result_payload = json.loads(result["Payload"].read().decode("utf-8"))
-        self.assertIn("message", result_payload)
-        self.assertEqual("success", result_payload["message"])
+        assert "message" in result_payload
+        assert "success" == result_payload["message"]
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(boto_span.ec)
+        assert test_span.ec is None
+        assert boto_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        assert boto_span.data['boto3']['op'] == 'Invoke'
         endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
-        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
-        self.assertEqual(boto_span.data['boto3']['reg'], self.lambda_region)
-        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
-        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
+        assert boto_span.data['boto3']['ep'] == endpoint
+        assert boto_span.data['boto3']['reg'] == self.lambda_region
+        assert 'FunctionName' in boto_span.data['boto3']['payload']
+        assert boto_span.data['boto3']['payload']['FunctionName'] == self.function_name
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == f'{endpoint}:443/Invoke'
 
-        self.assertIn("X-Capture-This", boto_span.data["http"]["header"])
-        self.assertEqual("this", boto_span.data["http"]["header"]["X-Capture-This"])
-        self.assertIn("X-Capture-That", boto_span.data["http"]["header"])
-        self.assertEqual("that", boto_span.data["http"]["header"]["X-Capture-That"])
+        assert "X-Capture-This" in boto_span.data["http"]["header"]
+        assert "this" == boto_span.data["http"]["header"]["X-Capture-This"]
+        assert "X-Capture-That" in boto_span.data["http"]["header"]
+        assert "that" == boto_span.data["http"]["header"]["X-Capture-That"]
 
         agent.options.extra_http_headers = original_extra_http_headers
 
 
-    def test_request_header_capture_before_sign(self):
+    def test_request_header_capture_before_sign(self) -> None:
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Custom-1', 'X-Custom-2']
 
@@ -171,50 +172,50 @@ class TestLambda(unittest.TestCase):
         # Register the function to before-sign event.
         event_system.register_first('before-sign.lambda.Invoke', add_custom_header_before_sign)
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(FunctionName=self.function_name, Payload=json.dumps({"message": "success"}))
 
-        self.assertEqual(result["StatusCode"], 200)
+        assert result["StatusCode"] == 200
         result_payload = json.loads(result["Payload"].read().decode("utf-8"))
-        self.assertIn("message", result_payload)
-        self.assertEqual("success", result_payload["message"])
+        assert "message" in result_payload
+        assert "success" == result_payload["message"]
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(boto_span.ec)
+        assert test_span.ec is None
+        assert boto_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        assert boto_span.data['boto3']['op'] == 'Invoke'
         endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
-        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
-        self.assertEqual(boto_span.data['boto3']['reg'], self.lambda_region)
-        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
-        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
+        assert boto_span.data['boto3']['ep'] == endpoint
+        assert boto_span.data['boto3']['reg'] == self.lambda_region
+        assert 'FunctionName' in boto_span.data['boto3']['payload']
+        assert boto_span.data['boto3']['payload']['FunctionName'] == self.function_name
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == f'{endpoint}:443/Invoke'
 
-        self.assertIn("X-Custom-1", boto_span.data["http"]["header"])
-        self.assertEqual("Value1", boto_span.data["http"]["header"]["X-Custom-1"])
-        self.assertIn("X-Custom-2", boto_span.data["http"]["header"])
-        self.assertEqual("Value2", boto_span.data["http"]["header"]["X-Custom-2"])
+        assert "X-Custom-1" in boto_span.data["http"]["header"]
+        assert "Value1" == boto_span.data["http"]["header"]["X-Custom-1"]
+        assert "X-Custom-2" in boto_span.data["http"]["header"]
+        assert "Value2" == boto_span.data["http"]["header"]["X-Custom-2"]
 
         agent.options.extra_http_headers = original_extra_http_headers
 
 
-    def test_response_header_capture(self):
+    def test_response_header_capture(self) -> None:
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ['X-Capture-This-Too', 'X-Capture-That-Too']
 
@@ -233,44 +234,44 @@ class TestLambda(unittest.TestCase):
         # Register the function to an event
         event_system.register('after-call.lambda.Invoke', modify_after_call_args)
 
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(FunctionName=self.function_name, Payload=json.dumps({"message": "success"}))
 
-        self.assertEqual(result["StatusCode"], 200)
+        assert result["StatusCode"] == 200
         result_payload = json.loads(result["Payload"].read().decode("utf-8"))
-        self.assertIn("message", result_payload)
-        self.assertEqual("success", result_payload["message"])
+        assert "message" in result_payload
+        assert "success" == result_payload["message"]
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert 2 == len(spans)
 
         filter = lambda span: span.n == "sdk"
         test_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(test_span)
+        assert test_span
 
         filter = lambda span: span.n == "boto3"
         boto_span = get_first_span_by_filter(spans, filter)
-        self.assertTrue(boto_span)
+        assert boto_span
 
-        self.assertEqual(boto_span.t, test_span.t)
-        self.assertEqual(boto_span.p, test_span.s)
+        assert boto_span.t == test_span.t
+        assert boto_span.p == test_span.s
 
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(boto_span.ec)
+        assert test_span.ec is None
+        assert boto_span.ec is None
 
-        self.assertEqual(boto_span.data['boto3']['op'], 'Invoke')
+        assert boto_span.data['boto3']['op'] == 'Invoke'
         endpoint = f'https://lambda.{self.lambda_region}.amazonaws.com'
-        self.assertEqual(boto_span.data['boto3']['ep'], endpoint)
-        self.assertEqual(boto_span.data['boto3']['reg'], self.lambda_region)
-        self.assertIn('FunctionName', boto_span.data['boto3']['payload'])
-        self.assertEqual(boto_span.data['boto3']['payload']['FunctionName'], self.function_name)
-        self.assertEqual(boto_span.data['http']['status'], 200)
-        self.assertEqual(boto_span.data['http']['method'], 'POST')
-        self.assertEqual(boto_span.data['http']['url'], f'{endpoint}:443/Invoke')
+        assert boto_span.data['boto3']['ep'] == endpoint
+        assert boto_span.data['boto3']['reg'] == self.lambda_region
+        assert 'FunctionName' in boto_span.data['boto3']['payload']
+        assert boto_span.data['boto3']['payload']['FunctionName'] == self.function_name
+        assert boto_span.data['http']['status'] == 200
+        assert boto_span.data['http']['method'] == 'POST'
+        assert boto_span.data['http']['url'] == f'{endpoint}:443/Invoke'
 
-        self.assertIn("X-Capture-This-Too", boto_span.data["http"]["header"])
-        self.assertEqual("this too", boto_span.data["http"]["header"]["X-Capture-This-Too"])
-        self.assertIn("X-Capture-That-Too", boto_span.data["http"]["header"])
-        self.assertEqual("that too", boto_span.data["http"]["header"]["X-Capture-That-Too"])
+        assert "X-Capture-This-Too" in boto_span.data["http"]["header"]
+        assert "this too" == boto_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert "X-Capture-That-Too" in boto_span.data["http"]["header"]
+        assert "that too" == boto_span.data["http"]["header"]["X-Capture-That-Too"]
 
         agent.options.extra_http_headers = original_extra_http_headers

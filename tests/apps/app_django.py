@@ -9,7 +9,7 @@ import sys
 import time
 
 try:
-    from django.urls import re_path
+    from django.urls import re_path, include
 except ImportError:
     from django.conf.urls import url as re_path
 
@@ -96,6 +96,10 @@ def cause_error(request):
     raise Exception('This is a fake error: /cause-error')
 
 
+def induce_exception(request):
+    raise Exception('This is a fake error: /induce-exception')
+
+
 def another(request):
     return HttpResponse('Stan wuz here!')
 
@@ -134,11 +138,16 @@ def response_with_headers(request):
     return HttpResponse('Stan wuz here with headers!', headers=headers)
 
 
+extra_patterns = [
+    re_path(r'^induce_exception$', induce_exception, name='induce_exception'),
+]
+
 urlpatterns = [
     re_path(r'^$', index, name='index'),
     re_path(r'^cause_error$', cause_error, name='cause_error'),
     re_path(r'^another$', another),
     re_path(r'^not_found$', not_found, name='not_found'),
+    re_path(r'^response_with_headers$', response_with_headers, name='response_with_headers'),
+    re_path(r"^exception$", include(extra_patterns)),
     re_path(r'^complex$', complex, name='complex'),
-    re_path(r'^response_with_headers$', response_with_headers, name='response_with_headers')
 ]

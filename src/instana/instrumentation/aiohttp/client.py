@@ -2,85 +2,111 @@
 # (c) Copyright Instana Inc. 2019
 
 
-import opentracing
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple
 import wrapt
 
-from ...log import logger
-from ...singletons import agent, async_tracer
-from ...util.secrets import strip_secrets_from_query
-from ...util.traceutils import tracing_is_off
+from opentelemetry.semconv.trace import SpanAttributes
+
+from instana.log import logger
+from instana.propagators.format import Format
+from instana.singletons import agent
+from instana.util.secrets import strip_secrets_from_query
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 try:
     import aiohttp
-    import asyncio
 
+    if TYPE_CHECKING:
+        from aiohttp.client import ClientSession
+        from instana.span.span import InstanaSpan
 
-    async def stan_request_start(session, trace_config_ctx, params):
+    async def stan_request_start(
+        session: "ClientSession", trace_config_ctx: SimpleNamespace, params
+    ) -> Awaitable[None]:
         try:
             # If we're not tracing, just return
             if tracing_is_off():
-                trace_config_ctx.scope = None
+                trace_config_ctx.span_context = None
                 return
 
-            scope = async_tracer.start_active_span("aiohttp-client", child_of=async_tracer.active_span)
-            trace_config_ctx.scope = scope
+            tracer, parent_span, _ = get_tracer_tuple()
+            parent_context = parent_span.get_span_context() if parent_span else None
 
-            async_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, params.headers)
+            span = tracer.start_span("aiohttp-client", span_context=parent_context)
 
-            parts = str(params.url).split('?')
+            tracer.inject(span.context, Format.HTTP_HEADERS, params.headers)
+
+            parts = str(params.url).split("?")
             if len(parts) > 1:
-                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
-                                                      agent.options.secrets_list)
-                scope.span.set_tag("http.params", cleaned_qp)
-            scope.span.set_tag("http.url", parts[0])
-            scope.span.set_tag('http.method', params.method)
+                cleaned_qp = strip_secrets_from_query(
+                    parts[1], agent.options.secrets_matcher, agent.options.secrets_list
+                )
+                span.set_attribute("http.params", cleaned_qp)
+            span.set_attribute(SpanAttributes.HTTP_URL, parts[0])
+            span.set_attribute(SpanAttributes.HTTP_METHOD, params.method)
+            trace_config_ctx.span_context = span
         except Exception:
-            logger.debug("stan_request_start", exc_info=True)
+            logger.debug("aiohttp-client stan_request_start error:", exc_info=True)
 
-
-    async def stan_request_end(session, trace_config_ctx, params):
+    async def stan_request_end(
+        session: "ClientSession", trace_config_ctx: SimpleNamespace, params
+    ) -> Awaitable[None]:
         try:
-            scope = trace_config_ctx.scope
-            if scope is not None:
-                scope.span.set_tag('http.status_code', params.response.status)
+            span: "InstanaSpan" = trace_config_ctx.span_context
+            if span:
+                span.set_attribute(
+                    SpanAttributes.HTTP_STATUS_CODE, params.response.status
+                )
 
-                if agent.options.extra_http_headers is not None:
+                if agent.options.extra_http_headers:
                     for custom_header in agent.options.extra_http_headers:
                         if custom_header in params.response.headers:
-                            scope.span.set_tag("http.header.%s" % custom_header, params.response.headers[custom_header])
+                            span.set_attribute(
+                                "http.header.%s" % custom_header,
+                                params.response.headers[custom_header],
+                            )
 
                 if 500 <= params.response.status:
-                    scope.span.mark_as_errored({"http.error": params.response.reason})
+                    span.mark_as_errored({"http.error": params.response.reason})
 
-                scope.close()
+                if span.is_recording():
+                    span.end()
+                trace_config_ctx = None
         except Exception:
-            logger.debug("stan_request_end", exc_info=True)
+            logger.debug("aiohttp-client stan_request_end error:", exc_info=True)
 
-
-    async def stan_request_exception(session, trace_config_ctx, params):
+    async def stan_request_exception(
+        session: "ClientSession", trace_config_ctx: SimpleNamespace, params
+    ) -> Awaitable[None]:
         try:
-            scope = trace_config_ctx.scope
-            if scope is not None:
-                scope.span.log_exception(params.exception)
-                scope.span.set_tag("http.error", str(params.exception))
-                scope.close()
+            span: "InstanaSpan" = trace_config_ctx.span_context
+            if span:
+                span.record_exception(params.exception)
+                span.set_attribute("http.error", str(params.exception))
+                if span.is_recording():
+                    span.end()
+                trace_config_ctx = None
         except Exception:
-            logger.debug("stan_request_exception", exc_info=True)
+            logger.debug("aiohttp-client stan_request_exception error:", exc_info=True)
 
-
-    @wrapt.patch_function_wrapper('aiohttp.client', 'ClientSession.__init__')
-    def init_with_instana(wrapped, instance, argv, kwargs):
+    @wrapt.patch_function_wrapper("aiohttp.client", "ClientSession.__init__")
+    def init_with_instana(
+        wrapped: Callable[..., Awaitable["ClientSession"]],
+        instance: aiohttp.client.ClientSession,
+        args: Tuple[int, str, Tuple[object, ...]],
+        kwargs: Dict[str, Any],
+    ) -> object:
         instana_trace_config = aiohttp.TraceConfig()
         instana_trace_config.on_request_start.append(stan_request_start)
         instana_trace_config.on_request_end.append(stan_request_end)
         instana_trace_config.on_request_exception.append(stan_request_exception)
-        if 'trace_configs' in kwargs:
-            kwargs['trace_configs'].append(instana_trace_config)
+        if "trace_configs" in kwargs:
+            kwargs["trace_configs"].append(instana_trace_config)
         else:
-            kwargs['trace_configs'] = [instana_trace_config]
+            kwargs["trace_configs"] = [instana_trace_config]
 
-        return wrapped(*argv, **kwargs)
-
+        return wrapped(*args, **kwargs)
 
     logger.debug("Instrumenting aiohttp client")
 except ImportError:

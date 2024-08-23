@@ -184,11 +184,10 @@ def boot_agent():
             # sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
         )
-
-        # from instana.instrumentation.aiohttp import (
-        #     client,  # noqa: F401
-        #     server,  # noqa: F401
-        # )
+        from instana.instrumentation.aiohttp import (
+            client,  # noqa: F401
+            server,  # noqa: F401
+        )
         # from instana.instrumentation.aws import lambda_inst  # noqa: F401
         # from instana.instrumentation.celery import hooks  # noqa: F401
         from instana.instrumentation.django import middleware  # noqa: F401

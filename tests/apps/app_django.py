@@ -15,6 +15,7 @@ except ImportError:
 
 from django.http import HttpResponse, Http404
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import SpanKind
 
 from instana.singletons import tracer
 
@@ -111,7 +112,7 @@ def not_found(request):
 def complex(request):
     with tracer.start_as_current_span("asteroid") as pspan:
         pspan.set_attribute("component", "Python simple example app")
-        pspan.set_attribute("span.kind", "client")
+        pspan.set_attribute("span.kind", SpanKind.CLIENT)
         pspan.set_attribute("peer.hostname", "localhost")
         pspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/one")
         pspan.set_attribute(SpanAttributes.HTTP_METHOD, "GET")
@@ -120,7 +121,7 @@ def complex(request):
         time.sleep(.2)
 
         with tracer.start_as_current_span("spacedust") as cspan:
-            cspan.set_attribute("span.kind", "client")
+            cspan.set_attribute("span.kind", SpanKind.CLIENT)
             cspan.set_attribute("peer.hostname", "localhost")
             cspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/two")
             cspan.set_attribute(SpanAttributes.HTTP_METHOD, "POST")

@@ -37,6 +37,9 @@ commands:
 
   run-tests-with-coverage-report:
     parameters:
+      googlecloud:
+        default: ""
+        type: string
       cassandra:
         default: ""
         type: string
@@ -57,6 +60,7 @@ commands:
             CASSANDRA_TEST: "<<parameters.cassandra>>"
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
+            GOOGLE_CLOUD_TEST: "<<parameters.googlecloud>>"
           command: |
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
@@ -210,6 +214,21 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  py311-googlecloud:
+    docker:
+      - image: cimg/python:3.11.4
+      - image: vanmoof/pubsub-emulator
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-googlecloud.txt"
+      - run-tests-with-coverage-report:
+          googlecloud: "true"
+          tests: "tests/clients/test_google-cloud-*.py"
+      - store-pytest-results
+      - store-coverage-report
+
   python312:
     docker:
       - image: cimg/python:3.12.0
@@ -232,6 +251,21 @@ jobs:
       - pip-install-deps:
           requirements: "tests/requirements-312.txt"
       - run-tests-with-coverage-report
+      - store-pytest-results
+      - store-coverage-report
+
+  py312-googlecloud:
+    docker:
+      - image: cimg/python:3.12.0
+      - image: vanmoof/pubsub-emulator
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-googlecloud.txt"
+      - run-tests-with-coverage-report:
+          googlecloud: "true"
+          tests: "tests/clients/test_google-cloud-*.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -260,7 +294,7 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39couchbase:
+  py39-couchbase:
     docker:
       - image: cimg/python:3.9.17
       - image: couchbase/server-sandbox:5.5.0
@@ -276,7 +310,7 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39cassandra:
+  py39-cassandra:
     docker:
       - image: cimg/python:3.9.17
       - image: cassandra:3.11
@@ -305,7 +339,7 @@ jobs:
       - store-pytest-results
       - run_sonarqube
 
-  py39gevent_starlette:
+  py39-gevent_starlette:
     docker:
       - image: cimg/python:3.9.17
     working_directory: ~/repo
@@ -329,9 +363,11 @@ workflows:
       - python311
       - python312
       - python313
-      - py39cassandra
-      - py39couchbase
-      - py39gevent_starlette
+      - py39-cassandra
+      - py39-couchbase
+      - py39-gevent_starlette
+      - py311-googlecloud
+      - py312-googlecloud
       - final_job:
           requires:
             - python38
@@ -340,6 +376,8 @@ workflows:
             - python311
             - python312
             - python313
-            - py39cassandra
-            - py39couchbase
-            - py39gevent_starlette
+            - py39-cassandra
+            - py39-couchbase
+            - py39-gevent_starlette
+            - py311-googlecloud
+            - py312-googlecloud

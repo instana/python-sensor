@@ -72,7 +72,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert urllib3_span.sy is None
         assert test_span.sy is None
 
-        assert None == django_span.ec
+        assert django_span.ec is None
         assert '/' == django_span.data["http"]["url"]
         assert 'GET' == django_span.data["http"]["method"]
         assert 200 == django_span.data["http"]["status"]
@@ -222,8 +222,8 @@ class TestDjango(StaticLiveServerTestCase):
         test_span = spans[4]
         urllib3_span = spans[3]
         django_span = spans[2]
-        ot_span1 = spans[1]
-        ot_span2 = spans[0]
+        otel_span1 = spans[1]
+        otel_span2 = spans[0]
 
         assert 'X-INSTANA-T' in response.headers
         assert int(response.headers['X-INSTANA-T'], 16)
@@ -243,21 +243,26 @@ class TestDjango(StaticLiveServerTestCase):
         assert "test" == test_span.data["sdk"]["name"]
         assert "urllib3" == urllib3_span.n
         assert "django" == django_span.n
-        assert "sdk" == ot_span1.n
-        assert "sdk" == ot_span2.n
+        assert "sdk" == otel_span1.n
+        assert "sdk" == otel_span2.n
 
         assert test_span.t == urllib3_span.t
         assert urllib3_span.t == django_span.t
-        assert django_span.t == ot_span1.t
-        assert ot_span1.t == ot_span2.t
+        assert django_span.t == otel_span1.t
+        assert otel_span1.t == otel_span2.t
 
         assert urllib3_span.p == test_span.s
         assert django_span.p == urllib3_span.s
-        assert ot_span1.p == django_span.s
-        assert ot_span2.p == ot_span1.s
+        assert otel_span1.p == django_span.s
+        assert otel_span2.p == otel_span1.s
 
-        assert None == django_span.ec
+        assert django_span.ec is None
         assert django_span.stack is None
+
+        assert otel_span1.data["sdk"]["type"] == "exit"
+        assert otel_span2.data["sdk"]["type"] == otel_span1.data["sdk"]["type"]
+        otel_span1.data["sdk"]["name"] == "asteroid"
+        otel_span2.data["sdk"]["name"] == "spacedust"
 
         assert '/complex' == django_span.data["http"]["url"]
         assert 'GET' == django_span.data["http"]["method"]
@@ -298,7 +303,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert urllib3_span.p == test_span.s
         assert django_span.p == urllib3_span.s
 
-        assert None == django_span.ec
+        assert django_span.ec is None
         assert django_span.stack is None
 
         assert '/' == django_span.data["http"]["url"]
@@ -341,7 +346,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert urllib3_span.p == test_span.s
         assert django_span.p == urllib3_span.s
 
-        assert None == django_span.ec
+        assert django_span.ec is None
         assert django_span.stack is None
 
         assert '/response_with_headers' == django_span.data["http"]["url"]

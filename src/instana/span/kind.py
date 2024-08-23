@@ -1,10 +1,12 @@
 # (c) Copyright IBM Corp. 2024
 
-ENTRY_KIND = ("entry", "server", "consumer")
+from opentelemetry.trace import SpanKind
 
-EXIT_KIND = ("exit", "client", "producer")
+ENTRY_KIND = ("entry", "server", "consumer", SpanKind.SERVER, SpanKind.CONSUMER)
 
-LOCAL_SPANS = ("render",)
+EXIT_KIND = ("exit", "client", "producer", SpanKind.CLIENT, SpanKind.PRODUCER)
+
+LOCAL_SPANS = ("render", SpanKind.INTERNAL)
 
 HTTP_SPANS = (
     "aiohttp-client",

@@ -53,8 +53,8 @@ class HTTPPropagator(BasePropagator):
             if span_context.suppression:
                 return
 
-            inject_key_value(carrier, self.HEADER_KEY_T, trace_id)
-            inject_key_value(carrier, self.HEADER_KEY_S, span_id)
+            inject_key_value(carrier, self.HEADER_KEY_T, str(trace_id))
+            inject_key_value(carrier, self.HEADER_KEY_S, str(span_id))
 
         except Exception:
             logger.debug("inject error:", exc_info=True)

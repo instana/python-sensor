@@ -191,7 +191,6 @@ class TestFlask(unittest.TestCase):
         # We should NOT have a path template for this route
         assert wsgi_span.data["http"]["path_tpl"] is None
 
-    @unittest.skip("Suppression is not yet handled")
     def test_get_request_with_suppression(self) -> None:
         headers = {'X-INSTANA-L':'0'}
         response = self.http.urlopen('GET', testenv["flask_server"] + '/', headers=headers)
@@ -213,7 +212,7 @@ class TestFlask(unittest.TestCase):
         # Assert that there are no spans in the recorded list
         assert spans == []
 
-    @unittest.skip("Suppression is not yet handled")
+    @unittest.skip("Handled when type of trace and span ids are modified to str")
     def test_get_request_with_suppression_and_w3c(self) -> None:
         headers = {
                 'X-INSTANA-L':'0',
@@ -239,7 +238,6 @@ class TestFlask(unittest.TestCase):
         # Assert that there are no spans in the recorded list
         assert spans == []
 
-    @unittest.skip("Synthetic requests are not yet handled")
     def test_synthetic_request(self) -> None:
         headers = {
             'X-INSTANA-SYNTHETIC': '1'

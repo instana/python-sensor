@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.testclient import TestClient
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from instana.span.span import get_current_span
 
 fastapi_server = FastAPI()
 
@@ -54,7 +55,14 @@ async def starlette_exception():
 
 
 def trigger_outgoing_call():
-    client = TestClient(fastapi_server)
+    # As TestClient() is based on httpx, and we don't support it yet,
+    # we must pass the SDK trace_id and span_id to the ASGI server.
+    span_context = get_current_span().get_span_context()
+    headers = {
+        "X-INSTANA-T": str(span_context.trace_id),
+        "X-INSTANA-S": str(span_context.span_id),
+    }
+    client = TestClient(fastapi_server, headers=headers)
     response = client.get("/users/1")
     return response.json()
 

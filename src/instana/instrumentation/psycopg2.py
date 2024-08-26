@@ -5,6 +5,7 @@
 import copy
 import wrapt
 
+from typing import Callable, Optional, Any, Tuple, Dict
 from instana.log import logger
 from instana.instrumentation.pep0249 import ConnectionFactory
 
@@ -19,7 +20,12 @@ try:
         setattr(psycopg2, "Connect", cf)
 
     @wrapt.patch_function_wrapper("psycopg2.extensions", "register_type")
-    def register_type_with_instana(wrapped, instance, args, kwargs):
+    def register_type_with_instana(
+        wrapped: Callable[..., Any],
+        instance: Optional[Any],
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+    ) -> Callable[..., Any]:
         args_clone = list(copy.copy(args))
 
         if (len(args_clone) >= 2) and hasattr(args_clone[1], "__wrapped__"):
@@ -28,7 +34,12 @@ try:
         return wrapped(*args_clone, **kwargs)
 
     @wrapt.patch_function_wrapper("psycopg2._json", "register_json")
-    def register_json_with_instana(wrapped, instance, args, kwargs):
+    def register_json_with_instana(
+        wrapped: Callable[..., Any],
+        instance: Optional[Any],
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+    ) -> Callable[..., Any]:
         if "conn_or_curs" in kwargs:
             if hasattr(kwargs["conn_or_curs"], "__wrapped__"):
                 kwargs["conn_or_curs"] = kwargs["conn_or_curs"].__wrapped__

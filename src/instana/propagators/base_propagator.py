@@ -181,8 +181,6 @@ class BasePropagator(object):
             correlation = True
 
         (
-            ctx_trace_id,
-            ctx_span_id,
             ctx_level,
             ctx_synthetic,
             ctx_trace_parent, 
@@ -192,9 +190,11 @@ class BasePropagator(object):
             ctx_correlation_id,
             ctx_traceparent,
             ctx_tracestate,
-        ) = [None] * 11
+        ) = [None] * 9
 
         ctx_level = self._get_ctx_level(level)
+        ctx_trace_id = trace_id
+        ctx_span_id = span_id
 
         if (
             trace_id
@@ -204,8 +204,6 @@ class BasePropagator(object):
         ):
             # ctx.trace_id = trace_id[-16:]  # only the last 16 chars
             # ctx.span_id = span_id[-16:]  # only the last 16 chars
-            ctx_trace_id = trace_id
-            ctx_span_id = span_id
             ctx_synthetic = synthetic
 
             # if len(trace_id) > 16:

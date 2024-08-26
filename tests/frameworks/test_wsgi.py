@@ -86,7 +86,6 @@ class TestWSGI:
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
-    @pytest.mark.skip("Suppression is not yet handled")
     def test_synthetic_request(self) -> None:
         headers = {
             'X-INSTANA-SYNTHETIC': '1'

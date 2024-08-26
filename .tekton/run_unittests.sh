@@ -40,9 +40,13 @@ gevent_starlette)
   export REQUIREMENTS='requirements-gevent-starlette.txt'
   export TESTS=('tests/frameworks/test_gevent.py' 'tests/frameworks/test_starlette.py')
   export GEVENT_STARLETTE_TEST='true' ;;
+googlecloud)
+  export REQUIREMENTS='requirements-googlecloud.txt'
+  export TESTS=('tests/clients/test_google-cloud-storage.py' 'tests/clients/test_google-cloud-pubsub.py')
+  export GOOGLE_CLOUD_TEST='true' ;;  
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
-       "not in (default|cassandra|couchbase|gevent_starlette)" >&2
+       "not in (default|cassandra|couchbase|gevent_starlette|googlecloud)" >&2
   exit 3 ;;
 esac
 

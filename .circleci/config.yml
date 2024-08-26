@@ -214,7 +214,7 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py311-googlecloud:
+  py311googlecloud:
     docker:
       - image: cimg/python:3.11.4
       - image: vanmoof/pubsub-emulator
@@ -254,7 +254,7 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py312-googlecloud:
+  py312googlecloud:
     docker:
       - image: cimg/python:3.12.0
       - image: vanmoof/pubsub-emulator
@@ -294,7 +294,7 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39-couchbase:
+  py39couchbase:
     docker:
       - image: cimg/python:3.9.17
       - image: couchbase/server-sandbox:5.5.0
@@ -310,7 +310,7 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39-cassandra:
+  py39cassandra:
     docker:
       - image: cimg/python:3.9.17
       - image: cassandra:3.11
@@ -339,7 +339,7 @@ jobs:
       - store-pytest-results
       - run_sonarqube
 
-  py39-gevent_starlette:
+  py39gevent_starlette:
     docker:
       - image: cimg/python:3.9.17
     working_directory: ~/repo
@@ -363,11 +363,11 @@ workflows:
       - python311
       - python312
       - python313
-      - py39-cassandra
-      - py39-couchbase
-      - py39-gevent_starlette
-      - py311-googlecloud
-      - py312-googlecloud
+      - py39cassandra
+      - py39couchbase
+      - py39gevent_starlette
+      - py311googlecloud
+      - py312googlecloud
       - final_job:
           requires:
             - python38
@@ -376,8 +376,8 @@ workflows:
             - python311
             - python312
             - python313
-            - py39-cassandra
-            - py39-couchbase
-            - py39-gevent_starlette
-            - py311-googlecloud
-            - py312-googlecloud
+            - py39cassandra
+            - py39couchbase
+            - py39gevent_starlette
+            - py311googlecloud
+            - py312googlecloud

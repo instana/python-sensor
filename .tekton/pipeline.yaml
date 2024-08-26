@@ -84,3 +84,19 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-googlecloud
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.11.9-bookworm
+              - "sha256:0c2928128a96e544a1ee248e50ee8ecbe840bf48ef5a49065812e3d06b6e1bcc"
+              # 3.12.4-bookworm
+              - "sha256:83f5f8714b6881d3e0e91023d9fe9e43aa6ad5a04e9f9a94ee180b18b021c72a"
+      taskRef:
+        name: python-tracer-unittest-googlecloud-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc

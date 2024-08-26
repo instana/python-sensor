@@ -115,12 +115,40 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: python-tracer-unittest-default-task
+  name: python-tracer-unittest-googlecloud-task
 spec:
   sidecars:
     - name: google-cloud-pubsub
       # vanmoof/pubsub-emulator:latest
       image: vanmoof/pubsub-emulator@sha256:ff71206d65589b58a8b6928c35349a58dbfd7f20eb2dc7822e0f32e5c40791c8
+      env:
+        - name: PUBSUB_EMULATOR_HOST
+          value: 0.0.0.0:8085
+      ports:
+        - containerPort: 8085
+          hostPort: 8085
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: googlecloud
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-default-task
+spec:
+  sidecars:
     - name: mariadb
       # mariadb:11.3.2
       image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65

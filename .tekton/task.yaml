@@ -149,6 +149,15 @@ metadata:
   name: python-tracer-unittest-default-task
 spec:
   sidecars:
+    - name: google-cloud-pubsub
+      # vanmoof/pubsub-emulator:latest
+      image: vanmoof/pubsub-emulator@sha256:ff71206d65589b58a8b6928c35349a58dbfd7f20eb2dc7822e0f32e5c40791c8
+      env:
+        - name: PUBSUB_EMULATOR_HOST
+          value: 0.0.0.0:8085
+      ports:
+        - containerPort: 8085
+          hostPort: 8085
     - name: mariadb
       # mariadb:11.3.2
       image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65

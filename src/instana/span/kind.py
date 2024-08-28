@@ -6,7 +6,7 @@ ENTRY_KIND = ("entry", "server", "consumer", SpanKind.SERVER, SpanKind.CONSUMER)
 
 EXIT_KIND = ("exit", "client", "producer", SpanKind.CLIENT, SpanKind.PRODUCER)
 
-LOCAL_SPANS = ("render", SpanKind.INTERNAL)
+LOCAL_SPANS = ("asyncio", "render", SpanKind.INTERNAL)
 
 HTTP_SPANS = (
     "aiohttp-client",

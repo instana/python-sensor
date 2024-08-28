@@ -163,7 +163,7 @@ def boot_agent():
 
         # Import & initialize instrumentation
         from instana.instrumentation import (
-            # asyncio,  # noqa: F401
+            asyncio,  # noqa: F401
             boto3_inst,  # noqa: F401
             # cassandra_inst,  # noqa: F401
             # couchbase_inst,  # noqa: F401

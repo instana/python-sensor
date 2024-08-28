@@ -73,13 +73,13 @@ class TestPsycoPG2:
 
         self.cursor.execute("""SELECT * from users""")
         affected_rows = self.cursor.rowcount
-        assert 1 == affected_rows
+        assert affected_rows == 1
         result = self.cursor.fetchone()
 
-        assert 6 == len(result)
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 0 == len(spans)
+        assert len(spans) == 0
 
     def test_basic_query(self) -> None:
         with tracer.start_as_current_span("test"):
@@ -88,19 +88,19 @@ class TestPsycoPG2:
             result = self.cursor.fetchone()
             self.db.commit()
 
-        assert 1 == affected_rows
-        assert 6 == len(result)
+        assert affected_rows == 1
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -116,11 +116,11 @@ class TestPsycoPG2:
         result = self.cursor.fetchone()
         self.db.commit()
 
-        assert 1 == affected_rows
-        assert 6 == len(result)
+        assert affected_rows == 1
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         db_span = spans[0]
 
@@ -141,18 +141,18 @@ class TestPsycoPG2:
             )
             affected_rows = self.cursor.rowcount
 
-        assert 1 == affected_rows
+        assert affected_rows == 1
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -173,18 +173,18 @@ class TestPsycoPG2:
             affected_rows = self.cursor.rowcount
             self.db.commit()
 
-        assert 2 == affected_rows
+        assert affected_rows == 2
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -204,15 +204,15 @@ class TestPsycoPG2:
         assert isinstance(callproc_result, tuple)
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -231,19 +231,19 @@ class TestPsycoPG2:
         except Exception:
             pass
 
-        assert affected_rows is None
-        assert result is None
+        assert not affected_rows
+        assert not result
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert 2 == db_span.ec
+        assert db_span.ec == 2
         assert db_span.data["pg"]["error"] == (
             'relation "blah" does not exist\nLINE 1: SELECT * from blah\n                      ^\n'
         )
@@ -309,19 +309,19 @@ class TestPsycoPG2:
                     affected_rows = cursor.rowcount
                     result = cursor.fetchone()
 
-        assert 1 == affected_rows
-        assert 6 == len(result)
+        assert affected_rows == 1
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -338,19 +338,19 @@ class TestPsycoPG2:
                 affected_rows = cursor.rowcount
                 result = cursor.fetchone()
 
-        assert 1 == affected_rows
-        assert 6 == len(result)
+        assert affected_rows == 1
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -367,19 +367,19 @@ class TestPsycoPG2:
                 affected_rows = cursor.rowcount
                 result = cursor.fetchone()
 
-        assert 1 == affected_rows
-        assert 6 == len(result)
+        assert affected_rows == 1
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]
@@ -389,27 +389,25 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_deprecated_parameter_database(self) -> None:
-        """test_deprecated_parameter_database"""
-
         with tracer.start_as_current_span("test"):
             self.cursor.execute("""SELECT * from users""")
             affected_rows = self.cursor.rowcount
             result = self.cursor.fetchone()
             self.db.commit()
 
-        assert 1 == affected_rows
-        assert 6 == len(result)
+        assert affected_rows == 1
+        assert len(result) == 6
 
         spans = self.recorder.queued_spans()
-        assert 2 == len(spans)
+        assert len(spans) == 2
 
         db_span, test_span = spans
 
-        assert "test" == test_span.data["sdk"]["name"]
+        assert test_span.data["sdk"]["name"] == "test"
         assert test_span.t == db_span.t
         assert db_span.p == test_span.s
 
-        assert db_span.ec is None
+        assert not db_span.ec
 
         assert db_span.n == "postgres"
         assert db_span.data["pg"]["db"] == testenv["postgresql_db"]

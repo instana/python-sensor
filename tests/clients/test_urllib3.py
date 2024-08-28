@@ -137,8 +137,9 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_get_request_https(self):
+        request_url = "https://reqres.in:443/api/users"
         with tracer.start_as_current_span("test"):
-            r = self.http.request("GET", "https://httpbin.org/robots.txt")
+            r = self.http.request("GET", request_url)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -163,7 +164,7 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
-        assert urllib3_span.data["http"]["url"] == "https://httpbin.org:443/robots.txt"
+        assert urllib3_span.data["http"]["url"] == request_url
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)

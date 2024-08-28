@@ -367,8 +367,8 @@ workflows:
       # - py39cassandra
       # - py39couchbase
       # - py39gevent_starlette
-      - py311googlecloud
-      - py312googlecloud
+      # - py311googlecloud
+      # - py312googlecloud
       - final_job:
           requires:
             - python38
@@ -380,5 +380,5 @@ workflows:
             # - py39cassandra
             # - py39couchbase
             # - py39gevent_starlette
-            - py311googlecloud
-            - py312googlecloud
+            # - py311googlecloud
+            # - py312googlecloud

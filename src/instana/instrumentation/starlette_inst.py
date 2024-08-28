@@ -8,12 +8,11 @@ https://www.starlette.io/
 
 from typing import Any, Callable, Dict, Tuple
 
-import starlette.applications
-
 try:
     import starlette
     import wrapt
     from starlette.middleware import Middleware
+    import starlette.applications
 
     from instana.instrumentation.asgi import InstanaASGIMiddleware
     from instana.log import logger
@@ -34,5 +33,6 @@ try:
         return wrapped(*args, **kwargs)
 
     logger.debug("Instrumenting Starlette")
+
 except ImportError:
     pass

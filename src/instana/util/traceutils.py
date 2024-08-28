@@ -22,12 +22,13 @@ def extract_custom_headers(tracing_span, headers) -> None:
 
 def get_active_tracer() -> Optional[InstanaTracer]:
     try:
-        # ToDo: Might have to add additional stuff when testing with async and tornado tracer
         current_span = get_current_span()
-        if current_span and current_span.is_recording():
-            return tracer
-        else:
+        if current_span:
+            # asyncio Spans are used as NonRecording Spans solely for context propagation
+            if current_span.is_recording() or current_span.name == "asyncio":
+                return tracer
             return None
+        return None
     except Exception:
         # Do not try to log this with instana, as there is no active tracer and there will be an infinite loop at least
         # for PY2

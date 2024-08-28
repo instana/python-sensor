@@ -45,7 +45,6 @@ collect_ignore_glob.append("*clients/test_redis*")
 collect_ignore_glob.append("*clients/test_sql*")
 
 collect_ignore_glob.append("*frameworks/test_aiohttp*")
-collect_ignore_glob.append("*frameworks/test_asyncio*")
 collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")
 collect_ignore_glob.append("*frameworks/test_grpcio*")

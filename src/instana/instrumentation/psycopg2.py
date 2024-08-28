@@ -25,7 +25,7 @@ try:
         instance: Optional[Any],
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
-    ) -> Callable[..., Any]:
+    ) -> Callable[..., object]:
         args_clone = list(copy.copy(args))
 
         if (len(args_clone) >= 2) and hasattr(args_clone[1], "__wrapped__"):
@@ -39,7 +39,7 @@ try:
         instance: Optional[Any],
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
-    ) -> Callable[..., Any]:
+    ) -> Callable[..., object]:
         if "conn_or_curs" in kwargs:
             if hasattr(kwargs["conn_or_curs"], "__wrapped__"):
                 kwargs["conn_or_curs"] = kwargs["conn_or_curs"].__wrapped__

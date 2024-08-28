@@ -174,6 +174,7 @@ def boot_agent():
             logging,  # noqa: F401
             # mysqlclient,  # noqa: F401
             # pika,  # noqa: F401
+            pep0249,  # noqa: F401
             psycopg2,  # noqa: F401
             # pymongo,  # noqa: F401
             # pymysql,  # noqa: F401
@@ -183,6 +184,7 @@ def boot_agent():
             # sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
         )
+
         # from instana.instrumentation.aiohttp import (
         #     client,  # noqa: F401
         #     server,  # noqa: F401

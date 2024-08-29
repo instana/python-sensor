@@ -116,6 +116,9 @@ def process_taskrun_logs(
             if task_name == "python-tracer-unittest-gevent-starlette-task":
                 match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
                 tekton_ci_output += f"{match[1]}\n"
+            elif task_name == "python-tracer-unittest-googlecloud-task":
+                match = re.search("Successfully installed .* (google-cloud-storage-[^\s]+)", logs)
+                tekton_ci_output += f"{match[1]}\n"
             elif task_name == "python-tracer-unittest-default-task":
                 for line in logs.splitlines():
                     if "Successfully installed" in line:
@@ -142,6 +145,17 @@ def get_tekton_ci_output():
 
     tekton_ci_output = process_taskrun_logs(
         starlette_taskruns, core_v1_client, namespace, task_name, ""
+    )
+
+    task_name = "python-tracer-unittest-googlecloud-task"
+    taskrun_filter = (
+        lambda tr: tr["metadata"]["name"].endswith("unittest-googlecloud-0")
+        and tr["status"]["conditions"][0]["type"] == "Succeeded"
+    )
+    googlecloud_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+
+    tekton_ci_output = process_taskrun_logs(
+        googlecloud_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
     )
 
     task_name = "python-tracer-unittest-default-task"
@@ -190,7 +204,7 @@ def main():
     # Convert dataframe to markdown
     markdown_table = df.to_markdown(index=False)
 
-    disclaimer = f"##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [python tracer](https://github.com/instana/python-sensor) repo."
+    disclaimer = "##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [python tracer](https://github.com/instana/python-sensor) repo."
     title = "## Python supported packages and versions"
 
     # Combine disclaimer, title, and markdown table with line breaks

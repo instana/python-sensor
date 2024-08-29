@@ -2,29 +2,29 @@
 ## Python supported packages and versions
 | Package name         | Support Policy   | Beta version   | Last Supported Version   | Latest version   | Up-to-date   | Cloud Native   |
 |:---------------------|:-----------------|:---------------|:-------------------------|:-----------------|:-------------|:---------------|
-| ASGI                 | 0-day            | No             | 3.0                      | 3.0              | Yes          | No             |
-| Celery               | 30-days          | No             | 5.4.0                    | 5.4.0            | Yes          | No             |
-| Django               | 30-days          | No             | 5.0.6                    | 5.0.6            | Yes          | No             |
-| FastAPI              | 0-day            | No             | 0.111.0                  | 0.111.0          | Yes          | No             |
-| Flask                | 0-day            | No             | 3.0.3                    | 3.0.3            | Yes          | No             |
-| Pyramid              | 30-days          | No             | 2.0.2                    | 2.0.2            | Yes          | No             |
-| Sanic                | On demand        | No             | 21.6.2                   | 23.12.1          | No           | No             |
-| Starlette            | 30-days          | No             | 0.37.2                   | 0.37.2           | Yes          | No             |
-| Tornado              | 30-days          | No             | 5.1.1                    | 6.4              | No           | No             |
+| ASGI                 | 45-days          | No             | 3.0                      | 3.0              | Yes          | No             |
+| Celery               | 45-days          | No             | 5.4.0                    | 5.4.0            | Yes          | No             |
+| Django               | 45-days          | No             | 5.1                      | 5.1              | Yes          | No             |
+| FastAPI              | 45-days          | No             | 0.112.2                  | 0.112.2          | Yes          | No             |
+| Flask                | 45-days          | No             | 3.0.3                    | 3.0.3            | Yes          | No             |
+| Pyramid              | 45-days          | No             | 2.0.2                    | 2.0.2            | Yes          | No             |
+| Sanic                | On demand        | No             | 21.6.2                   | 24.6.0           | No           | No             |
+| Starlette            | 45-days          | No             | 0.38.2                   | 0.38.2           | Yes          | No             |
+| Tornado              | 45-days          | No             | 5.1.1                    | 6.4.1            | No           | No             |
 | Webapp2              | On demand        | No             | 2.5.2                    | 2.5.2            | Yes          | No             |
-| WSGI                 | 0-day            | No             | 1.0.1                    | 1.0.1            | Yes          | No             |
-| Aiohttp              | 30-days          | No             | 3.9.5                    | 3.9.5            | Yes          | No             |
+| WSGI                 | 0-day            | Yes            | 1.0.1                    | 1.0.1            | Yes          | No             |
+| Aiohttp              | 45-days          | No             | 3.10.5                   | 3.10.5           | Yes          | No             |
 | Asynqp               | Deprecated       | No             | 0.6                      | 0.6              | Yes          | No             |
-| Boto3                | 0-day            | No             | 1.34.112                 | 1.34.112         | Yes          | Yes            |
-| Google-cloud-pubsub  | 30-days          | No             | 2.1.0                    | 2.21.1           | No           | Yes            |
-| Google-cloud-storage | 30-days          | No             | 2.14.0                   | 2.16.0           | No           | Yes            |
-| Grpcio               | 30-days          | No             | 1.64.0                   | 1.64.0           | Yes          | Yes            |
-| Mysqlclient          | 30-days          | No             | 2.2.4                    | 2.2.4            | Yes          | Yes            |
-| Pika                 | 30-days          | No             | 1.3.2                    | 1.3.2            | Yes          | No             |
-| PyMySQL              | 30-days          | No             | 1.1.1                    | 1.1.1            | Yes          | Yes            |
-| Pymongo              | 30-days          | No             | 4.7.2                    | 4.7.2            | Yes          | Yes            |
-| Psycopg2             | 30-days          | No             | 2.9.9                    | 2.9.9            | Yes          | No             |
-| Redis                | 30-days          | No             | 5.0.4                    | 5.0.4            | Yes          | Yes            |
-| Requests             | 0-day            | No             | 2.32.2                   | 2.32.2           | Yes          | Yes            |
-| SQLAlchemy           | 30-days          | No             | 2.0.30                   | 2.0.30           | Yes          | Yes            |
-| Urllib3              | 0-day            | No             | 2.2.1                    | 2.2.1            | Yes          | No             |
+| Boto3                | 45-days          | No             | 1.35.8                   | 1.35.8           | Yes          | Yes            |
+| Google-cloud-pubsub  | 45-days          | No             | 2.23.0                   | 2.23.0           | Yes          | Yes            |
+| Google-cloud-storage | 45-days          | No             | 2.18.2                   | 2.18.2           | Yes          | Yes            |
+| Grpcio               | 45-days          | No             | 1.66.1                   | 1.66.1           | Yes          | Yes            |
+| Mysqlclient          | 45-days          | No             | 2.2.4                    | 2.2.4            | Yes          | Yes            |
+| Pika                 | 45-days          | No             | 1.3.2                    | 1.3.2            | Yes          | No             |
+| PyMySQL              | 45-days          | No             | 1.1.1                    | 1.1.1            | Yes          | Yes            |
+| Pymongo              | 45-days          | No             | 4.8.0                    | 4.8.0            | Yes          | Yes            |
+| Psycopg2             | 45-days          | No             | 2.9.9                    | 2.9.9            | Yes          | No             |
+| Redis                | 45-days          | No             | 5.0.8                    | 5.0.8            | Yes          | Yes            |
+| Requests             | 45-days          | No             | 2.32.3                   | 2.32.3           | Yes          | Yes            |
+| SQLAlchemy           | 45-days          | No             | 2.0.32                   | 2.0.32           | Yes          | Yes            |
+| Urllib3              | 45-days          | No             | 2.2.2                    | 2.2.2            | Yes          | No             |

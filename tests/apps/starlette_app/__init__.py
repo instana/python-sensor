@@ -15,6 +15,8 @@ testenv["starlette_server"] = (
 def launch_starlette():
     from instana.singletons import agent
 
+    from .app import starlette_server
+
     # Hack together a manual custom headers list; We'll use this in tests
     agent.options.extra_http_headers = [
         "X-Capture-This",

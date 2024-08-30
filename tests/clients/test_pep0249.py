@@ -12,7 +12,6 @@ from instana.instrumentation.pep0249 import (
 )
 from instana.singletons import tracer
 from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple
 from opentelemetry.trace import SpanKind
 from pytest import LogCaptureFixture
 
@@ -52,7 +51,7 @@ class TestCursorWrapper:
         self.test_cursor.close()
         self.test_conn.close()
 
-    def reset_table(self):
+    def reset_table(self) -> None:
         self.test_cursor.execute(
             """
             DROP TABLE IF EXISTS tests;
@@ -66,7 +65,7 @@ class TestCursorWrapper:
         )
         self.test_conn.commit()
 
-    def reset_procedure(self):
+    def reset_procedure(self) -> None:
         self.test_cursor.execute("""
             DROP PROCEDURE IF EXISTS insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR);
             CREATE PROCEDURE insert_user(IN test_id INT, IN test_name VARCHAR, IN test_email VARCHAR)
@@ -79,7 +78,7 @@ class TestCursorWrapper:
             """)
         self.test_conn.commit()
 
-    def test_cursor_wrapper_default(self):
+    def test_cursor_wrapper_default(self) -> None:
         # CursorWrapper
         assert self.test_wrapper
         assert self.test_wrapper._module_name == self.cursor_name
@@ -110,7 +109,7 @@ class TestCursorWrapper:
         assert hasattr(self.test_cursor, "fetchone")
         assert hasattr(self.test_cursor, "fetchall")
 
-    def test_collect_kvs(self):
+    def test_collect_kvs(self) -> None:
         self.reset_table()
         with tracer.start_as_current_span("test") as span:
             sample_sql = """
@@ -124,7 +123,7 @@ class TestCursorWrapper:
             assert span.attributes["host"] == "127.0.0.1"
             assert span.attributes["port"] == 5432
 
-    def test_collect_kvs_error(self, caplog: LogCaptureFixture):
+    def test_collect_kvs_error(self, caplog: LogCaptureFixture) -> None:
         self.reset_table()
         with tracer.start_as_current_span("test") as span:
             connect_params = "sample"
@@ -138,12 +137,12 @@ class TestCursorWrapper:
             sample_wrapper._collect_kvs(span, sample_sql)
             assert "string indices must be integers" in caplog.messages[0]
 
-    def test_enter(self):
+    def test_enter(self) -> None:
         response = self.test_wrapper.__enter__()
         assert response == self.test_wrapper
         assert isinstance(response, CursorWrapper)
 
-    def test_execute_with_tracing_off(self):
+    def test_execute_with_tracing_off(self) -> None:
         self.reset_table()
         with tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
@@ -154,7 +153,7 @@ class TestCursorWrapper:
             assert sample_params in response
             assert len(response) == 2
 
-    def test_execute_with_tracing(self):
+    def test_execute_with_tracing(self) -> None:
         self.reset_table()
         with tracer.start_as_current_span("test"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
@@ -176,7 +175,7 @@ class TestCursorWrapper:
             assert sample_params in response
             assert len(response) == 2
 
-    def test_executemany_with_tracing_off(self):
+    def test_executemany_with_tracing_off(self) -> None:
         self.reset_table()
         with tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
@@ -191,7 +190,7 @@ class TestCursorWrapper:
                 assert record in response
             assert len(response) == 3
 
-    def test_executemany_with_tracing(self):
+    def test_executemany_with_tracing(self) -> None:
         self.reset_table()
         with tracer.start_as_current_span("test"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
@@ -216,7 +215,7 @@ class TestCursorWrapper:
                 assert record in response
             assert len(response) == 3
 
-    def test_callproc_with_tracing_off(self):
+    def test_callproc_with_tracing_off(self) -> None:
         self.reset_table()
         self.reset_procedure()
         with tracer.start_as_current_span("sqlalchemy"):
@@ -229,7 +228,7 @@ class TestCursorWrapper:
             assert sample_params in response
             assert len(response) == 2
 
-    def test_callproc_with_tracing(self):
+    def test_callproc_with_tracing(self) -> None:
         self.reset_table()
         self.reset_procedure()
         with tracer.start_as_current_span("test"):
@@ -280,26 +279,26 @@ class TestConnectionWrapper:
         yield
         self.test_conn.close()
 
-    def test_enter(self):
+    def test_enter(self) -> None:
         response = self.connection_manager.__enter__()
         assert isinstance(response, ConnectionWrapper)
         assert response._module_name == self.module_name
         assert response._connect_params == self.connect_params
 
-    def test_cursor(self):
+    def test_cursor(self) -> None:
         response = self.connection_manager.cursor()
         assert isinstance(response, CursorWrapper)
 
-    def test_close(self):
+    def test_close(self) -> None:
         response = self.connection_manager.close()
         assert self.test_conn.closed
         assert not response
 
-    def test_commit(self):
+    def test_commit(self) -> None:
         response = self.connection_manager.commit()
         assert not response
 
-    def test_rollback(self):
+    def test_rollback(self) -> None:
         if hasattr(self.connection_manager, "rollback"):
             response = self.connection_manager.rollback()
             assert not response
@@ -316,7 +315,7 @@ class TestConnectionFactory:
         self.test_module_name = None
         self.conn_fact = None
 
-    def test_call(self):
+    def test_call(self) -> None:
         response = self.conn_fact(
             dsn="user=root password=passw0rd dbname=instana_test_db host=localhost port=5432"
         )

@@ -3,10 +3,15 @@
 
 import logging
 import unittest
+import pytest
 from instana.singletons import agent, tracer
 
 
 class TestLogging(unittest.TestCase):
+    @pytest.fixture
+    def capture_log(self, caplog):
+        self.caplog = caplog
+
     def setUp(self):
         """ Clear all spans before a test run """
         self.recorder = tracer.recorder
@@ -74,3 +79,20 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(2, spans[0].k)
 
         self.assertEqual('foo bar', spans[0].data["log"].get('message'))
+
+    @pytest.mark.usefixtures("capture_log")
+    def test_log_caller(self):
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            logging.Formatter("source: %(funcName)s, message: %(message)s")
+        )
+        self.logger.addHandler(handler)
+
+        def log_custom_warning():
+            self.logger.warning("foo %s", "bar")
+
+        with tracer.start_active_span("test"):
+            log_custom_warning()
+        self.assertEqual(self.caplog.records[0].funcName, "log_custom_warning")
+
+        self.logger.removeHandler(handler)

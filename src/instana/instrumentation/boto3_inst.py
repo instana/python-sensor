@@ -5,7 +5,7 @@
 import json
 import wrapt
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Sequence, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Sequence, Type, Optional
 from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
@@ -23,8 +23,10 @@ try:
     import boto3
     from boto3.s3 import inject
 
-    def extract_custom_headers(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
-        if agent.options.extra_http_headers is None or headers is None:
+    def extract_custom_headers(
+        span: "InstanaSpan", headers: Optional[Dict[str, Any]] = None
+    ) -> None:
+        if not agent.options.extra_http_headers or not headers:
             return
         try:
             for custom_header in agent.options.extra_http_headers:

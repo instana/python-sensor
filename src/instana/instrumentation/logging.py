@@ -16,12 +16,16 @@ def log_with_instana(wrapped, instance, argv, kwargs):
     # argv[0] = level
     # argv[1] = message
     # argv[2] = args for message
+    if sys.version_info >= (3, 13):
+        stacklevel = 3
+    else:
+        stacklevel = 2
     try:
         tracer, parent_span, _ = get_tracer_tuple()
 
         # Only needed if we're tracing and serious log
         if tracing_is_off() or argv[0] < logging.WARN:
-            return wrapped(*argv, **kwargs)
+            return wrapped(*argv, **kwargs, stacklevel=stacklevel)
 
         msg = str(argv[1])
         args = argv[2]
@@ -48,7 +52,7 @@ def log_with_instana(wrapped, instance, argv, kwargs):
     except Exception:
         logger.debug('log_with_instana:', exc_info=True)
 
-    return wrapped(*argv, **kwargs)
+    return wrapped(*argv, **kwargs, stacklevel=stacklevel)
 
 
 logger.debug('Instrumenting logging')

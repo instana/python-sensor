@@ -120,8 +120,9 @@ class TestLogging(unittest.TestCase):
         def log_custom_warning():
             self.logger.warning("foo %s", "bar")
 
-        with tracer.start_active_span("test"):
+        with tracer.start_as_current_span("test"):
             log_custom_warning()
-        self.assertEqual(self.caplog.records[0].funcName, "log_custom_warning")
+
+        assert self.caplog.records[-1].funcName == "log_custom_warning"
 
         self.logger.removeHandler(handler)

@@ -42,7 +42,7 @@ collect_ignore_glob.append("*clients/test_couchbase*")
 collect_ignore_glob.append("*clients/test_google*")
 collect_ignore_glob.append("*clients/test_mysql*")
 collect_ignore_glob.append("*clients/test_pika*")
-collect_ignore_glob.append("*clients/test_pym*")
+collect_ignore_glob.append("*clients/test_pymongo*")
 collect_ignore_glob.append("*clients/test_redis*")
 collect_ignore_glob.append("*clients/test_sql*")
 

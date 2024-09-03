@@ -2,256 +2,289 @@
 # (c) Copyright Instana Inc. 2020
 
 import json
-import unittest
 import logging
+from typing import Generator
 
-from ..helpers import testenv
-from instana.singletons import agent, tracer
-
-import pymongo
 import bson
+import pymongo
+import pytest
+
+from instana.singletons import agent, tracer
+from instana.span.span import get_current_span
+from tests.helpers import testenv
 
 logger = logging.getLogger(__name__)
 
-pymongoversion = unittest.skipIf(
-    pymongo.version_tuple >= (4, 0), reason="map reduce is removed in pymongo 4.0"
-)
 
-
-class TestPyMongoTracer(unittest.TestCase):
-    def setUp(self):
-        self.client = pymongo.MongoClient(host=testenv['mongodb_host'], port=int(testenv['mongodb_port']),
-                                          username=testenv['mongodb_user'], password=testenv['mongodb_pw'])
+class TestPyMongoTracer:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        self.client = pymongo.MongoClient(
+            host=testenv["mongodb_host"],
+            port=int(testenv["mongodb_port"]),
+            username=testenv["mongodb_user"],
+            password=testenv["mongodb_pw"],
+        )
         self.client.test.records.delete_many(filter={})
-
-        self.recorder = tracer.recorder
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
-
-    def tearDown(self):
+        yield
         self.client.close()
         agent.options.allow_exit_as_root = False
 
-    def test_successful_find_query(self):
-        with tracer.start_active_span("test"):
+    def test_successful_find_query(self) -> None:
+        with tracer.start_as_current_span("test"):
             self.client.test.records.find_one({"type": "string"})
-
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 2)
+        assert len(spans) == 2
 
         db_span = spans[0]
         test_span = spans[1]
 
-        self.assertEqual(test_span.t, db_span.t)
-        self.assertEqual(db_span.p, test_span.s)
+        assert test_span.t == db_span.t
+        assert db_span.p == test_span.s
 
-        self.assertIsNone(db_span.ec)
+        assert not db_span.ec
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"], "find")
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert db_span.data["mongo"]["command"] == "find"
 
-        self.assertEqual(db_span.data["mongo"]["filter"], '{"type": "string"}')
-        self.assertIsNone(db_span.data["mongo"]["json"])
+        assert db_span.data["mongo"]["filter"] == '{"type": "string"}'
+        assert not db_span.data["mongo"]["json"]
 
-    def test_successful_find_query_as_root_span(self):
+    def test_successful_find_query_as_root_span(self) -> None:
         agent.options.allow_exit_as_root = True
         self.client.test.records.find_one({"type": "string"})
-
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 1)
+        assert len(spans) == 1
 
         db_span = spans[0]
 
-        self.assertEqual(db_span.p, None)
+        assert not db_span.p
+        assert not db_span.ec
 
-        self.assertIsNone(db_span.ec)
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert db_span.data["mongo"]["command"] == "find"
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"], "find")
+        assert db_span.data["mongo"]["filter"] == '{"type": "string"}'
+        assert not db_span.data["mongo"]["json"]
 
-        self.assertEqual(db_span.data["mongo"]["filter"], '{"type": "string"}')
-        self.assertIsNone(db_span.data["mongo"]["json"])
-
-    def test_successful_insert_query(self):
-        with tracer.start_active_span("test"):
+    def test_successful_insert_query(self) -> None:
+        with tracer.start_as_current_span("test"):
             self.client.test.records.insert_one({"type": "string"})
-
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 2)
+        assert len(spans) == 2
 
         db_span = spans[0]
         test_span = spans[1]
 
-        self.assertEqual(test_span.t, db_span.t)
-        self.assertEqual(db_span.p, test_span.s)
+        assert test_span.t == db_span.t
+        assert db_span.p == test_span.s
 
-        self.assertIsNone(db_span.ec)
+        assert not db_span.ec
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"], "insert")
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert db_span.data["mongo"]["command"] == "insert"
 
-        self.assertIsNone(db_span.data["mongo"]["filter"])
+        assert not db_span.data["mongo"]["filter"]
 
-    def test_successful_update_query(self):
-        with tracer.start_active_span("test"):
-            self.client.test.records.update_one({"type": "string"}, {"$set": {"type": "int"}})
-
-        self.assertIsNone(tracer.active_span)
+    def test_successful_update_query(self) -> None:
+        with tracer.start_as_current_span("test"):
+            self.client.test.records.update_one(
+                {"type": "string"}, {"$set": {"type": "int"}}
+            )
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 2)
+        assert len(spans) == 2
 
         db_span = spans[0]
         test_span = spans[1]
 
-        self.assertEqual(test_span.t, db_span.t)
-        self.assertEqual(db_span.p, test_span.s)
+        assert test_span.t == db_span.t
+        assert db_span.p == test_span.s
 
-        self.assertIsNone(db_span.ec)
+        assert not db_span.ec
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"], "update")
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert db_span.data["mongo"]["command"] == "update"
 
-        self.assertIsNone(db_span.data["mongo"]["filter"])
-        self.assertIsNotNone(db_span.data["mongo"]["json"])
+        assert not db_span.data["mongo"]["filter"]
+        assert db_span.data["mongo"]["json"]
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        self.assertIn({
-                        "q": {"type": "string"},
-                        "u": {"$set": {"type": "int"}},
-                        "multi": False,
-                        "upsert": False
-                       }, payload)
+        assert {
+            "q": {"type": "string"},
+            "u": {"$set": {"type": "int"}},
+            "multi": False,
+            "upsert": False,
+        } in payload
 
-    def test_successful_delete_query(self):
-        with tracer.start_active_span("test"):
+    def test_successful_delete_query(self) -> None:
+        with tracer.start_as_current_span("test"):
             self.client.test.records.delete_one(filter={"type": "string"})
-
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 2)
+        assert len(spans) == 2
 
         db_span = spans[0]
         test_span = spans[1]
 
-        self.assertEqual(test_span.t, db_span.t)
-        self.assertEqual(db_span.p, test_span.s)
+        assert test_span.t == db_span.t
+        assert db_span.p == test_span.s
 
-        self.assertIsNone(db_span.ec)
+        assert not db_span.ec
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"], "delete")
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert db_span.data["mongo"]["command"] == "delete"
 
-        self.assertIsNone(db_span.data["mongo"]["filter"])
-        self.assertIsNotNone(db_span.data["mongo"]["json"])
+        assert not db_span.data["mongo"]["filter"]
+        assert db_span.data["mongo"]["json"]
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        self.assertIn({"q": {"type": "string"}, "limit": 1}, payload)
+        assert {"q": {"type": "string"}, "limit": 1} in payload
 
-    def test_successful_aggregate_query(self):
-        with tracer.start_active_span("test"):
+    def test_successful_aggregate_query(self) -> None:
+        with tracer.start_as_current_span("test"):
             self.client.test.records.count_documents({"type": "string"})
-
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 2)
+        assert len(spans) == 2
 
         db_span = spans[0]
         test_span = spans[1]
 
-        self.assertEqual(test_span.t, db_span.t)
-        self.assertEqual(db_span.p, test_span.s)
+        assert test_span.t == db_span.t
+        assert db_span.p == test_span.s
 
-        self.assertIsNone(db_span.ec)
+        assert not db_span.ec
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"], "aggregate")
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert db_span.data["mongo"]["command"] == "aggregate"
 
-        self.assertIsNone(db_span.data["mongo"]["filter"])
-        self.assertIsNotNone(db_span.data["mongo"]["json"])
+        assert not db_span.data["mongo"]["filter"]
+        assert db_span.data["mongo"]["json"]
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        self.assertIn({"$match": {"type": "string"}}, payload)
+        assert {"$match": {"type": "string"}} in payload
 
-    @pymongoversion
-    def test_successful_map_reduce_query(self):
+    @pytest.mark.skipif(
+        pymongo.version_tuple >= (4, 0), reason="map reduce is removed in pymongo 4.0"
+    )
+    def test_successful_map_reduce_query(self) -> None:
         mapper = "function () { this.tags.forEach(function(z) { emit(z, 1); }); }"
         reducer = "function (key, values) { return len(values); }"
 
-        with tracer.start_active_span("test"):
-            self.client.test.records.map_reduce(bson.code.Code(mapper), bson.code.Code(reducer), "results",
-                                              query={"x": {"$lt": 2}})
-
-        self.assertIsNone(tracer.active_span)
+        with tracer.start_as_current_span("test"):
+            self.client.test.records.map_reduce(
+                bson.code.Code(mapper),
+                bson.code.Code(reducer),
+                "results",
+                query={"x": {"$lt": 2}},
+            )
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 2)
+        assert len(spans) == 2
 
         db_span = spans[0]
         test_span = spans[1]
 
-        self.assertEqual(test_span.t, db_span.t)
-        self.assertEqual(db_span.p, test_span.s)
+        assert test_span.t == db_span.t
+        assert db_span.p == test_span.s
 
-        self.assertIsNone(db_span.ec)
+        assert not db_span.ec
 
-        self.assertEqual(db_span.n, "mongo")
-        self.assertEqual(db_span.data["mongo"]["service"], "%s:%s" % (testenv['mongodb_host'], testenv['mongodb_port']))
-        self.assertEqual(db_span.data["mongo"]["namespace"], "test.records")
-        self.assertEqual(db_span.data["mongo"]["command"].lower(),
-                         "mapreduce")  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
+        assert db_span.n == "mongo"
+        assert (
+            db_span.data["mongo"]["service"]
+            == f"{testenv['mongodb_host']}:{testenv['mongodb_port']}"
+        )
+        assert db_span.data["mongo"]["namespace"] == "test.records"
+        assert (
+            db_span.data["mongo"]["command"].lower() == "mapreduce"
+        )  # mapreduce command was renamed to mapReduce in pymongo 3.9.0
 
-        self.assertEqual(db_span.data["mongo"]["filter"], '{"x": {"$lt": 2}}')
-        self.assertIsNotNone(db_span.data["mongo"]["json"])
+        assert db_span.data["mongo"]["filter"] == '{"x": {"$lt": 2}}'
+        assert db_span.data["mongo"]["json"]
 
         payload = json.loads(db_span.data["mongo"]["json"])
-        self.assertEqual(payload["map"], {"$code": mapper}, db_span.data["mongo"]["json"])
-        self.assertEqual(payload["reduce"], {"$code": reducer}, db_span.data["mongo"]["json"])
+        assert payload["map"], {"$code": mapper} == db_span.data["mongo"]["json"]
+        assert payload["reduce"], {"$code": reducer} == db_span.data["mongo"]["json"]
 
-    def test_successful_mutiple_queries(self):
-        with tracer.start_active_span("test"):
-            self.client.test.records.bulk_write([pymongo.InsertOne({"type": "string"}),
-                                                 pymongo.UpdateOne({"type": "string"}, {"$set": {"type": "int"}}),
-                                                 pymongo.DeleteOne({"type": "string"})])
-
-        self.assertIsNone(tracer.active_span)
+    def test_successful_mutiple_queries(self) -> None:
+        with tracer.start_as_current_span("test"):
+            self.client.test.records.bulk_write(
+                [
+                    pymongo.InsertOne({"type": "string"}),
+                    pymongo.UpdateOne({"type": "string"}, {"$set": {"type": "int"}}),
+                    pymongo.DeleteOne({"type": "string"}),
+                ]
+            )
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(len(spans), 4)
+        assert len(spans) == 4
 
         test_span = spans.pop()
 
         seen_span_ids = set()
         commands = []
         for span in spans:
-            self.assertEqual(test_span.t, span.t)
-            self.assertEqual(span.p, test_span.s)
+            assert test_span.t == span.t
+            assert span.p == test_span.s
 
             # check if all spans got a unique id
-            self.assertNotIn(span.s, seen_span_ids)
+            assert span.s not in seen_span_ids
 
             seen_span_ids.add(span.s)
             commands.append(span.data["mongo"]["command"])
 
         # ensure spans are ordered the same way as commands
-        self.assertListEqual(commands, ["insert", "update", "delete"])
-
+        assert commands == ["insert", "update", "delete"]

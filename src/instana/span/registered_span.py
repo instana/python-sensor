@@ -252,14 +252,8 @@ class RegisteredSpan(BaseSpan):
             self.data["pg"]["error"] = span.attributes.pop("pg.error", None)
 
         elif span.name == "mongo":
-            service = "%s:%s" % (
-                span.attributes.pop("host", None),
-                span.attributes.pop("port", None),
-            )
-            namespace = "%s.%s" % (
-                span.attributes.pop("db", "?"),
-                span.attributes.pop("collection", "?"),
-            )
+            service = f"{span.attributes.pop(SpanAttributes.SERVER_ADDRESS, None)}:{span.attributes.pop(SpanAttributes.SERVER_PORT, None)}"
+            namespace = f"{span.attributes.pop(SpanAttributes.DB_NAME, '?')}.{span.attributes.pop(SpanAttributes.DB_MONGODB_COLLECTION, '?')}"
 
             self.data["mongo"]["service"] = service
             self.data["mongo"]["namespace"] = namespace

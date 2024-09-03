@@ -177,7 +177,7 @@ def boot_agent():
             pep0249,  # noqa: F401
             psycopg2,  # noqa: F401
             # pymongo,  # noqa: F401
-            # pymysql,  # noqa: F401
+            pymysql,  # noqa: F401
             # redis,  # noqa: F401
             # sqlalchemy,  # noqa: F401
             starlette_inst,  # noqa: F401

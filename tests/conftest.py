@@ -37,7 +37,6 @@ collect_ignore_glob = [
 
 # TODO: remove the following entries as the migration of the instrumentation
 # codes are finalised.
-collect_ignore_glob.append("*clients/boto*")
 collect_ignore_glob.append("*clients/test_cassandra*")
 collect_ignore_glob.append("*clients/test_couchbase*")
 collect_ignore_glob.append("*clients/test_google*")

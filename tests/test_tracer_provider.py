@@ -37,7 +37,7 @@ def test_tracer_provider_get_tracer_empty_instrumenting_module_name(
     provider = InstanaTracerProvider()
     tracer = provider.get_tracer("")
 
-    assert "get_tracer called with missing module name." == caplog.record_tuples[0][2]
+    assert "get_tracer called with missing module name." in caplog.messages
     assert isinstance(tracer, InstanaTracer)
 
 

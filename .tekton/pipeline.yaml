@@ -25,18 +25,18 @@ spec:
         params:
           - name: imageDigest
             value:
-              # 3.8.19-bookworm
-              - "sha256:4d3590657cf443010b58ae94a09c59505a750744ed70d2028b35dac101df5e3a"
-              # 3.9.19-bookworm
-              - "sha256:e298e2e898691a938073f670dac8ef1a551c83344b67b5d8e32d1fbc8e0b57f8"
-              # 3.10.14-bookworm
-              - "sha256:c0352a2c64efe4cc08b198e90b97ed7e08897518c4bee99647e3eaf676e84951"
-              # 3.11.9-bookworm
-              - "sha256:0c2928128a96e544a1ee248e50ee8ecbe840bf48ef5a49065812e3d06b6e1bcc"
-              # 3.12.4-bookworm
-              - "sha256:83f5f8714b6881d3e0e91023d9fe9e43aa6ad5a04e9f9a94ee180b18b021c72a"
-              # 3.13.0rc1-bookworm
-              - "sha256:50446a4de6987bff979654da0a476746cdc2d5dfb8d0be2d99bac805f2f40281"
+              # 3.8.20-bookworm
+              - "sha256:f53fd710218c3c5415229037afaf04d0f32acba87dd90d48863fbdab4227ac89"
+              # 3.9.20-bookworm
+              - "sha256:dbb0be5b67aa84b9e3e4f325c7844ab439f40a5cca717c5b24e671cfb41dbb46"
+              # 3.10.15-bookworm
+              - "sha256:b346d9d55e40cd6079db55370581b3bd24067acf5f1acc386107ec0843102ec9"
+              # 3.11.10-bookworm
+              - "sha256:3cd9b520be95c671135ea1318f32be6912876024ee16d0f472669d3878801651"
+              # 3.12.6-bookworm
+              - "sha256:af6fa5c329d6bd6dec52855ccb8bb37c30fb8f00819953a035d49499e43b2c9b"
+              # 3.13.0rc2-bookworm
+              - "sha256:3aed70fd4585395e47c6005f0082b966151561f3c4070a3ed9d2fb594bbf44b8"
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:
@@ -49,8 +49,8 @@ spec:
         params:
           - name: imageDigest
             value:
-              # 3.9.19-bookworm
-              - "sha256:e298e2e898691a938073f670dac8ef1a551c83344b67b5d8e32d1fbc8e0b57f8"
+              # 3.9.20-bookworm
+              - "sha256:dbb0be5b67aa84b9e3e4f325c7844ab439f40a5cca717c5b24e671cfb41dbb46"
       taskRef:
         name: python-tracer-unittest-cassandra-task
       workspaces:
@@ -63,8 +63,8 @@ spec:
         params:
           - name: imageDigest
             value:
-              # 3.9.19-bookworm
-              - "sha256:e298e2e898691a938073f670dac8ef1a551c83344b67b5d8e32d1fbc8e0b57f8"
+              # 3.9.20-bookworm
+              - "sha256:dbb0be5b67aa84b9e3e4f325c7844ab439f40a5cca717c5b24e671cfb41dbb46"
       taskRef:
         name: python-tracer-unittest-couchbase-task
       workspaces:
@@ -77,8 +77,8 @@ spec:
         params:
           - name: imageDigest
             value:
-              # 3.9.18-bookworm
-              - "sha256:530d4ba717be787c0e2d011aa107edac6d721f8c06fe6d44708d4aa5e9bc5ec9"
+              # 3.9.20-bookworm
+              - "sha256:dbb0be5b67aa84b9e3e4f325c7844ab439f40a5cca717c5b24e671cfb41dbb46"
       taskRef:
         name: python-tracer-unittest-gevent-starlette-task
       workspaces:
@@ -91,10 +91,10 @@ spec:
         params:
           - name: imageDigest
             value:
-              # 3.11.9-bookworm
-              - "sha256:0c2928128a96e544a1ee248e50ee8ecbe840bf48ef5a49065812e3d06b6e1bcc"
-              # 3.12.4-bookworm
-              - "sha256:83f5f8714b6881d3e0e91023d9fe9e43aa6ad5a04e9f9a94ee180b18b021c72a"
+              # 3.11.10-bookworm
+              - "sha256:3cd9b520be95c671135ea1318f32be6912876024ee16d0f472669d3878801651"
+              # 3.12.6-bookworm
+              - "sha256:af6fa5c329d6bd6dec52855ccb8bb37c30fb8f00819953a035d49499e43b2c9b"
       taskRef:
         name: python-tracer-unittest-googlecloud-task
       workspaces:

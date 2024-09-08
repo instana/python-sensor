@@ -118,7 +118,7 @@ commands:
 jobs:
   python38:
     docker:
-      - image: cimg/python:3.8.17
+      - image: cimg/python:3.8.20
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -142,7 +142,7 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9.20
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -166,7 +166,7 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10.12
+      - image: cimg/python:3.10.15
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -191,7 +191,7 @@ jobs:
 
   python311:
     docker:
-      - image: cimg/python:3.11.4
+      - image: cimg/python:3.11.10
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -216,7 +216,7 @@ jobs:
 
   py311googlecloud:
     docker:
-      - image: cimg/python:3.11.4
+      - image: cimg/python:3.11.10
       - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
@@ -231,7 +231,7 @@ jobs:
 
   python312:
     docker:
-      - image: cimg/python:3.12.0
+      - image: cimg/python:3.12.6
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -256,7 +256,7 @@ jobs:
 
   py312googlecloud:
     docker:
-      - image: cimg/python:3.12.0
+      - image: cimg/python:3.12.6
       - image: vanmoof/pubsub-emulator
     working_directory: ~/repo
     steps:
@@ -271,7 +271,7 @@ jobs:
 
   python313:
     docker:
-      - image: python:3.13.0rc1-bookworm
+      - image: python:3.13.0rc2-bookworm
       - image: cimg/postgres:9.6.24
         environment:
           POSTGRES_USER: root
@@ -296,7 +296,7 @@ jobs:
 
   py39couchbase:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9.20
       - image: couchbase/server-sandbox:5.5.0
     working_directory: ~/repo
     steps:
@@ -312,7 +312,7 @@ jobs:
 
   py39cassandra:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9.20
       - image: cassandra:3.11
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -330,7 +330,7 @@ jobs:
 
   final_job:
     docker:
-      - image: cimg/python:3.8.17
+      - image: cimg/python:3.8.20
     working_directory: ~/repo
     steps:
       - checkout
@@ -341,7 +341,7 @@ jobs:
 
   py39gevent_starlette:
     docker:
-      - image: cimg/python:3.9.17
+      - image: cimg/python:3.9.20
     working_directory: ~/repo
     steps:
       - checkout

@@ -31,8 +31,8 @@ spec:
       mountPath: /workspace
   steps:
     - name: generate-currency-report
-      # 3.10.13-bookworm
-      image: python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc
+      # 3.10.15-bookworm
+      image: python@sha256:b346d9d55e40cd6079db55370581b3bd24067acf5f1acc386107ec0843102ec9
       script: |
         #!/usr/bin/env bash
         cd /workspace/python-sensor/.tekton/.currency

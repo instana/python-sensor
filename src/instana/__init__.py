@@ -181,7 +181,7 @@ def boot_agent():
             # redis,  # noqa: F401
             # sqlalchemy,  # noqa: F401
             starlette_inst,  # noqa: F401
-            # sanic_inst,  # noqa: F401
+            sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (

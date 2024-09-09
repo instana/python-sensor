@@ -1,5 +1,4 @@
-# (c) Copyright IBM Corp. 2021
-# (c) Copyright Instana Inc. 2021
+# (c) Copyright IBM Corp. 2024
 
 """
 Instrumentation for Sanic
@@ -8,112 +7,59 @@ https://sanicframework.org/en/
 try:
     import sanic
     import wrapt
-    import opentracing
-    from ..log import logger
-    from ..singletons import async_tracer, agent
-    from ..util.secrets import strip_secrets_from_query
-    from ..util.traceutils import extract_custom_headers
+    from typing import Callable, Tuple, Dict, Any
+    from sanic.exceptions import SanicException
 
+    from opentelemetry import context, trace
+    from opentelemetry.trace import SpanKind
+    from opentelemetry.semconv.trace import SpanAttributes
 
-    @wrapt.patch_function_wrapper('sanic.exceptions', 'SanicException.__init__')
-    def exception_with_instana(wrapped, instance, args, kwargs):
-        try:
-            message = kwargs.get("message") or args[0]
-            status_code = kwargs.get("status_code")
-            span = async_tracer.active_span
+    from instana.log import logger
+    from instana.singletons import tracer, agent
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers
+    from instana.propagators.format import Format
 
-            if all([span, status_code, message]) and 500 <= status_code:
-                span.set_tag("http.error", message)
-                try:
-                    wrapped(*args, **kwargs)
-                except Exception as exc:
-                    span.log_exception(exc)
-            else:
-                wrapped(*args, **kwargs)
-        except Exception:
-            logger.debug("exception_with_instana: ", exc_info=True)
-            wrapped(*args, **kwargs)
-
-
-    def response_details(span, response):
-        try:
-            status_code = response.status
-            if status_code is not None:
-                if 500 <= int(status_code):
-                    span.mark_as_errored()
-                span.set_tag('http.status_code', status_code)
-
-            if response.headers is not None:
-                extract_custom_headers(span, response.headers)
-                async_tracer.inject(span.context, opentracing.Format.HTTP_HEADERS, response.headers)
-            response.headers['Server-Timing'] = "intid;desc=%s" % span.context.trace_id
-        except Exception:
-            logger.debug("send_wrapper: ", exc_info=True)
-
-
-    if hasattr(sanic.response.BaseHTTPResponse, "send"):
-        @wrapt.patch_function_wrapper('sanic.response', 'BaseHTTPResponse.send')
-        async def send_with_instana(wrapped, instance, args, kwargs):
-            span = async_tracer.active_span
-            if span is None:
-                await wrapped(*args, **kwargs)
-            else:
-                response_details(span=span, response=instance)
-                try:
-                    await wrapped(*args, **kwargs)
-                except Exception as exc:
-                    span.log_exception(exc)
-                    raise
+    if hasattr(sanic.request, "types"):
+        from sanic.request.types import Request
+        from sanic.response.types import HTTPResponse
     else:
-        @wrapt.patch_function_wrapper('sanic.server', 'HttpProtocol.write_response')
-        def write_with_instana(wrapped, instance, args, kwargs):
-            response = args[0]
-            span = async_tracer.active_span
-            if span is None:
-                wrapped(*args, **kwargs)
-            else:
-                response_details(span=span, response=response)
-                try:
-                    wrapped(*args, **kwargs)
-                except Exception as exc:
-                    span.log_exception(exc)
-                    raise
+        from sanic.request import Request
+        from sanic.response import HTTPResponse
 
 
-        @wrapt.patch_function_wrapper('sanic.server', 'HttpProtocol.stream_response')
-        async def stream_with_instana(wrapped, instance, args, kwargs):
-            response = args[0]
-            span = async_tracer.active_span
-            if span is None:
-                await wrapped(*args, **kwargs)
-            else:
-                response_details(span=span, response=response)
-                try:
-                    await wrapped(*args, **kwargs)
-                except Exception as exc:
-                    span.log_exception(exc)
-                    raise
+    @wrapt.patch_function_wrapper("sanic.app", "Sanic.__init__")
+    def init_with_instana(
+        wrapped: Callable[..., sanic.app.Sanic.__init__],
+        instance: sanic.app.Sanic,
+        args: Tuple[object, ...],
+        kwargs: Dict[str, Any],
+    ) -> None:
+        wrapped(*args, **kwargs)
+        app = instance
 
-
-    @wrapt.patch_function_wrapper('sanic.app', 'Sanic.handle_request')
-    async def handle_request_with_instana(wrapped, instance, args, kwargs):
-
-        try:
-            request = args[0]
-            try:  # scheme attribute is calculated in the sanic handle_request method for v19, not yet present
+        @app.middleware("request")
+        def request_with_instana(request: Request) -> None:
+            try:
                 if "http" not in request.scheme:
-                    return await wrapped(*args, **kwargs)
-            except AttributeError:
-                pass
-            headers = request.headers.copy()
-            ctx = async_tracer.extract(opentracing.Format.HTTP_HEADERS, headers)
-            with async_tracer.start_active_span("asgi", child_of=ctx) as scope:
-                scope.span.set_tag('span.kind', 'entry')
-                scope.span.set_tag('http.path', request.path)
-                scope.span.set_tag('http.method', request.method)
-                scope.span.set_tag('http.host', request.host)
+                    return
+                
+                headers = request.headers.copy()
+                parent_context = tracer.extract(Format.HTTP_HEADERS, headers)
+
+                span = tracer.start_span("asgi", span_context=parent_context)
+                request.ctx.span = span
+
+                ctx = trace.set_span_in_context(span)
+                token = context.attach(ctx)
+                request.ctx.token = token
+
+                span.set_attribute('span.kind', SpanKind.CLIENT)
+                span.set_attribute('http.path', request.path)
+                span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
+                span.set_attribute(SpanAttributes.HTTP_HOST, request.host)
                 if hasattr(request, "url"):
-                    scope.span.set_tag("http.url", request.url)
+                    span.set_attribute(SpanAttributes.HTTP_URL, request.url)
 
                 query = request.query_string
 
@@ -121,24 +67,62 @@ try:
                     if isinstance(query, bytes):
                         query = query.decode('utf-8')
                     scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher,
-                                                               agent.options.secrets_list)
-                    scope.span.set_tag("http.params", scrubbed_params)
+                                                                agent.options.secrets_list)
+                    span.set_attribute("http.params", scrubbed_params)
 
-                if agent.options.extra_http_headers is not None:
-                    extract_custom_headers(scope.span, headers)
-                await wrapped(*args, **kwargs)
+                if agent.options.extra_http_headers:
+                    extract_custom_headers(span, headers)
                 if hasattr(request, "uri_template") and request.uri_template:
-                    scope.span.set_tag("http.path_tpl", request.uri_template)
-                if hasattr(request, "ctx"):  # ctx attribute added in the latest v19 versions
-                    request.ctx.iscope = scope
-        except Exception as e:
-            logger.debug("Sanic framework @ handle_request", exc_info=True)
-            return await wrapped(*args, **kwargs)
+                    span.set_attribute("http.path_tpl", request.uri_template)
+            except Exception:
+                logger.debug("request_with_instana: ", exc_info=True)
 
 
-    logger.debug("Instrumenting Sanic")
+        @app.exception(Exception)
+        def exception_with_instana(request: Request, exception: Exception) -> None:
+            try:
+                if not hasattr(request.ctx, "span"):
+                    return
+                span = request.ctx.span
+
+                if isinstance(exception, SanicException):
+                    # Handle Sanic-specific exceptions
+                    status_code = exception.status_code
+                    message = str(exception)
+
+                    if all([span, status_code, message]) and 500 <= status_code:
+                        span.set_attribute("http.error", message)
+            except Exception:
+                logger.debug("exception_with_instana: ", exc_info=True)
+
+
+        @app.middleware("response")
+        def response_with_instana(request: Request, response: HTTPResponse) -> None:
+            try:
+                if not hasattr(request.ctx, "span"):
+                    return
+                span = request.ctx.span
+
+                status_code = response.status
+                if status_code:
+                    if int(status_code) >= 500:
+                        span.mark_as_errored()
+                    span.set_attribute('http.status_code', status_code)
+
+                if hasattr(response, "headers"):
+                    extract_custom_headers(span, response.headers)
+                    tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
+                response.headers['Server-Timing'] = "intid;desc=%s" % span.context.trace_id
+
+                if span.is_recording():
+                    span.end()
+                request.ctx.span = None
+
+                if request.ctx.token:
+                    context.detach(request.ctx.token)
+                    request.ctx.token = None
+            except Exception:
+                logger.debug("response_with_instana: ", exc_info=True)
 
 except ImportError:
     pass
-except AttributeError:
-    logger.debug("Not supported Sanic version")

@@ -58,9 +58,5 @@ services:
     image: docker.io/vanmoof/pubsub-emulator
     environment:
       - PUBSUB_EMULATOR_HOST=0.0.0.0:8085
-    command:
-      - test-project
-      - test-topic
-      - test-subscription
     ports:
       - "8085:8085"

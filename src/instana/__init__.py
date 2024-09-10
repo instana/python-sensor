@@ -173,7 +173,7 @@ def boot_agent():
             # grpcio,  # noqa: F401
             logging,  # noqa: F401
             mysqlclient,  # noqa: F401
-            # pika,  # noqa: F401
+            pika,  # noqa: F401
             pep0249,  # noqa: F401
             psycopg2,  # noqa: F401
             pymongo,  # noqa: F401

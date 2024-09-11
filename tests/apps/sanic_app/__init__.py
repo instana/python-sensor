@@ -4,11 +4,10 @@
 
 import uvicorn
 
-from ...helpers import testenv
-from instana.log import logger
+from tests.helpers import testenv
 
 testenv["sanic_port"] = 1337
-testenv["sanic_server"] = ("http://127.0.0.1:" + str(testenv["sanic_port"]))
+testenv["sanic_server"] = f"http://127.0.0.1:{testenv['sanic_port']}"
 
 
 def launch_sanic():

@@ -200,8 +200,8 @@ a new `PipelineRun` based on GitHub events.
 After this ensure that there is a pod and a service created:
 
 ````bash
-   kubectl get pod | grep -i el-github-pr-eventlistener
-   kubectl get svc | grep -i el-github-pr-eventlistener
+   kubectl get pod | grep -i el-github-pr-python-eventlistener
+   kubectl get svc | grep -i el-github-pr-python-eventlistener
 ````
 
 Do not continue if any of these missing.

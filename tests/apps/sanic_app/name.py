@@ -7,8 +7,5 @@ from sanic.response import text
 
 
 class NameView(HTTPMethodView):
-
     def get(self, request, name):
         return text("Hello {}".format(name))
-
-

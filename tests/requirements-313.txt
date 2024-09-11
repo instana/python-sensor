@@ -43,10 +43,9 @@ pytz>=2024.1
 redis>=3.5.3
 requests-mock
 responses<=0.17.0
-# Newer versions of sanic are not supported
-# And this old version is not installable on 3.13 because of the `httptools` dependency fails to compile:
+# Sanic is not installable on 3.13 because `httptools, uvloop` dependencies fail to compile:
 # `too few arguments to function ‘_PyLong_AsByteArray’`
-#sanic==21.6.2
+#sanic>=19.9.0
 sqlalchemy>=2.0.0
 
 uvicorn>=0.13.4

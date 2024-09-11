@@ -4,6 +4,7 @@
 Instrumentation for Sanic
 https://sanicframework.org/en/
 """
+
 try:
     import sanic
     import wrapt
@@ -27,7 +28,6 @@ try:
         from sanic.request import Request
         from sanic.response import HTTPResponse
 
-
     @wrapt.patch_function_wrapper("sanic.app", "Sanic.__init__")
     def init_with_instana(
         wrapped: Callable[..., sanic.app.Sanic.__init__],
@@ -43,7 +43,7 @@ try:
             try:
                 if "http" not in request.scheme:
                     return
-                
+
                 headers = request.headers.copy()
                 parent_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
@@ -54,8 +54,8 @@ try:
                 token = context.attach(ctx)
                 request.ctx.token = token
 
-                span.set_attribute('span.kind', SpanKind.CLIENT)
-                span.set_attribute('http.path', request.path)
+                span.set_attribute("span.kind", SpanKind.CLIENT)
+                span.set_attribute("http.path", request.path)
                 span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 span.set_attribute(SpanAttributes.HTTP_HOST, request.host)
                 if hasattr(request, "url"):
@@ -65,9 +65,10 @@ try:
 
                 if isinstance(query, (str, bytes)) and len(query):
                     if isinstance(query, bytes):
-                        query = query.decode('utf-8')
-                    scrubbed_params = strip_secrets_from_query(query, agent.options.secrets_matcher,
-                                                                agent.options.secrets_list)
+                        query = query.decode("utf-8")
+                    scrubbed_params = strip_secrets_from_query(
+                        query, agent.options.secrets_matcher, agent.options.secrets_list
+                    )
                     span.set_attribute("http.params", scrubbed_params)
 
                 if agent.options.extra_http_headers:
@@ -76,7 +77,6 @@ try:
                     span.set_attribute("http.path_tpl", request.uri_template)
             except Exception:
                 logger.debug("request_with_instana: ", exc_info=True)
-
 
         @app.exception(Exception)
         def exception_with_instana(request: Request, exception: Exception) -> None:
@@ -95,7 +95,6 @@ try:
             except Exception:
                 logger.debug("exception_with_instana: ", exc_info=True)
 
-
         @app.middleware("response")
         def response_with_instana(request: Request, response: HTTPResponse) -> None:
             try:
@@ -107,12 +106,14 @@ try:
                 if status_code:
                     if int(status_code) >= 500:
                         span.mark_as_errored()
-                    span.set_attribute('http.status_code', status_code)
+                    span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
 
                 if hasattr(response, "headers"):
                     extract_custom_headers(span, response.headers)
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-                response.headers['Server-Timing'] = "intid;desc=%s" % span.context.trace_id
+                response.headers["Server-Timing"] = (
+                    "intid;desc=%s" % span.context.trace_id
+                )
 
                 if span.is_recording():
                     span.end()

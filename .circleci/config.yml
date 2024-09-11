@@ -107,8 +107,8 @@ commands:
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
-          store_artifacts:
-            path: htmlcov
+      - store_artifacts:
+          path: htmlcov
 
   store-coverage-report:
     steps:
@@ -337,7 +337,7 @@ jobs:
       - pip-install-deps:
             requirements: "tests/requirements.txt"
       - store-pytest-results
-      - run_sonarqube
+      # - run_sonarqube
 
   py39gevent_starlette:
     docker:

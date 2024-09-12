@@ -2,11 +2,17 @@
 # (c) Copyright Instana Inc. 2018
 
 import os
+from typing import TYPE_CHECKING, Type
 
 from opentelemetry import trace
 
-from instana.autoprofile.profiler import Profiler
+from instana.recorder import StanRecorder
 from instana.tracer import InstanaTracerProvider
+from instana.autoprofile.profiler import Profiler
+
+if TYPE_CHECKING:
+    from instana.agent.base import BaseAgent
+    from instana.tracer import InstanaTracer
 
 agent = None
 tracer = None
@@ -33,38 +39,28 @@ if env_is_aws_lambda:
     from .recorder import StanRecorder
 
     agent = AWSLambdaAgent()
-    span_recorder = StanRecorder(agent)
-
 elif env_is_aws_fargate:
-    from .agent.aws_fargate import AWSFargateAgent
-    from .recorder import StanRecorder
-
+    from instana.agent.aws_fargate import AWSFargateAgent
     agent = AWSFargateAgent()
-    span_recorder = StanRecorder(agent)
 elif env_is_google_cloud_run:
     from instana.agent.google_cloud_run import GCRAgent
-    from instana.recorder import StanRecorder
-
     agent = GCRAgent(
         service=k_service, configuration=k_configuration, revision=k_revision
     )
-    span_recorder = StanRecorder(agent)
 elif env_is_aws_eks_fargate:
-    from .agent.aws_eks_fargate import EKSFargateAgent
-    from .recorder import StanRecorder
-
+    from instana.agent.aws_eks_fargate import EKSFargateAgent
     agent = EKSFargateAgent()
-    span_recorder = StanRecorder(agent)
 else:
-    from .agent.host import HostAgent
-    from .recorder import StanRecorder
-
+    from instana.agent.host import HostAgent
     agent = HostAgent()
-    span_recorder = StanRecorder(agent)
     profiler = Profiler(agent)
+    
+
+if agent:
+    span_recorder = StanRecorder(agent)        
 
 
-def get_agent():
+def get_agent() -> Type["BaseAgent"]:
     """
     Retrieve the globally configured agent
     @return: The Instana Agent singleton
@@ -73,7 +69,7 @@ def get_agent():
     return agent
 
 
-def set_agent(new_agent):
+def set_agent(new_agent: Type["BaseAgent"]) -> None:
     """
     Set the global agent for the Instana package.  This is used for the
     test suite only currently.
@@ -96,7 +92,7 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer("instana.tracer")
 
 
-def get_tracer():
+def get_tracer() -> "InstanaTracer":
     """
     Retrieve the globally configured tracer
     @return: Tracer
@@ -105,7 +101,7 @@ def get_tracer():
     return tracer
 
 
-def set_tracer(new_tracer):
+def set_tracer(new_tracer: "InstanaTracer") -> None:
     """
     Set the global tracer for the Instana package.  This is used for the
     test suite only currently.
@@ -116,7 +112,7 @@ def set_tracer(new_tracer):
     tracer = new_tracer
 
 
-def get_profiler():
+def get_profiler() -> Profiler:
     """
     Retrieve the globally configured profiler
     @return: Profiler
@@ -125,7 +121,7 @@ def get_profiler():
     return profiler
 
 
-def set_profiler(new_profiler):
+def set_profiler(new_profiler: Profiler):
     """
     Set the global profiler for the Instana package.  This is used for the
     test suite only currently.

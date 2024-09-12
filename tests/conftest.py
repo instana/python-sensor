@@ -13,6 +13,7 @@ from opentelemetry.trace import set_span_in_context
 if importlib.util.find_spec("celery"):
     pytest_plugins = ("celery.contrib.pytest",)
 
+
 from instana.agent.host import HostAgent
 from instana.collector.base import BaseCollector
 from instana.recorder import StanRecorder
@@ -23,13 +24,18 @@ from instana.tracer import InstanaTracerProvider
 
 # Ignoring tests during OpenTelemetry migration.
 collect_ignore_glob = [
-    "*platforms*",
     "*w3c_trace_context*",
 ]
 
 # TODO: remove the following entries as the migration of the instrumentation
 # codes are finalised.
 collect_ignore_glob.append("*frameworks/test_gevent*")
+
+collect_ignore_glob.append("*platforms/aws/eks/test_eks*")
+collect_ignore_glob.append("*platforms/aws/fargate/test_fargate*")
+collect_ignore_glob.append("*platforms/test_gcr*")
+collect_ignore_glob.append("*platforms/test_google*")
+collect_ignore_glob.append("*platforms/test_host*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)

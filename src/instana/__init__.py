@@ -13,6 +13,7 @@ Source Code: https://github.com/instana/python-sensor
 import importlib
 import os
 import sys
+from typing import Tuple
 
 from instana.collector.helpers.runtime import (
     is_autowrapt_instrumented,
@@ -55,7 +56,7 @@ do_not_load_list = [
 ]
 
 
-def load(_):
+def load(_: object) -> None:
     """
     Method used to activate the Instana sensor via AUTOWRAPT_BOOTSTRAP
     environment variable.
@@ -66,15 +67,15 @@ def load(_):
     return None
 
 
-def apply_gevent_monkey_patch():
+def apply_gevent_monkey_patch() -> None:
     from gevent import monkey
 
     if os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
 
-        def short_key(k):
+        def short_key(k: str) -> str:
             return k[3:] if k.startswith("no-") else k
 
-        def key_to_bool(k):
+        def key_to_bool(k: str) -> bool:
             return not k.startswith("no-")
 
         import inspect
@@ -99,14 +100,16 @@ def apply_gevent_monkey_patch():
         monkey.patch_all()
 
 
-def get_lambda_handler_or_default():
+def get_aws_lambda_handler() -> Tuple[str, str]:
     """
-    For instrumenting AWS Lambda, users specify their original lambda handler in the LAMBDA_HANDLER environment
-    variable.  This function searches for and parses that environment variable or returns the defaults.
+    For instrumenting AWS Lambda, users specify their original lambda handler 
+    in the LAMBDA_HANDLER environment variable.  This function searches for and 
+    parses that environment variable or returns the defaults.
 
-    The default handler value for AWS Lambda is 'lambda_function.lambda_handler' which
-    equates to the function "lambda_handler in a file named "lambda_function.py" or in Python
-    terms "from lambda_function import lambda_handler"
+    The default handler value for AWS Lambda is 'lambda_function.lambda_handler'
+    which equates to the function "lambda_handler in a file named 
+    lambda_function.py" or in Python terms 
+    "from lambda_function import lambda_handler"
     """
     handler_module = "lambda_function"
     handler_function = "lambda_handler"
@@ -118,20 +121,20 @@ def get_lambda_handler_or_default():
             parts = handler.split(".")
             handler_function = parts.pop().strip()
             handler_module = ".".join(parts).strip()
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"get_aws_lambda_handler error: {exc}")
 
     return handler_module, handler_function
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: str, context: str) -> None:
     """
     Entry point for AWS Lambda monitoring.
 
     This function will trigger the initialization of Instana monitoring and then call
     the original user specified lambda handler function.
     """
-    module_name, function_name = get_lambda_handler_or_default()
+    module_name, function_name = get_aws_lambda_handler()
 
     try:
         # Import the module specified in module_name
@@ -151,7 +154,7 @@ def lambda_handler(event, context):
             )
 
 
-def boot_agent():
+def boot_agent() -> None:
     """Initialize the Instana agent and conditionally load auto-instrumentation."""
 
     import instana.singletons  # noqa: F401
@@ -189,8 +192,7 @@ def boot_agent():
             client,  # noqa: F401
             server,  # noqa: F401
         )
-
-        # from instana.instrumentation.aws import lambda_inst  # noqa: F401
+        from instana.instrumentation.aws import lambda_inst  # noqa: F401
         from instana.instrumentation import celery  # noqa: F401
         from instana.instrumentation.django import middleware  # noqa: F401
         from instana.instrumentation.google.cloud import (
@@ -229,7 +231,7 @@ if "INSTANA_DISABLE" not in os.environ:
             apply_gevent_monkey_patch()
         # AutoProfile
         if "INSTANA_AUTOPROFILE" in os.environ:
-            from .singletons import get_profiler
+            from instana.singletons import get_profiler
 
             profiler = get_profiler()
             if profiler:

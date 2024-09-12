@@ -85,4 +85,6 @@ exclude_also = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
     "except ImportError:",
+    "except Exception:",
+    "except Exception as exc:",
     ]

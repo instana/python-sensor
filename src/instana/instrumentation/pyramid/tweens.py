@@ -3,90 +3,107 @@
 
 
 from pyramid.httpexceptions import HTTPException
+from typing import TYPE_CHECKING, Dict, Any, Callable
 
-import opentracing as ot
-import opentracing.ext.tags as ext
+from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import SpanKind
 
-from ...log import logger
-from ...singletons import tracer, agent
-from ...util.secrets import strip_secrets_from_query
+from instana.log import logger
+from instana.singletons import tracer, agent
+from instana.util.secrets import strip_secrets_from_query
+from instana.propagators.format import Format
+
+if TYPE_CHECKING:
+    from pyramid.request import Request
+    from pyramid.response import Response
+    from pyramid.config import Configurator
+    from instana.span.span import InstanaSpan
+    from pyramid.registry import Registry
 
 
 class InstanaTweenFactory(object):
     """A factory that provides Instana instrumentation tween for Pyramid apps"""
 
-    def __init__(self, handler, registry):
+    def __init__(
+        self, handler: Callable[["Request"], "Response"], registry: "Registry"
+    ) -> None:
         self.handler = handler
 
-    def _extract_custom_headers(self, span, headers):
-        if agent.options.extra_http_headers is None:
+    def _extract_custom_headers(
+        self, span: "InstanaSpan", headers: Dict[str, Any]
+    ) -> None:
+        if not agent.options.extra_http_headers:
             return
         try:
             for custom_header in agent.options.extra_http_headers:
                 if custom_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+                    span.set_attribute(
+                        "http.header.%s" % custom_header, headers[custom_header]
+                    )
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
 
-    def __call__(self, request):
-        ctx = tracer.extract(ot.Format.HTTP_HEADERS, dict(request.headers))
-        scope = tracer.start_active_span('http', child_of=ctx)
+    def __call__(self, request: "Request") -> "Response":
+        ctx = tracer.extract(Format.HTTP_HEADERS, dict(request.headers))
 
-        scope.span.set_tag(ext.SPAN_KIND, ext.SPAN_KIND_RPC_SERVER)
-        scope.span.set_tag("http.host", request.host)
-        scope.span.set_tag(ext.HTTP_METHOD, request.method)
-        scope.span.set_tag(ext.HTTP_URL, request.path)
+        with tracer.start_as_current_span("http", span_context=ctx) as span:
+            span.set_attribute("span.kind", SpanKind.SERVER)
+            span.set_attribute("http.host", request.host)
+            span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
+            span.set_attribute(SpanAttributes.HTTP_URL, request.path)
 
-        if request.matched_route is not None:
-            scope.span.set_tag("http.path_tpl", request.matched_route.pattern)
+            self._extract_custom_headers(span, request.headers)
 
-        self._extract_custom_headers(scope.span, request.headers)
-        
-        if len(request.query_string):
-            scrubbed_params = strip_secrets_from_query(request.query_string, agent.options.secrets_matcher,
-                                                       agent.options.secrets_list)
-            scope.span.set_tag("http.params", scrubbed_params)
+            if len(request.query_string):
+                scrubbed_params = strip_secrets_from_query(
+                    request.query_string,
+                    agent.options.secrets_matcher,
+                    agent.options.secrets_list,
+                )
+                span.set_attribute("http.params", scrubbed_params)
 
-        response = None
-        try:
-            response = self.handler(request)
+            response = None
+            try:
+                response = self.handler(request)
+                if request.matched_route is not None:
+                    span.set_attribute("http.path_tpl", request.matched_route.pattern)
 
-            self._extract_custom_headers(scope.span, response.headers)
+                self._extract_custom_headers(span, response.headers)
 
-            tracer.inject(scope.span.context, ot.Format.HTTP_HEADERS, response.headers)
-            response.headers['Server-Timing'] = "intid;desc=%s" % scope.span.context.trace_id
-        except HTTPException as e:
-            response = e
-            raise
-        except BaseException as e:
-            scope.span.set_tag("http.status", 500)
+                tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
+                response.headers["Server-Timing"] = (
+                    "intid;desc=%s" % span.context.trace_id
+                )
+            except HTTPException as e:
+                response = e
+                raise
+            except BaseException as e:
+                span.set_attribute("http.status", 500)
 
-            # we need to explicitly populate the `message` tag with an error here
-            # so that it's picked up from an SDK span
-            scope.span.set_tag("message", str(e))
-            scope.span.log_exception(e)
+                # we need to explicitly populate the `message` tag with an error here
+                # so that it's picked up from an SDK span
+                span.set_attribute("message", str(e))
+                span.record_exception(e)
 
-            logger.debug("Pyramid Instana tween", exc_info=True)
-        finally:
-            if response:
-                scope.span.set_tag("http.status", response.status_int)
+                logger.debug("Pyramid Instana tween", exc_info=True)
+            finally:
+                if response:
+                    span.set_attribute("http.status", response.status_int)
 
-                if 500 <= response.status_int:
-                    if response.exception is not None:
-                        message = str(response.exception)
-                        scope.span.log_exception(response.exception)
-                    else:
-                        message = response.status
+                    if 500 <= response.status_int:
+                        if response.exception is not None:
+                            message = str(response.exception)
+                            span.record_exception(response.exception)
+                        else:
+                            message = response.status
 
-                    scope.span.set_tag("message", message)
-                    scope.span.assure_errored()
+                        span.set_attribute("message", message)
+                        span.assure_errored()
 
-            scope.close()
-
-        return response
+            return response
 
 
-def includeme(config):
+def includeme(config: "Configurator") -> None:
     logger.debug("Instrumenting pyramid")
-    config.add_tween(__name__ + '.InstanaTweenFactory')
+    config.add_tween(__name__ + ".InstanaTweenFactory")

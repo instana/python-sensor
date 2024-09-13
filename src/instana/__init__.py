@@ -166,7 +166,7 @@ def boot_agent():
             asyncio,  # noqa: F401
             boto3_inst,  # noqa: F401
             # cassandra_inst,  # noqa: F401
-            # couchbase_inst,  # noqa: F401
+            couchbase_inst,  # noqa: F401
             fastapi_inst,  # noqa: F401
             flask,  # noqa: F401
             # gevent_inst,  # noqa: F401

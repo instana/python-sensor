@@ -38,7 +38,6 @@ collect_ignore_glob = [
 # TODO: remove the following entries as the migration of the instrumentation
 # codes are finalised.
 collect_ignore_glob.append("*clients/test_cassandra*")
-collect_ignore_glob.append("*clients/test_couchbase*")
 collect_ignore_glob.append("*clients/test_google*")
 collect_ignore_glob.append("*clients/test_pika*")
 collect_ignore_glob.append("*clients/test_redis*")
@@ -56,8 +55,8 @@ collect_ignore_glob.append("*frameworks/test_tornado*")
 # if not os.environ.get("CASSANDRA_TEST"):
 #     collect_ignore_glob.append("*test_cassandra*")
 
-# if not os.environ.get("COUCHBASE_TEST"):
-#     collect_ignore_glob.append("*test_couchbase*")
+if not os.environ.get("COUCHBASE_TEST"):
+    collect_ignore_glob.append("*test_couchbase*")
 
 # if not os.environ.get("GEVENT_STARLETTE_TEST"):
 #     collect_ignore_glob.append("*test_gevent*")

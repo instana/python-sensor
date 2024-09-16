@@ -1,55 +1,65 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-import time
-import requests
-import multiprocessing
 import pytest
 from typing import Generator
+from sanic_testing.testing import SanicTestClient
 
-from instana.singletons import tracer
-from tests.helpers import testenv
+from instana.singletons import tracer, agent
 from tests.helpers import get_first_span_by_filter
 from tests.test_utils import _TraceContextMixin
+from tests.apps.sanic_app.server import app
 
 
 class TestSanic(_TraceContextMixin):
+    @classmethod
+    def setup_class(cls) -> None:
+        cls.client = SanicTestClient(app, port=1337, host="127.0.0.1")
+
+        # Hack together a manual custom headers list; We'll use this in tests
+        agent.options.extra_http_headers = [
+            "X-Capture-This",
+            "X-Capture-That",
+            "X-Capture-This-Too",
+            "X-Capture-That-Too",
+        ]
+
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """Setup and Teardown"""
+        # setup
         # Clear all spans before a test run
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
-        from tests.apps.sanic_app import launch_sanic
-
-        self.proc = multiprocessing.Process(target=launch_sanic, args=(), daemon=True)
-        self.proc.start()
-        time.sleep(2)
-        yield
-        # Kill server after tests
-        self.proc.kill()
 
     def test_vanilla_get(self) -> None:
-        result = requests.get(testenv["sanic_server"] + "/")
+        request, response = self.client.get("/")
 
-        assert result.status_code == 200
-        assert "X-INSTANA-T" in result.headers
-        assert "X-INSTANA-S" in result.headers
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
+        assert response.status_code == 200
+        assert "X-INSTANA-T" in response.headers
+        assert "X-INSTANA-S" in response.headers
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
         spans = self.recorder.queued_spans()
         assert len(spans) == 1
         assert spans[0].n == "asgi"
 
     def test_basic_get(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/", headers=headers)
 
-        assert result.status_code == 200
+        assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -57,25 +67,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -87,13 +92,20 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
     def test_404(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/foo/not_an_int")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/foo/not_an_int", headers=headers)
 
-        assert result.status_code == 404
+        assert response.status_code == 404
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -101,25 +113,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -131,13 +138,20 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
     def test_sanic_exception(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/wrong")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/wrong", headers=headers)
 
-        assert result.status_code == 400
+        assert response.status_code == 400
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 4
+        assert len(spans) == 3
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -145,25 +159,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -175,13 +184,20 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
     def test_500_instana_exception(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/instana_exception")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/instana_exception", headers=headers)
 
-        assert result.status_code == 500
+        assert response.status_code == 500
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 4
+        assert len(spans) == 3
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -189,25 +205,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert asgi_span.ec == 1
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -219,13 +230,20 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
     def test_500(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/test_request_args")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/test_request_args", headers=headers)
 
-        assert result.status_code == 500
+        assert response.status_code == 500
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 4
+        assert len(spans) == 3
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -233,25 +251,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert asgi_span.ec == 1
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -263,13 +276,20 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
     def test_path_templates(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/foo/1")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/foo/1", headers=headers)
 
-        assert result.status_code == 200
+        assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -277,25 +297,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -307,13 +322,20 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
     def test_secret_scrubbing(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/?secret=shhh")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/?secret=shhh", headers=headers)
 
-        assert result.status_code == 200
+        assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -321,25 +343,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -351,16 +368,21 @@ class TestSanic(_TraceContextMixin):
         assert asgi_span.data["http"]["params"] == "secret=<redacted>"
 
     def test_synthetic_request(self) -> None:
-        request_headers = {"X-INSTANA-SYNTHETIC": "1"}
-        with tracer.start_as_current_span("test"):
-            result = requests.get(
-                testenv["sanic_server"] + "/", headers=request_headers
-            )
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-SYNTHETIC": "1",
+            }
+            request, response = self.client.get("/", headers=headers)
 
-        assert result.status_code == 200
+        assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -368,25 +390,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -398,20 +415,25 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
         assert asgi_span.sy
-        assert not urllib3_span.sy
         assert not test_span.sy
 
     def test_request_header_capture(self) -> None:
-        request_headers = {"X-Capture-This": "this", "X-Capture-That": "that"}
-        with tracer.start_as_current_span("test"):
-            result = requests.get(
-                testenv["sanic_server"] + "/", headers=request_headers
-            )
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+                "X-Capture-This": "this",
+                "X-Capture-That": "that",
+            }
+            request, response = self.client.get("/", headers=headers)
 
-        assert result.status_code == 200
+        assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -419,25 +441,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -454,13 +471,20 @@ class TestSanic(_TraceContextMixin):
         assert "that" == asgi_span.data["http"]["header"]["X-Capture-That"]
 
     def test_response_header_capture(self) -> None:
-        with tracer.start_as_current_span("test"):
-            result = requests.get(testenv["sanic_server"] + "/response_headers")
+        with tracer.start_as_current_span("test") as span:
+            # As SanicTestClient() is based on httpx, and we don't support it yet,
+            # we must pass the SDK trace_id and span_id to the sanic server.
+            span_context = span.get_span_context()
+            headers = {
+                "X-INSTANA-T": str(span_context.trace_id),
+                "X-INSTANA-S": str(span_context.span_id),
+            }
+            request, response = self.client.get("/response_headers", headers=headers)
 
-        assert result.status_code == 200
+        assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -468,25 +492,20 @@ class TestSanic(_TraceContextMixin):
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "urllib3"
-        urllib3_span = get_first_span_by_filter(spans, span_filter)
-        assert urllib3_span
-
         span_filter = lambda span: span.n == "asgi"
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
-        self.assertTraceContextPropagated(test_span, urllib3_span)
-        self.assertTraceContextPropagated(urllib3_span, asgi_span)
+        self.assertTraceContextPropagated(test_span, asgi_span)
 
-        assert "X-INSTANA-T" in result.headers
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert "X-INSTANA-S" in result.headers
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
-        assert "X-INSTANA-L" in result.headers
-        assert result.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in result.headers
-        assert result.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"

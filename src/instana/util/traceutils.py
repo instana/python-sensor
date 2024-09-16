@@ -15,7 +15,7 @@ def extract_custom_headers(tracing_span, headers) -> None:
             # Headers are in the following format: b'x-header-1'
             for header_key, value in headers.items():
                 if header_key.lower() == custom_header.lower():
-                    tracing_span.set_attribute("http.header.%s" % custom_header, value)
+                    tracing_span.set_attribute(f"http.header.{custom_header}", value)
     except Exception:
         logger.debug("extract_custom_headers: ", exc_info=True)
 

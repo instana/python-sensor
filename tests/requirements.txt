@@ -35,6 +35,7 @@ redis>=3.5.3
 requests-mock
 responses<=0.17.0
 sanic>=19.9.0
+sanic-testing>=24.6.0
 sqlalchemy>=2.0.0
 tornado>=4.5.3,<6.0
 uvicorn>=0.13.4

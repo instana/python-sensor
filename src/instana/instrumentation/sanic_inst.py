@@ -1,4 +1,5 @@
-# (c) Copyright IBM Corp. 2024
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
 
 """
 Instrumentation for Sanic
@@ -21,12 +22,8 @@ try:
     from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
 
-    if hasattr(sanic.request, "types"):
-        from sanic.request.types import Request
-        from sanic.response.types import HTTPResponse
-    else:
-        from sanic.request import Request
-        from sanic.response import HTTPResponse
+    from sanic.request import Request
+    from sanic.response import HTTPResponse
 
     @wrapt.patch_function_wrapper("sanic.app", "Sanic.__init__")
     def init_with_instana(
@@ -54,7 +51,7 @@ try:
                 token = context.attach(ctx)
                 request.ctx.token = token
 
-                span.set_attribute("span.kind", SpanKind.CLIENT)
+                span.set_attribute("span.kind", SpanKind.SERVER)
                 span.set_attribute("http.path", request.path)
                 span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 span.set_attribute(SpanAttributes.HTTP_HOST, request.host)
@@ -81,7 +78,7 @@ try:
         @app.exception(Exception)
         def exception_with_instana(request: Request, exception: Exception) -> None:
             try:
-                if not hasattr(request.ctx, "span"):
+                if not hasattr(request.ctx, "span"): # pragma: no cover
                     return
                 span = request.ctx.span
 
@@ -98,7 +95,7 @@ try:
         @app.middleware("response")
         def response_with_instana(request: Request, response: HTTPResponse) -> None:
             try:
-                if not hasattr(request.ctx, "span"):
+                if not hasattr(request.ctx, "span"): # pragma: no cover
                     return
                 span = request.ctx.span
 

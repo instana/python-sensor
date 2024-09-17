@@ -44,7 +44,6 @@ collect_ignore_glob.append("*clients/test_sql*")
 collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")
 collect_ignore_glob.append("*frameworks/test_grpcio*")
-collect_ignore_glob.append("*frameworks/test_pyramid*")
 collect_ignore_glob.append("*frameworks/test_tornado*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
@@ -85,11 +84,6 @@ if sys.version_info >= (3, 13):
     collect_ignore_glob.append("*test_psycopg2*")
     collect_ignore_glob.append("*test_pep0249*")
     collect_ignore_glob.append("*test_sqlalchemy*")
-
-    # Currently the latest version of pyramid depends on the `cgi` module
-    # which has been deprecated since Python 3.11 and finally removed in 3.13
-    # `ModuleNotFoundError: No module named 'cgi'`
-    collect_ignore_glob.append("*test_pyramid*")
 
     # Currently not installable dependencies because of 3.13 incompatibilities
     collect_ignore_glob.append("*test_fastapi*")

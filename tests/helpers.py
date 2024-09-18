@@ -46,6 +46,7 @@ testenv["postgresql_pw"] = os.environ.get("POSTGRES_PW", "passw0rd")
 Redis Environment
 """
 testenv["redis_host"] = os.environ.get("REDIS_HOST", "127.0.0.1")
+testenv["redis_db"] = os.environ.get("REDIS_DB", 0)
 
 """
 MongoDB Environment

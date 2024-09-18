@@ -34,7 +34,6 @@ collect_ignore_glob = [
 # TODO: remove the following entries as the migration of the instrumentation
 # codes are finalised.
 collect_ignore_glob.append("*clients/test_google*")
-collect_ignore_glob.append("*clients/test_sql*")
 
 collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")

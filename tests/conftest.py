@@ -39,7 +39,6 @@ collect_ignore_glob = [
 # codes are finalised.
 collect_ignore_glob.append("*clients/test_google*")
 collect_ignore_glob.append("*clients/test_pika*")
-collect_ignore_glob.append("*clients/test_redis*")
 collect_ignore_glob.append("*clients/test_sql*")
 
 collect_ignore_glob.append("*frameworks/test_celery*")

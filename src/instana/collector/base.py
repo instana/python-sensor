@@ -137,12 +137,6 @@ class BaseCollector(object):
 
         self.prepare_and_report_data()
 
-        if self.thread_shutdown.is_set():
-            logger.debug(
-                "Thread shutdown signal is active: Shutting down reporting thread"
-            )
-            return False
-
         return True
 
     def prepare_and_report_data(self):

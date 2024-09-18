@@ -31,7 +31,7 @@ class Sampler(abc.ABC):
         Calling a span “sampled” can mean it was “sampled out” (dropped)
         or “sampled in” (recorded).
         """
-        pass
+        pass  # pragma: no cover
 
 
 class InstanaSampler(Sampler):

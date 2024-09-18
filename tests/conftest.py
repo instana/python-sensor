@@ -26,8 +26,8 @@ collect_ignore_glob = [
     "*autoprofile*",
     # "*clients*",
     # "*frameworks*",
-    "*platforms*",
-    "*propagators*",
+    # "*platforms*",
+    # "*propagators*",
     "*w3c_trace_context*",
 ]
 
@@ -39,6 +39,15 @@ collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")
 collect_ignore_glob.append("*frameworks/test_grpcio*")
 collect_ignore_glob.append("*frameworks/test_tornado*")
+
+collect_ignore_glob.append("*propagators/test_binary*")
+collect_ignore_glob.append("*propagators/test_http*")
+
+collect_ignore_glob.append("*agents/test_aws*")
+collect_ignore_glob.append("*agents/test_google*")
+collect_ignore_glob.append("*collector/test_gcr*")
+collect_ignore_glob.append("*collector/test_eks*")
+collect_ignore_glob.append("*collector/test_fargate*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)

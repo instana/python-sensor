@@ -23,6 +23,6 @@ def format_span(
         span.s = format_span_id(span.s)
         span.p = format_span_id(span.p) if span.p else None
         if isinstance(span.k, SpanKind):
-            span.k = span.k.value if not span.k is SpanKind.INTERNAL else 3
+            span.k = span.k.value if span.k is not SpanKind.INTERNAL else 3
         spans.append(span)
     return spans

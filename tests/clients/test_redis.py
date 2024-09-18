@@ -1,376 +1,456 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import unittest
 
+import logging
+from typing import Generator
+from unittest.mock import patch
+import pytest
 import redis
-from redis.sentinel import Sentinel
 
-from ..helpers import testenv
+from instana.span.span import get_current_span
+from tests.helpers import testenv
 from instana.singletons import agent, tracer
 
 
-class TestRedis(unittest.TestCase):
-    def setUp(self):
-        """ Clear all spans before a test run """
-        self.recorder = tracer.recorder
+class TestRedis:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        """Clear all spans before a test run"""
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
-
-        # self.sentinel = Sentinel([(testenv['redis_host'], 26379)], socket_timeout=0.1)
-        # self.sentinel_master = self.sentinel.discover_master('mymaster')
-        # self.client = redis.Redis(host=self.sentinel_master[0])
-
-        self.client = redis.Redis(host=testenv['redis_host'])
-
-    def tearDown(self):
-        """ Ensure that allow_exit_as_root has the default value """
+        self.client = redis.Redis(host=testenv["redis_host"], db=testenv["redis_db"])
+        yield
         agent.options.allow_exit_as_root = False
 
-    def test_vanilla(self):
-        self.client.set('instrument', 'piano')
-        result = self.client.get('instrument')
-
-    def test_set_get(self):
+    def test_set_get(self) -> None:
         result = None
-        with tracer.start_active_span('test'):
-            self.client.set('foox', 'barX')
-            self.client.set('fooy', 'barY')
-            result = self.client.get('foox')
+        with tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.set("fooy", "barY")
+            result = self.client.get("foox")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(4, len(spans))
+        assert len(spans) == 4
 
-        self.assertEqual(b'barX', result)
+        assert result == b"barX"
 
         rs1_span = spans[0]
         rs2_span = spans[1]
         rs3_span = spans[2]
         test_span = spans[3]
 
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         # Same traceId
-        self.assertEqual(test_span.t, rs1_span.t)
-        self.assertEqual(test_span.t, rs2_span.t)
-        self.assertEqual(test_span.t, rs3_span.t)
+        assert rs1_span.t == test_span.t
+        assert rs2_span.t == test_span.t
+        assert rs3_span.t == test_span.t
 
         # Parent relationships
-        self.assertEqual(rs1_span.p, test_span.s)
-        self.assertEqual(rs2_span.p, test_span.s)
-        self.assertEqual(rs3_span.p, test_span.s)
+        assert rs1_span.p == test_span.s
+        assert rs2_span.p == test_span.s
+        assert rs3_span.p == test_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(rs1_span.ec)
-        self.assertIsNone(rs2_span.ec)
-        self.assertIsNone(rs3_span.ec)
+        assert not test_span.ec
+        assert not rs1_span.ec
+        assert not rs2_span.ec
+        assert not rs3_span.ec
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        assert rs1_span.n == "redis"
+        assert "custom" not in rs1_span.data
+        assert "redis" in rs1_span.data
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs1_span.data["redis"]["command"])
-        self.assertIsNone(rs1_span.data["redis"]["error"])
+        assert rs1_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs1_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs1_span.data["redis"]["command"] == "SET"
+        assert not rs1_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs1_span.stack)
-        self.assertTrue(type(rs1_span.stack) is list)
-        self.assertGreater(len(rs1_span.stack), 0)
+        assert rs1_span.stack
+        assert isinstance(rs1_span.stack, list)
+        assert len(rs1_span.stack) > 0
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        assert rs2_span.n == "redis"
+        assert "custom" not in rs2_span.data
+        assert "redis" in rs2_span.data
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs2_span.data["redis"]["command"])
-        self.assertIsNone(rs2_span.data["redis"]["error"])
+        assert rs2_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs2_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs2_span.data["redis"]["command"] == "SET"
+        assert not rs2_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs2_span.stack)
-        self.assertTrue(type(rs2_span.stack) is list)
-        self.assertGreater(len(rs2_span.stack), 0)
+        assert rs2_span.stack
+        assert isinstance(rs2_span.stack, list)
+        assert len(rs2_span.stack) > 0
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        assert rs3_span.n == "redis"
+        assert "custom" not in rs3_span.data
+        assert "redis" in rs3_span.data
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
-        self.assertEqual("GET", rs3_span.data["redis"]["command"])
-        self.assertIsNone(rs3_span.data["redis"]["error"])
+        assert rs3_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs3_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs3_span.data["redis"]["command"] == "GET"
+        assert not rs3_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs3_span.stack)
-        self.assertTrue(type(rs3_span.stack) is list)
-        self.assertGreater(len(rs3_span.stack), 0)
+        assert rs3_span.stack
+        assert isinstance(rs3_span.stack, list)
+        assert len(rs3_span.stack) > 0
 
-    def test_set_get_as_root_span(self):
+    def test_set_get_as_root_span(self) -> None:
         agent.options.allow_exit_as_root = True
 
-        self.client.set('foox', 'barX')
-        self.client.set('fooy', 'barY')
-        result = self.client.get('foox')
+        self.client.set("foox", "barX")
+        self.client.set("fooy", "barY")
+        result = self.client.get("foox")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        self.assertEqual(b'barX', result)
+        assert result == b"barX"
 
         rs1_span = spans[0]
         rs2_span = spans[1]
         rs3_span = spans[2]
 
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         # Parent relationships
-        self.assertEqual(rs1_span.p, None)
-        self.assertEqual(rs2_span.p, None)
-        self.assertEqual(rs3_span.p, None)
+        assert not rs1_span.p
+        assert not rs2_span.p
+        assert not rs3_span.p
 
         # Error logging
-        self.assertIsNone(rs1_span.ec)
-        self.assertIsNone(rs2_span.ec)
-        self.assertIsNone(rs3_span.ec)
+        assert not rs1_span.ec
+        assert not rs2_span.ec
+        assert not rs3_span.ec
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        assert rs1_span.n == "redis"
+        assert "custom" not in rs1_span.data
+        assert "redis" in rs1_span.data
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs1_span.data["redis"]["command"])
-        self.assertIsNone(rs1_span.data["redis"]["error"])
+        assert rs1_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs1_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs1_span.data["redis"]["command"] == "SET"
+        assert not rs1_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs1_span.stack)
-        self.assertTrue(type(rs1_span.stack) is list)
-        self.assertGreater(len(rs1_span.stack), 0)
-
-        # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
-
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs2_span.data["redis"]["command"])
-        self.assertIsNone(rs2_span.data["redis"]["error"])
-
-        self.assertIsNotNone(rs2_span.stack)
-        self.assertTrue(type(rs2_span.stack) is list)
-        self.assertGreater(len(rs2_span.stack), 0)
-
-        # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
-
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
-        self.assertEqual("GET", rs3_span.data["redis"]["command"])
-        self.assertIsNone(rs3_span.data["redis"]["error"])
-
-        self.assertIsNotNone(rs3_span.stack)
-        self.assertTrue(type(rs3_span.stack) is list)
-        self.assertGreater(len(rs3_span.stack), 0)
-
-    def test_set_incr_get(self):
-        result = None
-        with tracer.start_active_span('test'):
-            self.client.set('counter', '10')
-            self.client.incr('counter')
-            result = self.client.get('counter')
-
-        spans = self.recorder.queued_spans()
-        self.assertEqual(4, len(spans))
-
-        self.assertEqual(b'11', result)
-
-        rs1_span = spans[0]
-        rs2_span = spans[1]
-        rs3_span = spans[2]
-        test_span = spans[3]
-
-        self.assertIsNone(tracer.active_span)
-
-        # Same traceId
-        self.assertEqual(test_span.t, rs1_span.t)
-        self.assertEqual(test_span.t, rs2_span.t)
-        self.assertEqual(test_span.t, rs3_span.t)
-
-        # Parent relationships
-        self.assertEqual(rs1_span.p, test_span.s)
-        self.assertEqual(rs2_span.p, test_span.s)
-        self.assertEqual(rs3_span.p, test_span.s)
-
-        # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(rs1_span.ec)
-        self.assertIsNone(rs2_span.ec)
-        self.assertIsNone(rs3_span.ec)
-
-        # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
-
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs1_span.data["redis"]["command"])
-        self.assertIsNone(rs1_span.data["redis"]["error"])
-
-        self.assertIsNotNone(rs1_span.stack)
-        self.assertTrue(type(rs1_span.stack) is list)
-        self.assertGreater(len(rs1_span.stack), 0)
+        assert rs1_span.stack
+        assert isinstance(rs1_span.stack, list)
+        assert len(rs1_span.stack) > 0
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        assert rs2_span.n == "redis"
+        assert "custom" not in rs2_span.data
+        assert "redis" in rs2_span.data
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
-        self.assertEqual("INCRBY", rs2_span.data["redis"]["command"])
-        self.assertIsNone(rs2_span.data["redis"]["error"])
+        assert rs2_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs2_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs2_span.data["redis"]["command"] == "SET"
+        assert not rs2_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs2_span.stack)
-        self.assertTrue(type(rs2_span.stack) is list)
-        self.assertGreater(len(rs2_span.stack), 0)
+        assert rs2_span.stack
+        assert isinstance(rs2_span.stack, list)
+        assert len(rs2_span.stack) > 0
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        assert rs3_span.n == "redis"
+        assert "custom" not in rs3_span.data
+        assert "redis" in rs3_span.data
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
-        self.assertEqual("GET", rs3_span.data["redis"]["command"])
-        self.assertIsNone(rs3_span.data["redis"]["error"])
+        assert rs3_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs3_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs3_span.data["redis"]["command"] == "GET"
+        assert not rs3_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs3_span.stack)
-        self.assertTrue(type(rs3_span.stack) is list)
-        self.assertGreater(len(rs3_span.stack), 0)
+        assert rs3_span.stack
+        assert isinstance(rs3_span.stack, list)
+        assert len(rs3_span.stack) > 0
 
-    def test_old_redis_client(self):
+    def test_set_incr_get(self) -> None:
         result = None
-        with tracer.start_active_span('test'):
-            self.client.set('foox', 'barX')
-            self.client.set('fooy', 'barY')
-            result = self.client.get('foox')
+        with tracer.start_as_current_span("test"):
+            self.client.set("counter", "10")
+            self.client.incr("counter")
+            result = self.client.get("counter")
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(4, len(spans))
+        assert len(spans) == 4
 
-        self.assertEqual(b'barX', result)
+        assert result == b"11"
 
         rs1_span = spans[0]
         rs2_span = spans[1]
         rs3_span = spans[2]
         test_span = spans[3]
 
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         # Same traceId
-        self.assertEqual(test_span.t, rs1_span.t)
-        self.assertEqual(test_span.t, rs2_span.t)
-        self.assertEqual(test_span.t, rs3_span.t)
+        assert rs1_span.t == test_span.t
+        assert rs2_span.t == test_span.t
+        assert rs3_span.t == test_span.t
 
         # Parent relationships
-        self.assertEqual(rs1_span.p, test_span.s)
-        self.assertEqual(rs2_span.p, test_span.s)
-        self.assertEqual(rs3_span.p, test_span.s)
+        assert rs1_span.p == test_span.s
+        assert rs2_span.p == test_span.s
+        assert rs3_span.p == test_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(rs1_span.ec)
-        self.assertIsNone(rs2_span.ec)
-        self.assertIsNone(rs3_span.ec)
+        assert not test_span.ec
+        assert not rs1_span.ec
+        assert not rs2_span.ec
+        assert not rs3_span.ec
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        assert rs1_span.n == "redis"
+        assert "custom" not in rs1_span.data
+        assert "redis" in rs1_span.data
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs1_span.data["redis"]["command"])
-        self.assertIsNone(rs1_span.data["redis"]["error"])
+        assert rs1_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs1_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs1_span.data["redis"]["command"] == "SET"
+        assert not rs1_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs1_span.stack)
-        self.assertTrue(type(rs1_span.stack) is list)
-        self.assertGreater(len(rs1_span.stack), 0)
+        assert rs1_span.stack
+        assert isinstance(rs1_span.stack, list)
+        assert len(rs1_span.stack) > 0
 
         # Redis span 2
-        self.assertEqual('redis', rs2_span.n)
-        self.assertFalse('custom' in rs2_span.data)
-        self.assertTrue('redis' in rs2_span.data)
+        assert rs2_span.n == "redis"
+        assert "custom" not in rs2_span.data
+        assert "redis" in rs2_span.data
 
-        self.assertEqual('redis-py', rs2_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs2_span.data["redis"]["connection"])
-        self.assertEqual("SET", rs2_span.data["redis"]["command"])
-        self.assertIsNone(rs2_span.data["redis"]["error"])
+        assert rs2_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs2_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs2_span.data["redis"]["command"] == "INCRBY"
+        assert not rs2_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs2_span.stack)
-        self.assertTrue(type(rs2_span.stack) is list)
-        self.assertGreater(len(rs2_span.stack), 0)
+        assert rs2_span.stack
+        assert isinstance(rs2_span.stack, list)
+        assert len(rs2_span.stack) > 0
 
         # Redis span 3
-        self.assertEqual('redis', rs3_span.n)
-        self.assertFalse('custom' in rs3_span.data)
-        self.assertTrue('redis' in rs3_span.data)
+        assert rs3_span.n == "redis"
+        assert "custom" not in rs3_span.data
+        assert "redis" in rs3_span.data
 
-        self.assertEqual('redis-py', rs3_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs3_span.data["redis"]["connection"])
-        self.assertEqual("GET", rs3_span.data["redis"]["command"])
-        self.assertIsNone(rs3_span.data["redis"]["error"])
+        assert rs3_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs3_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs3_span.data["redis"]["command"] == "GET"
+        assert not rs3_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs3_span.stack)
-        self.assertTrue(type(rs3_span.stack) is list)
-        self.assertGreater(len(rs3_span.stack), 0)
+        assert rs3_span.stack
+        assert isinstance(rs3_span.stack, list)
+        assert len(rs3_span.stack) > 0
 
-    def test_pipelined_requests(self):
+    def test_old_redis_client(self) -> None:
         result = None
-        with tracer.start_active_span('test'):
+        with tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.set("fooy", "barY")
+            result = self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4
+
+        assert result == b"barX"
+
+        rs1_span = spans[0]
+        rs2_span = spans[1]
+        rs3_span = spans[2]
+        test_span = spans[3]
+
+        current_span = get_current_span()
+        assert not current_span.is_recording()
+
+        # Same traceId
+        assert rs1_span.t == test_span.t
+        assert rs2_span.t == test_span.t
+        assert rs3_span.t == test_span.t
+
+        # Parent relationships
+        assert rs1_span.p == test_span.s
+        assert rs2_span.p == test_span.s
+        assert rs3_span.p == test_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not rs1_span.ec
+        assert not rs2_span.ec
+        assert not rs3_span.ec
+
+        # Redis span 1
+        assert rs1_span.n == "redis"
+        assert "custom" not in rs1_span.data
+        assert "redis" in rs1_span.data
+
+        assert rs1_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs1_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs1_span.data["redis"]["command"] == "SET"
+        assert not rs1_span.data["redis"]["error"]
+
+        assert rs1_span.stack
+        assert isinstance(rs1_span.stack, list)
+        assert len(rs1_span.stack) > 0
+
+        # Redis span 2
+        assert rs2_span.n == "redis"
+        assert "custom" not in rs2_span.data
+        assert "redis" in rs2_span.data
+
+        assert rs2_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs2_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+
+        assert rs2_span.data["redis"]["command"] == "SET"
+        assert not rs2_span.data["redis"]["error"]
+
+        assert rs2_span.stack
+        assert isinstance(rs2_span.stack, list)
+        assert len(rs2_span.stack) > 0
+
+        # Redis span 3
+        assert rs3_span.n == "redis"
+        assert "custom" not in rs3_span.data
+        assert "redis" in rs3_span.data
+
+        assert rs3_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs3_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs3_span.data["redis"]["command"] == "GET"
+        assert not rs3_span.data["redis"]["error"]
+
+        assert rs3_span.stack
+        assert isinstance(rs3_span.stack, list)
+        assert len(rs3_span.stack) > 0
+
+    def test_pipelined_requests(self) -> None:
+        result = None
+        with tracer.start_as_current_span("test"):
             pipe = self.client.pipeline()
-            pipe.set('foox', 'barX')
-            pipe.set('fooy', 'barY')
-            pipe.get('foox')
+            pipe.set("foox", "barX")
+            pipe.set("fooy", "barY")
+            pipe.get("foox")
             result = pipe.execute()
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
+        assert len(spans) == 2
 
-        self.assertEqual([True, True, b'barX'], result)
+        assert result == [True, True, b"barX"]
 
         rs1_span = spans[0]
         test_span = spans[1]
 
-        self.assertIsNone(tracer.active_span)
+        current_span = get_current_span()
+        assert not current_span.is_recording()
 
         # Same traceId
-        self.assertEqual(test_span.t, rs1_span.t)
+        assert rs1_span.t == test_span.t
 
         # Parent relationships
-        self.assertEqual(rs1_span.p, test_span.s)
+        assert rs1_span.p == test_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(rs1_span.ec)
+        assert not test_span.ec
+        assert not rs1_span.ec
 
         # Redis span 1
-        self.assertEqual('redis', rs1_span.n)
-        self.assertFalse('custom' in rs1_span.data)
-        self.assertTrue('redis' in rs1_span.data)
+        assert rs1_span.n == "redis"
+        assert "custom" not in rs1_span.data
+        assert "redis" in rs1_span.data
 
-        self.assertEqual('redis-py', rs1_span.data["redis"]["driver"])
-        self.assertEqual("redis://%s:6379/0" % testenv['redis_host'], rs1_span.data["redis"]["connection"])
-        self.assertEqual("PIPELINE", rs1_span.data["redis"]["command"])
-        self.assertEqual(['SET', 'SET', 'GET'], rs1_span.data["redis"]["subCommands"])
-        self.assertIsNone(rs1_span.data["redis"]["error"])
+        assert rs1_span.data["redis"]["driver"] == "redis-py"
+        assert (
+            rs1_span.data["redis"]["connection"]
+            == f"redis://{testenv['redis_host']}:6379/0"
+        )
+        assert rs1_span.data["redis"]["command"] == "PIPELINE"
+        assert rs1_span.data["redis"]["subCommands"] == ["SET", "SET", "GET"]
+        assert not rs1_span.data["redis"]["error"]
 
-        self.assertIsNotNone(rs1_span.stack)
-        self.assertTrue(type(rs1_span.stack) is list)
-        self.assertGreater(len(rs1_span.stack), 0)
+        assert rs1_span.stack
+        assert isinstance(rs1_span.stack, list)
+        assert len(rs1_span.stack) > 0
+
+    @patch(
+        "instana.instrumentation.redis.collect_attributes",
+        side_effect=Exception("test-error"),
+    )
+    @patch("instana.span.span.InstanaSpan.record_exception")
+    def test_execute_command_with_instana_exception(self, mock_record_func, _) -> None:
+        with tracer.start_as_current_span("test"), pytest.raises(
+            Exception, match="test-error"
+        ):
+            self.client.set("counter", "10")
+        mock_record_func.assert_called()
+
+    def test_execute_comand_with_instana_tracing_off(self) -> None:
+        with tracer.start_as_current_span("redis"):
+            response = self.client.set("counter", "10")
+            assert response
+
+    def test_execute_with_instana_tracing_off(self) -> None:
+        result = None
+        with tracer.start_as_current_span("redis"):
+            pipe = self.client.pipeline()
+            pipe.set("foox", "barX")
+            pipe.set("fooy", "barY")
+            pipe.get("foox")
+            result = pipe.execute()
+            assert result == [True, True, b"barX"]
+
+    def test_execute_with_instana_exception(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.DEBUG, logger="instana")
+        with tracer.start_as_current_span("test"), patch(
+            "instana.instrumentation.redis.collect_attributes",
+            side_effect=Exception("test-error"),
+        ):
+            pipe = self.client.pipeline()
+            pipe.set("foox", "barX")
+            pipe.set("fooy", "barY")
+            pipe.get("foox")
+            pipe.execute()
+        assert "Error collecting pipeline commands" in caplog.messages

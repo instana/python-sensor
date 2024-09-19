@@ -52,7 +52,6 @@ esac
 
 echo -n "Configuration is '${TEST_CONFIGURATION}' on ${PYTHON_VERSION} "
 echo    "with dependencies in '${REQUIREMENTS}'"
-export INSTANA_TEST='true'
 ls -lah .
 if [[ -n "${COUCHBASE_TEST}" ]]; then
   echo "Install Couchbase Dependencies"

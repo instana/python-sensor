@@ -19,7 +19,6 @@ from instana.collector.helpers.fargate.task import TaskHelper
 from instana.collector.helpers.runtime import RuntimeHelper
 from instana.collector.utils import format_span
 from instana.log import logger
-from instana.singletons import env_is_test
 from instana.util import DictionaryOfStan, validate_url
 
 
@@ -100,10 +99,6 @@ class AWSFargateCollector(BaseCollector):
         Get the latest data from the ECS metadata container API and store on the class
         @return: Boolean
         """
-        if env_is_test is True:
-            # For test, we are using mock ECS metadata
-            return
-
         try:
             self.fetching_start_time = int(time())
             delta = self.fetching_start_time - self.last_ecmu_full_fetch

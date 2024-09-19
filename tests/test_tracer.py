@@ -1,22 +1,19 @@
 # (c) Copyright IBM Corp. 2024
 
 import pytest
-
 from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE
 
-from instana.agent.test import TestAgent
+from instana.agent.host import HostAgent
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler
 from instana.span.span import (
+    INVALID_SPAN,
+    INVALID_SPAN_ID,
     InstanaSpan,
     get_current_span,
-    INVALID_SPAN_ID,
-    INVALID_SPAN,
 )
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer, InstanaTracerProvider
-from opentelemetry.context.context import Context
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
 
 
 def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
@@ -29,7 +26,7 @@ def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
 
     assert isinstance(tracer._sampler, InstanaSampler)
     assert isinstance(tracer.span_processor, StanRecorder)
-    assert isinstance(tracer.exporter, TestAgent)
+    assert isinstance(tracer.exporter, HostAgent)
     assert len(tracer._propagators) == 3
 
 

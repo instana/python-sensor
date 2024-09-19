@@ -67,10 +67,7 @@ class TheMachine(object):
         self.timer = threading.Timer(1, self.fsm.lookup)
         self.timer.daemon = True
         self.timer.name = self.THREAD_NAME
-
-        # Only start the announce process when not in Test
-        if not "INSTANA_TEST" in os.environ:
-            self.timer.start()
+        self.timer.start()
 
     @staticmethod
     def print_state_change(e):

@@ -15,7 +15,6 @@ span_recorder = None
 
 # Detect the environment where we are running ahead of time
 aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
-env_is_test = "INSTANA_TEST" in os.environ
 env_is_aws_fargate = aws_env == "AWS_ECS_FARGATE"
 env_is_aws_eks_fargate = (
     os.environ.get("INSTANA_TRACER_ENVIRONMENT") == "AWS_EKS_FARGATE"
@@ -29,15 +28,7 @@ env_is_google_cloud_run = all(
     (k_service, k_configuration, k_revision, instana_endpoint_url)
 )
 
-if env_is_test:
-    from .agent.test import TestAgent
-    from .recorder import StanRecorder
-
-    agent = TestAgent()
-    span_recorder = StanRecorder(agent)
-    profiler = Profiler(agent)
-
-elif env_is_aws_lambda:
+if env_is_aws_lambda:
     from .agent.aws_lambda import AWSLambdaAgent
     from .recorder import StanRecorder
 

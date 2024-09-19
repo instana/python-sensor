@@ -41,13 +41,6 @@ class StanRecorder(object):
         span = None
         spans = []
 
-        import time
-
-        from .singletons import env_is_test
-
-        if env_is_test is True:
-            time.sleep(1)
-
         if self.agent.collector.span_queue.empty() is True:
             return spans
 

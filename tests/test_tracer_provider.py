@@ -2,8 +2,8 @@
 
 from pytest import LogCaptureFixture
 
+from instana.agent.base import BaseAgent
 from instana.agent.host import HostAgent
-from instana.agent.test import TestAgent
 from instana.propagators.binary_propagator import BinaryPropagator
 from instana.propagators.format import Format
 from instana.propagators.http_propagator import HTTPPropagator
@@ -49,5 +49,5 @@ def test_tracer_provider_add_span_processor(span_processor: StanRecorder) -> Non
 
     provider.add_span_processor(span_processor)
     assert isinstance(provider._span_processor, StanRecorder)
-    assert isinstance(provider._span_processor.agent, TestAgent)
+    assert isinstance(provider._span_processor.agent, BaseAgent)
     assert provider._span_processor.THREAD_NAME == "InstanaSpan Recorder Test"

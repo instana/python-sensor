@@ -3,8 +3,6 @@
 
 import os
 
-os.environ["INSTANA_TEST"] = "true"
-
 if os.environ.get('GEVENT_STARLETTE_TEST'):
     from gevent import monkey
     monkey.patch_all()

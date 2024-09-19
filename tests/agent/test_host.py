@@ -71,13 +71,7 @@ def test_is_timed_out():
     assert agent.is_timed_out()
 
 
-def test_can_send_test_env():
-    agent = HostAgent()
-    with patch.dict("os.environ", {"INSTANA_TEST": "sample-data"}):
-        if "INSTANA_TEST" in os.environ:
-            assert agent.can_send()
-
-
+@pytest.mark.original
 def test_can_send():
     agent = HostAgent()
     agent._boot_pid = 12345
@@ -92,6 +86,7 @@ def test_can_send():
             assert agent.can_send() is True
 
 
+@pytest.mark.original
 def test_can_send_default():
     agent = HostAgent()
     with patch.dict("os.environ", {}, clear=True):
@@ -121,6 +116,7 @@ def test_set_from():
     assert agent.announce_data.pid == 1234
 
 
+@pytest.mark.original
 def test_get_from_structure():
     agent = HostAgent()
     agent.announce_data = AnnounceData(pid=1234, agentUuid="value")

@@ -4,6 +4,7 @@
 import importlib.util
 import os
 import sys
+from typing import Any, Dict
 
 import pytest
 from opentelemetry.context.context import Context
@@ -12,18 +13,13 @@ from opentelemetry.trace import set_span_in_context
 if importlib.util.find_spec("celery"):
     pytest_plugins = ("celery.contrib.pytest",)
 
-# Set our testing flags
-os.environ["INSTANA_TEST"] = "true"
-
-# TODO: remove all "noqa: E402" from instana package imports and move the
-# block of env variables setting to below the imports after finishing the
-# migration of instrumentation codes.
-from instana.agent.test import TestAgent  # noqa: E402
-from instana.recorder import StanRecorder  # noqa: E402
-from instana.span.base_span import BaseSpan  # noqa: E402
-from instana.span.span import InstanaSpan  # noqa: E402
-from instana.span_context import SpanContext  # noqa: E402
-from instana.tracer import InstanaTracerProvider  # noqa: E402
+from instana.agent.host import HostAgent
+from instana.collector.base import BaseCollector
+from instana.recorder import StanRecorder
+from instana.span.base_span import BaseSpan
+from instana.span.span import InstanaSpan
+from instana.span_context import SpanContext
+from instana.tracer import InstanaTracerProvider
 
 # Ignoring tests during OpenTelemetry migration.
 collect_ignore_glob = [
@@ -129,14 +125,14 @@ def span_id() -> int:
 
 @pytest.fixture
 def span_processor() -> StanRecorder:
-    rec = StanRecorder(TestAgent())
+    rec = StanRecorder(HostAgent())
     rec.THREAD_NAME = "InstanaSpan Recorder Test"
     return rec
 
 
 @pytest.fixture
 def tracer_provider(span_processor: StanRecorder) -> InstanaTracerProvider:
-    return InstanaTracerProvider(span_processor=span_processor, exporter=TestAgent())
+    return InstanaTracerProvider(span_processor=span_processor, exporter=HostAgent())
 
 
 @pytest.fixture
@@ -162,3 +158,56 @@ def base_span(span: InstanaSpan) -> BaseSpan:
 @pytest.fixture
 def context(span: InstanaSpan) -> Context:
     return set_span_in_context(span)
+
+
+def always_true(_: object) -> bool:
+    return True
+
+
+# Mocking HostAgent.can_send()
+@pytest.fixture(autouse=True)
+def can_send(monkeypatch, request) -> None:
+    """Return always True for HostAgent.can_send()"""
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original HostAgent.can_send()
+        monkeypatch.setattr(HostAgent, "can_send", HostAgent.can_send)
+    else:
+        monkeypatch.setattr(HostAgent, "can_send", always_true)
+
+
+# Mocking HostAgent.get_from_structure()
+@pytest.fixture(autouse=True)
+def get_from_structure(monkeypatch, request) -> None:
+    """
+    Retrieves the From data that is reported alongside monitoring data.
+    @return: dict()
+    """
+
+    def _get_from_structure(_: object) -> Dict[str, Any]:
+        return {"e": os.getpid(), "h": "fake"}
+
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original HostAgent.get_from_structure()
+        monkeypatch.setattr(
+            HostAgent, "get_from_structure", HostAgent.get_from_structure
+        )
+    else:
+        monkeypatch.setattr(HostAgent, "get_from_structure", _get_from_structure)
+
+
+# Mocking BaseCollector.prepare_and_report_data()
+@pytest.fixture(autouse=True)
+def prepare_and_report_data(monkeypatch, request):
+    """Return always True for BaseCollector.prepare_and_report_data()"""
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original BaseCollector.prepare_and_report_data()
+        monkeypatch.setattr(
+            BaseCollector,
+            "prepare_and_report_data",
+            BaseCollector.prepare_and_report_data,
+        )
+    else:
+        monkeypatch.setattr(BaseCollector, "prepare_and_report_data", always_true)

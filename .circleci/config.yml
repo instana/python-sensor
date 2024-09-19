@@ -56,7 +56,6 @@ commands:
       - run:
           name: Run Tests With Coverage Report
           environment:
-            INSTANA_TEST: "true"
             CASSANDRA_TEST: "<<parameters.cassandra>>"
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"

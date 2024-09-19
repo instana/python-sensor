@@ -8,13 +8,9 @@ can be any combination of metrics, snapshot data and spans.
 
 import queue  # pylint: disable=import-error
 import threading
-from os import environ
 
 from instana.log import logger
 from instana.util import DictionaryOfStan, every
-
-# TODO: Use mock.patch() or unittest.mock to mock the testing env
-env_is_test = "INSTANA_TEST" in environ
 
 
 class BaseCollector(object):
@@ -31,16 +27,7 @@ class BaseCollector(object):
         self.THREAD_NAME = "Instana Collector"
 
         # The Queue where we store finished spans before they are sent
-        if env_is_test:
-            # Override span queue with a multiprocessing version
-            # The test suite runs background applications - some in background threads,
-            # others in background processes.  This multiprocessing queue allows us to collect
-            # up spans from all sources.
-            import multiprocessing
-
-            self.span_queue = multiprocessing.Queue()
-        else:
-            self.span_queue = queue.Queue()
+        self.span_queue = queue.Queue()
 
         # The Queue where we store finished profiles before they are sent
         self.profile_queue = queue.Queue()
@@ -163,8 +150,6 @@ class BaseCollector(object):
         Prepare and report the data payload.
         @return: Boolean
         """
-        if env_is_test:
-            return True
         with self.background_report_lock:
             payload = self.prepare_payload()
             self.agent.report_data_payload(payload)

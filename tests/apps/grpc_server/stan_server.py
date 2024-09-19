@@ -92,7 +92,6 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
 
 if __name__ == "__main__":
     print ("Booting foreground GRPC application...")
-    # os.environ["INSTANA_TEST"] = "true"
 
     if sys.version_info >= (3, 5, 3):
         StanServicer().start_server()

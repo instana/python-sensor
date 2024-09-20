@@ -183,6 +183,7 @@ def boot_agent():
             starlette_inst,  # noqa: F401
             sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
+            pyramid_inst,
         )
         from instana.instrumentation.aiohttp import (
             client,  # noqa: F401

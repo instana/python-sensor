@@ -5,7 +5,7 @@ import pytest
 import urllib3
 from typing import Generator
 
-import tests.apps.pyramid_app
+import tests.apps.pyramid.pyramid_app
 from tests.helpers import testenv
 from instana.singletons import tracer, agent
 from instana.span.span import get_current_span

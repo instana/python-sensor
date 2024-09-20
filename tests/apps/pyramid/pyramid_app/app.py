@@ -40,8 +40,10 @@ def hello_user(request):
 
 
 app = None
-with Configurator() as config:
-    config.include("instana.instrumentation.pyramid.tweens")
+settings = {
+    "pyramid.tweens": "tests.apps.pyramid.pyramid_utils.tweens.timing_tween_factory",
+}
+with Configurator(settings=settings) as config:
     config.add_route("hello", "/")
     config.add_view(hello_world, route_name="hello")
     config.add_route("fail", "/500")

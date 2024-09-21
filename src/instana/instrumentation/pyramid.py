@@ -41,7 +41,7 @@ try:
                 for custom_header in agent.options.extra_http_headers:
                     if custom_header in headers:
                         span.set_attribute(
-                            "http.header.%s" % custom_header, headers[custom_header]
+                            f"http.header.{custom_header}", headers[custom_header]
                         )
 
             except Exception:
@@ -50,7 +50,7 @@ try:
         def __call__(self, request: "Request") -> "Response":
             ctx = tracer.extract(Format.HTTP_HEADERS, dict(request.headers))
 
-            with tracer.start_as_current_span("http", span_context=ctx) as span:
+            with tracer.start_as_current_span("wsgi", span_context=ctx) as span:
                 span.set_attribute("span.kind", SpanKind.SERVER)
                 span.set_attribute("http.host", request.host)
                 span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
@@ -78,32 +78,29 @@ try:
 
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
                     response.headers["Server-Timing"] = (
-                        "intid;desc=%s" % span.context.trace_id
+                        f"intid;desc={span.context.trace_id}"
                     )
                 except HTTPException as e:
                     response = e
-                    raise
+                    logger.debug(
+                        "Pyramid InstanaTweenFactory HTTPException: ", exc_info=True
+                    )
                 except BaseException as e:
-                    span.set_attribute("http.status", 500)
-
-                    # we need to explicitly populate the `message` tag with an error here
-                    # so that it's picked up from an SDK span
-                    span.set_attribute("message", str(e))
+                    span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 500)
                     span.record_exception(e)
 
-                    logger.debug("Pyramid Instana tween", exc_info=True)
+                    logger.debug(
+                        "Pyramid InstanaTweenFactory BaseException: ", exc_info=True
+                    )
                 finally:
                     if response:
-                        span.set_attribute("http.status", response.status_int)
+                        span.set_attribute(
+                            SpanAttributes.HTTP_STATUS_CODE, response.status_int
+                        )
 
                         if 500 <= response.status_int:
-                            if response.exception is not None:
-                                message = str(response.exception)
+                            if response.exception:
                                 span.record_exception(response.exception)
-                            else:
-                                message = response.status
-
-                            span.set_attribute("message", message)
                             span.assure_errored()
 
                 return response

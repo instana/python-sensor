@@ -37,7 +37,6 @@ class TestPyramid:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
         assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
@@ -75,23 +74,14 @@ class TestPyramid:
         assert not urllib3_span.ec
         assert not pyramid_span.ec
 
-        # HTTP SDK span
-        assert pyramid_span.n == "sdk"
-
-        assert pyramid_span.data["sdk"]
-        assert pyramid_span.data["sdk"]["name"] == "http"
-        assert pyramid_span.data["sdk"]["type"] == "entry"
-
-        sdk_custom_attributes = pyramid_span.data["sdk"]["custom"]["attributes"]
-        assert (
-            "127.0.0.1:" + str(testenv["pyramid_port"])
-            == sdk_custom_attributes["http.host"]
-        )
-        assert sdk_custom_attributes["http.url"] == "/"
-        assert sdk_custom_attributes["http.method"] == "GET"
-        assert sdk_custom_attributes["http.status"] == 200
-        assert "message" not in sdk_custom_attributes
-        assert sdk_custom_attributes["http.path_tpl"] == "/"
+        # wsgi
+        assert pyramid_span.n == "wsgi"
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["url"] == "/"
+        assert pyramid_span.data["http"]["method"] == "GET"
+        assert pyramid_span.data["http"]["status"] == 200
+        assert not pyramid_span.data["http"]["error"]
+        assert pyramid_span.data["http"]["path_tpl"] == "/"
 
         # urllib3
         assert test_span.data["sdk"]["name"] == "test"
@@ -118,7 +108,6 @@ class TestPyramid:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
         assert response.status == 200
 
         assert pyramid_span.sy
@@ -137,7 +126,6 @@ class TestPyramid:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
         assert response.status == 500
 
         assert "X-INSTANA-T" in response.headers
@@ -171,20 +159,13 @@ class TestPyramid:
         assert pyramid_span.ec == 1
 
         # wsgi
-        assert pyramid_span.n == "sdk"
-        assert pyramid_span.data["sdk"]["name"] == "http"
-        assert pyramid_span.data["sdk"]["type"] == "entry"
-
-        sdk_custom_attributes = pyramid_span.data["sdk"]["custom"]["attributes"]
-        assert (
-            "127.0.0.1:" + str(testenv["pyramid_port"])
-            == sdk_custom_attributes["http.host"]
-        )
-        assert sdk_custom_attributes["http.url"] == "/500"
-        assert sdk_custom_attributes["http.method"] == "GET"
-        assert sdk_custom_attributes["http.status"] == 500
-        assert sdk_custom_attributes["message"] == "internal error"
-        assert sdk_custom_attributes["http.path_tpl"] == "/500"
+        assert pyramid_span.n == "wsgi"
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["url"] == "/500"
+        assert pyramid_span.data["http"]["method"] == "GET"
+        assert pyramid_span.data["http"]["status"] == 500
+        assert pyramid_span.data["http"]["error"] == "internal error"
+        assert pyramid_span.data["http"]["path_tpl"] == "/500"
 
         # urllib3
         assert test_span.data["sdk"]["name"] == "test"
@@ -210,7 +191,6 @@ class TestPyramid:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
         assert response.status == 500
 
         assert not get_current_span().is_recording()
@@ -228,21 +208,14 @@ class TestPyramid:
         assert urllib3_span.ec == 1
         assert pyramid_span.ec == 1
 
-        # HTTP SDK span
-        assert pyramid_span.n == "sdk"
-        assert pyramid_span.data["sdk"]["name"] == "http"
-        assert pyramid_span.data["sdk"]["type"] == "entry"
-
-        sdk_custom_attributes = pyramid_span.data["sdk"]["custom"]["attributes"]
-        assert (
-            "127.0.0.1:" + str(testenv["pyramid_port"])
-            == sdk_custom_attributes["http.host"]
-        )
-        assert sdk_custom_attributes["http.url"] == "/exception"
-        assert sdk_custom_attributes["http.method"] == "GET"
-        assert sdk_custom_attributes["http.status"] == 500
-        assert sdk_custom_attributes["message"] == "fake exception"
-        assert "http.path_tpl" not in sdk_custom_attributes
+        # wsgi
+        assert pyramid_span.n == "wsgi"
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["url"] == "/exception"
+        assert pyramid_span.data["http"]["method"] == "GET"
+        assert pyramid_span.data["http"]["status"] == 500
+        assert pyramid_span.data["http"]["error"] == "fake exception"
+        assert not pyramid_span.data["http"]["path_tpl"]
 
         # urllib3
         assert test_span.data["sdk"]["name"] == "test"
@@ -294,22 +267,14 @@ class TestPyramid:
         assert not urllib3_span.ec
         assert not pyramid_span.ec
 
-        # HTTP SDK span
-        assert pyramid_span.n == "sdk"
-
-        assert pyramid_span.data["sdk"]
-        assert pyramid_span.data["sdk"]["name"] == "http"
-        assert pyramid_span.data["sdk"]["type"] == "entry"
-
-        sdk_custom_attributes = pyramid_span.data["sdk"]["custom"]["attributes"]
-        assert (
-            "127.0.0.1:" + str(testenv["pyramid_port"])
-            == sdk_custom_attributes["http.host"]
-        )
-        assert sdk_custom_attributes["http.url"] == "/response_headers"
-        assert sdk_custom_attributes["http.method"] == "GET"
-        assert sdk_custom_attributes["http.status"] == 200
-        assert "message" not in sdk_custom_attributes
+        # wsgi
+        assert pyramid_span.n == "wsgi"
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["url"] == "/response_headers"
+        assert pyramid_span.data["http"]["method"] == "GET"
+        assert pyramid_span.data["http"]["status"] == 200
+        assert not pyramid_span.data["http"]["error"]
+        assert pyramid_span.data["http"]["path_tpl"] == "/response_headers"
 
         # urllib3
         assert test_span.data["sdk"]["name"] == "test"
@@ -324,10 +289,11 @@ class TestPyramid:
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
 
-        assert sdk_custom_attributes["http.header.X-Capture-This"]
-        assert sdk_custom_attributes["http.header.X-Capture-This"] == "Ok"
-        assert sdk_custom_attributes["http.header.X-Capture-That"]
-        assert sdk_custom_attributes["http.header.X-Capture-That"] == "Ok too"
+        # custom headers
+        assert "X-Capture-This" in pyramid_span.data["http"]["header"]
+        assert pyramid_span.data["http"]["header"]["X-Capture-This"] == "Ok"
+        assert "X-Capture-That" in pyramid_span.data["http"]["header"]
+        assert pyramid_span.data["http"]["header"]["X-Capture-That"] == "Ok too"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
@@ -352,7 +318,6 @@ class TestPyramid:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert response
         assert response.status == 200
 
         # Same traceId
@@ -373,23 +338,14 @@ class TestPyramid:
         assert not urllib3_span.ec
         assert not pyramid_span.ec
 
-        # HTTP SDK span
-        assert pyramid_span.n == "sdk"
-
-        assert pyramid_span.data["sdk"]
-        assert pyramid_span.data["sdk"]["name"] == "http"
-        assert pyramid_span.data["sdk"]["type"] == "entry"
-
-        sdk_custom_attributes = pyramid_span.data["sdk"]["custom"]["attributes"]
-        assert (
-            "127.0.0.1:" + str(testenv["pyramid_port"])
-            == sdk_custom_attributes["http.host"]
-        )
-        assert sdk_custom_attributes["http.url"] == "/"
-        assert sdk_custom_attributes["http.method"] == "GET"
-        assert sdk_custom_attributes["http.status"] == 200
-        assert "message" not in sdk_custom_attributes
-        assert sdk_custom_attributes["http.path_tpl"] == "/"
+        # wsgi
+        assert pyramid_span.n == "wsgi"
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["url"] == "/"
+        assert pyramid_span.data["http"]["method"] == "GET"
+        assert pyramid_span.data["http"]["status"] == 200
+        assert not pyramid_span.data["http"]["error"]
+        assert pyramid_span.data["http"]["path_tpl"] == "/"
 
         # urllib3
         assert test_span.data["sdk"]["name"] == "test"
@@ -402,10 +358,10 @@ class TestPyramid:
         assert len(urllib3_span.stack) > 1
 
         # custom headers
-        assert sdk_custom_attributes["http.header.X-Capture-This-Too"]
-        assert sdk_custom_attributes["http.header.X-Capture-This-Too"] == "this too"
-        assert sdk_custom_attributes["http.header.X-Capture-That-Too"]
-        assert sdk_custom_attributes["http.header.X-Capture-That-Too"] == "that too"
+        assert "X-Capture-This-Too" in pyramid_span.data["http"]["header"]
+        assert pyramid_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
+        assert "X-Capture-That-Too" in pyramid_span.data["http"]["header"]
+        assert pyramid_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
@@ -460,31 +416,22 @@ class TestPyramid:
         assert not urllib3_span.ec
         assert not pyramid_span.ec
 
-        # HTTP SDK span
-        assert pyramid_span.n == "sdk"
-
-        assert pyramid_span.data["sdk"]
-        assert pyramid_span.data["sdk"]["name"] == "http"
-        assert pyramid_span.data["sdk"]["type"] == "entry"
-
-        sdk_custom_attributes = pyramid_span.data["sdk"]["custom"]["attributes"]
-        assert (
-            "127.0.0.1:" + str(testenv["pyramid_port"])
-            == sdk_custom_attributes["http.host"]
-        )
-        assert sdk_custom_attributes["http.url"] == "/hello_user/oswald"
-        assert sdk_custom_attributes["http.method"] == "GET"
-        assert sdk_custom_attributes["http.status"] == 200
-        assert sdk_custom_attributes["http.params"] == "secret=<redacted>"
-        assert "message" not in sdk_custom_attributes
-        assert sdk_custom_attributes["http.path_tpl"] == "/hello_user/{user}"
+        # wsgi
+        assert pyramid_span.n == "wsgi"
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["url"] == "/hello_user/oswald"
+        assert pyramid_span.data["http"]["method"] == "GET"
+        assert pyramid_span.data["http"]["status"] == 200
+        assert pyramid_span.data["http"]["params"] == "secret=<redacted>"
+        assert not pyramid_span.data["http"]["error"]
+        assert pyramid_span.data["http"]["path_tpl"] == "/hello_user/{user}"
 
         # urllib3
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 200
         assert (
-            testenv["pyramid_server"] + sdk_custom_attributes["http.url"]
+            testenv["pyramid_server"] + pyramid_span.data["http"]["url"]
             == urllib3_span.data["http"]["url"]
         )
         assert urllib3_span.data["http"]["method"] == "GET"

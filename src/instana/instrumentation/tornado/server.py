@@ -2,26 +2,15 @@
 # (c) Copyright Instana Inc. 2019
 
 
-import opentracing
-import wrapt
-
-from ...log import logger
-from ...singletons import agent, setup_tornado_tracer, tornado_tracer
-from ...util.secrets import strip_secrets_from_query
-
 try:
     import tornado
 
-    # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
-    # scope managers which we will tackle soon.
-    # Limit Tornado version for the time being.
-    if not (hasattr(tornado, 'version') and tornado.version[0] < '6'):
-        logger.debug('Instana supports Tornado package versions < 6.0.  Skipping.')
-        raise ImportError
+    import wrapt
 
-    from opentracing.scope_managers.tornado import tracer_stack_context
-
-    setup_tornado_tracer()
+    from instana.log import logger
+    from instana.singletons import agent, tracer
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.propagators.format import Format
 
     def extract_custom_headers(span, headers):
         if not agent.options.extra_http_headers or not headers:
@@ -29,7 +18,7 @@ try:
         try:
             for custom_header in agent.options.extra_http_headers:
                 if custom_header in headers:
-                    span.set_tag("http.header.%s" % custom_header, headers[custom_header])
+                    span.set_attribute("http.header.%s" % custom_header, headers[custom_header])
 
         except Exception:
             logger.debug("extract_custom_headers: ", exc_info=True)
@@ -38,36 +27,36 @@ try:
     @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler._execute')
     def execute_with_instana(wrapped, instance, argv, kwargs):
         try:
-            with tracer_stack_context():
-                ctx = None
-                if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
-                    ctx = tornado_tracer.extract(opentracing.Format.HTTP_HEADERS,
-                                                 instance.request.headers.__dict__['_dict'])
-                scope = tornado_tracer.start_active_span('tornado-server', child_of=ctx)
+            span_context = None
+            if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
+                span_context = tracer.extract(Format.HTTP_HEADERS,
+                                                instance.request.headers.__dict__['_dict'])
 
-                # Query param scrubbing
-                if instance.request.query is not None and len(instance.request.query) > 0:
-                    cleaned_qp = strip_secrets_from_query(instance.request.query, agent.options.secrets_matcher,
-                                                          agent.options.secrets_list)
-                    scope.span.set_tag("http.params", cleaned_qp)
+            span = tracer.start_span("tornado-server", span_context=span_context)
 
-                url = "%s://%s%s" % (instance.request.protocol, instance.request.host, instance.request.path)
-                scope.span.set_tag("http.url", url)
-                scope.span.set_tag("http.method", instance.request.method)
+            # Query param scrubbing
+            if instance.request.query is not None and len(instance.request.query) > 0:
+                cleaned_qp = strip_secrets_from_query(instance.request.query, agent.options.secrets_matcher,
+                                                        agent.options.secrets_list)
+                span.set_attribute("http.params", cleaned_qp)
+            
+            url = f"{instance.request.protocol}://{instance.request.host}{instance.request.path}"
+            span.set_attribute("http.url", url)
+            span.set_attribute("http.method", instance.request.method)
 
-                scope.span.set_tag("handler", instance.__class__.__name__)
+            span.set_attribute("handler", instance.__class__.__name__)
 
-                # Request header tracking support
-                extract_custom_headers(scope.span, instance.request.headers)
+            # Request header tracking support
+            extract_custom_headers(span, instance.request.headers)
 
-                setattr(instance.request, "_instana", scope)
+            setattr(instance.request, "_instana", span)
 
-                # Set the context response headers now because tornado doesn't give us a better option to do so
-                # later for this request.
-                tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers)
-                instance.set_header(name='Server-Timing', value="intid;desc=%s" % scope.span.context.trace_id)
+            # Set the context response headers now because tornado doesn't give us a better option to do so
+            # later for this request.
+            tracer.inject(span.context, Format.HTTP_HEADERS, instance._headers)
+            instance.set_header(name='Server-Timing', value=f"intid;desc={span.context.trace_id}")
 
-                return wrapped(*argv, **kwargs)
+            return wrapped(*argv, **kwargs)
         except Exception:
             logger.debug("tornado execute", exc_info=True)
 
@@ -77,9 +66,9 @@ try:
         if not hasattr(instance.request, '_instana'):
             return wrapped(*argv, **kwargs)
 
-        scope = instance.request._instana
-        tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, instance._headers)
-        instance.set_header(name='Server-Timing', value="intid;desc=%s" % scope.span.context.trace_id)
+        span = instance.request._instana
+        tracer.inject(span.context, Format.HTTP_HEADERS, instance._headers)
+        instance.set_header(name='Server-Timing', value=f"intid;desc={span.context.trace_id}")
 
 
     @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler.on_finish')
@@ -88,17 +77,19 @@ try:
             if not hasattr(instance.request, '_instana'):
                 return wrapped(*argv, **kwargs)
 
-            with instance.request._instana as scope:
-                # Response header tracking support
-                extract_custom_headers(scope.span, instance._headers)
+            span = instance.request._instana
+            # Response header tracking support
+            extract_custom_headers(span, instance._headers)
 
-                status_code = instance.get_status()
+            status_code = instance.get_status()
 
-                # Mark 500 responses as errored
-                if 500 <= status_code:
-                    scope.span.mark_as_errored()
+            # Mark 500 responses as errored
+            if 500 <= status_code:
+                span.mark_as_errored()
 
-                scope.span.set_tag("http.status_code", status_code)
+            span.set_attribute("http.status_code", status_code)
+            if span.is_recording():
+                span.end()
 
             return wrapped(*argv, **kwargs)
         except Exception:
@@ -112,8 +103,8 @@ try:
                 return wrapped(*argv, **kwargs)
 
             if not isinstance(argv[1], tornado.web.HTTPError):
-                scope = instance.request._instana
-                scope.span.log_exception(argv[0])
+                span = instance.request._instana
+                span.record_exception(argv[0])
 
             return wrapped(*argv, **kwargs)
         except Exception:

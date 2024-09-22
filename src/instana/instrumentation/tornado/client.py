@@ -2,33 +2,25 @@
 # (c) Copyright Instana Inc. 2019
 
 
-import opentracing
 import wrapt
 import functools
 
-from ...log import logger
-from ...singletons import agent, setup_tornado_tracer, tornado_tracer
-from ...util.secrets import strip_secrets_from_query
+from instana.log import logger
+from instana.singletons import agent, tracer
+from instana.util.secrets import strip_secrets_from_query
+from instana.propagators.format import Format
+from instana.span.span import get_current_span
 
 try:
     import tornado
 
-    # Tornado >=6.0 switched to contextvars for context management.  This requires changes to the opentracing
-    # scope managers which we will tackle soon.
-    # Limit Tornado version for the time being.
-    if not (hasattr(tornado, 'version') and tornado.version[0] < '6'):
-        logger.debug('Instana supports Tornado package versions < 6.0.  Skipping.')
-        raise ImportError
-
-    setup_tornado_tracer()
-
     @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
     def fetch_with_instana(wrapped, instance, argv, kwargs):
         try:
-            parent_span = tornado_tracer.active_span
+            parent_span = get_current_span()
 
             # If we're not tracing, just return
-            if (parent_span is None) or (parent_span.operation_name == "tornado-client"):
+            if (not parent_span.is_recording()) or (parent_span.name == "tornado-client"):
                 return wrapped(*argv, **kwargs)
 
             request = argv[0]
@@ -45,23 +37,25 @@ try:
                         new_kwargs[param] = kwargs.pop(param)
                 kwargs = new_kwargs
 
-            scope = tornado_tracer.start_active_span('tornado-client', child_of=parent_span)
-            tornado_tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, request.headers)
+            parent_context = parent_span.get_span_context() if parent_span else None
+
+            span = tracer.start_span("tornado-client", span_context=parent_context)
+            tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
 
             # Query param scrubbing
             parts = request.url.split('?')
             if len(parts) > 1:
                 cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
                                                       agent.options.secrets_list)
-                scope.span.set_tag("http.params", cleaned_qp)
+                span.set_attribute("http.params", cleaned_qp)
 
-            scope.span.set_tag("http.url", parts[0])
-            scope.span.set_tag("http.method", request.method)
+            span.set_attribute("http.url", parts[0])
+            span.set_attribute("http.method", request.method)
 
             future = wrapped(request, **kwargs)
 
             if future is not None:
-                cb = functools.partial(finish_tracing, scope=scope)
+                cb = functools.partial(finish_tracing, span=span)
                 future.add_done_callback(cb)
 
             return future
@@ -70,16 +64,17 @@ try:
             raise
 
 
-    def finish_tracing(future, scope):
+    def finish_tracing(future, span):
         try:
             response = future.result()
-            scope.span.set_tag("http.status_code", response.code)
+            span.set_attribute("http.status_code", response.code)
         except tornado.httpclient.HTTPClientError as e:
-            scope.span.set_tag("http.status_code", e.code)
-            scope.span.log_exception(e)
+            span.set_attribute("http.status_code", e.code)
+            span.record_exception(e)
             raise
         finally:
-            scope.close()
+            if span.is_recording():
+                span.end()
 
 
     logger.debug("Instrumenting tornado client")

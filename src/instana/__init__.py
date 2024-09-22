@@ -197,10 +197,10 @@ def boot_agent():
         #     pubsub,  # noqa: F401
         #     storage,  # noqa: F401
         # )
-        # from instana.instrumentation.tornado import (
-        #     client,  # noqa: F401
-        #     server,  # noqa: F401
-        # )
+        from instana.instrumentation.tornado import (
+            client,  # noqa: F401
+            server,  # noqa: F401
+        )
 
     # Hooks
     # from instana.hooks import hook_uwsgi  # noqa: F401

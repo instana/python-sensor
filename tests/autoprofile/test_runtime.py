@@ -1,24 +1,25 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import unittest
-import signal
 import os
+import signal
+from typing import TYPE_CHECKING
 
-from instana.autoprofile.profiler import Profiler
-from instana.autoprofile.runtime import runtime_info, register_signal
+from instana.autoprofile.runtime import RuntimeInfo, register_signal
+
+if TYPE_CHECKING:
+    from types import FrameType
 
 
-class RuntimeTestCase(unittest.TestCase):
-
-    def test_register_signal(self):
-        if runtime_info.OS_WIN:
+class TestRuntime:
+    def test_register_signal(self) -> None:
+        if RuntimeInfo.OS_WIN:
             return
 
-        result = {'handler': 0}
+        result = {"handler": 0}
 
-        def _handler(signum, frame):
-            result['handler'] += 1
+        def _handler(signum: signal.Signals, frame: "FrameType") -> None:
+            result["handler"] += 1
 
         register_signal(signal.SIGUSR1, _handler)
 
@@ -27,23 +28,4 @@ class RuntimeTestCase(unittest.TestCase):
 
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
 
-        self.assertEqual(result['handler'], 2)
-
-
-    '''def test_register_signal_default(self):
-        result = {'handler': 0}
-
-        def _handler(signum, frame):
-            result['handler'] += 1
-
-        register_signal(signal.SIGUSR1, _handler, once = True)
-
-        os.kill(os.getpid(), signal.SIGUSR1)
-        os.kill(os.getpid(), signal.SIGUSR1)
-
-        self.assertEqual(result['handler'], 1)'''
-
-
-if __name__ == '__main__':
-    unittest.main()
-
+        assert result["handler"] == 2

@@ -23,9 +23,6 @@ from instana.tracer import InstanaTracerProvider
 
 # Ignoring tests during OpenTelemetry migration.
 collect_ignore_glob = [
-    "*autoprofile*",
-    # "*clients*",
-    # "*frameworks*",
     "*platforms*",
     "*propagators*",
     "*w3c_trace_context*",

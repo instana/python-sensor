@@ -1,106 +1,86 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import threading
 import os
-import signal
-import atexit
 import platform
+import signal
+import threading
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union
 
-from ..log import logger
-from .runtime import min_version, runtime_info, register_signal
-from .frame_cache import FrameCache
-from .sampler_scheduler import SamplerScheduler, SamplerConfig
-from .samplers.cpu_sampler import CPUSampler
-from .samplers.allocation_sampler import AllocationSampler
-from .samplers.block_sampler import BlockSampler
+from instana.autoprofile.frame_cache import FrameCache
+from instana.autoprofile.runtime import RuntimeInfo, min_version, register_signal
+from instana.autoprofile.sampler_scheduler import SamplerConfig, SamplerScheduler
+from instana.autoprofile.samplers.allocation_sampler import AllocationSampler
+from instana.autoprofile.samplers.block_sampler import BlockSampler
+from instana.autoprofile.samplers.cpu_sampler import CPUSampler
+from instana.log import logger
+
+if TYPE_CHECKING:
+    from types import FrameType
+    from instana.agent.host import HostAgent
 
 
 class Profiler(object):
-
-    def __init__(self, agent):
+    def __init__(self, agent: "HostAgent") -> None:
         self.agent = agent
-
         self.profiler_started = False
         self.profiler_destroyed = False
-
         self.sampler_active = False
-
         self.main_thread_func = None
-
         self.frame_cache = FrameCache(self)
-
-        config = SamplerConfig()
-        config.log_prefix = 'CPU sampler'
-        config.max_profile_duration = 20
-        config.max_span_duration = 5
-        config.max_span_count = 30
-        config.span_interval = 20
-        config.report_interval = 120
-        self.cpu_sampler_scheduler = SamplerScheduler(self, CPUSampler(self), config)
-
-        config = SamplerConfig()
-        config.log_prefix = 'Allocation sampler'
-        config.max_profile_duration = 20
-        config.max_span_duration = 5
-        config.max_span_count = 30
-        config.span_interval = 20
-        config.report_interval = 120
-        self.allocation_sampler_scheduler = SamplerScheduler(self, AllocationSampler(self), config)
-
-        config = SamplerConfig()
-        config.log_prefix = 'Block sampler'
-        config.max_profile_duration = 20
-        config.max_span_duration = 5
-        config.max_span_count = 30
-        config.span_interval = 20
-        config.report_interval = 120
-        self.block_sampler_scheduler = SamplerScheduler(self, BlockSampler(self), config)
-
         self.options = None
+        self.cpu_sampler_scheduler = self._create_sampler_scheduler(
+            CPUSampler(self), "CPU sampler", 20, 5, 30, 20, 120
+        )
+        self.allocation_sampler_scheduler = self._create_sampler_scheduler(
+            AllocationSampler(self), "Allocation sampler", 20, 5, 30, 20, 120
+        )
+        self.block_sampler_scheduler = self._create_sampler_scheduler(
+            BlockSampler(self), "Block sampler", 20, 5, 30, 20, 120
+        )
 
-    def get_option(self, name, default_val=None):
+    def get_option(
+        self, name: str, default_val: Optional[object] = None
+    ) -> Optional[object]:
         if name not in self.options:
             return default_val
         else:
             return self.options[name]
 
-    def start(self, **kwargs):
+    def start(self, **kwargs: Dict[str, Any]) -> None:
         if self.profiler_started:
             return
 
         try:
-            if not min_version(2, 7) and not min_version(3, 4):
-                raise Exception('Supported Python versions 2.6 or higher and 3.4 or higher')
+            if not min_version(3, 8):
+                raise Exception("Supported Python versions 3.8 or higher.")
 
-            if platform.python_implementation() != 'CPython':
-                raise Exception('Supported Python interpreter is CPython')
+            if platform.python_implementation() != "CPython":
+                raise Exception("Supported Python interpreter is CPython.")
 
             if self.profiler_destroyed:
-                logger.warning('Destroyed profiler cannot be started')
+                logger.warning("Destroyed profiler cannot be started.")
                 return
 
             self.options = kwargs
-
             self.frame_cache.start()
-
             self.cpu_sampler_scheduler.setup()
             self.allocation_sampler_scheduler.setup()
             self.block_sampler_scheduler.setup()
 
             # execute main_thread_func in main thread on signal
-            def _signal_handler(signum, frame):
-                if(self.main_thread_func):
+            def _signal_handler(signum: signal.Signals, frame: "FrameType") -> bool:
+                if self.main_thread_func:
                     func = self.main_thread_func
                     self.main_thread_func = None
                     try:
                         func()
                     except Exception:
-                        logger.error('Error in signal handler function', exc_info=True)
+                        logger.error("Error in signal handler function", exc_info=True)
 
                     return True
 
-            if not runtime_info.OS_WIN:
+            if not RuntimeInfo.OS_WIN:
                 register_signal(signal.SIGUSR2, _signal_handler)
 
             self.cpu_sampler_scheduler.start()
@@ -108,13 +88,13 @@ class Profiler(object):
             self.block_sampler_scheduler.start()
 
             self.profiler_started = True
-            logger.debug('Profiler started')
+            logger.debug("Profiler started.")
         except Exception:
-            logger.error('Error starting profiler', exc_info=True)
+            logger.error("Error starting profiler", exc_info=True)
 
-    def destroy(self):
+    def destroy(self) -> None:
         if not self.profiler_started:
-            logger.warning('Profiler has not been started')
+            logger.warning("Profiler has not been started.")
             return
 
         if self.profiler_destroyed:
@@ -130,20 +110,20 @@ class Profiler(object):
         self.block_sampler_scheduler.destroy()
 
         self.profiler_destroyed = True
-        logger.debug('Profiler destroyed')
+        logger.debug("Profiler destroyed.")
 
-    def run_in_thread(self, func):
-        def func_wrapper():
+    def run_in_thread(self, func: Callable[..., object]) -> threading.Thread:
+        def func_wrapper() -> None:
             try:
                 func()
             except Exception:
-                logger.error('Error in thread function', exc_info=True)
+                logger.error("Error in thread function", exc_info=True)
 
         t = threading.Thread(target=func_wrapper)
         t.start()
         return t
 
-    def run_in_main_thread(self, func):
+    def run_in_main_thread(self, func: Callable[..., object]) -> bool:
         if self.main_thread_func:
             return False
 
@@ -151,3 +131,23 @@ class Profiler(object):
         os.kill(os.getpid(), signal.SIGUSR2)
 
         return True
+
+    def _create_sampler_scheduler(
+        self,
+        sampler: Union["AllocationSampler", "BlockSampler", "CPUSampler"],
+        log_prefix: str,
+        max_profile_duration: int,
+        max_span_duration: int,
+        max_span_count: int,
+        span_interval: int,
+        report_interval: int,
+    ) -> SamplerScheduler:
+        config = SamplerConfig()
+        config.log_prefix = log_prefix
+        config.max_profile_duration = max_profile_duration
+        config.max_span_duration = max_span_duration
+        config.max_span_count = max_span_count
+        config.span_interval = span_interval
+        config.report_interval = report_interval
+
+        return SamplerScheduler(self, sampler, config)

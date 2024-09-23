@@ -2,33 +2,32 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import threading
 import os
-import re
-import importlib
+from typing import TYPE_CHECKING
 
-from .runtime import runtime_info
+if TYPE_CHECKING:
+    from instana.autoprofile.profile import Profile
+
 
 class FrameCache(object):
     MAX_CACHE_SIZE = 2500
 
-    def __init__(self, profiler):
+    def __init__(self, profiler: "Profile") -> None:
         self.profiler = profiler
         self.profiler_frame_cache = None
-
         self.include_profiler_frames = None
-
         self.profiler_dir = os.path.dirname(os.path.realpath(__file__))
 
-    def start(self):
+    def start(self) -> None:
         self.profiler_frame_cache = dict()
+        self.include_profiler_frames = self.profiler.get_option(
+            "include_profiler_frames", False
+        )
 
-        self.include_profiler_frames = self.profiler.get_option('include_profiler_frames', False)
-
-    def stop(self):
+    def stop(self) -> None:
         pass
 
-    def is_profiler_frame(self, filename):
+    def is_profiler_frame(self, filename: str) -> bool:
         if filename in self.profiler_frame_cache:
             return self.profiler_frame_cache[filename]
 

@@ -1,20 +1,23 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import threading
 import signal
+import threading
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from ...log import logger
-from ..runtime import runtime_info
-from ..profile import Profile
-from ..profile import CallSite
+from instana.autoprofile.profile import CallSite, Profile
+from instana.autoprofile.runtime import RuntimeInfo
+from instana.log import logger
+
+if TYPE_CHECKING:
+    from types import FrameType
 
 
 class CPUSampler(object):
     SAMPLING_RATE = 0.01
-    MAX_TRACEBACK_SIZE = 25 # number of frames
+    MAX_TRACEBACK_SIZE = 25  # number of frames
 
-    def __init__(self, profiler):
+    def __init__(self, profiler: Profile) -> None:
         self.profiler = profiler
         self.ready = False
         self.top = None
@@ -22,15 +25,15 @@ class CPUSampler(object):
         self.prev_signal_handler = None
         self.sampler_active = False
 
-    def setup(self):
-        if self.profiler.get_option('cpu_sampler_disabled'):
+    def setup(self) -> None:
+        if self.profiler.get_option("cpu_sampler_disabled"):
             return
 
-        if not runtime_info.OS_LINUX and not runtime_info.OS_DARWIN:
-            logger.debug('CPU sampler is only supported on Linux and OS X.')
+        if not RuntimeInfo.OS_LINUX and not RuntimeInfo.OS_DARWIN:
+            logger.debug("CPU sampler is only supported on Linux and OS X.")
             return
 
-        def _sample(signum, signal_frame):
+        def _sample(signum: object, signal_frame: "FrameType") -> None:
             if self.sampler_active:
                 return
             self.sampler_active = True
@@ -40,32 +43,32 @@ class CPUSampler(object):
                     self.process_sample(signal_frame)
                     signal_frame = None
                 except Exception:
-                    logger.error('Error in signal handler', exc_info=True)
- 
+                    logger.error("Error in signal handler", exc_info=True)
+
             self.sampler_active = False
 
         self.prev_signal_handler = signal.signal(signal.SIGPROF, _sample)
 
         self.ready = True
 
-    def reset(self):
-        self.top = CallSite('', '', 0)
+    def reset(self) -> None:
+        self.top = CallSite("", "", 0)
 
-    def start_sampler(self):
-        logger.debug('Activating CPU sampler.')
+    def start_sampler(self) -> None:
+        logger.debug("Activating CPU sampler.")
 
         signal.setitimer(signal.ITIMER_PROF, self.SAMPLING_RATE, self.SAMPLING_RATE)
 
-    def stop_sampler(self):
+    def stop_sampler(self) -> None:
         signal.setitimer(signal.ITIMER_PROF, 0)
 
-    def destroy(self):
+    def destroy(self) -> None:
         if not self.ready:
             return
 
         signal.signal(signal.SIGPROF, self.prev_signal_handler)
 
-    def build_profile(self, duration, timespan):
+    def build_profile(self, duration: int, timespan: int) -> Profile:
         with self.top_lock:
             profile = Profile(
                 Profile.CATEGORY_CPU,
@@ -73,12 +76,12 @@ class CPUSampler(object):
                 Profile.UNIT_SAMPLE,
                 self.top.children.values(),
                 duration,
-                timespan
+                timespan,
             )
 
             return profile
 
-    def process_sample(self, signal_frame):
+    def process_sample(self, signal_frame: "FrameType") -> None:
         if self.top:
             if signal_frame:
                 stack = self.recover_stack(signal_frame)
@@ -87,12 +90,18 @@ class CPUSampler(object):
 
                 stack = None
 
-    def recover_stack(self, signal_frame):
+    def recover_stack(
+        self, signal_frame: "FrameType"
+    ) -> Optional[List[Tuple[str, str, int]]]:
         stack = []
 
         depth = 0
         while signal_frame is not None and depth <= self.MAX_TRACEBACK_SIZE:
-            if signal_frame.f_code and signal_frame.f_code.co_name and signal_frame.f_code.co_filename:
+            if (
+                signal_frame.f_code
+                and signal_frame.f_code.co_name
+                and signal_frame.f_code.co_filename
+            ):
                 func_name = signal_frame.f_code.co_name
                 filename = signal_frame.f_code.co_filename
                 lineno = signal_frame.f_lineno
@@ -100,11 +109,11 @@ class CPUSampler(object):
                 if filename and self.profiler.frame_cache.is_profiler_frame(filename):
                     return None
 
-                #frame = Frame(func_name, filename, lineno)
+                # frame = Frame(func_name, filename, lineno)
                 stack.append((func_name, filename, lineno))
 
                 signal_frame = signal_frame.f_back
-            
+
             depth += 1
 
         if len(stack) == 0:
@@ -112,10 +121,10 @@ class CPUSampler(object):
         else:
             return stack
 
-    def update_profile(self, profile, stack):
+    def update_profile(self, profile: Profile, stack: List[Tuple[str, str, int]]):
         current_node = profile
 
         for func_name, filename, lineno in reversed(stack):
             current_node = current_node.find_or_add_child(func_name, filename, lineno)
-        
+
         current_node.increment(1, 1)

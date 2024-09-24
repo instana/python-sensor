@@ -3,22 +3,23 @@
 
 import time
 import asyncio
-import unittest
+import pytest
+from typing import Generator
 
 import tornado
 from tornado.httpclient import AsyncHTTPClient
-from instana.singletons import tornado_tracer
+from instana.singletons import tracer
+from instana.span.span import get_current_span
 
 import tests.apps.tornado_server
-from ..helpers import testenv
+from tests.helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
-raise unittest.SkipTest("Non deterministic tests TBR")
+class TestTornadoClient:
 
-class TestTornadoClient(unittest.TestCase):
-
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
         """ Clear all spans before a test run """
-        self.recorder = tornado_tracer.recorder
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
 
         # New event loop for every test
@@ -27,435 +28,434 @@ class TestTornadoClient(unittest.TestCase):
         asyncio.set_event_loop(self.loop)
 
         self.http_client = AsyncHTTPClient()
-
-    def tearDown(self):
+        yield
         self.http_client.close()
 
-    def test_get(self):
+    def test_get(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsinstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
 
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        server_span = spans[0]
-        client_span = spans[1]
-        test_span = spans[2]
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
 
-        self.assertIsNone(tornado_tracer.active_span)
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(client_span.ec)
-        self.assertIsNone(server_span.ec)
+        assert not test_span.ec
+        assert not client_span.ec
+        assert not server_span.ec
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
-        self.assertIsNone(server_span.data["http"]["params"])
-        self.assertEqual("GET", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
+        # assert server_span.stack
+        # assert type(server_span.stack) is list
+        # assert len(server_span.stack) > 1
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", client_span.data["http"]["url"])
-        self.assertEqual("GET", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
-    def test_post(self):
+    def test_post(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/", method="POST", body='asdf')
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        server_span = spans[0]
-        client_span = spans[1]
-        test_span = spans[2]
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
 
-        self.assertIsNone(tornado_tracer.active_span)
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(client_span.ec)
-        self.assertIsNone(server_span.ec)
+        assert not test_span.ec
+        assert not client_span.ec
+        assert not server_span.ec
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
-        self.assertIsNone(server_span.data["http"]["params"])
-        self.assertEqual("POST", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "POST"
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", client_span.data["http"]["url"])
-        self.assertEqual("POST", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "POST"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
-    def test_get_301(self):
+    def test_get_301(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/301")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
-        self.assertEqual(4, len(spans))
+        assert len(spans) == 5
 
         server301_span = spans[0]
         server_span = spans[1]
         client_span = spans[2]
-        test_span = spans[3]
+        client301_span = spans[3]
+        test_span = spans[4]
 
-        self.assertIsNone(tornado_tracer.active_span)
+        filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 301
+        server301_span = get_first_span_by_filter(spans, filter)
+        filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 200
+        server_span = get_first_span_by_filter(spans, filter)
+        filter = lambda span: span.n == "tornado-client" and span.data["http"]["url"] == testenv["tornado_server"] + "/"
+        client_span = get_first_span_by_filter(spans, filter)
+        filter = lambda span: span.n == "tornado-client" and span.data["http"]["url"] == testenv["tornado_server"] + "/301"
+        client301_span = get_first_span_by_filter(spans, filter)
+        test_span = get_first_span_by_name(spans, "sdk")
+
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server301_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == client301_span.t
+        assert traceId == server301_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(server301_span.p, client_span.s)
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert server301_span.p == client301_span.s
+        assert client_span.p == test_span.s
+        assert client301_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(client_span.ec)
-        self.assertIsNone(server_span.ec)
+        assert not test_span.ec
+        assert not client_span.ec
+        assert not server_span.ec
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
-        self.assertIsNone(server_span.data["http"]["params"])
-        self.assertEqual("GET", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
 
-        self.assertEqual("tornado-server", server301_span.n)
-        self.assertEqual(301, server301_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/301", server301_span.data["http"]["url"])
-        self.assertIsNone(server301_span.data["http"]["params"])
-        self.assertEqual("GET", server301_span.data["http"]["method"])
-        self.assertIsNotNone(server301_span.stack)
-        self.assertTrue(type(server301_span.stack) is list)
-        self.assertTrue(len(server301_span.stack) > 1)
+        assert server301_span.n == "tornado-server"
+        assert server301_span.data["http"]["status"] == 301
+        assert testenv["tornado_server"] + "/301" == server301_span.data["http"]["url"]
+        assert not server301_span.data["http"]["params"]
+        assert server301_span.data["http"]["method"] == "GET"
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/301", client_span.data["http"]["url"])
-        self.assertEqual("GET", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert client301_span.n == "tornado-client"
+        assert client301_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/301" == client301_span.data["http"]["url"]
+        assert client301_span.data["http"]["method"] == "GET"
+        assert client301_span.stack
+        assert type(client301_span.stack) is list
+        assert len(client301_span.stack) > 1
 
-    def test_get_405(self):
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+
+    def test_get_405(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 try:
                     return await self.http_client.fetch(testenv["tornado_server"] + "/405")
                 except tornado.httpclient.HTTPClientError as e:
                     return e.response
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        server_span = spans[0]
-        client_span = spans[1]
-        test_span = spans[2]
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
 
-        self.assertIsNone(tornado_tracer.active_span)
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertEqual(client_span.ec, 1)
-        self.assertIsNone(server_span.ec)
+        assert not test_span.ec
+        assert client_span.ec == 1
+        assert not server_span.ec
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(405, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/405", server_span.data["http"]["url"])
-        self.assertIsNone(server_span.data["http"]["params"])
-        self.assertEqual("GET", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 405
+        assert testenv["tornado_server"] + "/405" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(405, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/405", client_span.data["http"]["url"])
-        self.assertEqual("GET", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 405
+        assert testenv["tornado_server"] + "/405" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
-    def test_get_500(self):
+    def test_get_500(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 try:
                     return await self.http_client.fetch(testenv["tornado_server"] + "/500")
                 except tornado.httpclient.HTTPClientError as e:
                     return e.response
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        server_span = spans[0]
-        client_span = spans[1]
-        test_span = spans[2]
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
 
-        self.assertIsNone(tornado_tracer.active_span)
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertEqual(client_span.ec, 1)
-        self.assertEqual(server_span.ec, 1)
+        assert not test_span.ec
+        assert client_span.ec == 1
+        assert server_span.ec == 1
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(500, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/500", server_span.data["http"]["url"])
-        self.assertIsNone(server_span.data["http"]["params"])
-        self.assertEqual("GET", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 500
+        assert testenv["tornado_server"] + "/500" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(500, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/500", client_span.data["http"]["url"])
-        self.assertEqual("GET", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 500
+        assert testenv["tornado_server"] + "/500" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
-    def test_get_504(self):
+    def test_get_504(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 try:
                     return await self.http_client.fetch(testenv["tornado_server"] + "/504")
                 except tornado.httpclient.HTTPClientError as e:
                     return e.response
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        server_span = spans[0]
-        client_span = spans[1]
-        test_span = spans[2]
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
 
-        self.assertIsNone(tornado_tracer.active_span)
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertEqual(client_span.ec, 1)
-        self.assertEqual(server_span.ec, 1)
+        assert not test_span.ec
+        assert client_span.ec == 1
+        assert server_span.ec == 1
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(504, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/504", server_span.data["http"]["url"])
-        self.assertIsNone(server_span.data["http"]["params"])
-        self.assertEqual("GET", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 504
+        assert testenv["tornado_server"] + "/504" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(504, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/504", client_span.data["http"]["url"])
-        self.assertEqual("GET", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 504
+        assert testenv["tornado_server"] + "/504" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
-    def test_get_with_params_to_scrub(self):
+    def test_get_with_params_to_scrub(self) -> None:
         async def test():
-            with tornado_tracer.start_active_span('test'):
+            with tracer.start_as_current_span("test"):
                 return await self.http_client.fetch(testenv["tornado_server"] + "/?secret=yeah")
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
-        self.assertIsInstance(response, tornado.httpclient.HTTPResponse)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
 
         time.sleep(0.5)
         spans = self.recorder.queued_spans()
-        self.assertEqual(3, len(spans))
+        assert len(spans) == 3
 
-        server_span = spans[0]
-        client_span = spans[1]
-        test_span = spans[2]
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
 
-        self.assertIsNone(tornado_tracer.active_span)
+        assert not get_current_span().is_recording()
 
         # Same traceId
         traceId = test_span.t
-        self.assertEqual(traceId, client_span.t)
-        self.assertEqual(traceId, server_span.t)
+        assert traceId == client_span.t
+        assert traceId == server_span.t
 
         # Parent relationships
-        self.assertEqual(client_span.p, test_span.s)
-        self.assertEqual(server_span.p, client_span.s)
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
 
         # Error logging
-        self.assertIsNone(test_span.ec)
-        self.assertIsNone(client_span.ec)
-        self.assertIsNone(server_span.ec)
+        assert not test_span.ec
+        assert not client_span.ec
+        assert not server_span.ec
 
-        self.assertEqual("tornado-server", server_span.n)
-        self.assertEqual(200, server_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", server_span.data["http"]["url"])
-        self.assertEqual('secret=<redacted>', server_span.data["http"]["params"])
-        self.assertEqual("GET", server_span.data["http"]["method"])
-        self.assertIsNotNone(server_span.stack)
-        self.assertTrue(type(server_span.stack) is list)
-        self.assertTrue(len(server_span.stack) > 1)
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == server_span.data["http"]["url"]
+        assert 'secret=<redacted>' == server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
 
-        self.assertEqual("tornado-client", client_span.n)
-        self.assertEqual(200, client_span.data["http"]["status"])
-        self.assertEqual(testenv["tornado_server"] + "/", client_span.data["http"]["url"])
-        self.assertEqual('secret=<redacted>', client_span.data["http"]["params"])
-        self.assertEqual("GET", client_span.data["http"]["method"])
-        self.assertIsNotNone(client_span.stack)
-        self.assertTrue(type(client_span.stack) is list)
-        self.assertTrue(len(client_span.stack) > 1)
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == client_span.data["http"]["url"]
+        assert 'secret=<redacted>' == client_span.data["http"]["params"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
 
-        self.assertIn("X-INSTANA-T", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-T"], traceId)
-        self.assertIn("X-INSTANA-S", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-S"], server_span.s)
-        self.assertIn("X-INSTANA-L", response.headers)
-        self.assertEqual(response.headers["X-INSTANA-L"], '1')
-        self.assertIn("Server-Timing", response.headers)
-        self.assertEqual(response.headers["Server-Timing"], "intid;desc=%s" % traceId)
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId

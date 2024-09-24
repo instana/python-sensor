@@ -14,7 +14,7 @@ import tornado.web
 
 import asyncio
 
-from ...helpers import testenv
+from tests.helpers import testenv
 
 
 class Application(tornado.web.Application):

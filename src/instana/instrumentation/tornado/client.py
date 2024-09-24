@@ -60,8 +60,7 @@ try:
 
             return future
         except Exception:
-            logger.debug("tornado fetch", exc_info=True)
-            raise
+            logger.debug("Tornado fetch_with_instana: ", exc_info=True)
 
 
     def finish_tracing(future, span):
@@ -71,7 +70,7 @@ try:
         except tornado.httpclient.HTTPClientError as e:
             span.set_attribute("http.status_code", e.code)
             span.record_exception(e)
-            raise
+            logger.debug("Tornado finish_tracing HTTPClientError: ", exc_info=True)
         finally:
             if span.is_recording():
                 span.end()

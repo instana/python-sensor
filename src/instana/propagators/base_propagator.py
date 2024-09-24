@@ -7,7 +7,6 @@ import os
 from typing import Any, Optional, TypeVar, Dict, List, Tuple
 
 from instana.log import logger
-from instana.util.ids import header_to_id, header_to_long_id
 from instana.span_context import SpanContext
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
@@ -193,8 +192,8 @@ class BasePropagator(object):
         ) = [None] * 9
 
         ctx_level = self._get_ctx_level(level)
-        ctx_trace_id = trace_id
-        ctx_span_id = span_id
+        ctx_trace_id = trace_id if ctx_level > 0 else None
+        ctx_span_id = span_id if ctx_level > 0 else None
 
         if (
             trace_id
@@ -206,8 +205,9 @@ class BasePropagator(object):
             # ctx.span_id = span_id[-16:]  # only the last 16 chars
             ctx_synthetic = synthetic
 
-            # if len(trace_id) > 16:
-            ctx_long_trace_id = trace_id
+            hex_trace_id = hex(trace_id)[2:]
+            if len(hex_trace_id) > 16:
+                ctx_long_trace_id = hex_trace_id
 
         elif not disable_w3c_trace_context and traceparent and not trace_id and not span_id:
             _, tp_trace_id, tp_parent_id, _ = self._tp.get_traceparent_fields(traceparent)
@@ -216,7 +216,7 @@ class BasePropagator(object):
                 instana_ancestor = self._ts.get_instana_ancestor(tracestate)
 
             if disable_traceparent == "":
-                ctx_trace_id = tp_trace_id[-16:]
+                ctx_trace_id = tp_trace_id
                 ctx_span_id = tp_parent_id
                 ctx_synthetic = synthetic
                 ctx_trace_parent = True
@@ -239,8 +239,8 @@ class BasePropagator(object):
             ctx_tracestate = tracestate
 
         return SpanContext(
-            trace_id=ctx_trace_id,
-            span_id=ctx_span_id,
+            trace_id=ctx_trace_id if ctx_trace_id else INVALID_TRACE_ID,
+            span_id=ctx_span_id if ctx_span_id else INVALID_SPAN_ID,
             is_remote=False,
             level=ctx_level,
             synthetic=ctx_synthetic,

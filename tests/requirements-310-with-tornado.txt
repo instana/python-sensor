@@ -1,8 +1,0 @@
-# pre 6.0 tornado would try to import 'MutableMapping' from 'collections'
-# directly, and in Python 3.10 that doesn't work anymore, so that would fail with:
-# venv/lib/python3.10/site-packages/tornado/httputil.py:107: in <module>
-# AttributeError: module 'collections' has no attribute 'MutableMapping'
-# An alternative would be to disable this in testconf:
-# collect_ignore_glob.append("*test_tornado*")
-tornado>=6.1
--r requirements-310.txt

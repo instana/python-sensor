@@ -1,18 +1,19 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2019
 
-
-import wrapt
-import functools
-
-from instana.log import logger
-from instana.singletons import agent, tracer
-from instana.util.secrets import strip_secrets_from_query
-from instana.propagators.format import Format
-from instana.span.span import get_current_span
-
 try:
     import tornado
+
+    import wrapt
+    import functools
+
+    from opentelemetry.semconv.trace import SpanAttributes
+
+    from instana.log import logger
+    from instana.singletons import agent, tracer
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.propagators.format import Format
+    from instana.span.span import get_current_span
 
     @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
     def fetch_with_instana(wrapped, instance, argv, kwargs):
@@ -49,8 +50,8 @@ try:
                                                       agent.options.secrets_list)
                 span.set_attribute("http.params", cleaned_qp)
 
-            span.set_attribute("http.url", parts[0])
-            span.set_attribute("http.method", request.method)
+            span.set_attribute(SpanAttributes.HTTP_URL, parts[0])
+            span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
 
             future = wrapped(request, **kwargs)
 
@@ -66,9 +67,9 @@ try:
     def finish_tracing(future, span):
         try:
             response = future.result()
-            span.set_attribute("http.status_code", response.code)
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.code)
         except tornado.httpclient.HTTPClientError as e:
-            span.set_attribute("http.status_code", e.code)
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, e.code)
             span.record_exception(e)
             logger.debug("Tornado finish_tracing HTTPClientError: ", exc_info=True)
         finally:

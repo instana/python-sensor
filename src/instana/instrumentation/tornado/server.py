@@ -7,6 +7,8 @@ try:
 
     import wrapt
 
+    from opentelemetry.semconv.trace import SpanAttributes
+
     from instana.log import logger
     from instana.singletons import agent, tracer
     from instana.util.secrets import strip_secrets_from_query
@@ -41,8 +43,8 @@ try:
                 span.set_attribute("http.params", cleaned_qp)
             
             url = f"{instance.request.protocol}://{instance.request.host}{instance.request.path}"
-            span.set_attribute("http.url", url)
-            span.set_attribute("http.method", instance.request.method)
+            span.set_attribute(SpanAttributes.HTTP_URL, url)
+            span.set_attribute(SpanAttributes.HTTP_METHOD, instance.request.method)
 
             span.set_attribute("handler", instance.__class__.__name__)
 
@@ -87,7 +89,7 @@ try:
             if 500 <= status_code:
                 span.mark_as_errored()
 
-            span.set_attribute("http.status_code", status_code)
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
             if span.is_recording():
                 span.end()
 

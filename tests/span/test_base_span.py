@@ -20,7 +20,6 @@ def test_basespan(
         "t": trace_id,
         "p": None,
         "s": span_id,
-        "l": 1,
         "ts": round(span.start_time / 10**6),
         "d": None,
         "f": None,
@@ -32,7 +31,6 @@ def test_basespan(
     assert expected_dict["t"] == base_span.t
     assert expected_dict["s"] == base_span.s
     assert expected_dict["p"] == base_span.p
-    assert expected_dict["l"] == base_span.l
     assert expected_dict["ts"] == base_span.ts
     assert expected_dict["d"] == base_span.d
     assert not base_span.f

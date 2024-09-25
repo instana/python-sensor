@@ -206,9 +206,6 @@ class TestFlask(unittest.TestCase):
         # This should not be present
         assert response.headers.get("tracestate", None) is None
 
-        # Assert that there isn't any span, where level is not 0!
-        assert any(map(lambda x: x.l != 0, spans)) is False
-
         # Assert that there are no spans in the recorded list
         assert spans == []
 
@@ -231,9 +228,6 @@ class TestFlask(unittest.TestCase):
 
         # The 'in=' section can not be in the tracestate
         assert "in=" not in response.headers["tracestate"]
-
-        # Assert that there isn't any span, where level is not 0!
-        assert any(map(lambda x: x.l != 0, spans)) is False
 
         # Assert that there are no spans in the recorded list
         assert spans == []

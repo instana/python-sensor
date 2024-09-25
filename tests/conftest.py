@@ -33,7 +33,6 @@ collect_ignore_glob.append("*clients/test_google*")
 
 collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")
-collect_ignore_glob.append("*frameworks/test_grpcio*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)

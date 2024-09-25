@@ -15,7 +15,7 @@ import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 from tests.helpers import testenv, get_first_span_by_name
 
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 from instana.span.span import get_current_span
 
 
@@ -29,6 +29,9 @@ class TestGRPCIO:
         self.server_stub = stan_pb2_grpc.StanStub(self.channel)
         # The grpc client apparently needs a second to connect and initialize
         time.sleep(1)
+        # tearDown
+        # Ensure that allow_exit_as_root has the default value
+        agent.options.allow_exit_as_root = False
 
     def generate_questions(self) -> None:
         """Used in the streaming grpc tests"""
@@ -651,3 +654,47 @@ class TestGRPCIO:
         # test-span
         assert test_span.n == "sdk"
         assert test_span.data["sdk"]["name"] == "test"
+
+    def test_root_exit_span(self) -> None:
+        agent.options.allow_exit_as_root = True
+
+        response = self.server_stub.OneQuestionOneResponse.with_call(
+            stan_pb2.QuestionRequest(question="Are you there?")
+        )
+        assert (
+            response[0].answer
+            == "Invention, my dear friends, is 93% perspiration, 6% electricity, 4% evaporation, and 2% butterscotch ripple. – Willy Wonka"
+        )
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 1
+
+        server_span = spans[0]
+
+        assert server_span
+
+        # Parent relationships
+        assert not server_span.p
+
+        # Error logging
+        assert not server_span.ec
+
+        # rpc-server
+        assert server_span.n == "rpc-server"
+        assert server_span.k is SpanKind.SERVER
+        assert not server_span.stack
+        assert server_span.data["rpc"]["flavor"] == "grpc"
+        assert server_span.data["rpc"]["call"] == "/stan.Stan/OneQuestionOneResponse"
+        assert server_span.data["rpc"]["host"] == testenv["grpc_host"]
+        assert server_span.data["rpc"]["port"] == str(testenv["grpc_port"])
+        assert not server_span.data["rpc"]["error"]
+
+    def test_no_root_exit_span(self) -> None:
+        responses = self.server_stub.OneQuestionManyResponses(
+            stan_pb2.QuestionRequest(question="Are you there?")
+        )
+
+        assert responses
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 0

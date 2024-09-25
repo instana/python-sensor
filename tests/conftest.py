@@ -34,7 +34,6 @@ collect_ignore_glob.append("*clients/test_google*")
 collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")
 collect_ignore_glob.append("*frameworks/test_grpcio*")
-collect_ignore_glob.append("*frameworks/test_tornado*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)
@@ -48,14 +47,6 @@ if not os.environ.get("COUCHBASE_TEST"):
 #     collect_ignore_glob.append("*test_gevent*")
 #     collect_ignore_glob.append("*test_starlette*")
 
-# Python 3.10 support is incomplete yet
-# TODO: Remove this once we start supporting Tornado >= 6.0
-if sys.version_info >= (3, 10):
-    collect_ignore_glob.append("*test_tornado*")
-    # Furthermore on Python 3.11 the above TC is skipped:
-    # tests/opentracing/test_ot_span.py::TestOTSpan::test_stacks
-    # TODO: Remove that once we find a workaround or DROP opentracing!
-
 if sys.version_info >= (3, 11):
     if not os.environ.get("GOOGLE_CLOUD_TEST"):
         collect_ignore_glob.append("*test_google-cloud*")
@@ -64,6 +55,7 @@ if sys.version_info >= (3, 13):
     # TODO: Test Case failures for unknown reason:
     collect_ignore_glob.append("*test_aiohttp_server*")
     collect_ignore_glob.append("*test_celery*")
+    collect_ignore_glob.append("*frameworks/test_tornado_server*")
 
     # Currently there is a runtime incompatibility caused by the library:
     # `undefined symbol: _PyErr_WriteUnraisableMsg`

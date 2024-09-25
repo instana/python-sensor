@@ -48,6 +48,7 @@ responses<=0.17.0
 #sanic>=19.9.0
 #sanic-testing>=24.6.0
 sqlalchemy>=2.0.0
+tornado>=6.4.1
 
 uvicorn>=0.13.4
 urllib3>=1.26.5

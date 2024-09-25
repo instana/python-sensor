@@ -170,7 +170,7 @@ def boot_agent():
             fastapi_inst,  # noqa: F401
             flask,  # noqa: F401
             # gevent_inst,  # noqa: F401
-            # grpcio,  # noqa: F401
+            grpcio,  # noqa: F401
             logging,  # noqa: F401
             mysqlclient,  # noqa: F401
             pika,  # noqa: F401

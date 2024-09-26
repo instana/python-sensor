@@ -191,8 +191,9 @@ def boot_agent():
         )
 
         # from instana.instrumentation.aws import lambda_inst  # noqa: F401
-        # from instana.instrumentation.celery import hooks  # noqa: F401
+        from instana.instrumentation.celery import celery_inst  # noqa: F401
         from instana.instrumentation.django import middleware  # noqa: F401
+
         # from instana.instrumentation.google.cloud import (
         #     pubsub,  # noqa: F401
         #     storage,  # noqa: F401

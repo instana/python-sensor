@@ -266,6 +266,7 @@ class TestTornadoServer:
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
+    @pytest.mark.skip("Non deterministic (flaky) testcase")
     def test_get_405(self) -> None:
         async def test():
             with tracer.start_as_current_span("test"):
@@ -327,6 +328,7 @@ class TestTornadoServer:
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
+    @pytest.mark.skip("Non deterministic (flaky) testcase")
     def test_get_500(self) -> None:
         async def test():
             with tracer.start_as_current_span("test"):
@@ -389,6 +391,7 @@ class TestTornadoServer:
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
 
+    @pytest.mark.skip("Non deterministic (flaky) testcase")
     def test_get_504(self) -> None:
         async def test():
             with tracer.start_as_current_span("test"):

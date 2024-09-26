@@ -169,7 +169,9 @@ def test_span_update_name(
 
 
 def test_span_set_status_with_Status_default(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     span = InstanaSpan(span_name, span_context, span_processor)
@@ -202,7 +204,9 @@ def test_span_set_status_with_Status_default(
 
 
 def test_span_set_status_with_Status_and_desc(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     span = InstanaSpan(span_name, span_context, span_processor)
@@ -238,7 +242,9 @@ def test_span_set_status_with_Status_and_desc(
 
 
 def test_span_set_status_with_StatusUNSET_to_StatusERROR(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     status_desc = "Status is UNSET."
@@ -273,7 +279,9 @@ def test_span_set_status_with_StatusUNSET_to_StatusERROR(
 
 
 def test_span_set_status_with_StatusOK_to_StatusERROR(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     status_desc = "Status is OK."
@@ -335,7 +343,9 @@ def test_span_set_status_with_StatusCode_default(
 
 
 def test_span_set_status_with_StatusCode_and_desc(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     span = InstanaSpan(span_name, span_context, span_processor)
@@ -366,7 +376,9 @@ def test_span_set_status_with_StatusCode_and_desc(
 
 
 def test_span_set_status_with_StatusCodeUNSET_to_StatusCodeERROR(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     status_desc = "Status is UNSET."
@@ -401,7 +413,9 @@ def test_span_set_status_with_StatusCodeUNSET_to_StatusCodeERROR(
 
 
 def test_span_set_status_with_StatusCodeOK_to_StatusCodeERROR(
-    span_context: SpanContext, span_processor: StanRecorder, caplog
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     span_name = "test-span"
     status_desc = "Status is OK."

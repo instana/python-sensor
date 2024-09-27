@@ -4,30 +4,33 @@
 import os
 import threading
 import time
-import six
-import unittest
+from typing import Generator
 
-from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
+import pytest
+import six
 from google.api_core.exceptions import AlreadyExists
+from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from google.cloud.pubsub_v1.publisher import exceptions
+from opentelemetry.trace import SpanKind
+
 from instana.singletons import agent, tracer
+from instana.span.span import get_current_span
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8085
 os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8085"
 
 
-class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
-    @classmethod
-    def setUpClass(cls):
-        cls.publisher = PublisherClient()
+class TestPubSubPublish(_TraceContextMixin):
+    publisher = PublisherClient()
 
-    def setUp(self):
-        self.recorder = tracer.recorder
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
 
-        self.project_id = 'test-project'
-        self.topic_name = 'test-topic'
+        self.project_id = "test-project"
+        self.topic_name = "test-topic"
 
         # setup topic_path & topic
         self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
@@ -36,31 +39,32 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
         except AlreadyExists:
             self.publisher.delete_topic(request={"topic": self.topic_path})
             self.publisher.create_topic(request={"name": self.topic_path})
-
-    def tearDown(self):
+        yield
         self.publisher.delete_topic(request={"topic": self.topic_path})
         agent.options.allow_exit_as_root = False
 
-    def test_publish(self):
+    def test_publish(self) -> None:
         # publish a single message
-        with tracer.start_active_span('test'):
-            future = self.publisher.publish(self.topic_path,
-                                            b'Test Message',
-                                            origin="instana")
+        with tracer.start_as_current_span("test"):
+            future = self.publisher.publish(
+                self.topic_path, b"Test Message", origin="instana"
+            )
         time.sleep(2.0)  # for sanity
         result = future.result()
-        self.assertIsInstance(result, six.string_types)
+        assert isinstance(result, six.string_types)
 
         spans = self.recorder.queued_spans()
         gcps_span, test_span = spans[0], spans[1]
 
-        self.assertEqual(2, len(spans))
-        self.assertIsNone(tracer.active_span)
-        self.assertEqual('gcps', gcps_span.n)
-        self.assertEqual(2, gcps_span.k)  # EXIT
+        assert len(spans) == 2
 
-        self.assertEqual('publish', gcps_span.data['gcps']['op'])
-        self.assertEqual(self.topic_name, gcps_span.data['gcps']['top'])
+        current_span = get_current_span()
+        assert not current_span.is_recording()
+        assert gcps_span.n == "gcps"
+        assert gcps_span.k is SpanKind.CLIENT
+
+        assert gcps_span.data["gcps"]["op"] == "publish"
+        assert self.topic_name == gcps_span.data["gcps"]["top"]
 
         # Trace Context Propagation
         self.assertTraceContextPropagated(test_span, gcps_span)
@@ -68,57 +72,58 @@ class TestPubSubPublish(unittest.TestCase, _TraceContextMixin):
         # Error logging
         self.assertErrorLogging(spans)
 
-    def test_publish_as_root_exit_span(self):
+    def test_publish_as_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True
         # publish a single message
-        future = self.publisher.publish(self.topic_path,
-                                        b'Test Message',
-                                        origin="instana")
+        future = self.publisher.publish(
+            self.topic_path, b"Test Message", origin="instana"
+        )
         time.sleep(2.0)  # for sanity
         result = future.result()
-        self.assertIsInstance(result, six.string_types)
+        assert isinstance(result, six.string_types)
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(1, len(spans))
+        assert len(spans) == 1
         gcps_span = spans[0]
 
-        self.assertIsNone(tracer.active_span)
-        self.assertEqual('gcps', gcps_span.n)
-        self.assertEqual(2, gcps_span.k)  # EXIT
+        current_span = get_current_span()
+        assert not current_span.is_recording()
+        assert gcps_span.n == "gcps"
+        assert gcps_span.k is SpanKind.CLIENT
 
-        self.assertEqual('publish', gcps_span.data['gcps']['op'])
-        self.assertEqual(self.topic_name, gcps_span.data['gcps']['top'])
+        assert gcps_span.data["gcps"]["op"] == "publish"
+        assert self.topic_name == gcps_span.data["gcps"]["top"]
 
         # Error logging
         self.assertErrorLogging(spans)
 
 
 class AckCallback(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.calls = 0
         self.lock = threading.Lock()
 
-    def __call__(self, message):
+    def __call__(self, message) -> None:
         message.ack()
         # Only increment the number of calls **after** finishing.
         with self.lock:
             self.calls += 1
 
 
-class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
+class TestPubSubSubscribe(_TraceContextMixin):
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls) -> None:
         cls.publisher = PublisherClient()
         cls.subscriber = SubscriberClient()
 
-    def setUp(self):
-
-        self.recorder = tracer.recorder
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
 
-        self.project_id = 'test-project'
-        self.topic_name = 'test-topic'
-        self.subscription_name = 'test-subscription'
+        self.project_id = "test-project"
+        self.topic_name = "test-topic"
+        self.subscription_name = "test-subscription"
 
         # setup topic_path & topic
         self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
@@ -130,29 +135,33 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
 
         # setup subscription path & attach subscription
         self.subscription_path = self.subscriber.subscription_path(
-            self.project_id, self.subscription_name)
+            self.project_id,
+            self.subscription_name,
+        )
         try:
             self.subscriber.create_subscription(
                 request={"name": self.subscription_path, "topic": self.topic_path}
             )
         except AlreadyExists:
-            self.subscriber.delete_subscription(request={"subscription": self.subscription_path})
+            self.subscriber.delete_subscription(
+                request={"subscription": self.subscription_path}
+            )
             self.subscriber.create_subscription(
                 request={"name": self.subscription_path, "topic": self.topic_path}
             )
-
-    def tearDown(self):
+        yield
         self.publisher.delete_topic(request={"topic": self.topic_path})
-        self.subscriber.delete_subscription(request={"subscription": self.subscription_path})
+        self.subscriber.delete_subscription(
+            request={"subscription": self.subscription_path}
+        )
 
-    def test_subscribe(self):
-
-        with tracer.start_active_span('test'):
+    def test_subscribe(self) -> None:
+        with tracer.start_as_current_span("test"):
             # Publish a message
-            future = self.publisher.publish(self.topic_path,
-                                            b"Test Message to PubSub",
-                                            origin="instana")
-            self.assertIsInstance(future.result(), six.string_types)
+            future = self.publisher.publish(
+                self.topic_path, b"Test Message to PubSub", origin="instana"
+            )
+            assert isinstance(future.result(), six.string_types)
 
             time.sleep(2.0)  # for sanity
 
@@ -171,15 +180,16 @@ class TestPubSubSubscribe(unittest.TestCase, _TraceContextMixin):
         consumer_span = spans[1]
         test_span = spans[2]
 
-        self.assertEqual(3, len(spans))
-        self.assertIsNone(tracer.active_span)
-        self.assertEqual('publish', producer_span.data['gcps']['op'])
-        self.assertEqual('consume', consumer_span.data['gcps']['op'])
-        self.assertEqual(self.topic_name, producer_span.data['gcps']['top'])
-        self.assertEqual(self.subscription_name, consumer_span.data['gcps']['sub'])
+        assert len(spans) == 3
+        current_span = get_current_span()
+        assert not current_span.is_recording()
+        assert producer_span.data["gcps"]["op"] == "publish"
+        assert consumer_span.data["gcps"]["op"] == "consume"
+        assert self.topic_name == producer_span.data["gcps"]["top"]
+        assert self.subscription_name == consumer_span.data["gcps"]["sub"]
 
-        self.assertEqual(2, producer_span.k)  # EXIT
-        self.assertEqual(1, consumer_span.k)  # ENTRY
+        assert producer_span.k is SpanKind.CLIENT
+        assert consumer_span.k is SpanKind.SERVER
 
         # Trace Context Propagation
         self.assertTraceContextPropagated(producer_span, consumer_span)

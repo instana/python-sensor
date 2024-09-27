@@ -29,8 +29,6 @@ collect_ignore_glob = [
 
 # TODO: remove the following entries as the migration of the instrumentation
 # codes are finalised.
-collect_ignore_glob.append("*clients/test_google*")
-
 collect_ignore_glob.append("*frameworks/test_gevent*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

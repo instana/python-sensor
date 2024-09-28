@@ -1,4 +1,7 @@
+import os
 import pytest
+
+os.environ["AWS_EXECUTION_ENV"] = "AWS_ECS_FARGATE"
 
 from instana.collector.aws_fargate import AWSFargateCollector
 

@@ -32,7 +32,6 @@ collect_ignore_glob = [
 collect_ignore_glob.append("*frameworks/test_gevent*")
 
 collect_ignore_glob.append("*platforms/aws/eks/test_eks*")
-collect_ignore_glob.append("*platforms/aws/fargate/test_fargate*")
 collect_ignore_glob.append("*platforms/test_gcr*")
 collect_ignore_glob.append("*platforms/test_google*")
 collect_ignore_glob.append("*platforms/test_host*")

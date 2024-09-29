@@ -269,6 +269,19 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  py312aws:
+    docker:
+      - image: cimg/python:3.12
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-312.txt"
+      - run-tests-with-coverage-report:
+          tests: "tests_aws"
+      - store-pytest-results
+      - store-coverage-report
+
   python313:
     docker:
       - image: python:3.13.0rc2-bookworm
@@ -368,6 +381,7 @@ workflows:
       # - py39gevent_starlette
       # - py311googlecloud
       # - py312googlecloud
+      - py312aws
       - final_job:
           requires:
             - python38
@@ -381,3 +395,4 @@ workflows:
             # - py39gevent_starlette
             # - py311googlecloud
             # - py312googlecloud
+            - py312aws

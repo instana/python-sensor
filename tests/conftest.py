@@ -31,7 +31,6 @@ collect_ignore_glob = [
 # codes are finalised.
 collect_ignore_glob.append("*clients/test_google*")
 
-collect_ignore_glob.append("*frameworks/test_celery*")
 collect_ignore_glob.append("*frameworks/test_gevent*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

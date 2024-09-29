@@ -93,7 +93,6 @@ try:
                 rv = wrapped(*args, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)
-                raise
             else:
                 return rv
 

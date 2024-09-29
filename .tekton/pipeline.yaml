@@ -100,3 +100,17 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-aws
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.12.6-bookworm
+              - "sha256:af6fa5c329d6bd6dec52855ccb8bb37c30fb8f00819953a035d49499e43b2c9b"
+      taskRef:
+        name: python-tracer-unittest-googlecloud-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc

@@ -207,3 +207,24 @@ spec:
       workingDir: /workspace/python-sensor/
       command:
       - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-aws-task
+spec:
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: aws
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh

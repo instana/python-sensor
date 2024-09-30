@@ -14,7 +14,6 @@ from instana.log import logger
 from instana.options import StandardOptions
 from instana.recorder import StanRecorder
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
-from instana.tracer import InstanaTracer
 
 
 class TestHost(unittest.TestCase):
@@ -22,7 +21,6 @@ class TestHost(unittest.TestCase):
         super(TestHost, self).__init__(methodName)
         self.agent = None
         self.span_recorder = None
-        self.tracer = None
 
         self.original_agent = get_agent()
         self.original_tracer = get_tracer()
@@ -49,9 +47,7 @@ class TestHost(unittest.TestCase):
     def create_agent_and_setup_tracer(self):
         self.agent = HostAgent()
         self.span_recorder = StanRecorder(self.agent)
-        self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
-        set_tracer(self.tracer)
 
     def test_secrets(self):
         self.create_agent_and_setup_tracer()

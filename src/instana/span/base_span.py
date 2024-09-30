@@ -24,8 +24,8 @@ class BaseSpan(object):
         self.t = span.context.trace_id
         self.p = span.parent_id
         self.s = span.context.span_id
-        self.ts = round(span.start_time / 10**6)
-        self.d = round(span.duration / 10**6) if span.duration else None
+        self.ts = span.start_time
+        self.d = span.duration if span.duration else None
         self.f = source
         self.ec = span.attributes.pop("ec", None)
         self.data = DictionaryOfStan()

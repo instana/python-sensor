@@ -6,25 +6,26 @@ couchbase instrumentation - This instrumentation supports the Python CouchBase 2
 https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 """
 
-from typing import Any, Callable, Dict, Tuple, Union
-
-import wrapt
-
-from instana.log import logger
-from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
-
 try:
     import couchbase
-    from couchbase.bucket import Bucket
+    from instana.log import logger
 
-    if not hasattr(couchbase, "__version__") and (
-        couchbase.__version__ < "2.3.4" or couchbase.__version__ >= "3.0.0"
+    if not (
+        hasattr(couchbase, "__version__")
+        and (couchbase.__version__ >= "2.3.4" and couchbase.__version__ < "3.0.0")
     ):
         logger.debug("Instana supports 2.3.4 <= couchbase_versions < 3.0.0. Skipping.")
         raise ImportError
 
+    from couchbase.bucket import Bucket
     from couchbase.n1ql import N1QLQuery
+
+    from typing import Any, Callable, Dict, Tuple, Union
+
+    import wrapt
+
+    from instana.span.span import InstanaSpan
+    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
     # List of operations to instrument
     # incr, incr_multi, decr, decr_multi, retrieve_in are wrappers around operations above

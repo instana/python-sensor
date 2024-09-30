@@ -7,12 +7,9 @@ import sys
 
 from mock import patch
 
-from instana.tracer import InstanaTracer
 from instana.recorder import StanRecorder
 from instana.agent.host import HostAgent
-from instana.collector.helpers.runtime import (
-    PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT,
-)
+from instana.collector.helpers.runtime import PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR
 from instana.collector.host import HostCollector
 from instana.singletons import get_agent, set_agent, get_tracer, set_tracer
 from instana.version import VERSION
@@ -23,7 +20,6 @@ class TestHostCollector(unittest.TestCase):
         super(TestHostCollector, self).__init__(methodName)
         self.agent = None
         self.span_recorder = None
-        self.tracer = None
 
         self.original_agent = get_agent()
         self.original_tracer = get_tracer()
@@ -57,9 +53,7 @@ class TestHostCollector(unittest.TestCase):
     def create_agent_and_setup_tracer(self):
         self.agent = HostAgent()
         self.span_recorder = StanRecorder(self.agent)
-        self.tracer = InstanaTracer(recorder=self.span_recorder)
         set_agent(self.agent)
-        set_tracer(self.tracer)
 
     def test_prepare_payload_basics(self):
         self.create_agent_and_setup_tracer()

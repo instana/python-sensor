@@ -45,8 +45,8 @@ def test_sdkspan(span_context: SpanContext, span_processor: StanRecorder) -> Non
     assert len(expected_result["data"]["sdk"]) == len(sdk_span.data["sdk"])
     assert expected_result["data"]["sdk"]["name"] == sdk_span.data["sdk"]["name"]
     assert expected_result["data"]["sdk"]["type"] == sdk_span.data["sdk"]["type"]
-    assert len(attributes) == len(sdk_span.data["sdk"]["custom"]["attributes"])
-    assert attributes == sdk_span.data["sdk"]["custom"]["attributes"]
+    assert len(attributes) == len(sdk_span.data["sdk"]["custom"]["tags"])
+    assert attributes == sdk_span.data["sdk"]["custom"]["tags"]
     assert attributes["arguments"] == sdk_span.data["sdk"]["arguments"]
     assert attributes["return"] == sdk_span.data["sdk"]["return"]
 

@@ -8,6 +8,14 @@ https://sanicframework.org/en/
 
 try:
     import sanic
+    from instana.log import logger
+
+    if not (hasattr(sanic, "__version__") and sanic.__version__ >= "19.9.0"):
+        logger.debug(
+            "Instana supports Sanic package versions 19.9.0 and newer.  Skipping."
+        )
+        raise ImportError
+
     import wrapt
     from typing import Callable, Tuple, Dict, Any
     from sanic.exceptions import SanicException
@@ -16,7 +24,6 @@ try:
     from opentelemetry.trace import SpanKind
     from opentelemetry.semconv.trace import SpanAttributes
 
-    from instana.log import logger
     from instana.singletons import tracer, agent
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
@@ -78,7 +85,7 @@ try:
         @app.exception(Exception)
         def exception_with_instana(request: Request, exception: Exception) -> None:
             try:
-                if not hasattr(request.ctx, "span"): # pragma: no cover
+                if not hasattr(request.ctx, "span"):  # pragma: no cover
                     return
                 span = request.ctx.span
 
@@ -95,7 +102,7 @@ try:
         @app.middleware("response")
         def response_with_instana(request: Request, response: HTTPResponse) -> None:
             try:
-                if not hasattr(request.ctx, "span"): # pragma: no cover
+                if not hasattr(request.ctx, "span"):  # pragma: no cover
                     return
                 span = request.ctx.span
 
@@ -106,11 +113,12 @@ try:
                     span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
 
                 if hasattr(response, "headers"):
-                    extract_custom_headers(span, response.headers)
+                    if agent.options.extra_http_headers:
+                        extract_custom_headers(span, response.headers)
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-                response.headers["Server-Timing"] = (
-                    "intid;desc=%s" % span.context.trace_id
-                )
+                    response.headers["Server-Timing"] = (
+                        f"intid;desc={span.context.trace_id}"
+                    )
 
                 if span.is_recording():
                     span.end()

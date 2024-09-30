@@ -2,12 +2,16 @@
 
 The `instana` Python package collects key metrics and distributed traces for [Instana].
 
-This package supports Python 3.8 or greater.
-
 Any feedback is welcome.  Happy Python visibility.
 
 [![CircleCI](https://circleci.com/gh/instana/python-sensor/tree/master.svg?style=svg)](https://circleci.com/gh/instana/python-sensor/tree/master)
-[![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-enabled-blue.svg)](http://opentracing.io)
+[![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-disabled-red.svg)](http://opentracing.io)
+[![OpenTelemetry Badge](https://img.shields.io/badge/OpenTelemetry-enabled-blue.svg)](http://opentelemetry.io)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Finstana%2Fpython-sensor%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)
+![GitHub Release](https://img.shields.io/github/v/release/instana/python-sensor)
+
+> [!NOTE]
+> Support for OpenTracing is deprecated starting on version 3.0.0. If you still want to use it, rely on any version up to 2.5.3 or use the `legacy_2.x` branch.
 
 ## Installation
 
@@ -53,7 +57,7 @@ Want to instrument other languages?  See our [Node.js], [Go], [Ruby] instrumenta
 
 <!-- Reference links -->
 [Instana]: https://www.instana.com/ "IBM Instana Observability"
-[Instana AutoTrace™️]: https://www.instana.com/supported-technologies/instana-autotrace/ "Instana AutoTrace"
+[Instana AutoTrace™️]: https://www.ibm.com/docs/en/instana-observability/current?topic=kubernetes-instana-autotrace-webhook "Instana AutoTrace"
 [configuration page]: https://www.ibm.com/docs/en/instana-observability/current?topic=package-python-configuration-configuring-instana#general "Instana Python package configuration"
 [PyPI]: https://pypi.python.org/pypi/instana "Instana package at PyPI"
 [installation document]: https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package#installing "Instana Python package installation"

@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import sys
 import MySQLdb
 import pytest
 
@@ -8,6 +9,10 @@ from instana.singletons import agent, tracer
 from tests.helpers import testenv
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin",
+    reason="Avoiding errors with deprecated MySQL Client lib.",
+)
 class TestMySQLPython:
     @pytest.fixture(autouse=True)
     def _resource(self):

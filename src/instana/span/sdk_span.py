@@ -22,7 +22,7 @@ class SDKSpan(BaseSpan):
 
         self.data["sdk"]["name"] = span.name
         self.data["sdk"]["type"] = span_kind[0]
-        self.data["sdk"]["custom"]["attributes"] = self._validate_attributes(
+        self.data["sdk"]["custom"]["tags"] = self._validate_attributes(
             span.attributes
         )
 

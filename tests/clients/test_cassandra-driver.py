@@ -7,7 +7,7 @@ from typing import Generator
 
 import pytest
 from cassandra import ConsistencyLevel
-from cassandra.cluster import Cluster
+from cassandra.cluster import Cluster, ResultSet
 from cassandra.query import SimpleStatement
 
 from instana.singletons import agent, tracer
@@ -43,7 +43,7 @@ class TestCassandra:
     def test_untraced_execute(self) -> None:
         res = session.execute("SELECT name, age, email FROM users")
 
-        assert res
+        assert isinstance(res, ResultSet)
 
         time.sleep(0.5)
 
@@ -69,7 +69,7 @@ class TestCassandra:
         with tracer.start_as_current_span("test"):
             res = session.execute("SELECT name, age, email FROM users")
 
-        assert res
+        assert isinstance(res, ResultSet)
 
         time.sleep(0.5)
 
@@ -101,7 +101,7 @@ class TestCassandra:
         agent.options.allow_exit_as_root = True
         res = session.execute("SELECT name, age, email FROM users")
 
-        assert res
+        assert isinstance(res, ResultSet)
 
         time.sleep(0.5)
 
@@ -128,7 +128,7 @@ class TestCassandra:
         with tracer.start_as_current_span("test"):
             res = session.execute_async("SELECT name, age, email FROM users").result()
 
-        assert res
+        assert isinstance(res, ResultSet)
 
         time.sleep(0.5)
 
@@ -164,7 +164,7 @@ class TestCassandra:
             )
             res = session.execute(query)
 
-        assert res
+        assert isinstance(res, ResultSet)
 
         time.sleep(0.5)
 

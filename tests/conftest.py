@@ -22,18 +22,9 @@ from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracerProvider
 
-# Ignoring tests during OpenTelemetry migration.
 collect_ignore_glob = [
-    "*w3c_trace_context*",
+    "*test_gevent*"
 ]
-
-# TODO: remove the following entries as the migration of the instrumentation
-# codes are finalised.
-collect_ignore_glob.append("*frameworks/test_gevent*")
-
-collect_ignore_glob.append("*platforms/test_gcr*")
-collect_ignore_glob.append("*platforms/test_google*")
-collect_ignore_glob.append("*platforms/test_host*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)

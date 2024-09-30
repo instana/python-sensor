@@ -23,7 +23,9 @@ from instana.span_context import SpanContext
 from instana.tracer import InstanaTracerProvider
 
 collect_ignore_glob = [
-    "*test_gevent*"
+    "*test_gevent*",
+    "*platforms/test_gcr*",
+    "*platforms/test_google*",
 ]
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

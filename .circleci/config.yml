@@ -376,11 +376,11 @@ workflows:
       - python311
       - python312
       - python313
-      # - py39cassandra
-      # - py39couchbase
+      - py39cassandra
+      - py39couchbase
       # - py39gevent_starlette
-      # - py311googlecloud
-      # - py312googlecloud
+      - py311googlecloud
+      - py312googlecloud
       - py312aws
       - final_job:
           requires:
@@ -390,9 +390,9 @@ workflows:
             - python311
             - python312
             - python313
-            # - py39cassandra
-            # - py39couchbase
+            - py39cassandra
+            - py39couchbase
             # - py39gevent_starlette
-            # - py311googlecloud
-            # - py312googlecloud
+            - py311googlecloud
+            - py312googlecloud
             - py312aws

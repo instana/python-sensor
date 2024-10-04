@@ -122,7 +122,7 @@ def test_get_from_structure():
     agent.announce_data = AnnounceData(pid=1234, agentUuid="value")
     assert agent.get_from_structure() == {"e": 1234, "h": "value"}
 
-
+@pytest.mark.original
 def test_is_agent_listening(
     caplog: LogCaptureFixture,
 ):

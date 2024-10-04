@@ -185,3 +185,14 @@ def prepare_and_report_data(monkeypatch, request):
         )
     else:
         monkeypatch.setattr(BaseCollector, "prepare_and_report_data", always_true)
+
+# Mocking HostAgent.is_agent_listening()
+@pytest.fixture(autouse=True)
+def is_agent_listening(monkeypatch, request) -> None:
+    """Always return `True` for `HostAgent.is_agent_listening()`"""
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original HostAgent.is_agent_listening()
+        monkeypatch.setattr(HostAgent, "is_agent_listening", HostAgent.is_agent_listening)
+    else:
+        monkeypatch.setattr(HostAgent, "is_agent_listening", always_true)

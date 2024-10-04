@@ -8,6 +8,7 @@ from typing import Any, Optional, TypeVar, Dict, List, Tuple
 
 from instana.log import logger
 from instana.span_context import SpanContext
+from instana.util.ids import header_to_id, header_to_long_id, hex_id
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
 
@@ -144,7 +145,7 @@ class BasePropagator(object):
         if span_context.suppression:
             return traceparent, tracestate
 
-        tracestate = self._ts.update_tracestate(tracestate, span_context.trace_id, span_context.span_id)
+        tracestate = self._ts.update_tracestate(tracestate, hex_id(span_context.trace_id), hex_id(span_context.span_id))
         return traceparent, tracestate
 
     def __determine_span_context(
@@ -201,11 +202,9 @@ class BasePropagator(object):
             and trace_id != INVALID_TRACE_ID
             and span_id != INVALID_SPAN_ID
         ):
-            # ctx.trace_id = trace_id[-16:]  # only the last 16 chars
-            # ctx.span_id = span_id[-16:]  # only the last 16 chars
             ctx_synthetic = synthetic
 
-            hex_trace_id = hex(trace_id)[2:]
+            hex_trace_id = hex_id(trace_id)
             if len(hex_trace_id) > 16:
                 ctx_long_trace_id = hex_trace_id
 
@@ -239,8 +238,8 @@ class BasePropagator(object):
             ctx_tracestate = tracestate
 
         return SpanContext(
-            trace_id=ctx_trace_id if ctx_trace_id else INVALID_TRACE_ID,
-            span_id=ctx_span_id if ctx_span_id else INVALID_SPAN_ID,
+            trace_id=int(ctx_trace_id) if ctx_trace_id else INVALID_TRACE_ID,
+            span_id=int(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
             is_remote=False,
             level=ctx_level,
             synthetic=ctx_synthetic,
@@ -268,14 +267,12 @@ class BasePropagator(object):
             trace_id = dc.get(self.LC_HEADER_KEY_T) or dc.get(self.ALT_LC_HEADER_KEY_T) or dc.get(
                 self.B_HEADER_KEY_T) or dc.get(self.B_ALT_LC_HEADER_KEY_T)
             if trace_id:
-                # trace_id = header_to_long_id(trace_id)
-                trace_id = int(trace_id)
+                trace_id = header_to_long_id(trace_id)
 
             span_id = dc.get(self.LC_HEADER_KEY_S) or dc.get(self.ALT_LC_HEADER_KEY_S) or dc.get(
                 self.B_HEADER_KEY_S) or dc.get(self.B_ALT_LC_HEADER_KEY_S)
             if span_id:
-                # span_id = header_to_id(span_id)
-                span_id = int(span_id)
+                span_id = header_to_id(span_id)
 
             level = dc.get(self.LC_HEADER_KEY_L) or dc.get(self.ALT_LC_HEADER_KEY_L) or dc.get(
                 self.B_HEADER_KEY_L) or dc.get(self.B_ALT_LC_HEADER_KEY_L)

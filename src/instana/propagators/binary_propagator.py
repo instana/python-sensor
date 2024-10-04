@@ -5,6 +5,8 @@
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator
 
+from opentelemetry.trace.span import format_span_id
+
 
 class BinaryPropagator(BasePropagator):
     """
@@ -25,8 +27,8 @@ class BinaryPropagator(BasePropagator):
 
     def inject(self, span_context, carrier, disable_w3c_trace_context=True):
         try:
-            trace_id = str(span_context.trace_id).encode()
-            span_id = str(span_context.span_id).encode()
+            trace_id = format_span_id(span_context.trace_id).encode()
+            span_id = format_span_id(span_context.span_id).encode()
             level = str(span_context.level).encode()
             server_timing = f"intid;desc={span_context.trace_id}".encode()
 

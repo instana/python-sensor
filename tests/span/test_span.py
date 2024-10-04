@@ -257,7 +257,7 @@ class TestSpan:
         assert not self.span.status.is_unset
         assert self.span.status.is_ok
         assert not self.span.status.description
-        assert excepted_log == caplog.record_tuples[1][2]
+        assert excepted_log in caplog.messages
         assert self.span.status.status_code != StatusCode.UNSET
         assert self.span.status.status_code == StatusCode.OK
         assert self.span.status.status_code != StatusCode.ERROR

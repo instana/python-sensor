@@ -21,6 +21,7 @@ from instana.span.base_span import BaseSpan
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracerProvider
+from instana.fsm import TheMachine
 
 collect_ignore_glob = [
     "*test_gevent*",
@@ -196,3 +197,23 @@ def is_agent_listening(monkeypatch, request) -> None:
         monkeypatch.setattr(HostAgent, "is_agent_listening", HostAgent.is_agent_listening)
     else:
         monkeypatch.setattr(HostAgent, "is_agent_listening", always_true)
+
+@pytest.fixture(autouse=True)
+def lookup_agent_host(monkeypatch, request) -> None:
+    """Always return `True` for `TheMachine.lookup_agent_host()`"""
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original TheMachine.lookup_agent_host()
+        monkeypatch.setattr(TheMachine, "lookup_agent_host", TheMachine.lookup_agent_host)
+    else:
+        monkeypatch.setattr(TheMachine, "lookup_agent_host", always_true)
+
+@pytest.fixture(autouse=True)
+def announce_sensor(monkeypatch, request) -> None:
+    """Always return `True` for `TheMachine.announce_sensor()`"""
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original TheMachine.announce_sensor()
+        monkeypatch.setattr(TheMachine, "announce_sensor", TheMachine.announce_sensor)
+    else:
+        monkeypatch.setattr(TheMachine, "announce_sensor", always_true)

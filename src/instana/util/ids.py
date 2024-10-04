@@ -44,6 +44,9 @@ def header_to_long_id(header: Union[bytes, str]) -> int:
     if not isinstance(header, str):
         return INVALID_SPAN_ID
 
+    if header.isdecimal():
+        return header
+
     try:
         if len(header) < 16:
             # Left pad ID with zeros
@@ -69,6 +72,9 @@ def header_to_id(header: Union[bytes, str]) -> int:
     if not isinstance(header, str):
         return INVALID_SPAN_ID
 
+    if header.isdecimal():
+        return header
+
     try:
         length = len(header)
         if length < 16:
@@ -81,3 +87,14 @@ def header_to_id(header: Union[bytes, str]) -> int:
         return int(header, 16)
     except ValueError:
         return INVALID_SPAN_ID
+
+
+def hex_id(id: Union[int, str]) -> str:
+    """
+    Returns the hexadecimal representation of the given ID.
+    """
+
+    hex_id = hex(int(id))[2:]
+    if len(hex_id) < 16:
+        hex_id = hex_id.zfill(16)
+    return hex_id

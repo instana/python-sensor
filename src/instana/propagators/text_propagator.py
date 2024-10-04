@@ -5,6 +5,8 @@
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator
 
+from opentelemetry.trace.span import format_span_id
+
 
 class TextPropagator(BasePropagator):
     """
@@ -16,8 +18,8 @@ class TextPropagator(BasePropagator):
 
     def inject(self, span_context, carrier, disable_w3c_trace_context=True):
         try:
-            trace_id = span_context.trace_id
-            span_id = span_context.span_id
+            trace_id = format_span_id(span_context.trace_id)
+            span_id = format_span_id(span_context.span_id)
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
                 carrier[self.LC_HEADER_KEY_T] = trace_id

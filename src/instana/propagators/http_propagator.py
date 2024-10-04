@@ -5,6 +5,7 @@
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator
 
+from opentelemetry.trace.span import format_span_id
 
 class HTTPPropagator(BasePropagator):
     """
@@ -53,8 +54,8 @@ class HTTPPropagator(BasePropagator):
             if span_context.suppression:
                 return
 
-            inject_key_value(carrier, self.HEADER_KEY_T, str(trace_id))
-            inject_key_value(carrier, self.HEADER_KEY_S, str(span_id))
+            inject_key_value(carrier, self.HEADER_KEY_T, format_span_id(trace_id))
+            inject_key_value(carrier, self.HEADER_KEY_S, format_span_id(span_id))
 
         except Exception:
             logger.debug("inject error:", exc_info=True)

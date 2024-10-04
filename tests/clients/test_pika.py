@@ -11,6 +11,7 @@ import pika.adapters.blocking_connection
 import pika.channel
 import pika.spec
 import pytest
+from opentelemetry.trace.span import format_span_id
 
 from instana.singletons import agent, tracer
 
@@ -373,8 +374,8 @@ class TestPikaChannel(_TestPika):
             (
                 pika.spec.BasicProperties(
                     headers={
-                        "X-INSTANA-T": str(rabbitmq_span.t),
-                        "X-INSTANA-S": str(rabbitmq_span.s),
+                        "X-INSTANA-T": format_span_id(rabbitmq_span.t),
+                        "X-INSTANA-S": format_span_id(rabbitmq_span.s),
                         "X-INSTANA-L": "1",
                     }
                 ),
@@ -414,8 +415,8 @@ class TestPikaChannel(_TestPika):
             (
                 pika.spec.BasicProperties(
                     headers={
-                        "X-INSTANA-T": str(rabbitmq_span.t),
-                        "X-INSTANA-S": str(rabbitmq_span.s),
+                        "X-INSTANA-T": format_span_id(rabbitmq_span.t),
+                        "X-INSTANA-S": format_span_id(rabbitmq_span.s),
                         "X-INSTANA-L": "1",
                     }
                 ),
@@ -447,8 +448,8 @@ class TestPikaChannel(_TestPika):
                 pika.spec.BasicProperties(
                     headers={
                         "X-Custom-1": "test",
-                        "X-INSTANA-T": str(rabbitmq_span.t),
-                        "X-INSTANA-S": str(rabbitmq_span.s),
+                        "X-INSTANA-T": format_span_id(rabbitmq_span.t),
+                        "X-INSTANA-S": format_span_id(rabbitmq_span.s),
                         "X-INSTANA-L": "1",
                     }
                 ),

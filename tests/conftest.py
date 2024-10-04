@@ -9,6 +9,7 @@ from typing import Any, Dict
 import pytest
 from opentelemetry.context.context import Context
 from opentelemetry.trace import set_span_in_context
+from opentelemetry.trace.span import format_span_id
 
 if importlib.util.find_spec("celery"):
     pytest_plugins = ("celery.contrib.pytest",)
@@ -97,6 +98,16 @@ def trace_id() -> int:
 def span_id() -> int:
     return 6895521157646639861
 
+@pytest.fixture
+def hex_trace_id(trace_id:int) -> str:
+    # Using format_span_id() to return a 16-byte hexadecimal string, instead of 
+    # the 32-byte hexadecimal string from format_trace_id().
+    return format_span_id(trace_id)
+
+
+@pytest.fixture
+def hex_span_id(span_id: int) -> str:
+    return format_span_id(span_id)
 
 @pytest.fixture
 def span_processor() -> StanRecorder:

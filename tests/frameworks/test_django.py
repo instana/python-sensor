@@ -9,6 +9,7 @@ from typing import Generator
 from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
+from instana.util.ids import hex_id
 from tests.apps.app_django import INSTALLED_APPS
 from instana.singletons import agent, tracer
 from tests.helpers import (
@@ -51,11 +52,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -140,11 +141,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -233,11 +234,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -399,11 +400,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -466,11 +467,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -526,11 +527,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -583,11 +584,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -634,11 +635,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(django_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(django_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(django_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(django_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"

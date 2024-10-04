@@ -8,6 +8,7 @@ import asyncio
 import pytest
 
 from instana.singletons import tracer, agent
+from instana.util.ids import hex_id
 
 import tests.apps.flask_app  # noqa: F401
 import tests.apps.aiohttp_app  # noqa: F401
@@ -82,9 +83,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -125,9 +126,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -175,9 +176,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span2.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span2.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -221,9 +222,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -268,9 +269,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -315,9 +316,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -364,9 +365,9 @@ class TestAiohttpClient:
         assert len(aiohttp_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -418,9 +419,9 @@ class TestAiohttpClient:
         assert aiohttp_span.data["http"]["header"]["X-Capture-This"] == "Ok"
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers

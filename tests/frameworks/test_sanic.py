@@ -6,6 +6,7 @@ from typing import Generator
 from sanic_testing.testing import SanicTestClient
 
 from instana.singletons import tracer, agent
+from instana.util.ids import hex_id
 from tests.helpers import get_first_span_by_filter
 from tests.test_utils import _TraceContextMixin
 from tests.apps.sanic_app.server import app
@@ -51,8 +52,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/", headers=headers)
 
@@ -74,9 +75,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -97,8 +98,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/foo/not_an_int", headers=headers)
 
@@ -120,9 +121,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -143,8 +144,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/wrong", headers=headers)
 
@@ -166,9 +167,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -189,8 +190,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/instana_exception", headers=headers)
 
@@ -212,9 +213,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -235,8 +236,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/test_request_args", headers=headers)
 
@@ -258,9 +259,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -281,8 +282,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/foo/1", headers=headers)
 
@@ -304,9 +305,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -327,8 +328,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/?secret=shhh", headers=headers)
 
@@ -350,9 +351,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -373,8 +374,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
                 "X-INSTANA-SYNTHETIC": "1",
             }
             request, response = self.client.get("/", headers=headers)
@@ -397,9 +398,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -423,8 +424,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
                 "X-Capture-This": "this",
                 "X-Capture-That": "that",
             }
@@ -448,9 +449,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -476,8 +477,8 @@ class TestSanic(_TraceContextMixin):
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/response_headers", headers=headers)
 
@@ -499,9 +500,9 @@ class TestSanic(_TraceContextMixin):
         self.assertTraceContextPropagated(test_span, asgi_span)
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(asgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers

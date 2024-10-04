@@ -9,9 +9,9 @@ from typing import Generator
 
 from moto import mock_aws
 
-import tests.apps.flask_app
+import tests.apps.flask_app  # noqa: F401
 from instana.singletons import tracer, agent
-from tests.helpers import get_first_span_by_filter, testenv
+from tests.helpers import get_first_span_by_filter, get_first_span_by_name, testenv
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -70,12 +70,10 @@ class TestSqs:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
-        test_span = get_first_span_by_filter(spans, filter)
+        test_span = get_first_span_by_name(spans, "sdk")
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
-        boto_span = get_first_span_by_filter(spans, filter)
+        boto_span = get_first_span_by_name(spans, "boto3")
         assert boto_span
 
         assert boto_span.t == test_span.t
@@ -174,28 +172,31 @@ class TestSqs:
         spans = self.recorder.queued_spans()
         assert len(spans) == 5
 
-        filter = lambda span: span.n == "sdk"
-        test_span = get_first_span_by_filter(spans, filter)
+        test_span = get_first_span_by_name(spans, "sdk")
         assert test_span
 
-        filter = lambda span: span.n == "urllib3"
-        http_span = get_first_span_by_filter(spans, filter)
+        http_span = get_first_span_by_name(spans, "urllib3")
         assert http_span
 
-        filter = lambda span: span.n == "wsgi"
-        wsgi_span = get_first_span_by_filter(spans, filter)
+        wsgi_span = get_first_span_by_name(spans, "wsgi")
         assert wsgi_span
 
-        filter = (
-            lambda span: span.n == "boto3" and span.data["boto3"]["op"] == "CreateQueue"
+        bcq_span = get_first_span_by_filter(
+            spans,
+            (
+                lambda span: span.n == "boto3"
+                and span.data["boto3"]["op"] == "CreateQueue"
+            ),
         )
-        bcq_span = get_first_span_by_filter(spans, filter)
         assert bcq_span
 
-        filter = (
-            lambda span: span.n == "boto3" and span.data["boto3"]["op"] == "SendMessage"
+        bsm_span = get_first_span_by_filter(
+            spans,
+            (
+                lambda span: span.n == "boto3"
+                and span.data["boto3"]["op"] == "SendMessage"
+            ),
         )
-        bsm_span = get_first_span_by_filter(spans, filter)
         assert bsm_span
 
         assert http_span.t == test_span.t
@@ -258,12 +259,10 @@ class TestSqs:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
-        test_span = get_first_span_by_filter(spans, filter)
+        test_span = get_first_span_by_name(spans, "sdk")
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
-        boto_span = get_first_span_by_filter(spans, filter)
+        boto_span = get_first_span_by_name(spans, "boto3")
         assert boto_span
 
         assert boto_span.t == test_span.t
@@ -351,12 +350,10 @@ class TestSqs:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
-        test_span = get_first_span_by_filter(spans, filter)
+        test_span = get_first_span_by_name(spans, "sdk")
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
-        boto_span = get_first_span_by_filter(spans, filter)
+        boto_span = get_first_span_by_name(spans, "boto3")
         assert boto_span
 
         assert boto_span.t == test_span.t
@@ -444,12 +441,10 @@ class TestSqs:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
-        test_span = get_first_span_by_filter(spans, filter)
+        test_span = get_first_span_by_name(spans, "sdk")
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
-        boto_span = get_first_span_by_filter(spans, filter)
+        boto_span = get_first_span_by_name(spans, "boto3")
         assert boto_span
 
         assert boto_span.t == test_span.t

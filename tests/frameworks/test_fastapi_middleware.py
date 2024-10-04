@@ -8,6 +8,7 @@ import pytest
 from instana.singletons import tracer
 from fastapi.testclient import TestClient
 
+from instana.util.ids import hex_id
 from tests.helpers import get_first_span_by_filter
 
 
@@ -53,8 +54,8 @@ class TestFastAPIMiddleware:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/", headers=headers)
 
@@ -82,8 +83,8 @@ class TestFastAPIMiddleware:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
 
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec

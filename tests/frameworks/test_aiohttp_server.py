@@ -8,6 +8,7 @@ import aiohttp
 import pytest
 
 from instana.singletons import agent, tracer
+from instana.util.ids import hex_id
 from tests.helpers import testenv
 
 
@@ -76,9 +77,9 @@ class TestAiohttpServer:
         assert not aioserver_span.stack
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(aioserver_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -125,9 +126,9 @@ class TestAiohttpServer:
         assert not aioserver_span.stack
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(trace_id)
+        assert response.headers["X-INSTANA-T"] == hex_id(trace_id)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(aioserver_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -198,9 +199,9 @@ class TestAiohttpServer:
         assert not aioserver_span.stack
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(aioserver_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -258,9 +259,9 @@ class TestAiohttpServer:
         assert not aioserver_span.stack
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(aioserver_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -307,9 +308,9 @@ class TestAiohttpServer:
         assert not aioserver_span.stack
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(aioserver_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
@@ -351,9 +352,9 @@ class TestAiohttpServer:
         assert not aioserver_span.stack
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(aioserver_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers

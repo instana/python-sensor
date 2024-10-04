@@ -10,7 +10,7 @@ import grpc
 
 from opentelemetry.trace import SpanKind
 
-import tests.apps.grpc_server
+import tests.apps.grpc_server  # noqa: F401
 import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 from tests.helpers import testenv, get_first_span_by_name
@@ -29,11 +29,12 @@ class TestGRPCIO:
         self.server_stub = stan_pb2_grpc.StanStub(self.channel)
         # The grpc client apparently needs a second to connect and initialize
         time.sleep(1)
+        yield
         # tearDown
         # Ensure that allow_exit_as_root has the default value
         agent.options.allow_exit_as_root = False
 
-    def generate_questions(self) -> None:
+    def generate_questions(self) -> Generator[None, None, None]:
         """Used in the streaming grpc tests"""
         questions = [
             stan_pb2.QuestionRequest(question="Are you there?"),
@@ -329,7 +330,7 @@ class TestGRPCIO:
 
         assert not get_current_span().is_recording()
         assert response
-        assert type(response) == tuple
+        assert isinstance(response, tuple)
         assert (
             response[0].answer
             == "Invention, my dear friends, is 93% perspiration, 6% electricity, 4% evaporation, and 2% butterscotch ripple. – Willy Wonka"
@@ -448,7 +449,7 @@ class TestGRPCIO:
     def test_async_unary(self) -> None:
         def process_response(future):
             result = future.result()
-            assert type(result) == stan_pb2.QuestionResponse
+            assert isinstance(result, stan_pb2.QuestionResponse)
             assert result.was_answered
             assert (
                 result.answer
@@ -515,7 +516,7 @@ class TestGRPCIO:
     def test_async_stream(self) -> None:
         def process_response(future):
             result = future.result()
-            assert type(result) == stan_pb2.QuestionResponse
+            assert isinstance(result, stan_pb2.QuestionResponse)
             assert result.was_answered
             assert result.answer == "Ok"
 
@@ -690,6 +691,7 @@ class TestGRPCIO:
         assert not server_span.data["rpc"]["error"]
 
     def test_no_root_exit_span(self) -> None:
+        agent.options.allow_exit_as_root = False
         responses = self.server_stub.OneQuestionManyResponses(
             stan_pb2.QuestionRequest(question="Are you there?")
         )

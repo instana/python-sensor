@@ -11,6 +11,7 @@ from tornado.httpclient import AsyncHTTPClient
 from instana.singletons import tracer
 from instana.span.span import get_current_span
 
+from instana.util.ids import hex_id
 import tests.apps.tornado_server
 from tests.helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
@@ -82,9 +83,9 @@ class TestTornadoClient:
         assert len(client_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
@@ -137,9 +138,9 @@ class TestTornadoClient:
         assert len(client_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
@@ -222,9 +223,9 @@ class TestTornadoClient:
         assert len(client301_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
@@ -280,9 +281,9 @@ class TestTornadoClient:
         assert len(client_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
@@ -338,9 +339,9 @@ class TestTornadoClient:
         assert len(client_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
@@ -396,9 +397,9 @@ class TestTornadoClient:
         assert len(client_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
@@ -452,9 +453,9 @@ class TestTornadoClient:
         assert len(client_span.stack) > 1
 
         assert "X-INSTANA-T" in response.headers
-        assert response.headers["X-INSTANA-T"] == str(traceId)
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
         assert "X-INSTANA-S" in response.headers
-        assert response.headers["X-INSTANA-S"] == str(server_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers

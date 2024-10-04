@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 import pytest
 from instana.singletons import tracer, agent
 
+from instana.util.ids import hex_id
 from tests.apps.fastapi_app.app import fastapi_server
 from tests.helpers import get_first_span_by_filter
 
@@ -56,8 +57,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/", headers=headers)
 
@@ -86,8 +87,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -107,8 +108,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/400", headers=headers)
 
@@ -137,8 +138,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -158,8 +159,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/500", headers=headers)
 
@@ -188,8 +189,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert asgi_span.ec == 1
@@ -208,8 +209,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/users/1", headers=headers)
 
@@ -238,8 +239,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -258,8 +259,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/?secret=shhh", headers=headers)
 
@@ -288,8 +289,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -308,8 +309,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
                 "X-INSTANA-SYNTHETIC": "1",
             }
             result = self.client.get("/", headers=headers)
@@ -339,8 +340,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -362,8 +363,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
                 "X-Capture-This": "this", 
                 "X-Capture-That": "that",
             }
@@ -394,8 +395,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)        
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)        
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -422,8 +423,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/response_headers", headers=headers)
 
@@ -452,8 +453,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec
@@ -477,8 +478,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/non_async_simple", headers=headers)
 
@@ -512,8 +513,8 @@ class TestFastAPI:
         assert asgi_span1.t == traceId
         assert asgi_span2.t == traceId
 
-        assert result.headers["X-INSTANA-T"] == str(asgi_span1.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span1.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span1.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span1.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span1.t}"
 
         assert not asgi_span1.ec
@@ -540,8 +541,8 @@ class TestFastAPI:
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
-                "X-INSTANA-T": str(span_context.trace_id),
-                "X-INSTANA-S": str(span_context.span_id),
+                "X-INSTANA-T": hex_id(span_context.trace_id),
+                "X-INSTANA-S": hex_id(span_context.span_id),
             }
             result = self.client.get("/non_async_threadpool", headers=headers)
 
@@ -570,8 +571,8 @@ class TestFastAPI:
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
         
-        assert result.headers["X-INSTANA-T"] == str(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == str(asgi_span.s)
+        assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
 
         assert not asgi_span.ec

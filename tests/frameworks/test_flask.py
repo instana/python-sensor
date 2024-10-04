@@ -6,6 +6,8 @@ import urllib3
 import flask
 from unittest.mock import patch
 
+from instana.util.ids import hex_id
+
 if hasattr(flask.signals, 'signals_available'):
     from flask.signals import signals_available
 else:
@@ -58,11 +60,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -133,11 +135,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -268,11 +270,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -348,11 +350,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -431,11 +433,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -642,11 +644,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -860,11 +862,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -940,11 +942,11 @@ class TestFlask(unittest.TestCase):
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -1015,11 +1017,11 @@ class TestFlask(unittest.TestCase):
         assert response.status == 200
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(wsgi_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(wsgi_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"

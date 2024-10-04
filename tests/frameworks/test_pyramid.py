@@ -5,6 +5,7 @@ import pytest
 import urllib3
 from typing import Generator
 
+from instana.util.ids import hex_id
 import tests.apps.pyramid.pyramid_app
 from tests.helpers import testenv
 from instana.singletons import tracer, agent
@@ -41,11 +42,11 @@ class TestPyramid:
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(pyramid_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(pyramid_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(pyramid_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(pyramid_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -130,11 +131,11 @@ class TestPyramid:
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(pyramid_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(pyramid_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(pyramid_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(pyramid_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
@@ -383,11 +384,11 @@ class TestPyramid:
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
-        assert response.headers["X-INSTANA-T"] == str(pyramid_span.t)
+        assert response.headers["X-INSTANA-T"] == hex_id(pyramid_span.t)
 
         assert "X-INSTANA-S" in response.headers
         assert int(response.headers["X-INSTANA-S"], 16)
-        assert response.headers["X-INSTANA-S"] == str(pyramid_span.s)
+        assert response.headers["X-INSTANA-S"] == hex_id(pyramid_span.s)
 
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"

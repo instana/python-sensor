@@ -1,6 +1,9 @@
 # (c) Copyright IBM Corp. 2024
 
+from typing import Generator
 from unittest.mock import Mock, patch
+
+import pytest
 
 from instana.recorder import StanRecorder
 from instana.span.base_span import BaseSpan
@@ -61,7 +64,9 @@ def test_basespan_with_synthetic_source_and_kwargs(
     assert _kwarg1 == base_span.arg1
 
 
-def test_populate_extra_span_attributes(span: InstanaSpan) -> None:
+def test_populate_extra_span_attributes(
+    span: InstanaSpan,
+) -> None:
     base_span = BaseSpan(span, None)
     base_span._populate_extra_span_attributes(span)
 
@@ -104,7 +109,9 @@ def test_populate_extra_span_attributes_with_values(
     assert long_id == base_span.crid
 
 
-def test_validate_attributes(base_span: BaseSpan) -> None:
+def test_validate_attributes(
+    base_span: BaseSpan,
+) -> None:
     attributes = {
         "field1": 1,
         "field2": "two",
@@ -118,7 +125,9 @@ def test_validate_attributes(base_span: BaseSpan) -> None:
         assert value in filtered_attributes.values()
 
 
-def test_validate_attribute_with_invalid_key_type(base_span: BaseSpan) -> None:
+def test_validate_attribute_with_invalid_key_type(
+    base_span: BaseSpan,
+) -> None:
     key = 1
     value = "one"
 
@@ -128,7 +137,9 @@ def test_validate_attribute_with_invalid_key_type(base_span: BaseSpan) -> None:
     assert not validated_value
 
 
-def test_validate_attribute_exception(span: InstanaSpan) -> None:
+def test_validate_attribute_exception(
+    span: InstanaSpan,
+) -> None:
     base_span = BaseSpan(span, None)
     key = "field1"
     value = span
@@ -142,7 +153,9 @@ def test_validate_attribute_exception(span: InstanaSpan) -> None:
         assert not validated_value
 
 
-def test_convert_attribute_value(span: InstanaSpan) -> None:
+def test_convert_attribute_value(
+    span: InstanaSpan,
+) -> None:
     base_span = BaseSpan(span, None)
     value = span
 
@@ -150,7 +163,9 @@ def test_convert_attribute_value(span: InstanaSpan) -> None:
     assert "<instana.span.span.InstanaSpan object" in converted_value
 
 
-def test_convert_attribute_value_exception(base_span: BaseSpan) -> None:
+def test_convert_attribute_value_exception(
+    base_span: BaseSpan,
+) -> None:
     mock = Mock()
     mock.__repr__ = Mock(side_effect=Exception("mocked error"))
 

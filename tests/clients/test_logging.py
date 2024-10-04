@@ -69,7 +69,7 @@ class TestLogging:
             try:
                 a = 42
                 b = 0
-                c = a / b
+                _ = a / b
             except Exception as e:
                 self.logger.exception("Exception: %s", str(e))
 

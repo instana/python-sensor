@@ -25,7 +25,7 @@ class TestHostCollector(unittest.TestCase):
         self.original_tracer = get_tracer()
 
     def setUp(self):
-        self.webhook_sitedir_path = PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR + '3.8.0'
+        self.webhook_sitedir_path = PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR + "3.8.0"
 
     def tearDown(self):
         """Reset all environment variables of consequence"""

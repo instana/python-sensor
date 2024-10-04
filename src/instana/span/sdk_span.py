@@ -22,9 +22,7 @@ class SDKSpan(BaseSpan):
 
         self.data["sdk"]["name"] = span.name
         self.data["sdk"]["type"] = span_kind[0]
-        self.data["sdk"]["custom"]["tags"] = self._validate_attributes(
-            span.attributes
-        )
+        self.data["sdk"]["custom"]["tags"] = self._validate_attributes(span.attributes)
 
         if span.events is not None and len(span.events) > 0:
             events = DictionaryOfStan()
@@ -58,5 +56,3 @@ class SDKSpan(BaseSpan):
             elif span.attributes["span.kind"] in EXIT_KIND:
                 kind = ("exit", 2)
         return kind
-
-

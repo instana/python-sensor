@@ -55,7 +55,7 @@ def request_started_with_instana(sender: flask.app.Flask, **extra: Any) -> None:
             path_tpl = flask.request.url_rule.rule.replace("<", "{")
             path_tpl = path_tpl.replace(">", "}")
             span.set_attribute("http.path_tpl", path_tpl)
-    except:
+    except Exception:
         logger.debug("Flask request_started_with_instana", exc_info=True)
 
 
@@ -78,7 +78,7 @@ def request_finished_with_instana(
             extract_custom_headers(span, response.headers, format=False)
 
             tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-    except:
+    except Exception:
         logger.debug("Flask request_finished_with_instana", exc_info=True)
     finally:
         if span and span.is_recording():

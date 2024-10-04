@@ -62,13 +62,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -108,13 +110,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -154,13 +158,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -200,13 +206,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -246,13 +254,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -292,13 +302,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -338,13 +350,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -385,13 +399,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -436,13 +452,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 
@@ -487,13 +505,15 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        span_filter = (
-            lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
-        )
+        def span_filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, span_filter)
         assert test_span
 
-        span_filter = lambda span: span.n == "asgi"
+        def span_filter(span):
+            return span.n == "asgi"
+
         asgi_span = get_first_span_by_filter(spans, span_filter)
         assert asgi_span
 

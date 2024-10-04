@@ -10,7 +10,7 @@ try:
     #
     # Blinker support is preferred but we do the best we can when it's not available.
     #
-    if hasattr(flask.signals, 'signals_available'):
+    if hasattr(flask.signals, "signals_available"):
         from flask.signals import signals_available
     else:
         # Beginning from 2.3.0 as stated in the notes
@@ -19,11 +19,11 @@ try:
         # The signals_available attribute is deprecated. #5056"
         signals_available = True
 
-    from instana.instrumentation.flask import common
+    from instana.instrumentation.flask import common  # noqa: F401
 
     if signals_available is True:
         import instana.instrumentation.flask.with_blinker
     else:
-        import instana.instrumentation.flask.vanilla
+        import instana.instrumentation.flask.vanilla  # noqa: F401
 except ImportError:
     pass

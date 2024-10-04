@@ -65,7 +65,7 @@ def lambda_handler_with_instana(
 
     if agent.collector.started:
         agent.collector.shutdown()
-    
+
     return result
 
 

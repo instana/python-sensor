@@ -41,23 +41,27 @@ if env_is_aws_lambda:
     agent = AWSLambdaAgent()
 elif env_is_aws_fargate:
     from instana.agent.aws_fargate import AWSFargateAgent
+
     agent = AWSFargateAgent()
 elif env_is_google_cloud_run:
     from instana.agent.google_cloud_run import GCRAgent
+
     agent = GCRAgent(
         service=k_service, configuration=k_configuration, revision=k_revision
     )
 elif env_is_aws_eks_fargate:
     from instana.agent.aws_eks_fargate import EKSFargateAgent
+
     agent = EKSFargateAgent()
 else:
     from instana.agent.host import HostAgent
+
     agent = HostAgent()
     profiler = Profiler(agent)
-    
+
 
 if agent:
-    span_recorder = StanRecorder(agent)        
+    span_recorder = StanRecorder(agent)
 
 
 def get_agent() -> Type["BaseAgent"]:

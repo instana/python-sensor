@@ -29,7 +29,7 @@ try:
         from starlette.requests import Request
         from starlette.responses import Response
 
-    if not (    # pragma: no cover
+    if not (  # pragma: no cover
         hasattr(fastapi, "__version__")
         and (
             fastapi.__version__[0] > "0" or int(fastapi.__version__.split(".")[1]) >= 51
@@ -84,7 +84,7 @@ try:
     logger.debug("Instrumenting FastAPI")
 
     # Reload GUnicorn when we are instrumenting an already running application
-    if "INSTANA_MAGIC" in os.environ and running_in_gunicorn(): # pragma: no cover
+    if "INSTANA_MAGIC" in os.environ and running_in_gunicorn():  # pragma: no cover
         os.kill(os.getpid(), signal.SIGHUP)
 
 except ImportError:

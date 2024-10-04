@@ -7,6 +7,7 @@ information display and a IPython console to diagnose environments.
 
 The console is disabled by default unless the ipython package is installed.
 """
+
 import os
 import sys
 
@@ -28,10 +29,14 @@ if "console" in sys.argv:
         import IPython
     except ImportError:
         print("This console is not enabled by default.")
-        print("IPython not installed.  To use this debug console do: 'pip install ipython'\n")
+        print(
+            "IPython not installed.  To use this debug console do: 'pip install ipython'\n"
+        )
     else:
         print("Welcome to the Instana console.\n")
-        print("This is a simple IPython console with the Instana Python Sensor pre-loaded.\n")
+        print(
+            "This is a simple IPython console with the Instana Python Sensor pre-loaded.\n"
+        )
 
         if "INSTANA_DEBUG" not in os.environ:
             print("If you want debug output of this sensors' activity run instead:\n")

@@ -24,8 +24,10 @@ class Tracestate:
         try:
             in_list_member = tracestate.strip().split("in=")[1].split(",")[0]
 
-            ia = InstanaAncestor(trace_id=in_list_member.split(";")[0],
-                                 parent_id=in_list_member.split(";")[1])
+            ia = InstanaAncestor(
+                trace_id=in_list_member.split(";")[0],
+                parent_id=in_list_member.split(";")[1],
+            )
             return ia
 
         except Exception:
@@ -54,14 +56,16 @@ class Tracestate:
                     splitted = tracestate.split("in=")
                     before_in = splitted[0]
                     after_in = splitted[1].split(",")[1:]
-                    tracestate = '{}{}'.format(before_in, ",".join(after_in))
+                    tracestate = "{}{}".format(before_in, ",".join(after_in))
                 # tracestate can contain a max of 32 list members, if it contains up to 31
                 # we can safely add the instana one without the need to truncate anything
                 if len(tracestate.split(",")) <= self.MAX_NUMBER_OF_LIST_MEMBERS - 1:
                     tracestate = "{},{}".format(instana_tracestate, tracestate)
                 else:
                     list_members = tracestate.split(",")
-                    list_members_to_remove = len(list_members) - self.MAX_NUMBER_OF_LIST_MEMBERS + 1
+                    list_members_to_remove = (
+                        len(list_members) - self.MAX_NUMBER_OF_LIST_MEMBERS + 1
+                    )
                     # Number 1 priority members to be removed are the ones larger than 128 characters
                     for i, m in reversed(list(enumerate(list_members))):
                         if len(m) > self.REMOVE_ENTRIES_LARGER_THAN:
@@ -79,6 +83,11 @@ class Tracestate:
                     # adding instana as first list member, total of 32 list members
                     tracestate = "{},{}".format(instana_tracestate, tracestate)
         except Exception:
-            logger.debug("Something went wrong while updating tracestate: {}:".format(tracestate), exc_info=True)
+            logger.debug(
+                "Something went wrong while updating tracestate: {}:".format(
+                    tracestate
+                ),
+                exc_info=True,
+            )
 
         return tracestate

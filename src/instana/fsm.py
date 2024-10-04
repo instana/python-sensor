@@ -28,11 +28,11 @@ class Discovery(object):
 
     def to_dict(self):
         kvs = dict()
-        kvs['pid'] = self.pid
-        kvs['name'] = self.name
-        kvs['args'] = self.args
-        kvs['fd'] = self.fd
-        kvs['inode'] = self.inode
+        kvs["pid"] = self.pid
+        kvs["name"] = self.name
+        kvs["args"] = self.args
+        kvs["fd"] = self.fd
+        kvs["inode"] = self.inode
         return kvs
 
 
@@ -50,19 +50,24 @@ class TheMachine(object):
         logger.debug("Initializing host agent state machine")
 
         self.agent = agent
-        self.fsm = Fysom({
-            "events": [
-                ("lookup",   "*",            "found"),
-                ("announce", "found",        "announced"),
-                ("pending",  "announced",    "wait4init"),
-                ("ready",    "wait4init",    "good2go")],
-            "callbacks": {
-                # Can add the following to debug
-                # "onchangestate":  self.print_state_change,
-                "onlookup":       self.lookup_agent_host,
-                "onannounce":     self.announce_sensor,
-                "onpending":      self.on_ready,
-                "ongood2go":      self.on_good2go}})
+        self.fsm = Fysom(
+            {
+                "events": [
+                    ("lookup", "*", "found"),
+                    ("announce", "found", "announced"),
+                    ("pending", "announced", "wait4init"),
+                    ("ready", "wait4init", "good2go"),
+                ],
+                "callbacks": {
+                    # Can add the following to debug
+                    # "onchangestate":  self.print_state_change,
+                    "onlookup": self.lookup_agent_host,
+                    "onannounce": self.announce_sensor,
+                    "onpending": self.on_ready,
+                    "ongood2go": self.on_good2go,
+                },
+            }
+        )
 
         self.timer = threading.Timer(1, self.fsm.lookup)
         self.timer.daemon = True
@@ -71,8 +76,14 @@ class TheMachine(object):
 
     @staticmethod
     def print_state_change(e):
-        logger.debug('========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========',
-                     os.getpid(), threading.current_thread().name, e.event, e.src, e.dst)
+        logger.debug(
+            "========= (%i#%s) FSM event: %s, src: %s, dst: %s ==========",
+            os.getpid(),
+            threading.current_thread().name,
+            e.event,
+            e.src,
+            e.dst,
+        )
 
     def reset(self):
         """
@@ -105,39 +116,45 @@ class TheMachine(object):
                     return True
 
         if self.warnedPeriodic is False:
-            logger.info("Instana Host Agent couldn't be found. Will retry periodically...")
+            logger.info(
+                "Instana Host Agent couldn't be found. Will retry periodically..."
+            )
             self.warnedPeriodic = True
 
-        self.schedule_retry(self.lookup_agent_host, e, self.THREAD_NAME + ": agent_lookup")
+        self.schedule_retry(
+            self.lookup_agent_host, e, self.THREAD_NAME + ": agent_lookup"
+        )
         return False
 
     def announce_sensor(self, e):
-        logger.debug("Attempting to make an announcement to the agent on %s:%d",
-                     self.agent.options.agent_host, self.agent.options.agent_port)
+        logger.debug(
+            "Attempting to make an announcement to the agent on %s:%d",
+            self.agent.options.agent_host,
+            self.agent.options.agent_port,
+        )
         pid = os.getpid()
 
         try:
             if os.path.isfile("/proc/self/cmdline"):
                 with open("/proc/self/cmdline") as cmd:
                     cmdinfo = cmd.read()
-                cmdline = cmdinfo.split('\x00')
+                cmdline = cmdinfo.split("\x00")
             else:
                 # Python doesn't provide a reliable method to determine what
                 # the OS process command line may be.  Here we are forced to
                 # rely on ps rather than adding a dependency on something like
                 # psutil which requires dev packages, gcc etc...
-                proc = subprocess.Popen(["ps", "-p", str(pid), "-o", "command"],
-                                        stdout=subprocess.PIPE)
+                proc = subprocess.Popen(
+                    ["ps", "-p", str(pid), "-o", "command"], stdout=subprocess.PIPE
+                )
                 (out, _) = proc.communicate()
-                parts = out.split(b'\n')
+                parts = out.split(b"\n")
                 cmdline = [parts[1].decode("utf-8")]
         except Exception:
             cmdline = sys.argv
             logger.debug("announce_sensor", exc_info=True)
 
-        d = Discovery(pid=self.__get_real_pid(),
-                      name=cmdline[0],
-                      args=cmdline[1:])
+        d = Discovery(pid=self.__get_real_pid(), name=cmdline[0], args=cmdline[1:])
 
         # If we're on a system with a procfs
         if os.path.exists("/proc/"):
@@ -146,24 +163,31 @@ class TheMachine(object):
                 # PermissionError: [Errno 13] Permission denied: '/proc/6/fd/8'
                 # Use a try/except as a safety
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.connect((self.agent.options.agent_host, self.agent.options.agent_port))
+                sock.connect(
+                    (self.agent.options.agent_host, self.agent.options.agent_port)
+                )
                 path = "/proc/%d/fd/%d" % (pid, sock.fileno())
                 d.fd = sock.fileno()
                 d.inode = os.readlink(path)
-            except:
+            except Exception:
                 logger.debug("Error generating file descriptor: ", exc_info=True)
 
         payload = self.agent.announce(d)
 
         if not payload:
             logger.debug("Cannot announce sensor. Scheduling retry.")
-            self.schedule_retry(self.announce_sensor, e, self.THREAD_NAME + ": announce")
+            self.schedule_retry(
+                self.announce_sensor, e, self.THREAD_NAME + ": announce"
+            )
             return False
-        
+
         self.agent.set_from(payload)
         self.fsm.pending()
-        logger.debug("Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
-                     str(pid), str(self.agent.announce_data.pid))
+        logger.debug(
+            "Announced pid: %s (true pid: %s).  Waiting for Agent Ready...",
+            str(pid),
+            str(self.agent.announce_data.pid),
+        )
         return True
 
     def schedule_retry(self, fun, e, name):
@@ -178,13 +202,20 @@ class TheMachine(object):
         ns_pid = str(os.getpid())
         true_pid = str(self.agent.announce_data.pid)
 
-        logger.info("Instana host agent available. We're in business. Announced PID: %s (true pid: %s)", ns_pid, true_pid)
+        logger.info(
+            "Instana host agent available. We're in business. Announced PID: %s (true pid: %s)",
+            ns_pid,
+            true_pid,
+        )
 
     def on_good2go(self, _):
         ns_pid = str(os.getpid())
         true_pid = str(self.agent.announce_data.pid)
 
-        self.agent.log_message_to_host_agent("Instana Python Package %s: PID %s (true pid: %s) is now online and reporting" % (VERSION, ns_pid, true_pid))
+        self.agent.log_message_to_host_agent(
+            "Instana Python Package %s: PID %s (true pid: %s) is now online and reporting"
+            % (VERSION, ns_pid, true_pid)
+        )
 
     def __get_real_pid(self):
         """
@@ -201,7 +232,7 @@ class TheMachine(object):
                 try:
                     file = open(sched_file)
                     line = file.readline()
-                    g = re.search(r'\((\d+),', line)
+                    g = re.search(r"\((\d+),", line)
                     if len(g.groups()) == 1:
                         pid = int(g.groups()[0])
                 except Exception:

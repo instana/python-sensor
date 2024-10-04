@@ -15,17 +15,19 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 testenv["wsgi_port"] = 10812
-testenv["wsgi_server"] = ("http://127.0.0.1:" + str(testenv["wsgi_port"]))
+testenv["wsgi_server"] = "http://127.0.0.1:" + str(testenv["wsgi_port"])
 
 app = default_app()
+
 
 @app.route("/")
 def hello():
     return "<center><h1>🐍 Hello Stan! 🦄</h1></center>"
 
+
 # Wrap the application with the Instana WSGI Middleware
 app = InstanaWSGIMiddleware(app)
-bottle_server = make_server('127.0.0.1', testenv["wsgi_port"], app)
+bottle_server = make_server("127.0.0.1", testenv["wsgi_port"], app)
 
 if __name__ == "__main__":
     bottle_server.request_queue_size = 20

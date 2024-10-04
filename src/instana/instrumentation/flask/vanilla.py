@@ -16,7 +16,7 @@ from instana.util.secrets import strip_secrets_from_query
 from instana.instrumentation.flask.common import extract_custom_headers
 from instana.propagators.format import Format
 
-path_tpl_re = re.compile('<.*>')
+path_tpl_re = re.compile("<.*>")
 
 
 def before_request_with_instana() -> None:
@@ -52,7 +52,7 @@ def before_request_with_instana() -> None:
             path_tpl = flask.request.url_rule.rule.replace("<", "{")
             path_tpl = path_tpl.replace(">", "}")
             span.set_attribute("http.path_tpl", path_tpl)
-    except:
+    except Exception:
         logger.debug("Flask before_request", exc_info=True)
 
     return None
@@ -69,7 +69,6 @@ def after_request_with_instana(
 
         span = flask.g.span
         if span:
-
             if 500 <= response.status_code:
                 span.mark_as_errored()
 
@@ -79,7 +78,7 @@ def after_request_with_instana(
             extract_custom_headers(span, response.headers, format=False)
 
             tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-    except:
+    except Exception:
         logger.debug("Flask after_request", exc_info=True)
     finally:
         if span and span.is_recording():
@@ -108,15 +107,17 @@ def teardown_request_with_instana(*argv: Union[Exception, Type[Exception]]) -> N
         flask.g.token = None
 
 
-@wrapt.patch_function_wrapper('flask', 'Flask.full_dispatch_request')
+@wrapt.patch_function_wrapper("flask", "Flask.full_dispatch_request")
 def full_dispatch_request_with_instana(
     wrapped: Callable[..., flask.wrappers.Response],
     instance: flask.app.Flask,
     argv: Tuple,
     kwargs: Dict,
 ) -> flask.wrappers.Response:
-    if not hasattr(instance, '_stan_wuz_here'):
-        logger.debug("Flask(vanilla): Applying flask before/after instrumentation funcs")
+    if not hasattr(instance, "_stan_wuz_here"):
+        logger.debug(
+            "Flask(vanilla): Applying flask before/after instrumentation funcs"
+        )
         setattr(instance, "_stan_wuz_here", True)
         instance.before_request(before_request_with_instana)
         instance.after_request(after_request_with_instana)

@@ -82,7 +82,7 @@ class TestUrllib3:
 
         threadpool_size = 15
         pool = ThreadPool(processes=threadpool_size)
-        res = pool.map(make_request, [u for u in range(threadpool_size)])
+        _ = pool.map(make_request, [u for u in range(threadpool_size)])
         # print(f'requests made within threadpool, instana does not instrument - statuses: {res}')
 
         spans = self.recorder.queued_spans()
@@ -631,7 +631,9 @@ class TestUrllib3:
         assert test_span.data["sdk"]["name"] == "test"
         assert urllib3_span.n == "urllib3"
         assert urllib3_span.data["http"]["status"] == 500
-        assert urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/exception"
+        assert (
+            urllib3_span.data["http"]["url"] == testenv["flask_server"] + "/exception"
+        )
         assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack
         assert isinstance(urllib3_span.stack, list)

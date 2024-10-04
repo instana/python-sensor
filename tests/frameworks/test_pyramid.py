@@ -6,7 +6,7 @@ import urllib3
 from typing import Generator
 
 from instana.util.ids import hex_id
-import tests.apps.pyramid.pyramid_app
+import tests.apps.pyramid.pyramid_app  # noqa: F401
 from tests.helpers import testenv
 from instana.singletons import tracer, agent
 from instana.span.span import get_current_span
@@ -77,7 +77,9 @@ class TestPyramid:
 
         # wsgi
         assert pyramid_span.n == "wsgi"
-        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["pyramid_port"]
+        )
         assert pyramid_span.data["http"]["url"] == "/"
         assert pyramid_span.data["http"]["method"] == "GET"
         assert pyramid_span.data["http"]["status"] == 200
@@ -161,7 +163,9 @@ class TestPyramid:
 
         # wsgi
         assert pyramid_span.n == "wsgi"
-        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["pyramid_port"]
+        )
         assert pyramid_span.data["http"]["url"] == "/500"
         assert pyramid_span.data["http"]["method"] == "GET"
         assert pyramid_span.data["http"]["status"] == 500
@@ -211,7 +215,9 @@ class TestPyramid:
 
         # wsgi
         assert pyramid_span.n == "wsgi"
-        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["pyramid_port"]
+        )
         assert pyramid_span.data["http"]["url"] == "/exception"
         assert pyramid_span.data["http"]["method"] == "GET"
         assert pyramid_span.data["http"]["status"] == 500
@@ -270,7 +276,9 @@ class TestPyramid:
 
         # wsgi
         assert pyramid_span.n == "wsgi"
-        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["pyramid_port"]
+        )
         assert pyramid_span.data["http"]["url"] == "/response_headers"
         assert pyramid_span.data["http"]["method"] == "GET"
         assert pyramid_span.data["http"]["status"] == 200
@@ -341,7 +349,9 @@ class TestPyramid:
 
         # wsgi
         assert pyramid_span.n == "wsgi"
-        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["pyramid_port"]
+        )
         assert pyramid_span.data["http"]["url"] == "/"
         assert pyramid_span.data["http"]["method"] == "GET"
         assert pyramid_span.data["http"]["status"] == 200
@@ -419,7 +429,9 @@ class TestPyramid:
 
         # wsgi
         assert pyramid_span.n == "wsgi"
-        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["pyramid_port"])
+        assert pyramid_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["pyramid_port"]
+        )
         assert pyramid_span.data["http"]["url"] == "/hello_user/oswald"
         assert pyramid_span.data["http"]["method"] == "GET"
         assert pyramid_span.data["http"]["status"] == 200

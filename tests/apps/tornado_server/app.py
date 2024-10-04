@@ -65,15 +65,14 @@ class R500Handler(tornado.web.RequestHandler):
 
 class R504Handler(tornado.web.RequestHandler):
     def get(self):
-        raise tornado.web.HTTPError(status_code=504, log_message="Simulated Internal Server Errors")
+        raise tornado.web.HTTPError(
+            status_code=504, log_message="Simulated Internal Server Errors"
+        )
 
 
 class ResponseHeadersHandler(tornado.web.RequestHandler):
     def get(self):
-        headers = {
-            'X-Capture-This-Too': 'this too',
-            'X-Capture-That-Too': 'that too'
-        }
+        headers = {"X-Capture-This-Too": "this too", "X-Capture-That-Too": "that too"}
         for key, value in headers.items():
             self.set_header(key, value)
         self.write("Stan wuz here with headers!")

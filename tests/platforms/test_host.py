@@ -4,6 +4,7 @@
 import os
 import logging
 import unittest
+import pytest
 
 from mock import MagicMock, patch
 import requests
@@ -230,7 +231,7 @@ class TestHost(unittest.TestCase):
         self.assertEqual(len(log.records), 1)
         self.assertIn('response payload has no agentUuid', log.output[0])
 
-
+    @pytest.mark.original
     @patch.object(requests.Session, "get")
     def test_agent_connection_attempt(self, mock_requests_session_get):
         mock_response = MagicMock()
@@ -248,7 +249,7 @@ class TestHost(unittest.TestCase):
         self.assertTrue(result)
         self.assertIn(msg, log.output[0])
 
-
+    @pytest.mark.original
     @patch.object(requests.Session, "get")
     def test_agent_connection_attempt_fails_with_404(self, mock_requests_session_get):
         mock_response = MagicMock()

@@ -14,7 +14,7 @@ PIP_INDEX_URL = "https://pypi.org/pypi"
 
 SPEC_MAP = {
     "ASGI": "https://asgi.readthedocs.io/en/latest/specs/main.html",
-    "WSGI": "https://peps.python.org/",
+    "WSGI": "https://peps.python.org/numerical",
 }
 
 

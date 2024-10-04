@@ -134,7 +134,7 @@ def context(span: InstanaSpan) -> Context:
     return set_span_in_context(span)
 
 
-def always_true(_: object) -> bool:
+def always_true(_: object, *args: object, **kwargs: object) -> bool:
     return True
 
 

@@ -46,7 +46,7 @@ googlecloud)
   export GOOGLE_CLOUD_TEST='true' ;;  
 aws)
   export REQUIREMENTS='requirements-312.txt'
-  export TESTS=('tests_aws')
+  export TESTS=('tests_aws') ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
        "not in (default|cassandra|couchbase|gevent_starlette|googlecloud)" >&2

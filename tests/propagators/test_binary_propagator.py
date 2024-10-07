@@ -11,6 +11,7 @@ from opentelemetry.trace import (
 
 from instana.propagators.binary_propagator import BinaryPropagator
 from instana.span_context import SpanContext
+from instana.util.ids import hex_id
 
 
 class TestBinaryPropagator:
@@ -37,7 +38,7 @@ class TestBinaryPropagator:
         assert carrier[b"x-instana-t"] == hex_trace_id.encode("utf-8")
         assert carrier[b"x-instana-s"] == hex_span_id.encode("utf-8")
         assert carrier[b"x-instana-l"] == b"1"
-        assert carrier[b"server-timing"] == f"intid;desc={trace_id}".encode("utf-8")
+        assert carrier[b"server-timing"] == f"intid;desc={hex_id(trace_id)}".encode("utf-8")
 
     def test_inject_carrier_dict_w3c_True(self, trace_id: int, span_id: int, hex_trace_id: str, hex_span_id: str) -> None:
         carrier = {}
@@ -55,7 +56,7 @@ class TestBinaryPropagator:
         assert carrier[b"x-instana-t"] == hex_trace_id.encode("utf-8")
         assert carrier[b"x-instana-s"] == hex_span_id.encode("utf-8")
         assert carrier[b"x-instana-l"] == b"1"
-        assert carrier[b"server-timing"] == f"intid;desc={trace_id}".encode("utf-8")
+        assert carrier[b"server-timing"] == f"intid;desc={hex_id(trace_id)}".encode("utf-8")
         assert carrier[
             b"traceparent"
         ] == f"00-{format_trace_id(trace_id)}-{format_span_id(span_id)}-01".encode(
@@ -82,7 +83,7 @@ class TestBinaryPropagator:
         assert carrier[2] == (b"x-instana-l", b"1")
         assert carrier[3] == (
             b"server-timing",
-            f"intid;desc={trace_id}".encode("utf-8"),
+            f"intid;desc={hex_id(trace_id)}".encode("utf-8"),
         )
 
     def test_inject_carrier_list_w3c_True(self, trace_id: int, span_id: int, hex_trace_id: str, hex_span_id: str) -> None:
@@ -114,7 +115,7 @@ class TestBinaryPropagator:
         assert carrier[4] == (b"x-instana-l", b"1")
         assert carrier[5] == (
             b"server-timing",
-            f"intid;desc={trace_id}".encode("utf-8"),
+            f"intid;desc={hex_id(trace_id)}".encode("utf-8"),
         )
 
     def test_inject_carrier_tuple(self, trace_id: int, span_id: int, hex_trace_id: str, hex_span_id: str) -> None:
@@ -136,7 +137,7 @@ class TestBinaryPropagator:
         assert carrier[2] == (b"x-instana-l", b"1")
         assert carrier[3] == (
             b"server-timing",
-            f"intid;desc={trace_id}".encode("utf-8"),
+            f"intid;desc={hex_id(trace_id)}".encode("utf-8"),
         )
 
     def test_inject_carrier_tuple_w3c_True(self, trace_id: int, span_id: int, hex_trace_id: str, hex_span_id: str) -> None:
@@ -168,7 +169,7 @@ class TestBinaryPropagator:
         assert carrier[4] == (b"x-instana-l", b"1")
         assert carrier[5] == (
             b"server-timing",
-            f"intid;desc={trace_id}".encode("utf-8"),
+            f"intid;desc={hex_id(trace_id)}".encode("utf-8"),
         )
 
     def test_inject_carrier_set_exception(self, trace_id: int, span_id: int) -> None:

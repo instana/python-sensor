@@ -19,6 +19,7 @@ from instana.instrumentation.aws.triggers import read_http_query_params
 from instana.options import AWSLambdaOptions
 from instana.singletons import get_agent
 from instana.util.aws import normalize_aws_lambda_arn
+from instana.util.ids import hex_id
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
@@ -225,7 +226,7 @@ class TestLambda:
         assert span.p == hex(span_id)[2:]
         assert span.ts
 
-        server_timing_value = f"intid;desc={trace_id}"
+        server_timing_value = f"intid;desc={hex_id(trace_id)}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -297,7 +298,7 @@ class TestLambda:
         assert span.p == hex(span_id)[2:]
         assert span.ts
 
-        server_timing_value = f"intid;desc={trace_id}"
+        server_timing_value = f"intid;desc={hex_id(trace_id)}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -409,7 +410,7 @@ class TestLambda:
         assert span.p == hex(span_id)[2:]
         assert span.ts
 
-        server_timing_value = f"intid;desc={trace_id}"
+        server_timing_value = f"intid;desc={hex_id(trace_id)}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -477,7 +478,7 @@ class TestLambda:
         assert not span.p
         assert span.ts
 
-        server_timing_value = f"intid;desc={int(span.t, 16)}"
+        server_timing_value = f"intid;desc={hex_id(int(span.t, 16))}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -554,7 +555,7 @@ class TestLambda:
         assert not span.p
         assert span.ts
 
-        server_timing_value = f"intid;desc={int(span.t, 16)}"
+        server_timing_value = f"intid;desc={hex_id(int(span.t, 16))}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -632,7 +633,7 @@ class TestLambda:
         assert not span.p
         assert span.ts
 
-        server_timing_value = f"intid;desc={int(span.t, 16)}"
+        server_timing_value = f"intid;desc={hex_id(int(span.t, 16))}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -703,7 +704,7 @@ class TestLambda:
         assert not span.p
         assert span.ts
 
-        server_timing_value = f"intid;desc={int(span.t, 16)}"
+        server_timing_value = f"intid;desc={hex_id(int(span.t, 16))}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {
@@ -807,7 +808,7 @@ class TestLambda:
         assert span.p == hex(int("0000000000004567"))[2:].zfill(16)
         assert span.ts
 
-        server_timing_value = f"intid;desc={int('0000000000001234')}"
+        server_timing_value = f"intid;desc={hex_id(int('0000000000001234'))}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {

@@ -62,7 +62,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "test" == test_span.data["sdk"]["name"]
@@ -151,7 +151,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "test" == test_span.data["sdk"]["name"]
@@ -244,7 +244,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "test" == test_span.data["sdk"]["name"]
@@ -410,7 +410,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "traceparent" in response.headers
@@ -477,7 +477,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "traceparent" in response.headers
@@ -537,7 +537,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "traceparent" in response.headers
@@ -594,7 +594,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "traceparent" in response.headers
@@ -645,7 +645,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % django_span.t
+        server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
     def test_url_pattern_route(self) -> None:

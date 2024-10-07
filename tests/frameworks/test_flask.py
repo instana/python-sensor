@@ -70,7 +70,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -145,7 +145,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -280,7 +280,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -360,7 +360,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -443,7 +443,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -512,7 +512,7 @@ class TestFlask(unittest.TestCase):
         # assert response.headers['X-INSTANA-L'] == '1'
         #
         # assert 'Server-Timing' in response.headers
-        # server_timing_value = "intid;desc=%s" % wsgi_span.t
+        # server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         # assert response.headers['Server-Timing'] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -583,7 +583,7 @@ class TestFlask(unittest.TestCase):
         # assert response.headers['X-INSTANA-L'] == '1'
         #
         # assert 'Server-Timing' in response.headers
-        # server_timing_value = "intid;desc=%s" % wsgi_span.t
+        # server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         # assert response.headers['Server-Timing'] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -654,7 +654,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -727,7 +727,7 @@ class TestFlask(unittest.TestCase):
         # assert response.headers['X-INSTANA-L'] == '1'
         #
         # assert 'Server-Timing' in response.headers
-        # server_timing_value = "intid;desc=%s" % wsgi_span.t
+        # server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         # assert response.headers['Server-Timing'] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -872,7 +872,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -952,7 +952,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False
@@ -1027,7 +1027,7 @@ class TestFlask(unittest.TestCase):
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert get_current_span().is_recording() is False

@@ -52,7 +52,7 @@ class TestPyramid:
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % pyramid_span.t
+        server_timing_value = f"intid;desc={hex_id(pyramid_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert not get_current_span().is_recording()
@@ -141,7 +141,7 @@ class TestPyramid:
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % pyramid_span.t
+        server_timing_value = f"intid;desc={hex_id(pyramid_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert not get_current_span().is_recording()
@@ -394,7 +394,7 @@ class TestPyramid:
         assert response.headers["X-INSTANA-L"] == "1"
 
         assert "Server-Timing" in response.headers
-        server_timing_value = "intid;desc=%s" % pyramid_span.t
+        server_timing_value = f"intid;desc={hex_id(pyramid_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert not get_current_span().is_recording()

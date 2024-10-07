@@ -58,7 +58,7 @@ class TestWSGI:
         assert response.headers['X-INSTANA-L'] == '1'
 
         assert 'Server-Timing' in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers['Server-Timing'] == server_timing_value
 
         # Same traceId
@@ -143,7 +143,7 @@ class TestWSGI:
         assert response.headers['X-INSTANA-L'] == '1'
 
         assert 'Server-Timing' in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers['Server-Timing'] == server_timing_value
 
         # Same traceId
@@ -201,7 +201,7 @@ class TestWSGI:
         assert response.headers['X-INSTANA-L'] == '1'
 
         assert 'Server-Timing' in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers['Server-Timing'] == server_timing_value
 
         # Same traceId
@@ -259,7 +259,7 @@ class TestWSGI:
         assert response.headers['X-INSTANA-L'] == '1'
 
         assert 'Server-Timing' in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers['Server-Timing'] == server_timing_value
 
     def test_with_incoming_mixed_case_context(self) -> None:
@@ -294,7 +294,7 @@ class TestWSGI:
         assert response.headers['X-INSTANA-L'] == '1'
 
         assert 'Server-Timing' in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers['Server-Timing'] == server_timing_value
 
     def test_response_headers(self) -> None:
@@ -325,5 +325,5 @@ class TestWSGI:
         assert response.headers['X-INSTANA-L'] == '1'
 
         assert 'Server-Timing' in response.headers
-        server_timing_value = "intid;desc=%s" % wsgi_span.t
+        server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
         assert response.headers['Server-Timing'] == server_timing_value

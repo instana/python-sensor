@@ -84,7 +84,7 @@ class TestStarlette:
 
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
-        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
+        assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["path"] == "/"
@@ -133,7 +133,7 @@ class TestStarlette:
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["X-INSTANA-L"] == "1"
-        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
+        assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["path"] == "/users/1"
@@ -182,7 +182,7 @@ class TestStarlette:
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["X-INSTANA-L"] == "1"
-        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
+        assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "testserver"
@@ -231,7 +231,7 @@ class TestStarlette:
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["X-INSTANA-L"] == "1"
-        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
+        assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "testserver"
@@ -284,7 +284,7 @@ class TestStarlette:
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["X-INSTANA-L"] == "1"
-        assert result.headers["Server-Timing"] == f"intid;desc={asgi_span.t}"
+        assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "testserver"

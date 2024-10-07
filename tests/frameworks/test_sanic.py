@@ -81,7 +81,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -127,7 +127,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -173,7 +173,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -219,7 +219,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert asgi_span.ec == 1
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -265,7 +265,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert asgi_span.ec == 1
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -311,7 +311,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -357,7 +357,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -404,7 +404,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -455,7 +455,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"
@@ -506,7 +506,7 @@ class TestSanic(_TraceContextMixin):
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == ("intid;desc=%s" % asgi_span.t)
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
         assert asgi_span.data["http"]["host"] == "127.0.0.1:1337"

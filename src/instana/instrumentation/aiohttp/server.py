@@ -70,9 +70,6 @@ try:
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)
                 tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-                response.headers["Server-Timing"] = (
-                    f"intid;desc={span.context.trace_id}"
-                )
 
             return response
         except Exception as exc:

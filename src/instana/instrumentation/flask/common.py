@@ -90,11 +90,6 @@ def handle_user_exception_with_instana(
 
                 if hasattr(response, 'headers'):
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-                    value = "intid;desc=%s" % span.context.trace_id
-                    if hasattr(response.headers, 'add'):
-                        response.headers.add('Server-Timing', value)
-                    elif type(response.headers) is dict or hasattr(response.headers, "__dict__"):
-                        response.headers['Server-Timing'] = value
             if span and span.is_recording():
                 span.end()
             flask.g.span = None

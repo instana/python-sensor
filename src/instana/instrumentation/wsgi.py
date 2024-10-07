@@ -26,9 +26,6 @@ class InstanaWSGIMiddleware(object):
         def new_start_response(status: str, headers: List[Tuple[object, ...]], exc_info: Optional[Exception] = None) -> object:
             """Modified start response with additional headers."""
             tracer.inject(self.span.context, Format.HTTP_HEADERS, headers)
-            headers.append(
-                ("Server-Timing", "intid;desc=%s" % self.span.context.trace_id)
-            )
 
             headers_str = [(header[0], str(header[1])) if not isinstance(header[1], str) else header for header in headers]
             res = start_response(status, headers_str, exc_info)

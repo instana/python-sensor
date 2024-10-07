@@ -7,6 +7,8 @@ from instana.propagators.base_propagator import BasePropagator
 
 from opentelemetry.trace.span import format_span_id
 
+from instana.util.ids import define_server_timing
+
 
 class TextPropagator(BasePropagator):
     """
@@ -20,23 +22,28 @@ class TextPropagator(BasePropagator):
         try:
             trace_id = format_span_id(span_context.trace_id)
             span_id = format_span_id(span_context.span_id)
+            server_timing = define_server_timing(span_context.trace_id).encode()
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
                 carrier[self.LC_HEADER_KEY_T] = trace_id
                 carrier[self.LC_HEADER_KEY_S] = span_id
                 carrier[self.LC_HEADER_KEY_L] = "1"
+                carrier[self.LC_HEADER_KEY_SERVER_TIMING] = server_timing
             elif isinstance(carrier, list):
                 carrier.append((self.LC_HEADER_KEY_T, trace_id))
                 carrier.append((self.LC_HEADER_KEY_S, span_id))
                 carrier.append((self.LC_HEADER_KEY_L, "1"))
+                carrier.append((self.LC_HEADER_KEY_SERVER_TIMING, server_timing))
             elif isinstance(carrier, tuple):
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_T, trace_id),))
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_S, span_id),))
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_L, "1"),))
+                carrier = carrier.__add__(((self.LC_HEADER_KEY_SERVER_TIMING, server_timing),))
             elif hasattr(carrier, '__setitem__'):
                 carrier.__setitem__(self.LC_HEADER_KEY_T, trace_id)
                 carrier.__setitem__(self.LC_HEADER_KEY_S, span_id)
                 carrier.__setitem__(self.LC_HEADER_KEY_L, "1")
+                carrier.__setitem__(self.LC_HEADER_KEY_SERVER_TIMING, server_timing)
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

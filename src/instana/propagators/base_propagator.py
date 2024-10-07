@@ -38,11 +38,13 @@ class BasePropagator(object):
     HEADER_KEY_SYNTHETIC = 'X-INSTANA-SYNTHETIC'
     HEADER_KEY_TRACEPARENT = "traceparent"
     HEADER_KEY_TRACESTATE = "tracestate"
+    HEADER_KEY_SERVER_TIMING = "Server-Timing"
 
     LC_HEADER_KEY_T = 'x-instana-t'
     LC_HEADER_KEY_S = 'x-instana-s'
     LC_HEADER_KEY_L = 'x-instana-l'
     LC_HEADER_KEY_SYNTHETIC = 'x-instana-synthetic'
+    LC_HEADER_KEY_SERVER_TIMING = "server-timing"
 
     ALT_LC_HEADER_KEY_T = 'http_x_instana_t'
     ALT_LC_HEADER_KEY_S = 'http_x_instana_s'
@@ -50,15 +52,16 @@ class BasePropagator(object):
     ALT_LC_HEADER_KEY_SYNTHETIC = 'http_x_instana_synthetic'
     ALT_HEADER_KEY_TRACEPARENT = "http_traceparent"
     ALT_HEADER_KEY_TRACESTATE = "http_tracestate"
+    ALT_LC_HEADER_KEY_SERVER_TIMING = "http_server_timing"
 
     # ByteArray variations
     B_HEADER_KEY_T = b'x-instana-t'
     B_HEADER_KEY_S = b'x-instana-s'
     B_HEADER_KEY_L = b'x-instana-l'
     B_HEADER_KEY_SYNTHETIC = b'x-instana-synthetic'
-    B_HEADER_SERVER_TIMING = b'server-timing'
     B_HEADER_KEY_TRACEPARENT = b'traceparent'
     B_HEADER_KEY_TRACESTATE = b'tracestate'
+    B_HEADER_KEY_SERVER_TIMING = b"server-timing"
 
     B_ALT_LC_HEADER_KEY_T = b'http_x_instana_t'
     B_ALT_LC_HEADER_KEY_S = b'http_x_instana_s'
@@ -66,6 +69,7 @@ class BasePropagator(object):
     B_ALT_LC_HEADER_KEY_SYNTHETIC = b'http_x_instana_synthetic'
     B_ALT_HEADER_KEY_TRACEPARENT = b'http_traceparent'
     B_ALT_HEADER_KEY_TRACESTATE = b'http_tracestate'
+    B_ALT_LC_HEADER_KEY_SERVER_TIMING = b"http_server_timing"
 
     def __init__(self):
         self._tp = Traceparent()

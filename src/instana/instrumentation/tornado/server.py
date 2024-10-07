@@ -56,7 +56,6 @@ try:
             # Set the context response headers now because tornado doesn't give us a better option to do so
             # later for this request.
             tracer.inject(span.context, Format.HTTP_HEADERS, instance._headers)
-            instance.set_header(name='Server-Timing', value=f"intid;desc={span.context.trace_id}")
 
             return wrapped(*argv, **kwargs)
         except Exception:
@@ -70,7 +69,6 @@ try:
 
         span = instance.request._instana
         tracer.inject(span.context, Format.HTTP_HEADERS, instance._headers)
-        instance.set_header(name='Server-Timing', value=f"intid;desc={span.context.trace_id}")
 
 
     @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler.on_finish')

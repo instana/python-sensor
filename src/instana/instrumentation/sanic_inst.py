@@ -116,9 +116,6 @@ try:
                     if agent.options.extra_http_headers:
                         extract_custom_headers(span, response.headers)
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-                    response.headers["Server-Timing"] = (
-                        f"intid;desc={span.context.trace_id}"
-                    )
 
                 if span.is_recording():
                     span.end()

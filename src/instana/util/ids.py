@@ -98,3 +98,8 @@ def hex_id(id: Union[int, str]) -> str:
     if len(hex_id) < 16:
         hex_id = hex_id.zfill(16)
     return hex_id
+
+
+def define_server_timing(trace_id: Union[int, str]) -> str:
+    # Note: The key `intid` is short for Instana Trace ID.
+    return f"intid;desc={hex_id(trace_id)}"

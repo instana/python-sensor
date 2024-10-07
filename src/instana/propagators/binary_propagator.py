@@ -7,6 +7,8 @@ from instana.propagators.base_propagator import BasePropagator
 
 from opentelemetry.trace.span import format_span_id
 
+from instana.util.ids import define_server_timing
+
 
 class BinaryPropagator(BasePropagator):
     """
@@ -30,7 +32,7 @@ class BinaryPropagator(BasePropagator):
             trace_id = format_span_id(span_context.trace_id).encode()
             span_id = format_span_id(span_context.span_id).encode()
             level = str(span_context.level).encode()
-            server_timing = f"intid;desc={span_context.trace_id}".encode()
+            server_timing = define_server_timing(span_context.trace_id).encode()
 
             if disable_w3c_trace_context:
                 traceparent, tracestate = [None] * 2

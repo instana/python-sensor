@@ -122,9 +122,6 @@ class InstanaMiddleware(MiddlewareMixin):
                     request.span, response.headers, format=False
                 )
                 tracer.inject(request.span.context, Format.HTTP_HEADERS, response)
-                response["Server-Timing"] = (
-                    "intid;desc=%s" % request.span.context.trace_id
-                )
         except Exception:
             logger.debug("Instana middleware @ process_response", exc_info=True)
         finally:

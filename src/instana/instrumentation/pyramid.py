@@ -77,9 +77,6 @@ try:
                     self._extract_custom_headers(span, response.headers)
 
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-                    response.headers["Server-Timing"] = (
-                        f"intid;desc={span.context.trace_id}"
-                    )
                 except HTTPException as e:
                     response = e
                     logger.debug(

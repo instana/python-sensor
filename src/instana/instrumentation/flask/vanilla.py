@@ -79,9 +79,6 @@ def after_request_with_instana(
             extract_custom_headers(span, response.headers, format=False)
 
             tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-            response.headers.add(
-                "Server-Timing", "intid;desc=%s" % span.context.trace_id
-            )
     except:
         logger.debug("Flask after_request", exc_info=True)
     finally:

@@ -89,7 +89,7 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_post(self) -> None:
         async def test():
@@ -144,7 +144,7 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_301(self) -> None:
         async def test():
@@ -229,7 +229,7 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_405(self) -> None:
         async def test():
@@ -287,7 +287,7 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_500(self) -> None:
         async def test():
@@ -345,7 +345,7 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_504(self) -> None:
         async def test():
@@ -403,7 +403,7 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_with_params_to_scrub(self) -> None:
         async def test():
@@ -459,4 +459,4 @@ class TestTornadoClient:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"

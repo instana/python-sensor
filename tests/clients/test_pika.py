@@ -14,6 +14,7 @@ import pytest
 from opentelemetry.trace.span import format_span_id
 
 from instana.singletons import agent, tracer
+from instana.util.ids import hex_id
 
 
 class _TestPika:
@@ -377,6 +378,7 @@ class TestPikaChannel(_TestPika):
                         "X-INSTANA-T": format_span_id(rabbitmq_span.t),
                         "X-INSTANA-S": format_span_id(rabbitmq_span.s),
                         "X-INSTANA-L": "1",
+                        "Server-Timing": f"intid;desc={hex_id(rabbitmq_span.t)}",
                     }
                 ),
                 b"Hello!",
@@ -418,6 +420,7 @@ class TestPikaChannel(_TestPika):
                         "X-INSTANA-T": format_span_id(rabbitmq_span.t),
                         "X-INSTANA-S": format_span_id(rabbitmq_span.s),
                         "X-INSTANA-L": "1",
+                        "Server-Timing": f"intid;desc={hex_id(rabbitmq_span.t)}",
                     }
                 ),
                 b"Hello!",
@@ -451,6 +454,7 @@ class TestPikaChannel(_TestPika):
                         "X-INSTANA-T": format_span_id(rabbitmq_span.t),
                         "X-INSTANA-S": format_span_id(rabbitmq_span.s),
                         "X-INSTANA-L": "1",
+                        "Server-Timing": f"intid;desc={hex_id(rabbitmq_span.t)}",
                     }
                 ),
                 b"Hello!",

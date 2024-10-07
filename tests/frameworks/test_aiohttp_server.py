@@ -83,7 +83,7 @@ class TestAiohttpServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == f"intid;desc={traceId}"
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_server_get_204(self):
         async def test():
@@ -132,7 +132,7 @@ class TestAiohttpServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == f"intid;desc={trace_id}"
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(trace_id)}"
 
     def test_server_synthetic_request(self):
         async def test():
@@ -205,7 +205,7 @@ class TestAiohttpServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == f"intid;desc={traceId}"
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_server_custom_header_capture(self):
         async def test():
@@ -265,7 +265,7 @@ class TestAiohttpServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == f"intid;desc={traceId}"
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
         assert "X-Capture-This" in aioserver_span.data["http"]["header"]
         assert aioserver_span.data["http"]["header"]["X-Capture-This"] == "this"
@@ -314,7 +314,7 @@ class TestAiohttpServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == f"intid;desc={traceId}"
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_server_get_500(self):
         async def test():
@@ -358,7 +358,7 @@ class TestAiohttpServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == f"intid;desc={traceId}"
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_server_get_exception(self):
         async def test():

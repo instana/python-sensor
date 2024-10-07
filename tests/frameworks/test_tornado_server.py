@@ -107,7 +107,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_post(self) -> None:
         async def test():
@@ -168,7 +168,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_synthetic_request(self) -> None:
         async def test():
@@ -265,7 +265,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     @pytest.mark.skip("Non deterministic (flaky) testcase")
     def test_get_405(self) -> None:
@@ -327,7 +327,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     @pytest.mark.skip("Non deterministic (flaky) testcase")
     def test_get_500(self) -> None:
@@ -390,7 +390,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     @pytest.mark.skip("Non deterministic (flaky) testcase")
     def test_get_504(self) -> None:
@@ -453,7 +453,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_with_params_to_scrub(self) -> None:
         async def test():
@@ -515,7 +515,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_request_header_capture(self) -> None:
         async def test():
@@ -585,7 +585,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
         assert "X-Capture-This" in tornado_span.data["http"]["header"]
         assert tornado_span.data["http"]["header"]["X-Capture-This"] == "this"
@@ -655,7 +655,7 @@ class TestTornadoServer:
         assert "X-INSTANA-L" in response.headers
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
-        assert response.headers["Server-Timing"] == "intid;desc=%s" % traceId
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
         assert "X-Capture-This-Too" in tornado_span.data["http"]["header"]
         assert tornado_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"

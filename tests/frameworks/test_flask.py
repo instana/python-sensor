@@ -211,7 +211,6 @@ class TestFlask(unittest.TestCase):
         # Assert that there are no spans in the recorded list
         assert spans == []
 
-    @unittest.skip("Handled when type of trace and span ids are modified to str")
     def test_get_request_with_suppression_and_w3c(self) -> None:
         headers = {
                 'X-INSTANA-L':'0',

@@ -6,7 +6,7 @@ import time
 import random
 from typing import Union
 
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID
+from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID, INVALID_TRACE_ID
 
 _rnd = random.Random()
 _current_pid = 0
@@ -42,7 +42,7 @@ def header_to_long_id(header: Union[bytes, str]) -> int:
         header = header.decode('utf-8')
 
     if not isinstance(header, str):
-        return INVALID_SPAN_ID
+        return INVALID_TRACE_ID
 
     if header.isdecimal():
         return header
@@ -54,7 +54,7 @@ def header_to_long_id(header: Union[bytes, str]) -> int:
 
         return int(header, 16)
     except ValueError:
-        return INVALID_SPAN_ID
+        return INVALID_TRACE_ID
 
 
 def header_to_id(header: Union[bytes, str]) -> int:
@@ -103,3 +103,34 @@ def hex_id(id: Union[int, str]) -> str:
 def define_server_timing(trace_id: Union[int, str]) -> str:
     # Note: The key `intid` is short for Instana Trace ID.
     return f"intid;desc={hex_id(trace_id)}"
+
+
+def header_to_32(header):
+    if isinstance(header, int):
+        return header
+
+    try:
+        if len(header) < 16:
+            # Left pad ID with zeros
+            header = header.zfill(16)
+
+        return int(header, 16)
+    except ValueError:
+        return INVALID_TRACE_ID
+    
+def header_to_16(header):
+    if isinstance(header, int):
+        return header
+
+    try:
+        length = len(header)
+        if length < 16:
+            # Left pad ID with zeros
+            header = header.zfill(16)
+        elif length > 16:
+            # Phase 0: Discard everything but the last 16byte
+            header = header[-16:]
+
+        return int(header, 16)
+    except ValueError:
+        return INVALID_SPAN_ID

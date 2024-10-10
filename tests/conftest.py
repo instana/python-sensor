@@ -26,8 +26,8 @@ from instana.fsm import TheMachine
 
 collect_ignore_glob = [
     "*test_gevent*",
-    "*platforms/test_gcr*",
-    "*platforms/test_google*",
+    "*collector/test_gcr*",
+    "*agent/test_google*",
 ]
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

@@ -96,3 +96,13 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(self.caplog.records[0].funcName, "log_custom_warning")
 
         self.logger.removeHandler(handler)
+
+    def test_stacklevel_as_kwarg(self):
+        with tracer.start_active_span("test"):
+            self.logger.warning("foo %s", "bar", stacklevel=2)
+
+        spans = self.recorder.queued_spans()
+        self.assertEqual(2, len(spans))
+        self.assertEqual(2, spans[0].k)
+
+        self.assertEqual("foo bar", spans[0].data["log"].get("message"))

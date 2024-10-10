@@ -16,16 +16,22 @@ def log_with_instana(wrapped, instance, argv, kwargs):
     # argv[0] = level
     # argv[1] = message
     # argv[2] = args for message
-    if sys.version_info >= (3, 13):
-        stacklevel = 3
+
+    # We take into consideration if `stacklevel` is already present in `kwargs`.
+    # This prevents the error `_log() got multiple values for keyword argument 'stacklevel'`
+    if "stacklevel" in kwargs.keys():
+        stacklevel = kwargs.pop("stacklevel")
     else:
         stacklevel = 2
+        if sys.version_info >= (3, 13):
+            stacklevel = 3
+        
     try:
-        tracer, parent_span, _ = get_tracer_tuple()
-
         # Only needed if we're tracing and serious log
         if tracing_is_off() or argv[0] < logging.WARN:
             return wrapped(*argv, **kwargs, stacklevel=stacklevel)
+
+        tracer, parent_span, _ = get_tracer_tuple()
 
         msg = str(argv[1])
         args = argv[2]

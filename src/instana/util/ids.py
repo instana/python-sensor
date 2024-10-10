@@ -99,10 +99,24 @@ def hex_id(id: Union[int, str]) -> str:
         hex_id = hex_id.zfill(16)
     return hex_id
 
+def hex_id_16(id: Union[int, str]) -> str:
+    """
+    Returns the hexadecimal representation of the given ID.
+    """
+
+    hex_id = hex(int(id))[2:]
+    length = len(hex_id)
+    if length < 16:
+        hex_id = hex_id.zfill(16)
+    elif length > 16:
+        # Phase 0: Discard everything but the last 16byte
+        hex_id = hex_id[-16:]
+    return hex_id
+
 
 def define_server_timing(trace_id: Union[int, str]) -> str:
     # Note: The key `intid` is short for Instana Trace ID.
-    return f"intid;desc={hex_id(trace_id)}"
+    return f"intid;desc={hex_id_16(trace_id)}"
 
 
 def header_to_32(header):

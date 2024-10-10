@@ -102,13 +102,13 @@ def apply_gevent_monkey_patch() -> None:
 
 def get_aws_lambda_handler() -> Tuple[str, str]:
     """
-    For instrumenting AWS Lambda, users specify their original lambda handler 
-    in the LAMBDA_HANDLER environment variable.  This function searches for and 
+    For instrumenting AWS Lambda, users specify their original lambda handler
+    in the LAMBDA_HANDLER environment variable.  This function searches for and
     parses that environment variable or returns the defaults.
 
     The default handler value for AWS Lambda is 'lambda_function.lambda_handler'
-    which equates to the function "lambda_handler in a file named 
-    lambda_function.py" or in Python terms 
+    which equates to the function "lambda_handler in a file named
+    lambda_function.py" or in Python terms
     "from lambda_function import lambda_handler"
     """
     handler_module = "lambda_function"
@@ -205,7 +205,7 @@ def boot_agent() -> None:
         )
 
     # Hooks
-    # from instana.hooks import hook_uwsgi  # noqa: F401
+    from instana.hooks import hook_uwsgi  # noqa: F401
 
 
 if "INSTANA_DISABLE" not in os.environ:

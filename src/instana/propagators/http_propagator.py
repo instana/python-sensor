@@ -4,7 +4,7 @@
 
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator
-from instana.util.ids import define_server_timing
+from instana.util.ids import define_server_timing, hex_id_16
 
 from opentelemetry.trace.span import format_span_id
 
@@ -55,7 +55,7 @@ class HTTPPropagator(BasePropagator):
             if span_context.suppression:
                 return
 
-            inject_key_value(carrier, self.HEADER_KEY_T, format_span_id(trace_id))
+            inject_key_value(carrier, self.HEADER_KEY_T, hex_id_16(trace_id))
             inject_key_value(carrier, self.HEADER_KEY_S, format_span_id(span_id))
             inject_key_value(
                 carrier, self.HEADER_KEY_SERVER_TIMING, define_server_timing(trace_id)

@@ -126,3 +126,13 @@ class TestLogging:
         assert caplog.records[-1].funcName == "log_custom_warning"
 
         self.logger.removeHandler(handler)
+
+    def test_stacklevel_as_kwarg(self):
+        with tracer.start_as_current_span("test"):
+            self.logger.warning("foo %s", "bar", stacklevel=2)
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+        assert spans[0].k == SpanKind.CLIENT
+
+        assert spans[0].data["log"].get("message") == "foo bar"

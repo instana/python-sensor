@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-import instana
 
 from sanic import Sanic
 from sanic.exceptions import SanicException

@@ -15,13 +15,15 @@ try:
     from instana.propagators.format import Format
     from instana.span.span import get_current_span
 
-    @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
+    @wrapt.patch_function_wrapper("tornado.httpclient", "AsyncHTTPClient.fetch")
     def fetch_with_instana(wrapped, instance, argv, kwargs):
         try:
             parent_span = get_current_span()
 
             # If we're not tracing, just return
-            if (not parent_span.is_recording()) or (parent_span.name == "tornado-client"):
+            if (not parent_span.is_recording()) or (
+                parent_span.name == "tornado-client"
+            ):
                 return wrapped(*argv, **kwargs)
 
             request = argv[0]
@@ -32,7 +34,7 @@ try:
                 request = tornado.httpclient.HTTPRequest(url=request, **kwargs)
 
                 new_kwargs = {}
-                for param in ('callback', 'raise_error'):
+                for param in ("callback", "raise_error"):
                     # if not in instead and pop
                     if param in kwargs:
                         new_kwargs[param] = kwargs.pop(param)
@@ -44,10 +46,11 @@ try:
             tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
 
             # Query param scrubbing
-            parts = request.url.split('?')
+            parts = request.url.split("?")
             if len(parts) > 1:
-                cleaned_qp = strip_secrets_from_query(parts[1], agent.options.secrets_matcher,
-                                                      agent.options.secrets_list)
+                cleaned_qp = strip_secrets_from_query(
+                    parts[1], agent.options.secrets_matcher, agent.options.secrets_list
+                )
                 span.set_attribute("http.params", cleaned_qp)
 
             span.set_attribute(SpanAttributes.HTTP_URL, parts[0])
@@ -63,7 +66,6 @@ try:
         except Exception:
             logger.debug("Tornado fetch_with_instana: ", exc_info=True)
 
-
     def finish_tracing(future, span):
         try:
             response = future.result()
@@ -75,7 +77,6 @@ try:
         finally:
             if span.is_recording():
                 span.end()
-
 
     logger.debug("Instrumenting tornado client")
 except ImportError:

@@ -12,7 +12,6 @@ from instana.util.traceutils import get_tracer_tuple
 from opentelemetry import trace, context
 
 try:
-    import celery
     from celery import registry, signals
 
     from urllib import parse

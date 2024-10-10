@@ -7,8 +7,9 @@ from tests.helpers import testenv
 
 testenv["starlette_host"] = "127.0.0.1"
 testenv["starlette_port"] = 10817
-testenv["starlette_server"] = "http://" + testenv["starlette_host"] + ":" + str(testenv["starlette_port"])
-
+testenv["starlette_server"] = (
+    "http://" + testenv["starlette_host"] + ":" + str(testenv["starlette_port"])
+)
 
 
 def launch_starlette():
@@ -17,7 +18,7 @@ def launch_starlette():
 
     # Hack together a manual custom headers list; We'll use this in tests
     agent.options.extra_http_headers = [
-        "X-Capture-This", 
+        "X-Capture-This",
         "X-Capture-That",
     ]
 

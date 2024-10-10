@@ -8,7 +8,7 @@ import opentracing
 
 while True:
     time.sleep(2)
-    with opentracing.tracer.start_active_span('RPCJobRunner') as rscope:
+    with opentracing.tracer.start_active_span("RPCJobRunner") as rscope:
         rscope.span.set_tag("span.kind", "entry")
         rscope.span.set_tag("http.url", "http://jobkicker.instana.com/runrpcjob")
         rscope.span.set_tag("http.method", "GET")
@@ -20,10 +20,11 @@ while True:
             scope.span.set_tag("rpc.call", "dance")
 
             carrier = dict()
-            opentracing.tracer.inject(scope.span.context, opentracing.Format.HTTP_HEADERS, carrier)
+            opentracing.tracer.inject(
+                scope.span.context, opentracing.Format.HTTP_HEADERS, carrier
+            )
 
             with xmlrpc.client.ServerProxy("http://localhost:8261/") as proxy:
-
                 result = proxy.dance("NOW!", carrier)
                 scope.span.set_tag("result", result)
 

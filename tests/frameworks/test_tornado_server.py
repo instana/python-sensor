@@ -10,7 +10,7 @@ import tornado
 from tornado.httpclient import AsyncHTTPClient
 
 from instana.util.ids import hex_id
-import tests.apps.tornado_server
+import tests.apps.tornado_server  # noqa: F401
 
 from instana.singletons import tracer, agent
 from tests.helpers import testenv, get_first_span_by_name, get_first_span_by_filter
@@ -27,14 +27,16 @@ class TestTornadoServer:
 
     async def post(self, session, url, headers=None):
         try:
-            async with session.post(url, headers=headers, data={"hello": "post"}) as response:
+            async with session.post(
+                url, headers=headers, data={"hello": "post"}
+            ) as response:
                 return response
         except aiohttp.web_exceptions.HTTPException:
             pass
 
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
 
@@ -105,7 +107,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -166,19 +168,19 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_synthetic_request(self) -> None:
         async def test():
-            headers = {
-                'X-INSTANA-SYNTHETIC': '1'
-            }
+            headers = {"X-INSTANA-SYNTHETIC": "1"}
 
             with tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["tornado_server"] + "/", headers=headers)
+                    return await self.fetch(
+                        session, testenv["tornado_server"] + "/", headers=headers
+                    )
 
         tornado.ioloop.IOLoop.current().run_sync(test)
 
@@ -204,9 +206,14 @@ class TestTornadoServer:
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
 
-        filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 301
+        def filter(span):
+            return span.n == "tornado-server" and span.data["http"]["status"] == 301
+
         tornado_301_span = get_first_span_by_filter(spans, filter)
-        filter = lambda span: span.n == "tornado-server" and span.data["http"]["status"] == 200
+
+        def filter(span):
+            return span.n == "tornado-server" and span.data["http"]["status"] == 200
+
         tornado_span = get_first_span_by_filter(spans, filter)
         aiohttp_span = get_first_span_by_name(spans, "aiohttp-client")
         test_span = get_first_span_by_name(spans, "sdk")
@@ -241,7 +248,9 @@ class TestTornadoServer:
         assert not tornado_span.ec
 
         assert tornado_301_span.data["http"]["status"] == 301
-        assert testenv["tornado_server"] + "/301" == tornado_301_span.data["http"]["url"]
+        assert (
+            testenv["tornado_server"] + "/301" == tornado_301_span.data["http"]["url"]
+        )
         assert not tornado_span.data["http"]["params"]
         assert tornado_301_span.data["http"]["method"] == "GET"
         assert not tornado_301_span.stack
@@ -263,7 +272,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -325,7 +334,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -378,7 +387,7 @@ class TestTornadoServer:
         assert aiohttp_span.data["http"]["status"] == 500
         assert testenv["tornado_server"] + "/500" == aiohttp_span.data["http"]["url"]
         assert aiohttp_span.data["http"]["method"] == "GET"
-        assert 'Internal Server Error' == aiohttp_span.data["http"]["error"]
+        assert "Internal Server Error" == aiohttp_span.data["http"]["error"]
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
         assert len(aiohttp_span.stack) > 1
@@ -388,7 +397,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -441,7 +450,7 @@ class TestTornadoServer:
         assert aiohttp_span.data["http"]["status"] == 504
         assert testenv["tornado_server"] + "/504" == aiohttp_span.data["http"]["url"]
         assert aiohttp_span.data["http"]["method"] == "GET"
-        assert 'Gateway Timeout' == aiohttp_span.data["http"]["error"]
+        assert "Gateway Timeout" == aiohttp_span.data["http"]["error"]
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
         assert len(aiohttp_span.stack) > 1
@@ -451,7 +460,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -459,7 +468,9 @@ class TestTornadoServer:
         async def test():
             with tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
-                    return await self.fetch(session, testenv["tornado_server"], params={"secret": "yeah"})
+                    return await self.fetch(
+                        session, testenv["tornado_server"], params={"secret": "yeah"}
+                    )
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
@@ -513,7 +524,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -522,14 +533,22 @@ class TestTornadoServer:
             with tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     # Hack together a manual custom request headers list
-                    agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
+                    agent.options.extra_http_headers = [
+                        "X-Capture-This",
+                        "X-Capture-That",
+                    ]
 
                     request_headers = {
                         "X-Capture-This": "this",
-                        "X-Capture-That": "that"
+                        "X-Capture-That": "that",
                     }
 
-                    return await self.fetch(session, testenv["tornado_server"], headers=request_headers, params={"secret": "iloveyou"})
+                    return await self.fetch(
+                        session,
+                        testenv["tornado_server"],
+                        headers=request_headers,
+                        params={"secret": "iloveyou"},
+                    )
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
@@ -583,7 +602,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
@@ -597,9 +616,16 @@ class TestTornadoServer:
             with tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     # Hack together a manual custom response headers list
-                    agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
+                    agent.options.extra_http_headers = [
+                        "X-Capture-This-Too",
+                        "X-Capture-That-Too",
+                    ]
 
-                    return await self.fetch(session, testenv["tornado_server"] + "/response_headers", params={"secret": "itsasecret"})
+                    return await self.fetch(
+                        session,
+                        testenv["tornado_server"] + "/response_headers",
+                        params={"secret": "itsasecret"},
+                    )
 
         response = tornado.ioloop.IOLoop.current().run_sync(test)
 
@@ -635,13 +661,19 @@ class TestTornadoServer:
         assert not tornado_span.ec
 
         assert tornado_span.data["http"]["status"] == 200
-        assert testenv["tornado_server"] + "/response_headers" == tornado_span.data["http"]["url"]
+        assert (
+            testenv["tornado_server"] + "/response_headers"
+            == tornado_span.data["http"]["url"]
+        )
         assert tornado_span.data["http"]["params"] == "secret=<redacted>"
         assert tornado_span.data["http"]["method"] == "GET"
         assert not tornado_span.stack
 
         assert aiohttp_span.data["http"]["status"] == 200
-        assert testenv["tornado_server"] + "/response_headers" == aiohttp_span.data["http"]["url"]
+        assert (
+            testenv["tornado_server"] + "/response_headers"
+            == aiohttp_span.data["http"]["url"]
+        )
         assert aiohttp_span.data["http"]["method"] == "GET"
         assert aiohttp_span.data["http"]["params"] == "secret=<redacted>"
         assert aiohttp_span.stack
@@ -653,7 +685,7 @@ class TestTornadoServer:
         assert "X-INSTANA-S" in response.headers
         assert response.headers["X-INSTANA-S"] == hex_id(tornado_span.s)
         assert "X-INSTANA-L" in response.headers
-        assert response.headers["X-INSTANA-L"] == '1'
+        assert response.headers["X-INSTANA-L"] == "1"
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 

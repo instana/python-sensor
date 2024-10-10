@@ -43,11 +43,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -128,11 +132,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -192,11 +200,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -256,11 +268,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 

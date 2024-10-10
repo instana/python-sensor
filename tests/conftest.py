@@ -98,9 +98,10 @@ def trace_id() -> int:
 def span_id() -> int:
     return 6895521157646639861
 
+
 @pytest.fixture
-def hex_trace_id(trace_id:int) -> str:
-    # Using format_span_id() to return a 16-byte hexadecimal string, instead of 
+def hex_trace_id(trace_id: int) -> str:
+    # Using format_span_id() to return a 16-byte hexadecimal string, instead of
     # the 32-byte hexadecimal string from format_trace_id().
     return format_span_id(trace_id)
 
@@ -108,6 +109,7 @@ def hex_trace_id(trace_id:int) -> str:
 @pytest.fixture
 def hex_span_id(span_id: int) -> str:
     return format_span_id(span_id)
+
 
 @pytest.fixture
 def span_processor() -> StanRecorder:
@@ -198,6 +200,7 @@ def prepare_and_report_data(monkeypatch, request):
     else:
         monkeypatch.setattr(BaseCollector, "prepare_and_report_data", always_true)
 
+
 # Mocking HostAgent.is_agent_listening()
 @pytest.fixture(autouse=True)
 def is_agent_listening(monkeypatch, request) -> None:
@@ -205,9 +208,12 @@ def is_agent_listening(monkeypatch, request) -> None:
     if "original" in request.keywords:
         # If using the `@pytest.mark.original` marker before the test function,
         # uses the original HostAgent.is_agent_listening()
-        monkeypatch.setattr(HostAgent, "is_agent_listening", HostAgent.is_agent_listening)
+        monkeypatch.setattr(
+            HostAgent, "is_agent_listening", HostAgent.is_agent_listening
+        )
     else:
         monkeypatch.setattr(HostAgent, "is_agent_listening", always_true)
+
 
 @pytest.fixture(autouse=True)
 def lookup_agent_host(monkeypatch, request) -> None:
@@ -215,9 +221,12 @@ def lookup_agent_host(monkeypatch, request) -> None:
     if "original" in request.keywords:
         # If using the `@pytest.mark.original` marker before the test function,
         # uses the original TheMachine.lookup_agent_host()
-        monkeypatch.setattr(TheMachine, "lookup_agent_host", TheMachine.lookup_agent_host)
+        monkeypatch.setattr(
+            TheMachine, "lookup_agent_host", TheMachine.lookup_agent_host
+        )
     else:
         monkeypatch.setattr(TheMachine, "lookup_agent_host", always_true)
+
 
 @pytest.fixture(autouse=True)
 def announce_sensor(monkeypatch, request) -> None:

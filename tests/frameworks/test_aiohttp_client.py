@@ -409,7 +409,10 @@ class TestAiohttpClient:
 
         assert aiohttp_span.n == "aiohttp-client"
         assert aiohttp_span.data["http"]["status"] == 200
-        assert aiohttp_span.data["http"]["url"] == testenv["flask_server"] + "/response_headers"
+        assert (
+            aiohttp_span.data["http"]["url"]
+            == testenv["flask_server"] + "/response_headers"
+        )
         assert aiohttp_span.data["http"]["method"] == "GET"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
@@ -438,7 +441,7 @@ class TestAiohttpClient:
         response = None
         try:
             response = self.loop.run_until_complete(test())
-        except:
+        except Exception:
             pass
 
         spans = self.recorder.queued_spans()

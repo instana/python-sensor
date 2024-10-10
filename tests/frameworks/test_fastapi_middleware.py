@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import logging
 from typing import Generator
 
 import pytest
@@ -23,6 +22,7 @@ class TestFastAPIMiddleware:
         # setup
         # We are using the TestClient from FastAPI to make it easier.
         from tests.apps.fastapi_app.app2 import fastapi_server
+
         self.client = TestClient(fastapi_server)
         # Clear all spans before a test run.
         self.recorder = tracer.span_processor

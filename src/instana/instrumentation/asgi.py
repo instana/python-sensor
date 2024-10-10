@@ -121,7 +121,9 @@ class InstanaASGIMiddleware:
                     if status_code:
                         if 500 <= int(status_code):
                             current_span.mark_as_errored()
-                        current_span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
+                        current_span.set_attribute(
+                            SpanAttributes.HTTP_STATUS_CODE, status_code
+                        )
 
                     headers = response.get("headers")
                     if headers:

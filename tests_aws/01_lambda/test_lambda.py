@@ -24,6 +24,7 @@ from instana.util.ids import hex_id
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
 
+
 # Mock Context object
 class MockContext(dict):
     def __init__(self, **kwargs: Dict[str, Any]) -> None:
@@ -81,7 +82,7 @@ class TestLambda:
         self.agent: AWSLambdaAgent = get_agent()
         yield
         # tearDown
-        # Reset collector config 
+        # Reset collector config
         self.agent.collector.snapshot_data_sent = False
         # Reset all environment variables of consequence
         if "AWS_EXECUTION_ENV" in os.environ:
@@ -184,7 +185,7 @@ class TestLambda:
         os.environ["INSTANA_AGENT_KEY"] = "Fake_Key"
         # We need reset the AWSLambdaOptions with new INSTANA_SERVICE_NAME
         self.agent.options = AWSLambdaOptions()
-        
+
         with open(
             self.pwd + "/../data/lambda/api_gateway_event.json", "r"
         ) as json_file:
@@ -779,7 +780,9 @@ class TestLambda:
     def test_agent_default_log_level(self) -> None:
         assert self.agent.options.log_level == logging.WARNING
 
-    def __validate_result_and_payload_for_gateway_v2_trace(self, result: Dict[str, Any], payload: defaultdict) -> "InstanaSpan":
+    def __validate_result_and_payload_for_gateway_v2_trace(
+        self, result: Dict[str, Any], payload: defaultdict
+    ) -> "InstanaSpan":
         assert isinstance(result, dict)
         assert "headers" in result
         assert "Server-Timing" in result["headers"]

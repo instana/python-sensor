@@ -27,7 +27,7 @@ if TYPE_CHECKING:
         from werkzeug.datastructures import Headers
 
 
-@wrapt.patch_function_wrapper('flask', 'templating._render')
+@wrapt.patch_function_wrapper("flask", "templating._render")
 def render_with_instana(
     wrapped: Callable[..., str],
     instance: object,
@@ -58,7 +58,7 @@ def render_with_instana(
             raise
 
 
-@wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
+@wrapt.patch_function_wrapper("flask", "Flask.handle_user_exception")
 def handle_user_exception_with_instana(
     wrapped: Callable[..., Union["HTTPException", "ResponseReturnValue"]],
     instance: flask.app.Flask,
@@ -78,7 +78,7 @@ def handle_user_exception_with_instana(
                 if isinstance(response, tuple):
                     status_code = response[1]
                 else:
-                    if hasattr(response, 'code'):
+                    if hasattr(response, "code"):
                         status_code = response.code
                     else:
                         status_code = response.status_code
@@ -88,12 +88,12 @@ def handle_user_exception_with_instana(
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(status_code))
 
-                if hasattr(response, 'headers'):
+                if hasattr(response, "headers"):
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
             if span and span.is_recording():
                 span.end()
             flask.g.span = None
-    except:
+    except Exception:
         logger.debug("handle_user_exception_with_instana:", exc_info=True)
 
     return response
@@ -107,7 +107,11 @@ def extract_custom_headers(
     try:
         for custom_header in agent.options.extra_http_headers:
             # Headers are available in this format: HTTP_X_CAPTURE_THIS
-            flask_header = ('HTTP_' + custom_header.upper()).replace('-', '_') if format else custom_header
+            flask_header = (
+                ("HTTP_" + custom_header.upper()).replace("-", "_")
+                if format
+                else custom_header
+            )
             if flask_header in headers:
                 span.set_attribute(
                     "http.header.%s" % custom_header, headers[flask_header]

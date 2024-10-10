@@ -1,10 +1,11 @@
 # Standard Libraries
-import re
 import json
+import re
+
+import pandas as pd
 
 # Third Party
 import requests
-import pandas as pd
 from bs4 import BeautifulSoup
 from kubernetes import client, config
 
@@ -117,7 +118,9 @@ def process_taskrun_logs(
                 match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
                 tekton_ci_output += f"{match[1]}\n"
             elif task_name == "python-tracer-unittest-googlecloud-task":
-                match = re.search("Successfully installed .* (google-cloud-storage-[^\s]+)", logs)
+                match = re.search(
+                    "Successfully installed .* (google-cloud-storage-[^\s]+)", logs
+                )
                 tekton_ci_output += f"{match[1]}\n"
             elif task_name == "python-tracer-unittest-default-task":
                 for line in logs.splitlines():
@@ -140,7 +143,10 @@ def get_tekton_ci_output():
     core_v1_client = client.CoreV1Api()
 
     task_name = "python-tracer-unittest-gevent-starlette-task"
-    taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"
+
+    def taskrun_filter(tr):
+        return tr["status"]["conditions"][0]["type"] == "Succeeded"
+
     starlette_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     tekton_ci_output = process_taskrun_logs(
@@ -148,10 +154,13 @@ def get_tekton_ci_output():
     )
 
     task_name = "python-tracer-unittest-googlecloud-task"
-    taskrun_filter = (
-        lambda tr: tr["metadata"]["name"].endswith("unittest-googlecloud-0")
-        and tr["status"]["conditions"][0]["type"] == "Succeeded"
-    )
+
+    def taskrun_filter(tr):
+        return (
+            tr["metadata"]["name"].endswith("unittest-googlecloud-0")
+            and tr["status"]["conditions"][0]["type"] == "Succeeded"
+        )
+
     googlecloud_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     tekton_ci_output = process_taskrun_logs(
@@ -159,10 +168,13 @@ def get_tekton_ci_output():
     )
 
     task_name = "python-tracer-unittest-default-task"
-    taskrun_filter = (
-        lambda tr: tr["metadata"]["name"].endswith("unittest-default-3")
-        and tr["status"]["conditions"][0]["type"] == "Succeeded"
-    )
+
+    def taskrun_filter(tr):
+        return (
+            tr["metadata"]["name"].endswith("unittest-default-3")
+            and tr["status"]["conditions"][0]["type"] == "Succeeded"
+        )
+
     default_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     tekton_ci_output = process_taskrun_logs(

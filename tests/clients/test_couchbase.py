@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
 import time
 from typing import Generator
 from unittest.mock import patch

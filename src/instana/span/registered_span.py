@@ -239,8 +239,12 @@ class RegisteredSpan(BaseSpan):
             self.data["mysql"]["host"] = span.attributes.pop("host", None)
             self.data["mysql"]["port"] = span.attributes.pop("port", None)
             self.data["mysql"]["db"] = span.attributes.pop(SpanAttributes.DB_NAME, None)
-            self.data["mysql"]["user"] = span.attributes.pop(SpanAttributes.DB_USER, None)
-            self.data["mysql"]["stmt"] = span.attributes.pop(SpanAttributes.DB_STATEMENT, None)
+            self.data["mysql"]["user"] = span.attributes.pop(
+                SpanAttributes.DB_USER, None
+            )
+            self.data["mysql"]["stmt"] = span.attributes.pop(
+                SpanAttributes.DB_STATEMENT, None
+            )
             self.data["mysql"]["error"] = span.attributes.pop("mysql.error", None)
 
         elif span.name == "postgres":

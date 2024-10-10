@@ -127,15 +127,21 @@ class TestDjango(StaticLiveServerTestCase):
             msg = "Expected 3 spans but got %d" % span_count
             fail_with_message_and_span_dump(msg, spans)
 
-        filter = lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
+        def filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "urllib3"
+        def filter(span):
+            return span.n == "urllib3"
+
         urllib3_span = get_first_span_by_filter(spans, filter)
         assert urllib3_span
 
-        filter = lambda span: span.n == "django"
+        def filter(span):
+            return span.n == "django"
+
         django_span = get_first_span_by_filter(spans, filter)
         assert django_span
 
@@ -188,7 +194,9 @@ class TestDjango(StaticLiveServerTestCase):
             msg = "Expected 3 spans but got %d" % span_count
             fail_with_message_and_span_dump(msg, spans)
 
-        filter = lambda span: span.n == "django"
+        def filter(span):
+            return span.n == "django"
+
         django_span = get_first_span_by_filter(spans, filter)
         assert django_span
 
@@ -210,7 +218,9 @@ class TestDjango(StaticLiveServerTestCase):
             msg = "Expected 3 spans but got %d" % span_count
             fail_with_message_and_span_dump(msg, spans)
 
-        filter = lambda span: span.n == "django"
+        def filter(span):
+            return span.n == "django"
+
         django_span = get_first_span_by_filter(spans, filter)
         assert django_span
         assert django_span.data["http"]["path_tpl"] is None

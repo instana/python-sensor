@@ -4,7 +4,7 @@
 from typing import Generator
 
 import pytest
-from instana.singletons import agent, tracer
+from instana.singletons import tracer
 from starlette.testclient import TestClient
 
 from instana.util.ids import hex_id

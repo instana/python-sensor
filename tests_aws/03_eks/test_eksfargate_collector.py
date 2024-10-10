@@ -6,7 +6,6 @@ from typing import Generator
 import pytest
 
 from instana.agent.aws_eks_fargate import EKSFargateAgent
-from instana.singletons import get_agent
 
 
 class TestEKSFargateCollector:

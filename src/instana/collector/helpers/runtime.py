@@ -1,7 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-""" Collection helper for the Python runtime """
+"""Collection helper for the Python runtime"""
+
 import gc
 import importlib.metadata
 import os
@@ -19,10 +20,11 @@ from instana.version import VERSION
 
 PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT = "/tmp/.instana/python"
 
-PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = '/opt/instana/instrumentation/python/'
+PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = "/opt/instana/instrumentation/python/"
+
 
 def is_autowrapt_instrumented():
-    return 'instana' in os.environ.get('AUTOWRAPT_BOOTSTRAP', ())
+    return "instana" in os.environ.get("AUTOWRAPT_BOOTSTRAP", ())
 
 
 def is_webhook_instrumented():
@@ -316,9 +318,9 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload["iv"] = VERSION
 
             if is_autowrapt_instrumented():
-                snapshot_payload['m'] = 'Autowrapt'
+                snapshot_payload["m"] = "Autowrapt"
             elif is_webhook_instrumented():
-                snapshot_payload['m'] = 'AutoTrace'
+                snapshot_payload["m"] = "AutoTrace"
             else:
                 snapshot_payload["m"] = "Manual"
 

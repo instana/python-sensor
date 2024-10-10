@@ -20,8 +20,6 @@ if TYPE_CHECKING:
     from botocore.client import BaseClient
 
 try:
-    import boto3
-    from boto3.s3 import inject
 
     def extract_custom_headers(
         span: "InstanaSpan", headers: Optional[Dict[str, Any]] = None

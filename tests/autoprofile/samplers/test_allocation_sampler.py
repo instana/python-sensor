@@ -69,4 +69,3 @@ class TestAllocationSampler:
         profile = sampler.build_profile(2000, 120000).to_dict()
 
         assert "test_allocation_sampler.py" in str(profile)
-

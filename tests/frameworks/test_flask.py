@@ -223,6 +223,10 @@ class TestFlask(unittest.TestCase):
         spans = self.recorder.queued_spans()
 
         assert response.headers.get("X-INSTANA-L", None) == "0"
+        # if X-INSTANA-L=0 then both X-INSTANA-T and X-INSTANA-S should not be present
+        assert not response.headers.get("X-INSTANA-T", None)
+        assert not response.headers.get("X-INSTANA-S", None)
+
         assert response.headers.get("traceparent", None) is not None
         assert response.headers["traceparent"].startswith("00-0af7651916cd43dd8448eb211c80319c")
         assert response.headers["traceparent"][-1] == "0"

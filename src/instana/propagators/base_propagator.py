@@ -8,7 +8,7 @@ from typing import Any, Optional, TypeVar, Dict, List, Tuple
 
 from instana.log import logger
 from instana.span_context import SpanContext
-from instana.util.ids import header_to_id, header_to_long_id, hex_id, header_to_32, header_to_16
+from instana.util.ids import header_to_id, header_to_long_id, hex_id, header_to_32, header_to_16, hex_id_16
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
 
@@ -219,7 +219,7 @@ class BasePropagator(object):
                 instana_ancestor = self._ts.get_instana_ancestor(tracestate)
 
             if disable_traceparent == "":
-                ctx_trace_id = tp_trace_id
+                ctx_trace_id = hex_id_16(tp_trace_id)
                 ctx_span_id = tp_parent_id
                 ctx_synthetic = synthetic
                 ctx_trace_parent = True

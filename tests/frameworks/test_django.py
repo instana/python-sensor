@@ -369,8 +369,8 @@ class TestDjango(StaticLiveServerTestCase):
 
         agent.options.extra_http_headers = original_extra_http_headers
 
-    # @pytest.mark.skip("Handled when type of trace and span ids are modified to str")
     def test_with_incoming_context(self) -> None:
+        """https://github.ibm.com/instana/technical-documentation/blob/master/tracing/specification/README.md#both-instana-headers-and-w3c-trace-context-specification-headers-incoming-not-suppressed"""
         request_headers = dict()
         request_headers["X-INSTANA-T"] = "1"
         request_headers["X-INSTANA-S"] = "1"
@@ -393,11 +393,8 @@ class TestDjango(StaticLiveServerTestCase):
 
         django_span = spans[0]
 
-        # assert django_span.t == '0000000000000001'
-        # assert django_span.p == '0000000000000001'
-        print(hex_id(django_span.t), hex_id(django_span.p))
-        assert django_span.t == 1
-        assert django_span.p == 1
+        assert hex_id(django_span.t) == '0000000000000001'
+        assert hex_id(django_span.p) == '0000000000000001'
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -417,10 +414,10 @@ class TestDjango(StaticLiveServerTestCase):
         assert "traceparent" in response.headers
         # The incoming traceparent header had version 01 (which does not exist at the time of writing), but since we
         # support version 00, we also need to pass down 00 for the version field.
-        # assert (
-        #     "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
-        #     == response.headers["traceparent"]
-        # )
+        assert (
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{hex_id(django_span.s)}-01"
+            == response.headers["traceparent"]
+        )
 
         assert "tracestate" in response.headers
         assert (
@@ -428,8 +425,8 @@ class TestDjango(StaticLiveServerTestCase):
             == response.headers["tracestate"]
         )
 
-    @pytest.mark.skip("Handled when type of trace and span ids are modified to str")
     def test_with_incoming_context_and_correlation(self) -> None:
+        """https://github.ibm.com/instana/technical-documentation/blob/master/tracing/specification/README.md#incoming-correlation-part-plus-w3c-trace-context-specification-headers"""
         request_headers = dict()
         request_headers["X-INSTANA-T"] = "1"
         request_headers["X-INSTANA-S"] = "1"
@@ -455,11 +452,11 @@ class TestDjango(StaticLiveServerTestCase):
 
         django_span = spans[0]
 
-        assert django_span.t == "a3ce929d0e0e4736"
-        assert django_span.p == "00f067aa0ba902b7"
+        assert hex_id(django_span.t) == "a3ce929d0e0e4736"
+        assert hex_id(django_span.p) == "00f067aa0ba902b7"
         assert django_span.ia.t == "a3ce929d0e0e4736"
         assert django_span.ia.p == "8357ccd9da194656"
-        assert django_span.lt == "4bf92f3577b34da6a3ce929d0e0e4736"
+        assert hex_id(django_span.lt) == "4bf92f3577b34da6a3ce929d0e0e4736"
         assert django_span.tp
         assert django_span.crtp == "web"
         assert django_span.crid == "1234567890abcdef"
@@ -481,26 +478,24 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "traceparent" in response.headers
         assert (
-            "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{hex_id(django_span.s)}-01"
             == response.headers["traceparent"]
         )
 
         assert "tracestate" in response.headers
         assert (
-            "in={};{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".format(
-                django_span.t, django_span.s
-            )
+            f"in={hex_id(django_span.t)};{hex_id(django_span.s)},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
             == response.headers["tracestate"]
         )
 
-    @pytest.mark.skip("Handled when type of trace and span ids are modified to str")
     def test_with_incoming_traceparent_tracestate(self) -> None:
+        """https://github.ibm.com/instana/technical-documentation/blob/master/tracing/specification/README.md#incoming-w3c-trace-context-specification-headers-but-no-instana-headers"""
         request_headers = dict()
         request_headers["traceparent"] = (
             "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
         )
         request_headers["tracestate"] = (
-            "rojo=00f067aa0ba902b7,in=a3ce929d0e0e4736;8357ccd9da194656,congo=t61rcWkgMzE"
+            "rojo=00f067aa0ba902b7,in=b4ce929d0e0e4735;9457ccd9da194657,congo=t61rcWkgMzE"
         )
 
         response = self.http.request(
@@ -516,12 +511,12 @@ class TestDjango(StaticLiveServerTestCase):
         django_span = spans[0]
 
         assert (
-            django_span.t == "a3ce929d0e0e4736"
+            hex_id(django_span.t) == "a3ce929d0e0e4736"
         )  # last 16 chars from traceparent trace_id
-        assert django_span.p == "00f067aa0ba902b7"
-        assert django_span.ia.t == "a3ce929d0e0e4736"
-        assert django_span.ia.p == "8357ccd9da194656"
-        assert django_span.lt == "4bf92f3577b34da6a3ce929d0e0e4736"
+        assert hex_id(django_span.p) == "00f067aa0ba902b7"
+        assert django_span.ia.t == "b4ce929d0e0e4735"
+        assert django_span.ia.p == "9457ccd9da194657"
+        assert hex_id(django_span.lt) == "4bf92f3577b34da6a3ce929d0e0e4736"
         assert django_span.tp
 
         assert "X-INSTANA-T" in response.headers
@@ -541,15 +536,13 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "traceparent" in response.headers
         assert (
-            "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{hex_id(django_span.s)}-01"
             == response.headers["traceparent"]
         )
 
         assert "tracestate" in response.headers
         assert (
-            "in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".format(
-                django_span.s
-            )
+            f"in=a3ce929d0e0e4736;{hex_id(django_span.s)},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
             == response.headers["tracestate"]
         )
 
@@ -600,10 +593,10 @@ class TestDjango(StaticLiveServerTestCase):
         assert response.headers["Server-Timing"] == server_timing_value
 
         assert "traceparent" in response.headers
-        # assert (
-        #     f"00-4bf92f3577b34da6a3ce929d0e0e4736-{hex_id(django_span.s)}-01"
-        #     == response.headers["traceparent"]
-        # )
+        assert (
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{hex_id(django_span.s)}-01"
+            == response.headers["traceparent"]
+        )
 
         assert "tracestate" in response.headers
         assert (
@@ -628,10 +621,8 @@ class TestDjango(StaticLiveServerTestCase):
 
         django_span = spans[0]
 
-        # assert django_span.t == '0000000000000001'
-        # assert django_span.p == '0000000000000001'
-
-        print(hex_id(django_span.t), hex_id(django_span.p))
+        assert hex_id(django_span.t) == '0000000000000001'
+        assert hex_id(django_span.p) == '0000000000000001'
         
         assert django_span.t == 1
         assert django_span.p == 1

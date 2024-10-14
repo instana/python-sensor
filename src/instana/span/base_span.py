@@ -6,6 +6,7 @@ import six
 from instana.log import logger
 from instana.util import DictionaryOfStan
 from instana.util.ids import hex_id_16, header_to_32
+from instana.span.kind import ENTRY_SPANS
 
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -32,7 +33,7 @@ class BaseSpan(object):
         self.data = DictionaryOfStan()
         self.stack = span.stack
 
-        if span.synthetic is True:
+        if span.synthetic is True and span.name in ENTRY_SPANS:
             self.sy = span.synthetic
 
         self.__dict__.update(kwargs)

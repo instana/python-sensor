@@ -5,6 +5,7 @@ import six
 
 from instana.log import logger
 from instana.util import DictionaryOfStan
+from instana.util.ids import hex_id_16, header_to_32
 
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -21,7 +22,7 @@ class BaseSpan(object):
 
     def __init__(self, span: Type["Span"], source, **kwargs) -> None:
         # pylint: disable=invalid-name
-        self.t = span.context.trace_id
+        self.t = header_to_32(hex_id_16(span.context.trace_id)) 
         self.p = span.parent_id
         self.s = span.context.span_id
         self.ts = round(span.start_time / 10**6)

@@ -97,6 +97,8 @@ def hex_id(id: Union[int, str]) -> str:
     hex_id = hex(int(id))[2:]
     if len(hex_id) < 16:
         hex_id = hex_id.zfill(16)
+    elif len(hex_id) > 16 and len(hex_id) < 32:
+        hex_id = hex_id.zfill(32)
     return hex_id
 
 def hex_id_16(id: Union[int, str]) -> str:
@@ -119,7 +121,7 @@ def define_server_timing(trace_id: Union[int, str]) -> str:
     return f"intid;desc={hex_id_16(trace_id)}"
 
 
-def header_to_32(header):
+def header_to_32(header) -> int:
     if isinstance(header, int):
         return header
 
@@ -132,7 +134,7 @@ def header_to_32(header):
     except ValueError:
         return INVALID_TRACE_ID
     
-def header_to_16(header):
+def header_to_16(header) -> int:
     if isinstance(header, int):
         return header
 

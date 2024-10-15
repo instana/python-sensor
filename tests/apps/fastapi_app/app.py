@@ -6,6 +6,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.testclient import TestClient
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from instana.span.span import get_current_span
+from instana.util.ids import hex_id
 
 fastapi_server = FastAPI()
 
@@ -59,8 +60,8 @@ def trigger_outgoing_call():
     # we must pass the SDK trace_id and span_id to the ASGI server.
     span_context = get_current_span().get_span_context()
     headers = {
-        "X-INSTANA-T": str(span_context.trace_id),
-        "X-INSTANA-S": str(span_context.span_id),
+        "X-INSTANA-T": hex_id(span_context.trace_id),
+        "X-INSTANA-S": hex_id(span_context.span_id),
     }
     client = TestClient(fastapi_server, headers=headers)
     response = client.get("/users/1")

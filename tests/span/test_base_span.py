@@ -56,7 +56,8 @@ def test_basespan_with_synthetic_source_and_kwargs(
 
     assert trace_id == base_span.t
     assert span_id == base_span.s
-    assert base_span.sy
+    # synthetic should be true only for entry spans
+    assert not base_span.sy
     assert source == base_span.f
     assert _kwarg1 == base_span.arg1
 
@@ -96,7 +97,8 @@ def test_populate_extra_span_attributes_with_values(
 
     assert trace_id == base_span.t
     assert span_id == base_span.s
-    assert base_span.sy
+    # synthetic should be true only for entry spans
+    assert not base_span.sy
     assert base_span.tp
     assert "IDK" == base_span.ia
     assert long_id == base_span.lt

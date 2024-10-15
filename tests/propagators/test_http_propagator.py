@@ -14,7 +14,7 @@ from opentelemetry.trace import (
 
 from instana.propagators.http_propagator import HTTPPropagator
 from instana.span_context import SpanContext
-from instana.util.ids import header_to_id
+from instana.util.ids import header_to_long_id, header_to_32, hex_id_16
 
 
 class TestHTTPPropagator:
@@ -62,7 +62,6 @@ class TestHTTPPropagator:
         span_id: int,
         _instana_long_tracer_id: str,
         _instana_span_id: str,
-        _long_tracer_id: int,
         _trace_id: int,
         _span_id: int,
         _traceparent: str,
@@ -82,7 +81,7 @@ class TestHTTPPropagator:
         assert ctx.correlation_type == "web"
         assert not ctx.instana_ancestor
         assert ctx.level == 1
-        assert ctx.long_trace_id == header_to_id(_instana_long_tracer_id)
+        assert ctx.long_trace_id == header_to_long_id(_instana_long_tracer_id)
         assert ctx.span_id == _span_id
         assert not ctx.synthetic
         assert ctx.trace_id == _trace_id
@@ -92,13 +91,14 @@ class TestHTTPPropagator:
 
     def test_extract_carrier_list(
         self,
-        trace_id: int,
-        span_id: int,
         _instana_long_tracer_id: str,
         _instana_span_id: str,
+        _trace_id: int,
+        _span_id: int,
         _traceparent: str,
         _tracestate: str,
     ) -> None:
+        _trace_id = str(_trace_id)
         carrier = [
             ("user-agent", "python-requests/2.23.0"),
             ("accept-encoding", "gzip, deflate"),
@@ -106,8 +106,8 @@ class TestHTTPPropagator:
             ("connection", "keep-alive"),
             ("traceparent", _traceparent),
             ("tracestate", _tracestate),
-            ("X-INSTANA-T", f"{trace_id}"),
-            ("X-INSTANA-S", f"{span_id}"),
+            ("X-INSTANA-T", f"{_trace_id}"),
+            ("X-INSTANA-S", f"{_span_id}"),
             ("X-INSTANA-L", "1"),
         ]
 
@@ -118,9 +118,10 @@ class TestHTTPPropagator:
         assert not ctx.instana_ancestor
         assert ctx.level == 1
         assert not ctx.long_trace_id
-        assert ctx.span_id == span_id
+        # create a new span id
+        assert ctx.span_id != _span_id
         assert not ctx.synthetic
-        assert ctx.trace_id == trace_id
+        assert ctx.trace_id == header_to_32(hex_id_16(header_to_32(_trace_id)))
         assert not ctx.trace_parent
         assert ctx.traceparent == f"00-{_instana_long_tracer_id}-{_instana_span_id}-01"
         assert ctx.tracestate == _tracestate
@@ -199,7 +200,7 @@ class TestHTTPPropagator:
         assert ctx.correlation_type == "web"
         assert not ctx.instana_ancestor
         assert ctx.level == 1
-        assert ctx.long_trace_id == header_to_id(_instana_long_tracer_id)
+        assert ctx.long_trace_id == header_to_long_id(_instana_long_tracer_id)
         assert ctx.span_id == _span_id
         assert not ctx.synthetic
         assert ctx.trace_id == _trace_id
@@ -209,16 +210,17 @@ class TestHTTPPropagator:
 
     def test_extract_carrier_dict_level_header_not_splitable(
         self,
-        trace_id: int,
-        span_id: int,
+        _trace_id: int,
+        _span_id: int,
         _traceparent: str,
         _tracestate: str,
     ) -> None:
+        _trace_id = str(_trace_id)
         carrier = {
             "traceparent": _traceparent,
             "tracestate": _tracestate,
-            "X-INSTANA-T": f"{trace_id}",
-            "X-INSTANA-S": f"{span_id}",
+            "X-INSTANA-T": f"{_trace_id}",
+            "X-INSTANA-S": f"{_span_id}",
             "X-INSTANA-L": ["1"],
         }
 
@@ -229,9 +231,10 @@ class TestHTTPPropagator:
         assert not ctx.instana_ancestor
         assert ctx.level == 1
         assert not ctx.long_trace_id
-        assert ctx.span_id == span_id
+        # create a new span id
+        assert ctx.span_id != _span_id
         assert not ctx.synthetic
-        assert ctx.trace_id == trace_id
+        assert ctx.trace_id == header_to_32(hex_id_16(header_to_32(_trace_id)))
         assert not ctx.trace_parent
         assert ctx.traceparent == _traceparent
         assert ctx.tracestate == _tracestate
@@ -304,7 +307,7 @@ class TestHTTPPropagator:
         # Assert that the traceparent is propagated when it is enabled
         if "traceparent" in carrier_header.keys():
             assert ctx.traceparent
-            tp_trace_id = header_to_id(carrier_header["traceparent"].split("-")[1])
+            tp_trace_id = header_to_long_id(carrier_header["traceparent"].split("-")[1])
         else:
             assert not ctx.traceparent
             tp_trace_id = ctx.trace_id

@@ -205,7 +205,7 @@ def boot_agent() -> None:
         )
 
     # Hooks
-    from instana.hooks import hook_uwsgi  # noqa: F401
+    from instana.hooks import hook_uwsgi, hook_gunicorn  # noqa: F401
 
 
 if "INSTANA_DISABLE" not in os.environ:

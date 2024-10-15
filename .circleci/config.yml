@@ -184,7 +184,7 @@ jobs:
     steps:
       - checkout
       - pip-install-deps:
-          requirements: "tests/requirements-310.txt"
+          requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report
@@ -209,7 +209,7 @@ jobs:
     steps:
       - checkout
       - pip-install-deps:
-          requirements: "tests/requirements-310.txt"
+          requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report
@@ -249,7 +249,7 @@ jobs:
     steps:
       - checkout
       - pip-install-deps:
-          requirements: "tests/requirements-312.txt"
+          requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report
@@ -276,7 +276,7 @@ jobs:
     steps:
       - checkout
       - pip-install-deps:
-          requirements: "tests/requirements-312.txt"
+          requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report:
           tests: "tests_aws"
       - store-pytest-results
@@ -302,7 +302,7 @@ jobs:
     steps:
       - checkout
       - pip-install-deps:
-          requirements: "tests/requirements-313.txt"
+          requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report

@@ -221,9 +221,9 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert span.t == hex(trace_id)[2:]
+        assert span.t == hex_id(trace_id)
         assert span.s
-        assert span.p == hex(span_id)[2:]
+        assert span.p == hex_id(span_id)
         assert span.ts
 
         server_timing_value = f"intid;desc={hex_id(trace_id)}"
@@ -293,9 +293,9 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert span.t == hex(trace_id)[2:]
+        assert span.t == hex_id(trace_id)
         assert span.s
-        assert span.p == hex(span_id)[2:]
+        assert span.p == hex_id(span_id)
         assert span.ts
 
         server_timing_value = f"intid;desc={hex_id(trace_id)}"
@@ -405,9 +405,9 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert span.t == hex(trace_id)[2:]
+        assert span.t == hex_id(trace_id)
         assert span.s
-        assert span.p == hex(span_id)[2:]
+        assert span.p == hex_id(span_id)
         assert span.ts
 
         server_timing_value = f"intid;desc={hex_id(trace_id)}"
@@ -803,9 +803,9 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert span.t == hex(int("0000000000001234"))[2:].zfill(16)
+        assert span.t == hex_id("0000000000001234")
         assert span.s
-        assert span.p == hex(int("0000000000004567"))[2:].zfill(16)
+        assert span.p == hex_id("0000000000004567")
         assert span.ts
 
         server_timing_value = f"intid;desc={hex_id(int('0000000000001234'))}"

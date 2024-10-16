@@ -8,7 +8,7 @@ from typing import Any, Optional, TypeVar, Dict, List, Tuple
 
 from instana.log import logger
 from instana.span_context import SpanContext
-from instana.util.ids import header_to_id, header_to_long_id, hex_id
+from instana.util.ids import header_to_id, header_to_long_id, hex_id, header_to_32, header_to_16
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
 
@@ -242,8 +242,8 @@ class BasePropagator(object):
             ctx_tracestate = tracestate
 
         return SpanContext(
-            trace_id=int(ctx_trace_id) if ctx_trace_id else INVALID_TRACE_ID,
-            span_id=int(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
+            trace_id=header_to_32(ctx_trace_id) if ctx_trace_id else INVALID_TRACE_ID,
+            span_id=header_to_16(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
             is_remote=False,
             level=ctx_level,
             synthetic=ctx_synthetic,

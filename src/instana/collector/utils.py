@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Type, List
 from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace import SpanKind
 
+from instana.util.ids import hex_id, header_to_32
+
 if TYPE_CHECKING:
     from instana.span.base_span import BaseSpan
 
@@ -22,6 +24,7 @@ def format_span(
         span.t = format_span_id(span.t)
         span.s = format_span_id(span.s)
         span.p = format_span_id(span.p) if span.p else None
+        span.lt = hex_id(header_to_32(span.lt)) if hasattr(span, "lt") else None
         if isinstance(span.k, SpanKind):
             span.k = span.k.value if not span.k is SpanKind.INTERNAL else 3
         spans.append(span)

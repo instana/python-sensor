@@ -99,5 +99,10 @@ class Traceparent:
         flags = level & SAMPLED_BITMASK
         flags = format(flags, "0>2x")
 
-        traceparent = f"{self.SPECIFICATION_VERSION}-{format_trace_id(trace_id)}-{format_span_id(parent_id)}-{flags}"
+        if isinstance(trace_id, str):
+            trace_id_out = trace_id
+        else:
+            trace_id_out = format_trace_id(trace_id)
+
+        traceparent = f"{self.SPECIFICATION_VERSION}-{trace_id_out}-{format_span_id(parent_id)}-{flags}"
         return traceparent

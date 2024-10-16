@@ -23,7 +23,8 @@ class BaseSpan(object):
 
     def __init__(self, span: Type["Span"], source, **kwargs) -> None:
         # pylint: disable=invalid-name
-        self.t = header_to_32(hex_id_16(span.context.trace_id)) 
+        # self.t = header_to_32(hex_id_16(span.context.trace_id)) 
+        self.t = span.context.trace_id
         self.p = span.parent_id
         self.s = span.context.span_id
         self.ts = round(span.start_time / 10**6)

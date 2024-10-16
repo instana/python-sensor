@@ -241,11 +241,29 @@ class BasePropagator(object):
             ctx_traceparent = traceparent
             ctx_tracestate = tracestate
 
+        if ctx_trace_id:
+            if isinstance(ctx_trace_id, int):
+                trace_id = header_to_32(hex_id_16(ctx_trace_id))
+            else:
+                trace_id = header_to_32(ctx_trace_id)
+        else:
+            trace_id = INVALID_TRACE_ID
+
+        if ctx_span_id:
+            if isinstance(ctx_span_id, str) and ctx_span_id.isdigit():
+                    span_id = int(ctx_span_id)
+            else:
+                span_id = header_to_16(ctx_span_id)
+                
+        else:
+            span_id = INVALID_SPAN_ID
         return SpanContext(
             # trace_id=int(ctx_trace_id) if ctx_trace_id else INVALID_TRACE_ID,
             # span_id=int(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
-            trace_id=header_to_32(hex_id_16(header_to_32(ctx_trace_id))) if ctx_trace_id else INVALID_TRACE_ID,
-            span_id=header_to_16(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
+            # trace_id=header_to_32(hex_id_16(header_to_32(ctx_trace_id))) if ctx_trace_id else INVALID_TRACE_ID,
+            trace_id=trace_id,
+            # span_id=header_to_16(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
+            span_id=span_id,
             is_remote=False,
             level=ctx_level,
             synthetic=ctx_synthetic,

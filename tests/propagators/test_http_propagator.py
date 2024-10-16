@@ -118,10 +118,9 @@ class TestHTTPPropagator:
         assert not ctx.instana_ancestor
         assert ctx.level == 1
         assert not ctx.long_trace_id
-        # create a new span id
-        assert ctx.span_id != _span_id
+        assert ctx.span_id == _span_id
         assert not ctx.synthetic
-        assert ctx.trace_id == header_to_32(hex_id_16(header_to_32(_trace_id)))
+        assert ctx.trace_id == header_to_32(_trace_id)
         assert not ctx.trace_parent
         assert ctx.traceparent == f"00-{_instana_long_tracer_id}-{_instana_span_id}-01"
         assert ctx.tracestate == _tracestate
@@ -231,10 +230,9 @@ class TestHTTPPropagator:
         assert not ctx.instana_ancestor
         assert ctx.level == 1
         assert not ctx.long_trace_id
-        # create a new span id
-        assert ctx.span_id != _span_id
+        assert ctx.span_id == _span_id
         assert not ctx.synthetic
-        assert ctx.trace_id == header_to_32(hex_id_16(header_to_32(_trace_id)))
+        assert ctx.trace_id == header_to_32(_trace_id)
         assert not ctx.trace_parent
         assert ctx.traceparent == _traceparent
         assert ctx.tracestate == _tracestate

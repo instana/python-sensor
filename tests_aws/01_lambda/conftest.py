@@ -17,13 +17,14 @@ if sys.version_info <= (3, 8):
 
 @pytest.fixture
 def trace_id() -> int:
-    return 2338823475918251
+    # return 2338823475918251
+    return 1812338823475918251
 
 
 @pytest.fixture
 def span_id() -> int:
-    return 5521157646639861
-
+    # return 5521157646639861
+    return 6895521157646639861
 
 def always_true(_: object) -> bool:
     return True

@@ -123,10 +123,6 @@ class InstanaTracer(Tracer):
         if parent_context and not isinstance(parent_context, SpanContext):
             raise TypeError("parent_context must be an Instana SpanContext or None.")
 
-        if parent_context and not parent_context.is_valid and not parent_context.suppression:
-            # We probably have an INVALID_SPAN_CONTEXT.
-            parent_context = None
-
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(
             name,

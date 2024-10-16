@@ -134,9 +134,6 @@ class InstanaTracer(Tracer):
             # events: Sequence[Event] = None,
         )
 
-        if parent_context is not None:
-            span.synthetic = parent_context.synthetic
-
         if name in EXIT_SPANS:
             self._add_stack(span)
 

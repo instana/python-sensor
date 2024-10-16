@@ -221,7 +221,7 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert hex_id(span.t) == hex_id(trace_id)
+        assert span.t == hex_id(trace_id)
         assert span.s
         assert span.p == hex_id(span_id)
         assert span.ts
@@ -293,7 +293,7 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert hex_id(span.t) == hex_id(trace_id)
+        assert span.t == hex_id(trace_id)
         assert span.s
         assert span.p == hex_id(span_id)
         assert span.ts
@@ -405,7 +405,7 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert hex_id(span.t) == hex_id(trace_id)
+        assert span.t == hex_id(trace_id)
         assert span.s
         assert span.p == hex_id(span_id)
         assert span.ts
@@ -803,7 +803,7 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert hex_id(span.t) == hex_id("0000000000001234")
+        assert span.t == hex_id("0000000000001234")
         assert span.s
         assert span.p == hex_id("0000000000004567")
         assert span.ts

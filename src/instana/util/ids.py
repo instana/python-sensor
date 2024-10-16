@@ -92,62 +92,82 @@ def header_to_id(header: Union[bytes, str]) -> int:
 def hex_id(id: Union[int, str]) -> str:
     """
     Returns the hexadecimal representation of the given ID.
+    Left pad with zeros when the length is not equal to 16
     """
 
     hex_id = hex(int(id))[2:]
-    if len(hex_id) < 16:
+    length = len(hex_id)
+    # Left pad ID with zeros
+    if length < 16:
         hex_id = hex_id.zfill(16)
-    elif len(hex_id) > 16 and len(hex_id) < 32:
+    elif length > 16 and length < 32:
         hex_id = hex_id.zfill(32)
     return hex_id
 
-def hex_id_16(id: Union[int, str]) -> str:
+def hex_id_limited(id: Union[int, str]) -> str:
     """
     Returns the hexadecimal representation of the given ID.
+    Limit longer IDs to 16 characters 
     """
     try:
         hex_id = hex(int(id))[2:]
         length = len(hex_id)
         if length < 16:
+            # Left pad ID with zeros
             hex_id = hex_id.zfill(16)
         elif length > 16:
             # Phase 0: Discard everything but the last 16byte
             hex_id = hex_id[-16:]
         return hex_id
-    except Exception: # ValueError: invalid literal for int() with base 10:
+    except ValueError: # ValueError: invalid literal for int() with base 10:
         return id
 
 def define_server_timing(trace_id: Union[int, str]) -> str:
     # Note: The key `intid` is short for Instana Trace ID.
-    return f"intid;desc={hex_id_16(trace_id)}"
+    return f"intid;desc={hex_id_limited(trace_id)}"
 
 
-def header_to_32(header) -> int:
-    if isinstance(header, int):
-        return header
+def internal_id(id: Union[int, str]) -> int:
+    """
+    Returns a valid id to be used internally. Handles both str and int types.
+    """
+    if isinstance(id, int):
+        return id
+
+    if isinstance(id, str) and id.isdigit():
+        return int(id)
 
     try:
-        if len(header) < 16:
+        if len(id) < 16:
             # Left pad ID with zeros
-            header = header.zfill(16)
+            id = id.zfill(16)
 
-        return int(header, 16)
+        # hex string -> int
+        return int(id, 16)
     except ValueError:
         return INVALID_TRACE_ID
     
-def header_to_16(header) -> int:
-    if isinstance(header, int):
-        return header
+def internal_id_limited(id: Union[int, str]) -> int:
+    """
+    Returns a valid id to be used internally. Handles both str and int types.
+    Note: Limits the hex string to 16 chars before conversion.
+    """
+    if isinstance(id, int):
+        return id
+
+    if isinstance(id, str) and id.isdigit():
+        return int(id)
 
     try:
-        length = len(header)
+        length = len(id)
         if length < 16:
             # Left pad ID with zeros
-            header = header.zfill(16)
+            id = id.zfill(16)
         elif length > 16:
             # Phase 0: Discard everything but the last 16byte
-            header = header[-16:]
+            id = id[-16:]
 
-        return int(header, 16)
+        # hex string -> int
+        return int(id, 16)
     except ValueError:
         return INVALID_SPAN_ID

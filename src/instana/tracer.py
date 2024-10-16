@@ -230,6 +230,7 @@ class InstanaTracer(Tracer):
             is_remote=is_remote,
             level=(parent_context.level if parent_context else 1),
             synthetic=(parent_context.synthetic if parent_context else False),
+            tracestate=(parent_context.tracestate if parent_context else None)
         )
 
         if parent_context is not None:
@@ -239,7 +240,6 @@ class InstanaTracer(Tracer):
             span_context.correlation_type = parent_context.correlation_type
             span_context.correlation_id = parent_context.correlation_id
             span_context.traceparent = parent_context.traceparent
-            span_context.tracestate = parent_context.tracestate
 
         return span_context
 

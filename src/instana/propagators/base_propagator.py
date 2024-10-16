@@ -149,7 +149,7 @@ class BasePropagator(object):
         if span_context.suppression:
             return traceparent, tracestate
 
-        tracestate = self._ts.update_tracestate(tracestate, hex_id(span_context.trace_id), hex_id(span_context.span_id))
+        tracestate = self._ts.update_tracestate(tracestate, hex_id_16(span_context.trace_id), hex_id(span_context.span_id))
         return traceparent, tracestate
 
     def __determine_span_context(

@@ -8,7 +8,7 @@ from typing import Any, Optional, TypeVar, Dict, List, Tuple
 
 from instana.log import logger
 from instana.span_context import SpanContext
-from instana.util.ids import header_to_id, header_to_long_id, hex_id, header_to_32, header_to_16, hex_id_16
+from instana.util.ids import header_to_id, header_to_long_id, hex_id, internal_id, internal_id_limited, hex_id_limited
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
 
@@ -149,7 +149,7 @@ class BasePropagator(object):
         if span_context.suppression:
             return traceparent, tracestate
 
-        tracestate = self._ts.update_tracestate(tracestate, hex_id_16(span_context.trace_id), hex_id(span_context.span_id))
+        tracestate = self._ts.update_tracestate(tracestate, hex_id_limited(span_context.trace_id), hex_id(span_context.span_id))
         return traceparent, tracestate
 
     def __determine_span_context(
@@ -219,7 +219,7 @@ class BasePropagator(object):
                 instana_ancestor = self._ts.get_instana_ancestor(tracestate)
 
             if disable_traceparent == "":
-                ctx_trace_id = hex_id_16(tp_trace_id)
+                ctx_trace_id = hex_id_limited(tp_trace_id)
                 ctx_span_id = tp_parent_id
                 ctx_synthetic = synthetic
                 ctx_trace_parent = True
@@ -241,11 +241,21 @@ class BasePropagator(object):
             ctx_traceparent = traceparent
             ctx_tracestate = tracestate
 
+        if ctx_trace_id:
+            if isinstance(ctx_trace_id, int):
+                # check if ctx_trace_id is a valid internal trace id
+                if (ctx_trace_id <=  2**64 - 1):
+                    trace_id = ctx_trace_id
+                else:
+                    trace_id = internal_id(hex_id_limited(ctx_trace_id))
+            else:
+                trace_id = internal_id(ctx_trace_id)
+        else:
+            trace_id = INVALID_TRACE_ID
+
         return SpanContext(
-            # trace_id=int(ctx_trace_id) if ctx_trace_id else INVALID_TRACE_ID,
-            # span_id=int(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
-            trace_id=header_to_32(hex_id_16(header_to_32(ctx_trace_id))) if ctx_trace_id else INVALID_TRACE_ID,
-            span_id=header_to_16(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
+            trace_id=trace_id,
+            span_id=internal_id_limited(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
             is_remote=False,
             level=ctx_level,
             synthetic=ctx_synthetic,

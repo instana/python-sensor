@@ -230,16 +230,14 @@ class InstanaTracer(Tracer):
             is_remote=is_remote,
             level=(parent_context.level if parent_context else 1),
             synthetic=(parent_context.synthetic if parent_context else False),
-            tracestate=(parent_context.tracestate if parent_context else None)
+            trace_parent=(parent_context.trace_parent if parent_context else None),
+            instana_ancestor=(parent_context.instana_ancestor if parent_context else None),
+            long_trace_id=(parent_context.long_trace_id if parent_context else None),
+            correlation_type=(parent_context.correlation_type if parent_context else None),
+            correlation_id=(parent_context.correlation_id if parent_context else None),
+            traceparent=(parent_context.traceparent if parent_context else None),
+            tracestate=(parent_context.tracestate if parent_context else None),
         )
-
-        if parent_context is not None:
-            span_context.long_trace_id = parent_context.long_trace_id
-            span_context.trace_parent = parent_context.trace_parent
-            span_context.instana_ancestor = parent_context.instana_ancestor
-            span_context.correlation_type = parent_context.correlation_type
-            span_context.correlation_id = parent_context.correlation_id
-            span_context.traceparent = parent_context.traceparent
 
         return span_context
 

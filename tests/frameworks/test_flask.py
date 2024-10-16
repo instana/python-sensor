@@ -211,8 +211,8 @@ class TestFlask(unittest.TestCase):
         # Assert that there are no spans in the recorded list
         assert spans == []
 
-    @unittest.skip("Handled when type of trace and span ids are modified to str")
     def test_get_request_with_suppression_and_w3c(self) -> None:
+        """https://github.ibm.com/instana/technical-documentation/tree/master/tracing/specification#incoming-level-0-plus-w3c-trace-context-specification-headers"""
         headers = {
                 'X-INSTANA-L':'0',
                 'traceparent': '00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01',
@@ -224,6 +224,7 @@ class TestFlask(unittest.TestCase):
 
         assert response.headers.get("X-INSTANA-L", None) == "0"
         assert response.headers.get("traceparent", None) is not None
+        assert response.headers["traceparent"].startswith("00-0af7651916cd43dd8448eb211c80319c")
         assert response.headers["traceparent"][-1] == "0"
         # The tracestate has to be present
         assert response.headers.get("tracestate", None) is not None

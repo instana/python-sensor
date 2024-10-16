@@ -10,7 +10,7 @@ from opentelemetry.trace.span import (
 )
 
 from instana.log import logger
-from instana.util.ids import header_to_id
+from instana.util.ids import header_to_id, header_to_long_id
 
 # See https://www.w3.org/TR/trace-context-2/#trace-flags for details on the bitmasks.
 SAMPLED_BITMASK = 0b1;
@@ -48,7 +48,7 @@ class Traceparent:
         try:
             traceparent_properties = traceparent.split("-")
             version = traceparent_properties[0]
-            trace_id = header_to_id(traceparent_properties[1])
+            trace_id = header_to_long_id(traceparent_properties[1])
             parent_id = header_to_id(traceparent_properties[2])
             flags = int(traceparent_properties[3], 16)
             sampled_flag = (flags & SAMPLED_BITMASK) == SAMPLED_BITMASK

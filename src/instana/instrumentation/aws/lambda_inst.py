@@ -17,6 +17,7 @@ from instana.instrumentation.aws.triggers import enrich_lambda_span, get_context
 from instana.log import logger
 from instana.singletons import env_is_aws_lambda, get_agent, get_tracer
 from instana.util.ids import define_server_timing
+from instana.util.ids import hex_id_16
 
 if TYPE_CHECKING:
     from instana.agent.aws_lambda import AWSLambdaAgent
@@ -44,7 +45,7 @@ def lambda_handler_with_instana(
             result = wrapped(*args, **kwargs)
 
             if isinstance(result, dict):
-                server_timing_value = define_server_timing(span.context.trace_id)
+                server_timing_value = define_server_timing(hex_id_16(span.context.trace_id))
                 if "headers" in result:
                     result["headers"]["Server-Timing"] = server_timing_value
                 elif "multiValueHeaders" in result:

@@ -105,16 +105,17 @@ def hex_id_16(id: Union[int, str]) -> str:
     """
     Returns the hexadecimal representation of the given ID.
     """
-
-    hex_id = hex(int(id))[2:]
-    length = len(hex_id)
-    if length < 16:
-        hex_id = hex_id.zfill(16)
-    elif length > 16:
-        # Phase 0: Discard everything but the last 16byte
-        hex_id = hex_id[-16:]
-    return hex_id
-
+    try:
+        hex_id = hex(int(id))[2:]
+        length = len(hex_id)
+        if length < 16:
+            hex_id = hex_id.zfill(16)
+        elif length > 16:
+            # Phase 0: Discard everything but the last 16byte
+            hex_id = hex_id[-16:]
+        return hex_id
+    except Exception: # ValueError: invalid literal for int() with base 10:
+        return id
 
 def define_server_timing(trace_id: Union[int, str]) -> str:
     # Note: The key `intid` is short for Instana Trace ID.

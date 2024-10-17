@@ -98,6 +98,7 @@ class TestHTTPPropagator:
         _traceparent: str,
         _tracestate: str,
     ) -> None:
+        _trace_id = str(_trace_id)
         carrier = [
             ("user-agent", "python-requests/2.23.0"),
             ("accept-encoding", "gzip, deflate"),
@@ -213,6 +214,7 @@ class TestHTTPPropagator:
         _traceparent: str,
         _tracestate: str,
     ) -> None:
+        _trace_id = str(_trace_id)
         carrier = {
             "traceparent": _traceparent,
             "tracestate": _tracestate,

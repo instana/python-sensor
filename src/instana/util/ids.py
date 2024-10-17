@@ -94,15 +94,17 @@ def hex_id(id: Union[int, str]) -> str:
     Returns the hexadecimal representation of the given ID.
     Left pad with zeros when the length is not equal to 16
     """
-
-    hex_id = hex(int(id))[2:]
-    length = len(hex_id)
-    # Left pad ID with zeros
-    if length < 16:
-        hex_id = hex_id.zfill(16)
-    elif length > 16 and length < 32:
-        hex_id = hex_id.zfill(32)
-    return hex_id
+    try:
+        hex_id = hex(int(id))[2:]
+        length = len(hex_id)
+        # Left pad ID with zeros
+        if length < 16:
+            hex_id = hex_id.zfill(16)
+        elif length > 16 and length < 32:
+            hex_id = hex_id.zfill(32)
+        return hex_id
+    except ValueError: # Handles ValueError: invalid literal for int() with base 10:
+        return id
 
 def hex_id_limited(id: Union[int, str]) -> str:
     """
@@ -119,7 +121,7 @@ def hex_id_limited(id: Union[int, str]) -> str:
             # Phase 0: Discard everything but the last 16byte
             hex_id = hex_id[-16:]
         return hex_id
-    except ValueError: # ValueError: invalid literal for int() with base 10:
+    except ValueError: # Handles ValueError: invalid literal for int() with base 10:
         return id
 
 def define_server_timing(trace_id: Union[int, str]) -> str:

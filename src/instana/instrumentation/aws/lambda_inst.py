@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
 import wrapt
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace.span import format_span_id
 
 from instana import get_aws_lambda_handler
 from instana.instrumentation.aws.triggers import enrich_lambda_span, get_context
@@ -45,7 +44,7 @@ def lambda_handler_with_instana(
             result = wrapped(*args, **kwargs)
 
             if isinstance(result, dict):
-                server_timing_value = define_server_timing(format_span_id(span.context.trace_id))
+                server_timing_value = define_server_timing(span.context.trace_id)
                 if "headers" in result:
                     result["headers"]["Server-Timing"] = server_timing_value
                 elif "multiValueHeaders" in result:

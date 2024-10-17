@@ -212,7 +212,7 @@ class TestFlask(unittest.TestCase):
         assert spans == []
 
     def test_get_request_with_suppression_and_w3c(self) -> None:
-        """https://github.ibm.com/instana/technical-documentation/tree/master/tracing/specification#incoming-level-0-plus-w3c-trace-context-specification-headers"""
+        """Incoming Level 0 Plus W3C Trace Context Specification Headers"""
         headers = {
                 'X-INSTANA-L':'0',
                 'traceparent': '00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01',

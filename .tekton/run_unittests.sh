@@ -17,16 +17,7 @@ PYTHON_MINOR_VERSION="$(echo "${PYTHON_VERSION}" | cut -d'.' -f 2)"
 
 case "${TEST_CONFIGURATION}" in
 default)
-  case "${PYTHON_MINOR_VERSION}" in
-    10 | 11)
-      export REQUIREMENTS='requirements-310.txt' ;;
-    12)
-      export REQUIREMENTS='requirements-312.txt' ;;
-    13)
-      export REQUIREMENTS='requirements-313.txt' ;;
-    *)
-      export REQUIREMENTS='requirements.txt' ;;
-  esac
+  export REQUIREMENTS='requirements.txt'
   export TESTS=('tests') ;;
 cassandra)
   export REQUIREMENTS='requirements-cassandra.txt'
@@ -45,7 +36,7 @@ googlecloud)
   export TESTS=('tests/clients/test_google-cloud-storage.py' 'tests/clients/test_google-cloud-pubsub.py')
   export GOOGLE_CLOUD_TEST='true' ;;  
 aws)
-  export REQUIREMENTS='requirements-312.txt'
+  export REQUIREMENTS='requirements.txt'
   export TESTS=('tests_aws') ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \

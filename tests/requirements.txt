@@ -4,20 +4,29 @@ boto3>=1.17.74
 bottle>=0.12.25
 celery>=5.2.7
 coverage>=5.5
-Django>=4.2.4
-fastapi>=0.92.0
+Django>=4.2.4; python_version < "3.10"
+Django>=5.0; python_version >= "3.10" and python_version < "3.12"
+Django>=5.0a1; python_version >= "3.12"  --pre
+# Dependency orjson has no 3.13 support yet:
+# https://github.com/matyasrichter/fastapi-injector/pull/31
+fastapi>=0.92.0; python_version < "3.13"
 flask>=2.3.2
-grpcio>=1.37.1
-google-cloud-pubsub>=2.0.0
-google-cloud-storage>=1.24.0
+# grpc is not supported on 3.13 yet:
+# https://github.com/grpc/grpc/issues/34922
+grpcio>=1.37.1; python_version < "3.13"
+# depends grpcio on 3.13
+google-cloud-pubsub>=2.0.0; python_version < "3.12"
+# depends grpcio on 3.13
+google-cloud-storage>=1.24.0; python_version < "3.12"
+legacy-cgi>=2.6.1; python_version == "3.13"
 lxml>=4.9.2
+markupsafe>=2.1.0;python_version >= "3.10"
 mock>=4.0.3
 moto>=4.1.2
 mysqlclient>=2.0.3
 PyMySQL[rsa]>=1.0.2
 psycopg2-binary>=2.8.6
 pika>=1.2.0
-
 # protobuf is pulled in and also `basictracer`, a core instana dependency
 # and also by google-cloud-storage
 # but also directly needed by tests/apps/grpc_server/stan_pb2.py
@@ -25,7 +34,6 @@ pika>=1.2.0
 # AttributeError: module 'google._upb._message' has no attribute 'Message'
 # TODO: Remove this when support for 4.0.0 is done
 protobuf<4.0.0
-
 pymongo>=3.11.4
 pyramid>=2.0.1
 pytest>=6.2.4
@@ -34,8 +42,11 @@ pytz>=2024.1
 redis>=3.5.3
 requests-mock
 responses<=0.17.0
-sanic>=19.9.0
-sanic-testing>=24.6.0
+# Sanic is not installable on 3.13 because `httptools, uvloop` dependencies fail to compile:
+# `too few arguments to function ‘_PyLong_AsByteArray’`
+sanic>=19.9.0; python_version < "3.13"
+sanic-testing>=24.6.0; python_version < "3.13"
+starlette>=0.38.2; python_version == "3.13"
 sqlalchemy>=2.0.0
 tornado>=6.4.1
 uvicorn>=0.13.4

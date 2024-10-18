@@ -63,6 +63,7 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-mock",
+  "pre-commit",
 ]
 
 [project.urls]

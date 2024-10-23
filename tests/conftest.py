@@ -42,31 +42,9 @@ if not os.environ.get("COUCHBASE_TEST"):
 #     collect_ignore_glob.append("*test_gevent*")
 #     collect_ignore_glob.append("*test_starlette*")
 
-if sys.version_info >= (3, 11):
-    if not os.environ.get("GOOGLE_CLOUD_TEST"):
-        collect_ignore_glob.append("*test_google-cloud*")
 
 if sys.version_info >= (3, 13):
-    # TODO: Test Case failures for unknown reason:
-    collect_ignore_glob.append("*test_aiohttp_server*")
-    collect_ignore_glob.append("*test_celery*")
-    collect_ignore_glob.append("*frameworks/test_tornado_server*")
-
-    # Currently there is a runtime incompatibility caused by the library:
-    # `undefined symbol: _PyErr_WriteUnraisableMsg`
-    collect_ignore_glob.append("*boto3*")
-
-    # Currently there is a runtime incompatibility caused by the library:
-    # `undefined symbol: _PyInterpreterState_Get`
-    collect_ignore_glob.append("*test_psycopg2*")
-    collect_ignore_glob.append("*test_pep0249*")
-    collect_ignore_glob.append("*test_sqlalchemy*")
-
     # Currently not installable dependencies because of 3.13 incompatibilities
-    collect_ignore_glob.append("*test_fastapi*")
-    collect_ignore_glob.append("*test_google-cloud-pubsub*")
-    collect_ignore_glob.append("*test_google-cloud-storage*")
-    collect_ignore_glob.append("*test_grpcio*")
     collect_ignore_glob.append("*test_sanic*")
 
 
@@ -98,9 +76,10 @@ def trace_id() -> int:
 def span_id() -> int:
     return 6895521157646639861
 
+
 @pytest.fixture
-def hex_trace_id(trace_id:int) -> str:
-    # Using format_span_id() to return a 16-byte hexadecimal string, instead of 
+def hex_trace_id(trace_id: int) -> str:
+    # Using format_span_id() to return a 16-byte hexadecimal string, instead of
     # the 32-byte hexadecimal string from format_trace_id().
     return format_span_id(trace_id)
 
@@ -108,6 +87,7 @@ def hex_trace_id(trace_id:int) -> str:
 @pytest.fixture
 def hex_span_id(span_id: int) -> str:
     return format_span_id(span_id)
+
 
 @pytest.fixture
 def span_processor() -> StanRecorder:
@@ -198,6 +178,7 @@ def prepare_and_report_data(monkeypatch, request):
     else:
         monkeypatch.setattr(BaseCollector, "prepare_and_report_data", always_true)
 
+
 # Mocking HostAgent.is_agent_listening()
 @pytest.fixture(autouse=True)
 def is_agent_listening(monkeypatch, request) -> None:
@@ -205,9 +186,12 @@ def is_agent_listening(monkeypatch, request) -> None:
     if "original" in request.keywords:
         # If using the `@pytest.mark.original` marker before the test function,
         # uses the original HostAgent.is_agent_listening()
-        monkeypatch.setattr(HostAgent, "is_agent_listening", HostAgent.is_agent_listening)
+        monkeypatch.setattr(
+            HostAgent, "is_agent_listening", HostAgent.is_agent_listening
+        )
     else:
         monkeypatch.setattr(HostAgent, "is_agent_listening", always_true)
+
 
 @pytest.fixture(autouse=True)
 def lookup_agent_host(monkeypatch, request) -> None:
@@ -215,9 +199,12 @@ def lookup_agent_host(monkeypatch, request) -> None:
     if "original" in request.keywords:
         # If using the `@pytest.mark.original` marker before the test function,
         # uses the original TheMachine.lookup_agent_host()
-        monkeypatch.setattr(TheMachine, "lookup_agent_host", TheMachine.lookup_agent_host)
+        monkeypatch.setattr(
+            TheMachine, "lookup_agent_host", TheMachine.lookup_agent_host
+        )
     else:
         monkeypatch.setattr(TheMachine, "lookup_agent_host", always_true)
+
 
 @pytest.fixture(autouse=True)
 def announce_sensor(monkeypatch, request) -> None:

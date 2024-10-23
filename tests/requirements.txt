@@ -7,20 +7,16 @@ coverage>=5.5
 Django>=4.2.4; python_version < "3.10"
 Django>=5.0; python_version >= "3.10" and python_version < "3.12"
 Django>=5.0a1; python_version >= "3.12"  --pre
-# Dependency orjson has no 3.13 support yet:
-# https://github.com/matyasrichter/fastapi-injector/pull/31
 fastapi>=0.92.0; python_version < "3.13"
+fastapi>=0.115.0; python_version >= "3.13"
 flask>=2.3.2
-# grpc is not supported on 3.13 yet:
-# https://github.com/grpc/grpc/issues/34922
-grpcio>=1.37.1; python_version < "3.13"
-# depends grpcio on 3.13
-google-cloud-pubsub>=2.0.0; python_version < "3.12"
-# depends grpcio on 3.13
-google-cloud-storage>=1.24.0; python_version < "3.12"
+gevent>=1.4.0
+grpcio<1.67.0; python_version < "3.13"
+grpcio>=1.67.0; python_version >= "3.13"
+google-cloud-pubsub>=2.0.0
+google-cloud-storage>=1.24.0
 legacy-cgi>=2.6.1; python_version == "3.13"
 lxml>=4.9.2
-markupsafe>=2.1.0;python_version >= "3.10"
 mock>=4.0.3
 moto>=4.1.2
 mysqlclient>=2.0.3

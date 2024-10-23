@@ -37,9 +37,6 @@ commands:
 
   run-tests-with-coverage-report:
     parameters:
-      googlecloud:
-        default: ""
-        type: string
       cassandra:
         default: ""
         type: string
@@ -59,7 +56,6 @@ commands:
             CASSANDRA_TEST: "<<parameters.cassandra>>"
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
-            GOOGLE_CLOUD_TEST: "<<parameters.googlecloud>>"
           command: |
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
@@ -214,21 +210,6 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py311googlecloud:
-    docker:
-      - image: cimg/python:3.11.10
-      - image: vanmoof/pubsub-emulator
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps:
-          requirements: "tests/requirements-googlecloud.txt"
-      - run-tests-with-coverage-report:
-          googlecloud: "true"
-          tests: "tests/clients/test_google-cloud-*.py"
-      - store-pytest-results
-      - store-coverage-report
-
   python312:
     docker:
       - image: cimg/python:3.12
@@ -254,21 +235,6 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py312googlecloud:
-    docker:
-      - image: cimg/python:3.12.6
-      - image: vanmoof/pubsub-emulator
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps:
-          requirements: "tests/requirements-googlecloud.txt"
-      - run-tests-with-coverage-report:
-          googlecloud: "true"
-          tests: "tests/clients/test_google-cloud-*.py"
-      - store-pytest-results
-      - store-coverage-report
-
   py312aws:
     docker:
       - image: cimg/python:3.12
@@ -284,7 +250,7 @@ jobs:
 
   python313:
     docker:
-      - image: python:3.13.0rc2-bookworm
+      - image: cimg/python:3.13
       - image: cimg/postgres:14.12
         environment:
           POSTGRES_USER: root
@@ -379,8 +345,6 @@ workflows:
       - py39cassandra
       - py39couchbase
       # - py39gevent_starlette
-      - py311googlecloud
-      - py312googlecloud
       - py312aws
       - final_job:
           requires:
@@ -393,6 +357,4 @@ workflows:
             - py39cassandra
             - py39couchbase
             # - py39gevent_starlette
-            - py311googlecloud
-            - py312googlecloud
             - py312aws

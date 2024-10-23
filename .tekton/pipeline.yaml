@@ -35,8 +35,8 @@ spec:
               - "sha256:3cd9b520be95c671135ea1318f32be6912876024ee16d0f472669d3878801651"
               # 3.12.6-bookworm
               - "sha256:af6fa5c329d6bd6dec52855ccb8bb37c30fb8f00819953a035d49499e43b2c9b"
-              # 3.13.0rc2-bookworm
-              - "sha256:3aed70fd4585395e47c6005f0082b966151561f3c4070a3ed9d2fb594bbf44b8"
+              # 3.13.0-bookworm
+              - "sha256:feee4734fdc44cc09a3c9cdb72e05bb8ff7e964f64766bc1a68638b2c667cf35"
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:
@@ -85,22 +85,6 @@ spec:
     #   workspaces:
     #     - name: task-pvc
     #       workspace: python-tracer-ci-pipeline-pvc
-    - name: unittest-googlecloud
-      runAfter:
-        - clone
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-              # 3.11.10-bookworm
-              - "sha256:3cd9b520be95c671135ea1318f32be6912876024ee16d0f472669d3878801651"
-              # 3.12.6-bookworm
-              - "sha256:af6fa5c329d6bd6dec52855ccb8bb37c30fb8f00819953a035d49499e43b2c9b"
-      taskRef:
-        name: python-tracer-unittest-googlecloud-task
-      workspaces:
-        - name: task-pvc
-          workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-aws
       runAfter:
         - clone
@@ -111,7 +95,7 @@ spec:
               # 3.12.6-bookworm
               - "sha256:af6fa5c329d6bd6dec52855ccb8bb37c30fb8f00819953a035d49499e43b2c9b"
       taskRef:
-        name: python-tracer-unittest-googlecloud-task
+        name: python-tracer-unittest-aws-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc

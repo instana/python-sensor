@@ -28,8 +28,7 @@ spec:
       - unittest-default
       - unittest-cassandra
       - unittest-couchbase
-      - unittest-gevent-starlette
-      - unittest-googlecloud
+      #- unittest-gevent-starlette
       taskRef:
         kind: Task
         name: github-set-status

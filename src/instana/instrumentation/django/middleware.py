@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2018
 
 
-import os
 import sys
 
 import opentracing as ot
@@ -45,7 +44,7 @@ class InstanaMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         try:
-            env = request.environ
+            env = request.META
 
             ctx = tracer.extract(ot.Format.HTTP_HEADERS, env)
             request.iscope = tracer.start_active_span('django', child_of=ctx)
@@ -92,7 +91,7 @@ class InstanaMiddleware(MiddlewareMixin):
         except Exception:
             logger.debug("Instana middleware @ process_response", exc_info=True)
         finally:
-            if request.iscope is not None:
+            if hasattr(request, "iscope") and request.iscope:
                 request.iscope.close()
                 request.iscope = None
         return response

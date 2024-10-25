@@ -327,8 +327,10 @@ jobs:
       - pip-install-deps:
           requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:
-          gevent: "true"
-          tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
+          # TODO: uncomment once gevent instrumentation is done
+          # gevent: "true"
+          # tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
+          tests: "tests/frameworks/test_starlette.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -344,7 +346,7 @@ workflows:
       - python313
       - py39cassandra
       - py39couchbase
-      # - py39gevent_starlette
+      - py39gevent_starlette
       - py312aws
       - final_job:
           requires:
@@ -356,5 +358,5 @@ workflows:
             - python313
             - py39cassandra
             - py39couchbase
-            # - py39gevent_starlette
+            - py39gevent_starlette
             - py312aws

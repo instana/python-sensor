@@ -201,6 +201,7 @@ class BasePropagator(object):
         print("***first***")
         print(ctx_trace_id, type(ctx_trace_id))
         ctx_span_id = span_id if ctx_level > 0 else None
+        print(ctx_span_id, type(ctx_span_id))
 
         if (
             trace_id
@@ -262,6 +263,7 @@ class BasePropagator(object):
         span_id=internal_id_limited(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID
         print("###########")
         print(trace_id, type(trace_id))
+        print(span_id, type(span_id))
 
         return SpanContext(
             trace_id=trace_id,

@@ -70,21 +70,20 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
-    # TODO: uncomment after gevent instrumentation is complete
-    # - name: unittest-gevent-starlette
-    #   runAfter:
-    #     - clone
-    #   matrix:
-    #     params:
-    #       - name: imageDigest
-    #         value:
-    #           # 3.9.20-bookworm
-    #           - "sha256:dbb0be5b67aa84b9e3e4f325c7844ab439f40a5cca717c5b24e671cfb41dbb46"
-    #   taskRef:
-    #     name: python-tracer-unittest-gevent-starlette-task
-    #   workspaces:
-    #     - name: task-pvc
-    #       workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-gevent-starlette
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # 3.9.20-bookworm
+              - "sha256:dbb0be5b67aa84b9e3e4f325c7844ab439f40a5cca717c5b24e671cfb41dbb46"
+      taskRef:
+        name: python-tracer-unittest-gevent-starlette-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-aws
       runAfter:
         - clone

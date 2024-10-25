@@ -29,8 +29,10 @@ couchbase)
   export COUCHBASE_TEST='true' ;;
 gevent_starlette)
   export REQUIREMENTS='requirements-gevent-starlette.txt'
-  export TESTS=('tests/frameworks/test_gevent.py' 'tests/frameworks/test_starlette.py')
-  export GEVENT_STARLETTE_TEST='true' ;;
+  # TODO: uncomment once gevent instrumentation is done
+  # export TESTS=('tests/frameworks/test_gevent.py' 'tests/frameworks/test_starlette.py')
+  # export GEVENT_STARLETTE_TEST='true' ;;
+  export TESTS=('tests/frameworks/test_starlette.py');;
 aws)
   export REQUIREMENTS='requirements.txt'
   export TESTS=('tests_aws') ;;

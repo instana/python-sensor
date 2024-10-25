@@ -28,6 +28,7 @@ collect_ignore_glob = [
     "*test_gevent*",
     "*collector/test_gcr*",
     "*agent/test_google*",
+    "*test_sanic*",
 ]
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

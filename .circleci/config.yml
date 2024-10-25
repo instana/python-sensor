@@ -58,7 +58,7 @@ commands:
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
           command: |
             . venv/bin/activate
-            coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
+            coverage run --source=instana -m pytest -vs --junitxml=test-results <<parameters.tests>>
             coverage report -m
             coverage html
             mkdir coverage_results

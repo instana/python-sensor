@@ -253,9 +253,13 @@ class BasePropagator(object):
         else:
             trace_id = INVALID_TRACE_ID
 
+        span_id=internal_id_limited(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID
+        print("###########")
+        print(trace_id, span_id)
+
         return SpanContext(
             trace_id=trace_id,
-            span_id=internal_id_limited(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID,
+            span_id=span_id,
             is_remote=False,
             level=ctx_level,
             synthetic=ctx_synthetic,

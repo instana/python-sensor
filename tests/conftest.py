@@ -38,9 +38,9 @@ if not os.environ.get("CASSANDRA_TEST"):
 if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
-# if not os.environ.get("GEVENT_STARLETTE_TEST"):
-#     collect_ignore_glob.append("*test_gevent*")
-#     collect_ignore_glob.append("*test_starlette*")
+if not os.environ.get("GEVENT_STARLETTE_TEST"):
+    collect_ignore_glob.append("*test_gevent*")
+    collect_ignore_glob.append("*test_starlette*")
 
 
 if sys.version_info >= (3, 13):

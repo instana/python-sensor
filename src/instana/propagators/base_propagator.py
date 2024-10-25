@@ -198,6 +198,8 @@ class BasePropagator(object):
 
         ctx_level = self._get_ctx_level(level)
         ctx_trace_id = trace_id if ctx_level > 0 else None
+        print("***first***")
+        print(ctx_trace_id, type(ctx_trace_id))
         ctx_span_id = span_id if ctx_level > 0 else None
 
         if (
@@ -220,6 +222,8 @@ class BasePropagator(object):
 
             if disable_traceparent == "":
                 ctx_trace_id = hex_id_limited(tp_trace_id)
+                print("$$$$disable_traceparent$$$$$$")
+                print(ctx_trace_id, type(ctx_trace_id))
                 ctx_span_id = tp_parent_id
                 ctx_synthetic = synthetic
                 ctx_trace_parent = True
@@ -248,6 +252,8 @@ class BasePropagator(object):
                     trace_id = ctx_trace_id
                 else:
                     trace_id = internal_id(hex_id_limited(ctx_trace_id))
+                    print("%%%sad%%%")
+                    print(trace_id, type(trace_id))
             else:
                 trace_id = internal_id(ctx_trace_id)
         else:
@@ -255,7 +261,7 @@ class BasePropagator(object):
 
         span_id=internal_id_limited(ctx_span_id) if ctx_span_id else INVALID_SPAN_ID
         print("###########")
-        print(trace_id, span_id)
+        print(trace_id, type(trace_id))
 
         return SpanContext(
             trace_id=trace_id,

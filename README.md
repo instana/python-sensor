@@ -11,7 +11,7 @@ Any feedback is welcome.  Happy Python visibility.
 ![GitHub Release](https://img.shields.io/github/v/release/instana/python-sensor)
 
 > [!NOTE]
-> Support for OpenTracing is deprecated starting on version 3.0.0. If you still want to use it, rely on any version up to 2.5.3 or use the `legacy_2.x` branch.
+> Support for OpenTracing is deprecated starting on version 3.0.0. If you still want to use it, rely on any version earlier than 3.0.0 or use the `legacy_2.x` branch.
 
 ## Installation
 

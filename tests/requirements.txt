@@ -11,8 +11,7 @@ fastapi>=0.92.0; python_version < "3.13"
 fastapi>=0.115.0; python_version >= "3.13"
 flask>=2.3.2
 gevent>=1.4.0
-grpcio<1.67.0; python_version < "3.13"
-grpcio>=1.67.0; python_version >= "3.13"
+grpcio>=1.14.1
 google-cloud-pubsub>=2.0.0
 google-cloud-storage>=1.24.0
 legacy-cgi>=2.6.1; python_version == "3.13"

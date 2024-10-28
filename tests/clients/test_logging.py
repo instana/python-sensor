@@ -97,12 +97,34 @@ class TestLogging(unittest.TestCase):
 
         self.logger.removeHandler(handler)
 
-    def test_stacklevel_as_kwarg(self):
+    @pytest.mark.usefixtures("capture_log")
+    def test_log_caller_with_stacklevel(
+        self
+    ) -> None:
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            logging.Formatter("source: %(funcName)s, message: %(message)s")
+        )
+        self.logger.addHandler(handler)
+
+        def log_custom_warning(stacklevel):
+            self.logger.warning("foo %s", "bar", stacklevel=stacklevel)
+
+        def main():
+            log_custom_warning(1)
+            log_custom_warning(2)
+
         with tracer.start_active_span("test"):
-            self.logger.warning("foo %s", "bar", stacklevel=2)
+            main()
+
+        assert self.caplog.records[-2].funcName == "log_custom_warning"
+        assert self.caplog.records[-1].funcName == "main"
+
+        self.logger.removeHandler(handler)
 
         spans = self.recorder.queued_spans()
-        self.assertEqual(2, len(spans))
-        self.assertEqual(2, spans[0].k)
 
-        self.assertEqual("foo bar", spans[0].data["log"].get("message"))
+        self.assertEqual(len(spans), 3)
+        self.assertEqual(spans[0].k, 2)
+
+        self.assertEqual(spans[0].data["log"].get('message'), "foo bar")

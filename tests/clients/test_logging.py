@@ -127,12 +127,40 @@ class TestLogging:
 
         self.logger.removeHandler(handler)
 
-    def test_stacklevel_as_kwarg(self):
+    @pytest.mark.parametrize(
+        "stacklevel, expected_caller_name",
+        [
+            (1, "log_custom_warning"),
+            (2, "main"),
+        ],
+    )
+    def test_log_caller_with_stacklevel(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        stacklevel: int,
+        expected_caller_name: str,
+    ) -> None:
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            logging.Formatter("source: %(funcName)s, message: %(message)s")
+        )
+        self.logger.addHandler(handler)
+
+        def log_custom_warning():
+            self.logger.warning("foo %s", "bar", stacklevel=stacklevel)
+
+        def main():
+            log_custom_warning()
+
         with tracer.start_as_current_span("test"):
-            self.logger.warning("foo %s", "bar", stacklevel=2)
+            main()
+
+        assert caplog.records[-1].funcName == expected_caller_name
+
+        self.logger.removeHandler(handler)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
-        assert spans[0].k == SpanKind.CLIENT
+        assert spans[0].k is SpanKind.CLIENT
 
         assert spans[0].data["log"].get("message") == "foo bar"

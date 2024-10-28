@@ -803,12 +803,13 @@ class TestLambda:
 
         span = payload["spans"].pop()
         assert span.n == "aws.lambda.entry"
-        assert span.t == hex_id("0000000000001234")
+        trace_id = "0000000000001234"
+        assert span.t == trace_id
         assert span.s
-        assert span.p == hex_id("0000000000004567")
+        assert span.p == "0000000000004567"
         assert span.ts
 
-        server_timing_value = f"intid;desc={hex_id(int('0000000000001234'))}"
+        server_timing_value = f"intid;desc={trace_id}"
         assert result["headers"]["Server-Timing"] == server_timing_value
 
         assert span.f == {

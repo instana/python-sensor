@@ -21,7 +21,7 @@ spec:
       spec:
         params:
         - name: revision
-          value: master
+          value: main
         - name: git-commit-sha
           value: $(tt.params.git-commit-sha)
         pipelineRef:
@@ -45,7 +45,7 @@ spec:
     - name: date-time-normalized
       value: $(extensions.normalized_date_time)
     - name: git-commit-sha
-      value: $(body.git_master_head_commit_sha)
+      value: $(body.git_main_head_commit_sha)
     - name: git-commit-short-sha
       value: $(extensions.truncated_sha)
 ---
@@ -70,7 +70,7 @@ spec:
               wget -O- \
                    --header 'Content-Type: application/json' \
                    --post-data '{
-                                 "git_master_head_commit_sha":"'"$(git ls-remote https://github.com/instana/python-sensor master | cut -f1)"'",
+                                 "git_main_head_commit_sha":"'"$(git ls-remote https://github.com/instana/python-sensor main | cut -f1)"'",
                                  "date_time":"'"$(date -u -Iminutes )"'"
                                 }' \
                   'http://el-python-tracer-scheduled-pipeline-listener.default.svc.cluster.local:8080'
@@ -92,7 +92,7 @@ spec:
             - name: "overlays"
               value:
               - key: truncated_sha
-                expression: "body.git_master_head_commit_sha.truncate(7)"
+                expression: "body.git_main_head_commit_sha.truncate(7)"
         - name: add-normalized-date-time
           ref:
             name: "cel"

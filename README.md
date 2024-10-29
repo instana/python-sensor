@@ -4,10 +4,10 @@ The `instana` Python package collects key metrics and distributed traces for [In
 
 Any feedback is welcome.  Happy Python visibility.
 
-[![CircleCI](https://circleci.com/gh/instana/python-sensor/tree/master.svg?style=svg)](https://circleci.com/gh/instana/python-sensor/tree/master)
+[![CircleCI](https://circleci.com/gh/instana/python-sensor/tree/main.svg?style=svg)](https://circleci.com/gh/instana/python-sensor/tree/main)
 [![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-disabled-red.svg)](http://opentracing.io)
 [![OpenTelemetry Badge](https://img.shields.io/badge/OpenTelemetry-enabled-blue.svg)](http://opentelemetry.io)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Finstana%2Fpython-sensor%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Finstana%2Fpython-sensor%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)
 ![GitHub Release](https://img.shields.io/github/v/release/instana/python-sensor)
 
 > [!NOTE]

@@ -135,12 +135,17 @@ def internal_id(id: Union[int, str]) -> int:
     """
     if isinstance(id, int):
         return id
+    
+    length = len(id)
 
     if isinstance(id, str) and id.isdigit():
-        return int(id)
+        if length == 16:
+            return int(id, 16)
+        else:
+            return int(id)
 
     try:
-        if len(id) < 16:
+        if length < 16:
             # Left pad ID with zeros
             id = id.zfill(16)
 
@@ -157,11 +162,15 @@ def internal_id_limited(id: Union[int, str]) -> int:
     if isinstance(id, int):
         return id
 
+    length = len(id)
+
     if isinstance(id, str) and id.isdigit():
-        return int(id)
+        if length == 16:
+            return int(id, 16)
+        else:
+            return int(id)
 
     try:
-        length = len(id)
         if length < 16:
             # Left pad ID with zeros
             id = id.zfill(16)

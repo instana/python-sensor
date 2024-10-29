@@ -6,9 +6,9 @@ _Note: To release a new Instana package, you must be a project member of the [In
 Contact [Peter Giacomo Lombardo](https://github.com/pglombardo) to be added._
 
 1. Before releasing, assure that [tests have passed](https://circleci.com/gh/instana/workflows/python-sensor) and that the package has also been manually validated in various stacks.
-2. `git checkout master && git pull --rebase && pip install -U twine`
-3. Bump the package version in `instana/version.py`. `git` commit & push the version change to the master branch
-4. Create a [draft Release on Github](https://github.com/instana/python-sensor/releases) using [./bin/create_general_release.py](https://github.com/instana/python-sensor/blob/master/bin/create_general_release.py)
+2. `git checkout main && git pull --rebase && pip install -U twine`
+3. Bump the package version in `instana/version.py`. `git` commit & push the version change to the `main` branch
+4. Create a [draft Release on Github](https://github.com/instana/python-sensor/releases) using [./bin/create_general_release.py](https://github.com/instana/python-sensor/blob/main/bin/create_general_release.py)
 5. Run `python setup.py sdist bdist_wheel` to create the packages file in `./dist/`
 6. Upload the package to Pypi with twine: `twine upload dist/instana-<version>*`
 7. Validate the new release on https://pypi.org/project/instana/

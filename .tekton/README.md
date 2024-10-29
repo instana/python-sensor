@@ -47,9 +47,9 @@ http://localhost:8001/api/v1/namespaces/tekton-pipelines/services/tekton-dashboa
 1. Click `Create`
 2. Select the `Namespace` (where the `Pipeline` resource is created by default it is `default`)
 3. Select the `Pipeline` created in the `pipeline.yaml` right now it is `python-tracer-ci-pipeline`
-4. Fill in `Params`. The `revision` should be `master` for the `master` branch
+4. Fill in `Params`. The `revision` should be `main` for the `main` branch
 4. Select the `ServiceAccount` set to `default`
-5. Optionally, enter a `PipelineRun name` for example `my-master-test-pipeline`,
+5. Optionally, enter a `PipelineRun name` for example `my-main-test-pipeline`,
    but if you don't then the Dashboard will generate a unique one for you.
 6. As long as [the known issue with Tekton Dashboard Workspace binding](
    https://github.com/tektoncd/dashboard/issues/1283), is not resolved.
@@ -293,5 +293,5 @@ The current schedule is `"5 0 * * Mon-Fri`,
 whic means every weekday 00:05 in the pod's timezone.
 This can be adjusted by editing the `schedule` attribute.
 Currently this triggers the `github-pr-python-tracer-ci-pipeline`
-on the head of the `master` branch.
+on the head of the `main` branch.
 These can also be changed on demand.

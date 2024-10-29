@@ -5,7 +5,7 @@ metadata:
 spec:
   params:
   - name: revision
-    value: "master"
+    value: "main"
   pipelineRef:
     name: python-currency-pipeline
   serviceAccountName: currency-serviceaccount

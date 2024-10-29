@@ -2,7 +2,7 @@ name: Find signed commits
 on:
   pull_request_target:
     branches:
-      - master # or the name of your main branch
+      - main # or the name of your main branch
 jobs:
   check-sign-off:
     name: Write comment if unsigned commits found

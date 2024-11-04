@@ -19,10 +19,6 @@ case "${TEST_CONFIGURATION}" in
 default)
   export REQUIREMENTS='requirements.txt'
   export TESTS=('tests') ;;
-cassandra)
-  export REQUIREMENTS='requirements-cassandra.txt'
-  export TESTS=('tests/clients/test_cassandra-driver.py')
-  export CASSANDRA_TEST='true' ;;
 couchbase)
   export REQUIREMENTS='requirements-couchbase.txt'
   export TESTS=('tests/clients/test_couchbase.py')
@@ -38,7 +34,7 @@ aws)
   export TESTS=('tests_aws') ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
-       "not in (default|cassandra|couchbase|gevent_starlette)" >&2
+       "not in (default|couchbase|gevent_starlette)" >&2
   exit 3 ;;
 esac
 

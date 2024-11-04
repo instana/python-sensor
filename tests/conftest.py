@@ -32,9 +32,6 @@ collect_ignore_glob = [
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)
-if not os.environ.get("CASSANDRA_TEST"):
-    collect_ignore_glob.append("*test_cassandra*")
-
 if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
@@ -46,6 +43,7 @@ if not os.environ.get("GEVENT_STARLETTE_TEST"):
 if sys.version_info >= (3, 13):
     # Currently not installable dependencies because of 3.13 incompatibilities
     collect_ignore_glob.append("*test_sanic*")
+    collect_ignore_glob.append("*test_cassandra*")
 
 
 @pytest.fixture(scope="session")

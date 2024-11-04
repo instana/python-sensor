@@ -37,9 +37,6 @@ commands:
 
   run-tests-with-coverage-report:
     parameters:
-      cassandra:
-        default: ""
-        type: string
       couchbase:
         default: ""
         type: string
@@ -53,7 +50,6 @@ commands:
       - run:
           name: Run Tests With Coverage Report
           environment:
-            CASSANDRA_TEST: "<<parameters.cassandra>>"
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
           command: |
@@ -128,6 +124,10 @@ jobs:
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: vanmoof/pubsub-emulator
+      - image: cassandra:3.11
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
     working_directory: ~/repo
     steps:
       - checkout
@@ -152,6 +152,10 @@ jobs:
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: vanmoof/pubsub-emulator
+      - image: cassandra:3.11
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
     working_directory: ~/repo
     steps:
       - checkout
@@ -176,6 +180,10 @@ jobs:
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: vanmoof/pubsub-emulator
+      - image: cassandra:3.11
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
     working_directory: ~/repo
     steps:
       - checkout
@@ -201,6 +209,10 @@ jobs:
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: vanmoof/pubsub-emulator
+      - image: cassandra:3.11
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
     working_directory: ~/repo
     steps:
       - checkout
@@ -226,6 +238,10 @@ jobs:
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: vanmoof/pubsub-emulator
+      - image: cassandra:3.11
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
     working_directory: ~/repo
     steps:
       - checkout
@@ -264,6 +280,10 @@ jobs:
       - image: rabbitmq:3.9.13
       - image: mongo:4.2.3
       - image: vanmoof/pubsub-emulator
+      - image: cassandra:3.11
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
     working_directory: ~/repo
     steps:
       - checkout
@@ -286,24 +306,6 @@ jobs:
       - run-tests-with-coverage-report:
           couchbase: "true"
           tests: "tests/clients/test_couchbase.py"
-      - store-pytest-results
-      - store-coverage-report
-
-  py39cassandra:
-    docker:
-      - image: cimg/python:3.9
-      - image: cassandra:3.11
-        environment:
-          MAX_HEAP_SIZE: 2048m
-          HEAP_NEWSIZE: 512m
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - pip-install-deps:
-          requirements: "tests/requirements-cassandra.txt"
-      - run-tests-with-coverage-report:
-          cassandra: "true"
-          tests: "tests/clients/test_cassandra-driver.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -344,7 +346,6 @@ workflows:
       - python311
       - python312
       - python313
-      - py39cassandra
       - py39couchbase
       - py39gevent_starlette
       - py312aws
@@ -356,7 +357,6 @@ workflows:
             - python311
             - python312
             - python313
-            - py39cassandra
             - py39couchbase
             - py39gevent_starlette
             - py312aws

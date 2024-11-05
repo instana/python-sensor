@@ -37,6 +37,9 @@ commands:
 
   run-tests-with-coverage-report:
     parameters:
+      googlecloud:
+        default: ""
+        type: string
       cassandra:
         default: ""
         type: string
@@ -53,6 +56,7 @@ commands:
       - run:
           name: Run Tests With Coverage Report
           environment:
+            GOOGLE_CLOUD_TEST: "<<parameters.googlecloud>>"
             CASSANDRA_TEST: "<<parameters.cassandra>>"
             COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
@@ -206,7 +210,22 @@ jobs:
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements.txt"
-      - run-tests-with-coverage-report
+      - run-tests-with-coverage-report:
+          googlecloud: "skip"
+      - store-pytest-results
+      - store-coverage-report
+
+  py311googlecloud:
+    docker:
+      - image: cimg/python:3.11.10
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-googlecloud.txt"
+      - run-tests-with-coverage-report:
+          googlecloud: "true"
+          tests: "tests/clients/test_google-cloud-storage.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -231,7 +250,8 @@ jobs:
       - checkout
       - pip-install-deps:
           requirements: "tests/requirements.txt"
-      - run-tests-with-coverage-report
+      - run-tests-with-coverage-report:
+          googlecloud: "skip"
       - store-pytest-results
       - store-coverage-report
 
@@ -245,6 +265,20 @@ jobs:
           requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report:
           tests: "tests_aws"
+      - store-pytest-results
+      - store-coverage-report
+
+  py312googlecloud:
+    docker:
+      - image: cimg/python:3.12
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-googlecloud.txt"
+      - run-tests-with-coverage-report:
+          googlecloud: "true"
+          tests: "tests/clients/test_google-cloud-storage.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -347,7 +381,9 @@ workflows:
       - py39cassandra
       - py39couchbase
       - py39gevent_starlette
+      - py311googlecloud
       - py312aws
+      - py312googlecloud
       - final_job:
           requires:
             - python38
@@ -359,4 +395,6 @@ workflows:
             - py39cassandra
             - py39couchbase
             - py39gevent_starlette
+            - py311googlecloud
             - py312aws
+            - py312googlecloud

@@ -30,8 +30,8 @@ collect_ignore_glob = [
     "*agent/test_google*",
 ]
 
-# # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
-# # be run explicitly.  (So always exclude them here)
+# Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
+# be run explicitly.  (So always exclude them here)
 if not os.environ.get("CASSANDRA_TEST"):
     collect_ignore_glob.append("*test_cassandra*")
 
@@ -42,6 +42,8 @@ if not os.environ.get("GEVENT_STARLETTE_TEST"):
     collect_ignore_glob.append("*test_gevent*")
     collect_ignore_glob.append("*test_starlette*")
 
+if os.environ.get("GOOGLE_CLOUD_TEST") == "skip":
+    collect_ignore_glob.append("*test_google-cloud-storage*")
 
 if sys.version_info >= (3, 13):
     # Currently not installable dependencies because of 3.13 incompatibilities

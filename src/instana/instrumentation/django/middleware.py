@@ -8,7 +8,7 @@ try:
     from opentelemetry import context, trace
     from opentelemetry.semconv.trace import SpanAttributes
     import wrapt
-    from typing import TYPE_CHECKING, Dict, Any, Callable, Optional, List, Tuple
+    from typing import TYPE_CHECKING, Dict, Any, Callable, Optional, List, Tuple, Type
 
     from instana.log import logger
     from instana.singletons import agent, tracer
@@ -17,10 +17,12 @@ try:
 
     if TYPE_CHECKING:
         from instana.span.span import InstanaSpan
-        from django.core.handlers.wsgi import WSGIRequest, WSGIHandler
+        from django.core.handlers.base import BaseHandler
         from django.http import HttpRequest, HttpResponse
 
-    DJ_INSTANA_MIDDLEWARE = "instana.instrumentation.django.middleware.InstanaMiddleware"
+    DJ_INSTANA_MIDDLEWARE = (
+        "instana.instrumentation.django.middleware.InstanaMiddleware"
+    )
 
     if django_version >= (2, 0):
         # Since Django 2.0, only `settings.MIDDLEWARE` is supported, so new-style
@@ -34,19 +36,19 @@ try:
                 response = self.get_response(request)
                 return self.process_response(request, response)
 
-    else: 
+    else:
         # Note: For 1.11 <= django_version < 2.0
         # Django versions 1.x can use `settings.MIDDLEWARE_CLASSES` and expect
         # old-style middlewares, which are created by inheriting from
         # `deprecation.MiddlewareMixin` since its creation in Django 1.10 and 1.11
         from django.utils.deprecation import MiddlewareMixin
 
-
     class InstanaMiddleware(MiddlewareMixin):
         """Django Middleware to provide request tracing for Instana"""
 
         def __init__(
-            self, get_response: Optional[Callable[["HttpRequest"], "HttpResponse"]] = None
+            self,
+            get_response: Optional[Callable[["HttpRequest"], "HttpResponse"]] = None,
         ) -> None:
             super(InstanaMiddleware, self).__init__(get_response)
             self.get_response = get_response
@@ -74,7 +76,7 @@ try:
             except Exception:
                 logger.debug("extract_custom_headers: ", exc_info=True)
 
-        def process_request(self, request: "WSGIRequest") -> None:
+        def process_request(self, request: Type["HttpRequest"]) -> None:
             try:
                 env = request.META
 
@@ -91,7 +93,9 @@ try:
 
                 request.span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 if "PATH_INFO" in env:
-                    request.span.set_attribute(SpanAttributes.HTTP_URL, env["PATH_INFO"])
+                    request.span.set_attribute(
+                        SpanAttributes.HTTP_URL, env["PATH_INFO"]
+                    )
                 if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
                     scrubbed_params = strip_secrets_from_query(
                         env["QUERY_STRING"],
@@ -105,7 +109,7 @@ try:
                 logger.debug("Django middleware @ process_request", exc_info=True)
 
         def process_response(
-            self, request: "WSGIRequest", response: "HttpResponse"
+            self, request: Type["HttpRequest"], response: "HttpResponse"
         ) -> "HttpResponse":
             try:
                 if request.span:
@@ -133,9 +137,10 @@ try:
                     request.span.set_attribute(
                         SpanAttributes.HTTP_STATUS_CODE, response.status_code
                     )
-                    self._extract_custom_headers(
-                        request.span, response.headers, format=False
-                    )
+                    if hasattr(response, "headers"):
+                        self._extract_custom_headers(
+                            request.span, response.headers, format=False
+                        )
                     tracer.inject(request.span.context, Format.HTTP_HEADERS, response)
             except Exception:
                 logger.debug("Instana middleware @ process_response", exc_info=True)
@@ -149,7 +154,9 @@ try:
                     request.token = None
             return response
 
-        def process_exception(self, request: "WSGIRequest", exception: Exception) -> None:
+        def process_exception(
+            self, request: Type["HttpRequest"], exception: Exception
+        ) -> None:
             from django.http.response import Http404
 
             if isinstance(exception, Http404):
@@ -157,7 +164,6 @@ try:
 
             if request.span:
                 request.span.record_exception(exception)
-
 
     def url_pattern_route(view_name: str) -> Callable[..., object]:
         from django.conf import settings
@@ -199,10 +205,9 @@ try:
 
         return list_urls(urlconf.urlpatterns)
 
-
     def load_middleware_wrapper(
         wrapped: Callable[..., None],
-        instance: "WSGIHandler",
+        instance: Type["BaseHandler"],
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> Callable[..., None]:
@@ -248,7 +253,6 @@ try:
             logger.warning(
                 "Instana: Couldn't add InstanaMiddleware to Django: ", exc_info=True
             )
-
 
     try:
         logger.debug("Instrumenting django")

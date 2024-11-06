@@ -64,7 +64,7 @@ class TestHostAgent:
         assert isinstance(self.agent.options, StandardOptions)
 
     def test_agent_default_log_level(self) -> None:
-        assert self.agent.options.log_level == logging.WARNING
+        assert self.agent.options.log_level == logging.WARN
 
     def test_agent_instana_debug(self) -> None:
         os.environ["INSTANA_DEBUG"] = "asdf"
@@ -76,6 +76,7 @@ class TestHostAgent:
         self.agent.options = StandardOptions()
         assert self.agent.options.service_name == "greycake"
 
+    @pytest.mark.original
     @patch.object(requests.Session, "put")
     def test_announce_is_successful(
         self,
@@ -104,6 +105,7 @@ class TestHostAgent:
         assert "agentUuid" in payload
         assert test_agent_uuid == payload["agentUuid"]
 
+    @pytest.mark.original
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_non_200(
         self,
@@ -129,6 +131,7 @@ class TestHostAgent:
         assert "response status code" in caplog.messages[0]
         assert "is NOT 200" in caplog.messages[0]
 
+    @pytest.mark.original
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_non_json(
         self,
@@ -153,6 +156,7 @@ class TestHostAgent:
         assert len(caplog.records) == 1
         assert "response is not JSON" in caplog.messages[0]
 
+    @pytest.mark.original
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_empty_list_json(
         self,
@@ -177,6 +181,7 @@ class TestHostAgent:
         assert len(caplog.records) == 1
         assert "payload has no fields" in caplog.messages[0]
 
+    @pytest.mark.original
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_missing_pid(
         self,
@@ -202,6 +207,7 @@ class TestHostAgent:
         assert len(caplog.records) == 1
         assert "response payload has no pid" in caplog.messages[0]
 
+    @pytest.mark.original
     @patch.object(requests.Session, "put")
     def test_announce_fails_with_missing_uuid(
         self,

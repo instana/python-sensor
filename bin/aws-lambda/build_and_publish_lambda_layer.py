@@ -11,19 +11,22 @@ import time
 import distutils.spawn
 from subprocess import call, check_call, check_output, CalledProcessError, DEVNULL
 
-for profile in ('china', 'non-china'):
+for profile in ("china", "non-china"):
     try:
-        check_call(['aws', 'configure', 'list', '--profile', profile], stdout=DEVNULL)
+        check_call(["aws", "configure", "list", "--profile", profile], stdout=DEVNULL)
     except CalledProcessError:
         raise ValueError(
             f"Please ensure, that your aws configuration includes a profile called '{profile}'"
-             "and has the 'access_key' and 'secret_key' configured for the respective regions")
+            "and has the 'access_key' and 'secret_key' configured for the respective regions"
+        )
 
 # Either -dev or -prod must be specified (and nothing else)
-if len(sys.argv) != 2 or (('-dev' not in sys.argv) and ('-prod' not in sys.argv)):
-    raise ValueError('Please specify -dev or -prod to indicate which type of layer to build.')
+if len(sys.argv) != 2 or (("-dev" not in sys.argv) and ("-prod" not in sys.argv)):
+    raise ValueError(
+        "Please specify -dev or -prod to indicate which type of layer to build."
+    )
 
-dev_mode = '-dev' in sys.argv
+dev_mode = "-dev" in sys.argv
 
 # Disable aws CLI pagination
 os.environ["AWS_PAGER"] = ""
@@ -31,7 +34,7 @@ os.environ["AWS_PAGER"] = ""
 # Check requirements first
 for cmd in ["pip", "zip"]:
     if distutils.spawn.find_executable(cmd) is None:
-        print("Can't find required tool: %s" % cmd)
+        print(f"Can't find required tool: {cmd}")
         exit(1)
 
 # Determine where this script is running from
@@ -41,24 +44,24 @@ this_file_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(this_file_path + "/../../")
 
 cwd = os.getcwd()
-print("===> Working directory is: %s" % cwd)
+print(f"===> Working directory is: {cwd}")
 
 # For development, respect or set PYTHONPATH to this repository
 local_env = os.environ.copy()
 if "PYTHONPATH" not in os.environ:
     local_env["PYTHONPATH"] = os.getcwd()
 
-build_directory = os.getcwd() + '/build/lambda/python'
+build_directory = os.getcwd() + "/build/lambda/python"
 
 if os.path.isdir(build_directory):
-    print("===> Cleaning build pre-existing directory: %s" % build_directory)
+    print(f"===> Cleaning build pre-existing directory: {build_directory}")
     shutil.rmtree(build_directory)
 
-print("===> Creating new build directory: %s" % build_directory)
+print(f"===> Creating new build directory: {build_directory}")
 os.makedirs(build_directory, exist_ok=True)
 
 print("===> Installing Instana and dependencies into build directory")
-call(["pip", "install", "-q", "-U", "-t", os.getcwd() + '/build/lambda/python', "instana"], env=local_env)
+call(["pip", "install", "-q", "-U", "-t", os.getcwd() + "/build/lambda/python", "instana"], env=local_env)
 
 print("===> Manually copying in local dev code")
 shutil.rmtree(build_directory + "/instana")
@@ -66,25 +69,24 @@ shutil.copytree(os.getcwd() + "/src/instana", build_directory + "/instana")
 
 print("===> Creating Lambda ZIP file")
 timestamp = time.strftime("%Y-%m-%d_%H:%M:%S")
-zip_filename = "instana-py-layer-%s.zip" % timestamp
+zip_filename = f"instana-py-layer-{timestamp}.zip"
 
 os.chdir(os.getcwd() + "/build/lambda/")
 call(["zip", "-q", "-r", zip_filename, "./python", "-x", "*.pyc", "./python/pip*", "./python/setuptools*", "./python/wheel*"])
 
-fq_zip_filename = os.getcwd() + '/%s' % zip_filename
-aws_zip_filename = "fileb://%s" % fq_zip_filename
+fq_zip_filename = os.getcwd() + zip_filename
+aws_zip_filename = f"fileb://{fq_zip_filename}"
 print("Zipfile should be at: ", fq_zip_filename)
 
 cn_regions = [
-           'cn-north-1',
-           'cn-northwest-1',
-           ]
+    "cn-north-1",
+    "cn-northwest-1",
+]
 
 if dev_mode:
-    target_regions = ['us-west-1']
+    target_regions = ["us-west-1"]
     LAYER_NAME = "instana-py-dev"
 else:
-
     target_regions = [
                'af-south-1',
                'ap-east-1',
@@ -118,14 +120,14 @@ else:
                'us-east-2',
                'us-west-1',
                'us-west-2'
-               ]
+    ]
     LAYER_NAME = "instana-python"
 
 published = dict()
 
 for region in target_regions:
-    print("===> Uploading layer to AWS %s " % region)
-    profile = 'china' if region in cn_regions else 'non-china'
+    print(f"===> Uploading layer to AWS {region} ")
+    profile = "china" if region in cn_regions else "non-china"
 
     response = check_output(["aws", "--region", region, "lambda", "publish-layer-version",
                              "--description",
@@ -136,8 +138,8 @@ for region in target_regions:
                              "--profile", profile])
 
     json_data = json.loads(response)
-    version = json_data['Version']
-    print("===> Uploaded version is %s" % version)
+    version = json_data["Version"]
+    print(f"===> Uploaded version is {version}")
 
     if dev_mode is False:
         print("===> Making layer public...")
@@ -149,9 +151,9 @@ for region in target_regions:
                                  "--output", "text",
                                  "--profile", profile])
 
-    published[region] = json_data['LayerVersionArn']
+    published[region] = json_data["LayerVersionArn"]
 
 
 print("===> Published list:")
 for key in published.keys():
-    print("%s\t%s" % (key, published[key]))
+    print(f"{key}\t{published[key]}")

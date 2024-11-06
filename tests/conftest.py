@@ -222,3 +222,14 @@ def announce_sensor(monkeypatch, request) -> None:
         monkeypatch.setattr(TheMachine, "announce_sensor", TheMachine.announce_sensor)
     else:
         monkeypatch.setattr(TheMachine, "announce_sensor", always_true)
+
+
+@pytest.fixture(autouse=True)
+def announce(monkeypatch, request) -> None:
+    """Always return `True` for `Host.announce()`"""
+    if "original" in request.keywords:
+        # If using the `@pytest.mark.original` marker before the test function,
+        # uses the original HostAgent.announce()
+        monkeypatch.setattr(HostAgent, "announce", HostAgent.announce)
+    else:
+        monkeypatch.setattr(HostAgent, "announce", always_true)

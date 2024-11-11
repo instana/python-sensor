@@ -4,9 +4,7 @@ boto3>=1.17.74
 bottle>=0.12.25
 celery>=5.2.7
 coverage>=5.5
-Django>=4.2.4; python_version < "3.10"
-Django>=5.0; python_version >= "3.10" and python_version < "3.12"
-Django>=5.0a1; python_version >= "3.12"  --pre
+Django>=4.2.16
 fastapi>=0.92.0; python_version < "3.13"
 fastapi>=0.115.0; python_version >= "3.13"
 flask>=2.3.2

@@ -70,11 +70,11 @@ try:
 
                     if django_header in headers:
                         span.set_attribute(
-                            "http.header.%s" % custom_header, headers[django_header]
+                            f"http.header.{custom_header}", headers[django_header]
                         )
 
             except Exception:
-                logger.debug("extract_custom_headers: ", exc_info=True)
+                logger.debug("Instana middleware @ extract_custom_headers: ", exc_info=True)
 
         def process_request(self, request: Type["HttpRequest"]) -> None:
             try:
@@ -104,7 +104,7 @@ try:
                     )
                     request.span.set_attribute("http.params", scrubbed_params)
                 if "HTTP_HOST" in env:
-                    request.span.set_attribute("http.host", env["HTTP_HOST"])
+                    request.span.set_attribute(SpanAttributes.HTTP_HOST, env["HTTP_HOST"])
             except Exception:
                 logger.debug("Django middleware @ process_request", exc_info=True)
 

@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   redis:
-    image: docker.io/library/redis
+    image: public.ecr.aws/docker/library/redis
     volumes:
       - ./tests/conf/redis.conf:/usr/local/etc/redis/redis.conf:Z
     command: redis-server /usr/local/etc/redis/redis.conf
@@ -9,19 +9,19 @@ services:
       - "0.0.0.0:6379:6379"
 
   cassandra:
-    image: docker.io/library/cassandra
+    image: public.ecr.aws/docker/library/cassandra
     ports:
       - 9042:9042
 
 
   couchbase:
-    image: docker.io/library/couchbase
+    image: public.ecr.aws/docker/library/couchbase:community
     ports:
       - 8091-8094:8091-8094
       - 11210:11210
 
   mariadb:
-    image: docker.io/library/mariadb
+    image: public.ecr.aws/docker/library/mariadb
     ports:
       - 3306:3306
     environment:
@@ -33,12 +33,12 @@ services:
       - ./tests/config/database/mysql/conf.d/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:Z
 
   mongodb:
-    image: docker.io/library/mongo
+    image: public.ecr.aws/docker/library/mongo
     ports:
       - '27017:27017'
 
   postgres:
-    image: docker.io/library/postgres
+    image: public.ecr.aws/docker/library/postgres
     ports:
       - 5432:5432
     environment:
@@ -47,7 +47,7 @@ services:
       POSTGRES_DB: instana_test_db
 
   rabbitmq:
-    image: docker.io/library/rabbitmq
+    image: public.ecr.aws/docker/library/rabbitmq
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost
     ports:
@@ -55,8 +55,10 @@ services:
       - 5672:5672
 
   pubsub:
-    image: docker.io/vanmoof/pubsub-emulator
+    image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
     environment:
-      - PUBSUB_EMULATOR_HOST=0.0.0.0:8085
+      - PUBSUB_EMULATOR_HOST=0.0.0.0:8681
+      - PUBSUB_PROJECT1=test-project,test-topic
     ports:
-      - "8085:8085"
+      - "8681:8681"
+      - "8682:8682"

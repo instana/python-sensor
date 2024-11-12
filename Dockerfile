@@ -1,15 +1,17 @@
 # Development Container
-FROM python:3.8.5
+FROM public.ecr.aws/docker/library/python:3.12-slim-bookworm
 
-RUN apt update -q
-RUN apt install -qy vim 
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq install --no-install-recommends git && \
+    apt-get -y -qq clean
 
-WORKDIR /python-sensor
-
-ENV INSTANA_DEBUG=true
-ENV PYTHONPATH=/python-sensor
-ENV AUTOWRAPT_BOOTSTRAP=instana
-
+WORKDIR /python-tracer
 COPY . ./
 
-RUN pip install -e .
+RUN pip install --upgrade pip && \
+    pip install -e .
+
+ENV INSTANA_DEBUG=true
+ENV PYTHONPATH=/python-tracer
+ENV AUTOWRAPT_BOOTSTRAP=instana

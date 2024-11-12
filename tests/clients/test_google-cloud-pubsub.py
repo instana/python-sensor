@@ -18,7 +18,7 @@ from instana.span.span import get_current_span
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8085
-os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8085"
+os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8681"
 
 
 class TestPubSubPublish(_TraceContextMixin):

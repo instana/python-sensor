@@ -128,13 +128,34 @@ for region in target_regions:
     print(f"===> Uploading layer to AWS {region} ")
     profile = "china" if region in cn_regions else "non-china"
 
-    response = check_output(["aws", "--region", region, "lambda", "publish-layer-version",
-                             "--description",
-                             "Provides Instana tracing and monitoring of AWS Lambda functions built with Python",
-                             "--license-info", "MIT", "--output", "json",
-                             "--layer-name", LAYER_NAME, "--zip-file", aws_zip_filename,
-                             "--compatible-runtimes", "python3.8", "python3.9", "python3.10", "python3.11", "python3.12",
-                             "--profile", profile])
+    response = check_output(
+        [
+            "aws",
+            "lambda",
+            "publish-layer-version",
+            "--layer-name",
+            LAYER_NAME,
+            "--description",
+            "Provides Instana tracing and monitoring of AWS Lambda functions built with Python",
+            "--license-info",
+            "MIT",
+            "--output",
+            "json",
+            "--zip-file",
+            aws_zip_filename,
+            "--compatible-runtimes",
+            "python3.8",
+            "python3.9",
+            "python3.10",
+            "python3.11",
+            "python3.12",
+            "python3.13",
+            "--region",
+            region,
+            "--profile",
+            profile,
+        ]
+    )
 
     json_data = json.loads(response)
     version = json_data["Version"]

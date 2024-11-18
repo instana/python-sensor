@@ -8,7 +8,6 @@ import sys
 import json
 import shutil
 import time
-import distutils.spawn
 from subprocess import call, check_call, check_output, CalledProcessError, DEVNULL
 
 for profile in ("china", "non-china"):
@@ -33,7 +32,7 @@ os.environ["AWS_PAGER"] = ""
 
 # Check requirements first
 for cmd in ["pip", "zip"]:
-    if distutils.spawn.find_executable(cmd) is None:
+    if not shutil.which(cmd):
         print(f"Can't find required tool: {cmd}")
         exit(1)
 

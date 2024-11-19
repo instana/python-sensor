@@ -96,20 +96,23 @@ commands:
 jobs:
   python38:
     docker:
-      - image: cimg/python:3.8
-      - image: cimg/postgres:14.12
+      - image: public.ecr.aws/docker/library/python:3.8
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
         environment:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: vanmoof/pubsub-emulator
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     working_directory: ~/repo
     steps:
       - checkout
@@ -120,20 +123,23 @@ jobs:
 
   python39:
     docker:
-      - image: cimg/python:3.9
-      - image: cimg/postgres:14.12
+      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
         environment:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: vanmoof/pubsub-emulator
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     working_directory: ~/repo
     steps:
       - checkout
@@ -144,20 +150,23 @@ jobs:
 
   python310:
     docker:
-      - image: cimg/python:3.10
-      - image: cimg/postgres:14.12
+      - image: public.ecr.aws/docker/library/python:3.10
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
         environment:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: vanmoof/pubsub-emulator
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     working_directory: ~/repo
     steps:
       - checkout
@@ -169,20 +178,23 @@ jobs:
 
   python311:
     docker:
-      - image: cimg/python:3.11
-      - image: cimg/postgres:14.12
+      - image: public.ecr.aws/docker/library/python:3.11
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
         environment:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: vanmoof/pubsub-emulator
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     working_directory: ~/repo
     steps:
       - checkout
@@ -194,20 +206,23 @@ jobs:
 
   python312:
     docker:
-      - image: cimg/python:3.12
-      - image: cimg/postgres:14.12
+      - image: public.ecr.aws/docker/library/python:3.12
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
         environment:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: vanmoof/pubsub-emulator
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     working_directory: ~/repo
     steps:
       - checkout
@@ -219,7 +234,7 @@ jobs:
 
   py312aws:
     docker:
-      - image: cimg/python:3.12
+      - image: public.ecr.aws/docker/library/python:3.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -232,20 +247,23 @@ jobs:
 
   python313:
     docker:
-      - image: cimg/python:3.13
-      - image: cimg/postgres:14.12
+      - image: public.ecr.aws/docker/library/python:3.13
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
-      - image: cimg/mariadb:10.11.2
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
         environment:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
-      - image: cimg/redis:5.0.14
-      - image: rabbitmq:3.9.13
-      - image: mongo:4.2.3
-      - image: vanmoof/pubsub-emulator
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     working_directory: ~/repo
     steps:
       - checkout
@@ -257,8 +275,8 @@ jobs:
 
   py39cassandra:
     docker:
-      - image: cimg/python:3.9
-      - image: cassandra:3.11
+      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/cassandra:3.11.16-jammy
         environment:
           MAX_HEAP_SIZE: 2048m
           HEAP_NEWSIZE: 512m
@@ -275,7 +293,7 @@ jobs:
 
   final_job:
     docker:
-      - image: cimg/python:3.8.20
+      - image: public.ecr.aws/docker/library/python:3.9
     working_directory: ~/repo
     steps:
       - checkout
@@ -286,7 +304,7 @@ jobs:
 
   py39gevent_starlette:
     docker:
-      - image: cimg/python:3.9.20
+      - image: public.ecr.aws/docker/library/python:3.9.20
     working_directory: ~/repo
     steps:
       - checkout

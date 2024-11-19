@@ -11,10 +11,12 @@ spec:
       mountPath: /workspace
   steps:
     - name: clone-repo
-      # alpine/git:2.43.0
-      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      # public.ecr.aws/docker/library/alpine:3.20.3
+      image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
       script: |
         #!/bin/sh
+        echo "Installing git"
+        apk fix && apk --no-cache --update add git gpg less openssh patch
         echo "Cloning repo"
         cd /workspace && git clone --filter=blob:none --sparse --depth 1 https://github.com/instana/python-sensor -b $(params.revision)
         cd python-sensor
@@ -31,8 +33,8 @@ spec:
       mountPath: /workspace
   steps:
     - name: generate-currency-report
-      # 3.10.15-bookworm
-      image: python@sha256:b346d9d55e40cd6079db55370581b3bd24067acf5f1acc386107ec0843102ec9
+      # public.ecr.aws/docker/library/python:3.10.15-bookworm
+      image: public.ecr.aws/docker/library/python@sha256:2eb72484c25c39aba019b0ab5679c2436833a0b705e955ed8e13c06ee900dd63
       script: |
         #!/usr/bin/env bash
         cd /workspace/python-sensor/.tekton/.currency
@@ -61,8 +63,8 @@ spec:
       mountPath: /workspace
   steps:
     - name: upload-currency-report
-      # alpine/git:2.43.0
-      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      # public.ecr.aws/docker/library/alpine:3.20.3
+      image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
       env:
         - name: GH_ENTERPRISE_TOKEN
           valueFrom:
@@ -71,7 +73,10 @@ spec:
               key: "GH_ENTERPRISE_TOKEN"
       script: |
         #!/bin/sh
+        echo "Installing git"
+        apk fix && apk --no-cache --update add git gpg less openssh patch
 
+        echo "Cloning repo"
         cd /workspace        
         git clone https://oauth2:$GH_ENTERPRISE_TOKEN@github.ibm.com/instana/tracer-reports.git
 

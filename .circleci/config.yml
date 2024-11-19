@@ -21,26 +21,9 @@ commands:
             pip install -r requirements.txt
             pip install -r <<parameters.requirements>>
 
-  install-couchbase-deps:
-    steps:
-      - run:
-          name: Install Couchbase Dependencies
-          # Even if we use focal, we need to add the bionic repo
-          # See: https://forums.couchbase.com/
-          # t/installing-libcouchbase-dev-on-ubuntu-20-focal-fossa/25955/3
-          command: |
-            sudo apt update
-            sudo wget -O - http://packages.couchbase.com/ubuntu/couchbase.key | sudo apt-key add -
-            echo "deb http://packages.couchbase.com/ubuntu bionic bionic/main" | sudo tee /etc/apt/sources.list.d/couchbase.list
-            sudo apt update
-            sudo apt install libcouchbase-dev -y
-
   run-tests-with-coverage-report:
     parameters:
       cassandra:
-        default: ""
-        type: string
-      couchbase:
         default: ""
         type: string
       gevent:
@@ -54,7 +37,6 @@ commands:
           name: Run Tests With Coverage Report
           environment:
             CASSANDRA_TEST: "<<parameters.cassandra>>"
-            COUCHBASE_TEST: "<<parameters.couchbase>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
           command: |
             . venv/bin/activate
@@ -273,22 +255,6 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39couchbase:
-    docker:
-      - image: cimg/python:3.9
-      - image: couchbase/server-sandbox:5.5.0
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - install-couchbase-deps
-      - pip-install-deps:
-          requirements: "tests/requirements-couchbase.txt"
-      - run-tests-with-coverage-report:
-          couchbase: "true"
-          tests: "tests/clients/test_couchbase.py"
-      - store-pytest-results
-      - store-coverage-report
-
   py39cassandra:
     docker:
       - image: cimg/python:3.9
@@ -345,7 +311,6 @@ workflows:
       - python312
       - python313
       - py39cassandra
-      - py39couchbase
       - py39gevent_starlette
       - py312aws
       - final_job:
@@ -357,6 +322,5 @@ workflows:
             - python312
             - python313
             - py39cassandra
-            - py39couchbase
             - py39gevent_starlette
             - py312aws

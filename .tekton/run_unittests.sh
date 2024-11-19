@@ -23,10 +23,6 @@ cassandra)
   export REQUIREMENTS='requirements-cassandra.txt'
   export TESTS=('tests/clients/test_cassandra-driver.py')
   export CASSANDRA_TEST='true' ;;
-couchbase)
-  export REQUIREMENTS='requirements-couchbase.txt'
-  export TESTS=('tests/clients/test_couchbase.py')
-  export COUCHBASE_TEST='true' ;;
 gevent_starlette)
   export REQUIREMENTS='requirements-gevent-starlette.txt'
   # TODO: uncomment once gevent instrumentation is done
@@ -38,29 +34,18 @@ aws)
   export TESTS=('tests_aws') ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
-       "not in (default|cassandra|couchbase|gevent_starlette)" >&2
+       "not in (default|cassandra|gevent_starlette)" >&2
   exit 3 ;;
 esac
 
 echo -n "Configuration is '${TEST_CONFIGURATION}' on ${PYTHON_VERSION} "
 echo    "with dependencies in '${REQUIREMENTS}'"
 ls -lah .
-if [[ -n "${COUCHBASE_TEST}" ]]; then
-  echo "Install Couchbase Dependencies"
-  # Even if we use bookworm for running this, we need to add the bionic repo
-  # See: https://forums.couchbase.com/
-  # t/installing-libcouchbase-dev-on-ubuntu-20-focal-fossa/25955/3
-  wget -O - http://packages.couchbase.com/ubuntu/couchbase.key | apt-key add -
-  echo "deb http://packages.couchbase.com/ubuntu bionic bionic/main" \
-       > /etc/apt/sources.list.d/couchbase.list
-  apt update
-  apt install libcouchbase-dev -y
-fi
 
 python -m venv /tmp/venv
 # shellcheck disable=SC1091
 source /tmp/venv/bin/activate
-pip install --upgrade pip "$([[ -n ${COUCHBASE_TEST} ]] && echo wheel || echo pip)"
+pip install --upgrade pip
 pip install -e .
 pip install -r "tests/${REQUIREMENTS}"
 

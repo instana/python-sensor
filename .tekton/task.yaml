@@ -60,40 +60,6 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: python-tracer-unittest-couchbase-task
-spec:
-  sidecars:
-    - name: couchbase
-      # couchbase/server-sandbox:5.5.1
-      image: couchbase/server-sandbox@sha256:d04302ea7782a0f53c3f371971138b339097d5e41f4154def5bdecc5bbb2e1da
-      readinessProbe:
-        httpGet:
-          path: /ui/index.html
-          port: 8091
-        # This Couchbase image recommends 60sec waiting for initial configuration
-        # Starting the tests too soon may result in
-        # "Error during initial configuration - aborting container"
-        # apparently because "vbucket map not available yet"
-        initialDelaySeconds: 60
-  params:
-  - name: imageDigest
-    type: string
-  workspaces:
-    - name: task-pvc
-      mountPath: /workspace
-  steps:
-    - name: unittest
-      image: python@$(params.imageDigest)
-      env:
-        - name: TEST_CONFIGURATION
-          value: couchbase
-      workingDir: /workspace/python-sensor/
-      command:
-      - /workspace/python-sensor/.tekton/run_unittests.sh
----
-apiVersion: tekton.dev/v1
-kind: Task
-metadata:
   name: python-tracer-unittest-gevent-starlette-task
 spec:
   params:

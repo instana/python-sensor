@@ -29,10 +29,6 @@ spec:
           # rabbitmq:3.13.0
           image: rabbitmq@sha256:27819d7be883b8aea04b9a244460181ef97427a98f8323b39402d65e6eb2ce6f
           command: ["sh", "-c", "'true'"]
-        - name: prepuller-couchbase
-          # couchbase/server-sandbox:5.5.1
-          image: couchbase/server-sandbox@sha256:d04302ea7782a0f53c3f371971138b339097d5e41f4154def5bdecc5bbb2e1da
-          command: ["sh", "-c", "'true'"]
         - name: prepuller-redis
           # redis:7.2.4-bookworm
           image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744

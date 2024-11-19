@@ -27,7 +27,6 @@ spec:
       - github-set-check-status-to-pending
       - unittest-default
       - unittest-cassandra
-      - unittest-couchbase
       - unittest-gevent-starlette
       taskRef:
         kind: Task

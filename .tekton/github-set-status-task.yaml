@@ -14,8 +14,8 @@ spec:
       secretName: githubtoken
   steps:
     - name: set-status
-      # curlimages/curl:8.6.0
-      image: curlimages/curl@sha256:f2237028bed58de91f62aea74260bb2a299cf12fbcabc23cfaf125fef276c884
+      # quay.io/curl/curl:8.11.0
+      image: quay.io/curl/curl@sha256:b90c4281fe1a4c6cc2b6a665c531d448bba078d75ffa98187e7d7e530fca5209
       env:
       - name: SHA
         value: $(params.SHA)

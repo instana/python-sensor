@@ -61,12 +61,12 @@ spec:
         spec:
           containers:
           - name: git
-            # alpine/git:2.43.0
-            image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
-            command:
-            - sh
-            - -c
-            - |
+            # public.ecr.aws/docker/library/alpine:3.20.3
+            image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
+            script: |
+              #!/bin/sh
+              echo "Installing git"
+              apk fix && apk --no-cache --update add git gpg less openssh patch
               wget -O- \
                    --header 'Content-Type: application/json' \
                    --post-data '{

@@ -12,10 +12,12 @@ spec:
       mountPath: /workspace
   steps:
     - name: clone
-      # alpine/git:2.43.0
-      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      # public.ecr.aws/docker/library/alpine:3.20.3
+      image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
       script: |
         #!/bin/sh
+        echo "Installing git"
+        apk fix && apk --no-cache --update add git gpg less openssh patch
         echo "Cloning repo"
         cd /workspace && git clone --depth 1 -b $(params.revision) https://github.com/instana/python-sensor
         ls -lah /workspace
@@ -27,8 +29,8 @@ metadata:
 spec:
   sidecars:
     - name: cassandra
-      # cassandra:3.11.16-jammy
-      image: cassandra@sha256:7d32a79e9adb4ca8c26f798e4a44ec8438da99c6bda2969410ea46cbdb0b4b94
+      # public.ecr.aws/docker/library/cassandra:3.11.16-jammy
+      image: public.ecr.aws/docker/library/cassandra@sha256:b175d99b80f8108594d00c705288fdb3186b9fc07b30b4c292c3592cddb5f0b5
       env:
         - name: MAX_HEAP_SIZE
           value: 2048m
@@ -49,7 +51,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: cassandra
@@ -70,7 +72,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: gevent_starlette
@@ -85,28 +87,30 @@ metadata:
 spec:
   sidecars:
     - name: google-cloud-pubsub
-      # vanmoof/pubsub-emulator:latest
-      image: vanmoof/pubsub-emulator@sha256:ff71206d65589b58a8b6928c35349a58dbfd7f20eb2dc7822e0f32e5c40791c8
+      # quay.io/thekevjames/gcloud-pubsub-emulator
+      image: quay.io/thekevjames/gcloud-pubsub-emulator@sha256:9bad1f28e6a3d6cd5f462c654c736faa4cf49732d9422ddb427ad30f3037c0ff
       env:
         - name: PUBSUB_EMULATOR_HOST
-          value: 0.0.0.0:8085
+          value: 0.0.0.0:8681
+        - name: PUBSUB_PROJECT1
+          value: test-project,test-topic
       ports:
-        - containerPort: 8085
-          hostPort: 8085
+        - containerPort: 8681
+          hostPort: 8681
     - name: mariadb
-      # mariadb:11.3.2
-      image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+      # public.ecr.aws/docker/library/mariadb:11.3.2
+      image: public.ecr.aws/docker/library/mariadb@sha256:a4a81ab6d190db84b67f286fd0511cdea619a24b63790b3db4fb69d263a5cd37
       env:
         - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
           value: passw0rd
         - name: MYSQL_DATABASE # or MARIADB_DATABASE
           value: instana_test_db
     - name: mongo
-      # mongo:7.0.6
-      image: mongo@sha256:125bda8abe859bcebc47e4a7e0921508d3bcb47725d261f0a2bcf4ea5c837dd5
+      # public.ecr.aws/docker/library/mongo:7.0.6
+      image: public.ecr.aws/docker/library/mongo@sha256:3a023748ee30e915dd51642f1ef430c73c4e54937060054ca84c70417f510cc5
     - name: postgres
-      # postgres:16.2-bookworm
-      image: postgres@sha256:3bfb87432e26badf72d727a0c5f5bb7b81438cd9baec5be8531c70a42b07adc6
+      # public.ecr.aws/docker/library/postgres:16.2-bookworm
+      image: public.ecr.aws/docker/library/postgres@sha256:07572430dbcd821f9f978899c3ab3a727f5029be9298a41662e1b5404d5b73e0
       env:
         - name: POSTGRES_USER
           value: root
@@ -122,11 +126,11 @@ spec:
           - pg_isready --host 127.0.0.1 --port 5432 --dbname=${POSTGRES_DB}
         timeoutSeconds: 10
     - name: redis
-      # redis:7.2.4-bookworm
-      image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744
+      # public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      image: public.ecr.aws/docker/library/redis@sha256:9341b6548cc35b64a6de0085555264336e2f570e17ecff20190bf62222f2bd64
     - name: rabbitmq
-      # rabbitmq:3.13.0
-      image: rabbitmq@sha256:27819d7be883b8aea04b9a244460181ef97427a98f8323b39402d65e6eb2ce6f
+      # public.ecr.aws/docker/library/rabbitmq:3.13.0
+      image: public.ecr.aws/docker/library/rabbitmq@sha256:39de1a4fc6c72d12bd5dfa23e8576536fd1c0cc8418344cd5a51addfc9a1145d
   params:
   - name: imageDigest
     type: string
@@ -135,7 +139,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: default
@@ -156,7 +160,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: aws

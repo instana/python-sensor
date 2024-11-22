@@ -26,7 +26,7 @@ def log_with_instana(
     # We take into consideration if `stacklevel` is already present in `kwargs`.
     # This prevents the error `_log() got multiple values for keyword argument 'stacklevel'`
     stacklevel_in = kwargs.pop("stacklevel", 1)
-    stacklevel = stacklevel_in + 1 + (sys.version_info >= (3, 13))
+    stacklevel = stacklevel_in + 1
 
     try:
         # Only needed if we're tracing and serious log

@@ -7,7 +7,7 @@ Any feedback is welcome.  Happy Python visibility.
 [![CircleCI](https://circleci.com/gh/instana/python-sensor/tree/main.svg?style=svg)](https://circleci.com/gh/instana/python-sensor/tree/main)
 [![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-disabled-red.svg)](http://opentracing.io)
 [![OpenTelemetry Badge](https://img.shields.io/badge/OpenTelemetry-enabled-blue.svg)](http://opentelemetry.io)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Finstana%2Fpython-sensor%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/instana)
 ![GitHub Release](https://img.shields.io/github/v/release/instana/python-sensor)
 
 > [!NOTE]
@@ -60,7 +60,7 @@ Want to instrument other languages?  See our [Node.js], [Go], [Ruby] instrumenta
 [Instana AutoTrace™️]: https://www.ibm.com/docs/en/instana-observability/current?topic=kubernetes-instana-autotrace-webhook "Instana AutoTrace"
 [configuration page]: https://www.ibm.com/docs/en/instana-observability/current?topic=package-python-configuration-configuring-instana#general "Instana Python package configuration"
 [PyPI]: https://pypi.python.org/pypi/instana "Instana package at PyPI"
-[installation document]: https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package#installing "Instana Python package installation"
+[installation document]: https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package#installation-methods "Instana Python package installation methods"
 [documentation portal]: https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package "Instana Python package documentation"
 [Node.js]: https://github.com/instana/nodejs "Instana Node.JS Tracer"
 [Go]: https://github.com/instana/golang-sensor "Instana Go Tracer"

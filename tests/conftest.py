@@ -48,6 +48,13 @@ if sys.version_info >= (3, 13):
     collect_ignore_glob.append("*test_sanic*")
 
 
+if sys.version_info >= (3, 14):
+    # Currently not installable dependencies because of 3.14 incompatibilities
+    collect_ignore_glob.append("*test_fastapi*")
+    # aiohttp-server tests failing due to deprecated methods used
+    collect_ignore_glob.append("*test_aiohttp_server*")
+
+
 @pytest.fixture(scope="session")
 def celery_config():
     return {

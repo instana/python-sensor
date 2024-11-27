@@ -273,6 +273,34 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  python314:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.14.0a2
+      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: passw0rd
+          POSTGRES_DB: instana_test_db
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - pip-install-deps:
+          requirements: "tests/requirements-pre314.txt"
+      - run-tests-with-coverage-report
+      - store-pytest-results
+      - store-coverage-report
+
   py39cassandra:
     docker:
       - image: public.ecr.aws/docker/library/python:3.9
@@ -328,6 +356,7 @@ workflows:
       - python311
       - python312
       - python313
+      - python314
       - py39cassandra
       - py39gevent_starlette
       - py312aws
@@ -339,6 +368,8 @@ workflows:
             - python311
             - python312
             - python313
+            # Uncomment the following when giving real support to 3.14
+            # - python314
             - py39cassandra
             - py39gevent_starlette
             - py312aws

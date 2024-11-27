@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import sys
 from typing import Generator
 import json
 import pytest
@@ -538,6 +539,10 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         assert gcs_span.data["gcs"]["bucket"] == "test bucket"
         assert gcs_span.data["gcs"]["object"] == "test object"
 
+    @pytest.mark.skipif(
+        sys.version_info >= (3, 14),
+        reason='Avoiding "Fatal Python error: Segmentation fault"',
+    )
     @patch("requests.Session.request")
     def test_objects_get(self, mock_requests: Mock) -> None:
         mock_requests.return_value = self._mock_response(
@@ -1077,6 +1082,10 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             response = client.list_buckets()
             assert isinstance(response.client, storage.Client)
 
+    @pytest.mark.skipif(
+        sys.version_info >= (3, 14),
+        reason='Avoiding "Fatal Python error: Segmentation fault"',
+    )
     @patch("requests.Session.request")
     def test_download_with_instana_tracing_is_off(self, mock_requests: Mock) -> None:
         mock_requests.return_value = self._mock_response(

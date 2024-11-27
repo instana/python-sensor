@@ -17,7 +17,7 @@ PYTHON_MINOR_VERSION="$(echo "${PYTHON_VERSION}" | cut -d'.' -f 2)"
 
 case "${TEST_CONFIGURATION}" in
 default)
-  export REQUIREMENTS='requirements.txt'
+  [ "${PYTHON_MINOR_VERSION}" -eq "14" ] && export REQUIREMENTS='requirements-pre314.txt' || export REQUIREMENTS='requirements.txt'
   export TESTS=('tests') ;;
 cassandra)
   export REQUIREMENTS='requirements-cassandra.txt'
@@ -34,7 +34,7 @@ aws)
   export TESTS=('tests_aws') ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
-       "not in (default|cassandra|gevent_starlette)" >&2
+       "not in (default|cassandra|gevent_starlette|aws)" >&2
   exit 3 ;;
 esac
 

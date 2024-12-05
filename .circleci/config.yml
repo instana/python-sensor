@@ -332,7 +332,7 @@ jobs:
 
   py39gevent_starlette:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.9.20
+      - image: public.ecr.aws/docker/library/python:3.9
     working_directory: ~/repo
     steps:
       - checkout

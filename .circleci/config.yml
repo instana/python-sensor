@@ -5,6 +5,29 @@ version: 2.1
 #   ruby: circleci/ruby@1.1.2
 
 commands:
+  check-if-tests-needed:
+    steps:
+      - run:
+          name: Check if tests need to run
+          command: |
+            # If we're on main branch, always run tests
+            if [ "${CIRCLE_BRANCH}" = "main" ]; then
+              echo "On main branch - running all tests"
+              exit 0
+            fi
+            
+            # Fetch all the branches
+            git fetch origin
+            
+            # Get list of changed files between current branch and main
+            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+            
+            # Check if any relevant files changed
+            echo "$CHANGED_FILES" | grep -q -E "^(src/|tests/|tests_aws/)" || {
+              echo "No changes in src/, tests/, or tests_aws/ directories. Skipping tests."
+              circleci step halt
+            }
+
   pip-install-deps:
     parameters:
       requirements:
@@ -116,6 +139,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps
       - run-tests-with-coverage-report
       - store-pytest-results
@@ -143,6 +167,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps
       - run-tests-with-coverage-report
       - store-pytest-results
@@ -170,6 +195,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
@@ -198,6 +224,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
@@ -226,6 +253,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
@@ -238,6 +266,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report:
@@ -267,6 +296,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements.txt"
       - run-tests-with-coverage-report
@@ -295,6 +325,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements-pre314.txt"
       - run-tests-with-coverage-report
@@ -311,6 +342,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements-cassandra.txt"
       - run-tests-with-coverage-report:
@@ -325,6 +357,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
             requirements: "tests/requirements.txt"
       - store-pytest-results
@@ -336,6 +369,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - check-if-tests-needed
       - pip-install-deps:
           requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:

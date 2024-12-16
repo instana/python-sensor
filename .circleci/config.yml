@@ -23,8 +23,8 @@ commands:
             CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
             
             # Check if any relevant files changed
-            echo "$CHANGED_FILES" | grep -q -E "^(src/|tests/|tests_aws/)" || {
-              echo "No changes in src/, tests/, or tests_aws/ directories. Skipping tests."
+            echo "$CHANGED_FILES" | grep -q -E "^(src/|tests/|tests_aws/|.circleci/)" || {
+              echo "No changes in src/, tests/, tests_aws/, or .circleci directories. Skipping tests."
               circleci step halt
             }
 

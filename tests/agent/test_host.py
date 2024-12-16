@@ -64,7 +64,7 @@ class TestHostAgent:
         assert isinstance(self.agent.options, StandardOptions)
 
     def test_agent_default_log_level(self) -> None:
-        assert self.agent.options.log_level == logging.WARN
+        assert self.agent.options.log_level == logging.WARNING
 
     def test_agent_instana_debug(self) -> None:
         os.environ["INSTANA_DEBUG"] = "asdf"

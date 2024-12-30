@@ -21,6 +21,20 @@ try:
         from aiohttp.client import ClientSession
         from instana.span.span import InstanaSpan
 
+    def extract_custom_headers(
+        span: "InstanaSpan", headers: Dict[str, Any]
+    ) -> None:
+        if not agent.options.extra_http_headers or not headers:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_attribute(
+                        f"http.header.{custom_header}", headers[custom_header]
+                    )
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
+
     async def stan_request_start(
         session: "ClientSession", trace_config_ctx: SimpleNamespace, params
     ) -> Awaitable[None]:
@@ -34,6 +48,8 @@ try:
             parent_context = parent_span.get_span_context() if parent_span else None
 
             span = tracer.start_span("aiohttp-client", span_context=parent_context)
+
+            extract_custom_headers(span, params.headers)
 
             tracer.inject(span.context, Format.HTTP_HEADERS, params.headers)
 
@@ -59,13 +75,7 @@ try:
                     SpanAttributes.HTTP_STATUS_CODE, params.response.status
                 )
 
-                if agent.options.extra_http_headers:
-                    for custom_header in agent.options.extra_http_headers:
-                        if custom_header in params.response.headers:
-                            span.set_attribute(
-                                "http.header.%s" % custom_header,
-                                params.response.headers[custom_header],
-                            )
+                extract_custom_headers(span, params.response.headers)
 
                 if 500 <= params.response.status:
                     span.mark_as_errored({"http.error": params.response.reason})

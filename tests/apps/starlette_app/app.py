@@ -20,6 +20,11 @@ def user(request):
     return PlainTextResponse("Hello, user id %s!" % user_id)
 
 
+def response_headers(request):
+    headers = {"X-Capture-This-Too": "this too", "X-Capture-That-Too": "that too"}
+    return PlainTextResponse("Stan wuz here with headers!", headers=headers)
+
+
 async def websocket_endpoint(websocket):
     await websocket.accept()
     await websocket.send_text("Hello, websocket!")
@@ -33,6 +38,7 @@ def startup():
 routes = [
     Route("/", homepage),
     Route("/users/{user_id}", user),
+    Route("/response_headers", response_headers),
     WebSocketRoute("/ws", websocket_endpoint),
     Mount("/static", StaticFiles(directory=dir_path + "/static")),
 ]

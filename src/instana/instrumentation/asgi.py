@@ -5,7 +5,7 @@
 Instana ASGI Middleware
 """
 
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Tuple
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind
@@ -29,7 +29,7 @@ class InstanaASGIMiddleware:
         self.app = app
 
     def _extract_custom_headers(
-        self, span: "InstanaSpan", headers: Dict[str, Any]
+        self, span: "InstanaSpan", headers: List[Tuple[object, ...]]
     ) -> None:
         if agent.options.extra_http_headers is None:
             return

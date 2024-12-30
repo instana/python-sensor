@@ -207,7 +207,9 @@ class TestAiohttpServer:
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
-    def test_server_custom_header_capture(self):
+    def test_server_request_header_capture(self):
+        original_extra_http_headers = agent.options.extra_http_headers
+
         async def test():
             with tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
@@ -271,6 +273,70 @@ class TestAiohttpServer:
         assert aioserver_span.data["http"]["header"]["X-Capture-This"] == "this"
         assert "X-Capture-That" in aioserver_span.data["http"]["header"]
         assert aioserver_span.data["http"]["header"]["X-Capture-That"] == "that"
+
+        agent.options.extra_http_headers = original_extra_http_headers
+
+    def test_server_response_header_capture(self):
+        original_extra_http_headers = agent.options.extra_http_headers
+
+        async def test():
+            with tracer.start_as_current_span("test"):
+                async with aiohttp.ClientSession() as session:
+                    # Hack together a manual custom headers list
+                    agent.options.extra_http_headers = [
+                        "X-Capture-This-Too",
+                        "X-Capture-That-Too",
+                    ]
+
+                    return await self.fetch(
+                        session,
+                        testenv["aiohttp_server"] + "/response_headers"
+                    )
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        aioserver_span = spans[0]
+        aioclient_span = spans[1]
+        test_span = spans[2]
+
+        # Same traceId
+        traceId = test_span.t
+        assert aioclient_span.t == traceId
+        assert aioserver_span.t == traceId
+
+        # Parent relationships
+        assert aioclient_span.p == test_span.s
+        assert aioserver_span.p == aioclient_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not aioclient_span.ec
+        assert not aioserver_span.ec
+
+        assert aioserver_span.n == "aiohttp-server"
+        assert aioserver_span.data["http"]["status"] == 200
+        assert aioserver_span.data["http"]["url"] == f"{testenv['aiohttp_server']}/response_headers"
+        assert aioserver_span.data["http"]["method"] == "GET"
+        assert not aioserver_span.stack
+
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == hex_id(aioserver_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
+
+        assert "X-Capture-This-Too" in aioserver_span.data["http"]["header"]
+        assert aioserver_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
+        assert "X-Capture-That-Too" in aioserver_span.data["http"]["header"]
+        assert aioserver_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
+
+        agent.options.extra_http_headers = original_extra_http_headers
 
     def test_server_get_401(self):
         async def test():

@@ -20,7 +20,7 @@ else:
 from opentelemetry.trace import SpanKind
 
 import tests.apps.flask_app
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 from instana.span.span import get_current_span
 from tests.helpers import testenv
 
@@ -1002,11 +1002,58 @@ class TestFlask(unittest.TestCase):
         # We should have a reported path template for this route
         assert "/users/{username}/sayhello" == wsgi_span.data["http"]["path_tpl"]
 
+    def test_request_header_capture(self) -> None:
+        # Hack together a manual custom headers list
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
+
+        request_headers = {
+            "X-Capture-This-Too": "this too",
+            "X-Capture-That-Too": "that too",
+        }
+
+        with tracer.start_as_current_span("test"):
+            response = self.http.request(
+                "GET", testenv["flask_server"] + "/", headers=request_headers
+            )
+
+        assert response
+        assert response.status == 200
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        wsgi_span = spans[0]
+        urllib3_span = spans[1]
+        test_span = spans[2]
+
+        # Same traceId
+        assert test_span.t == urllib3_span.t
+        assert urllib3_span.t == wsgi_span.t
+
+        # Parent relationships
+        assert urllib3_span.p == test_span.s
+        assert wsgi_span.p == urllib3_span.s
+
+        assert wsgi_span.ec is None
+        assert wsgi_span.stack is None
+
+        assert "/" == wsgi_span.data["http"]["url"]
+        assert "GET" == wsgi_span.data["http"]["method"]
+        assert 200 == wsgi_span.data["http"]["status"]
+
+        assert "X-Capture-This-Too" in wsgi_span.data["http"]["header"]
+        assert "this too" == wsgi_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert "X-Capture-That-Too" in wsgi_span.data["http"]["header"]
+        assert "that too" == wsgi_span.data["http"]["header"]["X-Capture-That-Too"]
+
+        agent.options.extra_http_headers = original_extra_http_headers
+
+
     def test_response_header_capture(self) -> None:
         # Hack together a manual custom headers list
-        from instana.singletons import agent
         original_extra_http_headers = agent.options.extra_http_headers
-        agent.options.extra_http_headers = [u'X-Capture-This', u'X-Capture-That']
+        agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
         with tracer.start_as_current_span("test"):
             response = self.http.request('GET', testenv["flask_server"] + '/response_headers')

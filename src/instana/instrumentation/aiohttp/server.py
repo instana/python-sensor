@@ -22,6 +22,20 @@ try:
     if TYPE_CHECKING:
         import aiohttp.web
 
+    def extract_custom_headers(
+        span: "InstanaSpan", headers: Dict[str, Any]
+    ) -> None:
+        if not agent.options.extra_http_headers or not headers:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_attribute(
+                        f"http.header.{custom_header}", headers[custom_header]
+                    )
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
+
     @middleware
     async def stan_middleware(
         request: "aiohttp.web.Request",
@@ -46,14 +60,7 @@ try:
             span.set_attribute(SpanAttributes.HTTP_URL, parts[0])
             span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
 
-            # Custom header tracking support
-            if agent.options.extra_http_headers:
-                for custom_header in agent.options.extra_http_headers:
-                    if custom_header in request.headers:
-                        span.set_attribute(
-                            "http.header.%s" % custom_header,
-                            request.headers[custom_header],
-                        )
+            extract_custom_headers(span, request.headers)
 
             response = None
             try:
@@ -69,6 +76,9 @@ try:
                     span.mark_as_errored()
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)
+
+                extract_custom_headers(span, response.headers)
+
                 tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
 
             return response

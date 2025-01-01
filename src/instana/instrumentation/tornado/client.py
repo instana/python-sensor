@@ -6,6 +6,7 @@ try:
 
     import wrapt
     import functools
+    from typing import TYPE_CHECKING, Dict, Any
 
     from opentelemetry.semconv.trace import SpanAttributes
 
@@ -14,6 +15,23 @@ try:
     from instana.util.secrets import strip_secrets_from_query
     from instana.propagators.format import Format
     from instana.span.span import get_current_span
+
+    if TYPE_CHECKING:
+        from instana.span.span import InstanaSpan
+
+    def extract_custom_headers(
+        span: "InstanaSpan", headers: Dict[str, Any]
+    ) -> None:
+        if not agent.options.extra_http_headers or not headers:
+            return
+        try:
+            for custom_header in agent.options.extra_http_headers:
+                if custom_header in headers:
+                    span.set_attribute(
+                        f"http.header.{custom_header}", headers[custom_header]
+                    )
+        except Exception:
+            logger.debug("extract_custom_headers: ", exc_info=True)
 
     @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
     def fetch_with_instana(wrapped, instance, argv, kwargs):
@@ -41,6 +59,9 @@ try:
             parent_context = parent_span.get_span_context() if parent_span else None
 
             span = tracer.start_span("tornado-client", span_context=parent_context)
+
+            extract_custom_headers(span, request.headers)
+
             tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
 
             # Query param scrubbing
@@ -68,6 +89,8 @@ try:
         try:
             response = future.result()
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.code)
+
+            extract_custom_headers(span, response.headers)
         except tornado.httpclient.HTTPClientError as e:
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, e.code)
             span.record_exception(e)

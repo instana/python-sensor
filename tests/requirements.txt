@@ -30,7 +30,8 @@ requests-mock
 responses<=0.17.0
 # Sanic is not installable on 3.13 because `httptools, uvloop` dependencies fail to compile:
 # `too few arguments to function ‘_PyLong_AsByteArray’`
-sanic>=19.9.0; python_version < "3.13"
+sanic<=24.6.0; python_version < "3.9"
+sanic>=19.9.0; python_version >= "3.9" and python_version < "3.13"
 sanic-testing>=24.6.0; python_version < "3.13"
 starlette>=0.38.2; python_version == "3.13"
 sqlalchemy>=2.0.0

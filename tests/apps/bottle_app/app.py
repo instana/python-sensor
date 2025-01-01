@@ -6,7 +6,7 @@
 import logging
 
 from wsgiref.simple_server import make_server
-from bottle import default_app
+from bottle import default_app, response
 
 from tests.helpers import testenv
 from instana.middleware import InstanaWSGIMiddleware
@@ -22,6 +22,12 @@ app = default_app()
 @app.route("/")
 def hello():
     return "<center><h1>🐍 Hello Stan! 🦄</h1></center>"
+
+@app.route("/response_headers")
+def response_headers():
+    response.set_header("X-Capture-This", "this")
+    response.set_header("X-Capture-That", "that")
+    return "Stan wuz here with headers!"
 
 # Wrap the application with the Instana WSGI Middleware
 app = InstanaWSGIMiddleware(app)

@@ -8,7 +8,7 @@ from typing import Generator
 
 import tornado
 from tornado.httpclient import AsyncHTTPClient
-from instana.singletons import tracer
+from instana.singletons import tracer, agent
 from instana.span.span import get_current_span
 
 from instana.util.ids import hex_id
@@ -460,3 +460,142 @@ class TestTornadoClient:
         assert response.headers["X-INSTANA-L"] == '1'
         assert "Server-Timing" in response.headers
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
+
+    def test_request_header_capture(self) -> None:
+        # Hack together a manual custom headers list
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
+
+        request_headers = {
+            "X-Capture-This": "this",
+            "X-Capture-That": "that",
+        }
+
+        async def test():
+            with tracer.start_as_current_span("test"):
+                return await self.http_client.fetch(testenv["tornado_server"] + "/", headers=request_headers)
+
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
+
+        time.sleep(0.5)
+        spans = self.recorder.queued_spans()
+
+        assert len(spans) == 3
+
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
+
+        assert not get_current_span().is_recording()
+
+        # Same traceId
+        traceId = test_span.t
+        assert traceId == client_span.t
+        assert traceId == server_span.t
+
+        # Parent relationships
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not client_span.ec
+        assert not server_span.ec
+
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
+
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
+
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
+
+        assert "X-Capture-This" in client_span.data["http"]["header"]
+        assert client_span.data["http"]["header"]["X-Capture-This"] == "this"
+        assert "X-Capture-That" in client_span.data["http"]["header"]
+        assert client_span.data["http"]["header"]["X-Capture-That"] == "that"
+
+        agent.options.extra_http_headers = original_extra_http_headers
+
+    def test_response_header_capture(self) -> None:
+        # Hack together a manual custom headers list
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
+
+        async def test():
+            with tracer.start_as_current_span("test"):
+                return await self.http_client.fetch(testenv["tornado_server"] + "/response_headers")
+
+        response = tornado.ioloop.IOLoop.current().run_sync(test)
+        assert isinstance(response, tornado.httpclient.HTTPResponse)
+
+        time.sleep(0.5)
+        spans = self.recorder.queued_spans()
+
+        assert len(spans) == 3
+
+        server_span = get_first_span_by_name(spans, "tornado-server")
+        client_span = get_first_span_by_name(spans, "tornado-client")
+        test_span = get_first_span_by_name(spans, "sdk")
+
+        assert not get_current_span().is_recording()
+
+        # Same traceId
+        traceId = test_span.t
+        assert traceId == client_span.t
+        assert traceId == server_span.t
+
+        # Parent relationships
+        assert client_span.p == test_span.s
+        assert server_span.p == client_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not client_span.ec
+        assert not server_span.ec
+
+        assert server_span.n == "tornado-server"
+        assert server_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/response_headers" == server_span.data["http"]["url"]
+        assert not server_span.data["http"]["params"]
+        assert server_span.data["http"]["method"] == "GET"
+
+        assert client_span.n == "tornado-client"
+        assert client_span.data["http"]["status"] == 200
+        assert testenv["tornado_server"] + "/response_headers" == client_span.data["http"]["url"]
+        assert client_span.data["http"]["method"] == "GET"
+        assert client_span.stack
+        assert type(client_span.stack) is list
+        assert len(client_span.stack) > 1
+
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == '1'
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
+
+        assert "X-Capture-This-Too" in client_span.data["http"]["header"]
+        assert client_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
+        assert "X-Capture-That-Too" in client_span.data["http"]["header"]
+        assert client_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
+
+        agent.options.extra_http_headers = original_extra_http_headers

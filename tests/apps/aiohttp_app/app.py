@@ -34,6 +34,11 @@ def raise_exception(request):
     raise Exception("Simulated exception")
 
 
+def response_headers(request):
+    headers = {"X-Capture-This-Too": "this too", "X-Capture-That-Too": "that too"}
+    return web.Response(text="Stan wuz here with headers!", headers=headers)
+
+
 def aiohttp_server():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -44,6 +49,7 @@ def aiohttp_server():
     app.add_routes([web.get('/401', four_hundred_one)])
     app.add_routes([web.get('/500', five_hundred)])
     app.add_routes([web.get('/exception', raise_exception)])
+    app.add_routes([web.get('/response_headers', response_headers)])
 
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())

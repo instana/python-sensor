@@ -501,3 +501,63 @@ class TestAiohttpClient:
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
+
+    def test_client_request_header_capture(self) -> None:
+        original_extra_http_headers = agent.options.extra_http_headers
+        agent.options.extra_http_headers = ["X-Capture-This-Too"]
+
+        request_headers = {
+            "X-Capture-This-Too": "Ok too",
+        }
+
+        async def test():
+            with tracer.start_as_current_span("test"):
+                async with aiohttp.ClientSession() as session:
+                    return await self.fetch(
+                        session, testenv["flask_server"] + "/", headers=request_headers
+                    )
+
+        response = self.loop.run_until_complete(test())
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        wsgi_span = spans[0]
+        aiohttp_span = spans[1]
+        test_span = spans[2]
+
+        # Same traceId
+        traceId = test_span.t
+        assert aiohttp_span.t == traceId
+        assert wsgi_span.t == traceId
+
+        # Parent relationships
+        assert aiohttp_span.p == test_span.s
+        assert wsgi_span.p == aiohttp_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not aiohttp_span.ec
+        assert not wsgi_span.ec
+
+        assert aiohttp_span.n == "aiohttp-client"
+        assert aiohttp_span.data["http"]["status"] == 200
+        assert aiohttp_span.data["http"]["url"] == testenv["flask_server"] + "/"
+        assert aiohttp_span.data["http"]["method"] == "GET"
+        assert aiohttp_span.stack
+        assert isinstance(aiohttp_span.stack, list)
+        assert len(aiohttp_span.stack) > 1
+
+        assert "X-Capture-This-Too" in aiohttp_span.data["http"]["header"]
+        assert aiohttp_span.data["http"]["header"]["X-Capture-This-Too"] == "Ok too"
+
+        assert "X-INSTANA-T" in response.headers
+        assert response.headers["X-INSTANA-T"] == hex_id(traceId)
+        assert "X-INSTANA-S" in response.headers
+        assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
+        assert "Server-Timing" in response.headers
+        assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
+
+        agent.options.extra_http_headers = original_extra_http_headers

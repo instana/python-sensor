@@ -12,7 +12,7 @@ from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
 from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off, extract_custom_headers
 
 try:
     import aiohttp
@@ -21,19 +21,6 @@ try:
         from aiohttp.client import ClientSession
         from instana.span.span import InstanaSpan
 
-    def extract_custom_headers(
-        span: "InstanaSpan", headers: Dict[str, Any]
-    ) -> None:
-        if not agent.options.extra_http_headers or not headers:
-            return
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                if custom_header in headers:
-                    span.set_attribute(
-                        f"http.header.{custom_header}", headers[custom_header]
-                    )
-        except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
 
     async def stan_request_start(
         session: "ClientSession", trace_config_ctx: SimpleNamespace, params

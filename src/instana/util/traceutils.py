@@ -1,21 +1,37 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING, Union, Dict, List, Any, Iterable
 
 from instana.log import logger
 from instana.singletons import agent, tracer
-from instana.span.span import InstanaSpan, get_current_span
+from instana.span.span import get_current_span
 from instana.tracer import InstanaTracer
 
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
 
-def extract_custom_headers(tracing_span, headers) -> None:
+def extract_custom_headers(span: "InstanaSpan", headers: Optional[Union[Dict[str, Any], List[Tuple[object, ...]], Iterable]] = None, format: Optional[bool] = False) -> None:
+    if not headers:
+        return
     try:
         for custom_header in agent.options.extra_http_headers:
-            # Headers are in the following format: b'x-header-1'
-            for header_key, value in headers.items():
-                if header_key.lower() == custom_header.lower():
-                    tracing_span.set_attribute(f"http.header.{custom_header}", value)
+            # Headers are available in the following formats: HTTP_X_CAPTURE_THIS, b'x-header-1', X-Capture-That
+            expected_header = (
+                ("HTTP_" + custom_header.upper()).replace("-", "_")
+                if format
+                else custom_header
+            )
+            for header in headers:
+                if isinstance(header, tuple):
+                    header_key = header[0].decode("utf-8") if isinstance(header[0], bytes) else header[0]
+                    header_val = header[1].decode("utf-8") if isinstance(header[1], bytes) else header[1]
+                    if header_key.lower() == expected_header.lower():
+                        span.set_attribute(
+                            f"http.header.{custom_header}", header_val,
+                        )  
+                elif header.lower() == expected_header.lower():
+                    span.set_attribute(f"http.header.{custom_header}", headers[expected_header])
     except Exception:
         logger.debug("extract_custom_headers: ", exc_info=True)
 
@@ -36,7 +52,7 @@ def get_active_tracer() -> Optional[InstanaTracer]:
 
 
 def get_tracer_tuple() -> (
-    Tuple[Optional[InstanaTracer], Optional[InstanaSpan], Optional[str]]
+    Tuple[Optional[InstanaTracer], Optional["InstanaSpan"], Optional[str]]
 ):
     active_tracer = get_active_tracer()
     current_span = get_current_span()

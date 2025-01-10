@@ -12,18 +12,9 @@ try:
     from instana.log import logger
     from instana.singletons import agent, tracer
     from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
 
-    def extract_custom_headers(span, headers):
-        if not agent.options.extra_http_headers or not headers:
-            return
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                if custom_header in headers:
-                    span.set_attribute("http.header.%s" % custom_header, headers[custom_header])
-
-        except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
 
 
     @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler._execute')

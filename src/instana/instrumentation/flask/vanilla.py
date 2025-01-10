@@ -13,7 +13,7 @@ from opentelemetry import context, trace
 from instana.log import logger
 from instana.singletons import agent, tracer
 from instana.util.secrets import strip_secrets_from_query
-from instana.instrumentation.flask.common import extract_custom_headers
+from instana.util.traceutils import extract_custom_headers
 from instana.propagators.format import Format
 
 path_tpl_re = re.compile('<.*>')

@@ -12,7 +12,7 @@ import requests
 import urllib3
 from instana.instrumentation.urllib3 import (
     _collect_kvs as collect_kvs,
-    _extract_custom_headers as extract_custom_headers,
+    extract_custom_headers,
     collect_response,
 )
 from instana.singletons import agent, tracer
@@ -971,7 +971,7 @@ class TestUrllib3:
         monkeypatch.setattr(span, "set_attribute", Exception("mocked error"))
         caplog.set_level(logging.DEBUG, logger="instana")
         extract_custom_headers(span, request_headers)
-        assert "urllib3 _extract_custom_headers error: " in caplog.messages
+        assert "extract_custom_headers: " in caplog.messages
 
     def test_collect_response_exception(
         self, span: "InstanaSpan", caplog: "LogCaptureFixture", monkeypatch

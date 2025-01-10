@@ -13,10 +13,10 @@ try:
     from instana.log import logger
     from instana.singletons import agent, tracer
     from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
 
     if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
         from django.core.handlers.base import BaseHandler
         from django.http import HttpRequest, HttpResponse
 
@@ -53,29 +53,6 @@ try:
             super(InstanaMiddleware, self).__init__(get_response)
             self.get_response = get_response
 
-        def _extract_custom_headers(
-            self, span: "InstanaSpan", headers: Dict[str, Any], format: bool
-        ) -> None:
-            if agent.options.extra_http_headers is None:
-                return
-
-            try:
-                for custom_header in agent.options.extra_http_headers:
-                    # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                    django_header = (
-                        ("HTTP_" + custom_header.upper()).replace("-", "_")
-                        if format
-                        else custom_header
-                    )
-
-                    if django_header in headers:
-                        span.set_attribute(
-                            f"http.header.{custom_header}", headers[django_header]
-                        )
-
-            except Exception:
-                logger.debug("Instana middleware @ extract_custom_headers: ", exc_info=True)
-
         def process_request(self, request: Type["HttpRequest"]) -> None:
             try:
                 env = request.META
@@ -89,7 +66,7 @@ try:
                 token = context.attach(ctx)
                 request.token = token
 
-                self._extract_custom_headers(span, env, format=True)
+                extract_custom_headers(span, env, format=True)
 
                 request.span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 if "PATH_INFO" in env:
@@ -138,7 +115,7 @@ try:
                         SpanAttributes.HTTP_STATUS_CODE, response.status_code
                     )
                     if hasattr(response, "headers"):
-                        self._extract_custom_headers(
+                        extract_custom_headers(
                             request.span, response.headers, format=False
                         )
                     tracer.inject(request.span.context, Format.HTTP_HEADERS, response)

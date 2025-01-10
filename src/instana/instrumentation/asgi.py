@@ -5,7 +5,7 @@
 Instana ASGI Middleware
 """
 
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind
@@ -14,6 +14,7 @@ from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent, tracer
 from instana.util.secrets import strip_secrets_from_query
+from instana.util.traceutils import extract_custom_headers
 
 if TYPE_CHECKING:
     from starlette.middleware.exceptions import ExceptionMiddleware
@@ -27,23 +28,6 @@ class InstanaASGIMiddleware:
 
     def __init__(self, app: "ExceptionMiddleware") -> None:
         self.app = app
-
-    def _extract_custom_headers(
-        self, span: "InstanaSpan", headers: List[Tuple[object, ...]]
-    ) -> None:
-        if agent.options.extra_http_headers is None:
-            return
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                # Headers are in the following format: b'x-header-1'
-                for header_pair in headers:
-                    if header_pair[0].decode("utf-8").lower() == custom_header.lower():
-                        span.set_attribute(
-                            f"http.header.{custom_header}",
-                            header_pair[1].decode("utf-8"),
-                        )
-        except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
 
     def _collect_kvs(self, scope: Dict[str, Any], span: "InstanaSpan") -> None:
         try:
@@ -93,8 +77,8 @@ class InstanaASGIMiddleware:
 
         with tracer.start_as_current_span("asgi", span_context=request_context) as span:
             self._collect_kvs(scope, span)
-            if "headers" in scope and agent.options.extra_http_headers:
-                self._extract_custom_headers(span, scope["headers"])
+            if "headers" in scope:
+                extract_custom_headers(span, scope["headers"])
 
             instana_send = self._send_with_instana(
                 span,
@@ -125,7 +109,7 @@ class InstanaASGIMiddleware:
 
                     headers = response.get("headers")
                     if headers:
-                        self._extract_custom_headers(current_span, headers)
+                        extract_custom_headers(current_span, headers)
                         tracer.inject(current_span.context, Format.BINARY, headers)
                 except Exception:
                     logger.debug("ASGI send_wrapper error: ", exc_info=True)

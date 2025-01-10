@@ -12,7 +12,7 @@ from opentelemetry import context, trace
 from instana.log import logger
 from instana.util.secrets import strip_secrets_from_query
 from instana.singletons import agent, tracer
-from instana.instrumentation.flask.common import extract_custom_headers
+from instana.util.traceutils import extract_custom_headers
 from instana.propagators.format import Format
 
 import flask
@@ -78,7 +78,7 @@ def request_finished_with_instana(
             extract_custom_headers(span, response.headers, format=False)
 
             tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-    except:
+    except Exception:
         logger.debug("Flask request_finished_with_instana", exc_info=True)
     finally:
         if span and span.is_recording():

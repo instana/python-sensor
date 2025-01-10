@@ -13,25 +13,10 @@ try:
     from instana.log import logger
     from instana.singletons import agent, tracer
     from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
     from instana.span.span import get_current_span
 
-    if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
-
-    def extract_custom_headers(
-        span: "InstanaSpan", headers: Dict[str, Any]
-    ) -> None:
-        if not agent.options.extra_http_headers or not headers:
-            return
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                if custom_header in headers:
-                    span.set_attribute(
-                        f"http.header.{custom_header}", headers[custom_header]
-                    )
-        except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
 
     @wrapt.patch_function_wrapper('tornado.httpclient', 'AsyncHTTPClient.fetch')
     def fetch_with_instana(wrapped, instance, argv, kwargs):

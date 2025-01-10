@@ -10,7 +10,7 @@ from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
 from instana.singletons import tracer, agent
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off, extract_custom_headers
 from instana.propagators.format import Format
 from instana.span.span import get_current_span
 
@@ -22,21 +22,6 @@ if TYPE_CHECKING:
 try:
     import boto3
     from boto3.s3 import inject
-
-    def extract_custom_headers(
-        span: "InstanaSpan", headers: Optional[Dict[str, Any]] = None
-    ) -> None:
-        if not agent.options.extra_http_headers or not headers:
-            return
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                if custom_header in headers:
-                    span.set_attribute(
-                        "http.header.%s" % custom_header, headers[custom_header]
-                    )
-
-        except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
 
     def lambda_inject_context(payload: Dict[str, Any], span: "InstanaSpan") -> None:
         """

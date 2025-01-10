@@ -75,8 +75,7 @@ try:
                     )
                     span.set_attribute("http.params", scrubbed_params)
 
-                if agent.options.extra_http_headers:
-                    extract_custom_headers(span, headers)
+                extract_custom_headers(span, headers)
                 if hasattr(request, "uri_template") and request.uri_template:
                     span.set_attribute("http.path_tpl", request.uri_template)
             except Exception:
@@ -113,8 +112,7 @@ try:
                     span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
 
                 if hasattr(response, "headers"):
-                    if agent.options.extra_http_headers:
-                        extract_custom_headers(span, response.headers)
+                    extract_custom_headers(span, response.headers)
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
 
                 if span.is_recording():

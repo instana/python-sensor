@@ -16,12 +16,12 @@ try:
     from instana.log import logger
     from instana.singletons import tracer, agent
     from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
 
     if TYPE_CHECKING:
         from pyramid.request import Request
         from pyramid.response import Response
-        from instana.span.span import InstanaSpan
         from pyramid.registry import Registry
 
     class InstanaTweenFactory(object):
@@ -32,21 +32,6 @@ try:
         ) -> None:
             self.handler = handler
 
-        def _extract_custom_headers(
-            self, span: "InstanaSpan", headers: Dict[str, Any]
-        ) -> None:
-            if not agent.options.extra_http_headers:
-                return
-            try:
-                for custom_header in agent.options.extra_http_headers:
-                    if custom_header in headers:
-                        span.set_attribute(
-                            f"http.header.{custom_header}", headers[custom_header]
-                        )
-
-            except Exception:
-                logger.debug("extract_custom_headers: ", exc_info=True)
-
         def __call__(self, request: "Request") -> "Response":
             ctx = tracer.extract(Format.HTTP_HEADERS, dict(request.headers))
 
@@ -56,7 +41,7 @@ try:
                 span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 span.set_attribute(SpanAttributes.HTTP_URL, request.path)
 
-                self._extract_custom_headers(span, request.headers)
+                extract_custom_headers(span, request.headers)
 
                 if len(request.query_string):
                     scrubbed_params = strip_secrets_from_query(
@@ -74,7 +59,7 @@ try:
                             "http.path_tpl", request.matched_route.pattern
                         )
 
-                    self._extract_custom_headers(span, response.headers)
+                    extract_custom_headers(span, response.headers)
 
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
                 except HTTPException as e:

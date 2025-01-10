@@ -11,26 +11,13 @@ from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
 from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple, tracing_is_off, extract_custom_headers
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
 
 try:
     import urllib3
-
-    def _extract_custom_headers(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
-        if agent.options.extra_http_headers is None:
-            return
-
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                if custom_header in headers:
-                    span.set_attribute(
-                        f"http.header.{custom_header}", headers[custom_header]
-                    )
-        except Exception:
-            logger.debug("urllib3 _extract_custom_headers error: ", exc_info=True)
 
     def _collect_kvs(
         instance: Union[
@@ -82,7 +69,7 @@ try:
         try:
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)
 
-            _extract_custom_headers(span, response.headers)
+            extract_custom_headers(span, response.headers)
 
             if 500 <= response.status:
                 span.mark_as_errored()
@@ -121,7 +108,7 @@ try:
                 if "method" in kvs:
                     span.set_attribute(SpanAttributes.HTTP_METHOD, kvs["method"])
                 if "headers" in kwargs:
-                    _extract_custom_headers(span, kwargs["headers"])
+                    extract_custom_headers(span, kwargs["headers"])
                     tracer.inject(span.context, Format.HTTP_HEADERS, kwargs["headers"])
 
                 response = wrapped(*args, **kwargs)

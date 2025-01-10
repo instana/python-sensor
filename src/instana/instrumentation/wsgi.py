@@ -5,18 +5,15 @@
 Instana WSGI Middleware
 """
 
-from typing import Dict, Any, Callable, List, Tuple, Optional, TYPE_CHECKING
+from typing import Dict, Any, Callable, List, Tuple, Optional
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
 
-from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent, tracer
 from instana.util.secrets import strip_secrets_from_query
-
-if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
+from instana.util.traceutils import extract_custom_headers
 
 
 class InstanaWSGIMiddleware(object):
@@ -24,29 +21,6 @@ class InstanaWSGIMiddleware(object):
 
     def __init__(self, app: object) -> None:
         self.app = app
-
-    def _extract_custom_headers(
-        self, span: "InstanaSpan", headers: List[Tuple[object, ...]], type
-    ) -> None:
-        if not agent.options.extra_http_headers or not headers:
-            return
-        try:
-            for custom_header in agent.options.extra_http_headers:
-                if type == "request" and isinstance(headers, dict):
-                    # Headers are available in this format: HTTP_X_CAPTURE_THIS
-                    wsgi_header = ("HTTP_" + custom_header.upper()).replace("-", "_")
-                    if wsgi_header in headers:
-                        self.span.set_attribute(
-                            f"http.header.{custom_header}", headers[wsgi_header]
-                        )
-                if type == "response" and isinstance(headers, list):
-                    for header_pair in headers:
-                        if header_pair[0].lower() == custom_header.lower():
-                            span.set_attribute(
-                                f"http.header.{custom_header}", header_pair[1],
-                            )
-        except Exception:
-            logger.debug("extract_custom_headers: ", exc_info=True)
 
     def __call__(self, environ: Dict[str, Any], start_response: Callable) -> object:
         env = environ
@@ -57,7 +31,7 @@ class InstanaWSGIMiddleware(object):
             exc_info: Optional[Exception] = None,
         ) -> object:
             """Modified start response with additional headers."""
-            self._extract_custom_headers(self.span, headers, type="response")
+            extract_custom_headers(self.span, headers)
 
             tracer.inject(self.span.context, Format.HTTP_HEADERS, headers)
 
@@ -86,7 +60,7 @@ class InstanaWSGIMiddleware(object):
         ctx = trace.set_span_in_context(self.span)
         self.token = context.attach(ctx)
 
-        self._extract_custom_headers(self.span, env, type="request")
+        extract_custom_headers(self.span, env, format=True)
 
         if "PATH_INFO" in env:
             self.span.set_attribute("http.path", env["PATH_INFO"])

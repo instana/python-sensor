@@ -7,7 +7,7 @@ import wrapt
 
 from instana.log import logger
 from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import check_if_ignored, get_tracer_tuple, tracing_is_off
 
 try:
     import redis
@@ -43,6 +43,8 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        if check_if_ignored("redis", args[0]):
+            return
         tracer, parent_span, operation_name = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 

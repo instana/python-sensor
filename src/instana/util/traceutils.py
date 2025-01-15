@@ -65,3 +65,10 @@ def get_tracer_tuple() -> (
 
 def tracing_is_off() -> bool:
     return not (bool(get_active_tracer()) or agent.options.allow_exit_as_root)
+
+
+def check_if_ignored(instrumentation, command) -> bool:
+    return (
+        instrumentation in agent.options.ignored_endpoints
+        or f"{instrumentation}.{command.lower()}" in agent.options.ignored_endpoints
+    )

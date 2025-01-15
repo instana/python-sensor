@@ -1,7 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-""" Collection helper for the Python runtime """
+"""Collection helper for the Python runtime"""
+
 import gc
 import importlib.metadata
 import os
@@ -19,14 +20,56 @@ from instana.version import VERSION
 
 PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT = "/tmp/.instana/python"
 
-PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = '/opt/instana/instrumentation/python/'
+PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = "/opt/instana/instrumentation/python/"
+
 
 def is_autowrapt_instrumented():
-    return 'instana' in os.environ.get('AUTOWRAPT_BOOTSTRAP', ())
+    return "instana" in os.environ.get("AUTOWRAPT_BOOTSTRAP", ())
 
 
 def is_webhook_instrumented():
     return any(map(lambda p: PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR in p, sys.path))
+
+
+def parse_ignored_endpoints(option_string):
+    """
+    This function parses option string to prepare a list for ignored endpoints.
+
+    @param option_string [String] The string user enter with INSTANA_IGNORE_ENDPOINTS variable
+    Format: "service1:endpoint1,endpoint2;service2:endpoint3" or "service1;service2"
+    """
+    try:
+        ignored_endpoints = []
+        if not option_string or not isinstance(option_string, str):
+            return ignored_endpoints
+
+        instrumentation_pairs = option_string.split(";")
+
+        for pair in instrumentation_pairs:
+            instrumentation = pair.strip()
+
+            if not instrumentation:
+                continue
+
+            if ":" in pair:
+                instrumentation, endpoints = pair.split(":", 1)
+                instrumentation = instrumentation.strip()
+
+                # Split endpoints by comma and clean whitespace
+                endpoint_list = [
+                    ep.strip() for ep in endpoints.split(",") if ep.strip()
+                ]
+                if endpoint_list:
+                    for endpoint in endpoint_list:
+                        ignored_endpoints.append(f"{instrumentation}.{endpoint}")
+            else:
+                # Handle case where only service name is provided
+                ignored_endpoints.append(instrumentation)
+
+        return ignored_endpoints
+    except Exception as e:
+        logger.debug("Error parsing ignored endpoints: %s", str(e))
+        return []
 
 
 class RuntimeHelper(BaseHelper):
@@ -316,9 +359,9 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload["iv"] = VERSION
 
             if is_autowrapt_instrumented():
-                snapshot_payload['m'] = 'Autowrapt'
+                snapshot_payload["m"] = "Autowrapt"
             elif is_webhook_instrumented():
-                snapshot_payload['m'] = 'AutoTrace'
+                snapshot_payload["m"] = "AutoTrace"
             else:
                 snapshot_payload["m"] = "Manual"
 

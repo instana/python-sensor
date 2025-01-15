@@ -17,7 +17,7 @@ jobs:
   build:
     name: Build package
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref_name, 'v0') }}
+    if: ${{ startsWith(github.ref_name, 'v3') }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python

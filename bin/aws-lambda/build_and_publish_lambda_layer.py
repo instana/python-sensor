@@ -73,7 +73,7 @@ zip_filename = f"instana-py-layer-{timestamp}.zip"
 os.chdir(os.getcwd() + "/build/lambda/")
 call(["zip", "-q", "-r", zip_filename, "./python", "-x", "*.pyc", "./python/pip*", "./python/setuptools*", "./python/wheel*"])
 
-fq_zip_filename = os.getcwd() + zip_filename
+fq_zip_filename = os.getcwd() + "/" + zip_filename
 aws_zip_filename = f"fileb://{fq_zip_filename}"
 print("Zipfile should be at: ", fq_zip_filename)
 
@@ -99,6 +99,7 @@ else:
                'ap-southeast-3',
                'ap-southeast-4',
                'ap-southeast-5',
+               'ap-southeast-7',
                'ca-central-1',
                'ca-west-1',
                'cn-north-1',

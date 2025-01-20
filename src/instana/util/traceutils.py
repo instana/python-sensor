@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
 
 def extract_custom_headers(span: "InstanaSpan", headers: Optional[Union[Dict[str, Any], List[Tuple[object, ...]], Iterable]] = None, format: Optional[bool] = False) -> None:
-    if not headers:
+    if not (agent.options.extra_http_headers and headers):
         return
     try:
         for custom_header in agent.options.extra_http_headers:

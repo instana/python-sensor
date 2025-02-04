@@ -3,14 +3,17 @@
 
 
 import logging
+import os
 from typing import Generator
 from unittest.mock import patch
+
 import pytest
 import redis
 
+from instana.options import StandardOptions
+from instana.singletons import agent, tracer
 from instana.span.span import get_current_span
 from tests.helpers import testenv
-from instana.singletons import agent, tracer
 
 
 class TestRedis:
@@ -21,6 +24,8 @@ class TestRedis:
         self.recorder.clear_spans()
         self.client = redis.Redis(host=testenv["redis_host"], db=testenv["redis_db"])
         yield
+        if "INSTANA_IGNORE_ENDPOINTS" in os.environ.keys():
+            del os.environ["INSTANA_IGNORE_ENDPOINTS"]
         agent.options.allow_exit_as_root = False
 
     def test_set_get(self) -> None:
@@ -454,3 +459,79 @@ class TestRedis:
             pipe.get("foox")
             pipe.execute()
         assert "Error collecting pipeline commands" in caplog.messages
+
+    def test_ignore_redis(
+        self,
+    ) -> None:
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis"
+        agent.options = StandardOptions()
+
+        with tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
+
+    def test_ignore_redis_single_command(self) -> None:
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set"
+        agent.options = StandardOptions()
+
+        with tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 2
+
+        redis_get_span = filtered_spans[0]
+        sdk_span = filtered_spans[1]
+
+        assert redis_get_span.n == "redis"
+        assert redis_get_span.data["redis"]["command"] == "GET"
+
+        assert sdk_span.n == "sdk"
+
+    def test_ignore_redis_multiple_commands(self) -> None:
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set,get"
+        agent.options = StandardOptions()
+        with tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
+
+        sdk_span = filtered_spans[0]
+
+        assert sdk_span.n == "sdk"
+
+    def test_ignore_redis_with_another_instrumentation(self) -> None:
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set;something_else:something"
+        agent.options = StandardOptions()
+        with tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 2
+
+        redis_get_span = filtered_spans[0]
+        sdk_span = filtered_spans[1]
+
+        assert redis_get_span.n == "redis"
+        assert redis_get_span.data["redis"]["command"] == "GET"
+
+        assert sdk_span.n == "sdk"

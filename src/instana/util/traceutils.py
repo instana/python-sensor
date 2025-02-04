@@ -1,7 +1,16 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-from typing import Optional, Tuple, TYPE_CHECKING, Union, Dict, List, Any, Iterable
+from typing import (
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+    Dict,
+    List,
+    Any,
+    Iterable,
+)
 
 from instana.log import logger
 from instana.singletons import agent, tracer
@@ -11,7 +20,12 @@ from instana.tracer import InstanaTracer
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
 
-def extract_custom_headers(span: "InstanaSpan", headers: Optional[Union[Dict[str, Any], List[Tuple[object, ...]], Iterable]] = None, format: Optional[bool] = False) -> None:
+
+def extract_custom_headers(
+    span: "InstanaSpan",
+    headers: Optional[Union[Dict[str, Any], List[Tuple[object, ...]], Iterable]] = None,
+    format: Optional[bool] = False,
+) -> None:
     if not (agent.options.extra_http_headers and headers):
         return
     try:
@@ -24,19 +38,31 @@ def extract_custom_headers(span: "InstanaSpan", headers: Optional[Union[Dict[str
             )
             for header in headers:
                 if isinstance(header, tuple):
-                    header_key = header[0].decode("utf-8") if isinstance(header[0], bytes) else header[0]
-                    header_val = header[1].decode("utf-8") if isinstance(header[1], bytes) else header[1]
+                    header_key = (
+                        header[0].decode("utf-8")
+                        if isinstance(header[0], bytes)
+                        else header[0]
+                    )
+                    header_val = (
+                        header[1].decode("utf-8")
+                        if isinstance(header[1], bytes)
+                        else header[1]
+                    )
                     if header_key.lower() == expected_header.lower():
                         span.set_attribute(
-                            f"http.header.{custom_header}", header_val,
-                        )  
+                            f"http.header.{custom_header}",
+                            header_val,
+                        )
                 elif header.lower() == expected_header.lower():
-                    span.set_attribute(f"http.header.{custom_header}", headers[expected_header])
+                    span.set_attribute(
+                        f"http.header.{custom_header}", headers[expected_header]
+                    )
     except Exception:
         logger.debug("extract_custom_headers: ", exc_info=True)
 
 
 def get_active_tracer() -> Optional[InstanaTracer]:
+    """Get the currently active tracer if one exists."""
     try:
         current_span = get_current_span()
         if current_span:
@@ -54,6 +80,7 @@ def get_active_tracer() -> Optional[InstanaTracer]:
 def get_tracer_tuple() -> (
     Tuple[Optional[InstanaTracer], Optional["InstanaSpan"], Optional[str]]
 ):
+    """Get a tuple of (tracer, span, span_name) for the current context."""
     active_tracer = get_active_tracer()
     current_span = get_current_span()
     if active_tracer:
@@ -64,4 +91,16 @@ def get_tracer_tuple() -> (
 
 
 def tracing_is_off() -> bool:
+    """Check if tracing is currently disabled."""
     return not (bool(get_active_tracer()) or agent.options.allow_exit_as_root)
+
+
+def is_service_or_endpoint_ignored(
+    service: str,
+    endpoint: str = "",
+) -> bool:
+    """Check if the given service and endpoint combination should be ignored."""
+    return (
+        service.lower() in agent.options.ignore_endpoints
+        or f"{service.lower()}.{endpoint.lower()}" in agent.options.ignore_endpoints
+    )

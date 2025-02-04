@@ -1,7 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-""" Collection helper for the Python runtime """
+"""Collection helper for the Python runtime"""
+
 import gc
 import importlib.metadata
 import os
@@ -10,29 +11,35 @@ import resource
 import sys
 import threading
 from types import ModuleType
+from typing import Any, Dict, List, Union, Callable
 
 from instana.collector.helpers.base import BaseHelper
 from instana.log import logger
 from instana.util import DictionaryOfStan
 from instana.util.runtime import determine_service_name
 from instana.version import VERSION
+from instana.collector.base import BaseCollector
 
 PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT = "/tmp/.instana/python"
 
-PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = '/opt/instana/instrumentation/python/'
-
-def is_autowrapt_instrumented():
-    return 'instana' in os.environ.get('AUTOWRAPT_BOOTSTRAP', ())
+PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR = "/opt/instana/instrumentation/python/"
 
 
-def is_webhook_instrumented():
+def is_autowrapt_instrumented() -> bool:
+    return "instana" in os.environ.get("AUTOWRAPT_BOOTSTRAP", ())
+
+
+def is_webhook_instrumented() -> bool:
     return any(map(lambda p: PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR in p, sys.path))
 
 
 class RuntimeHelper(BaseHelper):
     """Helper class to collect snapshot and metrics for this Python runtime"""
 
-    def __init__(self, collector):
+    def __init__(
+        self,
+        collector: BaseCollector,
+    ) -> None:
         super(RuntimeHelper, self).__init__(collector)
         self.previous = DictionaryOfStan()
         self.previous_rusage = resource.getrusage(resource.RUSAGE_SELF)
@@ -42,7 +49,7 @@ class RuntimeHelper(BaseHelper):
         else:
             self.previous_gc_count = None
 
-    def collect_metrics(self, **kwargs):
+    def collect_metrics(self, **kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.python"
@@ -66,7 +73,11 @@ class RuntimeHelper(BaseHelper):
             logger.debug("_collect_metrics: ", exc_info=True)
         return [plugin_data]
 
-    def _collect_runtime_metrics(self, plugin_data, with_snapshot):
+    def _collect_runtime_metrics(
+        self,
+        plugin_data: Dict[str, Any],
+        with_snapshot: bool,
+    ) -> None:
         if os.environ.get("INSTANA_DISABLE_METRICS_COLLECTION", False):
             return
 
@@ -270,7 +281,11 @@ class RuntimeHelper(BaseHelper):
         except Exception:
             logger.debug("_collect_gc_metrics", exc_info=True)
 
-    def _collect_thread_metrics(self, plugin_data, with_snapshot):
+    def _collect_thread_metrics(
+        self,
+        plugin_data: Dict[str, Any],
+        with_snapshot: bool,
+    ) -> None:
         try:
             threads = threading.enumerate()
             daemon_threads = [thread.daemon is True for thread in threads].count(True)
@@ -304,7 +319,10 @@ class RuntimeHelper(BaseHelper):
         except Exception:
             logger.debug("_collect_thread_metrics", exc_info=True)
 
-    def _collect_runtime_snapshot(self, plugin_data):
+    def _collect_runtime_snapshot(
+        self,
+        plugin_data: Dict[str, Any],
+    ) -> None:
         """Gathers Python specific Snapshot information for this process"""
         snapshot_payload = {}
         try:
@@ -316,9 +334,9 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload["iv"] = VERSION
 
             if is_autowrapt_instrumented():
-                snapshot_payload['m'] = 'Autowrapt'
+                snapshot_payload["m"] = "Autowrapt"
             elif is_webhook_instrumented():
-                snapshot_payload['m'] = 'AutoTrace'
+                snapshot_payload["m"] = "AutoTrace"
             else:
                 snapshot_payload["m"] = "Manual"
 
@@ -341,7 +359,7 @@ class RuntimeHelper(BaseHelper):
 
         plugin_data["data"]["snapshot"] = snapshot_payload
 
-    def gather_python_packages(self):
+    def gather_python_packages(self) -> Dict[str, Any]:
         """Collect up the list of modules in use"""
         if os.environ.get("INSTANA_DISABLE_PYTHON_PACKAGE_COLLECTION"):
             return {"instana": VERSION}
@@ -378,8 +396,7 @@ class RuntimeHelper(BaseHelper):
                         pass
                     except Exception:
                         logger.debug(
-                            "gather_python_packages: could not process module: %s",
-                            pkg_name,
+                            f"gather_python_packages: could not process module: {pkg_name}",
                         )
 
             # Manually set our package version
@@ -389,7 +406,10 @@ class RuntimeHelper(BaseHelper):
 
         return versions
 
-    def jsonable(self, value):
+    def jsonable(
+        self,
+        value: Union[Callable[[], Any], ModuleType, Any],
+    ) -> str:
         try:
             if callable(value):
                 try:

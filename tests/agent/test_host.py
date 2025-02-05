@@ -575,6 +575,90 @@ class TestHostAgent:
             assert isinstance(agent.last_seen, datetime.datetime)
             assert test_response.content == sample_response
 
+    def test_report_metrics(self) -> None:
+        agent = HostAgent()
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.return_value = "Success"
+
+        payload = {
+            "metrics": {
+                "plugins": [
+                    {"data": "sample data"},
+                ]
+            },
+        }
+
+        with patch.object(requests.Session, "post", return_value=mock_response), patch(
+            "instana.agent.host.HostAgent._HostAgent__traces_url",
+            return_value="localhost",
+        ), patch(
+            "instana.agent.host.HostAgent._HostAgent__profiles_url",
+            return_value="localhost",
+        ), patch(
+            "instana.agent.host.HostAgent._HostAgent__data_url",
+            return_value="localhost",
+        ):
+            test_response = agent.report_metrics(payload)
+            assert test_response.return_value == "Success"
+
+    def test_report_profiles(self) -> None:
+        agent = HostAgent()
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.return_value = "Success"
+
+        payload = {
+            "profiles": ["profile-1", "profile-2"],
+        }
+
+        with patch.object(requests.Session, "post", return_value=mock_response), patch(
+            "instana.agent.host.HostAgent._HostAgent__traces_url",
+            return_value="localhost",
+        ), patch(
+            "instana.agent.host.HostAgent._HostAgent__profiles_url",
+            return_value="localhost",
+        ), patch(
+            "instana.agent.host.HostAgent._HostAgent__data_url",
+            return_value="localhost",
+        ):
+            test_response = agent.report_profiles(payload)
+            assert test_response.return_value == "Success"
+
+    def test_report_spans(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        agent = HostAgent()
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.return_value = "Success"
+
+        span_name = "test_span"
+        span_1 = InstanaSpan(span_name, span_context, span_processor)
+        span_2 = InstanaSpan(span_name, span_context, span_processor)
+
+        payload = {
+            "spans": [span_1, span_2],
+        }
+
+        with patch.object(requests.Session, "post", return_value=mock_response), patch(
+            "instana.agent.host.HostAgent._HostAgent__traces_url",
+            return_value="localhost",
+        ), patch(
+            "instana.agent.host.HostAgent._HostAgent__profiles_url",
+            return_value="localhost",
+        ), patch(
+            "instana.agent.host.HostAgent._HostAgent__data_url",
+            return_value="localhost",
+        ):
+            test_response = agent.report_spans(payload)
+            assert test_response.return_value == "Success"
+
     def test_diagnostics(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.WARNING, logger="instana")
 

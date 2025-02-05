@@ -8,6 +8,7 @@ from instana.util.traceutils import (
     extract_custom_headers,
     get_active_tracer,
     get_tracer_tuple,
+    is_service_or_endpoint_ignored,
     tracing_is_off,
 )
 
@@ -95,3 +96,24 @@ def test_tracing_is_off() -> None:
     response = tracing_is_off()
     assert not response
     agent.options.allow_exit_as_root = False
+
+
+def test_is_service_or_endpoint_ignored() -> None:
+    agent.options.ignore_endpoints.append("service1")
+    agent.options.ignore_endpoints.append("service2.endpoint1")
+
+    # ignore all endpoints of service1
+    assert is_service_or_endpoint_ignored("service1")
+    assert is_service_or_endpoint_ignored("service1", "endpoint1")
+    assert is_service_or_endpoint_ignored("service1", "endpoint2")
+
+    # case-insensitive
+    assert is_service_or_endpoint_ignored("SERVICE1")
+    assert is_service_or_endpoint_ignored("service1", "ENDPOINT1")
+
+    # ignore only endpoint1 of service2
+    assert is_service_or_endpoint_ignored("service2", "endpoint1")
+    assert not is_service_or_endpoint_ignored("service2", "endpoint2")
+
+    # don't ignore other services
+    assert not is_service_or_endpoint_ignored("service3")

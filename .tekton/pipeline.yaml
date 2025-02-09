@@ -34,10 +34,10 @@ spec:
               - "sha256:3ba2e48b887586835af6a0c35fc6fc6086fb4881e963082330ab0a35f3f42c16"
               # public.ecr.aws/docker/library/python:3.11.11-bookworm
               - "sha256:2c80c66d876952e04fa74113864903198b7cfb36b839acb7a8fef82e94ed067c"
-              # public.ecr.aws/docker/library/python:3.12.8-bookworm
-              - "sha256:0fc7e6322b146c3fb01782d61412921b08f06439682105bc4e5c7f2dbfc56371"
-              # public.ecr.aws/docker/library/python:3.13.1-bookworm
-              - "sha256:3b1b63f17c5197411ee572be110333dae4b9d6f2fbc4f84c790f644e791d356b"
+              # public.ecr.aws/docker/library/python:3.12.9-bookworm
+              - "sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3"
+              # public.ecr.aws/docker/library/python:3.13.2-bookworm
+              - "sha256:90a15cf04e17111d514958f3b17186f2e239546f75530b1e301059f0b70de41f"
               # public.ecr.aws/docker/library/python:3.14.0a4-bookworm
               - "sha256:2b6ff3e4a96f18b7c6a5384cb1c623eec35b93b722da3c4470112435deeca590"
       taskRef:
@@ -80,8 +80,8 @@ spec:
         params:
           - name: imageDigest
             value:
-              # public.ecr.aws/docker/library/python:3.12.8-bookworm
-              - "sha256:0fc7e6322b146c3fb01782d61412921b08f06439682105bc4e5c7f2dbfc56371"
+              # public.ecr.aws/docker/library/python:3.12.9-bookworm
+              - "sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3"
       taskRef:
         name: python-tracer-unittest-aws-task
       workspaces:

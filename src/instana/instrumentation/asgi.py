@@ -31,7 +31,6 @@ class InstanaASGIMiddleware:
 
     def _collect_kvs(self, scope: Dict[str, Any], span: "InstanaSpan") -> None:
         try:
-            span.set_attribute("span.kind", SpanKind.SERVER)
             span.set_attribute("http.path", scope.get("path"))
             span.set_attribute(SpanAttributes.HTTP_METHOD, scope.get("method"))
 

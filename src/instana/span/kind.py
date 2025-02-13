@@ -21,6 +21,7 @@ HTTP_SPANS = (
 )
 
 ENTRY_SPANS = (
+    "aioamqp-consumer",
     "aiohttp-server",
     "aws.lambda.entry",
     "celery-worker",
@@ -34,6 +35,7 @@ ENTRY_SPANS = (
 )
 
 EXIT_SPANS = (
+    "aioamqp-publisher",
     "aiohttp-client",
     "boto3",
     "cassandra",

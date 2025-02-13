@@ -66,7 +66,6 @@ class TestRegisteredSpan:
     ) -> None:
         span_name = "test-registered-span"
         attributes = {
-            "span.kind": "entry",
             "http.host": "localhost",
             "http.url": "https://www.instana.com",
             "http.header.test": "one more test",

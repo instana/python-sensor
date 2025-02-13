@@ -116,7 +116,6 @@ class TestCursorWrapper:
                 select * from tests;
             """
             self.test_wrapper._collect_kvs(span, sample_sql)
-            assert span.attributes["span.kind"] == SpanKind.CLIENT
             assert span.attributes["db.name"] == "instana_test_db"
             assert span.attributes["db.statement"] == sample_sql
             assert span.attributes["db.user"] == "root"

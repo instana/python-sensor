@@ -34,9 +34,9 @@ class RegisteredSpan(BaseSpan):
         if "gcps" in span.name:
             self.n = "gcps"
 
-        # Store any leftover attributes in the custom section
+        # Logic to store custom attributes for registered spans (not used yet)
         if len(span.attributes) > 0:
-            self.data["custom"]["attributes"] = self._validate_attributes(
+            self.data["sdk"]["custom"]["tags"] = self._validate_attributes(
                 span.attributes
             )
 

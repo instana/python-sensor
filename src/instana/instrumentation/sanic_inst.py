@@ -58,7 +58,6 @@ try:
                 token = context.attach(ctx)
                 request.ctx.token = token
 
-                span.set_attribute("span.kind", SpanKind.SERVER)
                 span.set_attribute("http.path", request.path)
                 span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 span.set_attribute(SpanAttributes.HTTP_HOST, request.host)

@@ -38,8 +38,6 @@ class CursorWrapper(wrapt.ObjectProxy):
         sql: str,
     ) -> None:
         try:
-            span.set_attribute("span.kind", SpanKind.CLIENT)
-
             db_parameter_name = next(
                 (
                     p

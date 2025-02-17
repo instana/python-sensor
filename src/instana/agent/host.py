@@ -17,12 +17,10 @@ import urllib3
 
 from instana.agent.base import BaseAgent
 from instana.collector.host import HostCollector
-from instana.configurator import config
 from instana.fsm import Discovery, TheMachine
 from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
-from instana.util.config import parse_ignored_endpoints
 from instana.util.runtime import get_py_source
 from instana.version import VERSION
 
@@ -134,29 +132,7 @@ class HostAgent(BaseAgent):
         @param res_data: source identifiers provided as announce response
         @return: None
         """
-        if "secrets" in res_data:
-            self.options.secrets_matcher = res_data["secrets"]["matcher"]
-            self.options.secrets_list = res_data["secrets"]["list"]
-
-        if "extraHeaders" in res_data:
-            if self.options.extra_http_headers is None:
-                self.options.extra_http_headers = res_data["extraHeaders"]
-            else:
-                self.options.extra_http_headers.extend(res_data["extraHeaders"])
-            logger.info(
-                f"Will also capture these custom headers: {self.options.extra_http_headers}"
-            )
-
-        if "tracing" in res_data:
-            if (
-                "ignore-endpoints" in res_data["tracing"]
-                and "INSTANA_IGNORE_ENDPOINTS" not in os.environ
-                and "tracing" not in config
-            ):
-                self.options.ignore_endpoints = parse_ignored_endpoints(
-                    res_data["tracing"]["ignore-endpoints"]
-                )
-
+        self.options.set_from(res_data)
         self.announce_data = AnnounceData(
             pid=res_data["pid"],
             agentUuid=res_data["agentUuid"],

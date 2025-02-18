@@ -27,7 +27,7 @@ def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
     assert isinstance(tracer._sampler, InstanaSampler)
     assert isinstance(tracer.span_processor, StanRecorder)
     assert isinstance(tracer.exporter, HostAgent)
-    assert len(tracer._propagators) == 3
+    assert len(tracer._propagators) == 4
 
 
 def test_tracer_start_span(

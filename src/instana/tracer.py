@@ -26,6 +26,7 @@ from instana.propagators.binary_propagator import BinaryPropagator
 from instana.propagators.exceptions import UnsupportedFormatException
 from instana.propagators.format import Format
 from instana.propagators.http_propagator import HTTPPropagator
+from instana.propagators.kafka_propagator import KafkaPropagator
 from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
@@ -53,6 +54,7 @@ class InstanaTracerProvider(TracerProvider):
         self._propagators[Format.HTTP_HEADERS] = HTTPPropagator()
         self._propagators[Format.TEXT_MAP] = TextPropagator()
         self._propagators[Format.BINARY] = BinaryPropagator()
+        self._propagators[Format.KAFKA_HEADERS] = KafkaPropagator()
 
     def get_tracer(
         self,
@@ -118,7 +120,9 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
-        parent_context = span_context if span_context else get_current_span().get_span_context()
+        parent_context = (
+            span_context if span_context else get_current_span().get_span_context()
+        )
 
         if parent_context and not isinstance(parent_context, SpanContext):
             raise TypeError("parent_context must be an Instana SpanContext or None.")
@@ -224,9 +228,13 @@ class InstanaTracer(Tracer):
             level=(parent_context.level if parent_context else 1),
             synthetic=(parent_context.synthetic if parent_context else False),
             trace_parent=(parent_context.trace_parent if parent_context else None),
-            instana_ancestor=(parent_context.instana_ancestor if parent_context else None),
+            instana_ancestor=(
+                parent_context.instana_ancestor if parent_context else None
+            ),
             long_trace_id=(parent_context.long_trace_id if parent_context else None),
-            correlation_type=(parent_context.correlation_type if parent_context else None),
+            correlation_type=(
+                parent_context.correlation_type if parent_context else None
+            ),
             correlation_id=(parent_context.correlation_id if parent_context else None),
             traceparent=(parent_context.traceparent if parent_context else None),
             tracestate=(parent_context.tracestate if parent_context else None),
@@ -237,7 +245,9 @@ class InstanaTracer(Tracer):
     def inject(
         self,
         span_context: SpanContext,
-        format: Union[Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP],
+        format: Union[
+            Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP, Format.KAFKA_HEADERS
+        ],
         carrier: "CarrierT",
         disable_w3c_trace_context: bool = False,
     ) -> Optional["CarrierT"]:
@@ -250,7 +260,9 @@ class InstanaTracer(Tracer):
 
     def extract(
         self,
-        format: Union[Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP],
+        format: Union[
+            Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP, Format.KAFKA_HEADERS
+        ],
         carrier: "CarrierT",
         disable_w3c_trace_context: bool = False,
     ) -> Optional[Context]:

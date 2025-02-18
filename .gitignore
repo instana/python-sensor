@@ -98,3 +98,6 @@ ENV/
 # Visual Studio Code
 *.code-workspace
 .vscode
+
+# uv (https://docs.astral.sh/uv/)
+uv.lock

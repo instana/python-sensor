@@ -57,6 +57,12 @@ testenv["mongodb_port"] = os.environ.get("MONGO_PORT", "27017")
 testenv["mongodb_user"] = os.environ.get("MONGO_USER", None)
 testenv["mongodb_pw"] = os.environ.get("MONGO_PW", None)
 
+"""
+RabbitMQ Environment
+"""
+testenv["rabbitmq_host"] = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
+testenv["rabbitmq_port"] = os.environ.get("RABBITMQ_PORT", 5672)
+
 
 """
 Kafka Environment

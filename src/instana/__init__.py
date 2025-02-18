@@ -166,6 +166,7 @@ def boot_agent() -> None:
 
         # Import & initialize instrumentation
         from instana.instrumentation import (
+            aioamqp,  # noqa: F401
             asyncio,  # noqa: F401
             boto3_inst,  # noqa: F401
             cassandra_inst,  # noqa: F401
@@ -208,6 +209,7 @@ def boot_agent() -> None:
             client as tornado_client,  # noqa: F401
         )
         from instana.instrumentation.tornado import (
+            client as tornado_client,  # noqa: F401
             server as tornado_server,  # noqa: F401
         )
 

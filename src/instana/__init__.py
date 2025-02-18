@@ -169,6 +169,7 @@ def boot_agent() -> None:
             asyncio,  # noqa: F401
             boto3_inst,  # noqa: F401
             cassandra_inst,  # noqa: F401
+            celery,  # noqa: F401
             couchbase_inst,  # noqa: F401
             fastapi_inst,  # noqa: F401
             flask,  # noqa: F401
@@ -176,36 +177,42 @@ def boot_agent() -> None:
             grpcio,  # noqa: F401
             logging,  # noqa: F401
             mysqlclient,  # noqa: F401
-            pika,  # noqa: F401
             pep0249,  # noqa: F401
+            pika,  # noqa: F401
             psycopg2,  # noqa: F401
             pymongo,  # noqa: F401
             pymysql,  # noqa: F401
             pyramid,  # noqa: F401
             redis,  # noqa: F401
+            sanic_inst,  # noqa: F401
             sqlalchemy,  # noqa: F401
             starlette_inst,  # noqa: F401
-            sanic_inst,  # noqa: F401
             urllib3,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (
-            client,  # noqa: F401
-            server,  # noqa: F401
+            client as aiohttp_client,  # noqa: F401
+        )
+        from instana.instrumentation.aiohttp import (
+            server as aiohttp_server,  # noqa: F401
         )
         from instana.instrumentation.aws import lambda_inst  # noqa: F401
-        from instana.instrumentation import celery  # noqa: F401
         from instana.instrumentation.django import middleware  # noqa: F401
         from instana.instrumentation.google.cloud import (
             pubsub,  # noqa: F401
             storage,  # noqa: F401
         )
+        from instana.instrumentation.kafka import (
+            kafka_python,  # noqa: F401
+        )
         from instana.instrumentation.tornado import (
-            client,  # noqa: F401
-            server,  # noqa: F401
+            client as tornado_client,  # noqa: F401
+        )
+        from instana.instrumentation.tornado import (
+            server as tornado_server,  # noqa: F401
         )
 
     # Hooks
-    from instana.hooks import hook_uwsgi, hook_gunicorn  # noqa: F401
+    from instana.hooks import hook_gunicorn, hook_uwsgi  # noqa: F401
 
 
 if "INSTANA_DISABLE" not in os.environ:

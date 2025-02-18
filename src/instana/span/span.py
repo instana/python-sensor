@@ -165,6 +165,8 @@ class InstanaSpan(Span, ReadableSpan):
                 self.set_attribute("sqlalchemy.err", message)
             elif self.name == "aws.lambda.entry":
                 self.set_attribute("lambda.error", message)
+            elif self.name.startswith("kafka"):
+                self.set_attribute("kafka.error", message)
             else:
                 _attributes = {"message": message}
                 if attributes:

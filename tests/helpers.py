@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2018
 
 import os
+
 import pytest
 
 testenv = {}
@@ -55,6 +56,17 @@ testenv["mongodb_host"] = os.environ.get("MONGO_HOST", "127.0.0.1")
 testenv["mongodb_port"] = os.environ.get("MONGO_PORT", "27017")
 testenv["mongodb_user"] = os.environ.get("MONGO_USER", None)
 testenv["mongodb_pw"] = os.environ.get("MONGO_PW", None)
+
+
+"""
+Kafka Environment
+"""
+testenv["kafka_host"] = os.environ.get("KAFKA_HOST", "127.0.0.1")
+testenv["kafka_port"] = os.environ.get("KAFKA_PORT", "9094")
+testenv["kafka_topic"] = os.environ.get("KAFKA_TOPIC", "span-topic")
+testenv["kafka_bootstrap_servers"] = [
+    f"{testenv['kafka_host']}:{testenv['kafka_port']}",
+]
 
 
 def drop_log_spans_from_list(spans):
@@ -142,6 +154,7 @@ def get_spans_by_filter(spans, filter):
 
 def launch_traced_request(url):
     import requests
+
     from instana.log import logger
     from instana.singletons import tracer
 
@@ -153,6 +166,3 @@ def launch_traced_request(url):
         response = requests.get(url)
 
     return response
-
-
-

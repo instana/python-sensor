@@ -50,3 +50,15 @@ class Format(object):
     should use a prefix or other convention to distinguish tracer-specific
     key:value pairs.
     """
+
+    KAFKA_HEADERS = "kafka_headers"
+    """
+    The KAFKA_HEADERS format represents :class:`SpanContext`\\ s in a python
+    ``dict`` mapping from character-restricted strings to strings.
+
+    Keys and values in the KAFKA_HEADERS carrier must be suitable for use as
+    HTTP headers (without modification or further escaping). That is, the
+    keys have a greatly restricted character set, casing for the keys may not
+    be preserved by various intermediaries, and the values should be
+    URL-escaped.
+    """

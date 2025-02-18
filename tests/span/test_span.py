@@ -569,6 +569,7 @@ class TestSpan:
             ("celery-worker", "error"),
             ("sqlalchemy", "sqlalchemy.err"),
             ("aws.lambda.entry", "lambda.error"),
+            ("kafka", "kafka.error"),
         ],
     )
     def test_span_record_exception_default(

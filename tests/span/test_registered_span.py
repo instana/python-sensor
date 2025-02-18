@@ -146,6 +146,14 @@ class TestRegisteredSpan:
                     "rpc.port": 1234,
                 },
             ),
+            (
+                "kafka-consumer",
+                "kafka",
+                {
+                    "kafka.service": "my-topic",
+                    "kafka.access": "consume",
+                },
+            ),
         ],
     )
     def test_populate_entry_span_data(
@@ -350,6 +358,14 @@ class TestRegisteredSpan:
                     "gcps.top": "MY_SUBSCRIPTION_NAME",
                 },
             ),
+            (
+                "kafka-producer",
+                "kafka",
+                {
+                    "kafka.service": "my-topic",
+                    "kafka.access": "send",
+                },
+            ),
         ],
     )
     def test_populate_exit_span_data(
@@ -453,3 +469,29 @@ class TestRegisteredSpan:
 
         while self.span._events:
             self.span._events.pop()
+
+    def test_collect_kafka_attributes(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        span_name = "test-kafka-registered-span"
+        attributes = {
+            "kafka.service": "my-topic",
+            "kafka.access": "send",
+        }
+        service_name = "test-kafka-registered-service"
+        self.span = InstanaSpan(
+            span_name, span_context, span_processor, attributes=attributes
+        )
+        reg_span = RegisteredSpan(self.span, None, service_name)
+
+        excepted_result = {
+            "kafka.service": attributes["kafka.service"],
+            "kafka.access": attributes["kafka.access"],
+        }
+
+        reg_span._collect_kafka_attributes(self.span)
+
+        assert excepted_result["kafka.service"] == reg_span.data["kafka"]["service"]
+        assert excepted_result["kafka.access"] == reg_span.data["kafka"]["access"]

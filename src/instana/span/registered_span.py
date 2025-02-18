@@ -1,15 +1,31 @@
 # (c) Copyright IBM Corp. 2024
 
+from typing import TYPE_CHECKING, Any, Dict
+
+from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import SpanKind
+
 from instana.log import logger
 from instana.span.base_span import BaseSpan
-from instana.span.kind import ENTRY_SPANS, EXIT_SPANS, HTTP_SPANS, LOCAL_SPANS
+from instana.span.kind import (
+    ENTRY_SPANS,
+    EXIT_SPANS,
+    HTTP_SPANS,
+    LOCAL_SPANS,
+)
 
-from opentelemetry.trace import SpanKind
-from opentelemetry.semconv.trace import SpanAttributes
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
 
 
 class RegisteredSpan(BaseSpan):
-    def __init__(self, span, source, service_name, **kwargs) -> None:
+    def __init__(
+        self,
+        span: "InstanaSpan",
+        source: Dict[str, Any],
+        service_name: str,
+        **kwargs: Dict[str, Any],
+    ) -> None:
         # pylint: disable=invalid-name
         super(RegisteredSpan, self).__init__(span, source, **kwargs)
         self.n = span.name
@@ -34,13 +50,17 @@ class RegisteredSpan(BaseSpan):
         if "gcps" in span.name:
             self.n = "gcps"
 
+        # unify the span name for kafka-producer and kafka-consumer
+        if "kafka" in span.name:
+            self.n = "kafka"
+
         # Logic to store custom attributes for registered spans (not used yet)
         if len(span.attributes) > 0:
             self.data["sdk"]["custom"]["tags"] = self._validate_attributes(
                 span.attributes
             )
 
-    def _populate_entry_span_data(self, span) -> None:
+    def _populate_entry_span_data(self, span: "InstanaSpan") -> None:
         if span.name in HTTP_SPANS:
             self._collect_http_attributes(span)
 
@@ -127,10 +147,14 @@ class RegisteredSpan(BaseSpan):
             self.data["rpc"]["params"] = span.attributes.pop("rpc.params", None)
             # self.data["rpc"]["baggage"] = span.attributes.pop("rpc.baggage", None)
             self.data["rpc"]["error"] = span.attributes.pop("rpc.error", None)
+
+        elif span.name.startswith("kafka"):
+            self._collect_kafka_attributes(span)
+
         else:
             logger.debug("SpanRecorder: Unknown entry span: %s" % span.name)
 
-    def _populate_local_span_data(self, span) -> None:
+    def _populate_local_span_data(self, span: "InstanaSpan") -> None:
         if span.name == "render":
             self.data["render"]["name"] = span.attributes.pop("name", None)
             self.data["render"]["type"] = span.attributes.pop("type", None)
@@ -139,7 +163,7 @@ class RegisteredSpan(BaseSpan):
         else:
             logger.debug("SpanRecorder: Unknown local span: %s" % span.name)
 
-    def _populate_exit_span_data(self, span) -> None:
+    def _populate_exit_span_data(self, span: "InstanaSpan") -> None:
         if span.name in HTTP_SPANS:
             self._collect_http_attributes(span)
 
@@ -239,8 +263,12 @@ class RegisteredSpan(BaseSpan):
             self.data["mysql"]["host"] = span.attributes.pop("host", None)
             self.data["mysql"]["port"] = span.attributes.pop("port", None)
             self.data["mysql"]["db"] = span.attributes.pop(SpanAttributes.DB_NAME, None)
-            self.data["mysql"]["user"] = span.attributes.pop(SpanAttributes.DB_USER, None)
-            self.data["mysql"]["stmt"] = span.attributes.pop(SpanAttributes.DB_STATEMENT, None)
+            self.data["mysql"]["user"] = span.attributes.pop(
+                SpanAttributes.DB_USER, None
+            )
+            self.data["mysql"]["stmt"] = span.attributes.pop(
+                SpanAttributes.DB_STATEMENT, None
+            )
             self.data["mysql"]["error"] = span.attributes.pop("mysql.error", None)
 
         elif span.name == "postgres":
@@ -303,10 +331,14 @@ class RegisteredSpan(BaseSpan):
                     self.data["log"]["parameters"] = event.attributes.pop(
                         "parameters", None
                     )
+
+        elif span.name.startswith("kafka"):
+            self._collect_kafka_attributes(span)
+
         else:
             logger.debug("SpanRecorder: Unknown exit span: %s" % span.name)
 
-    def _collect_http_attributes(self, span) -> None:
+    def _collect_http_attributes(self, span: "InstanaSpan") -> None:
         self.data["http"]["host"] = span.attributes.pop("http.host", None)
         self.data["http"]["url"] = span.attributes.pop("http.url", None)
         self.data["http"]["path"] = span.attributes.pop("http.path", None)
@@ -325,3 +357,7 @@ class RegisteredSpan(BaseSpan):
             for key in custom_headers:
                 trimmed_key = key[12:]
                 self.data["http"]["header"][trimmed_key] = span.attributes.pop(key)
+
+    def _collect_kafka_attributes(self, span: "InstanaSpan") -> None:
+        self.data["kafka"]["service"] = span.attributes.pop("kafka.service", None)
+        self.data["kafka"]["access"] = span.attributes.pop("kafka.access", None)

@@ -31,6 +31,7 @@ ENTRY_SPANS = (
     "tornado-server",
     "gcps-consumer",
     "asgi",
+    "kafka-consumer",
 )
 
 EXIT_SPANS = (
@@ -53,6 +54,7 @@ EXIT_SPANS = (
     "pymongo",
     "gcs",
     "gcps-producer",
+    "kafka-producer",
 )
 
 REGISTERED_SPANS = LOCAL_SPANS + ENTRY_SPANS + EXIT_SPANS

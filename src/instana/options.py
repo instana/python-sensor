@@ -95,6 +95,59 @@ class StandardOptions(BaseOptions):
         if not isinstance(self.agent_port, int):
             self.agent_port = int(self.agent_port)
 
+    def set_secrets(self, secrets: Dict[str, Any]) -> None:
+        """
+        Set the secret option from the agent config.
+        @param secrets: dictionary of secrets
+        @return: None
+        """
+        self.secrets_matcher = secrets["matcher"]
+        self.secrets_list = secrets["list"]
+
+    def set_extra_headers(self, extra_headers: Dict[str, Any]) -> None:
+        """
+        Set the extra headers option from the agent config, which uses the legacy configuration setting.
+        @param extra_headers: dictionary of headers
+        @return: None
+        """
+        if self.extra_http_headers is None:
+            self.extra_http_headers = extra_headers
+        else:
+            self.extra_http_headers.extend(extra_headers)
+        logger.info(
+            f"Will also capture these custom headers: {self.extra_http_headers}"
+        )
+
+    def set_tracing(self, tracing: Dict[str, Any]) -> None:
+        """
+        Set tracing options from the agent config.
+        @param tracing: tracing configuration dictionary
+        @return: None
+        """
+        if (
+            "ignore-endpoints" in tracing
+            and "INSTANA_IGNORE_ENDPOINTS" not in os.environ
+            and "tracing" not in config
+        ):
+            self.ignore_endpoints = parse_ignored_endpoints(tracing["ignore-endpoints"])
+        if "extra-http-headers" in tracing:
+            self.extra_http_headers = tracing["extra-http-headers"]
+
+    def set_from(self, res_data: Dict[str, Any]) -> None:
+        """
+        Set the source identifiers given to use by the Instana Host agent.
+        @param res_data: source identifiers provided as announce response
+        @return: None
+        """
+        if "secrets" in res_data:
+            self.set_secrets(res_data["secrets"])
+
+        if "tracing" in res_data:
+            self.set_tracing(res_data["tracing"])
+        else:
+            if "extraHeaders" in res_data:
+                self.set_extra_headers(res_data["extraHeaders"])
+
 
 class ServerlessOptions(BaseOptions):
     """Base class for serverless environments.  Holds settings common to all serverless environments."""

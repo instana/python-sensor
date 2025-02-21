@@ -203,13 +203,13 @@ def boot_agent() -> None:
             storage,  # noqa: F401
         )
         from instana.instrumentation.kafka import (
+            confluent_kafka_python,  # noqa: F401
             kafka_python,  # noqa: F401
         )
         from instana.instrumentation.tornado import (
             client as tornado_client,  # noqa: F401
         )
         from instana.instrumentation.tornado import (
-            client as tornado_client,  # noqa: F401
             server as tornado_server,  # noqa: F401
         )
 

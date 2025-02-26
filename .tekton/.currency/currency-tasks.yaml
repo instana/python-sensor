@@ -33,8 +33,8 @@ spec:
       mountPath: /workspace
   steps:
     - name: generate-currency-report
-      # public.ecr.aws/docker/library/python:3.10.15-bookworm
-      image: public.ecr.aws/docker/library/python@sha256:2eb72484c25c39aba019b0ab5679c2436833a0b705e955ed8e13c06ee900dd63
+      # public.ecr.aws/docker/library/python:3.12.9-bookworm
+      image: public.ecr.aws/docker/library/python@sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3
       script: |
         #!/usr/bin/env bash
         cd /workspace/python-sensor/.tekton/.currency

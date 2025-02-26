@@ -136,19 +136,19 @@ spec:
       image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
       env:
         - name: KAFKA_CFG_NODE_ID
-          value: 0
+          value: "0"
         - name: KAFKA_CFG_PROCESS_ROLES
-          value: controller,broker
+          value: "controller,broker"
         - name: KAFKA_CFG_LISTENERS
-          value: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+          value: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
         - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
-          value: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          value: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
         - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-          value: 0@kafka:9093
+          value: "0@kafka:9093"
         - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
-          value: CONTROLLER
+          value: "CONTROLLER"
         - name: KAFKA_CFG_ADVERTISED_LISTENERS
-          value: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+          value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
     
   params:
   - name: imageDigest

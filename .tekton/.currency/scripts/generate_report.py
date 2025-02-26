@@ -1,12 +1,14 @@
 # Standard Libraries
-import re
 import json
+import re
+
+import pandas as pd
 
 # Third Party
 import requests
-import pandas as pd
 from bs4 import BeautifulSoup
 from kubernetes import client, config
+from packaging.version import Version
 
 JSON_FILE = "resources/table.json"
 REPORT_FILE = "docs/report.md"
@@ -67,7 +69,7 @@ def get_last_supported_version(tekton_ci_output, dependency):
 
 def isUptodate(last_supported_version, latest_version):
     """Check if the supported package is up-to-date"""
-    if last_supported_version == latest_version:
+    if Version(last_supported_version) >= Version(latest_version):
         up_to_date = "Yes"
     else:
         up_to_date = "No"
@@ -117,7 +119,9 @@ def process_taskrun_logs(
                 match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
                 tekton_ci_output += f"{match[1]}\n"
             elif task_name == "python-tracer-unittest-googlecloud-task":
-                match = re.search("Successfully installed .* (google-cloud-storage-[^\s]+)", logs)
+                match = re.search(
+                    "Successfully installed .* (google-cloud-storage-[^\s]+)", logs
+                )
                 tekton_ci_output += f"{match[1]}\n"
             elif task_name == "python-tracer-unittest-default-task":
                 for line in logs.splitlines():

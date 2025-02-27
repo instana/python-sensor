@@ -168,11 +168,10 @@ def boot_agent() -> None:
         from instana.instrumentation import (
             aioamqp,  # noqa: F401
             asyncio,  # noqa: F401
-            boto3_inst,  # noqa: F401
-            cassandra_inst,  # noqa: F401
+            cassandra,  # noqa: F401
             celery,  # noqa: F401
-            couchbase_inst,  # noqa: F401
-            fastapi_inst,  # noqa: F401
+            couchbase,  # noqa: F401
+            fastapi,  # noqa: F401
             flask,  # noqa: F401
             # gevent_inst,  # noqa: F401
             grpcio,  # noqa: F401
@@ -185,9 +184,9 @@ def boot_agent() -> None:
             pymysql,  # noqa: F401
             pyramid,  # noqa: F401
             redis,  # noqa: F401
-            sanic_inst,  # noqa: F401
+            sanic,  # noqa: F401
             sqlalchemy,  # noqa: F401
-            starlette_inst,  # noqa: F401
+            starlette,  # noqa: F401
             urllib3,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (
@@ -196,7 +195,10 @@ def boot_agent() -> None:
         from instana.instrumentation.aiohttp import (
             server as aiohttp_server,  # noqa: F401
         )
-        from instana.instrumentation.aws import lambda_inst  # noqa: F401
+        from instana.instrumentation.aws import (
+            boto3,  # noqa: F401
+            lambda_inst,  # noqa: F401
+        )
         from instana.instrumentation.django import middleware  # noqa: F401
         from instana.instrumentation.google.cloud import (
             pubsub,  # noqa: F401
@@ -209,12 +211,14 @@ def boot_agent() -> None:
             client as tornado_client,  # noqa: F401
         )
         from instana.instrumentation.tornado import (
-            client as tornado_client,  # noqa: F401
             server as tornado_server,  # noqa: F401
         )
 
     # Hooks
-    from instana.hooks import hook_gunicorn, hook_uwsgi  # noqa: F401
+    from instana.hooks import (
+        hook_gunicorn,  # noqa: F401
+        hook_uwsgi,  # noqa: F401
+    )
 
 
 if "INSTANA_DISABLE" not in os.environ:

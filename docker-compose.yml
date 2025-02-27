@@ -13,7 +13,6 @@ services:
     ports:
       - 9042:9042
 
-
   couchbase:
     image: public.ecr.aws/docker/library/couchbase:community
     ports:

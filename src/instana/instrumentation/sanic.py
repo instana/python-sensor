@@ -21,7 +21,6 @@ try:
     from sanic.exceptions import SanicException
 
     from opentelemetry import context, trace
-    from opentelemetry.trace import SpanKind
     from opentelemetry.semconv.trace import SpanAttributes
 
     from instana.singletons import tracer, agent

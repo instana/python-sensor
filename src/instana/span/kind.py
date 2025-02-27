@@ -40,6 +40,7 @@ EXIT_SPANS = (
     "cassandra",
     "celery-client",
     "couchbase",
+    "dynamodb",
     "log",
     "memcache",
     "mongo",

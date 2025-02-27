@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Tuple, Type
 
+from instana.instrumentation.aws.dynamodb import collect_dynamodb_attributes
 from opentelemetry.semconv.trace import SpanAttributes
 
 if TYPE_CHECKING:
@@ -70,53 +71,64 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         try:
-            with tracer.start_as_current_span(
-                "boto3", span_context=parent_context
-            ) as span:
-                try:
-                    operation = args[0]
-                    payload = args[1]
-
-                    span.set_attribute("op", operation)
-                    span.set_attribute("ep", instance._endpoint.host)
-                    span.set_attribute("reg", instance._client_config.region_name)
-
-                    span.set_attribute(
-                        SpanAttributes.HTTP_URL,
-                        instance._endpoint.host + ":443/" + args[0],
+            if instance:
+                if instance.meta.service_model.service_name == "dynamodb":
+                    collect_dynamodb_attributes(
+                        wrapped, instance, args, kwargs, parent_context
                     )
-                    span.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
+                else:
+                    with tracer.start_as_current_span(
+                        "boto3", span_context=parent_context
+                    ) as span:
+                        try:
+                            operation = args[0]
+                            payload = args[1]
 
-                    # Don't collect payload for SecretsManager
-                    if not hasattr(instance, "get_secret_value"):
-                        span.set_attribute("payload", payload)
+                            span.set_attribute("op", operation)
+                            span.set_attribute("ep", instance._endpoint.host)
+                            span.set_attribute(
+                                "reg", instance._client_config.region_name
+                            )
 
-                    # Inject context when invoking lambdas
-                    if "lambda" in instance._endpoint.host and operation == "Invoke":
-                        lambda_inject_context(payload, span)
+                            span.set_attribute(
+                                SpanAttributes.HTTP_URL,
+                                instance._endpoint.host + ":443/" + args[0],
+                            )
+                            span.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
 
-                except Exception:
-                    logger.debug(
-                        "make_api_call_with_instana: collect error",
-                        exc_info=True,
-                    )
+                            # Don't collect payload for SecretsManager
+                            if not hasattr(instance, "get_secret_value"):
+                                span.set_attribute("payload", payload)
 
-                try:
-                    result = wrapped(*args, **kwargs)
+                            # Inject context when invoking lambdas
+                            if (
+                                "lambda" in instance._endpoint.host
+                                and operation == "Invoke"
+                            ):
+                                lambda_inject_context(payload, span)
 
-                    if isinstance(result, dict):
-                        http_dict = result.get("ResponseMetadata")
-                        if isinstance(http_dict, dict):
-                            status = http_dict.get("HTTPStatusCode")
-                            if status is not None:
-                                span.set_attribute("http.status_code", status)
-                            headers = http_dict.get("HTTPHeaders")
-                            extract_custom_headers(span, headers)
+                        except Exception:
+                            logger.debug(
+                                "make_api_call_with_instana: collect error",
+                                exc_info=True,
+                            )
 
-                    return result
-                except Exception as exc:
-                    span.mark_as_errored({"error": exc})
-                    raise
+                        try:
+                            result = wrapped(*args, **kwargs)
+
+                            if isinstance(result, dict):
+                                http_dict = result.get("ResponseMetadata")
+                                if isinstance(http_dict, dict):
+                                    status = http_dict.get("HTTPStatusCode")
+                                    if status is not None:
+                                        span.set_attribute("http.status_code", status)
+                                    headers = http_dict.get("HTTPHeaders")
+                                    extract_custom_headers(span, headers)
+
+                            return result
+                        except Exception as exc:
+                            span.mark_as_errored({"error": exc})
+                            raise
         except Exception:
             logger.debug("make_api_call_with_instana: collect error", exc_info=True)
         else:

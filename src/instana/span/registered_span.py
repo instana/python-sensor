@@ -229,6 +229,13 @@ class RegisteredSpan(BaseSpan):
             )
             self.data["couchbase"]["sql"] = span.attributes.pop("couchbase.sql", None)
 
+        elif span.name == "dynamodb":
+            self.data["dynamodb"]["op"] = span.attributes.pop("dynamodb.op", None)
+            self.data["dynamodb"]["region"] = span.attributes.pop(
+                "dynamodb.region", None
+            )
+            self.data["dynamodb"]["table"] = span.attributes.pop("dynamodb.table", None)
+
         elif span.name == "rabbitmq":
             self.data["rabbitmq"]["exchange"] = span.attributes.pop("exchange", None)
             self.data["rabbitmq"]["queue"] = span.attributes.pop("queue", None)

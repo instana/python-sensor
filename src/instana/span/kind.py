@@ -50,6 +50,7 @@ EXIT_SPANS = (
     "redis",
     "rpc-client",
     "sqlalchemy",
+    "s3",
     "tornado-client",
     "urllib3",
     "pymongo",

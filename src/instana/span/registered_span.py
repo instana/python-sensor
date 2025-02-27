@@ -260,6 +260,10 @@ class RegisteredSpan(BaseSpan):
             # self.data["rpc"]["baggage"] = span.attributes.pop("rpc.baggage", None)
             self.data["rpc"]["error"] = span.attributes.pop("rpc.error", None)
 
+        elif span.name == "s3":
+            self.data["s3"]["op"] = span.attributes.pop("s3.op", None)
+            self.data["s3"]["bucket"] = span.attributes.pop("s3.bucket", None)
+
         elif span.name == "sqlalchemy":
             self.data["sqlalchemy"]["sql"] = span.attributes.pop("sqlalchemy.sql", None)
             self.data["sqlalchemy"]["eng"] = span.attributes.pop("sqlalchemy.eng", None)

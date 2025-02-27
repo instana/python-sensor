@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Tuple, Type
 
 from instana.instrumentation.aws.dynamodb import collect_dynamodb_attributes
+from instana.instrumentation.aws.s3 import collect_s3_attributes
 from opentelemetry.semconv.trace import SpanAttributes
 
 if TYPE_CHECKING:
@@ -74,6 +75,10 @@ try:
             if instance:
                 if instance.meta.service_model.service_name == "dynamodb":
                     collect_dynamodb_attributes(
+                        wrapped, instance, args, kwargs, parent_context
+                    )
+                elif instance.meta.service_model.service_name == "s3":
+                    collect_s3_attributes(
                         wrapped, instance, args, kwargs, parent_context
                     )
                 else:

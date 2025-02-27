@@ -12,7 +12,8 @@ Django>=4.2.16
 flask>=2.3.2
 # gevent is taking more than 20min to build on 3.14
 # gevent>=1.4.0
-grpcio>=1.14.1
+# grpcio is failing to build on 3.14.0a5
+# grpcio>=1.14.1
 google-cloud-pubsub>=2.0.0
 google-cloud-storage>=1.24.0
 legacy-cgi>=2.6.1

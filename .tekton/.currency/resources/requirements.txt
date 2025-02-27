@@ -3,3 +3,4 @@ pandas
 beautifulsoup4
 tabulate
 kubernetes
+packaging

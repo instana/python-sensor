@@ -18,6 +18,7 @@ HTTP_SPANS = (
     "urllib3",
     "wsgi",
     "asgi",
+    "spyne"
 )
 
 ENTRY_SPANS = (
@@ -32,6 +33,7 @@ ENTRY_SPANS = (
     "gcps-consumer",
     "asgi",
     "kafka-consumer",
+    "spyne"
 )
 
 EXIT_SPANS = (

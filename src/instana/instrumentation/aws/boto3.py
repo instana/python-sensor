@@ -1,16 +1,18 @@
 # (c) Copyright IBM Corp. 2025
-
-from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Tuple, Type
-
-from opentelemetry.semconv.trace import SpanAttributes
-
-if TYPE_CHECKING:
-    from botocore.auth import SigV4Auth
-    from botocore.client import BaseClient
-
-    from instana.span.span import InstanaSpan
-
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Tuple, Type
+
+    from opentelemetry.semconv.trace import SpanAttributes
+
+    from instana.instrumentation.aws.dynamodb import create_dynamodb_span
+    from instana.instrumentation.aws.s3 import create_s3_span
+
+    if TYPE_CHECKING:
+        from botocore.auth import SigV4Auth
+        from botocore.client import BaseClient
+
+        from instana.span.span import InstanaSpan
+
     import json
 
     import wrapt
@@ -69,37 +71,34 @@ try:
 
         parent_context = parent_span.get_span_context() if parent_span else None
 
-        try:
+        if instance.meta.service_model.service_name == "dynamodb":
+            create_dynamodb_span(wrapped, instance, args, kwargs, parent_context)
+        elif instance.meta.service_model.service_name == "s3":
+            create_s3_span(wrapped, instance, args, kwargs, parent_context)
+        else:
             with tracer.start_as_current_span(
                 "boto3", span_context=parent_context
             ) as span:
-                try:
-                    operation = args[0]
-                    payload = args[1]
+                operation = args[0]
+                payload = args[1]
 
-                    span.set_attribute("op", operation)
-                    span.set_attribute("ep", instance._endpoint.host)
-                    span.set_attribute("reg", instance._client_config.region_name)
+                span.set_attribute("op", operation)
+                span.set_attribute("ep", instance._endpoint.host)
+                span.set_attribute("reg", instance._client_config.region_name)
 
-                    span.set_attribute(
-                        SpanAttributes.HTTP_URL,
-                        instance._endpoint.host + ":443/" + args[0],
-                    )
-                    span.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
+                span.set_attribute(
+                    SpanAttributes.HTTP_URL,
+                    instance._endpoint.host + ":443/" + args[0],
+                )
+                span.set_attribute(SpanAttributes.HTTP_METHOD, "POST")
 
-                    # Don't collect payload for SecretsManager
-                    if not hasattr(instance, "get_secret_value"):
-                        span.set_attribute("payload", payload)
+                # Don't collect payload for SecretsManager
+                if not hasattr(instance, "get_secret_value"):
+                    span.set_attribute("payload", payload)
 
-                    # Inject context when invoking lambdas
-                    if "lambda" in instance._endpoint.host and operation == "Invoke":
-                        lambda_inject_context(payload, span)
-
-                except Exception:
-                    logger.debug(
-                        "make_api_call_with_instana: collect error",
-                        exc_info=True,
-                    )
+                # Inject context when invoking lambdas
+                if "lambda" in instance._endpoint.host and operation == "Invoke":
+                    lambda_inject_context(payload, span)
 
                 try:
                     result = wrapped(*args, **kwargs)
@@ -117,10 +116,7 @@ try:
                 except Exception as exc:
                     span.mark_as_errored({"error": exc})
                     raise
-        except Exception:
-            logger.debug("make_api_call_with_instana: collect error", exc_info=True)
-        else:
-            return wrapped(*args, **kwargs)
+        return wrapped(*args, **kwargs)
 
 except ImportError:
     pass

@@ -229,6 +229,13 @@ class RegisteredSpan(BaseSpan):
             )
             self.data["couchbase"]["sql"] = span.attributes.pop("couchbase.sql", None)
 
+        elif span.name == "dynamodb":
+            self.data["dynamodb"]["op"] = span.attributes.pop("dynamodb.op", None)
+            self.data["dynamodb"]["region"] = span.attributes.pop(
+                "dynamodb.region", None
+            )
+            self.data["dynamodb"]["table"] = span.attributes.pop("dynamodb.table", None)
+
         elif span.name == "rabbitmq":
             self.data["rabbitmq"]["exchange"] = span.attributes.pop("exchange", None)
             self.data["rabbitmq"]["queue"] = span.attributes.pop("queue", None)
@@ -252,6 +259,10 @@ class RegisteredSpan(BaseSpan):
             self.data["rpc"]["params"] = span.attributes.pop("rpc.params", None)
             # self.data["rpc"]["baggage"] = span.attributes.pop("rpc.baggage", None)
             self.data["rpc"]["error"] = span.attributes.pop("rpc.error", None)
+
+        elif span.name == "s3":
+            self.data["s3"]["op"] = span.attributes.pop("s3.op", None)
+            self.data["s3"]["bucket"] = span.attributes.pop("s3.bucket", None)
 
         elif span.name == "sqlalchemy":
             self.data["sqlalchemy"]["sql"] = span.attributes.pop("sqlalchemy.sql", None)

@@ -104,3 +104,13 @@ def is_service_or_endpoint_ignored(
         service.lower() in agent.options.ignore_endpoints
         or f"{service.lower()}.{endpoint.lower()}" in agent.options.ignore_endpoints
     )
+
+
+def get_operation_specifier(span_name: str) -> str:
+    """Get the specific operation specifier for the given span."""
+    operation_specifier = ""
+    if span_name == "redis":
+        operation_specifier = "command"
+    elif span_name == "dynamodb":
+        operation_specifier = "op"
+    return operation_specifier

@@ -12,7 +12,7 @@ from instana.singletons import agent, tracer
 from tests.helpers import testenv
 
 
-class TestKafkaPythonProducer:
+class TestKafkaPython:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """SetUp and TearDown"""
@@ -53,7 +53,7 @@ class TestKafkaPythonProducer:
         self.kafka_client.delete_topics([testenv["kafka_topic"]])
         self.kafka_client.close()
 
-    def test_trace_kafka_send(self) -> None:
+    def test_trace_kafka_python_send(self) -> None:
         with tracer.start_as_current_span("test"):
             future = self.producer.send(testenv["kafka_topic"], b"raw_bytes")
 
@@ -80,7 +80,7 @@ class TestKafkaPythonProducer:
         assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
         assert kafka_span.data["kafka"]["access"] == "send"
 
-    def test_trace_kafka_consume(self) -> None:
+    def test_trace_kafka_python_consume(self) -> None:
         agent.options.allow_exit_as_root = False
 
         # Produce some events
@@ -124,3 +124,44 @@ class TestKafkaPythonProducer:
         assert kafka_span.k == SpanKind.SERVER
         assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
         assert kafka_span.data["kafka"]["access"] == "consume"
+
+    def test_trace_kafka_python_error(self) -> None:
+        agent.options.allow_exit_as_root = False
+
+        # Consume the events
+        consumer = KafkaConsumer(
+            "inexistent_kafka_topic",
+            bootstrap_servers=testenv["kafka_bootstrap_servers"],
+            auto_offset_reset="earliest",  # consume earliest available messages
+            enable_auto_commit=False,  # do not auto-commit offsets
+            consumer_timeout_ms=1000,
+        )
+
+        with tracer.start_as_current_span("test"):
+            for msg in consumer:
+                if msg is None:
+                    break
+
+        consumer.close()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        kafka_span = spans[0]
+        test_span = spans[1]
+
+        # Same traceId
+        assert test_span.t == kafka_span.t
+
+        # Parent relationships
+        assert kafka_span.p == test_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert kafka_span.ec == 1
+
+        assert kafka_span.n == "kafka"
+        assert kafka_span.k == SpanKind.SERVER
+        assert kafka_span.data["kafka"]["service"] == "inexistent_kafka_topic"
+        assert kafka_span.data["kafka"]["access"] == "consume"
+        assert kafka_span.data["kafka"]["error"] == "StopIteration()"

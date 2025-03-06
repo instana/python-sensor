@@ -43,7 +43,7 @@ class TestSpyne:
         test_span = spans[2]
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -78,13 +78,13 @@ class TestSpyne:
         assert spyne_span.ec is None
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/hello" == spyne_span.data["http"]["url"]
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 200 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["url"] == "/hello"
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 200
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None
 
@@ -102,7 +102,7 @@ class TestSpyne:
         test_span = spans[2]
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -137,14 +137,14 @@ class TestSpyne:
         assert spyne_span.ec is None
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/say_hello" == spyne_span.data["http"]["url"]
+        assert spyne_span.data["http"]["url"] == "/say_hello"
         assert spyne_span.data["http"]["params"] == "name=World&times=4&secret=<redacted>"
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 200 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 200
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None
 
@@ -169,7 +169,7 @@ class TestSpyne:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert 200 == response.status
+        assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -204,13 +204,13 @@ class TestSpyne:
         assert spyne_span.ec is None
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/hello" == spyne_span.data["http"]["url"]
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 200 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["url"] == "/hello"
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 200
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None
 
@@ -238,7 +238,7 @@ class TestSpyne:
         urllib3_span = spans[1]
         test_span = spans[2]
 
-        assert 200 == response.status
+        assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -274,13 +274,13 @@ class TestSpyne:
         assert spyne_span.ec is None
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/response_headers" == spyne_span.data["http"]["url"]
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 200 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["url"] == "/response_headers"
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 200
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None
 
@@ -307,7 +307,7 @@ class TestSpyne:
         test_span = spans[3]
 
         assert response
-        assert 404 == response.status        
+        assert response.status         == 404
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -343,24 +343,24 @@ class TestSpyne:
         assert spyne_span.ec is None
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/custom_404" == spyne_span.data["http"]["url"]
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 404 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["url"] == "/custom_404"
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 404
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 404 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 404
         assert (
             testenv["spyne_server"] + "/custom_404" == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -379,7 +379,7 @@ class TestSpyne:
         test_span = spans[2]
 
         assert response
-        assert 404 == response.status        
+        assert response.status         == 404
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -415,24 +415,24 @@ class TestSpyne:
         assert spyne_span.ec is None
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/11111" == spyne_span.data["http"]["url"]
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 404 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["url"] == "/11111"
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 404
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 404 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 404
         assert (
             testenv["spyne_server"] + "/11111" == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -452,7 +452,7 @@ class TestSpyne:
         test_span = spans[3]
 
         assert response
-        assert 500 == response.status
+        assert response.status == 500
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -487,12 +487,12 @@ class TestSpyne:
         assert spyne_span.ec == 1
 
         # spyne
-        assert "spyne" == spyne_span.n
+        assert spyne_span.n == "spyne"
         assert (
             "127.0.0.1:" + str(testenv["spyne_port"]) == spyne_span.data["http"]["host"]
         )
-        assert "/exception" == spyne_span.data["http"]["url"]
-        assert "GET" == spyne_span.data["http"]["method"]
-        assert 500 == spyne_span.data["http"]["status"]
+        assert spyne_span.data["http"]["url"] == "/exception"
+        assert spyne_span.data["http"]["method"] == "GET"
+        assert spyne_span.data["http"]["status"] == 500
         assert spyne_span.data["http"]["error"] is None
         assert spyne_span.stack is None

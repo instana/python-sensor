@@ -34,8 +34,9 @@ responses<=0.17.0
 sanic<=24.6.0; python_version < "3.9"
 sanic>=19.9.0; python_version >= "3.9" and python_version < "3.13"
 sanic-testing>=24.6.0; python_version < "3.13"
-starlette>=0.38.2; python_version == "3.13"
+spyne>=2.14.0; python_version < "3.12"
 sqlalchemy>=2.0.0
+starlette>=0.38.2; python_version == "3.13"
 tornado>=6.4.1
 uvicorn>=0.13.4
 urllib3>=1.26.5

@@ -45,6 +45,11 @@ if not os.environ.get("GEVENT_STARLETTE_TEST"):
 if not os.environ.get("KAFKA_TEST"):
     collect_ignore_glob.append("*kafka/test*")
 
+if sys.version_info >= (3, 12):
+    # Currently Spyne does not support python > 3.12
+    collect_ignore_glob.append("*test_spyne*")
+
+
 if sys.version_info >= (3, 13):
     # Currently not installable dependencies because of 3.13 incompatibilities
     collect_ignore_glob.append("*test_sanic*")

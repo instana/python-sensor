@@ -7,7 +7,7 @@ import logging
 
 from wsgiref.simple_server import make_server
 from spyne import Application, rpc, ServiceBase, Iterable, UnsignedInteger, \
-    String, Unicode, M, UnsignedInteger32
+    String, Unicode
 
 from spyne.protocol.json import JsonDocument
 from spyne.protocol.http import HttpRpc
@@ -24,22 +24,9 @@ testenv["spyne_port"] = 10818
 testenv["spyne_server"] = ("http://127.0.0.1:" + str(testenv["spyne_port"]))
 
 class HelloWorldService(ServiceBase):
-    # @rpc(Unicode, _returns=Unicode)
-    # def get_resource(self, resource_id):
-    #     # Simulate checking for a resource
-    #     if resource_id != "existing_resource":
-    #         raise ResourceNotFoundError(
-    #             "Resource not found",
-    #             "The requested resource does not exist."
-    #         )
-    #     return f"Resource {resource_id} found."
-
     @rpc(String, UnsignedInteger, _returns=Iterable(String))
     def say_hello(ctx, name, times):
         """
-        Docstrings for service methods do appear as documentation in the
-        interface documents. <b>What fun!</b>
-
         :param name: The name to say hello to
         :param times: The number of times to say hello
 
@@ -50,12 +37,22 @@ class HelloWorldService(ServiceBase):
             yield 'Hello, %s' % name
 
     @rpc(_returns=Unicode)
-    def hello(self):
+    def hello(ctx):
         return "<center><h1>🐍 Hello Stan! 🦄</h1></center>"
     
-    @rpc(M(UnsignedInteger32))
-    def del_user(ctx, user_id):
+    @rpc(_returns=Unicode)
+    def response_headers(ctx):
+        ctx.transport.add_header("X-Capture-This", "this")
+        ctx.transport.add_header("X-Capture-That", "that")
+        return "Stan wuz here with headers!"
+    
+    @rpc(UnsignedInteger)
+    def custom_404(ctx, user_id):
         raise ResourceNotFoundError(user_id)
+    
+    @rpc()
+    def exception(ctx):
+        raise Exception('fake error')
 
 
 application = Application([HelloWorldService], 'spyne.examples.hello.http',
@@ -66,7 +63,5 @@ wsgi_app = WsgiApplication(application)
 spyne_server = make_server('127.0.0.1', testenv["spyne_port"], wsgi_app)
 
 if __name__ == '__main__':
-    # logging.info("listening to http://127.0.0.1:8000")
-    # logging.info("wsdl is at: http://localhost:8000/?wsdl")
     spyne_server.request_queue_size = 20
     spyne_server.serve_forever()

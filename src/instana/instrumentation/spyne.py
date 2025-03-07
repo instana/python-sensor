@@ -12,11 +12,37 @@ try:
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
 
+    def set_span_attributes(span, headers):
+        if "REQUEST_METHOD" in headers:
+            span.set_attribute(SpanAttributes.HTTP_METHOD, headers["REQUEST_METHOD"])
+        if "PATH_INFO" in headers:
+            span.set_attribute(SpanAttributes.HTTP_URL, headers["PATH_INFO"])
+        if "QUERY_STRING" in headers and len(headers["QUERY_STRING"]):
+            scrubbed_params = strip_secrets_from_query(
+                headers["QUERY_STRING"],
+                agent.options.secrets_matcher,
+                agent.options.secrets_list,
+            )
+            span.set_attribute("http.params", scrubbed_params)
+        if "HTTP_HOST" in headers:
+            span.set_attribute("http.host", headers["HTTP_HOST"])
+
+    def set_response_status_code(span, response_string):
+        resp_code = int(response_string.split()[0])
+
+        if 500 <= resp_code:
+            span.mark_as_errored()
+
+        span.set_attribute(
+            SpanAttributes.HTTP_STATUS_CODE, int(resp_code)
+        )   
 
     @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication.handle_error")
     def handle_error_with_instana(wrapped, instance, args, kwargs):
         ctx = args[0]
         span = ctx.udc
+
+        # span created inside process_request() will be handled by finalize() method
         if span:
             return wrapped(*args, **kwargs)
         
@@ -28,19 +54,7 @@ try:
         ) as span:
             extract_custom_headers(span, headers, format=True)
 
-            if "REQUEST_METHOD" in headers:
-                span.set_attribute(SpanAttributes.HTTP_METHOD, headers["REQUEST_METHOD"])
-            if "PATH_INFO" in headers:
-                span.set_attribute(SpanAttributes.HTTP_URL, headers["PATH_INFO"])
-            if "QUERY_STRING" in headers and len(headers["QUERY_STRING"]):
-                scrubbed_params = strip_secrets_from_query(
-                    headers["QUERY_STRING"],
-                    agent.options.secrets_matcher,
-                    agent.options.secrets_list,
-                )
-                span.set_attribute("http.params", scrubbed_params)
-            if "HTTP_HOST" in headers:
-                span.set_attribute("http.host", headers["HTTP_HOST"])
+            set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
             
@@ -49,14 +63,7 @@ try:
 
             response = wrapped(*args, **kwargs)
 
-            resp_code = int(ctx.transport.resp_code.split()[0])
-
-            if 500 <= resp_code:
-                span.mark_as_errored()
-
-            span.set_attribute(
-                SpanAttributes.HTTP_STATUS_CODE, int(resp_code)
-            )
+            set_response_status_code(span, ctx.transport.resp_code)
             return response  
 
 
@@ -64,16 +71,10 @@ try:
     def finalize_with_instana(wrapped, instance, args, kwargs):
         ctx = args[0]
         span = ctx.udc
+        response_string = ctx.transport.resp_code
 
-        if span and ctx.transport.resp_code:
-            resp_code = int(ctx.transport.resp_code.split()[0])
-
-            if 500 <= resp_code:
-                span.mark_as_errored()
-
-            span.set_attribute(
-                SpanAttributes.HTTP_STATUS_CODE, int(resp_code)
-            )
+        if span and response_string:
+            set_response_status_code(span, response_string)
             if span.is_recording():
                 span.end()
 
@@ -92,19 +93,7 @@ try:
         ) as span:
             extract_custom_headers(span, headers, format=True)
 
-            if "REQUEST_METHOD" in headers:
-                span.set_attribute(SpanAttributes.HTTP_METHOD, headers["REQUEST_METHOD"])
-            if "PATH_INFO" in headers:
-                span.set_attribute(SpanAttributes.HTTP_URL, headers["PATH_INFO"])
-            if "QUERY_STRING" in headers and len(headers["QUERY_STRING"]):
-                scrubbed_params = strip_secrets_from_query(
-                    headers["QUERY_STRING"],
-                    agent.options.secrets_matcher,
-                    agent.options.secrets_list,
-                )
-                span.set_attribute("http.params", scrubbed_params)
-            if "HTTP_HOST" in headers:
-                span.set_attribute("http.host", headers["HTTP_HOST"])
+            set_span_attributes(span, headers)
 
             response = wrapped(*args, **kwargs)
             response_headers = ctx.transport.resp_headers

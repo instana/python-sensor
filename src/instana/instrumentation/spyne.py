@@ -3,6 +3,7 @@
 try:
     import spyne
     import wrapt
+    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple, Iterable
 
     from opentelemetry.semconv.trace import SpanAttributes
 
@@ -12,7 +13,12 @@ try:
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
 
-    def set_span_attributes(span, headers):
+    if TYPE_CHECKING:
+        from instana.span.span import InstanaSpan
+        from spyne.application import Application
+        from spyne.server.wsgi import WsgiApplication
+
+    def set_span_attributes(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
         if "REQUEST_METHOD" in headers:
             span.set_attribute(SpanAttributes.HTTP_METHOD, headers["REQUEST_METHOD"])
         if "PATH_INFO" in headers:
@@ -27,48 +33,55 @@ try:
         if "HTTP_HOST" in headers:
             span.set_attribute("http.host", headers["HTTP_HOST"])
 
-    def set_response_status_code(span, response_string):
+    def set_response_status_code(span: "InstanaSpan", response_string: str) -> None:
         resp_code = int(response_string.split()[0])
 
         if 500 <= resp_code:
             span.mark_as_errored()
 
-        span.set_attribute(
-            SpanAttributes.HTTP_STATUS_CODE, int(resp_code)
-        )   
+        span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(resp_code))
 
     @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication.handle_error")
-    def handle_error_with_instana(wrapped, instance, args, kwargs):
+    def handle_error_with_instana(
+        wrapped: Callable[..., Iterable[object]],
+        instance: "WsgiApplication",
+        args: Tuple[object],
+        kwargs: Dict[str, Any],
+    ) -> Iterable[object]:
         ctx = args[0]
         span = ctx.udc
 
         # span created inside process_request() will be handled by finalize() method
         if span:
             return wrapped(*args, **kwargs)
-        
+
         headers = ctx.in_document
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-        with tracer.start_as_current_span(
-            "spyne", span_context=span_context
-        ) as span:
+        with tracer.start_as_current_span("spyne", span_context=span_context) as span:
             extract_custom_headers(span, headers, format=True)
 
             set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
-            
+
             extract_custom_headers(span, response_headers, format=False)
             tracer.inject(span.context, Format.HTTP_HEADERS, response_headers)
 
             response = wrapped(*args, **kwargs)
 
             set_response_status_code(span, ctx.transport.resp_code)
-            return response  
+            return response
 
-
-    @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication._WsgiApplication__finalize")
-    def finalize_with_instana(wrapped, instance, args, kwargs):
+    @wrapt.patch_function_wrapper(
+        "spyne.server.wsgi", "WsgiApplication._WsgiApplication__finalize"
+    )
+    def finalize_with_instana(
+        wrapped: Callable[..., Tuple[()]],
+        instance: "WsgiApplication",
+        args: Tuple[object],
+        kwargs: Dict[str, Any],
+    ) -> Tuple[()]:
         ctx = args[0]
         span = ctx.udc
         response_string = ctx.transport.resp_code
@@ -81,15 +94,21 @@ try:
             ctx.udc = None
         return wrapped(*args, **kwargs)
 
-
     @wrapt.patch_function_wrapper("spyne.application", "Application.process_request")
-    def process_request_with_instana(wrapped, instance, args, kwargs):
+    def process_request_with_instana(
+        wrapped: Callable[..., None],
+        instance: "Application",
+        args: Tuple[object],
+        kwargs: Dict[str, Any],
+    ) -> None:
         ctx = args[0]
         headers = ctx.in_document
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
         with tracer.start_as_current_span(
-            "spyne", span_context=span_context, end_on_exit=False,
+            "spyne",
+            span_context=span_context,
+            end_on_exit=False,
         ) as span:
             extract_custom_headers(span, headers, format=True)
 
@@ -97,7 +116,7 @@ try:
 
             response = wrapped(*args, **kwargs)
             response_headers = ctx.transport.resp_headers
-            
+
             extract_custom_headers(span, response_headers, format=False)
             tracer.inject(span.context, Format.HTTP_HEADERS, response_headers)
 

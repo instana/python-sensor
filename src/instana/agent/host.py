@@ -346,13 +346,17 @@ class HostAgent(BaseAgent):
         return
 
     def filter_spans(self, spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        from instana.util.traceutils import is_service_or_endpoint_ignored
+        from instana.util.traceutils import (
+            is_service_or_endpoint_ignored,
+            get_operation_specifier,
+        )
 
         filtered_spans = []
         for span in spans:
             if (hasattr(span, "n") or hasattr(span, "name")) and hasattr(span, "data"):
                 service = span.n
-                endpoint = span.data[service]["command"]
+                operation_specifier = get_operation_specifier(service)
+                endpoint = span.data[service][operation_specifier]
                 if isinstance(endpoint, str) and is_service_or_endpoint_ignored(
                     service, endpoint
                 ):

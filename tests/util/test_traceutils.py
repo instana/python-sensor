@@ -7,6 +7,7 @@ from instana.tracer import InstanaTracer
 from instana.util.traceutils import (
     extract_custom_headers,
     get_active_tracer,
+    get_operation_specifier,
     get_tracer_tuple,
     is_service_or_endpoint_ignored,
     tracing_is_off,
@@ -117,3 +118,13 @@ def test_is_service_or_endpoint_ignored() -> None:
 
     # don't ignore other services
     assert not is_service_or_endpoint_ignored("service3")
+
+
+def test_get_operation_specifier() -> None:
+    test_redis = "redis"
+    response_redis = get_operation_specifier(test_redis)
+    assert response_redis == "command"
+
+    test_dynamodb = "dynamodb"
+    response_dynamodb = get_operation_specifier(test_dynamodb)
+    assert response_dynamodb == "op"

@@ -53,6 +53,8 @@ if sys.version_info >= (3, 14):
     collect_ignore_glob.append("*test_fastapi*")
     # aiohttp-server tests failing due to deprecated methods used
     collect_ignore_glob.append("*test_aiohttp_server*")
+    # grpcio is failing to build on 3.14.0a5
+    collect_ignore_glob.append("*test_grpc*")
 
 
 @pytest.fixture(scope="session")

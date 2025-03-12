@@ -3,7 +3,11 @@
 from typing import Generator
 
 import pytest
-from confluent_kafka import Consumer, KafkaException, Producer  # noqa: F401
+from confluent_kafka import (
+    Consumer,
+    KafkaException,
+    Producer,
+)
 from confluent_kafka.admin import AdminClient, NewTopic
 from opentelemetry.trace import SpanKind
 
@@ -70,7 +74,7 @@ class TestConfluentKafka:
         assert kafka_span.n == "kafka"
         assert kafka_span.k == SpanKind.CLIENT
         assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
-        assert kafka_span.data["kafka"]["access"] == "send"
+        assert kafka_span.data["kafka"]["access"] == "produce"
 
     def test_trace_confluent_kafka_consume(self) -> None:
         # Produce some events
@@ -159,8 +163,7 @@ class TestConfluentKafka:
         consumer.subscribe(["inexistent_kafka_topic"])
 
         with tracer.start_as_current_span("test"):
-            msg = consumer.poll(timeout=5)  # noqa: F841
-            # assert not msg
+            consumer.consume(-10)
 
         consumer.close()
 
@@ -183,8 +186,8 @@ class TestConfluentKafka:
         assert kafka_span.n == "kafka"
         assert kafka_span.k == SpanKind.SERVER
         assert not kafka_span.data["kafka"]["service"]
-        assert kafka_span.data["kafka"]["access"] == "poll"
+        assert kafka_span.data["kafka"]["access"] == "consume"
         assert (
             kafka_span.data["kafka"]["error"]
-            == "'NoneType' object has no attribute 'topic'"
+            == "num_messages must be between 0 and 1000000 (1M)"
         )

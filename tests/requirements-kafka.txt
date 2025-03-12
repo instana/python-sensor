@@ -1,0 +1,6 @@
+coverage>=5.5
+mock>=2.0.0
+pytest
+kafka-python>=2.0.0; python_version < "3.12"
+kafka-python-ng>=2.0.0; python_version >= "3.12"
+confluent-kafka>=2.0.0

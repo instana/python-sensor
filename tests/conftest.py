@@ -17,12 +17,12 @@ if importlib.util.find_spec("celery"):
 
 from instana.agent.host import HostAgent
 from instana.collector.base import BaseCollector
+from instana.fsm import TheMachine
 from instana.recorder import StanRecorder
 from instana.span.base_span import BaseSpan
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracerProvider
-from instana.fsm import TheMachine
 
 collect_ignore_glob = [
     "*test_gevent*",
@@ -42,6 +42,8 @@ if not os.environ.get("GEVENT_STARLETTE_TEST"):
     collect_ignore_glob.append("*test_gevent*")
     collect_ignore_glob.append("*test_starlette*")
 
+if not os.environ.get("KAFKA_TEST"):
+    collect_ignore_glob.append("*kafka/test*")
 
 if sys.version_info >= (3, 13):
     # Currently not installable dependencies because of 3.13 incompatibilities

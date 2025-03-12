@@ -372,3 +372,4 @@ class RegisteredSpan(BaseSpan):
     def _collect_kafka_attributes(self, span: "InstanaSpan") -> None:
         self.data["kafka"]["service"] = span.attributes.pop("kafka.service", None)
         self.data["kafka"]["access"] = span.attributes.pop("kafka.access", None)
+        self.data["kafka"]["error"] = span.attributes.pop("kafka.error", None)

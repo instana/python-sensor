@@ -87,3 +87,17 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-kafka
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+              # public.ecr.aws/docker/library/python:3.12.9-bookworm
+              - "sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3"
+      taskRef:
+        name: python-tracer-unittest-kafka-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc

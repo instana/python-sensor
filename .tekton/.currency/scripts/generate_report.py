@@ -100,13 +100,17 @@ def get_upstream_version(dependency, last_supported_version):
         release_time = response_json["releases"][latest_version][-1][
             "upload_time_iso_8601"
         ]
-        latest_version_release_date = datetime.fromisoformat(release_time)
+        latest_version_release_date = datetime.strptime(
+            release_time, "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
         formatted_release_date = latest_version_release_date.strftime("%Y-%m-%d")
         for version, release_info in response_json["releases"].items():
             if version == last_supported_version:
                 release_time = release_info[-1]["upload_time_iso_8601"]
-                release_date = datetime.fromisoformat(release_time)
-                last_supported_version_release_date = release_date.strftime("%Y-%m-%d")
+                last_supported_version_release_date = datetime.strptime(
+                    release_time, "%Y-%m-%dT%H:%M:%S.%fZ"
+                ).strftime("%Y-%m-%d")
+
         return (
             latest_version,
             formatted_release_date,

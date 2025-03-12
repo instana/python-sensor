@@ -52,6 +52,9 @@ commands:
       gevent:
         default: ""
         type: string
+      kafka:
+        default: ""
+        type: string
       tests:
         default: "tests"
         type: string
@@ -61,6 +64,7 @@ commands:
           environment:
             CASSANDRA_TEST: "<<parameters.cassandra>>"
             GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
+            KAFKA_TEST: "<<parameters.kafka>>"
           command: |
             . venv/bin/activate
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
@@ -136,15 +140,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -173,15 +168,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -210,15 +196,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -248,15 +225,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -286,15 +254,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -338,15 +297,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -376,15 +326,6 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
-        environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
     working_directory: ~/repo
     steps:
       - checkout
@@ -443,6 +384,30 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  py312kafka:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.12
+      - image: public.ecr.aws/bitnami/kafka:3.9.0
+        environment:
+          KAFKA_CFG_NODE_ID: 0
+          KAFKA_CFG_PROCESS_ROLES: controller,broker
+          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
+          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps:
+          requirements: "tests/requirements-kafka.txt"
+      - run-tests-with-coverage-report:
+          kafka: "true"
+          tests: "tests/clients/kafka/test*.py"
+      - store-pytest-results
+      - store-coverage-report
+
 workflows:
   version: 2
   build:
@@ -457,6 +422,7 @@ workflows:
       - py39cassandra
       - py39gevent_starlette
       - py312aws
+      - py312kafka
       - final_job:
           requires:
             - python38

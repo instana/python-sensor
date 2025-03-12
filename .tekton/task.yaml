@@ -131,25 +131,6 @@ spec:
     - name: rabbitmq
       # public.ecr.aws/docker/library/rabbitmq:3.13.0
       image: public.ecr.aws/docker/library/rabbitmq@sha256:39de1a4fc6c72d12bd5dfa23e8576536fd1c0cc8418344cd5a51addfc9a1145d
-    - name: kafka
-      # public.ecr.aws/bitnami/kafka:3.9.0
-      image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
-      env:
-        - name: KAFKA_CFG_NODE_ID
-          value: "0"
-        - name: KAFKA_CFG_PROCESS_ROLES
-          value: "controller,broker"
-        - name: KAFKA_CFG_LISTENERS
-          value: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
-        - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-          value: "0@kafka:9093"
-        - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
-          value: "CONTROLLER"
-        - name: KAFKA_CFG_ADVERTISED_LISTENERS
-          value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
-    
   params:
   - name: imageDigest
     type: string
@@ -183,6 +164,46 @@ spec:
       env:
         - name: TEST_CONFIGURATION
           value: aws
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-kafka-task
+spec:
+  sidecars:
+    - name: kafka
+      # public.ecr.aws/bitnami/kafka:3.9.0
+      image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
+      env:
+        - name: KAFKA_CFG_NODE_ID
+          value: "0"
+        - name: KAFKA_CFG_PROCESS_ROLES
+          value: "controller,broker"
+        - name: KAFKA_CFG_LISTENERS
+          value: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+        - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+        - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+          value: "0@kafka:9093"
+        - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+          value: "CONTROLLER"
+        - name: KAFKA_CFG_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+  params:
+  - name: imageDigest
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: kafka
       workingDir: /workspace/python-sensor/
       command:
       - /workspace/python-sensor/.tekton/run_unittests.sh

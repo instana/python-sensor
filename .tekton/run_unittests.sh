@@ -32,9 +32,13 @@ gevent_starlette)
 aws)
   export REQUIREMENTS='requirements.txt'
   export TESTS=('tests_aws') ;;
+kafka)
+  export REQUIREMENTS='requirements-kafka.txt'
+  export TESTS=('tests/clients/kafka')
+  export KAFKA_TEST='true' ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
-       "not in (default|cassandra|gevent_starlette|aws)" >&2
+       "not in (default|cassandra|gevent_starlette|aws|kafka)" >&2
   exit 3 ;;
 esac
 

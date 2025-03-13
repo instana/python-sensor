@@ -255,6 +255,8 @@ try:
 
                     try:
                         yield yielded
+                    except GeneratorExit:
+                        gen.close()
                     except Exception as exc:
                         span.record_exception(exc)
 

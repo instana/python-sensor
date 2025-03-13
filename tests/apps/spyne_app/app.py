@@ -55,7 +55,7 @@ class HelloWorldService(ServiceBase):
         raise Exception('fake error')
 
 
-application = Application([HelloWorldService], 'spyne.examples.hello.http',
+application = Application([HelloWorldService], 'instana.spyne.service.helloworld',
     in_protocol=HttpRpc(validator='soft'),
     out_protocol=JsonDocument(ignore_wrappers=True),
 )

@@ -4,6 +4,7 @@ try:
     import spyne
     import wrapt
     from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple, Iterable
+    from types import SimpleNamespace
 
     from opentelemetry.semconv.trace import SpanAttributes
 
@@ -49,10 +50,9 @@ try:
         kwargs: Dict[str, Any],
     ) -> Iterable[object]:
         ctx = args[0]
-        span = ctx.udc
 
         # span created inside process_request() will be handled by finalize() method
-        if span:
+        if ctx.udc and ctx.udc.span:
             return wrapped(*args, **kwargs)
 
         headers = ctx.in_document
@@ -83,15 +83,15 @@ try:
         kwargs: Dict[str, Any],
     ) -> Tuple[()]:
         ctx = args[0]
-        span = ctx.udc
         response_string = ctx.transport.resp_code
 
-        if span and response_string:
+        if ctx.udc and ctx.udc.span and response_string:
+            span = ctx.udc.span
             set_response_status_code(span, response_string)
             if span.is_recording():
                 span.end()
 
-            ctx.udc = None
+            ctx.udc.span = None
         return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper("spyne.application", "Application.process_request")
@@ -121,7 +121,11 @@ try:
             tracer.inject(span.context, Format.HTTP_HEADERS, response_headers)
 
             ## Store the span in the user defined context object offered by Spyne
-            ctx.udc = span
+            if ctx.udc:
+                ctx.udc.span = span
+            else:
+                ctx.udc = SimpleNamespace()
+                ctx.udc.span = span
             return response
 
     logger.debug("Instrumenting Spyne")

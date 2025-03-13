@@ -22,6 +22,7 @@ from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
 from instana.util.runtime import get_py_source
+from instana.util.span_utils import get_operation_specifier
 from instana.version import VERSION
 
 
@@ -346,14 +347,16 @@ class HostAgent(BaseAgent):
         return
 
     def filter_spans(self, spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        from instana.util.traceutils import is_service_or_endpoint_ignored
-
+        """
+        Filters given span list using ignore-endpoint variable and returns the list of filtered spans.
+        """
         filtered_spans = []
         for span in spans:
             if (hasattr(span, "n") or hasattr(span, "name")) and hasattr(span, "data"):
                 service = span.n
-                endpoint = span.data[service]["command"]
-                if isinstance(endpoint, str) and is_service_or_endpoint_ignored(
+                operation_specifier = get_operation_specifier(service)
+                endpoint = span.data[service][operation_specifier]
+                if isinstance(endpoint, str) and self.__is_service_or_endpoint_ignored(
                     service, endpoint
                 ):
                     continue
@@ -362,6 +365,16 @@ class HostAgent(BaseAgent):
             else:
                 filtered_spans.append(span)
         return filtered_spans
+
+    def __is_service_or_endpoint_ignored(
+        self, service: str, endpoint: str = ""
+    ) -> bool:
+        """Check if the given service and endpoint combination should be ignored."""
+
+        return (
+            service.lower() in self.options.ignore_endpoints
+            or f"{service.lower()}.{endpoint.lower()}" in self.options.ignore_endpoints
+        )
 
     def handle_agent_tasks(self, task: Dict[str, Any]) -> None:
         """

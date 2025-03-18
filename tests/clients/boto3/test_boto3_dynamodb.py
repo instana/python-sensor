@@ -1,12 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import os
 from typing import Generator
 
 import boto3
 import pytest
 from moto import mock_aws
 
+from instana.options import StandardOptions
 from instana.singletons import agent, tracer
 from tests.helpers import get_first_span_by_filter
 
@@ -66,6 +68,55 @@ class TestDynamoDB:
         assert dynamodb_span.data["dynamodb"]["op"] == "CreateTable"
         assert dynamodb_span.data["dynamodb"]["region"] == "us-west-2"
         assert dynamodb_span.data["dynamodb"]["table"] == "dynamodb-table"
+
+    def test_ignore_dynamodb(self) -> None:
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb"
+        agent.options = StandardOptions()
+
+        with tracer.start_as_current_span("test"):
+            self.dynamodb.create_table(
+                TableName="dynamodb-table",
+                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+                ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+            )
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        filter = lambda span: span.n == "dynamodb"  # noqa: E731
+        dynamodb_span = get_first_span_by_filter(spans, filter)
+        assert dynamodb_span
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
+
+        assert dynamodb_span not in filtered_spans
+
+    def test_ignore_create_table(self) -> None:
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb.createtable"
+        agent.options = StandardOptions()
+
+        with tracer.start_as_current_span("test"):
+            self.dynamodb.create_table(
+                TableName="dynamodb-table",
+                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+                ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+            )
+            self.dynamodb.list_tables()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 2
+
+        filter = lambda span: span.n == "dynamodb"  # noqa: E731
+        dynamodb_span = get_first_span_by_filter(filtered_spans, filter)
+
+        assert dynamodb_span.n == "dynamodb"
+        assert dynamodb_span.data["dynamodb"]["op"] == "ListTables"
 
     def test_dynamodb_create_table_as_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True

@@ -15,10 +15,10 @@ from typing import (
 from instana.log import logger
 from instana.singletons import agent, tracer
 from instana.span.span import get_current_span
-from instana.tracer import InstanaTracer
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
+    from instana.tracer import InstanaTracer
 
 
 def extract_custom_headers(
@@ -61,7 +61,7 @@ def extract_custom_headers(
         logger.debug("extract_custom_headers: ", exc_info=True)
 
 
-def get_active_tracer() -> Optional[InstanaTracer]:
+def get_active_tracer() -> Optional["InstanaTracer"]:
     """Get the currently active tracer if one exists."""
     try:
         current_span = get_current_span()
@@ -78,7 +78,11 @@ def get_active_tracer() -> Optional[InstanaTracer]:
 
 
 def get_tracer_tuple() -> (
-    Tuple[Optional[InstanaTracer], Optional["InstanaSpan"], Optional[str]]
+    Tuple[
+        Optional["InstanaTracer"],
+        Optional["InstanaSpan"],
+        Optional[str],
+    ]
 ):
     """Get a tuple of (tracer, span, span_name) for the current context."""
     active_tracer = get_active_tracer()
@@ -93,14 +97,3 @@ def get_tracer_tuple() -> (
 def tracing_is_off() -> bool:
     """Check if tracing is currently disabled."""
     return not (bool(get_active_tracer()) or agent.options.allow_exit_as_root)
-
-
-def is_service_or_endpoint_ignored(
-    service: str,
-    endpoint: str = "",
-) -> bool:
-    """Check if the given service and endpoint combination should be ignored."""
-    return (
-        service.lower() in agent.options.ignore_endpoints
-        or f"{service.lower()}.{endpoint.lower()}" in agent.options.ignore_endpoints
-    )

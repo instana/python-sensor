@@ -3,16 +3,14 @@
 try:
     import spyne
     import wrapt
-    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple, Iterable
-    from types import SimpleNamespace
+    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple, Iterable, Type, Optional
 
-    from opentelemetry.semconv.trace import SpanAttributes
+    from types import SimpleNamespace
 
     from instana.log import logger
     from instana.singletons import agent, tracer
     from instana.propagators.format import Format
     from instana.util.secrets import strip_secrets_from_query
-    from instana.util.traceutils import extract_custom_headers
 
     if TYPE_CHECKING:
         from instana.span.span import InstanaSpan
@@ -20,27 +18,26 @@ try:
         from spyne.server.wsgi import WsgiApplication
 
     def set_span_attributes(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
-        if "REQUEST_METHOD" in headers:
-            span.set_attribute(SpanAttributes.HTTP_METHOD, headers["REQUEST_METHOD"])
         if "PATH_INFO" in headers:
-            span.set_attribute(SpanAttributes.HTTP_URL, headers["PATH_INFO"])
+            span.set_attribute("rpc.call", headers["PATH_INFO"])
         if "QUERY_STRING" in headers and len(headers["QUERY_STRING"]):
             scrubbed_params = strip_secrets_from_query(
                 headers["QUERY_STRING"],
                 agent.options.secrets_matcher,
                 agent.options.secrets_list,
             )
-            span.set_attribute("http.params", scrubbed_params)
-        if "HTTP_HOST" in headers:
-            span.set_attribute("http.host", headers["HTTP_HOST"])
+            span.set_attribute("rpc.params", scrubbed_params)
+        if "REMOTE_ADDR" in headers:
+            span.set_attribute("rpc.host", headers["REMOTE_ADDR"])
+        if "SERVER_PORT" in headers:
+            span.set_attribute("rpc.port", headers["SERVER_PORT"])
 
-    def set_response_status_code(span: "InstanaSpan", response_string: str) -> None:
+    def record_error(span: "InstanaSpan", response_string: str, error: Optional[Type[Exception]]) -> None:
         resp_code = int(response_string.split()[0])
 
         if 500 <= resp_code:
-            span.mark_as_errored()
+            span.record_exception(error)
 
-        span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(resp_code))
 
     @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication.handle_error")
     def handle_error_with_instana(
@@ -55,22 +52,19 @@ try:
         if ctx.udc and ctx.udc.span:
             return wrapped(*args, **kwargs)
 
-        headers = ctx.in_document
+        headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-        with tracer.start_as_current_span("spyne", span_context=span_context) as span:
-            extract_custom_headers(span, headers, format=True)
-
+        with tracer.start_as_current_span("rpc-server", span_context=span_context) as span:
             set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
 
-            extract_custom_headers(span, response_headers, format=False)
             tracer.inject(span.context, Format.HTTP_HEADERS, response_headers)
 
             response = wrapped(*args, **kwargs)
 
-            set_response_status_code(span, ctx.transport.resp_code)
+            record_error(span, ctx.transport.resp_code, ctx.in_error or ctx.out_error)
             return response
 
     @wrapt.patch_function_wrapper(
@@ -87,7 +81,7 @@ try:
 
         if ctx.udc and ctx.udc.span and response_string:
             span = ctx.udc.span
-            set_response_status_code(span, response_string)
+            record_error(span, response_string, ctx.in_error or ctx.out_error)
             if span.is_recording():
                 span.end()
 
@@ -102,22 +96,19 @@ try:
         kwargs: Dict[str, Any],
     ) -> None:
         ctx = args[0]
-        headers = ctx.in_document
+        headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
         with tracer.start_as_current_span(
-            "spyne",
+            "rpc-server",
             span_context=span_context,
             end_on_exit=False,
         ) as span:
-            extract_custom_headers(span, headers, format=True)
-
             set_span_attributes(span, headers)
 
             response = wrapped(*args, **kwargs)
             response_headers = ctx.transport.resp_headers
 
-            extract_custom_headers(span, response_headers, format=False)
             tracer.inject(span.context, Format.HTTP_HEADERS, response_headers)
 
             ## Store the span in the user defined context object offered by Spyne

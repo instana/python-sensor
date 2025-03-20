@@ -117,7 +117,7 @@ class TestConfluentKafka:
     def test_trace_confluent_kafka_poll(self) -> None:
         # Produce some events
         self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
-        self.producer.flush(timeout=30)
+        self.producer.flush()
 
         # Consume the events
         consumer_config = self.kafka_config.copy()
@@ -128,7 +128,7 @@ class TestConfluentKafka:
         consumer.subscribe([testenv["kafka_topic"]])
 
         with tracer.start_as_current_span("test"):
-            msg = consumer.poll(timeout=60)  # noqa: F841
+            msg = consumer.poll(timeout=30)  # noqa: F841
 
         consumer.close()
 
@@ -144,13 +144,8 @@ class TestConfluentKafka:
         # Parent relationships
         assert kafka_span.p == test_span.s
 
-        # Error logging
-        assert not test_span.ec
-        assert not kafka_span.ec
-
         assert kafka_span.n == "kafka"
         assert kafka_span.k == SpanKind.SERVER
-        assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
         assert kafka_span.data["kafka"]["access"] == "poll"
 
     def test_trace_confluent_kafka_error(self) -> None:

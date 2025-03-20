@@ -85,6 +85,45 @@ try:
             else:
                 return res
 
+    @wrapt.patch_function_wrapper("kafka", "KafkaConsumer.poll")
+    def trace_kafka_poll(
+        wrapped: Callable[..., "kafka.KafkaConsumer.poll"],
+        instance: "kafka.KafkaConsumer",
+        args: Tuple[int, str, Tuple[Any, ...]],
+        kwargs: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        if tracing_is_off():
+            return wrapped(*args, **kwargs)
+
+        tracer, parent_span, _ = get_tracer_tuple()
+
+        # The KafkaConsumer.consume() from the kafka-python-ng call the
+        # KafkaConsumer.poll() internally, so we do not consider it here.
+        if parent_span and parent_span.name == "kafka-consumer":
+            return wrapped(*args, **kwargs)
+
+        parent_context = (
+            parent_span.get_span_context()
+            if parent_span
+            else tracer.extract(
+                Format.KAFKA_HEADERS, {}, disable_w3c_trace_context=True
+            )
+        )
+
+        with tracer.start_as_current_span(
+            "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
+        ) as span:
+            topic = list(instance.subscription())[0]
+            span.set_attribute("kafka.service", topic)
+            span.set_attribute("kafka.access", "poll")
+
+            try:
+                res = wrapped(*args, **kwargs)
+            except Exception as exc:
+                span.record_exception(exc)
+            else:
+                return res
+
     logger.debug("Instrumenting Kafka (kafka-python)")
 except ImportError:
     pass

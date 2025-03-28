@@ -7,12 +7,7 @@ from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.span.base_span import BaseSpan
-from instana.span.kind import (
-    ENTRY_SPANS,
-    EXIT_SPANS,
-    HTTP_SPANS,
-    LOCAL_SPANS,
-)
+from instana.span.kind import ENTRY_SPANS, EXIT_SPANS, HTTP_SPANS, LOCAL_SPANS
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
@@ -57,6 +52,10 @@ class RegisteredSpan(BaseSpan):
         # unify the span name for aioamqp-producer and aioamqp-consumer
         if "amqp" in span.name:
             self.n = "amqp"
+
+        # unify the span name for httpx (and future exit HTTP spans)
+        if "httpx" in span.name:
+            self.n = "http"
 
         # Logic to store custom attributes for registered spans (not used yet)
         if len(span.attributes) > 0:

@@ -79,7 +79,7 @@ def strip_secrets_from_query(qp, matcher, kwlist):
             return qp
 
         # If there are no key=values, then just return
-        if not '=' in qp:
+        if '=' not in qp:
             return qp
 
         if '?' in qp:

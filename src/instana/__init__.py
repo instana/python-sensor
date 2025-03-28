@@ -175,6 +175,7 @@ def boot_agent() -> None:
             flask,  # noqa: F401
             # gevent_inst,  # noqa: F401
             grpcio,  # noqa: F401
+            httpx,  # noqa: F401
             logging,  # noqa: F401
             mysqlclient,  # noqa: F401
             pep0249,  # noqa: F401

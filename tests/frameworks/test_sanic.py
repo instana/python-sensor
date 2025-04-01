@@ -61,6 +61,8 @@ class TestSanic(_TraceContextMixin):
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
+        for span in spans:
+            print(span)
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"

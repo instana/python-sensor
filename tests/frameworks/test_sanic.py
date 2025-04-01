@@ -51,11 +51,16 @@ class TestSanic(_TraceContextMixin):
             # As SanicTestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the sanic server.
             span_context = span.get_span_context()
+            print("*****************************************************************")
+            print(span_context.trace_id)
+            print(hex_id(span_context.trace_id))
             headers = {
                 "X-INSTANA-T": hex_id(span_context.trace_id),
                 "X-INSTANA-S": hex_id(span_context.span_id),
             }
             request, response = self.client.get("/", headers=headers)
+
+        print(response.headers)
 
         assert response.status_code == 200
 

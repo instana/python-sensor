@@ -386,11 +386,17 @@ class TestSanic(_TraceContextMixin):
                 "X-INSTANA-SYNTHETIC": "1",
             }
             request, response = self.client.get("/", headers=headers)
+            print("Check for 3 instana headers in response")
+            print(response.headers)
 
         assert response.status_code == 200
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
+        for span in spans:
+            print(span.n)
+            print(span)
+            print()
 
         span_filter = (
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"

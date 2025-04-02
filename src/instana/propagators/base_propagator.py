@@ -89,6 +89,8 @@ class BasePropagator(object):
                 dc = carrier
             elif hasattr(carrier, "__dict__"):
                 dc = carrier.__dict__
+                if not dc:
+                    dc = dict(carrier)
             else:
                 dc = dict(carrier)
         except Exception:

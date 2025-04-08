@@ -12,6 +12,8 @@ try:
     from instana.singletons import agent
 
     import uwsgi
+    logger.debug("HEREEE")
+    logger.debug(dir(uwsgi))
 
     logger.debug(
         f"uWSGI options: {uwsgi.opt}",

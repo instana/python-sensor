@@ -309,7 +309,7 @@ jobs:
 
   python314:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.14.0a6
+      - image: public.ecr.aws/docker/library/python:3.14.0a7
       - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root

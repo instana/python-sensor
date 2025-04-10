@@ -58,18 +58,18 @@ class TestBaseOptions:
         assert not test_base_options.secrets
 
     def test_base_options_with_config(self) -> None:
-        config["tracing"]["ignore_endpoints"] = "service1;service3:endpoint1,endpoint2"
+        config["tracing"]["ignore_endpoints"] = "service1;service3:method1,method2"
         test_base_options = BaseOptions()
         assert test_base_options.ignore_endpoints == [
-            "service1",
-            "service3.endpoint1",
-            "service3.endpoint2",
+            "service1.*",
+            "service3.method1",
+            "service3.method2",
         ]
 
     def test_base_options_with_env_vars(self) -> None:
         os.environ["INSTANA_DEBUG"] = "true"
         os.environ["INSTANA_EXTRA_HTTP_HEADERS"] = "SOMETHING;HERE"
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "service1;service2:endpoint1,endpoint2"
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "service1;service2:method1,method2"
         os.environ["INSTANA_SECRETS"] = "secret1:username,password"
 
         test_base_options = BaseOptions()
@@ -79,9 +79,9 @@ class TestBaseOptions:
         assert test_base_options.extra_http_headers == ["something", "here"]
 
         assert test_base_options.ignore_endpoints == [
-            "service1",
-            "service2.endpoint1",
-            "service2.endpoint2",
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
         ]
 
         assert test_base_options.secrets_matcher == "secret1"
@@ -120,13 +120,13 @@ class TestStandardOptions:
     def test_set_tracing(self) -> None:
         test_standard_options = StandardOptions()
 
-        test_tracing = {"ignore-endpoints": "service1;service2:endpoint1,endpoint2"}
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
         test_standard_options.set_tracing(test_tracing)
 
         assert test_standard_options.ignore_endpoints == [
-            "service1",
-            "service2.endpoint1",
-            "service2.endpoint2",
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
         ]
         assert not test_standard_options.extra_http_headers
 
@@ -134,20 +134,20 @@ class TestStandardOptions:
         # Environment variables > In-code Configuration > Agent Configuration
         # First test when all attributes given
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = (
-            "env_service1;env_service2:endpoint1,endpoint2"
+            "env_service1;env_service2:method1,method2"
         )
         config["tracing"]["ignore_endpoints"] = (
-            "config_service1;config_service2:endpoint1,endpoint2"
+            "config_service1;config_service2:method1,method2"
         )
-        test_tracing = {"ignore-endpoints": "service1;service2:endpoint1,endpoint2"}
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
 
         test_standard_options = StandardOptions()
         test_standard_options.set_tracing(test_tracing)
 
         assert test_standard_options.ignore_endpoints == [
-            "env_service1",
-            "env_service2.endpoint1",
-            "env_service2.endpoint2",
+            "env_service1.*",
+            "env_service2.method1",
+            "env_service2.method2",
         ]
 
         # Second test when In-code configuration and Agent configuration given
@@ -158,16 +158,16 @@ class TestStandardOptions:
         test_standard_options.set_tracing(test_tracing)
 
         assert test_standard_options.ignore_endpoints == [
-            "config_service1",
-            "config_service2.endpoint1",
-            "config_service2.endpoint2",
+            "config_service1.*",
+            "config_service2.method1",
+            "config_service2.method2",
         ]
 
     def test_set_from(self) -> None:
         test_standard_options = StandardOptions()
         test_res_data = {
             "secrets": {"matcher": "sample-match", "list": ["sample", "list"]},
-            "tracing": {"ignore-endpoints": "service1;service2:endpoint1,endpoint2"},
+            "tracing": {"ignore-endpoints": "service1;service2:method1,method2"},
         }
         test_standard_options.set_from(test_res_data)
 
@@ -176,9 +176,9 @@ class TestStandardOptions:
         )
         assert test_standard_options.secrets_list == test_res_data["secrets"]["list"]
         assert test_standard_options.ignore_endpoints == [
-            "service1",
-            "service2.endpoint1",
-            "service2.endpoint2",
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
         ]
 
         test_res_data = {

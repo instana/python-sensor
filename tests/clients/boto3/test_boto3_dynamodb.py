@@ -94,7 +94,7 @@ class TestDynamoDB:
         assert dynamodb_span not in filtered_spans
 
     def test_ignore_create_table(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb.createtable"
+        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb:createtable"
         agent.options = StandardOptions()
 
         with tracer.start_as_current_span("test"):

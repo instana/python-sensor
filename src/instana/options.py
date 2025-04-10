@@ -19,7 +19,10 @@ import logging
 from typing import Any, Dict
 
 from instana.log import logger
-from instana.util.config import parse_ignored_endpoints
+from instana.util.config import (
+    parse_ignored_endpoints,
+    parse_ignored_endpoints_from_yaml,
+)
 from instana.util.runtime import determine_service_name
 from instana.configurator import config
 
@@ -44,18 +47,23 @@ class BaseOptions(object):
                 str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(";")
             )
 
-        if "INSTANA_IGNORE_ENDPOINTS" in os.environ:
-            self.ignore_endpoints = parse_ignored_endpoints(
-                os.environ["INSTANA_IGNORE_ENDPOINTS"]
+        if "INSTANA_IGNORE_ENDPOINTS_PATH" in os.environ:
+            self.ignore_endpoints = parse_ignored_endpoints_from_yaml(
+                os.environ["INSTANA_IGNORE_ENDPOINTS_PATH"]
             )
         else:
-            if (
-                isinstance(config.get("tracing"), dict)
-                and "ignore_endpoints" in config["tracing"]
-            ):
+            if "INSTANA_IGNORE_ENDPOINTS" in os.environ:
                 self.ignore_endpoints = parse_ignored_endpoints(
-                    config["tracing"]["ignore_endpoints"],
+                    os.environ["INSTANA_IGNORE_ENDPOINTS"]
                 )
+            else:
+                if (
+                    isinstance(config.get("tracing"), dict)
+                    and "ignore_endpoints" in config["tracing"]
+                ):
+                    self.ignore_endpoints = parse_ignored_endpoints(
+                        config["tracing"]["ignore_endpoints"],
+                    )
 
         if os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None) == "1":
             self.allow_exit_as_root = True

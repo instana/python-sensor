@@ -38,8 +38,8 @@ spec:
               - "sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3"
               # public.ecr.aws/docker/library/python:3.13.2-bookworm
               - "sha256:90a15cf04e17111d514958f3b17186f2e239546f75530b1e301059f0b70de41f"
-              # public.ecr.aws/docker/library/python:3.14.0a6-bookworm
-              - "sha256:cc1702492859ae14ce2c417060215a94153a51f42954eb7fd5f275b5b3039926"
+              # public.ecr.aws/docker/library/python:3.14.0a7-bookworm
+              - "sha256:4c1f7c905b091408b27eba4a7fa84e6e866da0e6dabb29a397a444946e10627f"
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:

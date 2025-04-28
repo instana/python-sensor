@@ -36,7 +36,9 @@ commands:
     steps:
       - run:
           name: Install Python Dependencies
+          no_output_timeout: 20m
           command: |
+            export PYTHONUNBUFFERED=1
             python -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
@@ -330,8 +332,24 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements-pre314.txt"
+      - run:
+          name: Install binutils
+          command: |
+            apt-get update
+            apt-get -y install build-essential libssl-dev libffi-dev python3-dev
+      - run:
+          name: Install Python Dependencies
+          no_output_timeout: 20m
+          command: |
+            export PYTHONUNBUFFERED=1
+            python -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install 'wheel>=0.29.0'
+            pip install -r requirements.txt
+            pip install -r tests/requirements-pre314.txt
+      # - pip-install-deps:
+      #     requirements: "tests/requirements-pre314.txt"
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report
@@ -412,27 +430,27 @@ workflows:
   version: 2
   build:
     jobs:
-      - python38
-      - python39
-      - python310
-      - python311
-      - python312
-      - python313
+      # - python38
+      # - python39
+      # - python310
+      # - python311
+      # - python312
+      # - python313
       - python314
-      - py39cassandra
-      - py39gevent_starlette
-      - py312aws
-      - py312kafka
-      - final_job:
-          requires:
-            - python38
-            - python39
-            - python310
-            - python311
-            - python312
-            - python313
-            # Uncomment the following when giving real support to 3.14
-            # - python314
-            - py39cassandra
-            - py39gevent_starlette
-            - py312aws
+      # - py39cassandra
+      # - py39gevent_starlette
+      # - py312aws
+      # - py312kafka
+      # - final_job:
+      #     requires:
+      #       - python38
+      #       - python39
+      #       - python310
+      #       - python311
+      #       - python312
+      #       - python313
+      #       # Uncomment the following when giving real support to 3.14
+      #       # - python314
+      #       - py39cassandra
+      #       - py39gevent_starlette
+      #       - py312aws

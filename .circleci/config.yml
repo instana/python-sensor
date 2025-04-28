@@ -272,7 +272,7 @@ jobs:
       - checkout
       - check-if-tests-needed
       - pip-install-deps:
-          requirements: "tests/requirements.txt"
+          requirements: "tests/requirements-aws.txt"
       - run-tests-with-coverage-report:
           tests: "tests_aws"
       - store-pytest-results

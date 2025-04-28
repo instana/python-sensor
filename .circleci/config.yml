@@ -278,6 +278,38 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  py312autowrapt:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.12
+        environment:
+          AUTOWRAPT_BOOTSTRAP: instana
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps:
+          requirements: "tests/requirements-minimal.txt"
+      - run-tests-with-coverage-report:
+          tests: "tests_autowrapt"
+      - store-pytest-results
+      - store-coverage-report
+
+  py313autowrapt:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.13
+        environment:
+          AUTOWRAPT_BOOTSTRAP: instana
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps:
+          requirements: "tests/requirements-minimal.txt"
+      - run-tests-with-coverage-report:
+          tests: "tests_autowrapt"
+      - store-pytest-results
+      - store-coverage-report
+
   python313:
     docker:
       - image: public.ecr.aws/docker/library/python:3.13
@@ -423,6 +455,8 @@ workflows:
       - py39gevent_starlette
       - py312aws
       - py312kafka
+      - py312autowrapt
+      - py313autowrapt
       - final_job:
           requires:
             - python38
@@ -436,3 +470,5 @@ workflows:
             - py39cassandra
             - py39gevent_starlette
             - py312aws
+            - py312autowrapt
+            - py313autowrapt

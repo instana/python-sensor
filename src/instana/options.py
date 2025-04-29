@@ -139,6 +139,10 @@ class StandardOptions(BaseOptions):
         @param res_data: source identifiers provided as announce response
         @return: None
         """
+        if not res_data or not isinstance(res_data, dict):
+            logger.debug(f"options.set_from: Wrong data type - {type(res_data)}")
+            return 
+
         if "secrets" in res_data:
             self.set_secrets(res_data["secrets"])
 

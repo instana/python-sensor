@@ -188,6 +188,27 @@ class TestStandardOptions:
 
         assert test_standard_options.extra_http_headers == test_res_data["extraHeaders"]
 
+    def test_set_from_bool(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        caplog.set_level(logging.DEBUG, logger="instana")
+        caplog.clear()
+
+        test_standard_options = StandardOptions()
+        test_res_data = True
+        test_standard_options.set_from(test_res_data)
+
+        assert len(caplog.messages) == 1
+        assert len(caplog.records) == 1
+        assert (
+            "options.set_from: Wrong data type - <class 'bool'>" in caplog.messages[0]
+        )
+
+        assert test_standard_options.secrets_list == ["key", "pass", "secret"]
+        assert test_standard_options.ignore_endpoints == []
+        assert not test_standard_options.extra_http_headers
+
 
 class TestServerlessOptions:
     @pytest.fixture(autouse=True)

@@ -9,7 +9,7 @@ from kafka.errors import TopicAlreadyExistsError
 from opentelemetry.trace import SpanKind
 
 from instana.singletons import agent, tracer
-from tests.helpers import testenv
+from tests.helpers import get_first_span_by_filter, testenv
 
 
 class TestKafkaPython:
@@ -202,3 +202,170 @@ class TestKafkaPython:
         assert kafka_span.data["kafka"]["service"] == "inexistent_kafka_topic"
         assert kafka_span.data["kafka"]["access"] == "consume"
         assert kafka_span.data["kafka"]["error"] == "StopIteration()"
+
+    def test_kafka_consumer_root_exit(self) -> None:
+        agent.options.allow_exit_as_root = True
+
+        self.producer.send(testenv["kafka_topic"], b"raw_bytes")
+        self.producer.flush()
+
+        # Consume the events
+        consumer = KafkaConsumer(
+            testenv["kafka_topic"],
+            bootstrap_servers=testenv["kafka_bootstrap_servers"],
+            auto_offset_reset="earliest",  # consume earliest available messages
+            enable_auto_commit=False,  # do not auto-commit offsets
+            consumer_timeout_ms=1000,
+        )
+
+        for msg in consumer:
+            if msg is None:
+                break
+
+        consumer.close()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4
+
+        producer_span = spans[0]
+        consumer_span = spans[1]
+
+        assert producer_span.s
+        assert producer_span.n == "kafka"
+        assert producer_span.data["kafka"]["access"] == "send"
+        assert producer_span.data["kafka"]["service"] == "span-topic"
+
+        assert consumer_span.s
+        assert consumer_span.n == "kafka"
+        assert consumer_span.data["kafka"]["access"] == "consume"
+        assert consumer_span.data["kafka"]["service"] == "span-topic"
+
+        assert producer_span.t == consumer_span.t
+
+    def test_kafka_poll_root_exit(self) -> None:
+        agent.options.allow_exit_as_root = True
+
+        self.kafka_client.create_topics(
+            [
+                NewTopic(
+                    name=testenv["kafka_topic"] + "_1",
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+                NewTopic(
+                    name=testenv["kafka_topic"] + "_2",
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+                NewTopic(
+                    name=testenv["kafka_topic"] + "_3",
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+            ]
+        )
+
+        self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes1")
+        self.producer.send(testenv["kafka_topic"] + "_2", b"raw_bytes2")
+        self.producer.send(testenv["kafka_topic"] + "_3", b"raw_bytes3")
+        self.producer.flush()
+
+        # Consume the events
+        consumer = KafkaConsumer(
+            bootstrap_servers=testenv["kafka_bootstrap_servers"],
+            auto_offset_reset="earliest",  # consume earliest available messages
+            enable_auto_commit=False,  # do not auto-commit offsets
+            consumer_timeout_ms=1000,
+        )
+        topics = [
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+            testenv["kafka_topic"] + "_3",
+        ]
+        consumer.subscribe(topics)
+
+        messages = consumer.poll(timeout_ms=1000)  # noqa: F841
+        consumer.close()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 6
+
+        producer_span_1 = get_first_span_by_filter(
+            spans,
+            lambda span: span.n == "kafka"
+            and span.data["kafka"]["access"] == "send"
+            and span.data["kafka"]["service"] == "span-topic_1",
+        )
+        producer_span_2 = get_first_span_by_filter(
+            spans,
+            lambda span: span.n == "kafka"
+            and span.data["kafka"]["access"] == "send"
+            and span.data["kafka"]["service"] == "span-topic_2",
+        )
+        producer_span_3 = get_first_span_by_filter(
+            spans,
+            lambda span: span.n == "kafka"
+            and span.data["kafka"]["access"] == "send"
+            and span.data["kafka"]["service"] == "span-topic_3",
+        )
+
+        poll_span_1 = get_first_span_by_filter(
+            spans,
+            lambda span: span.n == "kafka"
+            and span.data["kafka"]["access"] == "poll"
+            and span.data["kafka"]["service"] == "span-topic_1",
+        )
+        poll_span_2 = get_first_span_by_filter(
+            spans,
+            lambda span: span.n == "kafka"
+            and span.data["kafka"]["access"] == "poll"
+            and span.data["kafka"]["service"] == "span-topic_2",
+        )
+        poll_span_3 = get_first_span_by_filter(
+            spans,
+            lambda span: span.n == "kafka"
+            and span.data["kafka"]["access"] == "poll"
+            and span.data["kafka"]["service"] == "span-topic_3",
+        )
+
+        assert producer_span_1.n == "kafka"
+        assert producer_span_1.data["kafka"]["access"] == "send"
+        assert producer_span_1.data["kafka"]["service"] == "span-topic_1"
+
+        assert producer_span_2.n == "kafka"
+        assert producer_span_2.data["kafka"]["access"] == "send"
+        assert producer_span_2.data["kafka"]["service"] == "span-topic_2"
+
+        assert producer_span_3.n == "kafka"
+        assert producer_span_3.data["kafka"]["access"] == "send"
+        assert producer_span_3.data["kafka"]["service"] == "span-topic_3"
+
+        assert poll_span_1.n == "kafka"
+        assert poll_span_1.data["kafka"]["access"] == "poll"
+        assert poll_span_1.data["kafka"]["service"] == "span-topic_1"
+
+        assert poll_span_2.n == "kafka"
+        assert poll_span_2.data["kafka"]["access"] == "poll"
+        assert poll_span_2.data["kafka"]["service"] == "span-topic_2"
+
+        assert poll_span_3.n == "kafka"
+        assert poll_span_3.data["kafka"]["access"] == "poll"
+        assert poll_span_3.data["kafka"]["service"] == "span-topic_3"
+
+        # same trace id, different span ids
+        assert producer_span_1.t == poll_span_1.t
+        assert producer_span_1.s != poll_span_1.s
+
+        assert producer_span_2.t == poll_span_2.t
+        assert producer_span_2.s != poll_span_2.s
+
+        assert producer_span_3.t == poll_span_3.t
+        assert producer_span_3.s != poll_span_3.s
+
+        self.kafka_client.delete_topics(
+            [
+                testenv["kafka_topic"] + "_1",
+                testenv["kafka_topic"] + "_2",
+                testenv["kafka_topic"] + "_3",
+            ]
+        )

@@ -246,7 +246,7 @@ class InstanaTracer(Tracer):
         self,
         span_context: SpanContext,
         format: Union[
-            Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP, Format.KAFKA_HEADERS
+            Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP, Format.KAFKA_HEADERS  # type: ignore
         ],
         carrier: "CarrierT",
         disable_w3c_trace_context: bool = False,
@@ -261,7 +261,7 @@ class InstanaTracer(Tracer):
     def extract(
         self,
         format: Union[
-            Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP, Format.KAFKA_HEADERS
+            Format.BINARY, Format.HTTP_HEADERS, Format.TEXT_MAP, Format.KAFKA_HEADERS  # type: ignore
         ],
         carrier: "CarrierT",
         disable_w3c_trace_context: bool = False,

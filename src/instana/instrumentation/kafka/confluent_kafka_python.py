@@ -66,7 +66,13 @@ try:
             span.set_attribute("kafka.access", "produce")
 
             # context propagation
-            headers = args[6] if len(args) > 6 else kwargs.get("headers", {})
+            #
+            # As stated in the official documentation at
+            # https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#pythonclient-producer,
+            # headers can be either a list of (key, value) pairs or a
+            # dictionary. To maintain compatibility with the headers for the
+            # Kafka Python library, we will use a list of tuples.
+            headers = args[6] if len(args) > 6 else kwargs.get("headers", [])
             tracer.inject(
                 span.context,
                 Format.KAFKA_HEADERS,
@@ -75,11 +81,38 @@ try:
             )
 
             try:
+                kwargs["headers"] = headers
                 res = wrapped(*args, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)
             else:
                 return res
+
+    def create_span(
+        span_type: str,
+        topic: Optional[str] = "",
+        headers: Optional[List[Tuple[str, bytes]]] = [],
+        exception: Optional[str] = None,
+    ) -> None:
+        tracer, parent_span, _ = get_tracer_tuple()
+        parent_context = (
+            parent_span.get_span_context()
+            if parent_span
+            else tracer.extract(
+                Format.KAFKA_HEADERS,
+                headers,
+                disable_w3c_trace_context=True,
+            )
+        )
+        with tracer.start_as_current_span(
+            "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
+        ) as span:
+            if topic:
+                span.set_attribute("kafka.service", topic)
+            span.set_attribute("kafka.access", span_type)
+
+            if exception:
+                span.record_exception(exception)
 
     def trace_kafka_consume(
         wrapped: Callable[..., InstanaConfluentKafkaConsumer.consume],
@@ -90,29 +123,21 @@ try:
         if tracing_is_off():
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
+        res = None
+        exception = None
 
-        parent_context = (
-            parent_span.get_span_context()
-            if parent_span
-            else tracer.extract(
-                Format.KAFKA_HEADERS, {}, disable_w3c_trace_context=True
-            )
-        )
-
-        with tracer.start_as_current_span(
-            "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
-        ) as span:
-            span.set_attribute("kafka.access", "consume")
-
-            try:
-                res = wrapped(*args, **kwargs)
-                if isinstance(res, list) and len(res) > 0:
-                    span.set_attribute("kafka.service", res[0].topic())
-            except Exception as exc:
-                span.record_exception(exc)
+        try:
+            res = wrapped(*args, **kwargs)
+        except Exception as exc:
+            exception = exc
+        finally:
+            if res:
+                for message in res:
+                    create_span("consume", message.topic(), message.headers())
             else:
-                return res
+                create_span("consume", exception=exception)
+
+        return res
 
     def trace_kafka_poll(
         wrapped: Callable[..., InstanaConfluentKafkaConsumer.poll],
@@ -123,29 +148,24 @@ try:
         if tracing_is_off():
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
+        res = None
+        exception = None
 
-        parent_context = (
-            parent_span.get_span_context()
-            if parent_span
-            else tracer.extract(
-                Format.KAFKA_HEADERS, {}, disable_w3c_trace_context=True
-            )
-        )
-
-        with tracer.start_as_current_span(
-            "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
-        ) as span:
-            span.set_attribute("kafka.access", "poll")
-
-            try:
-                res = wrapped(*args, **kwargs)
-                if res:
-                    span.set_attribute("kafka.service", res.topic())
-            except Exception as exc:
-                span.record_exception(exc)
+        try:
+            res = wrapped(*args, **kwargs)
+        except Exception as exc:
+            exception = exc
+        finally:
+            if res:
+                create_span("poll", res.topic(), res.headers())
             else:
-                return res
+                create_span(
+                    "poll",
+                    next(iter(instance.list_topics().topics)),
+                    exception=exception,
+                )
+
+        return res
 
     # Apply the monkey patch
     confluent_kafka.Producer = InstanaConfluentKafkaProducer

@@ -10,19 +10,22 @@ from typing import TYPE_CHECKING, Generator
 import pytest
 import requests
 import urllib3
-from instana.instrumentation.urllib3 import (
-    _collect_kvs as collect_kvs,
-    extract_custom_headers,
-    collect_response,
-)
-from instana.singletons import agent, tracer
 
 import tests.apps.flask_app  # noqa: F401
+from instana.instrumentation.urllib3 import (
+    _collect_kvs as collect_kvs,
+)
+from instana.instrumentation.urllib3 import (
+    collect_response,
+    extract_custom_headers,
+)
+from instana.singletons import agent, tracer
 from tests.helpers import testenv
 
 if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
     from pytest import LogCaptureFixture
+
+    from instana.span.span import InstanaSpan
 
 
 class TestUrllib3:
@@ -136,6 +139,7 @@ class TestUrllib3:
         assert isinstance(urllib3_span.stack, list)
         assert len(urllib3_span.stack) > 1
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     def test_get_request_https(self):
         request_url = "https://jsonplaceholder.typicode.com:443/todos/1"
         with tracer.start_as_current_span("test"):

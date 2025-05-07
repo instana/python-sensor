@@ -41,3 +41,4 @@ tornado>=6.4.1
 uvicorn>=0.13.4
 urllib3>=1.26.5
 httpx>=0.27.0
+protobuf<=6.30.2

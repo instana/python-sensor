@@ -11,7 +11,11 @@ from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
 from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off, extract_custom_headers
+from instana.util.traceutils import (
+    get_tracer_tuple,
+    tracing_is_off,
+    extract_custom_headers,
+)
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
@@ -91,7 +95,11 @@ try:
         tracer, parent_span, span_name = get_tracer_tuple()
 
         # If we're not tracing, just return; boto3 has it's own visibility
-        if tracing_is_off() or (span_name == "boto3"):
+        if (
+            tracing_is_off()
+            or (span_name == "boto3")
+            or (agent.options.allow_exit_as_root and "com.instana" in kwargs.get("url"))
+        ):
             return wrapped(*args, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None

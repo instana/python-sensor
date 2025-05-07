@@ -1,9 +1,5 @@
 version: 2.1
 
-# More about orbs: https://circleci.com/docs/2.0/using-orbs/
-# orbs:
-#   ruby: circleci/ruby@1.1.2
-
 commands:
   check-if-tests-needed:
     steps:
@@ -29,10 +25,6 @@ commands:
             }
 
   pip-install-deps:
-    parameters:
-      requirements:
-        default: "tests/requirements.txt"
-        type: string
     steps:
       - run:
           name: Install Python Dependencies
@@ -42,6 +34,17 @@ commands:
             pip install --upgrade pip
             pip install 'wheel==0.45.1'
             pip install -r requirements.txt
+
+  pip-install-tests-deps:
+    parameters:
+      requirements:
+        default: "tests/requirements.txt"
+        type: string
+    steps:
+      - run:
+          name: Install Python Tests Dependencies
+          command: |
+            . venv/bin/activate
             pip install -r <<parameters.requirements>>
 
   run-tests-with-coverage-report:
@@ -121,9 +124,12 @@ commands:
           path: htmlcov
 
 jobs:
-  python38:
+  python3x:
+    parameters:
+      py-version:
+        type: string
     docker:
-      - image: public.ecr.aws/docker/library/python:3.8
+      - image: public.ecr.aws/docker/library/python:<<parameters.py-version>>
       - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
@@ -145,203 +151,14 @@ jobs:
       - checkout
       - check-if-tests-needed
       - pip-install-deps
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
-  python39:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.9
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
-  python310:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.10
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements.txt"
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
-  python311:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.11
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements.txt"
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
-  python312:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.12
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements.txt"
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
-  py312aws:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.12
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements-aws.txt"
-      - run-tests-with-coverage-report:
-          tests: "tests_aws"
-      - store-pytest-results
-      - store-coverage-report
-
-  py312autowrapt:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.12
-        environment:
-          AUTOWRAPT_BOOTSTRAP: instana
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements-minimal.txt"
-      - run-tests-with-coverage-report:
-          tests: "tests_autowrapt"
-      - store-pytest-results
-      - store-coverage-report
-
-  py313autowrapt:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.13
-        environment:
-          AUTOWRAPT_BOOTSTRAP: instana
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements-minimal.txt"
-      - run-tests-with-coverage-report:
-          tests: "tests_autowrapt"
-      - store-pytest-results
-      - store-coverage-report
-
-  python313:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.13
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements.txt"
+      - pip-install-tests-deps
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report
 
   python314:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.14.0a7
+      - image: ghcr.io/pvital/pvital-py3.14.0:latest
       - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root
@@ -362,8 +179,11 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps:
-          requirements: "tests/requirements-pre314.txt"
+      - run: |
+          cp -a /root/base/venv ./venv
+          . venv/bin/activate
+          pip install 'wheel==0.45.1'
+          pip install -r requirements.txt
       - run-tests-with-coverage-report
       - store-pytest-results
       - store-coverage-report
@@ -379,25 +199,14 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps:
+      - pip-install-deps
+      - pip-install-tests-deps:
           requirements: "tests/requirements-cassandra.txt"
       - run-tests-with-coverage-report:
           cassandra: "true"
           tests: "tests/clients/test_cassandra-driver.py"
       - store-pytest-results
       - store-coverage-report
-
-  final_job:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.9
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps:
-            requirements: "tests/requirements.txt"
-      - store-pytest-results
-      # - run_sonarqube
 
   py39gevent_starlette:
     docker:
@@ -406,13 +215,29 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps:
+      - pip-install-deps
+      - pip-install-tests-deps:
           requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:
           # TODO: uncomment once gevent instrumentation is done
           # gevent: "true"
           # tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
           tests: "tests/frameworks/test_starlette.py"
+      - store-pytest-results
+      - store-coverage-report
+
+  py312aws:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.12
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps
+      - pip-install-tests-deps:
+          requirements: "tests/requirements-aws.txt"
+      - run-tests-with-coverage-report:
+          tests: "tests_aws"
       - store-pytest-results
       - store-coverage-report
 
@@ -432,7 +257,8 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps:
+      - pip-install-deps
+      - pip-install-tests-deps:
           requirements: "tests/requirements-kafka.txt"
       - run-tests-with-coverage-report:
           kafka: "true"
@@ -440,35 +266,61 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  autowrapt:
+    parameters:
+      py-version:
+        type: string
+    docker:
+      - image: public.ecr.aws/docker/library/python:<<parameters.py-version>>
+        environment:
+          AUTOWRAPT_BOOTSTRAP: instana
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps
+      - pip-install-tests-deps:
+          requirements: "tests/requirements-minimal.txt"
+      - run-tests-with-coverage-report:
+          tests: "tests_autowrapt"
+      - store-pytest-results
+      - store-coverage-report
+
+  final_job:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.9
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps
+      - pip-install-tests-deps
+      - store-pytest-results
+      # - run_sonarqube
+
 workflows:
-  version: 2
-  build:
+  tests:
     jobs:
-      - python38
-      - python39
-      - python310
-      - python311
-      - python312
-      - python313
+      - python3x:
+          matrix:
+            parameters:
+              py-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
       - python314
       - py39cassandra
       - py39gevent_starlette
       - py312aws
       - py312kafka
-      - py312autowrapt
-      - py313autowrapt
+      - autowrapt:
+          matrix:
+            parameters:
+              py-version: ["3.12", "3.13"]
       - final_job:
           requires:
-            - python38
-            - python39
-            - python310
-            - python311
-            - python312
-            - python313
+            - python3x
             # Uncomment the following when giving real support to 3.14
             # - python314
             - py39cassandra
             - py39gevent_starlette
             - py312aws
-            - py312autowrapt
-            - py313autowrapt
+            - py312kafka
+            - autowrapt

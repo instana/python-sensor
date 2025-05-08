@@ -27,11 +27,10 @@ try:
         ) as span:
             try:
                 span.set_attribute("aioamqp.exchange", argv[0])
+                return await wrapped(*argv, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)
                 logger.debug(f"aioamqp basic_publish_with_instana error: {exc}")
-            finally:
-                return await wrapped(*argv, **kwargs)
 
     @wrapt.patch_function_wrapper("aioamqp.channel", "Channel.basic_consume")
     async def basic_consume_with_instana(
@@ -63,11 +62,10 @@ try:
                     span.set_attribute("aioamqp.message", args[1])
                     span.set_attribute("aioamqp.exchange_name", args[2].exchange_name)
                     span.set_attribute("aioamqp.routing_key", args[2].routing_key)
+                    return await wrapped_callback(*args, **kwargs)
                 except Exception as exc:
                     span.record_exception(exc)
                     logger.debug(f"aioamqp basic_consume_with_instana error: {exc}")
-                finally:
-                    return await wrapped_callback(*args, **kwargs)
 
         wrapped_callback = callback_wrapper(callback)
         argv = (wrapped_callback,) + argv[1:]

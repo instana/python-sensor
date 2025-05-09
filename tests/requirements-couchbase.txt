@@ -1,3 +1,2 @@
+-r requirements-minimal.txt
 couchbase<=2.5.12
-coverage>=5.5
-pytest>=4.6

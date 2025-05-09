@@ -1,15 +1,22 @@
-from typing import Optional
+from typing import List, Optional
 import pytest
 
-from instana.util.span_utils import get_operation_specifier
+from instana.util.span_utils import get_operation_specifiers
 
 
 @pytest.mark.parametrize(
     "span_name, expected_result",
-    [("something", ""), ("redis", "command"), ("dynamodb", "op")],
+    [
+        ("something", ["", ""]),
+        ("redis", ["command", ""]),
+        ("dynamodb", ["op", ""]),
+        ("kafka", ["access", "service"]),
+    ],
 )
-def test_get_operation_specifier(
-    span_name: str, expected_result: Optional[str]
+def test_get_operation_specifiers(
+    span_name: str,
+    expected_result: Optional[List[str]],
 ) -> None:
-    response_redis = get_operation_specifier(span_name)
-    assert response_redis == expected_result
+    operation_specifier, service_specifier = get_operation_specifiers(span_name)
+    assert operation_specifier == expected_result[0]
+    assert service_specifier == expected_result[1]

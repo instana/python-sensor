@@ -1,0 +1,19 @@
+# (c) Copyright IBM Corp. 2025
+
+# service-level configuration, aligning with in-code settings
+tracing:
+  ignore-endpoints:
+    redis:
+      - get
+      - type
+    dynamodb:
+      - query
+    kafka: 
+      - methods: ["consume", "send"]
+        endpoints: ["span-topic", "topic1", "topic2"]
+      - methods: ["consume"]
+        endpoints: ["topic3"]
+      - methods: ["*"] # Applied to all methods
+        endpoints: ["span-topic", "topic4"]
+      # - methods: ["consume", "send"]
+      #   endpoints: ["*"] # Applied to all topics

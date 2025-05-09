@@ -1,7 +1,10 @@
+# (c) Copyright IBM Corp. 2025
+
 import logging
 import os
 from typing import Generator
 
+from mock import patch
 import pytest
 
 from instana.configurator import config
@@ -38,6 +41,7 @@ def clean_env_vars():
 class TestBaseOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.base_options = None
         yield
         clean_env_vars()
         if "tracing" in config.keys():
@@ -46,147 +50,173 @@ class TestBaseOptions:
     def test_base_options(self) -> None:
         if "INSTANA_DEBUG" in os.environ:
             del os.environ["INSTANA_DEBUG"]
-        test_base_options = BaseOptions()
+        self.base_options = BaseOptions()
 
-        assert not test_base_options.debug
-        assert test_base_options.log_level == logging.WARN
-        assert not test_base_options.extra_http_headers
-        assert not test_base_options.allow_exit_as_root
-        assert not test_base_options.ignore_endpoints
-        assert test_base_options.secrets_matcher == "contains-ignore-case"
-        assert test_base_options.secrets_list == ["key", "pass", "secret"]
-        assert not test_base_options.secrets
+        assert not self.base_options.debug
+        assert self.base_options.log_level == logging.WARN
+        assert not self.base_options.extra_http_headers
+        assert not self.base_options.allow_exit_as_root
+        assert not self.base_options.ignore_endpoints
+        assert self.base_options.secrets_matcher == "contains-ignore-case"
+        assert self.base_options.secrets_list == ["key", "pass", "secret"]
+        assert not self.base_options.secrets
 
     def test_base_options_with_config(self) -> None:
-        config["tracing"]["ignore_endpoints"] = "service1;service3:endpoint1,endpoint2"
-        test_base_options = BaseOptions()
-        assert test_base_options.ignore_endpoints == [
-            "service1",
-            "service3.endpoint1",
-            "service3.endpoint2",
+        config["tracing"]["ignore_endpoints"] = "service1;service3:method1,method2"
+        self.base_options = BaseOptions()
+        assert self.base_options.ignore_endpoints == [
+            "service1.*",
+            "service3.method1",
+            "service3.method2",
         ]
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_DEBUG": "true",
+            "INSTANA_EXTRA_HTTP_HEADERS": "SOMETHING;HERE",
+            "INSTANA_IGNORE_ENDPOINTS": "service1;service2:method1,method2",
+            "INSTANA_SECRETS": "secret1:username,password",
+        },
+    )
     def test_base_options_with_env_vars(self) -> None:
-        os.environ["INSTANA_DEBUG"] = "true"
-        os.environ["INSTANA_EXTRA_HTTP_HEADERS"] = "SOMETHING;HERE"
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "service1;service2:endpoint1,endpoint2"
-        os.environ["INSTANA_SECRETS"] = "secret1:username,password"
+        self.base_options = BaseOptions()
+        assert self.base_options.log_level == logging.DEBUG
+        assert self.base_options.debug
 
-        test_base_options = BaseOptions()
-        assert test_base_options.log_level == logging.DEBUG
-        assert test_base_options.debug
+        assert self.base_options.extra_http_headers == ["something", "here"]
 
-        assert test_base_options.extra_http_headers == ["something", "here"]
-
-        assert test_base_options.ignore_endpoints == [
-            "service1",
-            "service2.endpoint1",
-            "service2.endpoint2",
+        assert self.base_options.ignore_endpoints == [
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
         ]
 
-        assert test_base_options.secrets_matcher == "secret1"
-        assert test_base_options.secrets_list == ["username", "password"]
+        assert self.base_options.secrets_matcher == "secret1"
+        assert self.base_options.secrets_list == ["username", "password"]
+
+    @patch.dict(
+        os.environ,
+        {"INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml"},
+    )
+    def test_base_options_with_endpoint_file(self) -> None:
+        self.base_options = BaseOptions()
+        assert self.base_options.ignore_endpoints == [
+            "redis.get",
+            "redis.type",
+            "dynamodb.query",
+            "kafka.consume.span-topic",
+            "kafka.consume.topic1",
+            "kafka.consume.topic2",
+            "kafka.send.span-topic",
+            "kafka.send.topic1",
+            "kafka.send.topic2",
+            "kafka.consume.topic3",
+            "kafka.*.span-topic",
+            "kafka.*.topic4",
+        ]
+        del self.base_options
 
 
 class TestStandardOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.standart_options = None
         yield
         clean_env_vars()
         if "tracing" in config.keys():
             del config["tracing"]
 
     def test_standard_options(self) -> None:
-        test_standard_options = StandardOptions()
+        self.standart_options = StandardOptions()
 
-        assert test_standard_options.AGENT_DEFAULT_HOST == "localhost"
-        assert test_standard_options.AGENT_DEFAULT_PORT == 42699
+        assert self.standart_options.AGENT_DEFAULT_HOST == "localhost"
+        assert self.standart_options.AGENT_DEFAULT_PORT == 42699
 
     def test_set_secrets(self) -> None:
-        test_standard_options = StandardOptions()
+        self.standart_options = StandardOptions()
 
         test_secrets = {"matcher": "sample-match", "list": ["sample", "list"]}
-        test_standard_options.set_secrets(test_secrets)
-        assert test_standard_options.secrets_matcher == "sample-match"
-        assert test_standard_options.secrets_list == ["sample", "list"]
+        self.standart_options.set_secrets(test_secrets)
+        assert self.standart_options.secrets_matcher == "sample-match"
+        assert self.standart_options.secrets_list == ["sample", "list"]
 
     def test_set_extra_headers(self) -> None:
-        test_standard_options = StandardOptions()
+        self.standart_options = StandardOptions()
         test_headers = {"header1": "sample-match", "header2": ["sample", "list"]}
 
-        test_standard_options.set_extra_headers(test_headers)
-        assert test_standard_options.extra_http_headers == test_headers
+        self.standart_options.set_extra_headers(test_headers)
+        assert self.standart_options.extra_http_headers == test_headers
 
     def test_set_tracing(self) -> None:
-        test_standard_options = StandardOptions()
+        self.standart_options = StandardOptions()
 
-        test_tracing = {"ignore-endpoints": "service1;service2:endpoint1,endpoint2"}
-        test_standard_options.set_tracing(test_tracing)
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+        self.standart_options.set_tracing(test_tracing)
 
-        assert test_standard_options.ignore_endpoints == [
-            "service1",
-            "service2.endpoint1",
-            "service2.endpoint2",
+        assert self.standart_options.ignore_endpoints == [
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
         ]
-        assert not test_standard_options.extra_http_headers
+        assert not self.standart_options.extra_http_headers
 
+    @patch.dict(
+        os.environ,
+        {"INSTANA_IGNORE_ENDPOINTS": "env_service1;env_service2:method1,method2"},
+    )
     def test_set_tracing_priority(self) -> None:
-        # Environment variables > In-code Configuration > Agent Configuration
-        # First test when all attributes given
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = (
-            "env_service1;env_service2:endpoint1,endpoint2"
-        )
         config["tracing"]["ignore_endpoints"] = (
-            "config_service1;config_service2:endpoint1,endpoint2"
+            "config_service1;config_service2:method1,method2"
         )
-        test_tracing = {"ignore-endpoints": "service1;service2:endpoint1,endpoint2"}
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
 
-        test_standard_options = StandardOptions()
-        test_standard_options.set_tracing(test_tracing)
+        self.standart_options = StandardOptions()
+        self.standart_options.set_tracing(test_tracing)
 
-        assert test_standard_options.ignore_endpoints == [
-            "env_service1",
-            "env_service2.endpoint1",
-            "env_service2.endpoint2",
+        assert self.standart_options.ignore_endpoints == [
+            "env_service1.*",
+            "env_service2.method1",
+            "env_service2.method2",
         ]
 
         # Second test when In-code configuration and Agent configuration given
 
         del os.environ["INSTANA_IGNORE_ENDPOINTS"]
 
-        test_standard_options = StandardOptions()
-        test_standard_options.set_tracing(test_tracing)
+        self.standart_options = StandardOptions()
+        self.standart_options.set_tracing(test_tracing)
 
-        assert test_standard_options.ignore_endpoints == [
-            "config_service1",
-            "config_service2.endpoint1",
-            "config_service2.endpoint2",
+        assert self.standart_options.ignore_endpoints == [
+            "config_service1.*",
+            "config_service2.method1",
+            "config_service2.method2",
         ]
 
     def test_set_from(self) -> None:
-        test_standard_options = StandardOptions()
+        self.standart_options = StandardOptions()
         test_res_data = {
             "secrets": {"matcher": "sample-match", "list": ["sample", "list"]},
-            "tracing": {"ignore-endpoints": "service1;service2:endpoint1,endpoint2"},
+            "tracing": {"ignore-endpoints": "service1;service2:method1,method2"},
         }
-        test_standard_options.set_from(test_res_data)
+        self.standart_options.set_from(test_res_data)
 
         assert (
-            test_standard_options.secrets_matcher == test_res_data["secrets"]["matcher"]
+            self.standart_options.secrets_matcher == test_res_data["secrets"]["matcher"]
         )
-        assert test_standard_options.secrets_list == test_res_data["secrets"]["list"]
-        assert test_standard_options.ignore_endpoints == [
-            "service1",
-            "service2.endpoint1",
-            "service2.endpoint2",
+        assert self.standart_options.secrets_list == test_res_data["secrets"]["list"]
+        assert self.standart_options.ignore_endpoints == [
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
         ]
 
         test_res_data = {
             "extraHeaders": {"header1": "sample-match", "header2": ["sample", "list"]},
         }
-        test_standard_options.set_from(test_res_data)
+        self.standart_options.set_from(test_res_data)
 
-        assert test_standard_options.extra_http_headers == test_res_data["extraHeaders"]
+        assert self.standart_options.extra_http_headers == test_res_data["extraHeaders"]
 
     def test_set_from_bool(
         self,
@@ -195,9 +225,9 @@ class TestStandardOptions:
         caplog.set_level(logging.DEBUG, logger="instana")
         caplog.clear()
 
-        test_standard_options = StandardOptions()
+        self.standart_options = StandardOptions()
         test_res_data = True
-        test_standard_options.set_from(test_res_data)
+        self.standart_options.set_from(test_res_data)
 
         assert len(caplog.messages) == 1
         assert len(caplog.records) == 1
@@ -205,180 +235,201 @@ class TestStandardOptions:
             "options.set_from: Wrong data type - <class 'bool'>" in caplog.messages[0]
         )
 
-        assert test_standard_options.secrets_list == ["key", "pass", "secret"]
-        assert test_standard_options.ignore_endpoints == []
-        assert not test_standard_options.extra_http_headers
+        assert self.standart_options.secrets_list == ["key", "pass", "secret"]
+        assert self.standart_options.ignore_endpoints == []
+        assert not self.standart_options.extra_http_headers
 
 
 class TestServerlessOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.serverless_options = None
         yield
         clean_env_vars()
 
     def test_serverless_options(self) -> None:
-        test_serverless_options = ServerlessOptions()
+        self.serverless_options = ServerlessOptions()
 
-        assert not test_serverless_options.debug
-        assert test_serverless_options.log_level == logging.WARN
-        assert not test_serverless_options.extra_http_headers
-        assert not test_serverless_options.allow_exit_as_root
-        assert not test_serverless_options.ignore_endpoints
-        assert test_serverless_options.secrets_matcher == "contains-ignore-case"
-        assert test_serverless_options.secrets_list == ["key", "pass", "secret"]
-        assert not test_serverless_options.secrets
-        assert not test_serverless_options.agent_key
-        assert not test_serverless_options.endpoint_url
-        assert test_serverless_options.ssl_verify
-        assert not test_serverless_options.endpoint_proxy
-        assert test_serverless_options.timeout == 0.8
+        assert not self.serverless_options.debug
+        assert self.serverless_options.log_level == logging.WARN
+        assert not self.serverless_options.extra_http_headers
+        assert not self.serverless_options.allow_exit_as_root
+        assert not self.serverless_options.ignore_endpoints
+        assert self.serverless_options.secrets_matcher == "contains-ignore-case"
+        assert self.serverless_options.secrets_list == ["key", "pass", "secret"]
+        assert not self.serverless_options.secrets
+        assert not self.serverless_options.agent_key
+        assert not self.serverless_options.endpoint_url
+        assert self.serverless_options.ssl_verify
+        assert not self.serverless_options.endpoint_proxy
+        assert self.serverless_options.timeout == 0.8
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_AGENT_KEY": "key1",
+            "INSTANA_ENDPOINT_URL": "localhost",
+            "INSTANA_DISABLE_CA_CHECK": "true",
+            "INSTANA_ENDPOINT_PROXY": "proxy1",
+            "INSTANA_TIMEOUT": "3000",
+            "INSTANA_LOG_LEVEL": "info",
+        },
+    )
     def test_serverless_options_with_env_vars(self) -> None:
-        os.environ["INSTANA_AGENT_KEY"] = "key1"
-        os.environ["INSTANA_ENDPOINT_URL"] = "localhost"
-        os.environ["INSTANA_DISABLE_CA_CHECK"] = "true"
-        os.environ["INSTANA_ENDPOINT_PROXY"] = "proxy1"
-        os.environ["INSTANA_TIMEOUT"] = "3000"
-        os.environ["INSTANA_LOG_LEVEL"] = "info"
+        self.serverless_options = ServerlessOptions()
 
-        test_serverless_options = ServerlessOptions()
-
-        assert test_serverless_options.agent_key == "key1"
-        assert test_serverless_options.endpoint_url == "localhost"
-        assert not test_serverless_options.ssl_verify
-        assert test_serverless_options.endpoint_proxy == {"https": "proxy1"}
-        assert test_serverless_options.timeout == 3
-        assert test_serverless_options.log_level == logging.INFO
+        assert self.serverless_options.agent_key == "key1"
+        assert self.serverless_options.endpoint_url == "localhost"
+        assert not self.serverless_options.ssl_verify
+        assert self.serverless_options.endpoint_proxy == {"https": "proxy1"}
+        assert self.serverless_options.timeout == 3
+        assert self.serverless_options.log_level == logging.INFO
 
 
 class TestAWSLambdaOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.aws_lambda_options = None
         yield
         clean_env_vars()
 
     def test_aws_lambda_options(self) -> None:
-        test_aws_lambda_options = AWSLambdaOptions()
+        self.aws_lambda_options = AWSLambdaOptions()
 
-        assert not test_aws_lambda_options.agent_key
-        assert not test_aws_lambda_options.endpoint_url
-        assert test_aws_lambda_options.ssl_verify
-        assert not test_aws_lambda_options.endpoint_proxy
-        assert test_aws_lambda_options.timeout == 0.8
-        assert test_aws_lambda_options.log_level == logging.WARN
+        assert not self.aws_lambda_options.agent_key
+        assert not self.aws_lambda_options.endpoint_url
+        assert self.aws_lambda_options.ssl_verify
+        assert not self.aws_lambda_options.endpoint_proxy
+        assert self.aws_lambda_options.timeout == 0.8
+        assert self.aws_lambda_options.log_level == logging.WARN
 
 
 class TestAWSFargateOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.aws_fargate_options = None
         yield
         clean_env_vars()
 
     def test_aws_fargate_options(self) -> None:
-        test_aws_fargate_options = AWSFargateOptions()
+        self.aws_fargate_options = AWSFargateOptions()
 
-        assert not test_aws_fargate_options.agent_key
-        assert not test_aws_fargate_options.endpoint_url
-        assert test_aws_fargate_options.ssl_verify
-        assert not test_aws_fargate_options.endpoint_proxy
-        assert test_aws_fargate_options.timeout == 0.8
-        assert test_aws_fargate_options.log_level == logging.WARN
-        assert not test_aws_fargate_options.tags
-        assert not test_aws_fargate_options.zone
+        assert not self.aws_fargate_options.agent_key
+        assert not self.aws_fargate_options.endpoint_url
+        assert self.aws_fargate_options.ssl_verify
+        assert not self.aws_fargate_options.endpoint_proxy
+        assert self.aws_fargate_options.timeout == 0.8
+        assert self.aws_fargate_options.log_level == logging.WARN
+        assert not self.aws_fargate_options.tags
+        assert not self.aws_fargate_options.zone
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_AGENT_KEY": "key1",
+            "INSTANA_ENDPOINT_URL": "localhost",
+            "INSTANA_DISABLE_CA_CHECK": "true",
+            "INSTANA_ENDPOINT_PROXY": "proxy1",
+            "INSTANA_TIMEOUT": "3000",
+            "INSTANA_LOG_LEVEL": "info",
+            "INSTANA_TAGS": "key1=value1,key2=value2",
+            "INSTANA_ZONE": "zone1",
+        },
+    )
     def test_aws_fargate_options_with_env_vars(self) -> None:
-        os.environ["INSTANA_AGENT_KEY"] = "key1"
-        os.environ["INSTANA_ENDPOINT_URL"] = "localhost"
-        os.environ["INSTANA_DISABLE_CA_CHECK"] = "true"
-        os.environ["INSTANA_ENDPOINT_PROXY"] = "proxy1"
-        os.environ["INSTANA_TIMEOUT"] = "3000"
-        os.environ["INSTANA_LOG_LEVEL"] = "info"
-        os.environ["INSTANA_TAGS"] = "key1=value1,key2=value2"
-        os.environ["INSTANA_ZONE"] = "zone1"
+        self.aws_fargate_options = AWSFargateOptions()
 
-        test_aws_fargate_options = AWSFargateOptions()
+        assert self.aws_fargate_options.agent_key == "key1"
+        assert self.aws_fargate_options.endpoint_url == "localhost"
+        assert not self.aws_fargate_options.ssl_verify
+        assert self.aws_fargate_options.endpoint_proxy == {"https": "proxy1"}
+        assert self.aws_fargate_options.timeout == 3
+        assert self.aws_fargate_options.log_level == logging.INFO
 
-        assert test_aws_fargate_options.agent_key == "key1"
-        assert test_aws_fargate_options.endpoint_url == "localhost"
-        assert not test_aws_fargate_options.ssl_verify
-        assert test_aws_fargate_options.endpoint_proxy == {"https": "proxy1"}
-        assert test_aws_fargate_options.timeout == 3
-        assert test_aws_fargate_options.log_level == logging.INFO
-
-        assert test_aws_fargate_options.tags == {"key1": "value1", "key2": "value2"}
-        assert test_aws_fargate_options.zone == "zone1"
+        assert self.aws_fargate_options.tags == {"key1": "value1", "key2": "value2"}
+        assert self.aws_fargate_options.zone == "zone1"
 
 
 class TestEKSFargateOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.eks_fargate_options = None
         yield
         clean_env_vars()
 
     def test_eks_fargate_options(self) -> None:
-        test_eks_fargate_options = EKSFargateOptions()
+        self.eks_fargate_options = EKSFargateOptions()
 
-        assert not test_eks_fargate_options.agent_key
-        assert not test_eks_fargate_options.endpoint_url
-        assert test_eks_fargate_options.ssl_verify
-        assert not test_eks_fargate_options.endpoint_proxy
-        assert test_eks_fargate_options.timeout == 0.8
-        assert test_eks_fargate_options.log_level == logging.WARN
+        assert not self.eks_fargate_options.agent_key
+        assert not self.eks_fargate_options.endpoint_url
+        assert self.eks_fargate_options.ssl_verify
+        assert not self.eks_fargate_options.endpoint_proxy
+        assert self.eks_fargate_options.timeout == 0.8
+        assert self.eks_fargate_options.log_level == logging.WARN
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_AGENT_KEY": "key1",
+            "INSTANA_ENDPOINT_URL": "localhost",
+            "INSTANA_DISABLE_CA_CHECK": "true",
+            "INSTANA_ENDPOINT_PROXY": "proxy1",
+            "INSTANA_TIMEOUT": "3000",
+            "INSTANA_LOG_LEVEL": "info",
+        },
+    )
     def test_eks_fargate_options_with_env_vars(self) -> None:
-        os.environ["INSTANA_AGENT_KEY"] = "key1"
-        os.environ["INSTANA_ENDPOINT_URL"] = "localhost"
-        os.environ["INSTANA_DISABLE_CA_CHECK"] = "true"
-        os.environ["INSTANA_ENDPOINT_PROXY"] = "proxy1"
-        os.environ["INSTANA_TIMEOUT"] = "3000"
-        os.environ["INSTANA_LOG_LEVEL"] = "info"
+        self.eks_fargate_options = EKSFargateOptions()
 
-        test_eks_fargate_options = EKSFargateOptions()
-
-        assert test_eks_fargate_options.agent_key == "key1"
-        assert test_eks_fargate_options.endpoint_url == "localhost"
-        assert not test_eks_fargate_options.ssl_verify
-        assert test_eks_fargate_options.endpoint_proxy == {"https": "proxy1"}
-        assert test_eks_fargate_options.timeout == 3
-        assert test_eks_fargate_options.log_level == logging.INFO
+        assert self.eks_fargate_options.agent_key == "key1"
+        assert self.eks_fargate_options.endpoint_url == "localhost"
+        assert not self.eks_fargate_options.ssl_verify
+        assert self.eks_fargate_options.endpoint_proxy == {"https": "proxy1"}
+        assert self.eks_fargate_options.timeout == 3
+        assert self.eks_fargate_options.log_level == logging.INFO
 
 
 class TestGCROptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.gcr_options = None
         yield
         clean_env_vars()
 
     def test_gcr_options(self) -> None:
-        test_gcr_options = GCROptions()
+        self.gcr_options = GCROptions()
 
-        assert not test_gcr_options.debug
-        assert test_gcr_options.log_level == logging.WARN
-        assert not test_gcr_options.extra_http_headers
-        assert not test_gcr_options.allow_exit_as_root
-        assert not test_gcr_options.ignore_endpoints
-        assert test_gcr_options.secrets_matcher == "contains-ignore-case"
-        assert test_gcr_options.secrets_list == ["key", "pass", "secret"]
-        assert not test_gcr_options.secrets
-        assert not test_gcr_options.agent_key
-        assert not test_gcr_options.endpoint_url
-        assert test_gcr_options.ssl_verify
-        assert not test_gcr_options.endpoint_proxy
-        assert test_gcr_options.timeout == 0.8
+        assert not self.gcr_options.debug
+        assert self.gcr_options.log_level == logging.WARN
+        assert not self.gcr_options.extra_http_headers
+        assert not self.gcr_options.allow_exit_as_root
+        assert not self.gcr_options.ignore_endpoints
+        assert self.gcr_options.secrets_matcher == "contains-ignore-case"
+        assert self.gcr_options.secrets_list == ["key", "pass", "secret"]
+        assert not self.gcr_options.secrets
+        assert not self.gcr_options.agent_key
+        assert not self.gcr_options.endpoint_url
+        assert self.gcr_options.ssl_verify
+        assert not self.gcr_options.endpoint_proxy
+        assert self.gcr_options.timeout == 0.8
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_AGENT_KEY": "key1",
+            "INSTANA_ENDPOINT_URL": "localhost",
+            "INSTANA_DISABLE_CA_CHECK": "true",
+            "INSTANA_ENDPOINT_PROXY": "proxy1",
+            "INSTANA_TIMEOUT": "3000",
+            "INSTANA_LOG_LEVEL": "info",
+        },
+    )
     def test_gcr_options_with_env_vars(self) -> None:
-        os.environ["INSTANA_AGENT_KEY"] = "key1"
-        os.environ["INSTANA_ENDPOINT_URL"] = "localhost"
-        os.environ["INSTANA_DISABLE_CA_CHECK"] = "true"
-        os.environ["INSTANA_ENDPOINT_PROXY"] = "proxy1"
-        os.environ["INSTANA_TIMEOUT"] = "3000"
-        os.environ["INSTANA_LOG_LEVEL"] = "info"
+        self.gcr_options = GCROptions()
 
-        test_gcr_options = GCROptions()
-
-        assert test_gcr_options.agent_key == "key1"
-        assert test_gcr_options.endpoint_url == "localhost"
-        assert not test_gcr_options.ssl_verify
-        assert test_gcr_options.endpoint_proxy == {"https": "proxy1"}
-        assert test_gcr_options.timeout == 3
-        assert test_gcr_options.log_level == logging.INFO
+        assert self.gcr_options.agent_key == "key1"
+        assert self.gcr_options.endpoint_url == "localhost"
+        assert not self.gcr_options.ssl_verify
+        assert self.gcr_options.endpoint_proxy == {"https": "proxy1"}
+        assert self.gcr_options.timeout == 3
+        assert self.gcr_options.log_level == logging.INFO

@@ -22,6 +22,7 @@ Base = declarative_base()
 
 class StanUser(Base):
     __tablename__ = "churchofstan"
+    __allow_unmapped__ = True
 
     id = Column(Integer, primary_key=True)
     name = Column(String)

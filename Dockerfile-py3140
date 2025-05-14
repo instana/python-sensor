@@ -9,6 +9,7 @@ RUN apt-get update \
 ENV WORKDIR_=/root/base
 
 WORKDIR $WORKDIR_
+COPY ./tests/requirements-minimal.txt .
 COPY ./tests/requirements-pre314.txt .
 
 ENV VIRTUAL_ENV="$WORKDIR_/venv"

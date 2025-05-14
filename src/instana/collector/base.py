@@ -8,9 +8,10 @@ can be any combination of metrics, snapshot data and spans.
 
 import queue  # pylint: disable=import-error
 import threading
+import time
 
 from instana.log import logger
-from instana.util import DictionaryOfStan, every
+from instana.util import DictionaryOfStan
 
 
 class BaseCollector(object):
@@ -76,22 +77,22 @@ class BaseCollector(object):
         """
         if self.is_reporting_thread_running():
             if self.thread_shutdown.is_set():
-                # Shutdown still in progress; Reschedule this start in 5 seconds from now
+                # Force a restart. 
+                self.thread_shutdown.clear()
+                # Reschedule this start in 5 seconds from now
                 timer = threading.Timer(5, self.start)
                 timer.daemon = True
                 timer.name = "Collector Timed Start"
                 timer.start()
                 return
             logger.debug(
-                "BaseCollector.start non-fatal: call but thread already running (started: %s)",
-                self.started,
+                f"BaseCollector.start non-fatal: call but thread already running (started: {self.started})"
             )
-            return
 
         if self.agent.can_send():
             logger.debug("BaseCollector.start: launching collection thread")
             self.thread_shutdown.clear()
-            self.reporting_thread = threading.Thread(target=self.thread_loop, args=())
+            self.reporting_thread = threading.Thread(target=self.background_report, args=())
             self.reporting_thread.daemon = True
             self.reporting_thread.name = self.THREAD_NAME
             self.reporting_thread.start()
@@ -113,37 +114,25 @@ class BaseCollector(object):
             self.prepare_and_report_data()
         self.started = False
 
-    def thread_loop(self):
-        """
-        Just a loop that is run in the background thread.
-        @return: None
-        """
-        every(
-            self.report_interval,
-            self.background_report,
-            "Instana Collector: prepare_and_report_data",
-        )
-
-    def background_report(self):
+    def background_report(self) -> None:
         """
         The main work-horse method to report data in the background thread.
-        @return: Boolean
+
+        This method runs indefinitely, preparing and reporting data at regular 
+        intervals.
+        It checks for a shutdown signal and stops execution if it's set.
+        
+        @return: None
         """
-        if self.thread_shutdown.is_set():
-            logger.debug(
-                "Thread shutdown signal is active: Shutting down reporting thread"
-            )
-            return False
+        while True:
+            if self.thread_shutdown.is_set():
+                logger.debug(
+                    "Thread shutdown signal is active: Shutting down reporting thread"
+                )
+                break
 
-        self.prepare_and_report_data()
-
-        if self.thread_shutdown.is_set():
-            logger.debug(
-                "Thread shutdown signal is active: Shutting down reporting thread"
-            )
-            return False
-
-        return True
+            self.prepare_and_report_data()
+            time.sleep(self.report_interval)
 
     def prepare_and_report_data(self):
         """

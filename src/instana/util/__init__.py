@@ -1,14 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+import importlib.metadata
 import json
-import time
 from collections import defaultdict
 from urllib import parse
 
-import importlib.metadata
-
-from ..log import logger
+from instana.log import logger
 
 
 def nested_dictionary():
@@ -109,30 +107,6 @@ def get_default_gateway():
 
     except Exception:
         logger.warning("get_default_gateway: ", exc_info=True)
-
-
-def every(delay, task, name):
-    """
-    Executes a task every `delay` seconds
-
-    :param delay: the delay in seconds
-    :param task: the method to run.  The method should return False if you want the loop to stop.
-    :return: None
-    """
-    next_time = time.time() + delay
-
-    while True:
-        time.sleep(max(0, next_time - time.time()))
-        try:
-            if task() is False:
-                break
-        except Exception:
-            logger.debug(
-                "Problem while executing repetitive task: %s", name, exc_info=True
-            )
-
-        # skip tasks if we are behind schedule:
-        next_time += (time.time() - next_time) // delay * delay + delay
 
 
 def validate_url(url):

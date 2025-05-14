@@ -158,7 +158,7 @@ jobs:
 
   python314:
     docker:
-      - image: ghcr.io/pvital/pvital-py3.14.0:latest
+      - image: ghcr.io/instana/python-sensor-test-py3.14.0:latest
       - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
         environment:
           POSTGRES_USER: root

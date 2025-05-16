@@ -692,31 +692,21 @@ class TestHostAgent:
         assert "should_send_snapshot_data: True" in caplog.messages
 
     def test_is_service_or_endpoint_ignored(self) -> None:
-        self.agent.options.ignore_endpoints.append("service1")
-        self.agent.options.ignore_endpoints.append("service2.endpoint1")
+        self.agent.options.ignore_endpoints.append("service1.*")
+        self.agent.options.ignore_endpoints.append("service2.method1")
 
         # ignore all endpoints of service1
-        assert self.agent._HostAgent__is_service_or_endpoint_ignored("service1")
-        assert self.agent._HostAgent__is_service_or_endpoint_ignored(
-            "service1", "endpoint1"
-        )
-        assert self.agent._HostAgent__is_service_or_endpoint_ignored(
-            "service1", "endpoint2"
-        )
+        assert self.agent._HostAgent__is_endpoint_ignored("service1")
+        assert self.agent._HostAgent__is_endpoint_ignored("service1", "method1")
+        assert self.agent._HostAgent__is_endpoint_ignored("service1", "method2")
 
         # case-insensitive
-        assert self.agent._HostAgent__is_service_or_endpoint_ignored("SERVICE1")
-        assert self.agent._HostAgent__is_service_or_endpoint_ignored(
-            "service1", "ENDPOINT1"
-        )
+        assert self.agent._HostAgent__is_endpoint_ignored("SERVICE1")
+        assert self.agent._HostAgent__is_endpoint_ignored("service1", "METHOD1")
 
         # ignore only endpoint1 of service2
-        assert self.agent._HostAgent__is_service_or_endpoint_ignored(
-            "service2", "endpoint1"
-        )
-        assert not self.agent._HostAgent__is_service_or_endpoint_ignored(
-            "service2", "endpoint2"
-        )
+        assert self.agent._HostAgent__is_endpoint_ignored("service2", "method1")
+        assert not self.agent._HostAgent__is_endpoint_ignored("service2", "method2")
 
         # don't ignore other services
-        assert not self.agent._HostAgent__is_service_or_endpoint_ignored("service3")
+        assert not self.agent._HostAgent__is_endpoint_ignored("service3")

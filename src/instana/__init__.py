@@ -189,6 +189,7 @@ def boot_agent() -> None:
             starlette,  # noqa: F401
             urllib3,  # noqa: F401
             spyne,  # noqa: F401
+            aio_pika,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (
             client as aiohttp_client,  # noqa: F401

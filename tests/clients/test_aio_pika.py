@@ -1,11 +1,14 @@
 # (c) Copyright IBM Corp. 2025
 
 import pytest
-from typing import Generator
+from typing import Generator, TYPE_CHECKING
 import asyncio
 from aio_pika import Message, connect, connect_robust
 
 from instana.singletons import agent, tracer
+
+if TYPE_CHECKING:
+    from instana.span.readable_span import ReadableSpan
 
 
 class TestAioPika:
@@ -15,7 +18,7 @@ class TestAioPika:
         # setup
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
-        
+
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(None)
         self.queue_name = "test.queue"
@@ -155,7 +158,7 @@ class TestAioPika:
         assert not test_span.ec
 
         # Span attributes
-        def assert_span_info(rabbitmq_span, sort) -> None:
+        def assert_span_info(rabbitmq_span: "ReadableSpan", sort: str) -> None:
             assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
             assert rabbitmq_span.data["rabbitmq"]["sort"] == sort
             assert rabbitmq_span.data["rabbitmq"]["address"]

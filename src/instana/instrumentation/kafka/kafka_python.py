@@ -30,7 +30,11 @@ try:
 
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
-
+        is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
+            "kafka",
+            "send",
+            args[0],
+        )
         with tracer.start_as_current_span(
             "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
@@ -39,6 +43,9 @@ try:
 
             # context propagation
             headers = kwargs.get("headers", [])
+            suppression_header = {"x_instana_l_s": "0" if is_suppressed else "1"}
+            headers.append(suppression_header)
+
             tracer.inject(
                 span.context,
                 Format.KAFKA_HEADERS,
@@ -46,8 +53,11 @@ try:
                 disable_w3c_trace_context=True,
             )
 
-            try:
+            headers.remove(suppression_header)
+
+            if tracer.exporter.options.kafka_trace_correlation:
                 kwargs["headers"] = headers
+            try:
                 res = wrapped(*args, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)

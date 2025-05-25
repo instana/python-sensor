@@ -2,16 +2,21 @@
 # (c) Copyright Instana Inc. 2020
 
 """
-A Collector launches a background thread and continually collects & reports data.  The data
-can be any combination of metrics, snapshot data and spans.
+A Collector launches a background thread and continually collects & reports data.
+The data can be any combination of metrics, snapshot data and spans.
 """
 
 import queue  # pylint: disable=import-error
 import threading
 import time
+from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Type
 
 from instana.log import logger
 from instana.util import DictionaryOfStan
+
+if TYPE_CHECKING:
+    from instana.agent.base import BaseAgent
+    from instana.span.readable_span import ReadableSpan
 
 
 class BaseCollector(object):
@@ -20,7 +25,7 @@ class BaseCollector(object):
     This class launches a background thread to do this work.
     """
 
-    def __init__(self, agent):
+    def __init__(self, agent: Type["BaseAgent"]) -> None:
         # The agent for this process.  Can be Standard, AWSLambda or Fargate
         self.agent = agent
 
@@ -61,7 +66,7 @@ class BaseCollector(object):
         # Start time of fetching metadata
         self.fetching_start_time = 0
 
-    def is_reporting_thread_running(self):
+    def is_reporting_thread_running(self) -> bool:
         """
         Indicates if there is a thread running with the name self.THREAD_NAME
         """
@@ -70,14 +75,14 @@ class BaseCollector(object):
                 return True
         return False
 
-    def start(self):
+    def start(self) -> None:
         """
         Starts the collector and starts reporting as long as the agent is in a ready state.
         @return: None
         """
         if self.is_reporting_thread_running():
             if self.thread_shutdown.is_set():
-                # Force a restart. 
+                # Force a restart.
                 self.thread_shutdown.clear()
                 # Reschedule this start in 5 seconds from now
                 timer = threading.Timer(5, self.start)
@@ -92,7 +97,9 @@ class BaseCollector(object):
         if self.agent.can_send():
             logger.debug("BaseCollector.start: launching collection thread")
             self.thread_shutdown.clear()
-            self.reporting_thread = threading.Thread(target=self.background_report, args=())
+            self.reporting_thread = threading.Thread(
+                target=self.background_report, args=()
+            )
             self.reporting_thread.daemon = True
             self.reporting_thread.name = self.THREAD_NAME
             self.reporting_thread.start()
@@ -102,7 +109,7 @@ class BaseCollector(object):
                 "BaseCollector.start: the agent tells us we can't send anything out"
             )
 
-    def shutdown(self, report_final=True):
+    def shutdown(self, report_final: bool = True) -> None:
         """
         Shuts down the collector and reports any final data (if possible).
         e.g. If the host agent disappeared, we won't be able to report final data.
@@ -118,10 +125,10 @@ class BaseCollector(object):
         """
         The main work-horse method to report data in the background thread.
 
-        This method runs indefinitely, preparing and reporting data at regular 
+        This method runs indefinitely, preparing and reporting data at regular
         intervals.
         It checks for a shutdown signal and stops execution if it's set.
-        
+
         @return: None
         """
         while True:
@@ -134,7 +141,7 @@ class BaseCollector(object):
             self.prepare_and_report_data()
             time.sleep(self.report_interval)
 
-    def prepare_and_report_data(self):
+    def prepare_and_report_data(self) -> bool:
         """
         Prepare and report the data payload.
         @return: Boolean
@@ -144,7 +151,7 @@ class BaseCollector(object):
             self.agent.report_data_payload(payload)
         return True
 
-    def prepare_payload(self):
+    def prepare_payload(self) -> DefaultDict[str, Any]:
         """
         Method to prepare the data to be reported.
         @return: DictionaryOfStan()
@@ -152,7 +159,7 @@ class BaseCollector(object):
         logger.debug("BaseCollector: prepare_payload needs to be overridden")
         return DictionaryOfStan()
 
-    def should_send_snapshot_data(self):
+    def should_send_snapshot_data(self) -> bool:
         """
         Determines if snapshot data should be sent
         @return: Boolean
@@ -160,10 +167,10 @@ class BaseCollector(object):
         logger.debug("BaseCollector: should_send_snapshot_data needs to be overridden")
         return False
 
-    def collect_snapshot(self, *argv, **kwargs):
+    def collect_snapshot(self, *argv, **kwargs) -> None:
         logger.debug("BaseCollector: collect_snapshot needs to be overridden")
 
-    def queued_spans(self):
+    def queued_spans(self) -> List["ReadableSpan"]:
         """
         Get all of the queued spans
         @return: list
@@ -178,7 +185,7 @@ class BaseCollector(object):
                 spans.append(span)
         return spans
 
-    def queued_profiles(self):
+    def queued_profiles(self) -> List[Dict[str, Any]]:
         """
         Get all of the queued profiles
         @return: list

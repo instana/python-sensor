@@ -146,7 +146,7 @@ def is_up_to_date(
     return up_to_date, days_behind
 
 
-def get_taskruns(namespace, task_name, taskrun_filter):
+def get_taskruns(namespace, task_name, taskrun_filter, is_default_task=False):
     """Get sorted taskruns filtered based on label_selector"""
     group = "tekton.dev"
     version = "v1"
@@ -166,6 +166,19 @@ def get_taskruns(namespace, task_name, taskrun_filter):
     filtered_taskruns.sort(
         key=lambda tr: tr["metadata"]["creationTimestamp"], reverse=True
     )
+
+    name_pattern = re.compile(r".*-(\d+)$")
+
+    if is_default_task:
+        filtered_taskruns.sort(
+            key=lambda tr: int(name_pattern.search(tr["metadata"]["name"]).group(1)),
+            reverse=True,
+        )
+    else:
+        filtered_taskruns.sort(
+            key=lambda tr: tr["metadata"]["creationTimestamp"],
+            reverse=True,
+        )
 
     return filtered_taskruns
 
@@ -236,7 +249,9 @@ def get_tekton_ci_output():
         lambda tr: tr["metadata"]["name"].endswith("unittest-default-3")
         and tr["status"]["conditions"][0]["type"] == "Succeeded"
     )
-    default_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+    default_taskruns = get_taskruns(
+        namespace, task_name, taskrun_filter, is_default_task=True
+    )
 
     tekton_ci_output = process_taskrun_logs(
         default_taskruns, core_v1_client, namespace, task_name, tekton_ci_output

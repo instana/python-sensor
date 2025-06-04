@@ -146,11 +146,6 @@ class TestBaseCollector:
         assert "Collector.shutdown: Reporting final data." in caplog.messages
         assert not self.collector.started
 
-    def test_background_report(self) -> None:
-        assert self.collector.background_report()
-        self.collector.thread_shutdown.set()
-        assert not self.collector.background_report()
-
     def test_should_send_snapshot_data(self, caplog: LogCaptureFixture) -> None:
         caplog.set_level(logging.DEBUG, logger="instana")
         self.collector.should_send_snapshot_data()

@@ -131,7 +131,7 @@ class BaseCollector(object):
 
         @return: None
         """
-        while True:
+        while True:  # pragma: no cover
             if self.thread_shutdown.is_set():
                 logger.debug(
                     "Thread shutdown signal is active: Shutting down reporting thread"

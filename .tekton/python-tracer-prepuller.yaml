@@ -54,24 +54,24 @@ spec:
           image: public.ecr.aws/docker/library/python@
           command: ["sh", "-c", "'true'"]
         - name: prepuller-39
-          # public.ecr.aws/docker/library/python:3.9.22-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b
+          # public.ecr.aws/docker/library/python:3.9.23-bookworm
+          image: public.ecr.aws/docker/library/python@sha256:4f77eeb4a6ab4364c601f1f4bc36f10945c0c42ef092f2704e7f99cd9170333a
           command: ["sh", "-c", "'true'"]
         - name: prepuller-310
-          # public.ecr.aws/docker/library/python:3.10.17-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:e2c7fb05741c735679b26eda7dd34575151079f8c615875fbefe401972b14d85
+          # public.ecr.aws/docker/library/python:3.10.18-bookworm
+          image: public.ecr.aws/docker/library/python@sha256:6b942ef4c1315964c027925010da1957e540c7c103c0718e7673da807bbf206c
           command: ["sh", "-c", "'true'"]
         - name: prepuller-311
-          # public.ecr.aws/docker/library/python:3.11.12-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:a3e280261e448b95d49423532ccd6e5329c39d171c10df1457891ff7c5e2301b
+          # public.ecr.aws/docker/library/python:3.11.13-bookworm
+          image: public.ecr.aws/docker/library/python@sha256:d53da2e965e9de4f1b5424544d7bd39f776ea9b1fc745335914045b1e6628c67
           command: ["sh", "-c", "'true'"]
         - name: prepuller-312
-          # public.ecr.aws/docker/library/python:3.12.10-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa
+          # public.ecr.aws/docker/library/python:3.12.11-bookworm
+          image: public.ecr.aws/docker/library/python@sha256:01b17a5e297dd60629347a17d7c27908fc2c049e81a8cea3d5a1141f38777b8f
           command: ["sh", "-c", "'true'"]
         - name: prepuller-313
-          # public.ecr.aws/docker/library/python:3.13.3-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:07bf1bd38e191e3ed18b5f3eb0006d5ab260cb8c967f49d3bf947e5c2e44d8a9
+          # public.ecr.aws/docker/library/python:3.13.4-bookworm
+          image: public.ecr.aws/docker/library/python@sha256:8300f4e04ed367fafc5877b39dcf7a205532e295778f6fd20a08e1652b177d7b
           command: ["sh", "-c", "'true'"]
         - name: prepuller-314
           # public.ecr.aws/docker/library/python:3.14.0b1-bookworm

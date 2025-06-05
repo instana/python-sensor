@@ -4,7 +4,6 @@ import re
 from datetime import datetime
 
 import pandas as pd
-
 # Third Party
 import requests
 from bs4 import BeautifulSoup
@@ -188,7 +187,7 @@ def process_taskrun_logs(
                     "Successfully installed .* (google-cloud-storage-[^\s]+)", logs
                 )
                 tekton_ci_output += f"{match[1]}\n"
-            elif task_name == "python-tracer-unittest-default-task":
+            elif task_name == "python-tracer-unittest-py-version-task":
                 for line in logs.splitlines():
                     if "Successfully installed" in line:
                         tekton_ci_output += line
@@ -227,7 +226,7 @@ def get_tekton_ci_output():
         googlecloud_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
     )
 
-    task_name = "python-tracer-unittest-default-task"
+    task_name = "python-tracer-unittest-py-version-task"
     taskrun_filter = (  # noqa: E731
         lambda tr: tr["metadata"]["name"].endswith("unittest-default-3")
         and tr["status"]["conditions"][0]["type"] == "Succeeded"

@@ -12,8 +12,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: clone
-      # public.ecr.aws/docker/library/alpine:3.20.3
-      image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
+      image: public.ecr.aws/docker/library/alpine:3.20.3
       script: |
         #!/bin/sh
         echo "Installing git"
@@ -29,8 +28,7 @@ metadata:
 spec:
   sidecars:
     - name: cassandra
-      # public.ecr.aws/docker/library/cassandra:3.11.16-jammy
-      image: public.ecr.aws/docker/library/cassandra@sha256:b175d99b80f8108594d00c705288fdb3186b9fc07b30b4c292c3592cddb5f0b5
+      image: public.ecr.aws/docker/library/cassandra:3.11.16-jammy
       env:
         - name: MAX_HEAP_SIZE
           value: 2048m
@@ -44,14 +42,14 @@ spec:
           - 'describe cluster'
         initialDelaySeconds: 20
   params:
-  - name: imageDigest
+  - name: py-version
     type: string
   workspaces:
     - name: task-pvc
       mountPath: /workspace
   steps:
     - name: unittest
-      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python:$(params.py-version)-bookworm
       env:
         - name: TEST_CONFIGURATION
           value: cassandra
@@ -65,14 +63,14 @@ metadata:
   name: python-tracer-unittest-gevent-starlette-task
 spec:
   params:
-  - name: imageDigest
+  - name: py-version
     type: string
   workspaces:
     - name: task-pvc
       mountPath: /workspace
   steps:
     - name: unittest
-      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python:$(params.py-version)-bookworm
       env:
         - name: TEST_CONFIGURATION
           value: gevent_starlette
@@ -83,7 +81,130 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: python-tracer-unittest-default-task
+  name: python-tracer-unittest-py-version-task
+spec:
+  sidecars:
+    - name: google-cloud-pubsub
+      image: quay.io/thekevjames/gcloud-pubsub-emulator
+      env:
+        - name: PUBSUB_EMULATOR_HOST
+          value: 0.0.0.0:8681
+        - name: PUBSUB_PROJECT1
+          value: test-project,test-topic
+      ports:
+        - containerPort: 8681
+          hostPort: 8681
+    - name: mariadb
+      image: public.ecr.aws/docker/library/mariadb:11.3.2
+      env:
+        - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
+          value: passw0rd
+        - name: MYSQL_DATABASE # or MARIADB_DATABASE
+          value: instana_test_db
+    - name: mongo
+      image: public.ecr.aws/docker/library/mongo:7.0.6
+    - name: postgres
+      image: public.ecr.aws/docker/library/postgres:16.2-bookworm
+      env:
+        - name: POSTGRES_USER
+          value: root
+        - name: POSTGRES_PASSWORD
+          value: passw0rd
+        - name: POSTGRES_DB
+          value: instana_test_db
+      readinessProbe:
+        exec:
+          command:
+          - sh
+          - -c
+          - pg_isready --host 127.0.0.1 --port 5432 --dbname=${POSTGRES_DB}
+        timeoutSeconds: 10
+    - name: redis
+      image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+    - name: rabbitmq
+      image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+  params:
+  - name: py-version
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: public.ecr.aws/docker/library/python:$(params.py-version)-bookworm
+      env:
+        - name: TEST_CONFIGURATION
+          value: default
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-aws-task
+spec:
+  params:
+  - name: py-version
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: public.ecr.aws/docker/library/python:$(params.py-version)-bookworm
+      env:
+        - name: TEST_CONFIGURATION
+          value: aws
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-kafka-task
+spec:
+  sidecars:
+    - name: kafka
+      # public.ecr.aws/bitnami/kafka:3.9.0
+      image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
+      env:
+        - name: KAFKA_CFG_NODE_ID
+          value: "0"
+        - name: KAFKA_CFG_PROCESS_ROLES
+          value: "controller,broker"
+        - name: KAFKA_CFG_LISTENERS
+          value: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+        - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+        - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+          value: "0@kafka:9093"
+        - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+          value: "CONTROLLER"
+        - name: KAFKA_CFG_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+  params:
+  - name: py-version
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: public.ecr.aws/docker/library/python:$(params.py-version)-bookworm
+      env:
+        - name: TEST_CONFIGURATION
+          value: kafka
+      workingDir: /workspace/python-sensor/
+      command:
+      - /workspace/python-sensor/.tekton/run_unittests.sh
+
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-tracer-unittest-python-next-task
 spec:
   sidecars:
     - name: google-cloud-pubsub
@@ -132,78 +253,17 @@ spec:
       # public.ecr.aws/docker/library/rabbitmq:3.13.0
       image: public.ecr.aws/docker/library/rabbitmq@sha256:39de1a4fc6c72d12bd5dfa23e8576536fd1c0cc8418344cd5a51addfc9a1145d
   params:
-  - name: imageDigest
+  - name: py-version
     type: string
   workspaces:
     - name: task-pvc
       mountPath: /workspace
   steps:
     - name: unittest
-      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python:$(params.py-version)-bookworm
       env:
         - name: TEST_CONFIGURATION
           value: default
-      workingDir: /workspace/python-sensor/
-      command:
-      - /workspace/python-sensor/.tekton/run_unittests.sh
----
-apiVersion: tekton.dev/v1
-kind: Task
-metadata:
-  name: python-tracer-unittest-aws-task
-spec:
-  params:
-  - name: imageDigest
-    type: string
-  workspaces:
-    - name: task-pvc
-      mountPath: /workspace
-  steps:
-    - name: unittest
-      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
-      env:
-        - name: TEST_CONFIGURATION
-          value: aws
-      workingDir: /workspace/python-sensor/
-      command:
-      - /workspace/python-sensor/.tekton/run_unittests.sh
----
-apiVersion: tekton.dev/v1
-kind: Task
-metadata:
-  name: python-tracer-unittest-kafka-task
-spec:
-  sidecars:
-    - name: kafka
-      # public.ecr.aws/bitnami/kafka:3.9.0
-      image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
-      env:
-        - name: KAFKA_CFG_NODE_ID
-          value: "0"
-        - name: KAFKA_CFG_PROCESS_ROLES
-          value: "controller,broker"
-        - name: KAFKA_CFG_LISTENERS
-          value: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
-        - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-          value: "0@kafka:9093"
-        - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
-          value: "CONTROLLER"
-        - name: KAFKA_CFG_ADVERTISED_LISTENERS
-          value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
-  params:
-  - name: imageDigest
-    type: string
-  workspaces:
-    - name: task-pvc
-      mountPath: /workspace
-  steps:
-    - name: unittest
-      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
-      env:
-        - name: TEST_CONFIGURATION
-          value: kafka
       workingDir: /workspace/python-sensor/
       command:
       - /workspace/python-sensor/.tekton/run_unittests.sh

@@ -6,6 +6,21 @@ spec:
   params:
   - name: revision
     type: string
+  - name: py-versions
+    type: array
+    default:
+      - "3.8"
+      - "3.9"
+      - "3.10"
+      - "3.11"
+      - "3.12"
+      - "3.13"
+  - name: py-version-latest
+    type: string
+    default: "3.13"
+  - name: py-version-next
+    type: string
+    default: "3.14.0b4"
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:
@@ -18,86 +33,86 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
-    - name: unittest-default
-      displayName: "Platforms and Browsers: $(params.platform) and $(params.browser)"
+    - name: unittest-py-version
+      displayName: "Unittest for Python $(params.py-version)"
       runAfter:
         - clone
       matrix:
         params:
-          - name: imageDigest
-            value:
-              # public.ecr.aws/docker/library/python:3.8.20-bookworm
-              - "sha256:7aa279fb41dad2962d3c915aa6f6615134baa412ab5aafa9d4384dcaaa0af15d"
-              # public.ecr.aws/docker/library/python:3.9.23-bookworm
-              - "sha256:4f77eeb4a6ab4364c601f1f4bc36f10945c0c42ef092f2704e7f99cd9170333a"
-              # public.ecr.aws/docker/library/python:3.10.18-bookworm
-              - "sha256:6b942ef4c1315964c027925010da1957e540c7c103c0718e7673da807bbf206c"
-              # public.ecr.aws/docker/library/python:3.11.13-bookworm
-              - "sha256:d53da2e965e9de4f1b5424544d7bd39f776ea9b1fc745335914045b1e6628c67"
-              # public.ecr.aws/docker/library/python:3.12.11-bookworm
-              - "sha256:01b17a5e297dd60629347a17d7c27908fc2c049e81a8cea3d5a1141f38777b8f"
-              # public.ecr.aws/docker/library/python:3.13.4-bookworm
-              - "sha256:8300f4e04ed367fafc5877b39dcf7a205532e295778f6fd20a08e1652b177d7b"
-              # public.ecr.aws/docker/library/python:3.14.0b1-bookworm
-              - "sha256:ce2af63139630eac65e3b9dba09c5083b199d692511eb1749192f25ac11abb93"
+          - name: py-version
+            value: $(params.py-versions)
       taskRef:
-        name: python-tracer-unittest-default-task
+        name: python-tracer-unittest-py-version-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-cassandra
+      displayName: "Unittest for Cassandra with Python $(params.py-version)"
       runAfter:
         - clone
       matrix:
         params:
-          - name: imageDigest
+          - name: py-version
             value:
-              # public.ecr.aws/docker/library/python:3.9.23-bookworm
-              - "sha256:4f77eeb4a6ab4364c601f1f4bc36f10945c0c42ef092f2704e7f99cd9170333a"
+              - $(params.py-version-latest)
       taskRef:
         name: python-tracer-unittest-cassandra-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-gevent-starlette
+      displayName: "Unittest for Gevent and Starlette with Python $(params.py-version)"
       runAfter:
         - clone
       matrix:
         params:
-          - name: imageDigest
+          - name: py-version
             value:
-              # public.ecr.aws/docker/library/python:3.9.23-bookworm
-              - "sha256:4f77eeb4a6ab4364c601f1f4bc36f10945c0c42ef092f2704e7f99cd9170333a"
+              - $(params.py-version-latest)
       taskRef:
         name: python-tracer-unittest-gevent-starlette-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-aws
+      displayName: "Unittest for AWS with Python $(params.py-version)"
       runAfter:
         - clone
       matrix:
         params:
-          - name: imageDigest
+          - name: py-version
             value:
-              # public.ecr.aws/docker/library/python:3.12.11-bookworm
-              - "sha256:01b17a5e297dd60629347a17d7c27908fc2c049e81a8cea3d5a1141f38777b8f"
+              - $(params.py-version-latest)
       taskRef:
         name: python-tracer-unittest-aws-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-kafka
+      displayName: "Unittest for Kafka with Python $(params.py-version)"
       runAfter:
         - clone
       matrix:
         params:
-          - name: imageDigest
+          - name: py-version
             value:
-              # public.ecr.aws/docker/library/python:3.12.11-bookworm
-              - "sha256:01b17a5e297dd60629347a17d7c27908fc2c049e81a8cea3d5a1141f38777b8f"
+              - $(params.py-version-latest)
       taskRef:
         name: python-tracer-unittest-kafka-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-python-next
+      displayName: "Unittest for next Python $(params.py-version)"
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: py-version
+            value:
+              - $(params.py-version-next)
+      taskRef:
+        name: python-tracer-unittest-python-next-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc

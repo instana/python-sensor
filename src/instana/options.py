@@ -19,7 +19,10 @@ import logging
 from typing import Any, Dict
 
 from instana.log import logger
-from instana.util.config import parse_ignored_endpoints
+from instana.util.config import (
+    parse_ignored_endpoints,
+    parse_ignored_endpoints_from_yaml,
+)
 from instana.util.runtime import determine_service_name
 from instana.configurator import config
 
@@ -34,31 +37,9 @@ class BaseOptions(object):
         self.extra_http_headers = None
         self.allow_exit_as_root = False
         self.ignore_endpoints = []
+        self.kafka_trace_correlation = True
 
-        if "INSTANA_DEBUG" in os.environ:
-            self.log_level = logging.DEBUG
-            self.debug = True
-
-        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
-            self.extra_http_headers = (
-                str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(";")
-            )
-
-        if "INSTANA_IGNORE_ENDPOINTS" in os.environ:
-            self.ignore_endpoints = parse_ignored_endpoints(
-                os.environ["INSTANA_IGNORE_ENDPOINTS"]
-            )
-        else:
-            if (
-                isinstance(config.get("tracing"), dict)
-                and "ignore_endpoints" in config["tracing"]
-            ):
-                self.ignore_endpoints = parse_ignored_endpoints(
-                    config["tracing"]["ignore_endpoints"],
-                )
-
-        if os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None) == "1":
-            self.allow_exit_as_root = True
+        self.set_trace_configurations()
 
         # Defaults
         self.secrets_matcher = "contains-ignore-case"
@@ -78,6 +59,56 @@ class BaseOptions(object):
                 )
 
         self.__dict__.update(kwds)
+
+    def set_trace_configurations(self) -> None:
+        """
+        Set tracing configurations from the environment variables and config file.
+        @return: None
+        """
+        # Use self.configurations to not read local configuration file
+        # in set_tracing method
+        if "INSTANA_DEBUG" in os.environ:
+            self.log_level = logging.DEBUG
+            self.debug = True
+
+        if "INSTANA_EXTRA_HTTP_HEADERS" in os.environ:
+            self.extra_http_headers = (
+                str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(";")
+            )
+
+        if "1" in [
+            os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None),  # deprecated
+            os.environ.get("INSTANA_ALLOW_ROOT_EXIT_SPAN", None),
+        ]:
+            self.allow_exit_as_root = True
+
+        # The priority is as follows:
+        # environment variables > in-code configuration >
+        # > agent config (configuration.yaml) > default value
+        if "INSTANA_IGNORE_ENDPOINTS" in os.environ:
+            self.ignore_endpoints = parse_ignored_endpoints(
+                os.environ["INSTANA_IGNORE_ENDPOINTS"]
+            )
+        elif "INSTANA_IGNORE_ENDPOINTS_PATH" in os.environ:
+            self.ignore_endpoints = parse_ignored_endpoints_from_yaml(
+                os.environ["INSTANA_IGNORE_ENDPOINTS_PATH"]
+            )
+        elif (
+            isinstance(config.get("tracing"), dict)
+            and "ignore_endpoints" in config["tracing"]
+        ):
+            self.ignore_endpoints = parse_ignored_endpoints(
+                config["tracing"]["ignore_endpoints"],
+            )
+
+        if "INSTANA_KAFKA_TRACE_CORRELATION" in os.environ:
+            self.kafka_trace_correlation = (
+                os.environ["INSTANA_KAFKA_TRACE_CORRELATION"].lower() == "true"
+            )
+        elif isinstance(config.get("tracing"), dict) and "kafka" in config["tracing"]:
+            self.kafka_trace_correlation = config["tracing"]["kafka"].get(
+                "trace_correlation", True
+            )
 
 
 class StandardOptions(BaseOptions):
@@ -124,12 +155,30 @@ class StandardOptions(BaseOptions):
         @param tracing: tracing configuration dictionary
         @return: None
         """
-        if (
-            "ignore-endpoints" in tracing
-            and "INSTANA_IGNORE_ENDPOINTS" not in os.environ
-            and "tracing" not in config
-        ):
+        if "ignore-endpoints" in tracing and not self.ignore_endpoints:
             self.ignore_endpoints = parse_ignored_endpoints(tracing["ignore-endpoints"])
+
+        if "kafka" in tracing:
+            if (
+                "INSTANA_KAFKA_TRACE_CORRELATION" not in os.environ
+                and not (
+                    isinstance(config.get("tracing"), dict)
+                    and "kafka" in config["tracing"]
+                )
+                and "trace-correlation" in tracing["kafka"]
+            ):
+                self.kafka_trace_correlation = (
+                    str(tracing["kafka"].get("trace-correlation", True)) == "true"
+                )
+
+            if (
+                "header-format" in tracing["kafka"]
+                and tracing["kafka"]["header-format"] == "binary"
+            ):
+                logger.warning(
+                    "Binary header format for Kafka is deprecated. Please use string header format."
+                )
+
         if "extra-http-headers" in tracing:
             self.extra_http_headers = tracing["extra-http-headers"]
 
@@ -141,13 +190,14 @@ class StandardOptions(BaseOptions):
         """
         if not res_data or not isinstance(res_data, dict):
             logger.debug(f"options.set_from: Wrong data type - {type(res_data)}")
-            return 
+            return
 
         if "secrets" in res_data:
             self.set_secrets(res_data["secrets"])
 
         if "tracing" in res_data:
             self.set_tracing(res_data["tracing"])
+
         else:
             if "extraHeaders" in res_data:
                 self.set_extra_headers(res_data["extraHeaders"])

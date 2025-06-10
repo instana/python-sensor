@@ -170,6 +170,7 @@ def get_taskruns(namespace, task_name, taskrun_filter, is_default_task=False):
     name_pattern = re.compile(r".*-(\d+)$")
 
     if is_default_task:
+        print(filtered_taskruns)
         filtered_taskruns.sort(
             key=lambda tr: int(name_pattern.search(tr["metadata"]["name"]).group(1)),
             reverse=True,

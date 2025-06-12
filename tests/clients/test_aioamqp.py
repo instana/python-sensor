@@ -27,7 +27,7 @@ class TestAioamqp:
             self.loop.close()
 
     async def delete_queue(self) -> None:
-        transport, protocol = await aioamqp.connect(
+        _, protocol = await aioamqp.connect(
             testenv["rabbitmq_host"],
             testenv["rabbitmq_port"],
         )
@@ -79,8 +79,11 @@ class TestAioamqp:
         publisher_span = spans[0]
         test_span = spans[1]
 
-        assert publisher_span.n == "sdk"
-        assert publisher_span.data["sdk"]["name"] == "aioamqp-publisher"
+        assert publisher_span.n == "amqp"
+        assert publisher_span.data["amqp"]["command"] == "publish"
+        assert publisher_span.data["amqp"]["routingkey"] == "message_queue"
+        assert publisher_span.data["amqp"]["connection"] == "127.0.0.1:5672"
+
         assert publisher_span.p == test_span.s
 
         assert test_span.n == "sdk"
@@ -100,31 +103,25 @@ class TestAioamqp:
         consumer_span = spans[2]
         test_span = spans[3]
 
-        assert publisher_span.n == "sdk"
-        assert publisher_span.data["sdk"]["name"] == "aioamqp-publisher"
+        assert publisher_span.n == "amqp"
+        assert publisher_span.data["amqp"]["command"] == "publish"
+        assert publisher_span.data["amqp"]["routingkey"] == "message_queue"
+        assert publisher_span.data["amqp"]["connection"] == "127.0.0.1:5672"
         assert publisher_span.p == test_span.s
-        assert (
-            publisher_span.data["sdk"]["custom"]["tags"]["aioamqp.exchange"]
-            == "b'Instana test message'"
-        )
 
         assert callback_span.n == "sdk"
         assert callback_span.data["sdk"]["name"] == "callback-span"
         assert callback_span.data["sdk"]["type"] == "intermediate"
         assert callback_span.p == consumer_span.s
 
-        assert consumer_span.n == "sdk"
-        assert consumer_span.data["sdk"]["name"] == "aioamqp-consumer"
-        assert consumer_span.data["sdk"]["custom"]["tags"]["aioamqp.callback"]
+        assert consumer_span.n == "amqp"
+        assert consumer_span.data["amqp"]["command"] == "consume"
+        assert consumer_span.data["amqp"]["routingkey"] == "message_queue"
+        assert consumer_span.data["amqp"]["connection"] == "127.0.0.1:5672"
         assert (
-            consumer_span.data["sdk"]["custom"]["tags"]["aioamqp.message"]
-            == "b'Instana test message'"
+            consumer_span.data["amqp"]["connection"]
+            == publisher_span.data["amqp"]["connection"]
         )
-        assert (
-            consumer_span.data["sdk"]["custom"]["tags"]["aioamqp.routing_key"]
-            == "message_queue"
-        )
-        assert not consumer_span.data["sdk"]["custom"]["tags"]["exchange_name"]
         assert consumer_span.p == test_span.s
 
         assert test_span.n == "sdk"

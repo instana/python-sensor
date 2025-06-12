@@ -26,11 +26,29 @@ try:
             "aioamqp-publisher", span_context=parent_context
         ) as span:
             try:
-                span.set_attribute("aioamqp.exchange", argv[0])
-                return await wrapped(*argv, **kwargs)
+                span.set_attribute("amqp.command", "publish")
+                span.set_attribute("amqp.routing_key", kwargs.get("routing_key"))
+
+                protocol = getattr(instance, "protocol", None)
+                transport = getattr(protocol, "_transport", None)
+                extra = getattr(transport, "_extra", {}) if transport else {}
+                peername = extra.get("peername")
+                if (
+                    peername
+                    and isinstance(peername, (list, tuple))
+                    and len(peername) >= 2
+                ):
+                    connection_info = f"{peername[0]}:{peername[1]}"
+                else:
+                    connection_info = "unknown"
+                span.set_attribute("amqp.connection", connection_info)
+
+                response = await wrapped(*argv, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)
                 logger.debug(f"aioamqp basic_publish_with_instana error: {exc}")
+            else:
+                return response
 
     @wrapt.patch_function_wrapper("aioamqp.channel", "Channel.basic_consume")
     async def basic_consume_with_instana(
@@ -58,14 +76,29 @@ try:
             ) as span:
                 try:
                     span.set_status(StatusCode.OK)
-                    span.set_attribute("aioamqp.callback", callback)
-                    span.set_attribute("aioamqp.message", args[1])
-                    span.set_attribute("aioamqp.exchange_name", args[2].exchange_name)
-                    span.set_attribute("aioamqp.routing_key", args[2].routing_key)
-                    return await wrapped_callback(*args, **kwargs)
+                    span.set_attribute("amqp.command", "consume")
+                    span.set_attribute("amqp.routing_key", args[2].routing_key)
+
+                    protocol = getattr(args[0], "protocol", None)
+                    transport = getattr(protocol, "_transport", None)
+                    extra = getattr(transport, "_extra", {}) if transport else {}
+                    peername = extra.get("peername")
+                    if (
+                        peername
+                        and isinstance(peername, (list, tuple))
+                        and len(peername) >= 2
+                    ):
+                        connection_info = f"{peername[0]}:{peername[1]}"
+                    else:
+                        connection_info = "unknown"
+                    span.set_attribute("amqp.connection", connection_info)
+
+                    response = await wrapped_callback(*args, **kwargs)
                 except Exception as exc:
                     span.record_exception(exc)
                     logger.debug(f"aioamqp basic_consume_with_instana error: {exc}")
+                else:
+                    return response
 
         wrapped_callback = callback_wrapper(callback)
         argv = (wrapped_callback,) + argv[1:]

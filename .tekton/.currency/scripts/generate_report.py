@@ -96,25 +96,20 @@ def get_upstream_version(dependency, last_supported_version):
         # get info using PYPI API
         response = requests.get(f"{PIP_INDEX_URL}/{dependency}/json")
         response_json = response.json()
+
         latest_version = response_json["info"]["version"]
-        release_time = response_json["releases"][latest_version][-1][
-            "upload_time_iso_8601"
-        ]
-        latest_version_release_date = datetime.strptime(
-            release_time, "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
-        formatted_release_date = latest_version_release_date.strftime("%Y-%m-%d")
-        for version, release_info in response_json["releases"].items():
-            if version == last_supported_version:
-                release_time = release_info[-1]["upload_time_iso_8601"]
-                last_supported_version_release_date = datetime.strptime(
-                    release_time, "%Y-%m-%dT%H:%M:%S.%fZ"
-                ).strftime("%Y-%m-%d")
+        release_info_latest = response_json["releases"][latest_version]
+        release_time_latest = release_info_latest[-1]["upload_time_iso_8601"]
+        release_date_latest = re.search(r"([\d-]+)T", release_time_latest)[1]
+
+        release_info_last_supported = response_json["releases"][last_supported_version]
+        release_time_last_supported = release_info_last_supported[-1]["upload_time_iso_8601"]
+        release_date_last_supported = re.search(r"([\d-]+)T", release_time_last_supported)[1]
 
         return (
             latest_version,
-            formatted_release_date,
-            last_supported_version_release_date,
+            release_date_latest,
+            release_date_last_supported,
         )
 
 

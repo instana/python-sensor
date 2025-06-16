@@ -115,13 +115,14 @@ def get_upstream_version(dependency, last_supported_version):
 
 def get_last_supported_version(tekton_ci_output, dependency):
     """Get up-to-date supported version"""
-    pattern = r"-([^\s]+)"
-
     if dependency == "Psycopg2":
         dependency = "psycopg2-binary"
+    
+    # either start with a space or in a new line
+    pattern = r"(?:^|\s)" + dependency + r"-([^\s]+)"
 
     last_supported_version = re.search(
-        dependency + pattern, tekton_ci_output, flags=re.I | re.M
+        pattern, tekton_ci_output, flags=re.I | re.M
     )
 
     return last_supported_version[1]

@@ -159,6 +159,24 @@
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
+      },
+      {
+        "Package name": "Spyne",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Aio-pika",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Aioamqp",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
       }
     ]
   }

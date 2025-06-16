@@ -289,7 +289,7 @@ def main():
     title = "## Python supported packages and versions"
 
     # Combine disclaimer, title, and markdown table with line breaks
-    final_markdown = disclaimer + "\n" + title + "\n" + markdown_table
+    final_markdown = f"{disclaimer}\n{title}\n{markdown_table}\n"
 
     with open(REPORT_FILE, "w") as file:
         file.write(final_markdown)

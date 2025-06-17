@@ -313,7 +313,7 @@ workflows:
       - autowrapt:
           matrix:
             parameters:
-              py-version: ["3.12", "3.13"]
+              py-version: ["3.11", "3.12", "3.13"]
       - final_job:
           requires:
             - python3x

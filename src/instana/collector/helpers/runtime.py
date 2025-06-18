@@ -7,18 +7,18 @@ import gc
 import importlib.metadata
 import os
 import platform
-import resource
 import sys
 import threading
 from types import ModuleType
-from typing import Any, Dict, List, Union, Callable
+from typing import Any, Callable, Dict, List, Union
 
+from instana.collector.base import BaseCollector
 from instana.collector.helpers.base import BaseHelper
+from instana.collector.helpers.resource_usage import get_resource_usage
 from instana.log import logger
 from instana.util import DictionaryOfStan
 from instana.util.runtime import determine_service_name
 from instana.version import VERSION
-from instana.collector.base import BaseCollector
 
 PATH_OF_DEPRECATED_INSTALLATION_VIA_HOST_AGENT = "/tmp/.instana/python"
 
@@ -42,7 +42,7 @@ class RuntimeHelper(BaseHelper):
     ) -> None:
         super(RuntimeHelper, self).__init__(collector)
         self.previous = DictionaryOfStan()
-        self.previous_rusage = resource.getrusage(resource.RUSAGE_SELF)
+        self.previous_rusage = get_resource_usage()
 
         if gc.isenabled():
             self.previous_gc_count = gc.get_count()
@@ -83,7 +83,7 @@ class RuntimeHelper(BaseHelper):
 
         """ Collect up and return the runtime metrics """
         try:
-            rusage = resource.getrusage(resource.RUSAGE_SELF)
+            rusage = get_resource_usage()
             if gc.isenabled():
                 self._collect_gc_metrics(plugin_data, with_snapshot)
 

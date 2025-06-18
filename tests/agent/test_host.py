@@ -20,6 +20,7 @@ from instana.recorder import StanRecorder
 from instana.singletons import get_agent
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
+from instana.util.runtime import is_windows
 
 
 class TestHostAgent:
@@ -279,6 +280,10 @@ class TestHostAgent:
         assert not result
         assert msg in caplog.messages[0]
 
+    @pytest.mark.skipif(
+        is_windows(),
+        reason='Avoiding "psutil.NoSuchProcess: process PID not found (pid=12345)"',
+    )
     def test_init(self) -> None:
         with patch(
             "instana.agent.base.BaseAgent.update_log_level"

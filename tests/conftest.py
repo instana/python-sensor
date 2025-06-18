@@ -50,16 +50,13 @@ if sys.version_info >= (3, 12):
     collect_ignore_glob.append("*test_spyne*")
 
 
-if sys.version_info >= (3, 13):
-    # Currently not installable dependencies because of 3.13 incompatibilities
-    collect_ignore_glob.append("*test_sanic*")
-
-
 if sys.version_info >= (3, 14):
     # Currently not installable dependencies because of 3.14 incompatibilities
     collect_ignore_glob.append("*test_fastapi*")
     # aiohttp-server tests failing due to deprecated methods used
     collect_ignore_glob.append("*test_aiohttp_server*")
+    # Currently Saniic does not support python >= 3.14
+    collect_ignore_glob.append("*test_sanic*")
 
 
 @pytest.fixture(scope="session")

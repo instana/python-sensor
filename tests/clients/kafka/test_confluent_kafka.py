@@ -259,7 +259,7 @@ class TestConfluentKafka:
         agent.options.allow_exit_as_root = True
 
         # Produce some events
-        self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
+        self.producer.produce(testenv["kafka_topic"] + "-poll", b"raw_bytes1")
         self.producer.flush()
 
         # Consume the events
@@ -268,7 +268,7 @@ class TestConfluentKafka:
         consumer_config["auto.offset.reset"] = "earliest"
 
         consumer = Consumer(consumer_config)
-        consumer.subscribe([testenv["kafka_topic"]])
+        consumer.subscribe([testenv["kafka_topic"] + "-poll"])
 
         msg = consumer.poll(timeout=30)  # noqa: F841
 
@@ -281,14 +281,14 @@ class TestConfluentKafka:
             spans,
             lambda span: span.n == "kafka"
             and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == "span-topic",
+            and span.data["kafka"]["service"] == "span-topic-poll",
         )
 
         poll_span = get_first_span_by_filter(
             spans,
             lambda span: span.n == "kafka"
             and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic",
+            and span.data["kafka"]["service"] == "span-topic-poll",
         )
 
         # Same traceId

@@ -18,32 +18,12 @@ from instana.options import (
     StandardOptions,
 )
 
-env_vars = [
-    "INSTANA_DEBUG",
-    "INSTANA_EXTRA_HTTP_HEADERS",
-    "INSTANA_IGNORE_ENDPOINTS",
-    "INSTANA_SECRETS",
-    "INSTANA_AGENT_KEY",
-    "INSTANA_ENDPOINT_URL",
-    "INSTANA_DISABLE_CA_CHECK",
-    "INSTANA_ENDPOINT_PROXY",
-    "INSTANA_TIMEOUT",
-    "INSTANA_LOG_LEVEL",
-]
-
-
-def clean_env_vars():
-    for env_var in env_vars:
-        if env_var in os.environ.keys():
-            del os.environ[env_var]
-
 
 class TestBaseOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         self.base_options = None
         yield
-        clean_env_vars()
         if "tracing" in config.keys():
             del config["tracing"]
 
@@ -57,18 +37,23 @@ class TestBaseOptions:
         assert not self.base_options.extra_http_headers
         assert not self.base_options.allow_exit_as_root
         assert not self.base_options.ignore_endpoints
+        assert self.base_options.kafka_trace_correlation
         assert self.base_options.secrets_matcher == "contains-ignore-case"
         assert self.base_options.secrets_list == ["key", "pass", "secret"]
         assert not self.base_options.secrets
 
     def test_base_options_with_config(self) -> None:
-        config["tracing"]["ignore_endpoints"] = "service1;service3:method1,method2"
+        config["tracing"] = {
+            "ignore_endpoints": "service1;service3:method1,method2",
+            "kafka": {"trace_correlation": True},
+        }
         self.base_options = BaseOptions()
         assert self.base_options.ignore_endpoints == [
             "service1.*",
             "service3.method1",
             "service3.method2",
         ]
+        assert self.base_options.kafka_trace_correlation
 
     @patch.dict(
         os.environ,
@@ -117,13 +102,113 @@ class TestBaseOptions:
         ]
         del self.base_options
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_IGNORE_ENDPOINTS": "env_service1;env_service2:method1,method2",
+            "INSTANA_KAFKA_TRACE_CORRELATION": "false",
+            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
+        },
+    )
+    def test_set_trace_configurations_by_env_variable(self) -> None:
+        # The priority is as follows:
+        # environment variables > in-code configuration >
+        # > agent config (configuration.yaml) > default value
+        config["tracing"]["ignore_endpoints"] = (
+            "config_service1;config_service2:method1,method2"
+        )
+        config["tracing"]["kafka"] = {"trace_correlation": True}
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+
+        # Setting by env variable
+        self.base_options = StandardOptions()
+        self.base_options.set_tracing(test_tracing)
+
+        assert self.base_options.ignore_endpoints == [
+            "env_service1.*",
+            "env_service2.method1",
+            "env_service2.method2",
+        ]
+        assert not self.base_options.kafka_trace_correlation
+
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_KAFKA_TRACE_CORRELATION": "false",
+            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
+        },
+    )
+    def test_set_trace_configurations_by_local_configuration_file(self) -> None:
+        config["tracing"]["ignore_endpoints"] = (
+            "config_service1;config_service2:method1,method2"
+        )
+        config["tracing"]["kafka"] = {"trace_correlation": True}
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+
+        self.base_options = StandardOptions()
+        self.base_options.set_tracing(test_tracing)
+
+        assert self.base_options.ignore_endpoints == [
+            "redis.get",
+            "redis.type",
+            "dynamodb.query",
+            "kafka.consume.span-topic",
+            "kafka.consume.topic1",
+            "kafka.consume.topic2",
+            "kafka.send.span-topic",
+            "kafka.send.topic1",
+            "kafka.send.topic2",
+            "kafka.consume.topic3",
+            "kafka.*.span-topic",
+            "kafka.*.topic4",
+        ]
+
+    def test_set_trace_configurations_by_in_code_variable(self) -> None:
+        config["tracing"]["ignore_endpoints"] = (
+            "config_service1;config_service2:method1,method2"
+        )
+        config["tracing"]["kafka"] = {"trace_correlation": True}
+        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+
+        self.base_options = StandardOptions()
+        self.base_options.set_tracing(test_tracing)
+
+        assert self.base_options.ignore_endpoints == [
+            "config_service1.*",
+            "config_service2.method1",
+            "config_service2.method2",
+        ]
+        assert self.base_options.kafka_trace_correlation
+
+    def test_set_trace_configurations_by_agent_configuration(self) -> None:
+        test_tracing = {
+            "ignore-endpoints": "service1;service2:method1,method2",
+            "trace-correlation": True,
+        }
+
+        self.base_options = StandardOptions()
+        self.base_options.set_tracing(test_tracing)
+
+        assert self.base_options.ignore_endpoints == [
+            "service1.*",
+            "service2.method1",
+            "service2.method2",
+        ]
+        assert self.base_options.kafka_trace_correlation
+
+    def test_set_trace_configurations_by_default(self) -> None:
+        self.base_options = StandardOptions()
+        self.base_options.set_tracing({})
+
+        assert not self.base_options.ignore_endpoints
+        assert self.base_options.kafka_trace_correlation
+
 
 class TestStandardOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         self.standart_options = None
         yield
-        clean_env_vars()
         if "tracing" in config.keys():
             del config["tracing"]
 
@@ -148,10 +233,17 @@ class TestStandardOptions:
         self.standart_options.set_extra_headers(test_headers)
         assert self.standart_options.extra_http_headers == test_headers
 
-    def test_set_tracing(self) -> None:
+    def test_set_tracing(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        caplog.set_level(logging.DEBUG, logger="instana")
         self.standart_options = StandardOptions()
 
-        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+        test_tracing = {
+            "ignore-endpoints": "service1;service2:method1,method2",
+            "kafka": {"trace-correlation": "false", "header-format": "binary"},
+        }
         self.standart_options.set_tracing(test_tracing)
 
         assert self.standart_options.ignore_endpoints == [
@@ -159,39 +251,12 @@ class TestStandardOptions:
             "service2.method1",
             "service2.method2",
         ]
-        assert not self.standart_options.extra_http_headers
-
-    @patch.dict(
-        os.environ,
-        {"INSTANA_IGNORE_ENDPOINTS": "env_service1;env_service2:method1,method2"},
-    )
-    def test_set_tracing_priority(self) -> None:
-        config["tracing"]["ignore_endpoints"] = (
-            "config_service1;config_service2:method1,method2"
+        assert not self.standart_options.kafka_trace_correlation
+        assert (
+            "Binary header format for Kafka is deprecated. Please use string header format."
+            in caplog.messages
         )
-        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
-
-        self.standart_options = StandardOptions()
-        self.standart_options.set_tracing(test_tracing)
-
-        assert self.standart_options.ignore_endpoints == [
-            "env_service1.*",
-            "env_service2.method1",
-            "env_service2.method2",
-        ]
-
-        # Second test when In-code configuration and Agent configuration given
-
-        del os.environ["INSTANA_IGNORE_ENDPOINTS"]
-
-        self.standart_options = StandardOptions()
-        self.standart_options.set_tracing(test_tracing)
-
-        assert self.standart_options.ignore_endpoints == [
-            "config_service1.*",
-            "config_service2.method1",
-            "config_service2.method2",
-        ]
+        assert not self.standart_options.extra_http_headers
 
     def test_set_from(self) -> None:
         self.standart_options = StandardOptions()
@@ -245,7 +310,6 @@ class TestServerlessOptions:
     def _resource(self) -> Generator[None, None, None]:
         self.serverless_options = None
         yield
-        clean_env_vars()
 
     def test_serverless_options(self) -> None:
         self.serverless_options = ServerlessOptions()
@@ -291,7 +355,6 @@ class TestAWSLambdaOptions:
     def _resource(self) -> Generator[None, None, None]:
         self.aws_lambda_options = None
         yield
-        clean_env_vars()
 
     def test_aws_lambda_options(self) -> None:
         self.aws_lambda_options = AWSLambdaOptions()
@@ -309,7 +372,6 @@ class TestAWSFargateOptions:
     def _resource(self) -> Generator[None, None, None]:
         self.aws_fargate_options = None
         yield
-        clean_env_vars()
 
     def test_aws_fargate_options(self) -> None:
         self.aws_fargate_options = AWSFargateOptions()
@@ -355,7 +417,6 @@ class TestEKSFargateOptions:
     def _resource(self) -> Generator[None, None, None]:
         self.eks_fargate_options = None
         yield
-        clean_env_vars()
 
     def test_eks_fargate_options(self) -> None:
         self.eks_fargate_options = EKSFargateOptions()
@@ -394,7 +455,6 @@ class TestGCROptions:
     def _resource(self) -> Generator[None, None, None]:
         self.gcr_options = None
         yield
-        clean_env_vars()
 
     def test_gcr_options(self) -> None:
         self.gcr_options = GCROptions()

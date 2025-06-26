@@ -73,8 +73,8 @@ class KafkaPropagator(BasePropagator):
                 disable_w3c_trace_context=disable_w3c_trace_context,
             )
 
-        except Exception:
-            logger.debug("kafka_propagator extract error:", exc_info=True)
+        except Exception as e:
+            logger.debug(f"kafka_propagator extract error: {e}", exc_info=True)
 
     # Assisted by watsonx Code Assistant
     def inject(
@@ -98,15 +98,12 @@ class KafkaPropagator(BasePropagator):
         span_id = span_context.span_id
         dictionary_carrier = self.extract_carrier_headers(carrier)
 
+        suppression_level = 1
         if dictionary_carrier:
             # Suppression `level` made in the child context or in the parent context
             # has priority over any non-suppressed `level` setting
-            child_level = int(
-                self.extract_instana_headers(dictionary_carrier)[2] or "1"
-            )
-            span_context.level = min(child_level, span_context.level)
-
-        serializable_level = str(span_context.level)
+            suppression_level = int(self.extract_instana_headers(dictionary_carrier)[2])
+            span_context.level = min(suppression_level, span_context.level)
 
         def inject_key_value(carrier, key, value):
             if isinstance(carrier, list):
@@ -122,18 +119,18 @@ class KafkaPropagator(BasePropagator):
             inject_key_value(
                 carrier,
                 self.KAFKA_HEADER_KEY_L_S,
-                serializable_level.encode("utf-8"),
+                str(suppression_level).encode("utf-8"),
             )
-            inject_key_value(
-                carrier,
-                self.KAFKA_HEADER_KEY_T,
-                hex_id_limited(trace_id).encode("utf-8"),
-            )
-            inject_key_value(
-                carrier,
-                self.KAFKA_HEADER_KEY_S,
-                format_span_id(span_id).encode("utf-8"),
-            )
-
+            if suppression_level == 1:
+                inject_key_value(
+                    carrier,
+                    self.KAFKA_HEADER_KEY_T,
+                    hex_id_limited(trace_id).encode("utf-8"),
+                )
+                inject_key_value(
+                    carrier,
+                    self.KAFKA_HEADER_KEY_S,
+                    format_span_id(span_id).encode("utf-8"),
+                )
         except Exception:
             logger.debug("KafkaPropagator - inject error:", exc_info=True)

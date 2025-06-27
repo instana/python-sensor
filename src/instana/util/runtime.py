@@ -1,18 +1,30 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import re
 import os
+import platform
+import re
 import sys
+from typing import Dict, List, Tuple, Union
 
-from ..log import logger
+from instana.log import logger
 
-def get_py_source(filename):
+
+def get_py_source(filename: str) -> Dict[str, str]:
     """
-    Retrieves and returns the source code for any Python
-    files requested by the UI via the host agent
-
-    @param filename [String] The fully qualified path to a file
+    Retrieves the source code for Python files requested by the UI via the host agent.
+    
+    This function reads and returns the content of Python source files. It validates
+    that the requested file has a .py extension and returns an appropriate error
+    message if the file cannot be read or is not a Python file.
+    
+    Args:
+        filename (str): The fully qualified path to a Python source file
+        
+    Returns:
+        Dict[str, str]: A dictionary containing either:
+            - {"data": source_code} if successful
+            - {"error": error_message} if an error occurred
     """
     response = None
     try:
@@ -35,9 +47,24 @@ def get_py_source(filename):
 regexp_py = re.compile(r"\.py$")
 
 
-def determine_service_name():
-    """ This function makes a best effort to name this application process. """
-
+def determine_service_name() -> str:
+    """
+    Determines the most appropriate service name for this application process.
+    
+    The service name is determined using the following priority order:
+    1. INSTANA_SERVICE_NAME environment variable if set
+    2. For specific frameworks:
+       - For gunicorn: process title or "gunicorn"
+       - For Flask: FLASK_APP environment variable
+       - For Django: first part of DJANGO_SETTINGS_MODULE
+       - For uwsgi: "uWSGI master/worker [app_name]"
+    3. Command line arguments (first non-option argument)
+    4. Executable name
+    5. "python" as a fallback
+    
+    Returns:
+        str: The determined service name
+    """
     # One environment variable to rule them all
     if "INSTANA_SERVICE_NAME" in os.environ:
         return os.environ["INSTANA_SERVICE_NAME"]
@@ -115,11 +142,22 @@ def determine_service_name():
 
     return app_name
 
-def get_proc_cmdline(as_string=False):
+def get_proc_cmdline(as_string: bool = False) -> Union[List[str], str]:
     """
-    Parse the proc file system for the command line of this process.  If not available, then return a default.
-    Return is dependent on the value of `as_string`.  If True, return the full command line as a string,
-    otherwise a list.
+    Parses the process command line from the proc file system.
+    
+    This function attempts to read the command line of the current process from
+    /proc/self/cmdline. If the proc filesystem is not available (e.g., on non-Unix
+    systems), it returns a default value.
+    
+    Args:
+        as_string (bool, optional): If True, returns the command line as a single 
+                                   space-separated string. If False, returns a list
+                                   of command line arguments. Defaults to False.
+    
+    Returns:
+        Union[List[str], str]: The command line as either a list of arguments or a 
+                              space-separated string, depending on the as_string parameter.
     """
     name = "python"
     if os.path.isfile("/proc/self/cmdline"):
@@ -141,3 +179,23 @@ def get_proc_cmdline(as_string=False):
         parts = " ".join(parts)
 
     return parts
+
+
+def get_runtime_env_info() -> Tuple[str, str]:
+    """
+    Returns information about the current runtime environment.
+    
+    This function collects and returns details about the machine architecture 
+    and Python version being used by the application.
+    
+    Returns:
+        Tuple[str, str]: A tuple containing:
+            - Machine type (e.g., 'arm64', 'ppc64le')
+            - Python version string
+    """
+    machine = platform.machine()
+    python_version = platform.python_version()
+    
+    return machine, python_version
+
+# Made with Bob

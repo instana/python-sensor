@@ -198,4 +198,15 @@ def get_runtime_env_info() -> Tuple[str, str]:
     
     return machine, python_version
 
+
+def log_runtime_env_info() -> None:
+    """
+    Logs debug information about the current runtime environment.
+    
+    This function retrieves machine architecture and Python version information
+    using get_runtime_env_info() and logs it as a debug message.
+    """
+    machine, python_version = get_runtime_env_info()
+    logger.debug(f"Runtime environment: Machine: {machine}, Python version: {python_version}")
+
 # Made with Bob

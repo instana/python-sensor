@@ -47,6 +47,7 @@ class TestConfigReader:
             "redis.get",
             "redis.type",
             "dynamodb.query",
+            "kafka.send.*",
             "kafka.consume.span-topic",
             "kafka.consume.topic1",
             "kafka.consume.topic2",

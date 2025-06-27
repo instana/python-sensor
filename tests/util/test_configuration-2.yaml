@@ -9,6 +9,7 @@ com.instana.tracing:
     dynamodb:
       - query
     kafka: 
+      - send
       - methods: ["consume", "send"]
         endpoints: ["span-topic", "topic1", "topic2"]
       - methods: ["consume"]

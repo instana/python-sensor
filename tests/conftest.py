@@ -23,12 +23,20 @@ from instana.span.base_span import BaseSpan
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracerProvider
+from instana.util.runtime import get_runtime_env_info
 
 collect_ignore_glob = [
     "*test_gevent*",
     "*collector/test_gcr*",
     "*agent/test_google*",
 ]
+
+# ppc64le has limitations with some supported libraries.
+machine, py_version = get_runtime_env_info()
+if machine == "ppc64le":
+    collect_ignore_glob.append("*test_grpcio*")
+    collect_ignore_glob.append("*test_google-cloud*")
+    collect_ignore_glob.append("*test_pymongo*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)
@@ -55,7 +63,7 @@ if sys.version_info >= (3, 14):
     collect_ignore_glob.append("*test_fastapi*")
     # aiohttp-server tests failing due to deprecated methods used
     collect_ignore_glob.append("*test_aiohttp_server*")
-    # Currently Saniic does not support python >= 3.14
+    # Currently Sanic does not support python >= 3.14
     collect_ignore_glob.append("*test_sanic*")
 
 

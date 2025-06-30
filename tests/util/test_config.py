@@ -4,6 +4,7 @@ from instana.util.config import (
     parse_endpoints_of_service,
     parse_ignored_endpoints,
     parse_ignored_endpoints_dict,
+    parse_kafka_methods,
     parse_service_pair,
 )
 
@@ -157,3 +158,13 @@ class TestConfig:
             "kafka.method6.endpoint1",
             "kafka.method6.endpoint2",
         ]
+
+    def test_parse_kafka_methods_as_dict(self) -> None:
+        test_rule_as_dict = {"methods": ["send"], "endpoints": ["topic1"]}
+        parsed_rule = parse_kafka_methods(test_rule_as_dict)
+        assert parsed_rule == ["kafka.send.topic1"]
+
+    def test_parse_kafka_methods_as_str(self) -> None:
+        test_rule_as_str = ["send"]
+        parsed_rule = parse_kafka_methods(test_rule_as_str)
+        assert parsed_rule == ["kafka.send.*"]

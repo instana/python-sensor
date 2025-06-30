@@ -82,16 +82,24 @@ def parse_endpoints_of_service(
     """
     if service == "kafka" and isinstance(methods, list):
         for rule in methods:
-            for method, endpoint in itertools.product(
-                rule["methods"], rule["endpoints"]
-            ):
-                ignore_endpoints.append(
-                    f"{service.lower()}.{method.lower()}.{endpoint.lower()}"
-                )
+            ignore_endpoints.extend(parse_kafka_methods(rule))
     else:
         for method in methods:
             ignore_endpoints.append(f"{service.lower()}.{method.lower()}")
     return ignore_endpoints
+
+
+def parse_kafka_methods(rule: Union[str, Dict[str, any]]) -> List[str]:
+    parsed_rule = []
+    if isinstance(rule, dict):
+        for method, endpoint in itertools.product(rule["methods"], rule["endpoints"]):
+            parsed_rule.append(f"kafka.{method.lower()}.{endpoint.lower()}")
+    elif isinstance(rule, list):
+        for method in rule:
+            parsed_rule.append(f"kafka.{method.lower()}.*")
+    else:
+        parsed_rule.append(f"kafka.{rule.lower()}.*")
+    return parsed_rule
 
 
 def parse_ignored_endpoints(params: Union[Dict[str, Any], str]) -> List[str]:

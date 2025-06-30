@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from typing import Any, Tuple, Dict, Callable
 
 from instana.log import logger
+from instana.util.runtime import get_runtime_env_info
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 
@@ -25,7 +26,7 @@ def log_with_instana(
 
     # We take into consideration if `stacklevel` is already present in `kwargs`.
     # This prevents the error `_log() got multiple values for keyword argument 'stacklevel'`
-    stacklevel_in = kwargs.pop("stacklevel", 1)
+    stacklevel_in = kwargs.pop("stacklevel", 1 if get_runtime_env_info()[0] != "ppc64le" else 2)
     stacklevel = stacklevel_in + 1 + (sys.version_info >= (3, 14))
 
     try:

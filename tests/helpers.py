@@ -108,6 +108,12 @@ def fail_with_message_and_span_dump(msg, spans):
     pytest.fail(msg + span_dump, True)
 
 
+def is_test_span(span):
+    """
+    return the filter for test span
+    """
+    return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
 def get_first_span_by_name(spans, name):
     """
     Get the first span in <spans> that has a span.n value of <name>

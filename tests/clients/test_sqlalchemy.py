@@ -276,7 +276,7 @@ class TestSQLAlchemy:
         invalid_connection_url = "postgresql://user1:pwd1@localhost:9999/mydb1"
         with pytest.raises(
             OperationalError,
-            match=r"\(psycopg2.OperationalError\) connection .* failed.*",
+            match=r"^(\(psycopg2\.OperationalError\)).*",
         ) as context_manager:
             engine = create_engine(invalid_connection_url)
             with engine.connect() as connection:

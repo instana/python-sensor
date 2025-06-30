@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from opentelemetry.trace import SpanKind
 
+from instana.util.runtime import get_runtime_env_info
 from instana.singletons import agent, tracer
 
 
@@ -145,6 +146,9 @@ class TestLogging:
             logging.Formatter("source: %(funcName)s, message: %(message)s")
         )
         self.logger.addHandler(handler)
+
+        if get_runtime_env_info()[0] == "ppc64le":
+            stacklevel += 1
 
         def log_custom_warning():
             self.logger.warning("foo %s", "bar", stacklevel=stacklevel)

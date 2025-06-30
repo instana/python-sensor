@@ -237,3 +237,16 @@ def announce(monkeypatch, request) -> None:
         monkeypatch.setattr(HostAgent, "announce", HostAgent.announce)
     else:
         monkeypatch.setattr(HostAgent, "announce", always_true)
+
+# Mocking the import of uwsgi
+def _uwsgi_masterpid() -> int:
+    return 12345
+
+module = type(sys)("uwsgi")
+module.opt = {
+    "master": True,
+    "lazy-apps": True,
+    "enable-threads": True,
+}
+module.masterpid = _uwsgi_masterpid
+sys.modules["uwsgi"] = module

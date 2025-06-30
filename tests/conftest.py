@@ -31,12 +31,16 @@ collect_ignore_glob = [
     "*agent/test_google*",
 ]
 
-# ppc64le has limitations with some supported libraries.
+# ppc64le and s390x have limitations with some supported libraries.
 machine, py_version = get_runtime_env_info()
-if machine == "ppc64le":
-    collect_ignore_glob.append("*test_grpcio*")
-    collect_ignore_glob.append("*test_google-cloud*")
-    collect_ignore_glob.append("*test_pymongo*")
+if machine in ["ppc64le", "s390x"]:
+    collect_ignore_glob.extend([
+        "*test_google-cloud*",
+        "*test_pymongo*",
+    ])
+
+    if machine == "ppc64le":
+        collect_ignore_glob.append("*test_grpcio*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will
 # # be run explicitly.  (So always exclude them here)
@@ -47,8 +51,10 @@ if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
 if not os.environ.get("GEVENT_STARLETTE_TEST"):
-    collect_ignore_glob.append("*test_gevent*")
-    collect_ignore_glob.append("*test_starlette*")
+    collect_ignore_glob.extend([
+        "*test_gevent*",
+        "*test_starlette*",
+    ])
 
 if not os.environ.get("KAFKA_TEST"):
     collect_ignore_glob.append("*kafka/test*")
@@ -59,13 +65,14 @@ if sys.version_info >= (3, 12):
 
 
 if sys.version_info >= (3, 14):
-    # Currently not installable dependencies because of 3.14 incompatibilities
-    collect_ignore_glob.append("*test_fastapi*")
-    # aiohttp-server tests failing due to deprecated methods used
-    collect_ignore_glob.append("*test_aiohttp_server*")
-    # Currently Sanic does not support python >= 3.14
-    collect_ignore_glob.append("*test_sanic*")
-
+    collect_ignore_glob.extend([
+        # Currently not installable dependencies because of 3.14 incompatibilities
+        "*test_fastapi*",
+        # aiohttp-server tests failing due to deprecated methods used
+        "*test_aiohttp_server*",
+        # Currently Sanic does not support python >= 3.14
+        "*test_sanic*",
+    ])
 
 @pytest.fixture(scope="session")
 def celery_config():

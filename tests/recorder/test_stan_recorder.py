@@ -1,15 +1,16 @@
-from multiprocessing import Queue
 import sys
+from multiprocessing import Queue
 from unittest import TestCase
 from unittest.mock import NonCallableMagicMock, PropertyMock
 
 import pytest
 
 from instana.recorder import StanRecorder
+from instana.util.runtime import get_runtime_env_info
 
 
 @pytest.mark.skipif(
-    sys.platform == "darwin",
+    sys.platform == "darwin" or get_runtime_env_info()[0] == "s390x",
     reason="Avoiding NotImplementedError when calling multiprocessing.Queue.qsize()",
 )
 class TestStanRecorderTC(TestCase):

@@ -3,6 +3,7 @@
 import pytest
 import httpx
 from typing import Generator
+import asyncio
 
 from instana.singletons import agent, tracer
 from instana.util.ids import hex_id
@@ -10,23 +11,70 @@ import tests.apps.flask_app
 from tests.helpers import testenv
 
 
-class TestHttpx:
+@pytest.mark.parametrize("request_mode", ["sync", "async"])
+class TestHttpxClients:
+    @classmethod
+    def setup_class(cls) -> None:
+        cls.client = httpx.Client()
+        cls.host = "127.0.0.1"
+        cls.recorder = tracer.span_processor
+
+    def teardown_class(cls) -> None:
+        cls.client.close()
+
     @pytest.fixture(autouse=True)
-    def _setup(self) -> Generator[None, None, None]:
+    def _resource(self, request_mode) -> Generator[None, None, None]:
         """SetUp and TearDown"""
         # setup
         # Clear all spans before a test run
-        self.host = "127.0.0.1"
-        self.recorder = tracer.span_processor
         self.recorder.clear_spans()
+
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(None)
         yield
         # teardown
+        if self.loop.is_running():
+            self.loop.close()
         # Ensure that allow_exit_as_root has the default value
         agent.options.allow_exit_as_root = False
 
-    def test_get_request(self):
+    async def get_async_response(self, path, request_method, headers) -> httpx.Response:
+        """Asynchronous request function"""
+        async with httpx.AsyncClient() as client:
+            if request_method == "GET":
+                response = await client.get(
+                    testenv["flask_server"] + path, headers=headers
+                )
+            elif request_method == "POST":
+                response = await client.post(
+                    testenv["flask_server"] + path, headers=headers
+                )
+            return response
+
+    # Synchronous request function
+    def get_sync_response(self, path, request_method, headers) -> httpx.Response:
+        """Synchronous request function"""
+        if request_method == "GET":
+            response = self.client.get(testenv["flask_server"] + path, headers=headers)
+        elif request_method == "POST":
+            response = self.client.post(testenv["flask_server"] + path, headers=headers)
+        return response
+
+    def execute_request(
+        self, request_mode, path, request_method="GET", headers=None
+    ) -> httpx.Response:
+        if request_mode == "async":
+            res = self.loop.run_until_complete(
+                self.get_async_response(path, request_method, headers)
+            )
+        elif request_mode == "sync":
+            res = self.get_sync_response(path, request_method, headers)
+        return res
+
+    def test_get_request(self, request_mode) -> None:
+        path = "/"
         with tracer.start_as_current_span("test"):
-            res = httpx.get(testenv["flask_server"] + "/")
+            res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -81,9 +129,10 @@ class TestHttpx:
         assert isinstance(httpx_span.stack, list)
         assert len(httpx_span.stack) > 1
 
-    def test_get_request_as_root_exit_span(self):
+    def test_get_request_as_root_exit_span(self, request_mode) -> None:
+        path = "/"
         agent.options.allow_exit_as_root = True
-        res = httpx.get(testenv["flask_server"] + "/")
+        res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -127,16 +176,19 @@ class TestHttpx:
         # httpx
         assert httpx_span.data["http"]["status"] == 200
         assert httpx_span.data["http"]["host"] == self.host
-        assert httpx_span.data["http"]["path"] == "/"
-        assert httpx_span.data["http"]["url"] == testenv["flask_server"] + "/"
+        assert httpx_span.data["http"]["path"] == path
+        assert httpx_span.data["http"]["url"] == testenv["flask_server"] + path
         assert httpx_span.data["http"]["method"] == "GET"
         assert httpx_span.stack
         assert isinstance(httpx_span.stack, list)
         assert len(httpx_span.stack) > 1
 
-    def test_get_request_with_query(self):
+    def test_get_request_with_query(self, request_mode) -> None:
+        path = "/"
         with tracer.start_as_current_span("test"):
-            res = httpx.get(testenv["flask_server"] + "/?user=instana&pass=itsasecret")
+            res = self.execute_request(
+                request_mode, path + "?user=instana&pass=itsasecret"
+            )
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -169,18 +221,18 @@ class TestHttpx:
         # httpx
         assert httpx_span.data["http"]["status"] == 200
         assert httpx_span.data["http"]["host"] == self.host
-        assert httpx_span.data["http"]["path"] == "/"
-        assert httpx_span.data["http"]["url"] == testenv["flask_server"] + "/"
+        assert httpx_span.data["http"]["path"] == path
+        assert httpx_span.data["http"]["url"] == testenv["flask_server"] + path
         assert httpx_span.data["http"]["params"] == "user=instana&pass=<redacted>"
         assert httpx_span.data["http"]["method"] == "GET"
         assert httpx_span.stack
         assert isinstance(httpx_span.stack, list)
         assert len(httpx_span.stack) > 1
 
-    def test_post_request(self):
+    def test_post_request(self, request_mode) -> None:
         path = "/notfound"
         with tracer.start_as_current_span("test"):
-            res = httpx.post(testenv["flask_server"] + "/notfound")
+            res = self.execute_request(request_mode, path, request_method="POST")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -220,10 +272,10 @@ class TestHttpx:
         assert isinstance(httpx_span.stack, list)
         assert len(httpx_span.stack) > 1
 
-    def test_5xx_request(self):
+    def test_5xx_request(self, request_mode) -> None:
         path = "/500"
         with tracer.start_as_current_span("test"):
-            res = httpx.get(testenv["flask_server"] + path)
+            res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -278,13 +330,13 @@ class TestHttpx:
         assert isinstance(httpx_span.stack, list)
         assert len(httpx_span.stack) > 1
 
-    def test_response_header_capture(self):
+    def test_response_header_capture(self, request_mode) -> None:
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
         path = "/response_headers"
 
         with tracer.start_as_current_span("test"):
-            res = httpx.get(testenv["flask_server"] + path)
+            res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
@@ -331,7 +383,8 @@ class TestHttpx:
 
         agent.options.extra_http_headers = original_extra_http_headers
 
-    def test_request_header_capture(self):
+    def test_request_header_capture(self, request_mode) -> None:
+        path = "/"
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
 
@@ -340,7 +393,7 @@ class TestHttpx:
             "X-Capture-That-Too": "that too",
         }
         with tracer.start_as_current_span("test"):
-            res = httpx.get(testenv["flask_server"] + "/", headers=request_headers)
+            res = self.execute_request(request_mode, path, headers=request_headers)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 3

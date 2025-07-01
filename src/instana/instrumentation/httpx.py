@@ -35,7 +35,7 @@ try:
                     agent.options.secrets_list,
                 )
                 span.set_attribute("http.params", formatted_query)
-            
+
             url_str = f"{url.scheme}://{url.host}"
             if url.port:
                 url_str += f":{url.port}"
@@ -93,7 +93,7 @@ try:
                 span.record_exception(e)
             else:
                 return response
-            
+
     @wrapt.patch_function_wrapper("httpx", "AsyncHTTPTransport.handle_async_request")
     async def handle_async_request_with_instana(
         wrapped: Callable[..., "httpx.AsyncHTTPTransport.handle_async_request"],
@@ -124,5 +124,6 @@ try:
                 return response
 
     logger.debug("Instrumenting httpx")
+
 except ImportError:
     pass

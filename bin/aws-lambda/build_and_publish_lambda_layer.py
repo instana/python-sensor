@@ -3,12 +3,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
-import sys
 import json
+import os
 import shutil
+import sys
 import time
-from subprocess import call, check_call, check_output, CalledProcessError, DEVNULL
+from subprocess import DEVNULL, CalledProcessError, call, check_call, check_output
 
 for profile in ("china", "non-china"):
     try:
@@ -60,7 +60,18 @@ print(f"===> Creating new build directory: {build_directory}")
 os.makedirs(build_directory, exist_ok=True)
 
 print("===> Installing Instana and dependencies into build directory")
-call(["pip", "install", "-q", "-U", "-t", os.getcwd() + "/build/lambda/python", "instana"], env=local_env)
+call(
+    [
+        "pip",
+        "install",
+        "-q",
+        "-U",
+        "-t",
+        os.getcwd() + "/build/lambda/python",
+        "instana",
+    ],
+    env=local_env,
+)
 
 print("===> Manually copying in local dev code")
 shutil.rmtree(build_directory + "/instana")
@@ -71,7 +82,20 @@ timestamp = time.strftime("%Y-%m-%d_%H:%M:%S")
 zip_filename = f"instana-py-layer-{timestamp}.zip"
 
 os.chdir(os.getcwd() + "/build/lambda/")
-call(["zip", "-q", "-r", zip_filename, "./python", "-x", "*.pyc", "./python/pip*", "./python/setuptools*", "./python/wheel*"])
+call(
+    [
+        "zip",
+        "-q",
+        "-r",
+        zip_filename,
+        "./python",
+        "-x",
+        "*.pyc",
+        "./python/pip*",
+        "./python/setuptools*",
+        "./python/wheel*",
+    ]
+)
 
 fq_zip_filename = os.getcwd() + "/" + zip_filename
 aws_zip_filename = f"fileb://{fq_zip_filename}"
@@ -87,39 +111,39 @@ if dev_mode:
     LAYER_NAME = "instana-py-dev"
 else:
     target_regions = [
-               'af-south-1',
-               'ap-east-1',
-               'ap-northeast-1',
-               'ap-northeast-2',
-               'ap-northeast-3',
-               'ap-south-1',
-               'ap-south-2',
-               'ap-southeast-1',
-               'ap-southeast-2',
-               'ap-southeast-3',
-               'ap-southeast-4',
-               'ap-southeast-5',
-               'ap-southeast-7',
-               'ca-central-1',
-               'ca-west-1',
-               'cn-north-1',
-               'cn-northwest-1',
-               'eu-central-1',
-               'eu-central-2',
-               'eu-north-1',
-               'eu-south-1',
-               'eu-south-2',
-               'eu-west-1',
-               'eu-west-2',
-               'eu-west-3',
-               'il-central-1',
-               'me-central-1',
-               'me-south-1',
-               'sa-east-1',
-               'us-east-1',
-               'us-east-2',
-               'us-west-1',
-               'us-west-2'
+        "af-south-1",
+        "ap-east-1",
+        "ap-northeast-1",
+        "ap-northeast-2",
+        "ap-northeast-3",
+        "ap-south-1",
+        "ap-south-2",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-southeast-3",
+        "ap-southeast-4",
+        "ap-southeast-5",
+        "ap-southeast-7",
+        "ca-central-1",
+        "ca-west-1",
+        "cn-north-1",
+        "cn-northwest-1",
+        "eu-central-1",
+        "eu-central-2",
+        "eu-north-1",
+        "eu-south-1",
+        "eu-south-2",
+        "eu-west-1",
+        "eu-west-2",
+        "eu-west-3",
+        "il-central-1",
+        "me-central-1",
+        "me-south-1",
+        "sa-east-1",
+        "us-east-1",
+        "us-east-2",
+        "us-west-1",
+        "us-west-2",
     ]
     LAYER_NAME = "instana-python"
 
@@ -164,13 +188,29 @@ for region in target_regions:
 
     if dev_mode is False:
         print("===> Making layer public...")
-        response = check_output(["aws", "--region", region, "lambda", "add-layer-version-permission",
-                                 "--layer-name", LAYER_NAME, "--version-number", str(version),
-                                 "--statement-id", "public-permission-all-accounts",
-                                 "--principal", "*",
-                                 "--action", "lambda:GetLayerVersion",
-                                 "--output", "text",
-                                 "--profile", profile])
+        response = check_output(
+            [
+                "aws",
+                "--region",
+                region,
+                "lambda",
+                "add-layer-version-permission",
+                "--layer-name",
+                LAYER_NAME,
+                "--version-number",
+                str(version),
+                "--statement-id",
+                "public-permission-all-accounts",
+                "--principal",
+                "*",
+                "--action",
+                "lambda:GetLayerVersion",
+                "--output",
+                "text",
+                "--profile",
+                profile,
+            ]
+        )
 
     published[region] = json_data["LayerVersionArn"]
 

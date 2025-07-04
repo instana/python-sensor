@@ -175,8 +175,7 @@ metadata:
 spec:
   sidecars:
     - name: kafka
-      # public.ecr.aws/bitnami/kafka:3.9.0
-      image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
+      image: public.ecr.aws/bitnami/kafka:3.9
       env:
         - name: KAFKA_CFG_NODE_ID
           value: "0"
@@ -193,14 +192,14 @@ spec:
         - name: KAFKA_CFG_ADVERTISED_LISTENERS
           value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
   params:
-  - name: imageDigest
+  - name: pythonVersion
     type: string
   workspaces:
     - name: task-pvc
       mountPath: /workspace
   steps:
     - name: unittest
-      image: public.ecr.aws/docker/library/python@$(params.imageDigest)
+      image: public.ecr.aws/docker/library/python@$(params.pythonVersion)
       env:
         - name: TEST_CONFIGURATION
           value: kafka

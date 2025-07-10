@@ -51,11 +51,15 @@ try:
             "rabbitmq", span_context=parent_context
         ) as span:
             connection = instance.channel._connection
-            _extract_span_attributes(
-                span, connection, "publish", kwargs["routing_key"], instance.name
+            message = kwargs["message"] if kwargs.get("message") else args[0]
+            routing_key = (
+                kwargs["routing_key"] if kwargs.get("routing_key") else args[1]
             )
 
-            message = args[0]
+            _extract_span_attributes(
+                span, connection, "publish", routing_key, instance.name
+            )
+
             tracer.inject(
                 span.context,
                 Format.HTTP_HEADERS,

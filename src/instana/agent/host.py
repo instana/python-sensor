@@ -338,6 +338,7 @@ class HostAgent(BaseAgent):
         filtered_spans = self.filter_spans(payload.get("spans", []))
         if len(filtered_spans) > 0:
             logger.debug(f"Reporting {len(filtered_spans)} spans")
+            logger.debug(filtered_spans)
             response = self.client.post(
                 self.__traces_url(),
                 data=to_json(filtered_spans),

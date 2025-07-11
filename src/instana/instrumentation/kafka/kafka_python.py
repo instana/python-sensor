@@ -104,6 +104,8 @@ try:
 
         try:
             res = wrapped(*args, **kwargs)
+        except StopIteration:
+            pass
         except Exception as exc:
             exception = exc
         finally:

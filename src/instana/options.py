@@ -14,17 +14,15 @@ BaseOptions - base class for all environments.  Holds settings common to all.
     - GCROptions - Options class for Google cloud Run.  Holds settings specific to GCR.
 """
 
-import os
 import logging
+import os
 from typing import Any, Dict
 
-from instana.log import logger
-from instana.util.config import (
-    parse_ignored_endpoints,
-    parse_ignored_endpoints_from_yaml,
-)
-from instana.util.runtime import determine_service_name
 from instana.configurator import config
+from instana.log import logger
+from instana.util.config import (is_truthy, parse_ignored_endpoints,
+                                 parse_ignored_endpoints_from_yaml)
+from instana.util.runtime import determine_service_name
 
 
 class BaseOptions(object):
@@ -76,10 +74,9 @@ class BaseOptions(object):
                 str(os.environ["INSTANA_EXTRA_HTTP_HEADERS"]).lower().split(";")
             )
 
-        if "1" in [
-            os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None),  # deprecated
-            os.environ.get("INSTANA_ALLOW_ROOT_EXIT_SPAN", None),
-        ]:
+        # Check if either of the environment variables is truthy
+        if is_truthy(os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None)) or \
+           is_truthy(os.environ.get("INSTANA_ALLOW_ROOT_EXIT_SPAN", None)):
             self.allow_exit_as_root = True
 
         # The priority is as follows:
@@ -102,9 +99,7 @@ class BaseOptions(object):
             )
 
         if "INSTANA_KAFKA_TRACE_CORRELATION" in os.environ:
-            self.kafka_trace_correlation = (
-                os.environ["INSTANA_KAFKA_TRACE_CORRELATION"].lower() == "true"
-            )
+            self.kafka_trace_correlation = is_truthy(os.environ["INSTANA_KAFKA_TRACE_CORRELATION"])
         elif isinstance(config.get("tracing"), dict) and "kafka" in config["tracing"]:
             self.kafka_trace_correlation = config["tracing"]["kafka"].get(
                 "trace_correlation", True
@@ -167,8 +162,8 @@ class StandardOptions(BaseOptions):
                 )
                 and "trace-correlation" in tracing["kafka"]
             ):
-                self.kafka_trace_correlation = (
-                    str(tracing["kafka"].get("trace-correlation", True)) == "true"
+                self.kafka_trace_correlation = is_truthy(
+                    tracing["kafka"].get("trace-correlation", True)
                 )
 
             if (

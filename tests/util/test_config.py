@@ -1,12 +1,11 @@
 # (c) Copyright IBM Corp. 2025
 
-from instana.util.config import (
-    parse_endpoints_of_service,
-    parse_ignored_endpoints,
-    parse_ignored_endpoints_dict,
-    parse_kafka_methods,
-    parse_service_pair,
-)
+import pytest
+
+from instana.util.config import (is_truthy, parse_endpoints_of_service,
+                                 parse_ignored_endpoints,
+                                 parse_ignored_endpoints_dict,
+                                 parse_kafka_methods, parse_service_pair)
 
 
 class TestConfig:
@@ -168,3 +167,24 @@ class TestConfig:
         test_rule_as_str = ["send"]
         parsed_rule = parse_kafka_methods(test_rule_as_str)
         assert parsed_rule == ["kafka.send.*"]
+        
+    @pytest.mark.parametrize("value, expected", [
+        (True, True),
+        (False, False),
+        ("True", True),
+        ("true", True),
+        ("1", True),
+        (1, True),
+        ("False", False),
+        ("false", False),
+        ("0", False),
+        (0, False),
+        (None, False),
+        ("TRUE", True),
+        ("FALSE", False),
+        ("yes", False),  # Only "true" and "1" are considered truthy
+        ("no", False),
+    ])
+    def test_is_truthy(self, value, expected) -> None:
+        """Test the is_truthy function with various input values."""
+        assert is_truthy(value) == expected

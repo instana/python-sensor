@@ -146,3 +146,34 @@ def parse_ignored_endpoints_from_yaml(file_path: str) -> List[str]:
         return ignored_endpoints
     else:
         return []
+
+
+def is_truthy(value: Any) -> bool:
+    """
+    Check if a value is truthy, accepting various formats.
+    
+    @param value: The value to check
+    @return: True if the value is considered truthy, False otherwise
+    
+    Accepts the following as True:
+    - True (Python boolean)
+    - "True", "true" (case-insensitive string)
+    - "1" (string)
+    - 1 (integer)
+    """
+    if value is None:
+        return False
+    
+    if isinstance(value, bool):
+        return value
+    
+    if isinstance(value, int):
+        return value == 1
+    
+    if isinstance(value, str):
+        value_lower = value.lower()
+        return value_lower == "true" or value == "1"
+    
+    return False
+
+# Made with Bob

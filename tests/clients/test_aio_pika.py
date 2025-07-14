@@ -30,7 +30,7 @@ class TestAioPika:
         # Ensure that allow_exit_as_root has the default value
         agent.options.allow_exit_as_root = False
 
-    async def publish_message(self) -> None:
+    async def publish_message(self, params_combination: str = "both_args") -> None:
         # Perform connection
         connection = await connect()
 
@@ -46,11 +46,22 @@ class TestAioPika:
             exchange = await channel.declare_exchange("test.exchange")
             await queue.bind(exchange, routing_key=queue_name)
 
+            message = Message(f"Hello {queue_name}".encode())
+
+            args = ()
+            kwargs = {}
+
+            if params_combination == "both_kwargs":
+                kwargs = {"message": message, "routing_key": queue_name}
+            elif params_combination == "arg_kwarg":
+                args = (message,)
+                kwargs = {"routing_key": queue_name}
+            else:
+                # params_combination == "both_args"
+                args = (message, queue_name)
+
             # Sending the message
-            await exchange.publish(
-                Message(f"Hello {queue_name}".encode()),
-                routing_key=queue_name,
-            )
+            await exchange.publish(*args, **kwargs)
 
     async def delete_queue(self) -> None:
         connection = await connect()
@@ -75,9 +86,13 @@ class TestAioPika:
                         if queue.name in message.body.decode():
                             break
 
-    def test_basic_publish(self) -> None:
+    @pytest.mark.parametrize(
+        "params_combination",
+        ["both_args", "both_kwargs", "arg_kwarg"],
+    )
+    def test_basic_publish(self, params_combination) -> None:
         with tracer.start_as_current_span("test"):
-            self.loop.run_until_complete(self.publish_message())
+            self.loop.run_until_complete(self.publish_message(params_combination))
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2

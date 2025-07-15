@@ -34,10 +34,12 @@ collect_ignore_glob = [
 # ppc64le and s390x have limitations with some supported libraries.
 machine, py_version = get_runtime_env_info()
 if machine in ["ppc64le", "s390x"]:
-    collect_ignore_glob.extend([
-        "*test_google-cloud*",
-        "*test_pymongo*",
-    ])
+    collect_ignore_glob.extend(
+        [
+            "*test_google-cloud*",
+            "*test_pymongo*",
+        ]
+    )
 
     if machine == "ppc64le":
         collect_ignore_glob.append("*test_grpcio*")
@@ -51,13 +53,26 @@ if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
 if not os.environ.get("GEVENT_STARLETTE_TEST"):
-    collect_ignore_glob.extend([
-        "*test_gevent*",
-        "*test_starlette*",
-    ])
+    collect_ignore_glob.extend(
+        [
+            "*test_gevent*",
+            "*test_starlette*",
+        ]
+    )
 
 if not os.environ.get("KAFKA_TEST"):
     collect_ignore_glob.append("*kafka/test*")
+
+# Currently asyncio and tornado_server depends on aiohttp and
+# since aiohttp versions < 3.12.14 have vulnerability we skip the tests below
+if sys.version_info < (3, 9):
+    collect_ignore_glob.extend(
+        [
+            "*test_aiohttp*",
+            "*test_asyncio*",
+            "*test_tornado_server*",
+        ]
+    )
 
 if sys.version_info >= (3, 12):
     # Currently Spyne does not support python > 3.12
@@ -65,14 +80,17 @@ if sys.version_info >= (3, 12):
 
 
 if sys.version_info >= (3, 14):
-    collect_ignore_glob.extend([
-        # Currently not installable dependencies because of 3.14 incompatibilities
-        "*test_fastapi*",
-        # aiohttp-server tests failing due to deprecated methods used
-        "*test_aiohttp_server*",
-        # Currently Sanic does not support python >= 3.14
-        "*test_sanic*",
-    ])
+    collect_ignore_glob.extend(
+        [
+            # Currently not installable dependencies because of 3.14 incompatibilities
+            "*test_fastapi*",
+            # aiohttp-server tests failing due to deprecated methods used
+            "*test_aiohttp_server*",
+            # Currently Sanic does not support python >= 3.14
+            "*test_sanic*",
+        ]
+    )
+
 
 @pytest.fixture(scope="session")
 def celery_config():
@@ -253,9 +271,11 @@ def announce(monkeypatch, request) -> None:
     else:
         monkeypatch.setattr(HostAgent, "announce", always_true)
 
+
 # Mocking the import of uwsgi
 def _uwsgi_masterpid() -> int:
     return 12345
+
 
 module = type(sys)("uwsgi")
 module.opt = {

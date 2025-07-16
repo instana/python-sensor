@@ -23,7 +23,7 @@ from instana.span.base_span import BaseSpan
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracerProvider
-from instana.util.runtime import get_runtime_env_info
+from instana.util.runtime import is_ppc64, is_s390x
 
 collect_ignore_glob = [
     "*test_gevent*",
@@ -32,8 +32,7 @@ collect_ignore_glob = [
 ]
 
 # ppc64le and s390x have limitations with some supported libraries.
-machine, py_version = get_runtime_env_info()
-if machine in ["ppc64le", "s390x"]:
+if is_ppc64() or is_s390x():
     collect_ignore_glob.extend(
         [
             "*test_google-cloud*",
@@ -41,7 +40,7 @@ if machine in ["ppc64le", "s390x"]:
         ]
     )
 
-    if machine == "ppc64le":
+    if is_ppc64():
         collect_ignore_glob.append("*test_grpcio*")
 
 # # Cassandra and gevent tests are run in dedicated jobs on CircleCI and will

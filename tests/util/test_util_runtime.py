@@ -13,6 +13,9 @@ from instana.util.runtime import (
     get_proc_cmdline,
     get_py_source,
     get_runtime_env_info,
+    is_ppc64,
+    is_s390x,
+    is_windows,
     log_runtime_env_info,
 )
 
@@ -40,7 +43,7 @@ def test_get_py_source(tmp_path) -> None:
     [
         (
             "non_existent_file.py",
-            {"error": "[Errno 2] No such file or directory: 'non_existent_file.py'"}
+            {"error": "[Errno 2] No such file or directory: 'non_existent_file.py'"},
         ),
         ("temp_file.txt", {"error": "Only Python source files are allowed. (*.py)"}),
     ],
@@ -60,9 +63,9 @@ def test_get_py_source_exception(mocker) -> None:
 
     with pytest.raises(Exception) as exc_info:
         get_py_source("/path/to/non_readable_file.py")
-        assert str(exc_info.value) == exception_message, (
-            f"Expected {exception_message}, but got {exc_info.value}"
-        )
+        assert (
+            str(exc_info.value) == exception_message
+        ), f"Expected {exception_message}, but got {exc_info.value}"
 
 
 @pytest.fixture()
@@ -142,7 +145,7 @@ def test_determine_service_name_via_cli_args(
 ) -> None:
     mocker.patch("instana.util.runtime.get_proc_cmdline", return_value="python")
     sys.argv = argv
-    # We check "python" in the return of determine_service_name() because this 
+    # We check "python" in the return of determine_service_name() because this
     # can be the value "python3"
     assert "python" in determine_service_name()
 
@@ -173,14 +176,18 @@ def test_determine_service_name_via_tty(
         (True, "python script.py arg1 arg2"),
     ],
 )
-def test_get_proc_cmdline(as_string: bool, expected: Union[List[str], str], mocker: "MockerFixture") -> None:
+def test_get_proc_cmdline(
+    as_string: bool, expected: Union[List[str], str], mocker: "MockerFixture"
+) -> None:
     # Mock the proc filesystem presence
     mocker.patch("os.path.isfile", return_value="/proc/self/cmdline")
     # Mock the content of /proc/self/cmdline
     mocked_data = mocker.mock_open(read_data="python\0script.py\0arg1\0arg2\0")
     mocker.patch("builtins.open", mocked_data)
 
-    assert get_proc_cmdline(as_string) == expected, f"Expected {expected}, but got {get_proc_cmdline(as_string)}"
+    assert (
+        get_proc_cmdline(as_string) == expected
+    ), f"Expected {expected}, but got {get_proc_cmdline(as_string)}"
 
 
 @pytest.mark.parametrize(
@@ -198,29 +205,88 @@ def test_get_proc_cmdline_no_proc_fs(
     assert get_proc_cmdline(as_string) == expected
 
 
-
 def test_get_runtime_env_info(mocker: "MockerFixture") -> None:
     """Test the get_runtime_env_info function."""
-    expected_output = ("x86_64", "3.13.5")
+    expected_output = ("x86_64", "Linux", "3.13.5")
 
     mocker.patch("platform.machine", return_value=expected_output[0])
-    mocker.patch("platform.python_version", return_value=expected_output[1])
+    mocker.patch("platform.system", return_value=expected_output[1])
+    mocker.patch("platform.python_version", return_value=expected_output[2])
 
-    machine, py_version = get_runtime_env_info()
+    machine, system, py_version = get_runtime_env_info()
     assert machine == expected_output[0]
-    assert py_version == expected_output[1]
+    assert system == expected_output[1]
+    assert py_version == expected_output[2]
 
 
-def test_log_runtime_env_info(mocker: "MockerFixture", caplog: "LogCaptureFixture") -> None:
+def test_log_runtime_env_info(
+    mocker: "MockerFixture", caplog: "LogCaptureFixture"
+) -> None:
     """Test the log_runtime_env_info function."""
-    expected_output = ("x86_64", "3.13.5")
+    expected_output = ("x86_64", "Linux", "3.13.5")
     caplog.set_level(logging.DEBUG, logger="instana")
 
     mocker.patch("platform.machine", return_value=expected_output[0])
-    mocker.patch("platform.python_version", return_value=expected_output[1])
+    mocker.patch("platform.system", return_value=expected_output[1])
+    mocker.patch("platform.python_version", return_value=expected_output[2])
 
     log_runtime_env_info()
-    assert (
-        f"Runtime environment: Machine: {expected_output[0]}, Python version: {expected_output[1]}"
-        in caplog.messages
+
+    expected_log_message = f"Runtime environment: Machine: {expected_output[0]}, System: {expected_output[1]}, Python version: {expected_output[2]}"
+    assert expected_log_message in caplog.messages
+
+
+@pytest.mark.parametrize(
+    "system, expected",
+    [
+        ("Windows", True),
+        ("windows", True),  # Test case insensitivity
+        ("WINDOWS", True),  # Test case insensitivity
+        ("Linux", False),
+        ("Darwin", False),
+    ],
+)
+def test_is_windows(system: str, expected: bool, mocker: "MockerFixture") -> None:
+    """Test the is_windows function."""
+    mocker.patch(
+        "instana.util.runtime.get_runtime_env_info",
+        return_value=("x86_64", system, "3.13.5"),
     )
+    assert is_windows() == expected
+
+
+@pytest.mark.parametrize(
+    "machine, expected",
+    [
+        ("ppc64le", True),
+        ("ppc64", True),
+        ("PPC64", True),  # Test case insensitivity
+        ("x86_64", False),
+        ("arm64", False),
+    ],
+)
+def test_is_ppc64(machine: str, expected: bool, mocker: "MockerFixture") -> None:
+    """Test the is_ppc64 function."""
+    mocker.patch(
+        "instana.util.runtime.get_runtime_env_info",
+        return_value=(machine, "Linux", "3.13.5"),
+    )
+    assert is_ppc64() == expected
+
+
+@pytest.mark.parametrize(
+    "machine, expected",
+    [
+        ("s390x", True),
+        ("S390X", True),  # Test case insensitivity
+        ("x86_64", False),
+        ("arm64", False),
+    ],
+)
+def test_is_s390x(machine: str, expected: bool, mocker: "MockerFixture") -> None:
+    """Test the is_s390x function."""
+    mocker.patch(
+        "instana.util.runtime.get_runtime_env_info",
+        return_value=(machine, "Linux", "3.13.5"),
+    )
+    assert is_s390x() == expected

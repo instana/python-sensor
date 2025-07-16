@@ -68,7 +68,7 @@ try:
         span_type: str,
         topic: Optional[str],
         headers: Optional[List[Tuple[str, bytes]]] = [],
-        exception: Optional[str] = None,
+        exception: Optional[Exception] = None,
     ) -> None:
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = (
@@ -104,6 +104,8 @@ try:
 
         try:
             res = wrapped(*args, **kwargs)
+        except StopIteration:
+            pass
         except Exception as exc:
             exception = exc
         finally:
@@ -145,19 +147,17 @@ try:
             res = wrapped(*args, **kwargs)
         except Exception as exc:
             exception = exc
-        finally:
-            if res:
-                for partition, consumer_records in res.items():
-                    for message in consumer_records:
-                        create_span(
-                            "poll",
-                            partition.topic,
-                            message.headers if hasattr(message, "headers") else [],
-                        )
-            else:
-                create_span(
-                    "poll", list(instance.subscription())[0], exception=exception
-                )
+
+        if res:
+            for partition, consumer_records in res.items():
+                for message in consumer_records:
+                    create_span(
+                        "poll",
+                        partition.topic,
+                        message.headers if hasattr(message, "headers") else [],
+                    )
+        else:
+            create_span("poll", list(instance.subscription())[0], exception=exception)
 
         return res
 

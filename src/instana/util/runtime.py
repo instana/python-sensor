@@ -13,14 +13,14 @@ from instana.log import logger
 def get_py_source(filename: str) -> Dict[str, str]:
     """
     Retrieves the source code for Python files requested by the UI via the host agent.
-    
+
     This function reads and returns the content of Python source files. It validates
     that the requested file has a .py extension and returns an appropriate error
     message if the file cannot be read or is not a Python file.
-    
+
     Args:
         filename (str): The fully qualified path to a Python source file
-        
+
     Returns:
         Dict[str, str]: A dictionary containing either:
             - {"data": source_code} if successful
@@ -32,7 +32,7 @@ def get_py_source(filename: str) -> Dict[str, str]:
             response = {"error": "Only Python source files are allowed. (*.py)"}
         else:
             pysource = ""
-            with open(filename, 'r') as pyfile:
+            with open(filename, "r") as pyfile:
                 pysource = pyfile.read()
 
             response = {"data": pysource}
@@ -50,7 +50,7 @@ regexp_py = re.compile(r"\.py$")
 def determine_service_name() -> str:
     """
     Determines the most appropriate service name for this application process.
-    
+
     The service name is determined using the following priority order:
     1. INSTANA_SERVICE_NAME environment variable if set
     2. For specific frameworks:
@@ -61,7 +61,7 @@ def determine_service_name() -> str:
     3. Command line arguments (first non-option argument)
     4. Executable name
     5. "python" as a fallback
-    
+
     Returns:
         str: The determined service name
     """
@@ -75,13 +75,13 @@ def determine_service_name() -> str:
     basename = None
 
     try:
-        if not hasattr(sys, 'argv'):
+        if not hasattr(sys, "argv"):
             proc_cmdline = get_proc_cmdline(as_string=False)
             return os.path.basename(proc_cmdline[0])
 
         # Get first argument that is not an CLI option
         for candidate in sys.argv:
-            if len(candidate) > 0 and candidate[0] != '-':
+            if len(candidate) > 0 and candidate[0] != "-":
                 basename = candidate
                 break
 
@@ -93,7 +93,7 @@ def determine_service_name() -> str:
             basename = os.path.basename(basename)
 
         if basename == "gunicorn":
-            if 'setproctitle' in sys.modules:
+            if "setproctitle" in sys.modules:
                 # With the setproctitle package, gunicorn renames their processes
                 # to pretty things - we use those by default
                 # gunicorn: master [djface.wsgi]
@@ -104,8 +104,8 @@ def determine_service_name() -> str:
         elif "FLASK_APP" in os.environ:
             app_name = os.environ["FLASK_APP"]
         elif "DJANGO_SETTINGS_MODULE" in os.environ:
-            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split('.')[0]
-        elif basename == '':
+            app_name = os.environ["DJANGO_SETTINGS_MODULE"].split(".")[0]
+        elif basename == "":
             if sys.stdout.isatty():
                 app_name = "Interactive Console"
             else:
@@ -142,21 +142,22 @@ def determine_service_name() -> str:
 
     return app_name
 
+
 def get_proc_cmdline(as_string: bool = False) -> Union[List[str], str]:
     """
     Parses the process command line from the proc file system.
-    
+
     This function attempts to read the command line of the current process from
     /proc/self/cmdline. If the proc filesystem is not available (e.g., on non-Unix
     systems), it returns a default value.
-    
+
     Args:
-        as_string (bool, optional): If True, returns the command line as a single 
+        as_string (bool, optional): If True, returns the command line as a single
                                    space-separated string. If False, returns a list
                                    of command line arguments. Defaults to False.
-    
+
     Returns:
-        Union[List[str], str]: The command line as either a list of arguments or a 
+        Union[List[str], str]: The command line as either a list of arguments or a
                               space-separated string, depending on the as_string parameter.
     """
     name = "python"
@@ -172,7 +173,7 @@ def get_proc_cmdline(as_string: bool = False) -> Union[List[str], str]:
 
     # /proc/self/command line will have strings with null bytes such as "/usr/bin/python\0-s\0-d\0".  This
     # bit will prep the return value and drop the trailing null byte
-    parts = name.split('\0')
+    parts = name.split("\0")
     parts.pop()
 
     if as_string is True:
@@ -181,32 +182,70 @@ def get_proc_cmdline(as_string: bool = False) -> Union[List[str], str]:
     return parts
 
 
-def get_runtime_env_info() -> Tuple[str, str]:
+def get_runtime_env_info() -> Tuple[str, str, str]:
     """
     Returns information about the current runtime environment.
-    
-    This function collects and returns details about the machine architecture 
+
+    This function collects and returns details about the machine architecture
     and Python version being used by the application.
-    
+
     Returns:
-        Tuple[str, str]: A tuple containing:
+        Tuple[str, str, str]: A tuple containing:
             - Machine type (e.g., 'arm64', 'ppc64le')
+            - System/OS name (e.g., ' Linux', 'Windows')
             - Python version string
     """
     machine = platform.machine()
+    system = platform.system()
     python_version = platform.python_version()
-    
-    return machine, python_version
+
+    return machine, system, python_version
 
 
 def log_runtime_env_info() -> None:
     """
     Logs debug information about the current runtime environment.
-    
+
     This function retrieves machine architecture and Python version information
     using get_runtime_env_info() and logs it as a debug message.
     """
-    machine, python_version = get_runtime_env_info()
-    logger.debug(f"Runtime environment: Machine: {machine}, Python version: {python_version}")
+    machine, system, python_version = get_runtime_env_info()
+    logger.debug(
+        f"Runtime environment: Machine: {machine}, System: {system}, Python version: {python_version}"
+    )
+
+
+def is_windows() -> bool:
+    """
+    Checks if the current runtime environment is running on a Windows operating system.
+
+    Returns:
+        bool: True if the current runtime environment is Windows, False otherwise.
+    """
+    system = get_runtime_env_info()[1].lower()
+    return system == "windows"
+
+
+def is_ppc64() -> bool:
+    """
+    Checks if the current runtime environment is running on ppc64 architecture.
+
+    Returns:
+        bool: True if the current runtime environment is on ppc64 architecture, False otherwise.
+    """
+    machine = get_runtime_env_info()[0].lower()
+    return machine.startswith("ppc64")
+
+
+def is_s390x() -> bool:
+    """
+    Checks if the current runtime environment is running on s390x architecture.
+
+    Returns:
+        bool: True if the current runtime environment is on s390x architecture, False otherwise.
+    """
+    machine = get_runtime_env_info()[0].lower()
+    return machine == "s390x"
+
 
 # Made with Bob

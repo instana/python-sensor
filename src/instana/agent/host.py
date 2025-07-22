@@ -9,7 +9,7 @@ monitoring state and reporting that data.
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import requests
 import urllib3
@@ -17,13 +17,16 @@ from requests import Response
 
 from instana.agent.base import BaseAgent
 from instana.collector.host import HostCollector
-from instana.fsm import Discovery, TheMachine
+from instana.fsm import TheMachine
 from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
 from instana.util.runtime import get_py_source, log_runtime_env_info
 from instana.util.span_utils import get_operation_specifiers
 from instana.version import VERSION
+
+if TYPE_CHECKING:
+    from instana.util.process_discovery import Discovery
 
 
 class AnnounceData(object):
@@ -176,7 +179,7 @@ class HostAgent(BaseAgent):
 
     def announce(
         self,
-        discovery: Discovery,
+        discovery: "Discovery",
     ) -> Optional[Dict[str, Any]]:
         """
         With the passed in Discovery class, attempt to announce to the host agent.

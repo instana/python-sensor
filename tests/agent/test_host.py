@@ -14,12 +14,13 @@ from mock import MagicMock, patch
 
 from instana.agent.host import AnnounceData, HostAgent
 from instana.collector.host import HostCollector
-from instana.fsm import Discovery, TheMachine
+from instana.fsm import TheMachine
 from instana.options import StandardOptions
 from instana.recorder import StanRecorder
 from instana.singletons import get_agent
 from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
+from instana.util.process_discovery import Discovery
 from instana.util.runtime import is_windows
 
 
@@ -714,4 +715,5 @@ class TestHostAgent:
         assert not self.agent._HostAgent__is_endpoint_ignored("service2", "method2")
 
         # don't ignore other services
+        assert not self.agent._HostAgent__is_endpoint_ignored("service3")
         assert not self.agent._HostAgent__is_endpoint_ignored("service3")

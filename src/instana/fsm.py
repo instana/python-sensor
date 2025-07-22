@@ -8,45 +8,22 @@ import socket
 import subprocess
 import sys
 import threading
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 from fysom import Fysom
 
 from instana.log import logger
 from instana.util import get_default_gateway
+from instana.util.process_discovery import Discovery
 from instana.version import VERSION
 
 if TYPE_CHECKING:
     from instana.agent.host import HostAgent
 
 
-class Discovery:
-    pid: int = 0
-    name: Optional[str] = None
-    args: Optional[List[str]] = None
-    fd: int = -1
-    inode: str = ""
-
-    def __init__(self, **kwds: Any) -> None:
-        self.__dict__.update(kwds)
-
-    def to_dict(self) -> Dict[str, Any]:
-        kvs: Dict[str, Any] = dict()
-        kvs["pid"] = self.pid
-        kvs["name"] = self.name
-        kvs["args"] = self.args
-        kvs["fd"] = self.fd
-        kvs["inode"] = self.inode
-        return kvs
-
-
 class TheMachine:
     RETRY_PERIOD = 30
     THREAD_NAME = "Instana Machine"
-
-    agent: Optional["HostAgent"] = None
-    fsm = None
-    timer = None
 
     warnedPeriodic = False
 

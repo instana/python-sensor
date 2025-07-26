@@ -11,6 +11,7 @@ Source Code: https://github.com/instana/python-sensor
 """
 
 import importlib
+import importlib.util
 import os
 import sys
 from typing import Tuple
@@ -70,7 +71,7 @@ def load(_: object) -> None:
 def apply_gevent_monkey_patch() -> None:
     from gevent import monkey
 
-    if os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
+    if provided_options := os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS"):
 
         def short_key(k: str) -> str:
             return k[3:] if k.startswith("no-") else k
@@ -81,12 +82,8 @@ def apply_gevent_monkey_patch() -> None:
         import inspect
 
         all_accepted_patch_all_args = inspect.getfullargspec(monkey.patch_all)[0]
-        provided_options = (
-            os.environ.get("INSTANA_GEVENT_MONKEY_OPTIONS")
-            .replace(" ", "")
-            .replace("--", "")
-            .split(",")
-        )
+        provided_options.replace(" ", "").replace("--", "").split(",")
+
         provided_options = [
             k for k in provided_options if short_key(k) in all_accepted_patch_all_args
         ]
@@ -115,9 +112,7 @@ def get_aws_lambda_handler() -> Tuple[str, str]:
     handler_function = "lambda_handler"
 
     try:
-        handler = os.environ.get("LAMBDA_HANDLER", False)
-
-        if handler:
+        if handler := os.environ.get("LAMBDA_HANDLER", None):
             parts = handler.split(".")
             handler_function = parts.pop().strip()
             handler_module = ".".join(parts).strip()
@@ -159,13 +154,10 @@ def boot_agent() -> None:
 
     import instana.singletons  # noqa: F401
 
-    # Instrumentation
+    # Import & initialize instrumentation
     if "INSTANA_DISABLE_AUTO_INSTR" not in os.environ:
-        # TODO: remove the following entries as the migration of the
-        # instrumentation codes are finalised.
-
-        # Import & initialize instrumentation
         from instana.instrumentation import (
+            aio_pika,  # noqa: F401
             aioamqp,  # noqa: F401
             asyncio,  # noqa: F401
             cassandra,  # noqa: F401
@@ -173,7 +165,6 @@ def boot_agent() -> None:
             couchbase,  # noqa: F401
             fastapi,  # noqa: F401
             flask,  # noqa: F401
-            # gevent_inst,  # noqa: F401
             grpcio,  # noqa: F401
             httpx,  # noqa: F401
             logging,  # noqa: F401
@@ -186,11 +177,10 @@ def boot_agent() -> None:
             pyramid,  # noqa: F401
             redis,  # noqa: F401
             sanic,  # noqa: F401
+            spyne,  # noqa: F401
             sqlalchemy,  # noqa: F401
             starlette,  # noqa: F401
             urllib3,  # noqa: F401
-            spyne,  # noqa: F401
-            aio_pika,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (
             client as aiohttp_client,  # noqa: F401
@@ -218,11 +208,21 @@ def boot_agent() -> None:
             server as tornado_server,  # noqa: F401
         )
 
+        # from instana.instrumentation import gevent_inst # noqa: F401
+
     # Hooks
     from instana.hooks import (
         hook_gunicorn,  # noqa: F401
         hook_uwsgi,  # noqa: F401
     )
+
+
+def _start_profiler() -> None:
+    """Start the Instana Auto Profile."""
+    from instana.singletons import get_profiler
+
+    if profiler := get_profiler():
+        profiler.start()
 
 
 if "INSTANA_DISABLE" not in os.environ:
@@ -246,12 +246,9 @@ if "INSTANA_DISABLE" not in os.environ:
             and importlib.util.find_spec("gevent")
         ):
             apply_gevent_monkey_patch()
+
         # AutoProfile
         if "INSTANA_AUTOPROFILE" in os.environ:
-            from instana.singletons import get_profiler
-
-            profiler = get_profiler()
-            if profiler:
-                profiler.start()
+            _start_profiler()
 
         boot_agent()

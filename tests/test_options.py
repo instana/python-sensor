@@ -4,8 +4,8 @@ import logging
 import os
 from typing import Generator
 
-from mock import patch
 import pytest
+from mock import patch
 
 from instana.configurator import config
 from instana.options import (
@@ -41,6 +41,8 @@ class TestBaseOptions:
         assert self.base_options.secrets_matcher == "contains-ignore-case"
         assert self.base_options.secrets_list == ["key", "pass", "secret"]
         assert not self.base_options.secrets
+        assert self.base_options.disabled_spans == []
+        assert self.base_options.enabled_spans == []
 
     def test_base_options_with_config(self) -> None:
         config["tracing"] = {
@@ -62,6 +64,7 @@ class TestBaseOptions:
             "INSTANA_EXTRA_HTTP_HEADERS": "SOMETHING;HERE",
             "INSTANA_IGNORE_ENDPOINTS": "service1;service2:method1,method2",
             "INSTANA_SECRETS": "secret1:username,password",
+            "INSTANA_TRACING_DISABLE": "logging, redis,kafka",
         },
     )
     def test_base_options_with_env_vars(self) -> None:
@@ -79,6 +82,11 @@ class TestBaseOptions:
 
         assert self.base_options.secrets_matcher == "secret1"
         assert self.base_options.secrets_list == ["username", "password"]
+
+        assert "logging" in self.base_options.disabled_spans
+        assert "redis" in self.base_options.disabled_spans
+        assert "kafka" in self.base_options.disabled_spans
+        assert len(self.base_options.enabled_spans) == 0
 
     @patch.dict(
         os.environ,
@@ -108,17 +116,29 @@ class TestBaseOptions:
             "INSTANA_IGNORE_ENDPOINTS": "env_service1;env_service2:method1,method2",
             "INSTANA_KAFKA_TRACE_CORRELATION": "false",
             "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
+            "INSTANA_TRACING_DISABLE": "logging,redis, kafka",
         },
     )
     def test_set_trace_configurations_by_env_variable(self) -> None:
         # The priority is as follows:
         # environment variables > in-code configuration >
         # > agent config (configuration.yaml) > default value
+
+        # in-code configuration
+        config["tracing"] = {}
         config["tracing"]["ignore_endpoints"] = (
             "config_service1;config_service2:method1,method2"
         )
         config["tracing"]["kafka"] = {"trace_correlation": True}
-        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+        config["tracing"]["disable"] = [{"databases": True}]
+
+        # agent config (configuration.yaml)
+        test_tracing = {
+            "ignore-endpoints": "service1;service2:method1,method2",
+            "disable": [
+                {"messaging": True},
+            ],
+        }
 
         # Setting by env variable
         self.base_options = StandardOptions()
@@ -131,6 +151,14 @@ class TestBaseOptions:
         ]
         assert not self.base_options.kafka_trace_correlation
 
+        # Check disabled_spans list
+        assert "logging" in self.base_options.disabled_spans
+        assert "redis" in self.base_options.disabled_spans
+        assert "kafka" in self.base_options.disabled_spans
+        assert "databases" not in self.base_options.disabled_spans
+        assert "messaging" not in self.base_options.disabled_spans
+        assert len(self.base_options.enabled_spans) == 0
+
     @patch.dict(
         os.environ,
         {
@@ -138,12 +166,25 @@ class TestBaseOptions:
             "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
         },
     )
-    def test_set_trace_configurations_by_local_configuration_file(self) -> None:
+    def test_set_trace_configurations_by_in_code_configuration(self) -> None:
+        # The priority is as follows:
+        # in-code configuration > agent config (configuration.yaml) > default value
+
+        # in-code configuration
+        config["tracing"] = {}
         config["tracing"]["ignore_endpoints"] = (
             "config_service1;config_service2:method1,method2"
         )
         config["tracing"]["kafka"] = {"trace_correlation": True}
-        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+        config["tracing"]["disable"] = [{"databases": True}]
+
+        # agent config (configuration.yaml)
+        test_tracing = {
+            "ignore-endpoints": "service1;service2:method1,method2",
+            "disable": [
+                {"messaging": True},
+            ],
+        }
 
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
@@ -163,7 +204,16 @@ class TestBaseOptions:
             "kafka.*.topic4",
         ]
 
+        # Check disabled_spans list
+        assert "databases" in self.base_options.disabled_spans
+        assert "logging" not in self.base_options.disabled_spans
+        assert "redis" not in self.base_options.disabled_spans
+        assert "kafka" not in self.base_options.disabled_spans
+        assert "messaging" not in self.base_options.disabled_spans
+        assert len(self.base_options.enabled_spans) == 0
+
     def test_set_trace_configurations_by_in_code_variable(self) -> None:
+        config["tracing"] = {}
         config["tracing"]["ignore_endpoints"] = (
             "config_service1;config_service2:method1,method2"
         )
@@ -184,6 +234,13 @@ class TestBaseOptions:
         test_tracing = {
             "ignore-endpoints": "service1;service2:method1,method2",
             "trace-correlation": True,
+            "disable": [
+                {
+                    "messaging": True,
+                    "logging": True,
+                    "kafka": False,
+                },
+            ],
         }
 
         self.base_options = StandardOptions()
@@ -196,12 +253,78 @@ class TestBaseOptions:
         ]
         assert self.base_options.kafka_trace_correlation
 
+        # Check disabled_spans list
+        assert "databases" not in self.base_options.disabled_spans
+        assert "logging" in self.base_options.disabled_spans
+        assert "messaging" in self.base_options.disabled_spans
+        assert "kafka" in self.base_options.enabled_spans
+
     def test_set_trace_configurations_by_default(self) -> None:
         self.base_options = StandardOptions()
         self.base_options.set_tracing({})
 
         assert not self.base_options.ignore_endpoints
         assert self.base_options.kafka_trace_correlation
+        assert len(self.base_options.disabled_spans) == 0
+        assert len(self.base_options.enabled_spans) == 0
+
+    @patch.dict(
+        os.environ,
+        {"INSTANA_TRACING_DISABLE": "true"},
+    )
+    def test_set_trace_configurations_disable_all_tracing(self) -> None:
+        self.base_options = BaseOptions()
+
+        # All categories should be disabled
+        assert "logging" in self.base_options.disabled_spans
+        assert "databases" in self.base_options.disabled_spans
+        assert "messaging" in self.base_options.disabled_spans
+        assert "protocols" in self.base_options.disabled_spans
+
+        # Check is_span_disabled method
+        assert self.base_options.is_span_disabled(category="logging")
+        assert self.base_options.is_span_disabled(category="databases")
+        assert self.base_options.is_span_disabled(span_type="redis")
+
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_CONFIG_PATH": "tests/util/test_configuration-1.yaml",
+        },
+    )
+    def test_set_trace_configurations_disable_local_yaml(self) -> None:
+        self.base_options = BaseOptions()
+
+        # All categories should be disabled
+        assert "logging" in self.base_options.disabled_spans
+        assert "databases" in self.base_options.disabled_spans
+        assert "redis" not in self.base_options.disabled_spans
+        assert "redis" in self.base_options.enabled_spans
+
+        # Check is_span_disabled method
+        assert self.base_options.is_span_disabled(category="logging")
+        assert self.base_options.is_span_disabled(category="databases")
+        assert not self.base_options.is_span_disabled(span_type="redis")
+
+    def test_is_span_disabled_method(self) -> None:
+        self.base_options = BaseOptions()
+
+        # Default behavior - nothing disabled
+        assert not self.base_options.is_span_disabled(category="logging")
+        assert not self.base_options.is_span_disabled(span_type="redis")
+
+        # Disable a category
+        self.base_options.disabled_spans = ["databases"]
+        assert not self.base_options.is_span_disabled(category="logging")
+        assert self.base_options.is_span_disabled(category="databases")
+        assert self.base_options.is_span_disabled(span_type="redis")
+        assert self.base_options.is_span_disabled(span_type="mysql")
+
+        # Test precedence rules
+        self.base_options.enabled_spans = ["redis"]
+        assert self.base_options.is_span_disabled(category="databases")
+        assert self.base_options.is_span_disabled(span_type="mysql")
+        assert not self.base_options.is_span_disabled(span_type="redis")
 
 
 class TestStandardOptions:
@@ -257,6 +380,25 @@ class TestStandardOptions:
             in caplog.messages
         )
         assert not self.standart_options.extra_http_headers
+
+    def test_set_tracing_with_span_disabling(self) -> None:
+        self.standart_options = StandardOptions()
+
+        test_tracing = {
+            "disable": [{"logging": True}, {"redis": False}, {"databases": True}]
+        }
+        self.standart_options.set_tracing(test_tracing)
+
+        # Check disabled_spans and enabled_spans lists
+        assert "logging" in self.standart_options.disabled_spans
+        assert "databases" in self.standart_options.disabled_spans
+        assert "redis" in self.standart_options.enabled_spans
+
+        # Check is_span_disabled method
+        assert self.standart_options.is_span_disabled(category="logging")
+        assert self.standart_options.is_span_disabled(category="databases")
+        assert self.standart_options.is_span_disabled(span_type="mysql")
+        assert not self.standart_options.is_span_disabled(span_type="redis")
 
     def test_set_from(self) -> None:
         self.standart_options = StandardOptions()
@@ -493,3 +635,6 @@ class TestGCROptions:
         assert self.gcr_options.endpoint_proxy == {"https": "proxy1"}
         assert self.gcr_options.timeout == 3
         assert self.gcr_options.log_level == logging.INFO
+
+
+# Made with Bob

@@ -20,6 +20,7 @@ from instana.collector.helpers.runtime import (
     is_autowrapt_instrumented,
     is_webhook_instrumented,
 )
+from instana.util.config import is_truthy
 from instana.version import VERSION
 
 __author__ = "Instana Inc."
@@ -225,7 +226,9 @@ def _start_profiler() -> None:
         profiler.start()
 
 
-if "INSTANA_DISABLE" not in os.environ:
+if "INSTANA_DISABLE" not in os.environ and not is_truthy(
+    os.environ.get("INSTANA_TRACING_DISABLE", None)
+):
     # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
     # and some Pipenv installs.  If this is the case, it's best effort.
     if (

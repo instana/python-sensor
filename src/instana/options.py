@@ -16,12 +16,20 @@ BaseOptions - base class for all environments.  Holds settings common to all.
 
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 from instana.configurator import config
 from instana.log import logger
-from instana.util.config import (is_truthy, parse_ignored_endpoints,
-                                 parse_ignored_endpoints_from_yaml)
+from instana.util.config import (
+    SPAN_TYPE_TO_CATEGORY,
+    get_disable_trace_configurations_from_env,
+    get_disable_trace_configurations_from_local,
+    get_disable_trace_configurations_from_yaml,
+    is_truthy,
+    parse_ignored_endpoints,
+    parse_ignored_endpoints_from_yaml,
+    parse_span_disabling,
+)
 from instana.util.runtime import determine_service_name
 
 
@@ -36,6 +44,11 @@ class BaseOptions(object):
         self.allow_exit_as_root = False
         self.ignore_endpoints = []
         self.kafka_trace_correlation = True
+
+        # disabled_spans lists all categories and types that should be disabled
+        self.disabled_spans = []
+        # enabled_spans lists all categories and types that should be enabled, preceding disabled_spans
+        self.enabled_spans = []
 
         self.set_trace_configurations()
 
@@ -75,8 +88,9 @@ class BaseOptions(object):
             )
 
         # Check if either of the environment variables is truthy
-        if is_truthy(os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None)) or \
-           is_truthy(os.environ.get("INSTANA_ALLOW_ROOT_EXIT_SPAN", None)):
+        if is_truthy(os.environ.get("INSTANA_ALLOW_EXIT_AS_ROOT", None)) or is_truthy(
+            os.environ.get("INSTANA_ALLOW_ROOT_EXIT_SPAN", None)
+        ):
             self.allow_exit_as_root = True
 
         # The priority is as follows:
@@ -99,11 +113,68 @@ class BaseOptions(object):
             )
 
         if "INSTANA_KAFKA_TRACE_CORRELATION" in os.environ:
-            self.kafka_trace_correlation = is_truthy(os.environ["INSTANA_KAFKA_TRACE_CORRELATION"])
+            self.kafka_trace_correlation = is_truthy(
+                os.environ["INSTANA_KAFKA_TRACE_CORRELATION"]
+            )
         elif isinstance(config.get("tracing"), dict) and "kafka" in config["tracing"]:
             self.kafka_trace_correlation = config["tracing"]["kafka"].get(
                 "trace_correlation", True
             )
+
+        self.set_disable_trace_configurations()
+
+    def set_disable_trace_configurations(self) -> None:
+        disabled_spans = []
+        enabled_spans = []
+
+        # The precedence is as follows:
+        # environment variables > in-code (local) config > agent config (configuration.yaml)
+        # For the env vars: INSTANA_TRACING_DISABLE > INSTANA_CONFIG_PATH
+        if "INSTANA_TRACING_DISABLE" in os.environ:
+            disabled_spans, enabled_spans = get_disable_trace_configurations_from_env()
+        elif "INSTANA_CONFIG_PATH" in os.environ:
+            disabled_spans, enabled_spans = get_disable_trace_configurations_from_yaml()
+        else:
+            # In-code (local) config
+            # The agent config (configuration.yaml) is handled in StandardOptions.set_disable_tracing()
+            disabled_spans, enabled_spans = (
+                get_disable_trace_configurations_from_local()
+            )
+
+        self.disabled_spans.extend(disabled_spans)
+        self.enabled_spans.extend(enabled_spans)
+
+    def is_span_disabled(self, category=None, span_type=None) -> bool:
+        """
+        Check if a span is disabled based on its category and type.
+
+        Args:
+            category (str): The span category (e.g., "logging", "databases")
+            span_type (str): The span type (e.g., "redis", "kafka")
+
+        Returns:
+            bool: True if the span is disabled, False otherwise
+        """
+        # If span_type is provided, check if it's disabled
+        if span_type and span_type in self.disabled_spans:
+            return True
+
+        # If category is provided directly, check if it's disabled
+        if category and category in self.disabled_spans:
+            return True
+
+        # If span_type is provided but not explicitly configured,
+        # check if its parent category is disabled. Also check for the precedence rules
+        if span_type and span_type in SPAN_TYPE_TO_CATEGORY:
+            parent_category = SPAN_TYPE_TO_CATEGORY[span_type]
+            if (
+                parent_category in self.disabled_spans
+                and span_type not in self.enabled_spans
+            ):
+                return True
+
+        # Default: not disabled
+        return False
 
 
 class StandardOptions(BaseOptions):
@@ -176,6 +247,26 @@ class StandardOptions(BaseOptions):
 
         if "extra-http-headers" in tracing:
             self.extra_http_headers = tracing["extra-http-headers"]
+
+        # Handle span disabling configuration
+        if "disable" in tracing:
+            self.set_disable_tracing(tracing["disable"])
+
+    def set_disable_tracing(self, tracing_config: Sequence[Dict[str, Any]]) -> None:
+        # The precedence is as follows:
+        # environment variables > in-code (local) config > agent config (configuration.yaml)
+        if (
+            "INSTANA_TRACING_DISABLE" not in os.environ
+            and "INSTANA_CONFIG_PATH" not in os.environ
+            and not (
+                isinstance(config.get("tracing"), dict)
+                and "disable" in config["tracing"]
+            )
+        ):
+            # agent config (configuration.yaml)
+            disabled_spans, enabled_spans = parse_span_disabling(tracing_config)
+            self.disabled_spans.extend(disabled_spans)
+            self.enabled_spans.extend(enabled_spans)
 
     def set_from(self, res_data: Dict[str, Any]) -> None:
         """

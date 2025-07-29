@@ -17,3 +17,8 @@ tracing:
         endpoints: ["span-topic", "topic4"]
       # - methods: ["consume", "send"]
       #   endpoints: ["*"] # Applied to all topics
+  disable:
+    - "logging": true
+    - "databases": true
+    - "redis": false
+    

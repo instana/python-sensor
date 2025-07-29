@@ -2,10 +2,42 @@
 
 import itertools
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
+from instana.configurator import config
 from instana.log import logger
 from instana.util.config_reader import ConfigReader
+
+# List of supported span categories (technology or protocol)
+SPAN_CATEGORIES = [
+    "logging",
+    "databases",
+    "messaging",
+    "protocols",  # http, grpc, etc.
+]
+
+# Mapping of span type calls (framework, library name, instrumentation name) to categories
+SPAN_TYPE_TO_CATEGORY = {
+    # Database types
+    "redis": "databases",
+    "mysql": "databases",
+    "postgresql": "databases",
+    "mongodb": "databases",
+    "cassandra": "databases",
+    "couchbase": "databases",
+    "dynamodb": "databases",
+    "sqlalchemy": "databases",
+    # Messaging types
+    "kafka": "messaging",
+    "rabbitmq": "messaging",
+    "pika": "messaging",
+    "aio_pika": "messaging",
+    "aioamqp": "messaging",
+    # Protocol types
+    "http": "protocols",
+    "grpc": "protocols",
+    "graphql": "protocols",
+}
 
 
 def parse_service_pair(pair: str) -> List[str]:
@@ -151,10 +183,10 @@ def parse_ignored_endpoints_from_yaml(file_path: str) -> List[str]:
 def is_truthy(value: Any) -> bool:
     """
     Check if a value is truthy, accepting various formats.
-    
+
     @param value: The value to check
     @return: True if the value is considered truthy, False otherwise
-    
+
     Accepts the following as True:
     - True (Python boolean)
     - "True", "true" (case-insensitive string)
@@ -163,17 +195,128 @@ def is_truthy(value: Any) -> bool:
     """
     if value is None:
         return False
-    
+
     if isinstance(value, bool):
         return value
-    
+
     if isinstance(value, int):
         return value == 1
-    
+
     if isinstance(value, str):
         value_lower = value.lower()
         return value_lower == "true" or value == "1"
-    
+
     return False
+
+
+def parse_span_disabling(
+    disable_list: Sequence[Union[str, Dict[str, Any]]],
+) -> Tuple[List[str], List[str]]:
+    """
+    Process a list of span disabling configurations and return lists of disabled and enabled spans.
+
+    @param disable_list: List of span disabling configurations
+    @return: Tuple of (disabled_spans, enabled_spans)
+    """
+    if not isinstance(disable_list, list):
+        logger.debug(
+            f"parse_span_disabling: Invalid disable_list type: {type(disable_list)}"
+        )
+        return [], []
+
+    disabled_spans = []
+    enabled_spans = []
+
+    for item in disable_list:
+        if isinstance(item, str):
+            disabled = parse_span_disabling_str(item)
+            disabled_spans.extend(disabled)
+        elif isinstance(item, dict):
+            disabled, enabled = parse_span_disabling_dict(item)
+            disabled_spans.extend(disabled)
+            enabled_spans.extend(enabled)
+        else:
+            logger.debug(
+                f"parse_span_disabling: Invalid disable_list item type: {type(item)}"
+            )
+
+    return disabled_spans, enabled_spans
+
+
+def parse_span_disabling_str(item: str) -> List[str]:
+    """
+    Process a string span disabling configuration and return a list of disabled spans.
+
+    @param item: String span disabling configuration
+    @return: List of disabled spans
+    """
+    if item.lower() in SPAN_CATEGORIES or item.lower() in SPAN_TYPE_TO_CATEGORY.keys():
+        return [item.lower()]
+    else:
+        logger.debug(f"set_span_disabling_str: Invalid span category/type: {item}")
+        return []
+
+
+def parse_span_disabling_dict(items: Dict[str, bool]) -> Tuple[List[str], List[str]]:
+    """
+    Process a dictionary span disabling configuration and return lists of disabled and enabled spans.
+
+    @param items: Dictionary span disabling configuration
+    @return: Tuple of (disabled_spans, enabled_spans)
+    """
+    disabled_spans = []
+    enabled_spans = []
+
+    for key, value in items.items():
+        if key in SPAN_CATEGORIES or key in SPAN_TYPE_TO_CATEGORY.keys():
+            if is_truthy(value):
+                disabled_spans.append(key)
+            else:
+                enabled_spans.append(key)
+        else:
+            logger.debug(f"set_span_disabling_dict: Invalid span category/type: {key}")
+
+    return disabled_spans, enabled_spans
+
+
+def get_disable_trace_configurations_from_env() -> Tuple[List[str], List[str]]:
+    # Read INSTANA_TRACING_DISABLE environment variable
+    if tracing_disable := os.environ.get("INSTANA_TRACING_DISABLE", None):
+        if is_truthy(tracing_disable):
+            # INSTANA_TRACING_DISABLE is True/true/1, then we disable all tracing
+            disabled_spans = []
+            for category in SPAN_CATEGORIES:
+                disabled_spans.append(category)
+            return disabled_spans, []
+        else:
+            # INSTANA_TRACING_DISABLE is a comma-separated list of span categories/types
+            tracing_disable_list = [x.strip() for x in tracing_disable.split(",")]
+            return parse_span_disabling(tracing_disable_list)
+    return [], []
+
+
+def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
+    config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
+
+    if "tracing" in config_reader.data:
+        root_key = "tracing"
+    elif "com.instana.tracing" in config_reader.data:
+        logger.warning(
+            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
+        )
+        root_key = "com.instana.tracing"
+    else:
+        return [], []
+
+    tracing_disable_config = config_reader.data[root_key].get("disable", "")
+    return parse_span_disabling(tracing_disable_config)
+
+
+def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]:
+    if "tracing" in config:
+        if tracing_disable_config := config["tracing"].get("disable", None):
+            return parse_span_disabling(tracing_disable_config)
+    return [], []
+
 
 # Made with Bob

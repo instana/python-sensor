@@ -1,10 +1,14 @@
 # (c) Copyright IBM Corp. 2025
 
 import logging
+import os
 
 import pytest
 
-from instana.util.config import parse_ignored_endpoints_from_yaml
+from instana.util.config import (
+    get_disable_trace_configurations_from_yaml,
+    parse_ignored_endpoints_from_yaml,
+)
 
 
 class TestConfigReader:
@@ -32,6 +36,14 @@ class TestConfigReader:
             "kafka.*.topic4",
         ]
 
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
+        disabled_spans, enabled_spans = get_disable_trace_configurations_from_yaml()
+        # Check disabled_spans list
+        assert "logging" in disabled_spans
+        assert "databases" in disabled_spans
+        assert "redis" not in disabled_spans
+        assert "redis" in enabled_spans
+
         assert (
             'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
             not in caplog.messages
@@ -58,6 +70,15 @@ class TestConfigReader:
             "kafka.*.span-topic",
             "kafka.*.topic4",
         ]
+
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-2.yaml"
+        disabled_spans, enabled_spans = get_disable_trace_configurations_from_yaml()
+        # Check disabled_spans list
+        assert "logging" in disabled_spans
+        assert "databases" in disabled_spans
+        assert "redis" not in disabled_spans
+        assert "redis" in enabled_spans
+
         assert (
             'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
             in caplog.messages

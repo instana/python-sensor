@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Tuple
 import wrapt
 
 from instana.log import logger
+from instana.singletons import agent
 from instana.util.runtime import get_runtime_env_info
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
@@ -27,12 +28,18 @@ def log_with_instana(
 
     # We take into consideration if `stacklevel` is already present in `kwargs`.
     # This prevents the error `_log() got multiple values for keyword argument 'stacklevel'`
-    stacklevel_in = kwargs.pop("stacklevel", 1 if get_runtime_env_info()[0] not in ["ppc64le", "s390x"] else 2)
+    stacklevel_in = kwargs.pop(
+        "stacklevel", 1 if get_runtime_env_info()[0] not in ["ppc64le", "s390x"] else 2
+    )
     stacklevel = stacklevel_in + 1 + (sys.version_info >= (3, 14))
 
     try:
-        # Only needed if we're tracing and serious log
-        if tracing_is_off() or argv[0] < logging.WARN:
+        # Only needed if we're tracing and serious log and logging spans are not disabled
+        if (
+            tracing_is_off()
+            or argv[0] < logging.WARN
+            or agent.options.is_span_disabled(category="logging")
+        ):
             return wrapped(*argv, **kwargs, stacklevel=stacklevel)
 
         tracer, parent_span, _ = get_tracer_tuple()

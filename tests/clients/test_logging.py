@@ -70,7 +70,7 @@ class TestLogging:
             try:
                 a = 42
                 b = 0
-                c = a / b
+                c = a / b  # noqa: F841
             except Exception as e:
                 self.logger.exception("Exception: %s", str(e))
 
@@ -168,3 +168,78 @@ class TestLogging:
         assert spans[0].k is SpanKind.CLIENT
 
         assert spans[0].data["log"].get("message") == "foo bar"
+
+
+class TestLoggingDisabling:
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        # Setup
+        self.recorder = tracer.span_processor
+        self.recorder.clear_spans()
+        self.logger = logging.getLogger("unit test")
+
+        # Save original options
+        self.original_options = agent.options
+
+        yield
+
+        # Teardown
+        agent.options = self.original_options
+        agent.options.allow_exit_as_root = False
+
+    def test_logging_enabled(self) -> None:
+        with tracer.start_as_current_span("test"):
+            self.logger.warning("test message")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+        assert spans[0].k is SpanKind.CLIENT
+        assert spans[0].data["log"].get("message") == "test message"
+
+    def test_logging_disabled(self) -> None:
+        # Disable logging spans
+        agent.options.disabled_spans = ["logging"]
+
+        with tracer.start_as_current_span("test"):
+            self.logger.warning("test message")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 1  # Only the parent span, no logging span
+
+    def test_logging_disabled_via_env_var(self, monkeypatch):
+        # Disable logging spans via environment variable
+        monkeypatch.setenv("INSTANA_TRACING_DISABLE", "logging")
+
+        # Create new options to read from environment
+        original_options = agent.options
+        agent.options = type(original_options)()
+
+        with tracer.start_as_current_span("test"):
+            self.logger.warning("test message")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 1  # Only the parent span, no logging span
+
+        # Restore original options
+        agent.options = original_options
+
+    def test_logging_disabled_via_yaml(self) -> None:
+        # Disable logging spans via YAML configuration
+        original_options = agent.options
+        agent.options = type(original_options)()
+
+        # Simulate YAML configuration
+        tracing_config = {"disable": [{"logging": True}]}
+        agent.options.set_tracing(tracing_config)
+
+        with tracer.start_as_current_span("test"):
+            self.logger.warning("test message")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 1  # Only the parent span, no logging span
+
+        # Restore original options
+        agent.options = original_options
+
+
+# Made with Bob

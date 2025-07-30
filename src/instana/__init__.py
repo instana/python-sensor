@@ -11,9 +11,9 @@ Source Code: https://github.com/instana/python-sensor
 """
 
 import importlib
-import importlib.util
 import os
 import sys
+from importlib import util as importlib_util
 from typing import Tuple
 
 from instana.collector.helpers.runtime import (
@@ -226,9 +226,15 @@ def _start_profiler() -> None:
         profiler.start()
 
 
-if "INSTANA_DISABLE" not in os.environ and not is_truthy(
-    os.environ.get("INSTANA_TRACING_DISABLE", None)
-):
+if "INSTANA_DISABLE" in os.environ:  # pragma: no cover
+    import warnings
+
+    message = "Instana: The INSTANA_DISABLE environment variable is deprecated. Please use INSTANA_TRACING_DISABLE=True instead."
+    warnings.simplefilter("always")
+    warnings.warn(message, DeprecationWarning)
+
+
+if not is_truthy(os.environ.get("INSTANA_TRACING_DISABLE", None)):
     # There are cases when sys.argv may not be defined at load time.  Seems to happen in embedded Python,
     # and some Pipenv installs.  If this is the case, it's best effort.
     if (
@@ -246,7 +252,7 @@ if "INSTANA_DISABLE" not in os.environ and not is_truthy(
         if (
             (is_autowrapt_instrumented() or is_webhook_instrumented())
             and "INSTANA_DISABLE_AUTO_INSTR" not in os.environ
-            and importlib.util.find_spec("gevent")
+            and importlib_util.find_spec("gevent")
         ):
             apply_gevent_monkey_patch()
 

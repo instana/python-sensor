@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2024
 
 from typing import TYPE_CHECKING, Type
-import six
 
 from instana.log import logger
 from instana.util import DictionaryOfStan
@@ -83,12 +82,12 @@ class BaseSpan(object):
 
         try:
             # Attribute keys must be some type of text or string type
-            if isinstance(key, (six.text_type, six.string_types)):
+            if isinstance(key, str):
                 validated_key = key[0:1024]  # Max key length of 1024 characters
 
                 if isinstance(
                     value,
-                    (bool, float, int, list, dict, six.text_type, six.string_types),
+                    (bool, float, int, list, dict, str),
                 ):
                     validated_value = value
                 else:

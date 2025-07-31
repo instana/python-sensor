@@ -14,7 +14,7 @@ from tests.test_utils import _TraceContextMixin
 from opentelemetry.trace import SpanKind
 
 from mock import patch, Mock
-from six.moves import http_client
+from http import client as http_client
 
 from google.cloud import storage
 from google.api_core import iam, page_iterator

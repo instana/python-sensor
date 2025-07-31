@@ -7,7 +7,6 @@ import time
 from typing import Generator
 
 import pytest
-import six
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from google.cloud.pubsub_v1.publisher import exceptions
@@ -51,7 +50,7 @@ class TestPubSubPublish(_TraceContextMixin):
             )
         time.sleep(2.0)  # for sanity
         result = future.result()
-        assert isinstance(result, six.string_types)
+        assert isinstance(result, str)
 
         spans = self.recorder.queued_spans()
         gcps_span, test_span = spans[0], spans[1]
@@ -80,7 +79,7 @@ class TestPubSubPublish(_TraceContextMixin):
         )
         time.sleep(2.0)  # for sanity
         result = future.result()
-        assert isinstance(result, six.string_types)
+        assert isinstance(result, str)
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 1
@@ -161,7 +160,7 @@ class TestPubSubSubscribe(_TraceContextMixin):
             future = self.publisher.publish(
                 self.topic_path, b"Test Message to PubSub", origin="instana"
             )
-            assert isinstance(future.result(), six.string_types)
+            assert isinstance(future.result(), str)
 
             time.sleep(2.0)  # for sanity
 

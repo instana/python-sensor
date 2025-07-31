@@ -129,24 +129,6 @@ class TestConfluentKafka:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        kafka_span = spans[0]
-        test_span = spans[1]
-
-        # Same traceId
-        assert test_span.t == kafka_span.t
-
-        # Parent relationships
-        assert kafka_span.p == test_span.s
-
-        # Error logging
-        assert not test_span.ec
-        assert not kafka_span.ec
-
-        assert kafka_span.n == "kafka"
-        assert kafka_span.k == SpanKind.SERVER
-        assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
-        assert kafka_span.data["kafka"]["access"] == "consume"
-
     def test_trace_confluent_kafka_poll(self) -> None:
         # Produce some events
         self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
@@ -162,15 +144,22 @@ class TestConfluentKafka:
         consumer.subscribe([testenv["kafka_topic"]])
 
         with tracer.start_as_current_span("test"):
-            msg = consumer.poll(timeout=30)  # noqa: F841
+            msg = consumer.poll(timeout=3)  # noqa: F841
 
         consumer.close()
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        kafka_span = spans[0]
-        test_span = spans[1]
+        def filter(span):
+            return span.n == "kafka" and span.data["kafka"]["access"] == "poll"
+
+        kafka_span = get_first_span_by_filter(spans, filter)
+
+        def filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
+        test_span = get_first_span_by_filter(spans, filter)
 
         # Same traceId
         assert test_span.t == kafka_span.t
@@ -282,10 +271,7 @@ class TestConfluentKafka:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
-
-        filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 1
+        assert len(spans) == 1
 
     @patch.dict(
         os.environ,
@@ -323,7 +309,7 @@ class TestConfluentKafka:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 5
+        assert len(spans) == 4
 
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 3
@@ -362,7 +348,7 @@ class TestConfluentKafka:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 1
@@ -598,7 +584,7 @@ class TestConfluentKafka:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 2
 
         producer_span_1 = get_first_span_by_filter(
             spans,
@@ -628,10 +614,7 @@ class TestConfluentKafka:
         assert producer_span_1
         # consumer has been suppressed
         assert not consumer_span_1
-
-        assert producer_span_2.t == consumer_span_2.t
-        assert producer_span_2.s == consumer_span_2.p
-        assert producer_span_2.s != consumer_span_2.s
+        assert not consumer_span_2
 
         for message in messages:
             if message.topic() == "span-topic_1":

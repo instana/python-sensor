@@ -9,7 +9,7 @@ on:
 
   # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#release
   release:
-    types: [published]
+    types: [published, released]
 jobs:
   build:
     name: Slack Post
@@ -30,5 +30,6 @@ jobs:
           ./bin/announce_release_on_slack.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID_RELEASES: ${{ secrets.SLACK_CHANNEL_ID_RELEASES }}
+          SLACK_BOT_TOKEN: ${{ secrets.RUPY_TRACER_RELEASES_TOKEN }}
+          SLACK_CHANNEL_ID_RELEASES: ${{ secrets.RUPY_TRACER_RELEASES_CHANNEL_ID }}
+          SLACK_BOT_SERVICE_ID: ${{ secrets.RUPY_TRACER_RELEASES_SERVICE_ID }}

@@ -92,8 +92,4 @@ Invention, my dear friends, is 93% perspiration, 6% electricity, \
 
 if __name__ == "__main__":
     print ("Booting foreground GRPC application...")
-
-    if sys.version_info >= (3, 5, 3):
-        StanServicer().start_server()
-    else:
-        print("Python v3.5.3 or higher only")
+    StanServicer().start_server()

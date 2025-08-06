@@ -1,0 +1,41 @@
+name: PR Slack Notification
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  pull_request:
+    types: [opened, reopened, review_requested]
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history to access commit messages
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        pip install httpx
+
+    - name: Send Slack notification
+      env:
+        SLACK_TOKEN: ${{ secrets.RUPY_PR_ANNOUNCEMENT_TOKEN }}
+        SLACK_SERVICE: ${{ secrets.RUPY_PR_ANNOUNCEMENT_CHANNEL_ID }}
+        SLACK_TEAM: ${{ secrets.RUPY_TOWN_CRIER_SERVICE_ID }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        REPO_NAME: ${{ github.repository }}
+      run: python .github/scripts/announce_pr_on_slack.py

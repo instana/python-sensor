@@ -145,7 +145,6 @@ for region in target_regions:
             "--zip-file",
             aws_zip_filename,
             "--compatible-runtimes",
-            "python3.8",
             "python3.9",
             "python3.10",
             "python3.11",

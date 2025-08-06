@@ -4,10 +4,13 @@
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
 import wrapt
 from typing import TYPE_CHECKING, Dict, Any, List, Tuple, Union, Callable, Optional
-from typing_extensions import Self
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off

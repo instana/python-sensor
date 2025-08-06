@@ -10,10 +10,6 @@ os.environ["AWS_EXECUTION_ENV"] = "AWS_Lambda_python_3.10"
 
 from instana.collector.base import BaseCollector
 
-if sys.version_info <= (3, 8):
-    print("Python runtime version not supported by AWS Lambda.")
-    exit(1)
-
 
 @pytest.fixture
 def trace_id() -> int:

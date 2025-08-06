@@ -49,10 +49,6 @@ spec:
           # public.ecr.aws/bitnami/kafka:3.9.0
           image: public.ecr.aws/docker/library/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
           command: ["sh", "-c", "'true'"]
-        - name: prepuller-38
-          # public.ecr.aws/docker/library/python:3.8.20-bookworm
-          image: public.ecr.aws/docker/library/python@
-          command: ["sh", "-c", "'true'"]
         - name: prepuller-39
           # public.ecr.aws/docker/library/python:3.9.22-bookworm
           image: public.ecr.aws/docker/library/python@sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b

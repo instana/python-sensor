@@ -62,16 +62,6 @@ if not os.environ.get("GEVENT_STARLETTE_TEST"):
 if not os.environ.get("KAFKA_TEST"):
     collect_ignore_glob.append("*kafka/test*")
 
-# Currently asyncio and tornado_server depends on aiohttp and
-# since aiohttp versions < 3.12.14 have vulnerability we skip the tests below
-if sys.version_info < (3, 9):
-    collect_ignore_glob.extend(
-        [
-            "*test_aiohttp*",
-            "*test_asyncio*",
-            "*test_tornado_server*",
-        ]
-    )
 
 if sys.version_info >= (3, 12):
     # Currently Spyne does not support python > 3.12

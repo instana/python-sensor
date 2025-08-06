@@ -26,8 +26,6 @@ spec:
         params:
           - name: imageDigest
             value:
-              # public.ecr.aws/docker/library/python:3.8.20-bookworm
-              - "sha256:7aa279fb41dad2962d3c915aa6f6615134baa412ab5aafa9d4384dcaaa0af15d"
               # public.ecr.aws/docker/library/python:3.9.22-bookworm
               - "sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b"
               # public.ecr.aws/docker/library/python:3.10.17-bookworm

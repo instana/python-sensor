@@ -44,8 +44,11 @@ try:
         logger.debug(
             f"uWSGI --master={opt_master} --lazy-apps={opt_lazy_apps}: postfork hooks not applied"
         )
+
 except ImportError:
     logger.debug(
         "uwsgi hooks: decorators not available: likely not running under uWSGI"
     )
-    pass
+
+except AttributeError:
+    logger.debug("uwsgi hooks: Running under uWSGI but decorators not available")

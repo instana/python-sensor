@@ -135,7 +135,7 @@ def determine_service_name() -> str:
                     uwsgi_type = "uWSGI worker%s"
 
                 app_name = uwsgi_type % app_name
-            except ImportError:
+            except (ImportError, AttributeError):
                 pass
     except Exception:
         logger.debug("non-fatal get_application_name: ", exc_info=True)

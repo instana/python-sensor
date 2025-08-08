@@ -33,11 +33,10 @@ def get_gh_release_info_text_with_token(release_tag: str, access_token: str) -> 
 
     msg = (
         f":mega: Oyez! Oyez! Oyez!\n"
-        f":package: A new version of the Python Tracer has been released.\n"
-        f"Name: Instana Python Tracer {release.title}\n"
-        f"Tag: {release.tag_name}\n"
-        f"Created at: {release.created_at}\n"
-        f"Published at: {release.published_at}\n"
+        f"The Instana Python Tracer {release_tag} has been released.\n"
+        f":package: https://pypi.org/project/instana/ \n"
+        f":github: {release.html_url} \n"
+        f"**Release Notes:**\n"
         f"{release.body}\n"
     )
 

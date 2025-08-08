@@ -6,7 +6,7 @@ permissions:
 
 on:
   pull_request:
-    types: [opened, reopened, review_requested]
+    types: [opened, reopened]
 
 jobs:
   notify-slack:

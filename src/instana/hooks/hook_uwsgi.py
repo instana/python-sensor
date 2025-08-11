@@ -49,3 +49,4 @@ except ImportError:
         "uwsgi hooks: decorators not available: likely not running under uWSGI"
     )
     pass
+

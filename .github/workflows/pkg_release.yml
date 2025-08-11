@@ -11,13 +11,13 @@ name: Release new version
 on:
   push:
     tags:
-      - v3.*
+      - 'v3.*'
+      - '!v3.*post*'
 
 jobs:
   build:
     name: Build package
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref_name, 'v3') }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python

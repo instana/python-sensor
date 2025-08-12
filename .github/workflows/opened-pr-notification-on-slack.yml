@@ -6,12 +6,13 @@ permissions:
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, ready_for_review]
 
 jobs:
   notify-slack:
     runs-on: ubuntu-latest
-
+    
+    if: ${{ !github.event.pull_request.draft }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4

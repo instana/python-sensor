@@ -92,10 +92,11 @@ spec:
         - clone
       matrix:
         params:
-          - name: imageDigest
+          - name: pythonVersion
             value:
-              # public.ecr.aws/docker/library/python:3.12.10-bookworm
-              - "sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa"
+              - "3.11"
+              - "3.12"
+              - "3.13"
       taskRef:
         name: python-tracer-unittest-kafka-task
       workspaces:

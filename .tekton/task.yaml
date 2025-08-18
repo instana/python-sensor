@@ -12,7 +12,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: clone
-      image: public.ecr.aws/docker/library/alpine:3.20.3
+      image: public.ecr.aws/docker/library/alpine:latest
       script: |
         #!/bin/sh
         echo "Installing git"
@@ -167,8 +167,7 @@ metadata:
 spec:
   sidecars:
     - name: kafka
-      # public.ecr.aws/bitnami/kafka:3.9.0
-      image: public.ecr.aws/bitnami/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
+      image: public.ecr.aws/bitnami/kafka:3.9.0
       env:
         - name: KAFKA_CFG_NODE_ID
           value: "0"
@@ -208,8 +207,7 @@ metadata:
 spec:
   sidecars:
     - name: google-cloud-pubsub
-      # quay.io/thekevjames/gcloud-pubsub-emulator
-      image: quay.io/thekevjames/gcloud-pubsub-emulator@sha256:9bad1f28e6a3d6cd5f462c654c736faa4cf49732d9422ddb427ad30f3037c0ff
+      image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
       env:
         - name: PUBSUB_EMULATOR_HOST
           value: 0.0.0.0:8681
@@ -219,19 +217,16 @@ spec:
         - containerPort: 8681
           hostPort: 8681
     - name: mariadb
-      # public.ecr.aws/docker/library/mariadb:11.3.2
-      image: public.ecr.aws/docker/library/mariadb@sha256:a4a81ab6d190db84b67f286fd0511cdea619a24b63790b3db4fb69d263a5cd37
+      image: public.ecr.aws/docker/library/mariadb:11.3.2
       env:
         - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
           value: passw0rd
         - name: MYSQL_DATABASE # or MARIADB_DATABASE
           value: instana_test_db
     - name: mongo
-      # public.ecr.aws/docker/library/mongo:7.0.6
-      image: public.ecr.aws/docker/library/mongo@sha256:3a023748ee30e915dd51642f1ef430c73c4e54937060054ca84c70417f510cc5
+      image: public.ecr.aws/docker/library/mongo:7.0.6
     - name: postgres
-      # public.ecr.aws/docker/library/postgres:16.2-bookworm
-      image: public.ecr.aws/docker/library/postgres@sha256:07572430dbcd821f9f978899c3ab3a727f5029be9298a41662e1b5404d5b73e0
+      image: public.ecr.aws/docker/library/postgres:16.2-bookworm
       env:
         - name: POSTGRES_USER
           value: root
@@ -247,11 +242,9 @@ spec:
           - pg_isready --host 127.0.0.1 --port 5432 --dbname=${POSTGRES_DB}
         timeoutSeconds: 10
     - name: redis
-      # public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      image: public.ecr.aws/docker/library/redis@sha256:9341b6548cc35b64a6de0085555264336e2f570e17ecff20190bf62222f2bd64
+      image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
     - name: rabbitmq
-      # public.ecr.aws/docker/library/rabbitmq:3.13.0
-      image: public.ecr.aws/docker/library/rabbitmq@sha256:39de1a4fc6c72d12bd5dfa23e8576536fd1c0cc8418344cd5a51addfc9a1145d
+      image: public.ecr.aws/docker/library/rabbitmq:3.13.0
   params:
   - name: py-version
     type: string

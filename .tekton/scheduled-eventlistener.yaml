@@ -61,8 +61,7 @@ spec:
         spec:
           containers:
           - name: git
-            # public.ecr.aws/docker/library/alpine:3.20.3
-            image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
+            image: public.ecr.aws/docker/library/alpine:latest
             script: |
               #!/bin/sh
               echo "Installing git"

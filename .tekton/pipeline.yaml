@@ -6,10 +6,32 @@ spec:
   params:
   - name: revision
     type: string
+  - name: py-38-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.8-bookworm
+  - name: py-39-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.9-bookworm
+  - name: py-310-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.10-bookworm
+  - name: py-311-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.11-bookworm
+  - name: py-312-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.12-bookworm
+  - name: py-313-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.13-bookworm
+  - name: py-314-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.14.0rc2
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:
     - name: clone
+      displayName: "clone $(params.revision)"
       params:
       - name: revision
         value: $(params.revision)
@@ -19,27 +41,20 @@ spec:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-default
-      displayName: "Platforms and Browsers: $(params.platform) and $(params.browser)"
+      displayName: "Python $(params.imageDigest)"
       runAfter:
         - clone
       matrix:
         params:
           - name: imageDigest
             value:
-              # public.ecr.aws/docker/library/python:3.8.20-bookworm
-              - "sha256:7aa279fb41dad2962d3c915aa6f6615134baa412ab5aafa9d4384dcaaa0af15d"
-              # public.ecr.aws/docker/library/python:3.9.22-bookworm
-              - "sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b"
-              # public.ecr.aws/docker/library/python:3.10.17-bookworm
-              - "sha256:e2c7fb05741c735679b26eda7dd34575151079f8c615875fbefe401972b14d85"
-              # public.ecr.aws/docker/library/python:3.11.12-bookworm
-              - "sha256:a3e280261e448b95d49423532ccd6e5329c39d171c10df1457891ff7c5e2301b"
-              # public.ecr.aws/docker/library/python:3.12.10-bookworm
-              - "sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa"
-              # public.ecr.aws/docker/library/python:3.13.3-bookworm
-              - "sha256:07bf1bd38e191e3ed18b5f3eb0006d5ab260cb8c967f49d3bf947e5c2e44d8a9"
-              # public.ecr.aws/docker/library/python:3.14.0b2-bookworm
-              - "sha256:4f8ae0a7847680b269d8ef51528053b2cfc9242377f349cbc3a36eacf579903f"
+            - $(params.py-38-imageDigest)
+            - $(params.py-39-imageDigest)
+            - $(params.py-310-imageDigest)
+            - $(params.py-311-imageDigest)
+            - $(params.py-312-imageDigest)
+            - $(params.py-313-imageDigest)
+            # - $(params.py-314-imageDigest)
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:
@@ -48,12 +63,9 @@ spec:
     - name: unittest-cassandra
       runAfter:
         - clone
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-              # public.ecr.aws/docker/library/python:3.9.22-bookworm
-              - "sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b"
+      params:
+        - name: imageDigest
+          value: $(params.py-312-imageDigest)
       taskRef:
         name: python-tracer-unittest-cassandra-task
       workspaces:
@@ -62,12 +74,9 @@ spec:
     - name: unittest-gevent-starlette
       runAfter:
         - clone
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-              # public.ecr.aws/docker/library/python:3.9.22-bookworm
-              - "sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b"
+      params:
+        - name: imageDigest
+          value: $(params.py-313-imageDigest)
       taskRef:
         name: python-tracer-unittest-gevent-starlette-task
       workspaces:
@@ -76,12 +85,9 @@ spec:
     - name: unittest-aws
       runAfter:
         - clone
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-              # public.ecr.aws/docker/library/python:3.12.10-bookworm
-              - "sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa"
+      params:
+        - name: imageDigest
+          value: $(params.py-313-imageDigest)
       taskRef:
         name: python-tracer-unittest-aws-task
       workspaces:
@@ -90,14 +96,23 @@ spec:
     - name: unittest-kafka
       runAfter:
         - clone
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-              # public.ecr.aws/docker/library/python:3.12.10-bookworm
-              - "sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa"
+      params:
+        - name: imageDigest
+          value: $(params.py-313-imageDigest)
       taskRef:
         name: python-tracer-unittest-kafka-task
+      workspaces:
+        - name: task-pvc
+          workspace: python-tracer-ci-pipeline-pvc
+    - name: unittest-python-next
+      displayName: "Python next $(params.imageDigest)"
+      runAfter:
+        - clone
+      params:
+        - name: py-version
+          value: 3.14.0rc2
+      taskRef:
+        name: python-tracer-unittest-python-next-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc

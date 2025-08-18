@@ -14,68 +14,52 @@ spec:
       # Configure an init container for each image you want to pull
       initContainers:
         - name: prepuller-git
-          # public.ecr.aws/docker/library/alpine:3.20.3
-          image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
+          image: public.ecr.aws/docker/library/alpine:latest
           command: ["sh", "-c", "'true'"]
         - name: prepuller-google-cloud-pubsub
-          # quay.io/thekevjames/gcloud-pubsub-emulator:501.0.0
-          image: quay.io/thekevjames/gcloud-pubsub-emulator@sha256:9bad1f28e6a3d6cd5f462c654c736faa4cf49732d9422ddb427ad30f3037c0ff
+          image: quay.io/thekevjames/gcloud-pubsub-emulator:501.0.0
           command: ["sh", "-c", "'true'"]
         - name: prepuller-cassandra
-          # public.ecr.aws/docker/library/cassandra:3.11.16-jammy
-          image: public.ecr.aws/docker/library/cassandra@sha256:b175d99b80f8108594d00c705288fdb3186b9fc07b30b4c292c3592cddb5f0b5
+          image: public.ecr.aws/docker/library/cassandra:3.11.16-jammy
           command: ["sh", "-c", "'true'"]
         - name: prepuller-rabbitmq
-          # public.ecr.aws/docker/library/rabbitmq:3.13.0
-          image: public.ecr.aws/docker/library/rabbitmq@sha256:39de1a4fc6c72d12bd5dfa23e8576536fd1c0cc8418344cd5a51addfc9a1145d
+          image: public.ecr.aws/docker/library/rabbitmq:3.13.0
           command: ["sh", "-c", "'true'"]
         - name: prepuller-redis
-          # public.ecr.aws/docker/library/redis:7.2.4-bookworm
-          image: public.ecr.aws/docker/library/redis@sha256:9341b6548cc35b64a6de0085555264336e2f570e17ecff20190bf62222f2bd64
+          image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-mongo
-          # public.ecr.aws/docker/library/mongo:7.0.6
-          image: public.ecr.aws/docker/library/mongo@sha256:3a023748ee30e915dd51642f1ef430c73c4e54937060054ca84c70417f510cc5
+          image: public.ecr.aws/docker/library/mongo:7.0.6
           command: ["sh", "-c", "'true'"]
         - name: prepuller-mariadb
-          # public.ecr.aws/docker/library/mariadb:11.3.2
-          image: public.ecr.aws/docker/library/mariadb@sha256:a4a81ab6d190db84b67f286fd0511cdea619a24b63790b3db4fb69d263a5cd37
+          image: public.ecr.aws/docker/library/mariadb:11.3.2
           command: ["sh", "-c", "'true'"]
         - name: prepuller-postgres
-          # public.ecr.aws/docker/library/postgres:16.2-bookworm
-          image: public.ecr.aws/docker/library/postgres@sha256:07572430dbcd821f9f978899c3ab3a727f5029be9298a41662e1b5404d5b73e0
+          image: public.ecr.aws/docker/library/postgres:16.2-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-kafka
-          # public.ecr.aws/bitnami/kafka:3.9.0
-          image: public.ecr.aws/docker/library/kafka@sha256:d2890d68f96b36da3c8413fa94294f018b2f95d87cf108cbf71eab510572d9be
+          image: public.ecr.aws/bitnami/kafka:3.9.0
           command: ["sh", "-c", "'true'"]
         - name: prepuller-38
-          # public.ecr.aws/docker/library/python:3.8.20-bookworm
-          image: public.ecr.aws/docker/library/python@
+          image: public.ecr.aws/docker/library/python:3.8-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-39
-          # public.ecr.aws/docker/library/python:3.9.22-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:a847112640804ed2d03bb774d46bb1619bd37862fb2b7e48eebe425a168c153b
+          image: public.ecr.aws/docker/library/python:3.9-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-310
-          # public.ecr.aws/docker/library/python:3.10.17-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:e2c7fb05741c735679b26eda7dd34575151079f8c615875fbefe401972b14d85
+          image: public.ecr.aws/docker/library/python:3.10-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-311
-          # public.ecr.aws/docker/library/python:3.11.12-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:a3e280261e448b95d49423532ccd6e5329c39d171c10df1457891ff7c5e2301b
+          image: public.ecr.aws/docker/library/python:3.11-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-312
-          # public.ecr.aws/docker/library/python:3.12.10-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa
+          image: public.ecr.aws/docker/library/python:3.12-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-313
-          # public.ecr.aws/docker/library/python:3.13.3-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:07bf1bd38e191e3ed18b5f3eb0006d5ab260cb8c967f49d3bf947e5c2e44d8a9
+          image: public.ecr.aws/docker/library/python:3.13-bookworm
           command: ["sh", "-c", "'true'"]
         - name: prepuller-314
-          # public.ecr.aws/docker/library/python:3.14.0b2-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:4f8ae0a7847680b269d8ef51528053b2cfc9242377f349cbc3a36eacf579903f
+          image: public.ecr.aws/docker/library/python:3.14.0rc2
           command: ["sh", "-c", "'true'"]
 
       # Use the pause container to ensure the Pod goes into a `Running` phase

@@ -20,7 +20,7 @@ spec:
     default: "3.13"
   - name: py-version-next
     type: string
-    default: "3.14.0b4"
+    default: "3.14.0rc2"
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:

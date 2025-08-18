@@ -74,8 +74,8 @@ spec:
           image: public.ecr.aws/docker/library/python@sha256:8300f4e04ed367fafc5877b39dcf7a205532e295778f6fd20a08e1652b177d7b
           command: ["sh", "-c", "'true'"]
         - name: prepuller-314
-          # public.ecr.aws/docker/library/python:3.14.0b2-bookworm
-          image: public.ecr.aws/docker/library/python@sha256:4f8ae0a7847680b269d8ef51528053b2cfc9242377f349cbc3a36eacf579903f
+          # public.ecr.aws/docker/library/python:3.14.0rc2-bookworm
+          image: public.ecr.aws/docker/library/python:3.14.0rc2-bookworm
           command: ["sh", "-c", "'true'"]
 
       # Use the pause container to ensure the Pod goes into a `Running` phase

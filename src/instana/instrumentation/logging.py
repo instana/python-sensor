@@ -31,7 +31,7 @@ def log_with_instana(
     stacklevel_in = kwargs.pop(
         "stacklevel", 1 if get_runtime_env_info()[0] not in ["ppc64le", "s390x"] else 2
     )
-    stacklevel = stacklevel_in + 1 + (sys.version_info >= (3, 14))
+    stacklevel = stacklevel_in + 1
 
     try:
         # Only needed if we're tracing and serious log and logging spans are not disabled

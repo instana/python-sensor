@@ -8,6 +8,27 @@ spec:
     type: string
   - name: git-commit-sha
     type: string
+  - name: py-38-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.8-bookworm
+  - name: py-39-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.9-bookworm
+  - name: py-310-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.10-bookworm
+  - name: py-311-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.11-bookworm
+  - name: py-312-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.12-bookworm
+  - name: py-313-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.13-bookworm
+  - name: py-314-imageDigest
+    type: string
+    default: public.ecr.aws/docker/library/python:3.14.0rc2
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:
@@ -28,6 +49,9 @@ spec:
       - unittest-default
       - unittest-cassandra
       - unittest-gevent-starlette
+      - unittest-aws
+      - unittest-kafka
+      - unittest-python-next
       taskRef:
         kind: Task
         name: github-set-status

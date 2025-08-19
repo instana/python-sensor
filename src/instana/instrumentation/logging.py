@@ -4,8 +4,8 @@
 
 import logging
 import sys
-from collections.abc import Mapping
-from typing import Any, Callable, Dict, Tuple
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import wrapt
 
@@ -18,8 +18,8 @@ from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 def log_with_instana(
     wrapped: Callable[..., None],
     instance: logging.Logger,
-    argv: Tuple[int, str, Tuple[Any, ...]],
-    kwargs: Dict[str, Any],
+    argv: tuple[int, str, tuple[Any, ...]],
+    kwargs: dict[str, Any],
 ) -> Callable[..., None]:
     # argv[0] = level
     # argv[1] = message
@@ -27,12 +27,14 @@ def log_with_instana(
 
     # We take into consideration if `stacklevel` is already present in `kwargs`.
     # This prevents the error `_log() got multiple values for keyword argument 'stacklevel'`
-    stacklevel_in = kwargs.pop("stacklevel", 1 if get_runtime_env_info()[0] not in ["ppc64le", "s390x"] else 2)
-    stacklevel = stacklevel_in + 1 + (sys.version_info >= (3, 14))
+    stacklevel_in = kwargs.pop(
+        "stacklevel", 1 if get_runtime_env_info()[0] not in ["ppc64le", "s390x"] else 2
+    )
+    stacklevel = stacklevel_in + 1
 
     try:
         # Only needed if we're tracing and serious log
-        if tracing_is_off() or argv[0] < logging.WARN:
+        if tracing_is_off() or argv[0] < logging.WARNING:
             return wrapped(*argv, **kwargs, stacklevel=stacklevel)
 
         tracer, parent_span, _ = get_tracer_tuple()
@@ -49,7 +51,7 @@ def log_with_instana(
         parameters = None
         (t, v, tb) = sys.exc_info()
         if t is not None and v is not None:
-            parameters = "{} {}".format(t, v)
+            parameters = f"{t} {v}"
 
         parent_context = parent_span.get_span_context() if parent_span else None
 

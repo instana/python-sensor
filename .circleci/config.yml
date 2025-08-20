@@ -244,18 +244,16 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py312kafka:
+  py313kafka:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.12
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
+      - image: public.ecr.aws/docker/library/python:3.13
+      - image: public.ecr.aws/ubuntu/zookeeper:latest
         environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
+          TZ: UTC
+      - image: public.ecr.aws/ubuntu/kafka:latest
+        environment:
+          TZ: UTC
+          ZOOKEEPER_HOST: localhost
     working_directory: ~/repo
     steps:
       - checkout
@@ -309,7 +307,7 @@ workflows:
       - py39cassandra
       - py39gevent
       - py312aws
-      - py312kafka
+      - py313kafka
       - autowrapt:
           matrix:
             parameters:
@@ -322,5 +320,5 @@ workflows:
             - py39cassandra
             - py39gevent
             - py312aws
-            - py312kafka
+            - py313kafka
             - autowrapt

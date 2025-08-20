@@ -166,23 +166,18 @@ metadata:
   name: python-tracer-unittest-kafka-task
 spec:
   sidecars:
-    - name: kafka
-      image: public.ecr.aws/bitnami/kafka:3.9.0
+    - name: zookeeper
+      image: public.ecr.aws/ubuntu/zookeeper:latest
       env:
-        - name: KAFKA_CFG_NODE_ID
-          value: "0"
-        - name: KAFKA_CFG_PROCESS_ROLES
-          value: "controller,broker"
-        - name: KAFKA_CFG_LISTENERS
-          value: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
-        - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-          value: "0@kafka:9093"
-        - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
-          value: "CONTROLLER"
-        - name: KAFKA_CFG_ADVERTISED_LISTENERS
-          value: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+        - name: TZ
+          value: "UTC"
+    - name: kafka
+      image: public.ecr.aws/ubuntu/kafka:latest
+      env:
+        - name: TZ
+          value: "UTC"
+        - name: ZOOKEEPER_HOST
+          value: zookeeper
   params:
   - name: imageDigest
     type: string

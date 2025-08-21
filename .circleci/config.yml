@@ -91,28 +91,35 @@ commands:
       - attach_workspace:
           at: .
       - run:
-          name: Install Java
-          command: |
-            sudo apt-get update
-            sudo apt-get install openjdk-11-jdk
-      - run:
           name: Run SonarQube to report the coverage
           command: |
             . venv/bin/activate
             coverage combine ./coverage_results
             coverage xml -i
-            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.1.3023.zip
-            unzip -d /tmp /tmp/sonar-scanner-cli.zip
-            if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
-              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
-                -Dsonar.host.url=${SONARQUBE_URL} \
-                -Dsonar.login="${SONARQUBE_LOGIN}" \
-                -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
+
+            PR_NUMBER=$(echo ${CIRCLE_PULL_REQUEST} | sed 's/.*\///')
+            SONAR_SCANNER_VERSION=7.2.0.5079
+            export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+            SONAR_TOKEN=${SONAR_TOKEN}
+
+            curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
+            unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+            export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+            export SONAR_SCANNER_OPTS="-server"
+            if [[ -n "${PR_NUMBER}" ]]; then
+              sonar-scanner \
+                -Dsonar.organization=instana \
+                -Dsonar.projectKey=instana_python-sensor \
+                -Dsonar.sources=. \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
+                -Dsonar.pullrequest.key="${PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
-              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
-                -Dsonar.host.url=${SONARQUBE_URL} \
-                -Dsonar.login="${SONARQUBE_LOGIN}" \
+              sonar-scanner \
+                -Dsonar.organization=instana \
+                -Dsonar.projectKey=instana_python-sensor \
+                -Dsonar.sources=. \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
       - store_artifacts:
@@ -296,7 +303,7 @@ jobs:
       - pip-install-deps
       - pip-install-tests-deps
       - store-pytest-results
-      # - run_sonarqube
+      - run_sonarqube
 
 workflows:
   tests:

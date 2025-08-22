@@ -11,8 +11,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: clone-repo
-      # public.ecr.aws/docker/library/alpine:3.20.3
-      image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
+      image: public.ecr.aws/docker/library/alpine:latest
       script: |
         #!/bin/sh
         echo "Installing git"
@@ -33,14 +32,14 @@ spec:
       mountPath: /workspace
   steps:
     - name: generate-currency-report
-      # public.ecr.aws/docker/library/python:3.12.10-bookworm
-      image: public.ecr.aws/docker/library/python@sha256:4ea730e54e2a87b716ffc58a426bd627baa182a3d4d5696d05c1bca2dde775aa
+      image: public.ecr.aws/docker/library/python:3.12-bookworm
       script: |
         #!/usr/bin/env bash
         cd /workspace/python-sensor/.tekton/.currency
 
         python -m venv /tmp/venv
         source /tmp/venv/bin/activate
+        pip install --upgrade pip
         pip install -r resources/requirements.txt
 
         python scripts/generate_report.py
@@ -63,8 +62,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: upload-currency-report
-      # public.ecr.aws/docker/library/alpine:3.20.3
-      image: public.ecr.aws/docker/library/alpine@sha256:029a752048e32e843bd6defe3841186fb8d19a28dae8ec287f433bb9d6d1ad85
+      image: public.ecr.aws/docker/library/alpine:latest
       env:
         - name: GH_ENTERPRISE_TOKEN
           valueFrom:

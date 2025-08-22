@@ -93,9 +93,9 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
+            python -m venv venv
             . venv/bin/activate
-            coverage combine ./coverage_results
-            coverage xml -i
+            pip install --upgrade pip coverage
 
             PR_NUMBER=$(echo ${CIRCLE_PULL_REQUEST} | sed 's/.*\///')
             SONAR_SCANNER_VERSION=7.2.0.5079

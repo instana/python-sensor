@@ -293,7 +293,7 @@ jobs:
 
   final_job:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/python:3.13
     working_directory: ~/repo
     steps:
       - checkout

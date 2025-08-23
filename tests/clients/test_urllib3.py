@@ -992,3 +992,41 @@ class TestUrllib3:
         caplog.set_level(logging.DEBUG, logger="instana")
         collect_kvs({}, (), {})
         assert "urllib3 _collect_kvs error: " in caplog.messages
+
+    def test_internal_span_creation_with_url_in_hostname(self) -> None:
+        internal_url = "https://com.instana.example.com/api/test"
+
+        with tracer.start_as_current_span("test"):
+            try:
+                self.http.request("GET", internal_url, retries=False, timeout=1)
+            except Exception:
+                pass
+
+        spans = self.recorder.queued_spans()
+
+        assert len(spans) == 1
+
+        test_span = spans[0]
+        assert test_span.data["sdk"]["name"] == "test"
+
+        urllib3_spans = [span for span in spans if span.n == "urllib3"]
+        assert len(urllib3_spans) == 0
+
+    def test_internal_span_creation_with_url_in_path(self) -> None:
+        internal_url_path = "https://example.com/com.instana/api/test"
+
+        with tracer.start_as_current_span("test"):
+            try:
+                self.http.request("GET", internal_url_path, retries=False, timeout=1)
+            except Exception:
+                pass
+
+        spans = self.recorder.queued_spans()
+
+        assert len(spans) == 1
+
+        test_span = spans[0]
+        assert test_span.data["sdk"]["name"] == "test"
+
+        urllib3_spans = [span for span in spans if span.n == "urllib3"]
+        assert len(urllib3_spans) == 0

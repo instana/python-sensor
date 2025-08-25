@@ -96,18 +96,17 @@ commands:
             python -m venv venv
             . venv/bin/activate
             pip install --upgrade pip coverage
+            coverage combine ./coverage_results
+            coverage xml -i
 
             PR_NUMBER=$(echo ${CIRCLE_PULL_REQUEST} | sed 's/.*\///')
-            SONAR_SCANNER_VERSION=7.2.0.5079
-            export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
             SONAR_TOKEN=${SONAR_TOKEN}
 
-            curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
-            unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-            export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+            pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pysonar-scanner
             export SONAR_SCANNER_OPTS="-server"
+            
             if [[ -n "${PR_NUMBER}" ]]; then
-              sonar-scanner \
+              pysonar-scanner \
                 -Dsonar.organization=instana \
                 -Dsonar.projectKey=instana_python-sensor \
                 -Dsonar.sources=. \
@@ -115,7 +114,7 @@ commands:
                 -Dsonar.pullrequest.key="${PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
-              sonar-scanner \
+              pysonar-scanner \
                 -Dsonar.organization=instana \
                 -Dsonar.projectKey=instana_python-sensor \
                 -Dsonar.sources=. \

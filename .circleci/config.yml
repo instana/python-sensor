@@ -93,9 +93,7 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
-            python -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip coverage
             coverage combine ./coverage_results
             coverage xml -i
 
@@ -109,7 +107,6 @@ commands:
               pysonar-scanner \
                 -Dsonar.organization=instana \
                 -Dsonar.projectKey=instana_python-sensor \
-                -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.pullrequest.key="${PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
@@ -117,7 +114,6 @@ commands:
               pysonar-scanner \
                 -Dsonar.organization=instana \
                 -Dsonar.projectKey=instana_python-sensor \
-                -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi

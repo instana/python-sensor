@@ -91,28 +91,33 @@ commands:
       - attach_workspace:
           at: .
       - run:
-          name: Install Java
-          command: |
-            sudo apt-get update
-            sudo apt-get install openjdk-11-jdk
-      - run:
           name: Run SonarQube to report the coverage
           command: |
+            python -m venv venv
             . venv/bin/activate
+            
+            pip install --upgrade pip coverage
             coverage combine ./coverage_results
             coverage xml -i
-            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.1.3023.zip
-            unzip -d /tmp /tmp/sonar-scanner-cli.zip
-            if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
-              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
-                -Dsonar.host.url=${SONARQUBE_URL} \
-                -Dsonar.login="${SONARQUBE_LOGIN}" \
-                -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
+
+            PR_NUMBER=$(echo ${CIRCLE_PULL_REQUEST} | sed 's/.*\///')
+            SONAR_TOKEN=${SONAR_TOKEN}
+
+            pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pysonar-scanner
+            export SONAR_SCANNER_OPTS="-server"
+            
+            if [[ -n "${PR_NUMBER}" ]]; then
+              pysonar-scanner \
+                -Dsonar.organization=instana \
+                -Dsonar.projectKey=instana_python-sensor \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
+                -Dsonar.pullrequest.key="${PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
-              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
-                -Dsonar.host.url=${SONARQUBE_URL} \
-                -Dsonar.login="${SONARQUBE_LOGIN}" \
+              pysonar-scanner \
+                -Dsonar.organization=instana \
+                -Dsonar.projectKey=instana_python-sensor \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
       - store_artifacts:
@@ -288,15 +293,12 @@ jobs:
 
   final_job:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/python:3.13
     working_directory: ~/repo
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps
-      - pip-install-tests-deps
-      - store-pytest-results
-      # - run_sonarqube
+      - run_sonarqube
 
 workflows:
   tests:

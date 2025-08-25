@@ -93,7 +93,10 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
+            python -m venv venv
             . venv/bin/activate
+            
+            pip install --upgrade pip coverage
             coverage combine ./coverage_results
             coverage xml -i
 
@@ -295,9 +298,6 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
-      - pip-install-deps
-      - pip-install-tests-deps
-      - store-pytest-results
       - run_sonarqube
 
 workflows:

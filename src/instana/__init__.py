@@ -182,6 +182,7 @@ def boot_agent() -> None:
             sqlalchemy,  # noqa: F401
             starlette,  # noqa: F401
             urllib3,  # noqa: F401
+            gevent,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (
             client as aiohttp_client,  # noqa: F401
@@ -208,8 +209,6 @@ def boot_agent() -> None:
         from instana.instrumentation.tornado import (
             server as tornado_server,  # noqa: F401
         )
-
-        # from instana.instrumentation import gevent_inst # noqa: F401
 
     # Hooks
     from instana.hooks import (

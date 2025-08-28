@@ -17,6 +17,15 @@ from instana.singletons import agent, tracer
 from instana.util.config import parse_ignored_endpoints_from_yaml
 from tests.helpers import get_first_span_by_filter, testenv
 
+from instana.instrumentation.kafka import kafka_python
+from instana.instrumentation.kafka.kafka_python import (
+    clear_context,
+    save_consumer_span_into_context,
+    close_consumer_span,
+    consumer_span,
+)
+from instana.span.span import InstanaSpan
+
 
 class TestKafkaPython:
     @pytest.fixture(autouse=True)
@@ -72,6 +81,10 @@ class TestKafkaPython:
         agent.options.allow_exit_as_root = False
         # Close connections
         self.producer.close()
+
+        # Clear context
+        clear_context()
+
         self.kafka_client.delete_topics(
             [
                 testenv["kafka_topic"],
@@ -132,10 +145,17 @@ class TestKafkaPython:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 4
+        assert len(spans) == 3
 
-        kafka_span = spans[0]
-        test_span = spans[len(spans) - 1]
+        def filter(span):
+            return span.n == "kafka" and span.data["kafka"]["access"] == "consume"
+
+        kafka_span = get_first_span_by_filter(spans, filter)
+
+        def filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
+        test_span = get_first_span_by_filter(spans, filter)
 
         # Same traceId
         assert test_span.t == kafka_span.t
@@ -168,15 +188,22 @@ class TestKafkaPython:
         )
 
         with tracer.start_as_current_span("test"):
-            msg = consumer.poll()  # noqa: F841
+            msg = consumer.poll(timeout_ms=3000)  # noqa: F841
 
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 2
+        assert len(spans) == 3
 
-        kafka_span = spans[0]
-        test_span = spans[1]
+        def filter(span):
+            return span.n == "kafka" and span.data["kafka"]["access"] == "poll"
+
+        kafka_span = get_first_span_by_filter(spans, filter)
+
+        def filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
+        test_span = get_first_span_by_filter(spans, filter)
 
         # Same traceId
         assert test_span.t == kafka_span.t
@@ -194,27 +221,36 @@ class TestKafkaPython:
         assert kafka_span.data["kafka"]["access"] == "poll"
 
     def test_trace_kafka_python_error(self) -> None:
-        # Consume the events
         consumer = KafkaConsumer(
             "inexistent_kafka_topic",
             bootstrap_servers=testenv["kafka_bootstrap_servers"],
-            auto_offset_reset="earliest",  # consume earliest available messages
-            enable_auto_commit=False,  # do not auto-commit offsets
+            auto_offset_reset="earliest",
+            enable_auto_commit=False,
             consumer_timeout_ms=1000,
         )
 
         with tracer.start_as_current_span("test"):
-            for msg in consumer:
-                if msg is None:
-                    break
+            consumer._client = None
 
-        consumer.close()
+            try:
+                for msg in consumer:
+                    if msg is None:
+                        break
+            except Exception:
+                pass
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        kafka_span = spans[0]
-        test_span = spans[1]
+        def filter(span):
+            return span.n == "kafka" and span.data["kafka"]["access"] == "consume"
+
+        kafka_span = get_first_span_by_filter(spans, filter)
+
+        def filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
+        test_span = get_first_span_by_filter(spans, filter)
 
         # Same traceId
         assert test_span.t == kafka_span.t
@@ -230,7 +266,10 @@ class TestKafkaPython:
         assert kafka_span.k == SpanKind.SERVER
         assert kafka_span.data["kafka"]["service"] == "inexistent_kafka_topic"
         assert kafka_span.data["kafka"]["access"] == "consume"
-        assert kafka_span.data["kafka"]["error"] == "StopIteration()"
+        assert (
+            kafka_span.data["kafka"]["error"]
+            == "'NoneType' object has no attribute 'poll'"
+        )
 
     def consume_from_topic(self, topic_name: str) -> None:
         consumer = KafkaConsumer(
@@ -302,10 +341,7 @@ class TestKafkaPython:
         self.consume_from_topic(testenv["kafka_topic"])
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 4
-
-        filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 1
+        assert len(spans) == 1
 
     @patch.dict(
         os.environ,
@@ -326,10 +362,10 @@ class TestKafkaPython:
             self.consume_from_topic(testenv["kafka_topic"] + "_1")
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 11
+        assert len(spans) == 7
 
         filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 8
+        assert len(filtered_spans) == 6
 
         span_to_be_filtered = get_first_span_by_filter(
             spans,
@@ -351,10 +387,7 @@ class TestKafkaPython:
         self.consume_from_topic(testenv["kafka_topic"])
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
-
-        filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 1
+        assert len(spans) == 1
 
     def test_kafka_consumer_root_exit(self) -> None:
         agent.options.allow_exit_as_root = True
@@ -378,7 +411,7 @@ class TestKafkaPython:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 4
+        assert len(spans) == 3
 
         producer_span = spans[0]
         consumer_span = spans[1]
@@ -713,3 +746,50 @@ class TestKafkaPython:
                             format_span_id(producer_span_2.s).encode("utf-8"),
                         ),
                     ]
+
+    def test_save_consumer_span_into_context(self, span: "InstanaSpan") -> None:
+        """Test save_consumer_span_into_context function."""
+        # Verify initial state
+        assert consumer_span.get(None) is None
+        assert kafka_python.consumer_token is None
+
+        # Save span into context
+        save_consumer_span_into_context(span)
+
+        # Verify span is saved in context variable
+        assert consumer_span.get(None) == span
+        # Verify token is stored
+        assert kafka_python.consumer_token is not None
+
+    def test_close_consumer_span_recording_span(self, span: "InstanaSpan") -> None:
+        """Test close_consumer_span with a recording span."""
+        # Save span into context first
+        save_consumer_span_into_context(span)
+        assert kafka_python.consumer_token is not None
+
+        # Verify span is recording
+        assert span.is_recording()
+
+        # Close the span
+        close_consumer_span(span)
+
+        # Verify span was ended and context cleared
+        assert not span.is_recording()
+        assert consumer_span.get(None) is None
+        assert kafka_python.consumer_token is None
+
+    def test_clear_context(self, span: "InstanaSpan") -> None:
+        """Test clear_context function."""
+        # Save span into context
+        save_consumer_span_into_context(span)
+
+        # Verify context has data
+        assert consumer_span.get(None) == span
+        assert kafka_python.consumer_token is not None
+
+        # Clear context
+        clear_context()
+
+        # Verify all context is cleared
+        assert consumer_span.get(None) is None
+        assert kafka_python.consumer_token is None

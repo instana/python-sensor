@@ -1,22 +1,30 @@
 # (c) Copyright IBM Corp. 2025
 
+
 try:
+    import contextvars
     import inspect
     from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
     import kafka  # noqa: F401
     import wrapt
+    from opentelemetry import context, trace
     from opentelemetry.trace import SpanKind
 
     from instana.log import logger
     from instana.propagators.format import Format
+    from instana.singletons import get_tracer
     from instana.util.traceutils import (
         get_tracer_tuple,
         tracing_is_off,
     )
+    from instana.span.span import InstanaSpan
 
     if TYPE_CHECKING:
         from kafka.producer.future import FutureRecordMetadata
+
+    consumer_token = None
+    consumer_span = contextvars.ContextVar("kafka_python_consumer_span")
 
     @wrapt.patch_function_wrapper("kafka", "KafkaProducer.send")
     def trace_kafka_send(
@@ -59,35 +67,86 @@ try:
                 kwargs["headers"] = headers
             try:
                 res = wrapped(*args, **kwargs)
+                return res
             except Exception as exc:
                 span.record_exception(exc)
-            else:
-                return res
 
     def create_span(
         span_type: str,
         topic: Optional[str],
         headers: Optional[List[Tuple[str, bytes]]] = [],
-        exception: Optional[str] = None,
+        exception: Optional[Exception] = None,
     ) -> None:
-        tracer, parent_span, _ = get_tracer_tuple()
-        parent_context = (
-            parent_span.get_span_context()
-            if parent_span
-            else tracer.extract(
-                Format.KAFKA_HEADERS,
-                headers,
-                disable_w3c_trace_context=True,
+        try:
+            span = consumer_span.get(None)
+            if span is not None:
+                close_consumer_span(span)
+
+            tracer, parent_span, _ = get_tracer_tuple()
+
+            if not tracer:
+                tracer = get_tracer()
+
+            is_suppressed = False
+            if topic:
+                is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
+                    "kafka",
+                    span_type,
+                    topic,
+                )
+
+            if not is_suppressed and headers:
+                for header_name, header_value in headers:
+                    if header_name == "x_instana_l_s" and header_value == b"0":
+                        is_suppressed = True
+                        break
+
+            if is_suppressed:
+                return
+
+            parent_context = (
+                parent_span.get_span_context()
+                if parent_span
+                else tracer.extract(
+                    Format.KAFKA_HEADERS,
+                    headers,
+                    disable_w3c_trace_context=True,
+                )
             )
-        )
-        with tracer.start_as_current_span(
-            "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
-        ) as span:
+            span = tracer.start_span(
+                "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
+            )
             if topic:
                 span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", span_type)
             if exception:
                 span.record_exception(exception)
+                span.end()
+
+            save_consumer_span_into_context(span)
+        except Exception:
+            pass
+
+    def save_consumer_span_into_context(span: "InstanaSpan") -> None:
+        global consumer_token
+        ctx = trace.set_span_in_context(span)
+        consumer_token = context.attach(ctx)
+        consumer_span.set(span)
+
+    def close_consumer_span(span: "InstanaSpan") -> None:
+        global consumer_token
+        if span.is_recording():
+            span.end()
+            consumer_span.set(None)
+        if consumer_token is not None:
+            context.detach(consumer_token)
+            consumer_token = None
+
+    def clear_context() -> None:
+        global consumer_token
+        context.attach(trace.set_span_in_context(None))
+        consumer_token = None
+        consumer_span.set(None)
 
     @wrapt.patch_function_wrapper("kafka", "KafkaConsumer.__next__")
     def trace_kafka_consume(
@@ -96,29 +155,41 @@ try:
         args: Tuple[int, str, Tuple[Any, ...]],
         kwargs: Dict[str, Any],
     ) -> "FutureRecordMetadata":
-        if tracing_is_off():
-            return wrapped(*args, **kwargs)
-
         exception = None
         res = None
 
         try:
             res = wrapped(*args, **kwargs)
+            create_span(
+                "consume",
+                res.topic if res else list(instance.subscription())[0],
+                res.headers,
+            )
+            return res
+        except StopIteration:
+            pass
         except Exception as exc:
             exception = exc
-        finally:
-            if res:
-                create_span(
-                    "consume",
-                    res.topic if res else list(instance.subscription())[0],
-                    res.headers,
-                )
-            else:
-                create_span(
-                    "consume", list(instance.subscription())[0], exception=exception
-                )
+            create_span(
+                "consume", list(instance.subscription())[0], exception=exception
+            )
 
-        return res
+    @wrapt.patch_function_wrapper("kafka", "KafkaConsumer.close")
+    def trace_kafka_close(
+        wrapped: Callable[..., None],
+        instance: "kafka.KafkaConsumer",
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+    ) -> None:
+        try:
+            span = consumer_span.get(None)
+            if span is not None:
+                close_consumer_span(span)
+        except Exception as e:
+            logger.debug(
+                f"Error while closing kafka-consumer span: {e}"
+            )  # pragma: no cover
+        return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper("kafka", "KafkaConsumer.poll")
     def trace_kafka_poll(
@@ -127,9 +198,6 @@ try:
         args: Tuple[int, str, Tuple[Any, ...]],
         kwargs: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
-        if tracing_is_off():
-            return wrapped(*args, **kwargs)
-
         # The KafkaConsumer.consume() from the kafka-python-ng call the
         # KafkaConsumer.poll() internally, so we do not consider it here.
         if any(
@@ -143,23 +211,17 @@ try:
 
         try:
             res = wrapped(*args, **kwargs)
+            for partition, consumer_records in res.items():
+                for message in consumer_records:
+                    create_span(
+                        "poll",
+                        partition.topic,
+                        message.headers if hasattr(message, "headers") else [],
+                    )
+            return res
         except Exception as exc:
             exception = exc
-        finally:
-            if res:
-                for partition, consumer_records in res.items():
-                    for message in consumer_records:
-                        create_span(
-                            "poll",
-                            partition.topic,
-                            message.headers if hasattr(message, "headers") else [],
-                        )
-            else:
-                create_span(
-                    "poll", list(instance.subscription())[0], exception=exception
-                )
-
-        return res
+            create_span("poll", list(instance.subscription())[0], exception=exception)
 
     logger.debug("Instrumenting Kafka (kafka-python)")
 except ImportError:

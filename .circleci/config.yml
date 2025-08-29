@@ -219,10 +219,8 @@ jobs:
       - pip-install-tests-deps:
           requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:
-          # TODO: uncomment once gevent instrumentation is done
-          # gevent: "true"
-          # tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
-          tests: "tests/frameworks/test_starlette.py"
+          gevent: "true"
+          tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
       - store-pytest-results
       - store-coverage-report
 

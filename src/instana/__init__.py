@@ -83,7 +83,7 @@ def apply_gevent_monkey_patch() -> None:
         import inspect
 
         all_accepted_patch_all_args = inspect.getfullargspec(monkey.patch_all)[0]
-        provided_options.replace(" ", "").replace("--", "").split(",")
+        provided_options = provided_options.replace(" ", "").replace("--", "").split(",")
 
         provided_options = [
             k for k in provided_options if short_key(k) in all_accepted_patch_all_args

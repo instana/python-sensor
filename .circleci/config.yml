@@ -220,7 +220,7 @@ jobs:
           requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:
           gevent: "true"
-          tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
+          tests: "tests/frameworks/test_starlette.py tests/frameworks/test_gevent.py"
       - store-pytest-results
       - store-coverage-report
 

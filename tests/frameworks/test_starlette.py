@@ -29,7 +29,6 @@ class TestStarlette:
         # Clear all spans before a test run.
         self.recorder = tracer.span_processor
         self.recorder.clear_spans()
-        yield
 
     def test_vanilla_get(self) -> None:
         result = self.client.get("/")

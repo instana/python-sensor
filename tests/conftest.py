@@ -50,7 +50,7 @@ if not os.environ.get("CASSANDRA_TEST"):
 if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
-if not os.environ.get("GEVENT_STARLETTE_TEST"):
+if not os.environ.get("GEVENT_TEST"):
     collect_ignore_glob.extend(
         [
             "*test_gevent*",

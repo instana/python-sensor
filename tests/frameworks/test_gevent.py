@@ -14,8 +14,8 @@ from instana.singletons import tracer
 from tests.helpers import testenv, get_spans_by_filter, filter_test_span
 
 
-# Skip the tests if the environment variable `GEVENT_STARLETTE_TEST` is not set
-pytestmark = pytest.mark.skipif(not os.environ.get("GEVENT_STARLETTE_TEST"), reason="GEVENT_STARLETTE_TEST not set")
+# Skip the tests if the environment variable `GEVENT_TEST` is not set
+pytestmark = pytest.mark.skipif(not os.environ.get("GEVENT_TEST"), reason="GEVENT_TEST not set")
 
 
 class TestGEvent:

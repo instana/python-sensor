@@ -66,7 +66,7 @@ commands:
           name: Run Tests With Coverage Report
           environment:
             CASSANDRA_TEST: "<<parameters.cassandra>>"
-            GEVENT_STARLETTE_TEST: "<<parameters.gevent>>"
+            GEVENT_TEST: "<<parameters.gevent>>"
             KAFKA_TEST: "<<parameters.kafka>>"
           command: |
             . venv/bin/activate
@@ -208,21 +208,6 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39starlette:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.9
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps
-      - pip-install-tests-deps:
-          requirements: "tests/requirements-gevent-starlette.txt"
-      - run-tests-with-coverage-report:
-          tests: "tests/frameworks/test_starlette.py"
-      - store-pytest-results
-      - store-coverage-report
-
   py39gevent:
     docker:
       - image: public.ecr.aws/docker/library/python:3.9
@@ -321,7 +306,6 @@ workflows:
       - python314
       - py39cassandra
       - py39gevent
-      - py39starlette
       - py312aws
       - py312kafka
       - autowrapt:
@@ -335,7 +319,6 @@ workflows:
             # - python314
             - py39cassandra
             - py39gevent
-            - py39starlette
             - py312aws
             - py312kafka
             - autowrapt

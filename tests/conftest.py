@@ -28,7 +28,6 @@ from instana.util.runtime import is_ppc64, is_s390x
 collect_ignore_glob = [
     "*collector/test_gcr*",
     "*agent/test_google*",
-    "*test_gevent_autotrace*"
 ]
 
 # ppc64le and s390x have limitations with some supported libraries.
@@ -54,7 +53,7 @@ if not os.environ.get("COUCHBASE_TEST"):
 if not os.environ.get("GEVENT_STARLETTE_TEST"):
     collect_ignore_glob.extend(
         [
-            "*test_gevent.py",
+            "*test_gevent*",
         ]
     )
 

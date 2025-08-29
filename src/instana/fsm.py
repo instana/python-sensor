@@ -8,14 +8,13 @@ import socket
 import subprocess
 import sys
 import threading
-from typing import TYPE_CHECKING, Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable
 
 from fysom import Fysom
 
 from instana.log import logger
 from instana.util import get_default_gateway
 from instana.util.process_discovery import Discovery
-from instana.util.runtime import is_windows
 from instana.version import VERSION
 
 if TYPE_CHECKING:
@@ -104,16 +103,48 @@ class TheMachine:
         return False
 
     def announce_sensor(self, e: Any) -> bool:
-        pid: int = os.getpid()
         logger.debug(
-            f"Attempting to announce PID {pid} to the agent on {self.agent.options.agent_host}:{self.agent.options.agent_port}"
+            f"Attempting to make an announcement to the agent on {self.agent.options.agent_host}:{self.agent.options.agent_port}"
         )
+        pid = os.getpid()
 
-        cmdline = self._get_cmdline(pid)
+        try:
+            if os.path.isfile("/proc/self/cmdline"):
+                with open("/proc/self/cmdline") as cmd:
+                    cmdinfo = cmd.read()
+                cmdline = cmdinfo.split("\x00")
+            else:
+                # Python doesn't provide a reliable method to determine what
+                # the OS process command line may be.  Here we are forced to
+                # rely on ps rather than adding a dependency on something like
+                # psutil which requires dev packages, gcc etc...
+                proc = subprocess.Popen(
+                    ["ps", "-p", str(pid), "-o", "command"], stdout=subprocess.PIPE
+                )
+                (out, _) = proc.communicate()
+                parts = out.split(b"\n")
+                cmdline = [parts[1].decode("utf-8")]
+        except Exception:
+            cmdline = sys.argv
+            logger.debug("announce_sensor", exc_info=True)
 
         d = Discovery(pid=self.__get_real_pid(), name=cmdline[0], args=cmdline[1:])
 
-        self._setup_socket_connection(d, pid)
+        # If we're on a system with a procfs
+        if os.path.exists("/proc/"):
+            try:
+                # In CentOS 7, some odd things can happen such as:
+                # PermissionError: [Errno 13] Permission denied: '/proc/6/fd/8'
+                # Use a try/except as a safety
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect(
+                    (self.agent.options.agent_host, self.agent.options.agent_port)
+                )
+                path = f"/proc/{pid}/fd/{sock.fileno()}"
+                d.fd = sock.fileno()
+                d.inode = os.readlink(path)
+            except:  # noqa: E722
+                logger.debug("Error generating file descriptor: ", exc_info=True)
 
         payload = self.agent.announce(d)
 
@@ -158,112 +189,28 @@ class TheMachine:
     def __get_real_pid(self) -> int:
         """
         Attempts to determine the true process ID by querying the
-        /proc/<pid>/sched file on Linux systems or using the OS default PID.
-        For Windows, we use the standard OS PID as there's no equivalent concept
-        of container PIDs vs host PIDs.
+        /proc/<pid>/sched file.  This works on systems with a proc filesystem.
+        Otherwise default to os default.
         """
         pid = None
 
-        # For Linux systems with procfs
         if os.path.exists("/proc/"):
             sched_file = f"/proc/{os.getpid()}/sched"
 
             if os.path.isfile(sched_file):
                 try:
-                    with open(sched_file) as file:
-                        line = file.readline()
-                        g = re.search(r"\((\d+),", line)
-                        if g and len(g.groups()) == 1:
-                            pid = int(g.groups()[0])
+                    file = open(sched_file)
+                    line = file.readline()
+                    g = re.search(r"\((\d+),", line)
+                    if g and len(g.groups()) == 1:
+                        pid = int(g.groups()[0])
                 except Exception:
                     logger.debug("parsing sched file failed", exc_info=True)
 
-        # For Windows or if Linux method failed
         if pid is None:
             pid = os.getpid()
 
         return pid
-
-    def _get_cmdline_windows(self) -> List[str]:
-        """
-        Get command line using Windows API
-        """
-        import ctypes
-        from ctypes import wintypes
-
-        GetCommandLineW = ctypes.windll.kernel32.GetCommandLineW
-        GetCommandLineW.argtypes = []
-        GetCommandLineW.restype = wintypes.LPCWSTR
-
-        cmd = GetCommandLineW()
-        # Simple parsing - this is a basic approach and might need refinement
-        # for complex command lines with quotes and spaces
-        return cmd.split()
-
-    def _get_cmdline_linux_proc(self) -> List[str]:
-        """
-        Get command line from Linux /proc filesystem
-        """
-        with open("/proc/self/cmdline") as cmd:
-            cmdinfo = cmd.read()
-        return cmdinfo.split("\x00")
-
-    def _get_cmdline_unix_ps(self, pid: int) -> List[str]:
-        """
-        Get command line using ps command (for Unix-like systems without /proc)
-        """
-        proc = subprocess.Popen(
-            ["ps", "-p", str(pid), "-o", "command"], stdout=subprocess.PIPE
-        )
-        (out, _) = proc.communicate()
-        parts = out.split(b"\n")
-        return [parts[1].decode("utf-8")]
-
-    def _get_cmdline_unix(self, pid: int) -> List[str]:
-        """
-        Get command line using Unix
-        """
-        if os.path.isfile("/proc/self/cmdline"):
-            return self._get_cmdline_linux_proc()
-        else:
-            return self._get_cmdline_unix_ps(pid)
-
-    def _get_cmdline(self, pid: int) -> List[str]:
-        """
-        Get command line in a platform-independent way
-        """
-        try:
-            if is_windows():
-                return self._get_cmdline_windows()
-            else:
-                return self._get_cmdline_unix(pid)
-        except Exception:
-            logger.debug("Error getting command line", exc_info=True)
-            return sys.argv
-
-    def _setup_socket_connection(self, discovery: Discovery, pid: int) -> None:
-        """
-        Set up socket connection and populate discovery object with socket details
-        """
-        try:
-            # In CentOS 7, some odd things can happen such as:
-            # PermissionError: [Errno 13] Permission denied: '/proc/6/fd/8'
-            # Use a try/except as a safety
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.agent.options.agent_host, self.agent.options.agent_port))
-            discovery.fd = sock.fileno()
-
-            # If we're on a system with a procfs (Linux)
-            if os.path.exists("/proc/"):
-                try:
-                    path = "/proc/%d/fd/%d" % (pid, sock.fileno())
-                    discovery.inode = os.readlink(path)
-                except Exception:
-                    logger.debug(
-                        "Error generating file descriptor inode: ", exc_info=True
-                    )
-        except Exception:
-            logger.debug("Error creating socket connection: ", exc_info=True)
 
 
 # Made with Bob

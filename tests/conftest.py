@@ -26,7 +26,6 @@ from instana.tracer import InstanaTracerProvider
 from instana.util.runtime import is_ppc64, is_s390x
 
 collect_ignore_glob = [
-    "*test_gevent*",
     "*collector/test_gcr*",
     "*agent/test_google*",
 ]

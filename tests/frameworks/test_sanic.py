@@ -7,7 +7,7 @@ from sanic_testing.testing import SanicTestClient
 
 from instana.singletons import tracer, agent
 from instana.util.ids import hex_id
-from tests.helpers import get_first_span_by_filter, get_first_span_by_name, is_test_span
+from tests.helpers import get_first_span_by_filter, get_first_span_by_name, filter_test_span
 from tests.test_utils import _TraceContextMixin
 from tests.apps.sanic_app.server import app
 
@@ -57,7 +57,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -108,7 +108,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -159,7 +159,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -210,7 +210,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -261,7 +261,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -312,7 +312,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -363,7 +363,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -417,7 +417,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -476,7 +476,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")
@@ -523,7 +523,7 @@ class TestSanic(_TraceContextMixin):
         spans = self.recorder.queued_spans()
         assert len(spans) == 3
 
-        test_span = get_first_span_by_filter(spans, is_test_span)
+        test_span = get_first_span_by_filter(spans, filter_test_span)
         assert test_span
 
         httpx_span = get_first_span_by_name(spans, "http")

@@ -55,7 +55,6 @@ if not os.environ.get("GEVENT_STARLETTE_TEST"):
     collect_ignore_glob.extend(
         [
             "*test_gevent.py",
-            "*test_starlette*",
         ]
     )
 

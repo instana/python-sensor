@@ -8,7 +8,7 @@ from ..utils import launch_background_thread
 
 app_thread = None
 
-if not any((app_thread, os.environ.get('GEVENT_STARLETTE_TEST'), os.environ.get('CASSANDRA_TEST'))):
+if not any((app_thread, os.environ.get('GEVENT_TEST'), os.environ.get('CASSANDRA_TEST'))):
     testenv["tornado_port"] = 10813
     testenv["tornado_server"] = ("http://127.0.0.1:" + str(testenv["tornado_port"]))
 

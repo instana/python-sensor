@@ -6,8 +6,11 @@ Instrumentation for the gevent package.
 """
 
 import sys
-from ..log import logger
-from ..singletons import tracer
+
+from opentelemetry import context
+import contextvars
+
+from instana.log import logger
 
 
 def instrument_gevent():
@@ -16,26 +19,15 @@ def instrument_gevent():
         logger.debug("Instrumenting gevent")
 
         import gevent
-        from opentracing.scope_managers.gevent import GeventScopeManager
-        from opentracing.scope_managers.gevent import _GeventScope
 
         def spawn_callback(new_greenlet):
             """Handles context propagation for newly spawning greenlets"""
-            parent_scope = tracer.scope_manager.active
-            if parent_scope is not None:
-                # New greenlet, new clean slate.  Clone and make active in this new greenlet
-                # the currently active scope (but don't finish() the span on close - it's a
-                # clone/not the original and we don't want to close it prematurely)
-                # TODO: Change to our own ScopeManagers
-                parent_scope_clone = _GeventScope(
-                    parent_scope.manager, parent_scope.span, finish_on_close=False
-                )
-                tracer._scope_manager._set_greenlet_scope(
-                    parent_scope_clone, new_greenlet
-                )
+            parent_context = context.get_current()
+            new_context = contextvars.Context()
 
-        logger.debug(" -> Updating tracer to use gevent based context management")
-        tracer._scope_manager = GeventScopeManager()
+            new_context.run(lambda: context.attach(parent_context))
+            new_greenlet.gr_context = new_context
+
         gevent.Greenlet.add_spawn_callback(spawn_callback)
     except Exception:
         logger.debug("instrument_gevent: ", exc_info=True)
@@ -43,11 +35,5 @@ def instrument_gevent():
 
 if "gevent" not in sys.modules:
     logger.debug("Instrumenting gevent: gevent not detected or loaded.  Nothing done.")
-elif not hasattr(sys.modules["gevent"], "version_info"):
-    logger.debug("gevent module has no 'version_info'. Skipping instrumentation.")
-elif sys.modules["gevent"].version_info < (1, 4):
-    logger.debug(
-        "gevent < 1.4 detected.  The Instana package supports gevent versions 1.4 and greater."
-    )
 else:
     instrument_gevent()

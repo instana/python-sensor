@@ -6,7 +6,7 @@ import sys
 import time
 import threading
 
-if not any((os.environ.get('GEVENT_STARLETTE_TEST'),
+if not any((os.environ.get('GEVENT_TEST'),
             os.environ.get('CASSANDRA_TEST'),
             sys.version_info < (3, 5, 3))):
     # Background RPC application

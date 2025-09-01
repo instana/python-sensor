@@ -3,7 +3,7 @@
 
 import os
 
-if os.environ.get('GEVENT_STARLETTE_TEST'):
+if os.environ.get('GEVENT_TEST'):
     from gevent import monkey
     monkey.patch_all()
 

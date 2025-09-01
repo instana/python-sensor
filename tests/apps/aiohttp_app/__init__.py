@@ -8,7 +8,7 @@ from ..utils import launch_background_thread
 
 APP_THREAD = None
 
-if not any((os.environ.get('GEVENT_STARLETTE_TEST'),
+if not any((os.environ.get('GEVENT_TEST'),
             os.environ.get('CASSANDRA_TEST'),
             sys.version_info < (3, 5, 3))):
     APP_THREAD = launch_background_thread(server, "AIOHTTP")

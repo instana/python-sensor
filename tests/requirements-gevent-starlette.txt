@@ -1,6 +1,6 @@
 -r requirements-minimal.txt
 flask>=0.12.2
-gevent>=1.4.0
+gevent>=23.9.0.post1
 mock>=2.0.0
 pyramid>=2.0.1
 starlette>=0.12.13

@@ -108,7 +108,7 @@ def fail_with_message_and_span_dump(msg, spans):
     pytest.fail(msg + span_dump, True)
 
 
-def is_test_span(span):
+def filter_test_span(span):
     """
     return the filter for test span
     """

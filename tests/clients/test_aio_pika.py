@@ -86,6 +86,22 @@ class TestAioPika:
                         if queue.name in message.body.decode():
                             break
 
+    async def consume_with_exception(self, connect_method) -> None:
+        connection = await connect_method()
+
+        async def on_message(msg):
+            raise RuntimeError("Simulated Exception")
+
+        async with connection:
+            # Creating channel
+            channel = await connection.channel()
+
+            # Declaring queue
+            queue = await channel.declare_queue(self.queue_name)
+
+            await queue.consume(on_message)
+            await asyncio.sleep(1)  # Wait to ensure the message is processed
+
     @pytest.mark.parametrize(
         "params_combination",
         ["both_args", "both_kwargs", "arg_kwarg"],
@@ -170,6 +186,48 @@ class TestAioPika:
         # Error logging
         assert not rabbitmq_publisher_span.ec
         assert not rabbitmq_consumer_span.ec
+        assert not test_span.ec
+
+        # Span attributes
+        def assert_span_info(rabbitmq_span: "ReadableSpan", sort: str) -> None:
+            assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
+            assert rabbitmq_span.data["rabbitmq"]["sort"] == sort
+            assert rabbitmq_span.data["rabbitmq"]["address"]
+            assert rabbitmq_span.data["rabbitmq"]["key"] == "test.queue"
+            assert rabbitmq_span.stack
+            assert isinstance(rabbitmq_span.stack, list)
+            assert len(rabbitmq_span.stack) > 0
+
+        assert_span_info(rabbitmq_publisher_span, "publish")
+        assert_span_info(rabbitmq_consumer_span, "consume")
+
+    @pytest.mark.parametrize(
+        "connect_method",
+        [connect, connect_robust],
+    )
+    def test_consume_with_exception(self, connect_method) -> None:
+        with tracer.start_as_current_span("test"):
+            self.loop.run_until_complete(self.publish_message())
+            self.loop.run_until_complete(self.consume_with_exception(connect_method))
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        rabbitmq_publisher_span = spans[0]
+        rabbitmq_consumer_span = spans[1]
+        test_span = spans[2]
+
+        # Same traceId
+        assert test_span.t == rabbitmq_publisher_span.t
+        assert rabbitmq_publisher_span.t == rabbitmq_consumer_span.t
+
+        # Parent relationships
+        assert rabbitmq_publisher_span.p == test_span.s
+        assert rabbitmq_consumer_span.p == rabbitmq_publisher_span.s
+
+        # Error logging
+        assert not rabbitmq_publisher_span.ec
+        assert rabbitmq_consumer_span.ec == 1
         assert not test_span.ec
 
         # Span attributes

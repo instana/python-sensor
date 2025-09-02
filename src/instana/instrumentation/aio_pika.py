@@ -100,12 +100,12 @@ try:
                 _extract_span_attributes(
                     span, connection, "consume", message.routing_key, message.exchange
                 )
-            try:
-                response = await wrapped(*args, **kwargs)
-            except Exception as exc:
-                span.record_exception(exc)
-            else:
-                return response
+                try:
+                    response = await wrapped(*args, **kwargs)
+                except Exception as exc:
+                    span.record_exception(exc)
+                else:
+                    return response
 
         wrapped_callback = callback_wrapper(callback)
         if kwargs.get("callback"):

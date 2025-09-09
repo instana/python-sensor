@@ -5,6 +5,7 @@
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator
 from instana.util.ids import define_server_timing, hex_id_limited
+from instana.span_context import SpanContext
 
 from opentelemetry.trace.span import format_span_id
 
@@ -27,7 +28,26 @@ class HTTPPropagator(BasePropagator):
             # Suppression `level` made in the child context or in the parent context
             # has priority over any non-suppressed `level` setting
             child_level = int(self.extract_instana_headers(dictionary_carrier)[2] or "1")
-            span_context.level = min(child_level, span_context.level)
+            new_level = min(child_level, span_context.level)
+
+            if new_level != span_context.level:
+                # Create a new span context with the updated level
+                span_context = SpanContext(
+                    trace_id=span_context.trace_id,
+                    span_id=span_context.span_id,
+                    is_remote=span_context.is_remote,
+                    trace_flags=span_context.trace_flags,
+                    trace_state=span_context.trace_state,
+                    level=new_level,
+                    synthetic=span_context.synthetic,
+                    trace_parent=span_context.trace_parent,
+                    instana_ancestor=span_context.instana_ancestor,
+                    long_trace_id=span_context.long_trace_id,
+                    correlation_type=span_context.correlation_type,
+                    correlation_id=span_context.correlation_id,
+                    traceparent=span_context.traceparent,
+                    tracestate=span_context.tracestate
+                )
 
         serializable_level = str(span_context.level)
 

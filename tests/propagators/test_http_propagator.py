@@ -340,3 +340,45 @@ class TestHTTPPropagator:
         if "tracestate" in carrier_header.keys():
             assert "tracestate" in downstream_carrier
             assert carrier_header["tracestate"] == downstream_carrier["tracestate"]
+
+    def test_suppression_when_child_level_is_lower(
+        self,
+        _trace_id: int,
+        _span_id: int,
+    ) -> None:
+        """
+        Test that span_context.level is updated when the child level (extracted from carrier) is lower than the current span_context.level.
+        """
+        # Create a span context with level=1
+        original_span_context = SpanContext(
+            trace_id=_trace_id,
+            span_id=_span_id,
+            is_remote=False,
+            level=1,
+        )
+
+        # Create a carrier with level=0 (suppression)
+        carrier_header = {"x-instana-l": "0"}
+
+        # Inject the span context into the carrier
+        self.hptc.inject(original_span_context, carrier_header)
+
+        # Extract the span context from the carrier to verify the level was updated
+        extracted_context = self.hptc.extract(carrier_header)
+
+        # Verify that the level is 0 (suppressed)
+        assert extracted_context.level == 0
+        assert extracted_context.suppression
+
+        # Create a new carrier to test the propagation
+        downstream_carrier = {}
+
+        # Inject the extracted context into the downstream carrier
+        self.hptc.inject(extracted_context, downstream_carrier)
+
+        # Verify that the downstream carrier has the correct level
+        assert downstream_carrier.get("X-INSTANA-L") == "0"
+
+        # Verify that no trace or span IDs are injected when suppressed
+        assert "X-INSTANA-T" not in downstream_carrier
+        assert "X-INSTANA-S" not in downstream_carrier

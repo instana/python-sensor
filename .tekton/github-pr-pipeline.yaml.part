@@ -28,7 +28,7 @@ spec:
     default: public.ecr.aws/docker/library/python:3.13-bookworm
   - name: py-314-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.14.0rc2
+    default: public.ecr.aws/docker/library/python:3.14.0rc3
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:

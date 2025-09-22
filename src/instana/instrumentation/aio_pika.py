@@ -43,18 +43,26 @@ try:
     ) -> Optional["ConfirmationFrameType"]:
         if tracing_is_off():
             return await wrapped(*args, **kwargs)
-
+        
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
+
+        def _bind_args(
+            message: Type["AbstractMessage"],
+            routing_key: str,
+            *args: object,
+            **kwargs: object,
+        ) -> Tuple[object, ...]:
+            return (message, routing_key, args, kwargs)
+        
+        (message, routing_key, args, kwargs) = _bind_args(
+            *args, **kwargs
+        )
 
         with tracer.start_as_current_span(
             "rabbitmq", span_context=parent_context
         ) as span:
             connection = instance.channel._connection
-            message = kwargs["message"] if kwargs.get("message") else args[0]
-            routing_key = (
-                kwargs["routing_key"] if kwargs.get("routing_key") else args[1]
-            )
 
             _extract_span_attributes(
                 span, connection, "publish", routing_key, instance.name
@@ -66,6 +74,9 @@ try:
                 message.properties.headers,
                 disable_w3c_trace_context=True,
             )
+
+            args = (message, routing_key) + args
+
             try:
                 response = await wrapped(*args, **kwargs)
             except Exception as exc:

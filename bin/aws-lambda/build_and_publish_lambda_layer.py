@@ -149,6 +149,7 @@ else:
     LAYER_NAME = "instana-python"
 
 published = dict()
+version = 0
 
 for region in target_regions:
     print(f"===> Uploading layer to AWS {region} ")
@@ -219,5 +220,8 @@ for region in target_regions:
 
 
 print("===> Published list:")
+print(f"AWS Lambda Layer v{version}")
+print("| AWS Region | ARN |")
+print("| :-- | :-- |")
 for key in published.keys():
-    print(f"{key}\t{published[key]}")
+    print(f"| {key} | {published[key]} |")

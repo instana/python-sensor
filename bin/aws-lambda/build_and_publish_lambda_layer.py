@@ -107,7 +107,7 @@ cn_regions = [
 ]
 
 if dev_mode:
-    target_regions = ["us-west-1"]
+    target_regions = ["us-east-1"]
     LAYER_NAME = "instana-py-dev"
 else:
     target_regions = [

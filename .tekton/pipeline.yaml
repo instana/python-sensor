@@ -98,7 +98,7 @@ spec:
         - clone
       params:
         - name: imageDigest
-          value: $(params.py-313-imageDigest)
+          value: $(params.py-312-imageDigest)
       taskRef:
         name: python-tracer-unittest-kafka-task
       workspaces:

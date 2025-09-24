@@ -56,6 +56,9 @@ class TestAioPika:
             elif params_combination == "arg_kwarg":
                 args = (message,)
                 kwargs = {"routing_key": queue_name}
+            elif params_combination == "arg_kwarg_empty_key":
+                args = (message,)
+                kwargs = {"routing_key": ""} 
             else:
                 # params_combination == "both_args"
                 args = (message, queue_name)
@@ -102,6 +105,15 @@ class TestAioPika:
             await queue.consume(on_message)
             await asyncio.sleep(1)  # Wait to ensure the message is processed
 
+    def assert_span_info(self, rabbitmq_span: "ReadableSpan", sort: str, key: str = "test.queue") -> None:
+        assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
+        assert rabbitmq_span.data["rabbitmq"]["sort"] == sort
+        assert rabbitmq_span.data["rabbitmq"]["address"]
+        assert rabbitmq_span.data["rabbitmq"]["key"] == key
+        assert rabbitmq_span.stack
+        assert isinstance(rabbitmq_span.stack, list)
+        assert len(rabbitmq_span.stack) > 0
+
     @pytest.mark.parametrize(
         "params_combination",
         ["both_args", "both_kwargs", "arg_kwarg"],
@@ -127,13 +139,8 @@ class TestAioPika:
         assert not rabbitmq_span.ec
 
         # Span attributes
-        assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
-        assert rabbitmq_span.data["rabbitmq"]["sort"] == "publish"
-        assert rabbitmq_span.data["rabbitmq"]["address"]
-        assert rabbitmq_span.data["rabbitmq"]["key"] == "test.queue"
-        assert rabbitmq_span.stack
-        assert isinstance(rabbitmq_span.stack, list)
-        assert len(rabbitmq_span.stack) > 0
+        key = "" if params_combination == "arg_kwarg_empty_key" else self.queue_name
+        self.assert_span_info(rabbitmq_span, "publish", key)
 
     def test_basic_publish_as_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True
@@ -151,13 +158,7 @@ class TestAioPika:
         assert not rabbitmq_span.ec
 
         # Span attributes
-        assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
-        assert rabbitmq_span.data["rabbitmq"]["sort"] == "publish"
-        assert rabbitmq_span.data["rabbitmq"]["address"]
-        assert rabbitmq_span.data["rabbitmq"]["key"] == "test.queue"
-        assert rabbitmq_span.stack
-        assert isinstance(rabbitmq_span.stack, list)
-        assert len(rabbitmq_span.stack) > 0
+        self.assert_span_info(rabbitmq_span, "publish")
 
     @pytest.mark.parametrize(
         "connect_method",
@@ -189,17 +190,8 @@ class TestAioPika:
         assert not test_span.ec
 
         # Span attributes
-        def assert_span_info(rabbitmq_span: "ReadableSpan", sort: str) -> None:
-            assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
-            assert rabbitmq_span.data["rabbitmq"]["sort"] == sort
-            assert rabbitmq_span.data["rabbitmq"]["address"]
-            assert rabbitmq_span.data["rabbitmq"]["key"] == "test.queue"
-            assert rabbitmq_span.stack
-            assert isinstance(rabbitmq_span.stack, list)
-            assert len(rabbitmq_span.stack) > 0
-
-        assert_span_info(rabbitmq_publisher_span, "publish")
-        assert_span_info(rabbitmq_consumer_span, "consume")
+        self.assert_span_info(rabbitmq_publisher_span, "publish")
+        self.assert_span_info(rabbitmq_consumer_span, "consume")
 
     @pytest.mark.parametrize(
         "connect_method",
@@ -231,14 +223,5 @@ class TestAioPika:
         assert not test_span.ec
 
         # Span attributes
-        def assert_span_info(rabbitmq_span: "ReadableSpan", sort: str) -> None:
-            assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
-            assert rabbitmq_span.data["rabbitmq"]["sort"] == sort
-            assert rabbitmq_span.data["rabbitmq"]["address"]
-            assert rabbitmq_span.data["rabbitmq"]["key"] == "test.queue"
-            assert rabbitmq_span.stack
-            assert isinstance(rabbitmq_span.stack, list)
-            assert len(rabbitmq_span.stack) > 0
-
-        assert_span_info(rabbitmq_publisher_span, "publish")
-        assert_span_info(rabbitmq_consumer_span, "consume")
+        self.assert_span_info(rabbitmq_publisher_span, "publish")
+        self.assert_span_info(rabbitmq_consumer_span, "consume")

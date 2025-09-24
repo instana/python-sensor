@@ -43,7 +43,7 @@ try:
     ) -> Optional["ConfirmationFrameType"]:
         if tracing_is_off():
             return await wrapped(*args, **kwargs)
-        
+
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 

@@ -71,6 +71,8 @@ try:
             kwargs["middleware"] = [Middleware(InstanaASGIMiddleware)]
         elif isinstance(middleware, list):
             middleware.append(Middleware(InstanaASGIMiddleware))
+        elif isinstance(middleware, tuple):
+            kwargs["middleware"] =  (*middleware, Middleware(InstanaASGIMiddleware))
 
         exception_handlers = kwargs.get("exception_handlers")
         if exception_handlers is None:

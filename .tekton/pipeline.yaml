@@ -20,7 +20,7 @@ spec:
     default: public.ecr.aws/docker/library/python:3.11-bookworm
   - name: py-312-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.12-bookworm
+    default: public.ecr.aws/docker/library/python:3.12
   - name: py-313-imageDigest
     type: string
     default: public.ecr.aws/docker/library/python:3.13-bookworm

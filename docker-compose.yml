@@ -63,16 +63,37 @@ services:
 
   # Sidecar container for Kafka
   zookeeper:
-    image: public.ecr.aws/ubuntu/zookeeper:latest
-    ports:
-      - 2181:2181
-    environment:
-      - TZ=UTC
+    image: public.ecr.aws/ubuntu/zookeeper:3.1-22.04_edge
+    ports: ["2181:2181"]
+    environment: [ "TZ=UTC" ]
 
   kafka:
-    image: public.ecr.aws/ubuntu/kafka:latest   # works on amd64, arm64, ppc64le and s390x
-    ports:
-      - '9092:9092'
+    image: public.ecr.aws/ubuntu/kafka:3.1-22.04_edge
+    depends_on: [zookeeper]
+    ports: 
+      - "9094:9094"
+      - "9093:9093"
     environment:
       - TZ=UTC
       - ZOOKEEPER_HOST=zookeeper
+      - ZOOKEEPER_PORT=2181
+    command: 
+      - /opt/kafka/config/server.properties
+      - --override
+      - listeners=INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+      - --override
+      - advertised.listeners=INTERNAL://kafka:9093,EXTERNAL://127.0.0.1:9094
+      - --override
+      - listener.security.protocol.map=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - --override
+      - inter.broker.listener.name=INTERNAL
+      - --override
+      - broker.id=1
+      - --override
+      - offsets.topic.replication.factor=1
+      - --override
+      - transaction.state.log.replication.factor=1
+      - --override
+      - transaction.state.log.min.isr=1
+      - --override
+      - auto.create.topics.enable=true

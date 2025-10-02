@@ -167,17 +167,45 @@ metadata:
 spec:
   sidecars:
     - name: zookeeper
-      image: public.ecr.aws/ubuntu/zookeeper:latest
+      image: public.ecr.aws/ubuntu/zookeeper:3.1-22.04_edge
+      ports:
+        - containerPort: 9093
       env:
         - name: TZ
           value: "UTC"
     - name: kafka
-      image: public.ecr.aws/ubuntu/kafka:latest
+      image: public.ecr.aws/ubuntu/kafka:3.1-22.04_edge
       env:
         - name: TZ
           value: "UTC"
         - name: ZOOKEEPER_HOST
-          value: zookeeper
+          value: localhost
+        - name: ZOOKEEPER_PORT
+          value: "2181"
+      ports:
+        - containerPort: 9093
+        - containerPort: 9094
+      command:
+        - /opt/kafka/bin/kafka-server-start.sh
+        - /opt/kafka/config/server.properties
+        - --override
+        - listeners=INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+        - --override
+        - advertised.listeners=INTERNAL://localhost:9093,EXTERNAL://localhost:9094
+        - --override
+        - listener.security.protocol.map=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+        - --override
+        - inter.broker.listener.name=INTERNAL
+        - --override
+        - broker.id=1
+        - --override
+        - offsets.topic.replication.factor=1
+        - --override
+        - transaction.state.log.replication.factor=1
+        - --override
+        - transaction.state.log.min.isr=1
+        - --override
+        - auto.create.topics.enable=true
   params:
   - name: imageDigest
     type: string

@@ -15,9 +15,13 @@ Any feedback is welcome.  Happy Python visibility.
 
 ## Installation
 
-Instana remotely instruments your Python web servers automatically via [Instana AutoTrace™️]. To configure which Python processes this applies to, see the [configuration page].
+You can use automatic installation or manual installation as described in the following sections:
 
-##  Manual Installation
+### Automatic installation
+
+Instana remotely instruments your Python applications automatically by [Instana AutoTrace webhook] in Kubernetes and Red Hat OpenShift clusters. However, if you prefer to install the package manually, see [Manual Installation](#manual-installation) as follows.
+
+###  Manual Installation
 
 If you wish to instrument your applications manually, you can install the package with the following into the `virtualenv`, `pipenv`, or container (hosted on [PyPI]):
 
@@ -27,7 +31,7 @@ or to alternatively update an existing installation:
 
     pip install -U instana
 
-### Activating Without Code Changes
+#### Activating Without Code Changes
 
 The Instana package can then be activated _without any code changes required_ by setting the following environment variable for your Python application:
 
@@ -35,7 +39,7 @@ The Instana package can then be activated _without any code changes required_ by
 
 This will cause the Instana Python package to instrument your Python application automatically. Once it finds the Instana host agent, it will report Python metrics and distributed traces.
 
-### Activating via Import
+#### Activating With Code Changes
 
 Alternatively, if you prefer the manual method, import the `instana` package inside of your Python application:
 
@@ -57,11 +61,11 @@ Want to instrument other languages?  See our [Node.js], [Go], [Ruby] instrumenta
 
 <!-- Reference links -->
 [Instana]: https://www.instana.com/ "IBM Instana Observability"
-[Instana AutoTrace™️]: https://www.ibm.com/docs/en/instana-observability/current?topic=kubernetes-instana-autotrace-webhook "Instana AutoTrace"
+[Instana AutoTrace webhook]: https://www.ibm.com/docs/en/instana-observability/current?topic=kubernetes-instana-autotrace-webhook "Instana AutoTrace webhook"
 [configuration page]: https://www.ibm.com/docs/en/instana-observability/current?topic=package-python-configuration-configuring-instana#general "Instana Python package configuration"
 [PyPI]: https://pypi.python.org/pypi/instana "Instana package at PyPI"
 [installation document]: https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package#installation-methods "Instana Python package installation methods"
-[documentation portal]: https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-python-instana-python-package "Instana Python package documentation"
+[documentation portal]: https://ibm.biz/monitoring-python "Monitoring Python - IBM documentation"
 [Node.js]: https://github.com/instana/nodejs "Instana Node.JS Tracer"
 [Go]: https://github.com/instana/golang-sensor "Instana Go Tracer"
 [Ruby]: https://github.com/instana/ruby-sensor "Instana Ruby Tracer"

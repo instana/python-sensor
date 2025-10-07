@@ -104,7 +104,7 @@ spec:
     - name: mongo
       image: public.ecr.aws/docker/library/mongo:7.0.6
     - name: postgres
-      image: public.ecr.aws/docker/library/postgres:16.2-bookworm
+      image: public.ecr.aws/docker/library/postgres:16.10-trixie
       env:
         - name: POSTGRES_USER
           value: root
@@ -248,7 +248,7 @@ spec:
     - name: mongo
       image: public.ecr.aws/docker/library/mongo:7.0.6
     - name: postgres
-      image: public.ecr.aws/docker/library/postgres:16.2-bookworm
+      image: public.ecr.aws/docker/library/postgres:16.10-trixie
       env:
         - name: POSTGRES_USER
           value: root

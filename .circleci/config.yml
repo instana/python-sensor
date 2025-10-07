@@ -135,7 +135,7 @@ jobs:
         type: string
     docker:
       - image: public.ecr.aws/docker/library/python:<<parameters.py-version>>
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
+      - image: public.ecr.aws/docker/library/postgres:16.10-trixie
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd

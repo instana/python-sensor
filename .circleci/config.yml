@@ -319,6 +319,7 @@ jobs:
 
 workflows:
   tests:
+    max_auto_reruns: 2
     jobs:
       - python3x:
           matrix:

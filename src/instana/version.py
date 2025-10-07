@@ -3,4 +3,4 @@
 
 # Module version file.  Used by setup.py and snapshot reporting.
 
-VERSION = "3.8.3"
+VERSION = "3.9.0"

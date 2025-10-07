@@ -34,6 +34,7 @@ spec:
           - name: imageDigest
             value:
             - $(params.py-313-imageDigest)
+            - $(params.py-314-imageDigest)
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:

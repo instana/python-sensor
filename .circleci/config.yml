@@ -19,8 +19,8 @@ commands:
             CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
             
             # Check if any relevant files changed
-            echo "$CHANGED_FILES" | grep -q -E "^(src/|tests/|tests_aws/|.circleci/)" || {
-              echo "No changes in src/, tests/, tests_aws/, or .circleci directories. Skipping tests."
+            echo "$CHANGED_FILES" | grep -q -E "^(src/|tests/|tests_autowrapt/|tests_aws/|.circleci/|pyproject.toml)" || {
+              echo "No changes in src/, tests/, tests_autowrapt/, tests_aws/, .circleci directories or pyproject.toml file. Skipping tests."
               circleci step halt
             }
 
@@ -161,38 +161,6 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  python314:
-    docker:
-      - image: ghcr.io/pvital/pvital-py3.14.0:latest
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - run: |
-          cp -a /root/base/venv ./venv
-          . venv/bin/activate
-          pip install 'wheel==0.45.1'
-          pip install -r requirements.txt
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
   py39cassandra:
     docker:
       - image: public.ecr.aws/docker/library/python:3.9
@@ -324,8 +292,7 @@ workflows:
       - python3x:
           matrix:
             parameters:
-              py-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
-      - python314
+              py-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
       - py39cassandra
       - py39gevent
       - py312aws
@@ -333,12 +300,10 @@ workflows:
       - autowrapt:
           matrix:
             parameters:
-              py-version: ["3.11", "3.12", "3.13"]
+              py-version: ["3.11", "3.12", "3.13", "3.14"]
       - final_job:
           requires:
             - python3x
-            # Uncomment the following when giving real support to 3.14
-            # - python314
             - py39cassandra
             - py39gevent
             - py312aws

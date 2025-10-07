@@ -17,6 +17,7 @@ from instana.log import logger
 
 if TYPE_CHECKING:
     from types import FrameType
+
     from instana.agent.host import HostAgent
 
 
@@ -52,11 +53,11 @@ class Profiler(object):
             return
 
         try:
-            if not min_version(3, 8):
-                raise Exception("Supported Python versions 3.8 or higher.")
+            if not min_version(3, 9):
+                raise EnvironmentError("Supported Python versions: 3.9 or higher.")
 
             if platform.python_implementation() != "CPython":
-                raise Exception("Supported Python interpreter is CPython.")
+                raise EnvironmentError("Supported Python interpreter: CPython.")
 
             if self.profiler_destroyed:
                 logger.warning("Destroyed profiler cannot be started.")

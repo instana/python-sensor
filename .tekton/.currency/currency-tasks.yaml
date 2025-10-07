@@ -32,7 +32,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: generate-currency-report
-      image: public.ecr.aws/docker/library/python:3.12-bookworm
+      image: public.ecr.aws/docker/library/python:3.12-trixie
       script: |
         #!/usr/bin/env bash
         cd /workspace/python-sensor/.tekton/.currency

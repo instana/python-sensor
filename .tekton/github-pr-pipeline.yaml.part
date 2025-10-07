@@ -10,22 +10,22 @@ spec:
     type: string
   - name: py-39-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.9-bookworm
+    default: public.ecr.aws/docker/library/python:3.9-trixie
   - name: py-310-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.10-bookworm
+    default: public.ecr.aws/docker/library/python:3.10-trixie
   - name: py-311-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.11-bookworm
+    default: public.ecr.aws/docker/library/python:3.11-trixie
   - name: py-312-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.12-bookworm
+    default: public.ecr.aws/docker/library/python:3.12-trixie
   - name: py-313-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.13-bookworm
+    default: public.ecr.aws/docker/library/python:3.13-trixie
   - name: py-314-imageDigest
     type: string
-    default: public.ecr.aws/docker/library/python:3.14-bookworm
+    default: public.ecr.aws/docker/library/python:3.14-trixie
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:

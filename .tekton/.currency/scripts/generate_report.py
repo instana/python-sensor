@@ -202,44 +202,37 @@ def process_taskrun_logs(
 
 def get_tekton_ci_output():
     """Get the latest successful scheduled tekton pipeline output"""
-    # # To run locally
-    # config.load_kube_config()
-
-    ## To run inside the tekton kubernetes cluster
-    config.load_incluster_config()
+    try:
+        config.load_incluster_config()
+        print("Using in-cluster Kubernetes configuration...")
+    except config.config_exception.ConfigException:
+        # Fall back to local config if running locally and not inside cluster
+        config.load_kube_config()
+        print("Using local Kubernetes configuration...")
 
     namespace = "default"
     core_v1_client = client.CoreV1Api()
 
     taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"  # noqa: E731
 
-    task_name = "python-tracer-unittest-gevent-starlette-task"
-    starlette_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+    tasks = [
+        "python-tracer-unittest-gevent-starlette-task",
+        "python-tracer-unittest-kafka-task",
+        "python-tracer-unittest-cassandra-task",
+        "python-tracer-unittest-default-task"
+    ]
 
-    tekton_ci_output = process_taskrun_logs(
-        starlette_taskruns, core_v1_client, namespace, task_name, ""
-    )
+    tekton_ci_output = ""
 
-    task_name = "python-tracer-unittest-kafka-task"
-    kafka_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
-
-    tekton_ci_output = process_taskrun_logs(
-        kafka_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
-    )
-
-    task_name = "python-tracer-unittest-cassandra-task"
-    cassandra_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
-
-    tekton_ci_output = process_taskrun_logs(
-        cassandra_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
-    )
-
-    task_name = "python-tracer-unittest-default-task"
-    default_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
-
-    tekton_ci_output = process_taskrun_logs(
-        default_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
-    )
+    for task_name in tasks:
+        try:
+            taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+                
+            tekton_ci_output = process_taskrun_logs(
+                taskruns, core_v1_client, namespace, task_name, tekton_ci_output
+            )
+        except Exception as exc:
+            print(f"Error processing task {task_name}: {str(exc)}")
 
     return tekton_ci_output
 

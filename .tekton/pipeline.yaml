@@ -6,27 +6,12 @@ spec:
   params:
   - name: revision
     type: string
-  - name: py-38-imageDigest
-    type: string
-    default: public.ecr.aws/docker/library/python:3.8-bookworm
-  - name: py-39-imageDigest
-    type: string
-    default: public.ecr.aws/docker/library/python:3.9-bookworm
-  - name: py-310-imageDigest
-    type: string
-    default: public.ecr.aws/docker/library/python:3.10-bookworm
-  - name: py-311-imageDigest
-    type: string
-    default: public.ecr.aws/docker/library/python:3.11-bookworm
   - name: py-312-imageDigest
     type: string
     default: public.ecr.aws/docker/library/python:3.12-bookworm
   - name: py-313-imageDigest
     type: string
     default: public.ecr.aws/docker/library/python:3.13-bookworm
-  - name: py-314-imageDigest
-    type: string
-    default: public.ecr.aws/docker/library/python:3.14.0rc3
   workspaces:
     - name: python-tracer-ci-pipeline-pvc
   tasks:
@@ -48,13 +33,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.py-38-imageDigest)
-            - $(params.py-39-imageDigest)
-            - $(params.py-310-imageDigest)
-            - $(params.py-311-imageDigest)
-            - $(params.py-312-imageDigest)
             - $(params.py-313-imageDigest)
-            # - $(params.py-314-imageDigest)
       taskRef:
         name: python-tracer-unittest-default-task
       workspaces:
@@ -82,17 +61,6 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc
-    - name: unittest-aws
-      runAfter:
-        - clone
-      params:
-        - name: imageDigest
-          value: $(params.py-313-imageDigest)
-      taskRef:
-        name: python-tracer-unittest-aws-task
-      workspaces:
-        - name: task-pvc
-          workspace: python-tracer-ci-pipeline-pvc
     - name: unittest-kafka
       runAfter:
         - clone
@@ -101,18 +69,6 @@ spec:
           value: $(params.py-313-imageDigest)
       taskRef:
         name: python-tracer-unittest-kafka-task
-      workspaces:
-        - name: task-pvc
-          workspace: python-tracer-ci-pipeline-pvc
-    - name: unittest-python-next
-      displayName: "Python next $(params.imageDigest)"
-      runAfter:
-        - clone
-      params:
-        - name: py-version
-          value: 3.14.0rc3
-      taskRef:
-        name: python-tracer-unittest-python-next-task
       workspaces:
         - name: task-pvc
           workspace: python-tracer-ci-pipeline-pvc

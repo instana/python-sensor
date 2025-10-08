@@ -25,7 +25,7 @@ spec:
         - name: git-commit-sha
           value: $(tt.params.git-commit-sha)
         pipelineRef:
-          name: github-pr-python-tracer-ci-pipeline
+          name: python-tracer-ci-pipeline
         workspaces:
         - name: python-tracer-ci-pipeline-pvc
           volumeClaimTemplate:

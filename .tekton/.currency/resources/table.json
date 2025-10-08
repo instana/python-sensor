@@ -8,9 +8,10 @@
         "Cloud Native": "No"
       },
       {
-        "Package name": "Celery",
-        "Support Policy": "45-days",
-        "Beta version": "No",
+        "Package name": "WSGI",
+        "Support Policy": "0-day",
+        "Beta version": "Yes",
+        "Last Supported Version": "1.0.1",
         "Cloud Native": "No"
       },
       {
@@ -56,49 +57,28 @@
         "Cloud Native": "No"
       },
       {
-        "Package name": "Webapp2",
-        "Support Policy": "On demand",
-        "Beta version": "No",
-        "Last Supported Version": "2.5.2",
-        "Cloud Native": "No"
-      },
-      {
-        "Package name": "WSGI",
-        "Support Policy": "0-day",
-        "Beta version": "Yes",
-        "Last Supported Version": "1.0.1",
-        "Cloud Native": "No"
-      },
-      {
         "Package name": "Aiohttp",
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
-        "Package name": "Asynqp",
-        "Support Policy": "Deprecated",
+        "Package name": "Httpx",
+        "Support Policy": "45-days",
         "Beta version": "No",
-        "Last Supported Version": "0.6",
         "Cloud Native": "No"
       },
       {
-        "Package name": "Boto3",
+        "Package name": "Requests",
         "Support Policy": "45-days",
         "Beta version": "No",
-        "Cloud Native": "Yes"
+        "Cloud Native": "No"
       },
       {
-        "Package name": "Google-cloud-pubsub",
+        "Package name": "Urllib3",
         "Support Policy": "45-days",
         "Beta version": "No",
-        "Cloud Native": "Yes"
-      },
-      {
-        "Package name": "Google-cloud-storage",
-        "Support Policy": "45-days",
-        "Beta version": "No",
-        "Cloud Native": "Yes"
+        "Cloud Native": "No"
       },
       {
         "Package name": "Grpcio",
@@ -107,16 +87,16 @@
         "Cloud Native": "Yes"
       },
       {
+        "Package name": "Cassandra-driver",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
         "Package name": "Mysqlclient",
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
-      },
-      {
-        "Package name": "Pika",
-        "Support Policy": "45-days",
-        "Beta version": "No",
-        "Cloud Native": "No"
       },
       {
         "Package name": "PyMySQL",
@@ -143,25 +123,13 @@
         "Cloud Native": "Yes"
       },
       {
-        "Package name": "Requests",
-        "Support Policy": "45-days",
-        "Beta version": "No",
-        "Cloud Native": "Yes"
-      },
-      {
         "Package name": "SQLAlchemy",
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       },
       {
-        "Package name": "Urllib3",
-        "Support Policy": "45-days",
-        "Beta version": "No",
-        "Cloud Native": "No"
-      },
-      {
-        "Package name": "Spyne",
+        "Package name": "Aioamqp",
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
@@ -173,7 +141,49 @@
         "Cloud Native": "No"
       },
       {
-        "Package name": "Aioamqp",
+        "Package name": "Confluent-kafka",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Kafka-python-ng",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Pika",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Boto3",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Google-cloud-pubsub",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Google-cloud-storage",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Gevent",
+        "Support Policy": "On demand",
+        "Beta version": "No",
+        "Cloud Native": "No"
+      },
+      {
+        "Package name": "Celery",
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"

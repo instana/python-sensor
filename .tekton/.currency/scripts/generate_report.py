@@ -31,7 +31,7 @@ def get_upstream_version(dependency, last_supported_version):
     last_supported_version_release_date = "Not found"
     if dependency in SPEC_MAP:
         # webscrape info from official website
-        version_pattern = "(\d+\.\d+\.?\d*)"
+        version_pattern = r"(\d+\.\d+\.?\d*)"
         latest_version_release_date = ""
 
         url = SPEC_MAP[dependency]
@@ -181,17 +181,17 @@ def process_taskrun_logs(
                 f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
             )
             if task_name == "python-tracer-unittest-gevent-starlette-task":
-                match = re.search("Successfully installed .* (starlette-[^\s]+)", logs)
-                tekton_ci_output += f"{match[1]}\n"
-            elif task_name == "python-tracer-unittest-googlecloud-task":
-                match = re.search(
-                    "Successfully installed .* (google-cloud-storage-[^\s]+)", logs
-                )
+                match = re.search(r"Successfully installed .*(gevent-[^\s]+) .* (starlette-[^\s]+)", logs)
+                tekton_ci_output += f"{match[1]}\n{match[2]}\n"
+            elif task_name == "python-tracer-unittest-kafka-task":
+                match = re.search(r"Successfully installed .*(confluent-kafka-[^\s]+) .* (kafka-python-ng-[^\s]+)", logs)
+                tekton_ci_output += f"{match[1]}\n{match[2]}\n"
+            elif task_name == "python-tracer-unittest-cassandra-task":
+                match = re.search(r"Successfully installed .*(cassandra-driver-[^\s]+)", logs)
                 tekton_ci_output += f"{match[1]}\n"
             elif task_name == "python-tracer-unittest-default-task":
-                for line in logs.splitlines():
-                    if "Successfully installed" in line:
-                        tekton_ci_output += line
+                lines = re.findall(r"^Successfully installed .*", logs, re.M)
+                tekton_ci_output += "\n".join(lines)
             break
         else:
             print(
@@ -202,36 +202,39 @@ def process_taskrun_logs(
 
 def get_tekton_ci_output():
     """Get the latest successful scheduled tekton pipeline output"""
+    # # To run locally
     # config.load_kube_config()
+
+    ## To run inside the tekton kubernetes cluster
     config.load_incluster_config()
 
     namespace = "default"
     core_v1_client = client.CoreV1Api()
 
-    task_name = "python-tracer-unittest-gevent-starlette-task"
     taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"  # noqa: E731
+
+    task_name = "python-tracer-unittest-gevent-starlette-task"
     starlette_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     tekton_ci_output = process_taskrun_logs(
         starlette_taskruns, core_v1_client, namespace, task_name, ""
     )
 
-    task_name = "python-tracer-unittest-googlecloud-task"
-    taskrun_filter = (  # noqa: E731
-        lambda tr: tr["metadata"]["name"].endswith("unittest-googlecloud-0")
-        and tr["status"]["conditions"][0]["type"] == "Succeeded"
-    )
-    googlecloud_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+    task_name = "python-tracer-unittest-kafka-task"
+    kafka_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     tekton_ci_output = process_taskrun_logs(
-        googlecloud_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
+        kafka_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
+    )
+
+    task_name = "python-tracer-unittest-cassandra-task"
+    cassandra_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+
+    tekton_ci_output = process_taskrun_logs(
+        cassandra_taskruns, core_v1_client, namespace, task_name, tekton_ci_output
     )
 
     task_name = "python-tracer-unittest-default-task"
-    taskrun_filter = (  # noqa: E731
-        lambda tr: tr["metadata"]["name"].endswith("unittest-default-3")
-        and tr["status"]["conditions"][0]["type"] == "Succeeded"
-    )
     default_taskruns = get_taskruns(namespace, task_name, taskrun_filter)
 
     tekton_ci_output = process_taskrun_logs(

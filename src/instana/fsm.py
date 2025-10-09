@@ -119,7 +119,7 @@ class TheMachine:
                 # rely on ps rather than adding a dependency on something like
                 # psutil which requires dev packages, gcc etc...
                 proc = subprocess.Popen(
-                    ["ps", "-p", str(pid), "-o", "command"], stdout=subprocess.PIPE
+                    ["ps", "-p", str(pid), "-o", "args"], stdout=subprocess.PIPE
                 )
                 (out, _) = proc.communicate()
                 parts = out.split(b"\n")

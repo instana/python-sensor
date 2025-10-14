@@ -88,8 +88,12 @@ aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
 env_is_aws_lambda = "AWS_Lambda_" in aws_env
 
 if running_in_gunicorn() and glogging_available():
+    print("if#######")
     logger = logging.getLogger("gunicorn.error")
 elif env_is_aws_lambda is True:
+    print("elif#######")
     logger = get_aws_lambda_logger()
 else:
     logger = get_standard_logger()
+
+print(logger.name)

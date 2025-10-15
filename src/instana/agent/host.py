@@ -138,10 +138,15 @@ class HostAgent(BaseAgent):
         @return: None
         """
         self.options.set_from(res_data)
-        self.announce_data = AnnounceData(
-            pid=res_data["pid"],
-            agentUuid=res_data["agentUuid"],
-        )
+
+        # Ensure required keys are present
+        if "pid" in res_data and "agentUuid" in res_data:
+            self.announce_data = AnnounceData(
+                pid=res_data["pid"],
+                agentUuid=res_data["agentUuid"],
+            )
+        else:
+            logger.debug(f"Missing required keys in announce response: {res_data}")
 
     def get_from_structure(self) -> Dict[str, str]:
         """

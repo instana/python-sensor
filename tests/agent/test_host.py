@@ -5,7 +5,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Generator
+from typing import Any, Dict, Generator
 from unittest.mock import Mock
 
 import pytest
@@ -717,3 +717,36 @@ class TestHostAgent:
         # don't ignore other services
         assert not self.agent._HostAgent__is_endpoint_ignored("service3")
         assert not self.agent._HostAgent__is_endpoint_ignored("service3")
+
+    @pytest.mark.parametrize(
+        "input_data",
+        [
+            {
+                "agentUuid": "test-uuid",
+            },
+            {
+                "pid": 1234,
+            },
+            {
+                "extraHeaders": ["value-3"],
+            },
+        ],
+        ids=["missing_pid", "missing_agent_uuid", "missing_both_required_keys"],
+    )
+    def test_set_from_missing_required_keys(
+        self, input_data: Dict[str, Any], caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test set_from when required keys are missing in res_data."""
+        agent = HostAgent()
+        caplog.set_level(logging.DEBUG, logger="instana")
+
+        res_data = {
+            "secrets": {"matcher": "value-1", "list": ["value-2"]},
+        }
+        res_data.update(input_data)
+
+        agent.set_from(res_data)
+
+        assert agent.announce_data is None
+        assert "Missing required keys in announce response" in caplog.messages[-1]
+        assert str(res_data) in caplog.messages[-1]

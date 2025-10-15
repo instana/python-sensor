@@ -148,7 +148,7 @@ class TheMachine:
 
         payload = self.agent.announce(d)
 
-        if not payload:
+        if not payload or not isinstance(payload, dict):
             logger.debug("Cannot announce sensor. Scheduling retry.")
             self.schedule_retry(
                 self.announce_sensor, e, f"{self.THREAD_NAME}: announce"

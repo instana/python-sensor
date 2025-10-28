@@ -14,11 +14,8 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.singletons import get_tracer
-    from instana.util.traceutils import (
-        get_tracer_tuple,
-        tracing_is_off,
-    )
     from instana.span.span import InstanaSpan
+    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
     if TYPE_CHECKING:
         from kafka.producer.future import FutureRecordMetadata
@@ -38,15 +35,19 @@ try:
 
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
+
+        # Get the topic from either args or kwargs
+        topic = args[0] if args else kwargs.get("topic", "")
+
         is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
             "kafka",
             "send",
-            args[0],
+            topic,
         )
         with tracer.start_as_current_span(
             "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
-            span.set_attribute("kafka.service", args[0])
+            span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", "send")
 
             # context propagation

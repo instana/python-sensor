@@ -14,11 +14,8 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.singletons import get_tracer
-    from instana.util.traceutils import (
-        get_tracer_tuple,
-        tracing_is_off,
-    )
     from instana.span.span import InstanaSpan
+    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
     consumer_token = None
     consumer_span = contextvars.ContextVar("confluent_kafka_consumer_span")
@@ -69,16 +66,20 @@ try:
 
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
+
+        # Get the topic from either args or kwargs
+        topic = args[0] if args else kwargs.get("topic", "")
+
         is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
             "kafka",
             "produce",
-            args[0],
+            topic,
         )
 
         with tracer.start_as_current_span(
             "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
-            span.set_attribute("kafka.service", args[0])
+            span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", "produce")
 
             # context propagation
@@ -89,6 +90,10 @@ try:
             # dictionary. To maintain compatibility with the headers for the
             # Kafka Python library, we will use a list of tuples.
             headers = args[6] if len(args) > 6 else kwargs.get("headers", [])
+
+            # Initialize headers if it's None
+            if headers is None:
+                headers = []
             suppression_header = {"x_instana_l_s": "0" if is_suppressed else "1"}
             headers.append(suppression_header)
 

@@ -5,30 +5,26 @@ import time
 from typing import Generator
 
 import pytest
-from confluent_kafka import (
-    Consumer,
-    KafkaException,
-    Producer,
-)
+from confluent_kafka import Consumer, KafkaException, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
-from mock import patch, Mock
+from mock import Mock, patch
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.span import format_span_id
 
 from instana.configurator import config
-from instana.options import StandardOptions
-from instana.singletons import agent, tracer
-from instana.util.config import parse_ignored_endpoints_from_yaml
-from tests.helpers import get_first_span_by_filter, testenv
 from instana.instrumentation.kafka import confluent_kafka_python
 from instana.instrumentation.kafka.confluent_kafka_python import (
     clear_context,
-    save_consumer_span_into_context,
     close_consumer_span,
-    trace_kafka_close,
     consumer_span,
+    save_consumer_span_into_context,
+    trace_kafka_close,
 )
+from instana.options import StandardOptions
+from instana.singletons import agent, tracer
 from instana.span.span import InstanaSpan
+from instana.util.config import parse_ignored_endpoints_from_yaml
+from tests.helpers import get_first_span_by_filter, testenv
 
 
 class TestConfluentKafka:
@@ -97,6 +93,66 @@ class TestConfluentKafka:
     def test_trace_confluent_kafka_produce(self) -> None:
         with tracer.start_as_current_span("test"):
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes")
+            self.producer.flush(timeout=10)
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        kafka_span = spans[0]
+        test_span = spans[1]
+
+        # Same traceId
+        assert test_span.t == kafka_span.t
+
+        # Parent relationships
+        assert kafka_span.p == test_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not kafka_span.ec
+
+        assert kafka_span.n == "kafka"
+        assert kafka_span.k == SpanKind.CLIENT
+        assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
+        assert kafka_span.data["kafka"]["access"] == "produce"
+
+    def test_trace_confluent_kafka_produce_with_keyword_topic(self) -> None:
+        """Test that tracing works when topic is passed as a keyword argument."""
+        with tracer.start_as_current_span("test"):
+            # Pass topic as a keyword argument
+            self.producer.produce(topic=testenv["kafka_topic"], value=b"raw_bytes")
+            self.producer.flush(timeout=10)
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        kafka_span = spans[0]
+        test_span = spans[1]
+
+        # Same traceId
+        assert test_span.t == kafka_span.t
+
+        # Parent relationships
+        assert kafka_span.p == test_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert not kafka_span.ec
+
+        assert kafka_span.n == "kafka"
+        assert kafka_span.k == SpanKind.CLIENT
+        assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"]
+        assert kafka_span.data["kafka"]["access"] == "produce"
+
+    def test_trace_confluent_kafka_produce_with_keyword_args(self) -> None:
+        """Test that tracing works when both topic and headers are passed as keyword arguments."""
+        with tracer.start_as_current_span("test"):
+            # Pass both topic and headers as keyword arguments
+            self.producer.produce(
+                topic=testenv["kafka_topic"],
+                value=b"raw_bytes",
+                headers=[("custom-header", b"header-value")],
+            )
             self.producer.flush(timeout=10)
 
         spans = self.recorder.queued_spans()

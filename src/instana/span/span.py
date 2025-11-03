@@ -228,6 +228,84 @@ class InstanaSpan(Span, ReadableSpan):
             logger.debug("span.assure_errored", exc_info=True)
 
 
+class NonRecordingInstanaSpan(InstanaSpan):
+    """The Span that is used when no Span implementation is available.
+
+    All operations are no-op except context propagation.
+    This is an Instana-specific implementation of NonRecordingSpan.
+    """
+
+    def __init__(self, context: SpanContext) -> None:
+        # Initialize with minimal parameters, as this is a non-recording span
+        super().__init__(
+            name="no-op-span",
+            context=context,
+            span_processor=None,  # No span processor needed for non-recording span
+        )
+
+    def get_span_context(self) -> SpanContext:
+        return self._context
+
+    def set_attributes(
+        self, attributes: Dict[str, types.AttributeValue]
+    ) -> None:
+        # No-op implementation
+        pass
+
+    def set_attribute(self, key: str, value: types.AttributeValue) -> None:
+        # No-op implementation
+        pass
+
+    def update_name(self, name: str) -> None:
+        # No-op implementation
+        pass
+
+    def is_recording(self) -> bool:
+        return False
+
+    def set_status(
+        self,
+        status: Union[Status, StatusCode],
+        description: Optional[str] = None,
+    ) -> None:
+        # No-op implementation
+        pass
+
+    def add_event(
+        self,
+        name: str,
+        attributes: types.Attributes = None,
+        timestamp: Optional[int] = None,
+    ) -> None:
+        # No-op implementation
+        pass
+
+    def record_exception(
+        self,
+        exception: BaseException,
+        attributes: types.Attributes = None,
+        timestamp: Optional[int] = None,
+        escaped: bool = False,
+    ) -> None:
+        # No-op implementation
+        pass
+
+    def end(self, end_time: Optional[int] = None) -> None:
+        # No-op implementation
+        pass
+
+    def mark_as_errored(self, attributes: types.Attributes = None) -> None:
+        # No-op implementation
+        pass
+
+    def assure_errored(self) -> None:
+        # No-op implementation
+        pass
+
+    def __repr__(self) -> str:
+        return f"NonRecordingInstanaSpan({self._context!r})"
+
+
 INVALID_SPAN_CONTEXT = SpanContext(
     trace_id=INVALID_TRACE_ID,
     span_id=INVALID_SPAN_ID,
@@ -235,7 +313,7 @@ INVALID_SPAN_CONTEXT = SpanContext(
     trace_flags=DEFAULT_TRACE_OPTIONS,
     trace_state=DEFAULT_TRACE_STATE,
 )
-INVALID_SPAN = NonRecordingSpan(INVALID_SPAN_CONTEXT)
+INVALID_SPAN = NonRecordingInstanaSpan(INVALID_SPAN_CONTEXT)
 
 
 def get_current_span(context: Optional[Context] = None) -> InstanaSpan:

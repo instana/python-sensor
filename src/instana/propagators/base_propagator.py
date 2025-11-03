@@ -18,11 +18,14 @@ from instana.util.ids import (
 )
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
+from instana.span.span import NonRecordingInstanaSpan
 
 from opentelemetry.trace import (
     INVALID_SPAN_ID,
     INVALID_TRACE_ID,
+    set_span_in_context,
 )
+from opentelemetry.context.context import Context
 
 # The carrier, typed here as CarrierT, can be a dict, a list, or a tuple.
 # Using the trace header as an example, it can be in the following forms
@@ -441,7 +444,11 @@ class BasePropagator(object):
                 tracestate,
                 disable_w3c_trace_context,
             )
-            return span_context
+
+            context = set_span_in_context(
+                NonRecordingInstanaSpan(span_context), Context()
+            )
+            return context
 
         except Exception:
             logger.debug("base_propagator extract error:", exc_info=True)

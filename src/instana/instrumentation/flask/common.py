@@ -33,7 +33,7 @@ def render_with_instana(
     parent_span = flask.g.span
     parent_context = parent_span.get_span_context()
 
-    with tracer.start_as_current_span("render", span_context=parent_context) as span:
+    with tracer.start_as_current_span("render", context=parent_context) as span:
         try:
             flask_version = tuple(map(int, version("flask").split(".")))
             template = argv[1] if flask_version >= (2, 2, 0) else argv[0]

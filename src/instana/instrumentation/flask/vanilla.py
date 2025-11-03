@@ -22,9 +22,9 @@ path_tpl_re = re.compile('<.*>')
 def before_request_with_instana() -> None:
     try:
         env = flask.request.environ
-        span_context = tracer.extract(Format.HTTP_HEADERS, env)
+        parent_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-        span = tracer.start_span("wsgi", span_context=span_context)
+        span = tracer.start_span("wsgi", context=parent_context)
         flask.g.span = span
 
         ctx = trace.set_span_in_context(span)

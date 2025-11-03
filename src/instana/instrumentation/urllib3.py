@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 import wrapt
 from opentelemetry.semconv.trace import SpanAttributes
+# from opentelemetry.context import get_current
 
 from instana.log import logger
 from instana.propagators.format import Format
@@ -115,9 +116,10 @@ try:
             return wrapped(*args, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
+        # parent_context = get_current()
 
         with tracer.start_as_current_span(
-            "urllib3", span_context=parent_context
+            "urllib3", context=parent_context
         ) as span:
             try:
                 kvs = _collect_kvs(instance, args, kwargs)

@@ -50,7 +50,7 @@ try:
         if tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
 
-        with tracer.start_as_current_span("redis", span_context=parent_context) as span:
+        with tracer.start_as_current_span("redis", context=parent_context) as span:
             try:
                 collect_attributes(span, instance, args, kwargs)
                 if len(args) > 0:
@@ -76,7 +76,7 @@ try:
         if tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
 
-        with tracer.start_as_current_span("redis", span_context=parent_context) as span:
+        with tracer.start_as_current_span("redis", context=parent_context) as span:
             try:
                 collect_attributes(span, instance, args, kwargs)
                 span.set_attribute("command", "PIPELINE")

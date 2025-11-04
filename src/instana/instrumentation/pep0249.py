@@ -75,7 +75,7 @@ class CursorWrapper(wrapt.ObjectProxy):
 
         parent_context = parent_span.get_span_context() if parent_span else None
         with tracer.start_as_current_span(
-            self._module_name, span_context=parent_context
+            self._module_name, context=parent_context
         ) as span:
             try:
                 self._collect_kvs(span, sql)
@@ -100,7 +100,7 @@ class CursorWrapper(wrapt.ObjectProxy):
 
         parent_context = parent_span.get_span_context() if parent_span else None
         with tracer.start_as_current_span(
-            self._module_name, span_context=parent_context
+            self._module_name, context=parent_context
         ) as span:
             try:
                 self._collect_kvs(span, sql)
@@ -125,7 +125,7 @@ class CursorWrapper(wrapt.ObjectProxy):
 
         parent_context = parent_span.get_span_context() if parent_span else None
         with tracer.start_as_current_span(
-            self._module_name, span_context=parent_context
+            self._module_name, context=parent_context
         ) as span:
             try:
                 self._collect_kvs(span, proc_name)

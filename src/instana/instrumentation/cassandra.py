@@ -89,7 +89,7 @@ try:
 
         with tracer.start_as_current_span(
             "cassandra",
-            span_context=parent_context,
+            context=parent_context,
             attributes=attributes,
             end_on_exit=False,
         ) as span:

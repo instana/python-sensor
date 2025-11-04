@@ -78,7 +78,7 @@ try:
                     Format.HTTP_HEADERS, headers, disable_w3c_trace_context=True
                 )
 
-            span = tracer.start_span("celery-worker", span_context=ctx)
+            span = tracer.start_span("celery-worker", context=ctx)
             span.set_attribute("task", task.name)
             span.set_attribute("task_id", task_id)
             add_broker_attributes(span, task.app.conf["broker_url"])
@@ -153,7 +153,7 @@ try:
                 task = registry.tasks.get(task_name)
                 task_id = _get_task_id(headers, body)
 
-                span = tracer.start_span("celery-client", span_context=parent_context)
+                span = tracer.start_span("celery-client", context=parent_context)
                 span.set_attribute("task", task_name)
                 span.set_attribute("task_id", task_id)
                 add_broker_attributes(span, task.app.conf["broker_url"])

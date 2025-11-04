@@ -74,7 +74,7 @@ class InstanaASGIMiddleware:
         if isinstance(request_headers, list):
             request_context = tracer.extract(Format.BINARY, request_headers)
 
-        with tracer.start_as_current_span("asgi", span_context=request_context) as span:
+        with tracer.start_as_current_span("asgi", context=request_context) as span:
             self._collect_kvs(scope, span)
             if "headers" in scope:
                 extract_custom_headers(span, scope["headers"])

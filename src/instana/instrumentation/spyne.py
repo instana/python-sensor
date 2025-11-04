@@ -55,7 +55,7 @@ try:
         headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-        with tracer.start_as_current_span("rpc-server", span_context=span_context) as span:
+        with tracer.start_as_current_span("rpc-server", context=span_context) as span:
             set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
@@ -101,7 +101,7 @@ try:
 
         with tracer.start_as_current_span(
             "rpc-server",
-            span_context=span_context,
+            context=span_context,
             end_on_exit=False,
         ) as span:
             set_span_attributes(span, headers)

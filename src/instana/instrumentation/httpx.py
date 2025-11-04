@@ -80,7 +80,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "httpx", span_context=parent_context, kind=SpanKind.CLIENT
+            "httpx", context=parent_context, kind=SpanKind.CLIENT
         ) as span:
             try:
                 request = args[0]
@@ -109,7 +109,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "httpx", span_context=parent_context, kind=SpanKind.CLIENT
+            "httpx", context=parent_context, kind=SpanKind.CLIENT
         ) as span:
             try:
                 request = args[0]

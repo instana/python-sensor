@@ -54,8 +54,8 @@ class InstanaWSGIMiddleware(object):
                 context.detach(self.token)
             return res
 
-        span_context = tracer.extract(Format.HTTP_HEADERS, env)
-        self.span = tracer.start_span("wsgi", span_context=span_context)
+        parent_context = tracer.extract(Format.HTTP_HEADERS, env)
+        self.span = tracer.start_span("wsgi", context=parent_context)
 
         ctx = trace.set_span_in_context(self.span)
         self.token = context.attach(ctx)

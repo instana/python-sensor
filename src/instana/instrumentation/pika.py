@@ -84,7 +84,7 @@ try:
         )
 
         with tracer.start_as_current_span(
-            "rabbitmq", span_context=parent_context
+            "rabbitmq", context=parent_context
         ) as span:
             try:
                 _extract_publisher_attributes(
@@ -147,7 +147,7 @@ try:
             )
 
             with tracer.start_as_current_span(
-                "rabbitmq", span_context=parent_context
+                "rabbitmq", context=parent_context
             ) as span:
                 try:
                     _extract_consumer_tags(span, conn=instance.connection, queue=queue)
@@ -194,7 +194,7 @@ try:
             )
 
             with tracer.start_as_current_span(
-                "rabbitmq", span_context=parent_context
+                "rabbitmq", context=parent_context
             ) as span:
                 try:
                     _extract_consumer_tags(
@@ -244,7 +244,7 @@ try:
                     disable_w3c_trace_context=True,
                 )
                 with tracer.start_as_current_span(
-                    "rabbitmq", span_context=parent_context
+                    "rabbitmq", context=parent_context
                 ) as span:
                     try:
                         _extract_consumer_tags(

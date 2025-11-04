@@ -31,7 +31,7 @@ try:
         kwargs: Dict[str, Any],
         parent_context: SpanContext,
     ) -> None:
-        with tracer.start_as_current_span("s3", span_context=parent_context) as span:
+        with tracer.start_as_current_span("s3", context=parent_context) as span:
             try:
                 span.set_attribute("s3.op", args[0])
                 if "Bucket" in args[1].keys():
@@ -54,7 +54,7 @@ try:
 
         parent_context = parent_span.get_span_context() if parent_span else None
 
-        with tracer.start_as_current_span("s3", span_context=parent_context) as span:
+        with tracer.start_as_current_span("s3", context=parent_context) as span:
             try:
                 span.set_attribute("s3.op", operations[wrapped.__name__])
                 if "Bucket" in kwargs:

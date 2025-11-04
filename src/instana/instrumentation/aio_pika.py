@@ -60,7 +60,7 @@ try:
         )
 
         with tracer.start_as_current_span(
-            "rabbitmq", span_context=parent_context
+            "rabbitmq", context=parent_context
         ) as span:
             connection = instance.channel._connection
 
@@ -106,7 +106,7 @@ try:
                 Format.HTTP_HEADERS, message.headers, disable_w3c_trace_context=True
             )
             with tracer.start_as_current_span(
-                "rabbitmq", span_context=parent_context
+                "rabbitmq", context=parent_context
             ) as span:
                 _extract_span_attributes(
                     span, connection, "consume", message.routing_key, message.exchange

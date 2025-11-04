@@ -101,7 +101,7 @@ try:
                 return wrapped(*args, **kwargs)
 
             with tracer.start_as_current_span(
-                "couchbase", span_context=parent_context
+                "couchbase", context=parent_context
             ) as span:
                 collect_attributes(span, instance, None, op)
                 try:
@@ -127,7 +127,7 @@ try:
             return wrapped(*args, **kwargs)
 
         with tracer.start_as_current_span(
-            "couchbase", span_context=parent_context
+            "couchbase", context=parent_context
         ) as span:
             try:
                 collect_attributes(span, instance, args[0], "n1ql_query")

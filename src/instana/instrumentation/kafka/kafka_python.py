@@ -45,7 +45,7 @@ try:
             topic,
         )
         with tracer.start_as_current_span(
-            "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
+            "kafka-producer", context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
             span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", "send")
@@ -116,7 +116,7 @@ try:
                 )
             )
             span = tracer.start_span(
-                "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
+                "kafka-consumer", context=parent_context, kind=SpanKind.CONSUMER
             )
             if topic:
                 span.set_attribute("kafka.service", topic)

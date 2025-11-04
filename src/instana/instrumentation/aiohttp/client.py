@@ -34,7 +34,7 @@ try:
             tracer, parent_span, _ = get_tracer_tuple()
             parent_context = parent_span.get_span_context() if parent_span else None
 
-            span = tracer.start_span("aiohttp-client", span_context=parent_context)
+            span = tracer.start_span("aiohttp-client", context=parent_context)
 
             extract_custom_headers(span, params.headers)
 

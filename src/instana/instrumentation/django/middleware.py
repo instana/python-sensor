@@ -57,9 +57,9 @@ try:
             try:
                 env = request.META
 
-                span_context = tracer.extract(Format.HTTP_HEADERS, env)
+                parent_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-                span = tracer.start_span("django", span_context=span_context)
+                span = tracer.start_span("django", context=parent_context)
                 request.span = span
 
                 ctx = trace.set_span_in_context(span)

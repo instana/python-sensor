@@ -77,7 +77,7 @@ try:
             create_s3_span(wrapped, instance, args, kwargs, parent_context)
         else:
             with tracer.start_as_current_span(
-                "boto3", span_context=parent_context
+                "boto3", context=parent_context
             ) as span:
                 operation = args[0]
                 payload = args[1]

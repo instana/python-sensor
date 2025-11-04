@@ -23,7 +23,7 @@ try:
         tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
         with tracer.start_as_current_span(
-            "aioamqp-publisher", span_context=parent_context
+            "aioamqp-publisher", context=parent_context
         ) as span:
             try:
                 span.set_attribute("amqp.command", "publish")
@@ -72,7 +72,7 @@ try:
             kwargs: Dict,
         ) -> object:
             with tracer.start_as_current_span(
-                "aioamqp-consumer", span_context=parent_context
+                "aioamqp-consumer", context=parent_context
             ) as span:
                 try:
                     span.set_status(StatusCode.OK)

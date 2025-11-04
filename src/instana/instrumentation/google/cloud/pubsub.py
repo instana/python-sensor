@@ -57,7 +57,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "gcps-producer", span_context=parent_context
+            "gcps-producer", context=parent_context
         ) as span:
             # trace continuity, inject to the span context
             headers = {}
@@ -105,7 +105,7 @@ try:
                 parent_context = None
 
             with tracer.start_as_current_span(
-                "gcps-consumer", span_context=parent_context
+                "gcps-consumer", context=parent_context
             ) as span:
                 _set_consumer_attributes(span, subscription_path=args[0])
                 try:

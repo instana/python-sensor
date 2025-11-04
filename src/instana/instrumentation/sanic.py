@@ -50,7 +50,7 @@ try:
                 headers = request.headers.copy()
                 parent_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-                span = tracer.start_span("asgi", span_context=parent_context)
+                span = tracer.start_span("asgi", context=parent_context)
                 request.ctx.span = span
 
                 ctx = trace.set_span_in_context(span)

@@ -38,7 +38,7 @@ try:
 
         result = None
         with tracer.start_as_current_span(
-            "aws.lambda.entry", span_context=incoming_ctx
+            "aws.lambda.entry", context=incoming_ctx
         ) as span:
             enrich_lambda_span(agent, span, *args)
             try:

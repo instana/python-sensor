@@ -61,7 +61,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -93,7 +93,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -125,7 +125,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context, record_exception=False
+            "rpc-client", context=parent_context, record_exception=False
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -157,7 +157,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -191,7 +191,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -223,7 +223,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -255,7 +255,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -289,7 +289,7 @@ try:
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context
+            "rpc-client", context=parent_context
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -322,7 +322,7 @@ try:
             Format.BINARY, metadata_dict, disable_w3c_trace_context=True
         )
 
-        with tracer.start_as_current_span("rpc-server", span_context=ctx) as span:
+        with tracer.start_as_current_span("rpc-server", context=ctx) as span:
             try:
                 collect_attributes(span, instance, argv, kwargs)
                 rv = wrapped(*argv, **kwargs)

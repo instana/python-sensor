@@ -25,7 +25,7 @@ try:
                 span_context = tracer.extract(Format.HTTP_HEADERS,
                                                 instance.request.headers.__dict__['_dict'])
 
-            span = tracer.start_span("tornado-server", span_context=span_context)
+            span = tracer.start_span("tornado-server", context=span_context)
 
             # Query param scrubbing
             if instance.request.query is not None and len(instance.request.query) > 0:

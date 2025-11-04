@@ -21,7 +21,7 @@ class TestUtils:
     def test_format_span(self, span_context: SpanContext) -> None:
         self.span_context = span_context
         with tracer.start_as_current_span(
-            name="span1", span_context=self.span_context
+            name="span1", context=self.span_context
         ) as pspan:
             expected_trace_id = format_span_id(pspan.context.trace_id)
             expected_span_id = format_span_id(pspan.context.span_id)

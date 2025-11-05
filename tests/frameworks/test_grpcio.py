@@ -1,22 +1,20 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import time
 import random
+import time
 from typing import Generator
 
-import pytest
 import grpc
-
+import pytest
 from opentelemetry.trace import SpanKind
 
 import tests.apps.grpc_server  # noqa: F401
 import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
-from tests.helpers import testenv, get_first_span_by_name
-
-from instana.singletons import tracer, agent
+from instana.singletons import agent, tracer
 from instana.span.span import get_current_span
+from tests.helpers import get_first_span_by_filter, get_first_span_by_name, testenv
 
 
 class TestGRPCIO:
@@ -668,14 +666,18 @@ class TestGRPCIO:
         )
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 1
+        assert len(spans) == 2
 
-        server_span = spans[0]
+        filter = lambda span: span.n == "rpc-server"  # noqa: E731
+        server_span = get_first_span_by_filter(spans, filter)
+
+        filter = lambda span: span.n == "rpc-client"  # noqa: E731
+        client_span = get_first_span_by_filter(spans, filter)
 
         assert server_span
 
         # Parent relationships
-        assert not server_span.p
+        assert server_span.p == client_span.s
 
         # Error logging
         assert not server_span.ec
@@ -689,6 +691,12 @@ class TestGRPCIO:
         assert server_span.data["rpc"]["host"] == testenv["grpc_host"]
         assert server_span.data["rpc"]["port"] == str(testenv["grpc_port"])
         assert not server_span.data["rpc"]["error"]
+
+        # rpc-client
+        assert client_span.data["rpc"]["flavor"] == "grpc"
+        assert client_span.data["rpc"]["host"] == "127.0.0.1"
+        assert client_span.data["rpc"]["port"] == "10814"
+        assert client_span.data["rpc"]["call_type"] == "unary"
 
     def test_no_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = False

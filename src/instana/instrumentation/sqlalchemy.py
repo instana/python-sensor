@@ -2,20 +2,20 @@
 # (c) Copyright Instana Inc. 2018
 
 
-import re
-from typing import Any, Dict
-
-from opentelemetry import context, trace
-
-from instana.log import logger
-from instana.span.span import InstanaSpan, get_current_span
-from instana.span_context import SpanContext
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
-
 try:
+    import re
+    from typing import Any, Dict
+
+    from opentelemetry import context, trace
     from sqlalchemy import __version__ as sqlalchemy_version
     from sqlalchemy import event
     from sqlalchemy.engine import Engine
+
+    from instana.log import logger
+    from instana.singletons import get_tracer
+    from instana.span.span import InstanaSpan, get_current_span
+    from instana.span_context import SpanContext
+    from instana.util.traceutils import get_tracer_tuple
 
     url_regexp = re.compile(r"\/\/(\S+@)")
 
@@ -24,11 +24,12 @@ try:
         **kw: Dict[str, Any],
     ) -> None:
         try:
+            tracer, parent_span, _ = get_tracer_tuple()
+
             # If we're not tracing, just return
-            if tracing_is_off():
+            if not tracer:
                 return
 
-            tracer, parent_span, _ = get_tracer_tuple()
             parent_context = parent_span.get_span_context() if parent_span else None
 
             span = tracer.start_span("sqlalchemy", span_context=parent_context)
@@ -54,8 +55,9 @@ try:
         **kw: Dict[str, Any],
     ) -> None:
         try:
+            tracer = get_tracer()
             # If we're not tracing, just return
-            if tracing_is_off():
+            if not tracer:
                 return
 
             current_span = get_current_span()
@@ -96,10 +98,10 @@ try:
         **kw: Dict[str, Any],
     ) -> None:
         try:
-            if tracing_is_off():
-                return
+            tracer, parent_span, _ = get_tracer_tuple()
 
-            current_span = get_current_span()
+            if not tracer:
+                return
 
             # support older db error event
             if error_event == "dbapi_error":
@@ -110,7 +112,7 @@ try:
                 exception_string = "sqlalchemy_exception"
 
             if context:
-                _set_error_attributes(context, exception_string, current_span)
+                _set_error_attributes(context, exception_string, parent_span)
         except Exception:
             logger.debug(
                 "Instrumenting sqlalchemy @ receive_handle_db_error",

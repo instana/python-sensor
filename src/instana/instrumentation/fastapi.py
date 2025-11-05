@@ -6,24 +6,22 @@ Instrumentation for FastAPI
 https://fastapi.tiangolo.com/
 """
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
-
 try:
     import os
     import signal
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
     import fastapi
     import wrapt
     from fastapi import HTTPException
     from fastapi.exception_handlers import http_exception_handler
+    from opentelemetry.semconv.trace import SpanAttributes
     from starlette.middleware import Middleware
 
     from instana.instrumentation.asgi import InstanaASGIMiddleware
     from instana.log import logger
+    from instana.span.span import get_current_span
     from instana.util.gunicorn import running_in_gunicorn
-    from instana.util.traceutils import get_tracer_tuple
-
-    from opentelemetry.semconv.trace import SpanAttributes
 
     if TYPE_CHECKING:
         from starlette.requests import Request
@@ -48,12 +46,14 @@ try:
         to the default exception handler.
         """
         try:
-            _, span, _ = get_tracer_tuple()
+            current_span = get_current_span()
 
-            if span:
+            if current_span:
                 if hasattr(exc, "detail") and 500 <= exc.status_code:
-                    span.set_attribute("http.error", exc.detail)
-                span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, exc.status_code)
+                    current_span.set_attribute("http.error", exc.detail)
+                current_span.set_attribute(
+                    SpanAttributes.HTTP_STATUS_CODE, exc.status_code
+                )
         except Exception:
             logger.debug("FastAPI instana_exception_handler: ", exc_info=True)
 
@@ -72,7 +72,7 @@ try:
         elif isinstance(middleware, list):
             middleware.append(Middleware(InstanaASGIMiddleware))
         elif isinstance(middleware, tuple):
-            kwargs["middleware"] =  (*middleware, Middleware(InstanaASGIMiddleware))
+            kwargs["middleware"] = (*middleware, Middleware(InstanaASGIMiddleware))
         else:
             logger.warning("Unsupported FastAPI middleware sequence type.")
 

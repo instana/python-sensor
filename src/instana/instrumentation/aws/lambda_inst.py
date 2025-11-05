@@ -5,12 +5,11 @@
 Instrumentation for AWS Lambda functions
 """
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
-
-if TYPE_CHECKING:
-    from instana.agent.aws_lambda import AWSLambdaAgent
-
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+
+    if TYPE_CHECKING:
+        from instana.agent.aws_lambda import AWSLambdaAgent
     import sys
     import traceback
 

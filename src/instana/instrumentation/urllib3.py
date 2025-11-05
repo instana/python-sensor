@@ -2,25 +2,24 @@
 # (c) Copyright Instana Inc. 2017
 
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
-
-import wrapt
-from opentelemetry.semconv.trace import SpanAttributes
-
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import agent
-from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import (
-    get_tracer_tuple,
-    tracing_is_off,
-    extract_custom_headers,
-)
-
-if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
-
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
+
+    import wrapt
+    from opentelemetry.semconv.trace import SpanAttributes
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import agent
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import (
+        extract_custom_headers,
+        get_tracer_tuple,
+    )
+
+    if TYPE_CHECKING:
+        from instana.span.span import InstanaSpan
+
     import urllib3
 
     def _collect_kvs(
@@ -107,7 +106,7 @@ try:
         host = getattr(instance, "host", "") or ""
 
         if (
-            tracing_is_off()
+            not tracer
             or span_name == "boto3"
             or "com.instana" in request_url_or_path
             or "com.instana" in host

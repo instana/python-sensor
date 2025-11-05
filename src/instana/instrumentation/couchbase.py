@@ -8,6 +8,7 @@ https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 
 try:
     import couchbase
+
     from instana.log import logger
 
     if not (
@@ -17,15 +18,14 @@ try:
         logger.debug("Instana supports 2.3.4 <= couchbase_versions < 3.0.0. Skipping.")
         raise ImportError
 
-    from couchbase.bucket import Bucket
-    from couchbase.n1ql import N1QLQuery
-
     from typing import Any, Callable, Dict, Tuple, Union
 
     import wrapt
+    from couchbase.bucket import Bucket
+    from couchbase.n1ql import N1QLQuery
 
     from instana.span.span import InstanaSpan
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+    from instana.util.traceutils import get_tracer_tuple
 
     # List of operations to instrument
     # incr, incr_multi, decr, decr_multi, retrieve_in are wrappers around operations above
@@ -94,11 +94,11 @@ try:
             kwargs: Dict[str, Any],
         ) -> object:
             tracer, parent_span, _ = get_tracer_tuple()
-            parent_context = parent_span.get_span_context() if parent_span else None
-
             # If we're not tracing, just return
-            if tracing_is_off():
+            if not tracer:
                 return wrapped(*args, **kwargs)
+
+            parent_context = parent_span.get_span_context() if parent_span else None
 
             with tracer.start_as_current_span(
                 "couchbase", span_context=parent_context
@@ -120,11 +120,11 @@ try:
         kwargs: Dict[str, Any],
     ) -> object:
         tracer, parent_span, _ = get_tracer_tuple()
-        parent_context = parent_span.get_span_context() if parent_span else None
-
         # If we're not tracing, just return
-        if tracing_is_off():
+        if not tracer:
             return wrapped(*args, **kwargs)
+
+        parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
             "couchbase", span_context=parent_context

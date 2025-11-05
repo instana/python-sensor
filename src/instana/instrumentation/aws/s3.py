@@ -8,13 +8,14 @@ try:
 
     if TYPE_CHECKING:
         from botocore.client import BaseClient
+
+        from instana.tracer import InstanaTracer
+
     import wrapt
 
     from instana.log import logger
-    from instana.singletons import tracer
     from instana.util.traceutils import (
         get_tracer_tuple,
-        tracing_is_off,
     )
 
     operations = {
@@ -30,6 +31,7 @@ try:
         args: Sequence[Dict[str, Any]],
         kwargs: Dict[str, Any],
         parent_context: SpanContext,
+        tracer: "InstanaTracer",
     ) -> None:
         with tracer.start_as_current_span("s3", span_context=parent_context) as span:
             try:
@@ -46,11 +48,10 @@ try:
         args: Sequence[object],
         kwargs: Dict[str, Any],
     ) -> Callable[..., object]:
-        # If we're not tracing, just return
-        if tracing_is_off():
-            return wrapped(*args, **kwargs)
-
         tracer, parent_span, _ = get_tracer_tuple()
+        # If we're not tracing, just return
+        if not tracer:
+            return wrapped(*args, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
 
@@ -66,7 +67,8 @@ try:
                         span.set_attribute("s3.bucket", args[1])
             except Exception:
                 logger.debug(
-                    f"collect_s3_injected_attributes collect error: {wrapped.__name__}", exc_info=True
+                    f"collect_s3_injected_attributes collect error: {wrapped.__name__}",
+                    exc_info=True,
                 )
 
             try:
@@ -74,7 +76,8 @@ try:
             except Exception as exc:
                 span.record_exception(exc)
                 logger.debug(
-                    f"collect_s3_injected_attributes error: {wrapped.__name__}", exc_info=True
+                    f"collect_s3_injected_attributes error: {wrapped.__name__}",
+                    exc_info=True,
                 )
                 raise
 

@@ -1,28 +1,28 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+
+    import wrapt
+    from opentelemetry.semconv.trace import SpanAttributes
+    from pyramid.config import Configurator
     from pyramid.httpexceptions import HTTPException
     from pyramid.path import caller_package
     from pyramid.settings import aslist
     from pyramid.tweens import EXCVIEW
-    from pyramid.config import Configurator
-    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple
-    import wrapt
-
-    from opentelemetry.semconv.trace import SpanAttributes
-    from opentelemetry.trace import SpanKind
 
     from instana.log import logger
-    from instana.singletons import tracer, agent
+    from instana.propagators.format import Format
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
-    from instana.propagators.format import Format
 
     if TYPE_CHECKING:
+        from pyramid.registry import Registry
         from pyramid.request import Request
         from pyramid.response import Response
-        from pyramid.registry import Registry
 
     class InstanaTweenFactory(object):
         """A factory that provides Instana instrumentation tween for Pyramid apps"""
@@ -33,6 +33,11 @@ try:
             self.handler = handler
 
         def __call__(self, request: "Request") -> "Response":
+            tracer = get_tracer()
+
+            if not tracer:
+                return
+
             ctx = tracer.extract(Format.HTTP_HEADERS, dict(request.headers))
 
             with tracer.start_as_current_span("wsgi", span_context=ctx) as span:

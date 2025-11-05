@@ -14,6 +14,7 @@ from opentelemetry.trace import SpanKind
 
 from instana.singletons import agent, tracer
 from instana.span.span import get_current_span
+from tests.helpers import get_first_span_by_filter
 from tests.test_utils import _TraceContextMixin
 
 # Use PubSub Emulator exposed at :8085
@@ -82,8 +83,10 @@ class TestPubSubPublish(_TraceContextMixin):
         assert isinstance(result, str)
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 1
-        gcps_span = spans[0]
+        assert len(spans) == 2
+
+        filter = lambda span: span.n == "gcps"  # noqa: E731
+        gcps_span = get_first_span_by_filter(spans, filter)
 
         current_span = get_current_span()
         assert not current_span.is_recording()
@@ -92,6 +95,14 @@ class TestPubSubPublish(_TraceContextMixin):
 
         assert gcps_span.data["gcps"]["op"] == "publish"
         assert self.topic_name == gcps_span.data["gcps"]["top"]
+
+        filter = lambda span: span.n == "rpc-client"  # noqa: E731
+        rpc_span = get_first_span_by_filter(spans, filter)
+
+        assert rpc_span.data["rpc"]["call_type"] == "unary"
+        assert rpc_span.data["rpc"]["host"] == "localhost"
+        assert rpc_span.data["rpc"]["port"] == "8681"
+        assert rpc_span.data["rpc"]["call"] == "/google.pubsub.v1.Publisher/Publish"
 
         # Error logging
         self.assertErrorLogging(spans)

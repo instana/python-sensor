@@ -2,19 +2,19 @@
 # (c) Copyright Instana Inc. 2021
 
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
-
-import wrapt
-
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import tracer
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
-
-if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
-
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+
+    import wrapt
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import get_tracer
+    from instana.util.traceutils import get_tracer_tuple
+
+    if TYPE_CHECKING:
+        from instana.span.span import InstanaSpan
+
     from google.cloud import pubsub_v1
 
     def _set_publisher_attributes(
@@ -49,11 +49,11 @@ try:
         """References:
         - PublisherClient.publish(topic_path, messages, metadata)
         """
+        tracer, parent_span, _ = get_tracer_tuple()
         # return early if we're not tracing
-        if tracing_is_off():
+        if not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span(
@@ -95,6 +95,10 @@ try:
         - SubscriberClient.subscribe(subscription_path, callback)
         - callback(message) is called from the subscription future
         """
+        tracer = get_tracer()
+        # return early if we're not tracing
+        if not tracer:
+            return
 
         def callback_with_instana(message):
             if message.attributes:

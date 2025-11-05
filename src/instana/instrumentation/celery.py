@@ -2,20 +2,19 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import contextvars
-from typing import Any, Dict, Tuple
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import tracer
-from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple
-from opentelemetry import trace, context
-
 try:
-    import celery
-    from celery import registry, signals
-
+    import contextvars
+    from typing import Any, Dict, Tuple
     from urllib import parse
+
+    from celery import registry, signals
+    from opentelemetry import context, trace
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import get_tracer
+    from instana.span.span import InstanaSpan
+    from instana.util.traceutils import get_tracer_tuple
 
     client_token: Dict[str, Any] = {}
     worker_token: Dict[str, Any] = {}
@@ -66,6 +65,10 @@ try:
         **kwargs: Dict[str, Any],
     ) -> None:
         try:
+            tracer = get_tracer()
+            if not tracer:
+                return
+
             ctx = None
 
             task = kwargs.get("sender", None)
@@ -144,40 +147,42 @@ try:
     ) -> None:
         try:
             tracer, parent_span, _ = get_tracer_tuple()
+            if not tracer:
+                return
+
             parent_context = parent_span.get_span_context() if parent_span else None
 
-            if tracer:
-                body = kwargs["body"]
-                headers = kwargs["headers"]
-                task_name = kwargs["sender"]
-                task = registry.tasks.get(task_name)
-                task_id = _get_task_id(headers, body)
+            body = kwargs["body"]
+            headers = kwargs["headers"]
+            task_name = kwargs["sender"]
+            task = registry.tasks.get(task_name)
+            task_id = _get_task_id(headers, body)
 
-                span = tracer.start_span("celery-client", span_context=parent_context)
-                span.set_attribute("task", task_name)
-                span.set_attribute("task_id", task_id)
-                add_broker_attributes(span, task.app.conf["broker_url"])
+            span = tracer.start_span("celery-client", span_context=parent_context)
+            span.set_attribute("task", task_name)
+            span.set_attribute("task_id", task_id)
+            add_broker_attributes(span, task.app.conf["broker_url"])
 
-                # Context propagation
-                context_headers = {}
-                tracer.inject(
-                    span.context,
-                    Format.HTTP_HEADERS,
-                    context_headers,
-                    disable_w3c_trace_context=True,
-                )
+            # Context propagation
+            context_headers = {}
+            tracer.inject(
+                span.context,
+                Format.HTTP_HEADERS,
+                context_headers,
+                disable_w3c_trace_context=True,
+            )
 
-                # Fix for broken header propagation
-                # https://github.com/celery/celery/issues/4875
-                task_headers = kwargs.get("headers") or {}
-                task_headers.setdefault("headers", {})
-                task_headers["headers"].update(context_headers)
-                kwargs["headers"] = task_headers
+            # Fix for broken header propagation
+            # https://github.com/celery/celery/issues/4875
+            task_headers = kwargs.get("headers") or {}
+            task_headers.setdefault("headers", {})
+            task_headers["headers"].update(context_headers)
+            kwargs["headers"] = task_headers
 
-                ctx = trace.set_span_in_context(span)
-                token = context.attach(ctx)
-                client_token["token"] = token
-                client_span.set(span)
+            ctx = trace.set_span_in_context(span)
+            token = context.attach(ctx)
+            client_token["token"] = token
+            client_span.set(span)
         except Exception:
             logger.debug("celery-client before_task_publish: ", exc_info=True)
 

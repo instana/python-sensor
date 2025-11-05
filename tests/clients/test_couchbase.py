@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
 import time
 from typing import Generator
 from unittest.mock import patch
@@ -1329,7 +1328,8 @@ class TestStandardCouchDB:
         res = None
 
         with tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.couchbase_inst.tracing_is_off", return_value=True
+            "instana.instrumentation.couchbase_inst.get_tracer_tuple",
+            return_value=(None, None, None),
         ):
             res = self.bucket.n1ql_query("SELECT 1")
         assert res

@@ -15,7 +15,7 @@ try:
     from instana.propagators.format import Format
     from instana.singletons import get_tracer
     from instana.span.span import InstanaSpan
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+    from instana.util.traceutils import get_tracer_tuple
 
     if TYPE_CHECKING:
         from kafka.producer.future import FutureRecordMetadata
@@ -30,10 +30,11 @@ try:
         args: Tuple[int, str, Tuple[Any, ...]],
         kwargs: Dict[str, Any],
     ) -> "FutureRecordMetadata":
-        if tracing_is_off():
+        tracer, parent_span, _ = get_tracer_tuple()
+
+        if not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         # Get the topic from either args or kwargs

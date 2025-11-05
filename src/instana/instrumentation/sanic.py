@@ -8,7 +8,9 @@ https://sanicframework.org/en/
 
 try:
     import sanic
+
     from instana.log import logger
+    from instana.singletons import get_tracer
 
     if not (hasattr(sanic, "__version__") and sanic.__version__ >= "19.9.0"):
         logger.debug(
@@ -16,20 +18,19 @@ try:
         )
         raise ImportError
 
-    import wrapt
-    from typing import Callable, Tuple, Dict, Any
-    from sanic.exceptions import SanicException
+    from typing import Any, Callable, Dict, Tuple
 
+    import wrapt
     from opentelemetry import context, trace
     from opentelemetry.semconv.trace import SpanAttributes
-
-    from instana.singletons import tracer, agent
-    from instana.util.secrets import strip_secrets_from_query
-    from instana.util.traceutils import extract_custom_headers
-    from instana.propagators.format import Format
-
+    from sanic.exceptions import SanicException
     from sanic.request import Request
     from sanic.response import HTTPResponse
+
+    from instana.propagators.format import Format
+    from instana.singletons import agent
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers
 
     @wrapt.patch_function_wrapper("sanic.app", "Sanic.__init__")
     def init_with_instana(
@@ -44,7 +45,9 @@ try:
         @app.middleware("request")
         def request_with_instana(request: Request) -> None:
             try:
-                if "http" not in request.scheme:
+                tracer = get_tracer()
+
+                if "http" not in request.scheme or not tracer:
                     return
 
                 headers = request.headers.copy()
@@ -99,7 +102,9 @@ try:
         @app.middleware("response")
         def response_with_instana(request: Request, response: HTTPResponse) -> None:
             try:
-                if not hasattr(request.ctx, "span"):  # pragma: no cover
+                tracer = get_tracer()
+
+                if not hasattr(request.ctx, "span") or not tracer:  # pragma: no cover
                     return
                 span = request.ctx.span
 

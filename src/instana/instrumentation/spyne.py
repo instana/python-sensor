@@ -1,21 +1,31 @@
 # (c) Copyright IBM Corp. 2025
 
-try:
-    import spyne
-    import wrapt
-    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple, Iterable, Type, Optional
 
+try:
     from types import SimpleNamespace
+    from typing import (
+        TYPE_CHECKING,
+        Any,
+        Callable,
+        Dict,
+        Iterable,
+        Optional,
+        Tuple,
+        Type,
+    )
+
+    import wrapt
 
     from instana.log import logger
-    from instana.singletons import agent, tracer
     from instana.propagators.format import Format
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
 
     if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
         from spyne.application import Application
         from spyne.server.wsgi import WsgiApplication
+
+        from instana.span.span import InstanaSpan
 
     def set_span_attributes(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
         if "PATH_INFO" in headers:
@@ -32,12 +42,13 @@ try:
         if "SERVER_PORT" in headers:
             span.set_attribute("rpc.port", headers["SERVER_PORT"])
 
-    def record_error(span: "InstanaSpan", response_string: str, error: Optional[Type[Exception]]) -> None:
+    def record_error(
+        span: "InstanaSpan", response_string: str, error: Optional[Type[Exception]]
+    ) -> None:
         resp_code = int(response_string.split()[0])
 
         if 500 <= resp_code:
             span.record_exception(error)
-
 
     @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication.handle_error")
     def handle_error_with_instana(
@@ -46,16 +57,20 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> Iterable[object]:
+        tracer = get_tracer()
+
         ctx = args[0]
 
         # span created inside process_request() will be handled by finalize() method
-        if ctx.udc and ctx.udc.span:
+        if ctx.udc and ctx.udc.span or not tracer:
             return wrapped(*args, **kwargs)
 
         headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-        with tracer.start_as_current_span("rpc-server", span_context=span_context) as span:
+        with tracer.start_as_current_span(
+            "rpc-server", span_context=span_context
+        ) as span:
             set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
@@ -76,6 +91,11 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> Tuple[()]:
+        tracer = get_tracer()
+
+        if not tracer:
+            return wrapped(*args, **kwargs)
+
         ctx = args[0]
         response_string = ctx.transport.resp_code
 
@@ -95,6 +115,11 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> None:
+        tracer = get_tracer()
+
+        if not tracer:
+            return wrapped(*args, **kwargs)
+
         ctx = args[0]
         headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)

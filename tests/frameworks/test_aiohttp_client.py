@@ -1,17 +1,16 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from typing import Any, Dict, Generator, Optional
-import aiohttp
 import asyncio
+from typing import Any, Dict, Generator, Optional
 
+import aiohttp
 import pytest
 
-from instana.singletons import tracer, agent
-from instana.util.ids import hex_id
-
-import tests.apps.flask_app  # noqa: F401
 import tests.apps.aiohttp_app  # noqa: F401
+import tests.apps.flask_app  # noqa: F401
+from instana.singletons import agent, tracer
+from instana.util.ids import hex_id
 from tests.helpers import testenv
 
 
@@ -409,7 +408,10 @@ class TestAiohttpClient:
 
         assert aiohttp_span.n == "aiohttp-client"
         assert aiohttp_span.data["http"]["status"] == 200
-        assert aiohttp_span.data["http"]["url"] == testenv["flask_server"] + "/response_headers"
+        assert (
+            aiohttp_span.data["http"]["url"]
+            == testenv["flask_server"] + "/response_headers"
+        )
         assert aiohttp_span.data["http"]["method"] == "GET"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
@@ -438,7 +440,7 @@ class TestAiohttpClient:
         response = None
         try:
             response = self.loop.run_until_complete(test())
-        except:
+        except Exception:
             pass
 
         spans = self.recorder.queued_spans()
@@ -471,8 +473,8 @@ class TestAiohttpClient:
 
     def test_client_get_tracing_off(self, mocker) -> None:
         mocker.patch(
-            "instana.instrumentation.aiohttp.client.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.aiohttp.client.get_tracer_tuple",
+            return_value=(None, None, None),
         )
 
         async def test():

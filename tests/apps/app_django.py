@@ -8,16 +8,16 @@ import os
 import sys
 import time
 
+from instana.singletons import get_tracer
+
 try:
-    from django.urls import re_path, include
+    from django.urls import include, re_path
 except ImportError:
     from django.conf.urls import url as re_path
 
-from django.http import HttpResponse, Http404
+from django.http import Http404, HttpResponse
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind
-
-from instana.singletons import tracer
 
 filepath, extension = os.path.splitext(__file__)
 os.environ["DJANGO_SETTINGS_MODULE"] = os.path.basename(filepath)
@@ -110,6 +110,8 @@ def not_found(request):
 
 
 def complex(request):
+    tracer = get_tracer()
+
     with tracer.start_as_current_span("asteroid") as pspan:
         pspan.set_attribute("component", "Python simple example app")
         pspan.set_attribute("span.kind", SpanKind.CLIENT)

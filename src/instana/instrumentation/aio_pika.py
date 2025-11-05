@@ -1,29 +1,31 @@
 # (c) Copyright IBM Corp. 2025
 
+
 try:
-    import aio_pika
-    import wrapt
     from typing import (
         TYPE_CHECKING,
-        Dict,
         Any,
         Callable,
+        Dict,
+        Optional,
         Tuple,
         Type,
-        Optional,
     )
+
+    import wrapt
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
-    from instana.singletons import tracer
+    from instana.singletons import get_tracer
+    from instana.util.traceutils import get_tracer_tuple
 
     if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
+        from aio_pika.abc import AbstractMessage, ConsumerTag
         from aio_pika.exchange import Exchange
-        from aiormq.abc import ConfirmationFrameType
-        from aio_pika.abc import ConsumerTag, AbstractMessage
         from aio_pika.queue import Queue, QueueIterator
+        from aiormq.abc import ConfirmationFrameType
+
+        from instana.span.span import InstanaSpan
 
     def _extract_span_attributes(
         span: "InstanaSpan", connection, sort: str, routing_key: str, exchange: str
@@ -41,10 +43,10 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> Optional["ConfirmationFrameType"]:
-        if tracing_is_off():
+        tracer, parent_span, _ = get_tracer_tuple()
+        if not tracer:
             return await wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         def _bind_args(
@@ -54,10 +56,8 @@ try:
             **kwargs: object,
         ) -> Tuple[object, ...]:
             return (message, routing_key, args, kwargs)
-        
-        (message, routing_key, args, kwargs) = _bind_args(
-            *args, **kwargs
-        )
+
+        (message, routing_key, args, kwargs) = _bind_args(*args, **kwargs)
 
         with tracer.start_as_current_span(
             "rabbitmq", span_context=parent_context
@@ -91,6 +91,10 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> "ConsumerTag":
+        tracer = get_tracer()
+        if not tracer:
+            return await wrapped(*args, **kwargs)
+
         connection = instance.channel._connection
         callback = kwargs["callback"] if kwargs.get("callback") else args[0]
 

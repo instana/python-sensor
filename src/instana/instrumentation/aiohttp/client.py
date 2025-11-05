@@ -2,36 +2,38 @@
 # (c) Copyright Instana Inc. 2019
 
 
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple
-import wrapt
-
-from opentelemetry.semconv.trace import SpanAttributes
-
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import agent
-from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off, extract_custom_headers
-
 try:
+    from types import SimpleNamespace
+    from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple
+
     import aiohttp
+    import wrapt
+    from opentelemetry.semconv.trace import SpanAttributes
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import agent
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import (
+        extract_custom_headers,
+        get_tracer_tuple,
+    )
 
     if TYPE_CHECKING:
         from aiohttp.client import ClientSession
-        from instana.span.span import InstanaSpan
 
+        from instana.span.span import InstanaSpan
 
     async def stan_request_start(
         session: "ClientSession", trace_config_ctx: SimpleNamespace, params
     ) -> Awaitable[None]:
         try:
+            tracer, parent_span, _ = get_tracer_tuple()
             # If we're not tracing, just return
-            if tracing_is_off():
+            if not tracer:
                 trace_config_ctx.span_context = None
                 return
 
-            tracer, parent_span, _ = get_tracer_tuple()
             parent_context = parent_span.get_span_context() if parent_span else None
 
             span = tracer.start_span("aiohttp-client", span_context=parent_context)

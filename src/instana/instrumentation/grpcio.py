@@ -1,21 +1,21 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2019
 
+
 try:
     import grpc
+    import wrapt
     from grpc._channel import (
-        _UnaryUnaryMultiCallable,
+        _StreamStreamMultiCallable,
         _StreamUnaryMultiCallable,
         _UnaryStreamMultiCallable,
-        _StreamStreamMultiCallable,
+        _UnaryUnaryMultiCallable,
     )
 
-    import wrapt
-
     from instana.log import logger
-    from instana.singletons import tracer
     from instana.propagators.format import Format
-    from instana.span.span import get_current_span
+    from instana.singletons import get_tracer
+    from instana.util.traceutils import get_tracer_tuple
 
     SUPPORTED_TYPES = [
         _UnaryUnaryMultiCallable,
@@ -52,10 +52,9 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.with_call")
     def unary_unary_with_call_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -84,10 +83,9 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.future")
     def unary_unary_future_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -116,10 +114,9 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.__call__")
     def unary_unary_call_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -148,10 +145,9 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._channel", "_StreamUnaryMultiCallable.__call__")
     def stream_unary_call_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -182,10 +178,9 @@ try:
         "grpc._channel", "_StreamUnaryMultiCallable.with_call"
     )
     def stream_unary_with_call_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -214,10 +209,9 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._channel", "_StreamUnaryMultiCallable.future")
     def stream_unary_future_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -246,10 +240,9 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._channel", "_UnaryStreamMultiCallable.__call__")
     def unary_stream_call_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -280,10 +273,9 @@ try:
         "grpc._channel", "_StreamStreamMultiCallable.__call__"
     )
     def stream_stream_call_with_instana(wrapped, instance, argv, kwargs):
-        parent_span = get_current_span()
-
+        tracer, parent_span, _ = get_tracer_tuple()
         # If we're not tracing, just return
-        if not parent_span.is_recording():
+        if not tracer:
             return wrapped(*argv, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -312,6 +304,8 @@ try:
 
     @wrapt.patch_function_wrapper("grpc._server", "_call_behavior")
     def call_behavior_with_instana(wrapped, instance, argv, kwargs):
+        tracer = get_tracer()
+
         # Prep any incoming context headers
         metadata = argv[0].invocation_metadata
         metadata_dict = {}

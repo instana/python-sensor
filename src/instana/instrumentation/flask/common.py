@@ -10,8 +10,9 @@ from typing import Callable, Tuple, Dict, Any, TYPE_CHECKING, Union
 from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
-from instana.singletons import tracer
 from instana.propagators.format import Format
+from instana.singletons import get_tracer
+from instana.util.traceutils import get_tracer_tuple
 
 
 if TYPE_CHECKING:
@@ -19,15 +20,18 @@ if TYPE_CHECKING:
     from flask.typing import ResponseReturnValue
     from jinja2.environment import Template
 
-@wrapt.patch_function_wrapper('flask', 'templating._render')
+
+@wrapt.patch_function_wrapper("flask", "templating._render")
 def render_with_instana(
     wrapped: Callable[..., str],
     instance: object,
     argv: Tuple[flask.app.Flask, "Template", Dict[str, Any]],
     kwargs: Dict[str, Any],
 ) -> str:
+    tracer, parent_span, _ = get_tracer_tuple()
+
     # If we're not tracing, just return
-    if not (hasattr(flask, "g") and hasattr(flask.g, "span")):
+    if not (hasattr(flask, "g") and hasattr(flask.g, "span")) and not tracer:
         return wrapped(*argv, **kwargs)
 
     parent_span = flask.g.span
@@ -50,7 +54,7 @@ def render_with_instana(
             raise
 
 
-@wrapt.patch_function_wrapper('flask', 'Flask.handle_user_exception')
+@wrapt.patch_function_wrapper("flask", "Flask.handle_user_exception")
 def handle_user_exception_with_instana(
     wrapped: Callable[..., Union["HTTPException", "ResponseReturnValue"]],
     instance: flask.app.Flask,
@@ -59,6 +63,12 @@ def handle_user_exception_with_instana(
 ) -> Union["HTTPException", "ResponseReturnValue"]:
     # Call original and then try to do post processing
     response = wrapped(*argv, **kwargs)
+
+    tracer = get_tracer()
+
+    # return early if we're not tracing
+    if not tracer:
+        return response
 
     try:
         exc = argv[0]
@@ -70,7 +80,7 @@ def handle_user_exception_with_instana(
                 if isinstance(response, tuple):
                     status_code = response[1]
                 else:
-                    if hasattr(response, 'code'):
+                    if hasattr(response, "code"):
                         status_code = response.code
                     else:
                         status_code = response.status_code
@@ -80,12 +90,12 @@ def handle_user_exception_with_instana(
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(status_code))
 
-                if hasattr(response, 'headers'):
+                if hasattr(response, "headers"):
                     tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
             if span and span.is_recording():
                 span.end()
             flask.g.span = None
-    except:
+    except Exception:
         logger.debug("handle_user_exception_with_instana:", exc_info=True)
 
     return response

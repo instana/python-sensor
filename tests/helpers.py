@@ -5,6 +5,8 @@ import os
 
 import pytest
 
+from instana.singletons import get_tracer
+
 testenv = {}
 
 """
@@ -114,6 +116,7 @@ def filter_test_span(span):
     """
     return span.n == "sdk" and span.data["sdk"]["name"] == "test"
 
+
 def get_first_span_by_name(spans, name):
     """
     Get the first span in <spans> that has a span.n value of <name>
@@ -168,7 +171,12 @@ def launch_traced_request(url):
     import requests
 
     from instana.log import logger
-    from instana.singletons import tracer
+
+    tracer = get_tracer()
+
+    # return early if we're not tracing
+    if not tracer:
+        return
 
     logger.warn(
         "Launching request with a root SDK span name of 'launch_traced_request'"

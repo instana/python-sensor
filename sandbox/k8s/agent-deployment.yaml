@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: instana-agent
+  labels:
+    app: instana-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: instana-agent
+  template:
+    metadata:
+      labels:
+        app: instana-agent
+    spec:
+      containers:
+      - name: instana-agent
+        image: instana-agent:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 42699
+          name: agent
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: instana-agent
+  labels:
+    app: instana-agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 42699
+    targetPort: 42699
+    protocol: TCP
+    name: agent
+  selector:
+    app: instana-agent
+
+# Made with Bob

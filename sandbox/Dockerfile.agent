@@ -1,0 +1,21 @@
+# Use Python 3.11 slim image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy fake agent file
+COPY fake_agent.py /app/
+
+# Install Flask and Werkzeug
+RUN pip install --no-cache-dir Flask==3.0.0 Werkzeug==3.0.1
+
+# Expose port 42699 (Instana agent port)
+EXPOSE 42699
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV INSTANA_DEBUG=True
+
+# Run the fake agent
+CMD ["python", "fake_agent.py"]

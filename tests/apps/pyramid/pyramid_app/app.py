@@ -1,12 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from wsgiref.simple_server import make_server
-from pyramid.config import Configurator
 import logging
+from wsgiref.simple_server import make_server
 
-from pyramid.response import Response
 import pyramid.httpexceptions as exc
+from pyramid.config import Configurator
+from pyramid.response import Response
 
 from tests.helpers import testenv
 
@@ -25,6 +25,10 @@ def please_fail(request):
     raise exc.HTTPInternalServerError("internal error")
 
 
+def fail_with_http_exception(request):
+    raise exc.HTTPException("bad request")
+
+
 def tableflip(request):
     raise BaseException("fake exception")
 
@@ -39,6 +43,10 @@ def hello_user(request):
     return Response(f"Hello {user}!")
 
 
+def return_error_response(request):
+    return Response("Error", status=500)
+
+
 app = None
 settings = {
     "pyramid.tweens": "tests.apps.pyramid.pyramid_utils.tweens.timing_tween_factory",
@@ -48,12 +56,16 @@ with Configurator(settings=settings) as config:
     config.add_view(hello_world, route_name="hello")
     config.add_route("fail", "/500")
     config.add_view(please_fail, route_name="fail")
+    config.add_route("fail_with_http_exception", "/fail_with_http_exception")
+    config.add_view(fail_with_http_exception, route_name="fail_with_http_exception")
     config.add_route("crash", "/exception")
     config.add_view(tableflip, route_name="crash")
     config.add_route("response_headers", "/response_headers")
     config.add_view(response_headers, route_name="response_headers")
     config.add_route("hello_user", "/hello_user/{user}")
     config.add_view(hello_user, route_name="hello_user")
+    config.add_route(name="return_error_response", pattern="/return_error_response")
+    config.add_view(return_error_response, route_name="return_error_response")
     app = config.make_wsgi_app()
 
 pyramid_server = make_server("127.0.0.1", testenv["pyramid_port"], app)

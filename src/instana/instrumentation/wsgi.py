@@ -39,19 +39,7 @@ class InstanaWSGIMiddleware(object):
         extract_custom_headers(span, env, format=True)
 
         # Set request attributes
-        if "PATH_INFO" in env:
-            span.set_attribute("http.path", env["PATH_INFO"])
-        if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
-            scrubbed_params = strip_secrets_from_query(
-                env["QUERY_STRING"],
-                agent.options.secrets_matcher,
-                agent.options.secrets_list,
-            )
-            span.set_attribute("http.params", scrubbed_params)
-        if "REQUEST_METHOD" in env:
-            span.set_attribute(SpanAttributes.HTTP_METHOD, env["REQUEST_METHOD"])
-        if "HTTP_HOST" in env:
-            span.set_attribute("http.host", env["HTTP_HOST"])
+        _set_request_attributes(span, env)
 
         def new_start_response(
             status: str,
@@ -110,3 +98,18 @@ def _end_span_after_iterating(
             span.end()
         if token:
             context.detach(token)
+
+def _set_request_attributes(span: "InstanaSpan", env: Dict[str, Any]) -> None:
+    if "PATH_INFO" in env:
+        span.set_attribute("http.path", env["PATH_INFO"])
+    if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
+        scrubbed_params = strip_secrets_from_query(
+            env["QUERY_STRING"],
+            agent.options.secrets_matcher,
+            agent.options.secrets_list,
+        )
+        span.set_attribute("http.params", scrubbed_params)
+    if "REQUEST_METHOD" in env:
+        span.set_attribute(SpanAttributes.HTTP_METHOD, env["REQUEST_METHOD"])
+    if "HTTP_HOST" in env:
+        span.set_attribute(SpanAttributes.HTTP_HOST, env["HTTP_HOST"])

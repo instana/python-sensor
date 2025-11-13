@@ -5,7 +5,7 @@
 Instana WSGI Middleware
 """
 
-from typing import Dict, Any, Callable, List, Tuple, Optional
+from typing import Dict, Any, Callable, List, Tuple, Optional, Iterable, TYPE_CHECKING
 
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
@@ -15,6 +15,8 @@ from instana.singletons import agent, tracer
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import extract_custom_headers
 
+if TYPE_CHECKING:
+    from instana.span.span import InstanaSpan
 
 class InstanaWSGIMiddleware(object):
     """Instana WSGI middleware"""
@@ -25,15 +27,41 @@ class InstanaWSGIMiddleware(object):
     def __call__(self, environ: Dict[str, Any], start_response: Callable) -> object:
         env = environ
 
+        # Extract context and start span
+        span_context = tracer.extract(Format.HTTP_HEADERS, env)
+        span = tracer.start_span("wsgi", span_context=span_context)
+
+        # Attach context - this makes the span current
+        ctx = trace.set_span_in_context(span)
+        token = context.attach(ctx)
+
+        # Extract custom headers from request
+        extract_custom_headers(span, env, format=True)
+
+        # Set request attributes
+        if "PATH_INFO" in env:
+            span.set_attribute("http.path", env["PATH_INFO"])
+        if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
+            scrubbed_params = strip_secrets_from_query(
+                env["QUERY_STRING"],
+                agent.options.secrets_matcher,
+                agent.options.secrets_list,
+            )
+            span.set_attribute("http.params", scrubbed_params)
+        if "REQUEST_METHOD" in env:
+            span.set_attribute(SpanAttributes.HTTP_METHOD, env["REQUEST_METHOD"])
+        if "HTTP_HOST" in env:
+            span.set_attribute("http.host", env["HTTP_HOST"])
+
         def new_start_response(
             status: str,
             headers: List[Tuple[object, ...]],
             exc_info: Optional[Exception] = None,
         ) -> object:
             """Modified start response with additional headers."""
-            extract_custom_headers(self.span, headers)
+            extract_custom_headers(span, headers)
 
-            tracer.inject(self.span.context, Format.HTTP_HEADERS, headers)
+            tracer.inject(span.context, Format.HTTP_HEADERS, headers)
 
             headers_str = [
                 (header[0], str(header[1]))
@@ -41,39 +69,44 @@ class InstanaWSGIMiddleware(object):
                 else header
                 for header in headers
             ]
-            res = start_response(status, headers_str, exc_info)
 
+            # Set status code attribute
             sc = status.split(" ")[0]
             if 500 <= int(sc):
-                self.span.mark_as_errored()
+                span.mark_as_errored()
 
-            self.span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, sc)
-            if self.span and self.span.is_recording():
-                self.span.end()
-            if self.token:
-                context.detach(self.token)
-            return res
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, sc)
 
-        span_context = tracer.extract(Format.HTTP_HEADERS, env)
-        self.span = tracer.start_span("wsgi", span_context=span_context)
+            return start_response(status, headers_str, exc_info)
 
-        ctx = trace.set_span_in_context(self.span)
-        self.token = context.attach(ctx)
+        try:
+            iterable = self.app(environ, new_start_response)
 
-        extract_custom_headers(self.span, env, format=True)
+            # Wrap the iterable to ensure span ends after iteration completes
+            return _end_span_after_iterating(iterable, span, token)
 
-        if "PATH_INFO" in env:
-            self.span.set_attribute("http.path", env["PATH_INFO"])
-        if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
-            scrubbed_params = strip_secrets_from_query(
-                env["QUERY_STRING"],
-                agent.options.secrets_matcher,
-                agent.options.secrets_list,
-            )
-            self.span.set_attribute("http.params", scrubbed_params)
-        if "REQUEST_METHOD" in env:
-            self.span.set_attribute(SpanAttributes.HTTP_METHOD, env["REQUEST_METHOD"])
-        if "HTTP_HOST" in env:
-            self.span.set_attribute("http.host", env["HTTP_HOST"])
+        except Exception as exc:
+            # If exception occurs before iteration completes, end span and detach token
+            if span and span.is_recording():
+                span.record_exception(exc)
+                span.end()
+            if token:
+                context.detach(token)
+            raise exc
 
-        return self.app(environ, new_start_response)
+
+def _end_span_after_iterating(
+    iterable: Iterable[object], span: "InstanaSpan", token: object
+) -> Iterable[object]:
+    try:
+        yield from iterable
+    finally:
+        # Ensure iterable cleanup (important for generators)
+        if hasattr(iterable, "close"):
+            iterable.close()
+
+        # End span and detach token after iteration completes
+        if span and span.is_recording():
+            span.end()
+        if token:
+            context.detach(token)

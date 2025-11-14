@@ -101,3 +101,4 @@ ENV/
 
 # uv (https://docs.astral.sh/uv/)
 uv.lock
+sandbox/oc_notes.md

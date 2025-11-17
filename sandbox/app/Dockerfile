@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy the entire project to get access to src/instana
 COPY . /app
 
-# Set working directory to sandbox
-WORKDIR /app/sandbox
+# Set working directory to sandbox/app
+WORKDIR /app/sandbox/app
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt

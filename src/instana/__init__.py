@@ -213,7 +213,6 @@ def boot_agent() -> None:
     # Hooks
     from instana.hooks import (
         hook_gunicorn,  # noqa: F401
-        hook_uwsgi,  # noqa: F401
     )
 
 

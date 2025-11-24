@@ -1,38 +1,53 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2025
 # (c) Copyright Instana Inc. 2019
 
 
 try:
     import tornado
+    from typing import TYPE_CHECKING, Callable, Tuple, Dict, Any, Coroutine, Optional
 
     import wrapt
+
+    if TYPE_CHECKING:
+        from tornado.web import RequestHandler
 
     from opentelemetry.semconv.trace import SpanAttributes
 
     from instana.log import logger
-    from instana.singletons import agent, tracer
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
 
-
-
-    @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler._execute')
-    def execute_with_instana(wrapped, instance, argv, kwargs):
+    @wrapt.patch_function_wrapper("tornado.web", "RequestHandler._execute")
+    def execute_with_instana(
+        wrapped: Callable[..., object],
+        instance: "RequestHandler",
+        argv: Tuple[object, ...],
+        kwargs: Dict[str, Any],
+    ) -> Coroutine:
         try:
             span_context = None
-            if hasattr(instance.request.headers, '__dict__') and '_dict' in instance.request.headers.__dict__:
-                span_context = tracer.extract(Format.HTTP_HEADERS,
-                                                instance.request.headers.__dict__['_dict'])
+            tracer = get_tracer()
+            if (
+                hasattr(instance.request.headers, "__dict__")
+                and "_dict" in instance.request.headers.__dict__
+            ):
+                span_context = tracer.extract(
+                    Format.HTTP_HEADERS, instance.request.headers.__dict__["_dict"]
+                )
 
             span = tracer.start_span("tornado-server", span_context=span_context)
 
             # Query param scrubbing
             if instance.request.query is not None and len(instance.request.query) > 0:
-                cleaned_qp = strip_secrets_from_query(instance.request.query, agent.options.secrets_matcher,
-                                                        agent.options.secrets_list)
+                cleaned_qp = strip_secrets_from_query(
+                    instance.request.query,
+                    agent.options.secrets_matcher,
+                    agent.options.secrets_list,
+                )
                 span.set_attribute("http.params", cleaned_qp)
-            
+
             url = f"{instance.request.protocol}://{instance.request.host}{instance.request.path}"
             span.set_attribute(SpanAttributes.HTTP_URL, url)
             span.set_attribute(SpanAttributes.HTTP_METHOD, instance.request.method)
@@ -52,20 +67,29 @@ try:
         except Exception:
             logger.debug("tornado execute", exc_info=True)
 
-
-    @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler.set_default_headers')
-    def set_default_headers_with_instana(wrapped, instance, argv, kwargs):
-        if not hasattr(instance.request, '_instana'):
+    @wrapt.patch_function_wrapper("tornado.web", "RequestHandler.set_default_headers")
+    def set_default_headers_with_instana(
+        wrapped: Callable[..., object],
+        instance: "RequestHandler",
+        argv: Tuple[object, ...],
+        kwargs: Dict[str, Any],
+    ) -> Optional[Coroutine]:
+        if not hasattr(instance.request, "_instana"):
             return wrapped(*argv, **kwargs)
 
         span = instance.request._instana
+        tracer = get_tracer()
         tracer.inject(span.context, Format.HTTP_HEADERS, instance._headers)
 
-
-    @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler.on_finish')
-    def on_finish_with_instana(wrapped, instance, argv, kwargs):
+    @wrapt.patch_function_wrapper("tornado.web", "RequestHandler.on_finish")
+    def on_finish_with_instana(
+        wrapped: Callable[..., object],
+        instance: "RequestHandler",
+        argv: Tuple[object, ...],
+        kwargs: Dict[str, Any],
+    ) -> Coroutine:
         try:
-            if not hasattr(instance.request, '_instana'):
+            if not hasattr(instance.request, "_instana"):
                 return wrapped(*argv, **kwargs)
 
             span = instance.request._instana
@@ -86,11 +110,15 @@ try:
         except Exception:
             logger.debug("tornado on_finish", exc_info=True)
 
-
-    @wrapt.patch_function_wrapper('tornado.web', 'RequestHandler.log_exception')
-    def log_exception_with_instana(wrapped, instance, argv, kwargs):
+    @wrapt.patch_function_wrapper("tornado.web", "RequestHandler.log_exception")
+    def log_exception_with_instana(
+        wrapped: Callable[..., object],
+        instance: "RequestHandler",
+        argv: Tuple[object, ...],
+        kwargs: Dict[str, Any],
+    ) -> Coroutine:
         try:
-            if not hasattr(instance.request, '_instana'):
+            if not hasattr(instance.request, "_instana"):
                 return wrapped(*argv, **kwargs)
 
             if not isinstance(argv[1], tornado.web.HTTPError):
@@ -100,7 +128,6 @@ try:
             return wrapped(*argv, **kwargs)
         except Exception:
             logger.debug("tornado log_exception", exc_info=True)
-
 
     logger.debug("Instrumenting tornado server")
 except ImportError:

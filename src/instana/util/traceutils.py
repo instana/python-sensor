@@ -16,9 +16,9 @@ from typing import (
 from instana.log import logger
 from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
+from instana.span.span import InstanaSpan
 
 if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
     from instana.tracer import InstanaTracer
 
 
@@ -62,22 +62,6 @@ def extract_custom_headers(
         logger.debug("extract_custom_headers: ", exc_info=True)
 
 
-def get_active_tracer() -> Optional["InstanaTracer"]:
-    """Get the currently active tracer if one exists."""
-    try:
-        current_span = get_current_span()
-        if current_span:
-            # asyncio Spans are used as NonRecording Spans solely for context propagation
-            if current_span.is_recording() or current_span.name == "asyncio":
-                return get_tracer()
-            return None
-        return None
-    except Exception:
-        # Do not try to log this with instana, as there is no active tracer and there will be an infinite loop at least
-        # for PY2
-        return None
-
-
 def get_tracer_tuple() -> (
     Tuple[
         Optional["InstanaTracer"],
@@ -86,15 +70,17 @@ def get_tracer_tuple() -> (
     ]
 ):
     """Get a tuple of (tracer, span, span_name) for the current context."""
-    active_tracer = get_active_tracer()
-    current_span = get_current_span()
-    if active_tracer:
-        return (active_tracer, current_span, current_span.name)
-    elif agent.options.allow_exit_as_root:
-        return (get_tracer(), None, None)
-    return (None, None, None)
-
-
-def tracing_is_off() -> bool:
-    """Check if tracing is currently disabled."""
-    return not (bool(get_active_tracer()) or agent.options.allow_exit_as_root)
+    try:
+        active_tracer = get_tracer()
+        current_span = get_current_span()
+        # asyncio Spans are used as NonRecording Spans solely for context propagation
+        if current_span and isinstance(current_span, InstanaSpan):
+            if current_span.is_recording() or current_span.name == "asyncio":
+                return (active_tracer, current_span, current_span.name)
+        elif agent.options.allow_exit_as_root:
+            return (active_tracer, None, None)
+        return (None, None, None)
+    except Exception:
+        # Do not try to log this with instana, as there is no active tracer and there will be an infinite loop at least
+        # for PY2
+        return (None, None, None)

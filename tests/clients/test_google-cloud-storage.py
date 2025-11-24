@@ -1073,13 +1073,13 @@ class TestGoogleCloudStorage(_TraceContextMixin):
                 pass
             assert isinstance(buckets, page_iterator.HTTPIterator)
 
-    def test_execute_with_instana_tracing_is_off(self) -> None:
+    def test_execute_with_instana_is_tracing_off(self) -> None:
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
         with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+            return_value=(None, None, None),
         ):
             response = client.list_buckets()
             assert isinstance(response.client, storage.Client)
@@ -1089,7 +1089,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         reason='Avoiding "Fatal Python error: Segmentation fault"',
     )
     @patch("requests.Session.request")
-    def test_download_with_instana_tracing_is_off(self, mock_requests: Mock) -> None:
+    def test_download_with_instana_is_tracing_off(self, mock_requests: Mock) -> None:
         mock_requests.return_value = self._mock_response(
             content=b"CONTENT", status_code=http_client.OK
         )
@@ -1097,8 +1097,8 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
         with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+            return_value=(None, None, None),
         ):
             response = (
                 client.bucket("test bucket")
@@ -1111,7 +1111,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             assert not response
 
     @patch("requests.Session.request")
-    def test_upload_with_instana_tracing_is_off(self, mock_requests: Mock) -> None:
+    def test_upload_with_instana_is_tracing_off(self, mock_requests: Mock) -> None:
         mock_requests.return_value = self._mock_response(
             json_content={"kind": "storage#object"}, status_code=http_client.OK
         )
@@ -1121,8 +1121,8 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
 
         with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+            return_value=(None, None, None),
         ):
             response = (
                 client.bucket("test bucket")
@@ -1132,7 +1132,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             assert not response
 
     @patch("requests.Session.request")
-    def test_finish_batch_operation_tracing_is_off(self, mock_requests: Mock) -> None:
+    def test_finish_batch_operation_is_tracing_off(self, mock_requests: Mock) -> None:
         mock_requests.return_value = self._mock_response(
             _TWO_PART_BATCH_RESPONSE,
             status_code=http_client.OK,
@@ -1145,8 +1145,8 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         bucket = client.bucket("test-bucket")
 
         with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+            return_value=(None, None, None),
         ):
             with client.batch() as batch_response:
                 for obj in ["obj1", "obj2"]:

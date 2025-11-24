@@ -37,7 +37,6 @@ class TestSanic(_TraceContextMixin):
         """Setup and Teardown"""
         # setup
         # Clear all spans before a test run
-        self.tracer = get_tracer()
         self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 

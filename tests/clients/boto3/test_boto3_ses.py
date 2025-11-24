@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import os
 import boto3
 import pytest
 from typing import Generator
 from moto import mock_aws
 
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_filter
 
 pwd = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +19,8 @@ class TestSes:
     def _resource(self) -> Generator[None, None, None]:
         """Setup and Teardown"""
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws()
         self.mock.start()
@@ -34,7 +36,7 @@ class TestSes:
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     def test_verify_email(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.ses.verify_email_identity(
                 EmailAddress="pglombardo+instana299@tuta.io"
             )
@@ -44,11 +46,15 @@ class TestSes:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -119,7 +125,7 @@ class TestSes:
             "before-call.ses.VerifyEmailIdentity", add_custom_header_before_call
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.ses.verify_email_identity(
                 EmailAddress="pglombardo+instana299@tuta.io"
             )
@@ -129,11 +135,15 @@ class TestSes:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -182,7 +192,7 @@ class TestSes:
             "before-sign.ses.VerifyEmailIdentity", add_custom_header_before_sign
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.ses.verify_email_identity(
                 EmailAddress="pglombardo+instana299@tuta.io"
             )
@@ -192,11 +202,15 @@ class TestSes:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -247,7 +261,7 @@ class TestSes:
             "after-call.ses.VerifyEmailIdentity", modify_after_call_args
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.ses.verify_email_identity(
                 EmailAddress="pglombardo+instana299@tuta.io"
             )
@@ -257,11 +271,15 @@ class TestSes:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 

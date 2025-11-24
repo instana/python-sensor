@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 try:
     from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
@@ -11,7 +12,7 @@ try:
     import wrapt
 
     from instana.log import logger
-    from instana.singletons import tracer
+    from instana.singletons import get_tracer
     from instana.util.traceutils import (
         get_tracer_tuple,
         tracing_is_off,
@@ -31,6 +32,7 @@ try:
         kwargs: Dict[str, Any],
         parent_context: SpanContext,
     ) -> None:
+        tracer = get_tracer()
         with tracer.start_as_current_span("s3", span_context=parent_context) as span:
             try:
                 span.set_attribute("s3.op", args[0])
@@ -66,7 +68,8 @@ try:
                         span.set_attribute("s3.bucket", args[1])
             except Exception:
                 logger.debug(
-                    f"collect_s3_injected_attributes collect error: {wrapped.__name__}", exc_info=True
+                    f"collect_s3_injected_attributes collect error: {wrapped.__name__}",
+                    exc_info=True,
                 )
 
             try:
@@ -74,7 +77,8 @@ try:
             except Exception as exc:
                 span.record_exception(exc)
                 logger.debug(
-                    f"collect_s3_injected_attributes error: {wrapped.__name__}", exc_info=True
+                    f"collect_s3_injected_attributes error: {wrapped.__name__}",
+                    exc_info=True,
                 )
                 raise
 

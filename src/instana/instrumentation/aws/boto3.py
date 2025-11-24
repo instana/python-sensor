@@ -1,4 +1,6 @@
 # (c) Copyright IBM Corp. 2025
+
+
 try:
     from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Tuple, Type
 
@@ -19,7 +21,7 @@ try:
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.singletons import tracer
+    from instana.singletons import get_tracer
     from instana.span.span import get_current_span
     from instana.util.traceutils import (
         extract_custom_headers,
@@ -34,6 +36,7 @@ try:
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.invoke
         """
         try:
+            tracer = get_tracer()
             invoke_payload = payload.get("Payload", {})
 
             if not isinstance(invoke_payload, dict):

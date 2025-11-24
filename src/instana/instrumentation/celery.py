@@ -2,20 +2,20 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import contextvars
-from typing import Any, Dict, Tuple
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import tracer
-from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple
-from opentelemetry import trace, context
-
 try:
-    import celery
-    from celery import registry, signals
-
+    import celery  # noqa: F401
+    import contextvars
+    from typing import Any, Dict, Tuple
     from urllib import parse
+
+    from celery import registry, signals
+    from opentelemetry import context, trace
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import get_tracer
+    from instana.span.span import InstanaSpan
+    from instana.util.traceutils import get_tracer_tuple
 
     client_token: Dict[str, Any] = {}
     worker_token: Dict[str, Any] = {}
@@ -67,6 +67,7 @@ try:
     ) -> None:
         try:
             ctx = None
+            tracer = get_tracer()
 
             task = kwargs.get("sender", None)
             task_id = kwargs.get("task_id", None)

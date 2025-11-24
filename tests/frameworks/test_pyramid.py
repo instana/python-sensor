@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 from typing import Generator
 
 import pytest
 import urllib3
 
 import tests.apps.pyramid.pyramid_app  # noqa: F401
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 from instana.util.ids import hex_id
 from tests.helpers import testenv
@@ -18,7 +19,8 @@ class TestPyramid:
     def _resource(self) -> Generator[None, None, None]:
         """Clear all spans before a test run"""
         self.http = urllib3.PoolManager()
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
     def test_vanilla_requests(self) -> None:
@@ -29,7 +31,7 @@ class TestPyramid:
         assert len(spans) == 1
 
     def test_get_request(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", testenv["pyramid_server"] + "/")
 
         spans = self.recorder.queued_spans()
@@ -100,7 +102,7 @@ class TestPyramid:
     def test_synthetic_request(self) -> None:
         headers = {"X-INSTANA-SYNTHETIC": "1"}
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/", headers=headers
             )
@@ -119,7 +121,7 @@ class TestPyramid:
         assert not test_span.sy
 
     def test_500(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", testenv["pyramid_server"] + "/500")
 
         spans = self.recorder.queued_spans()
@@ -184,7 +186,7 @@ class TestPyramid:
         assert len(urllib3_span.stack) > 1
 
     def test_return_error_response(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/return_error_response"
             )
@@ -209,7 +211,7 @@ class TestPyramid:
         assert pyramid_span.ec == 1
 
     def test_fail_with_http_exception(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/fail_with_http_exception"
             )
@@ -234,7 +236,7 @@ class TestPyramid:
         assert pyramid_span.ec == 1
 
     def test_exception(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/exception"
             )
@@ -292,7 +294,7 @@ class TestPyramid:
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/response_headers"
             )
@@ -366,7 +368,7 @@ class TestPyramid:
             "X-Capture-That-Too": "that too",
         }
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/", headers=request_headers
             )
@@ -428,7 +430,7 @@ class TestPyramid:
         agent.options.extra_http_headers = original_extra_http_headers
 
     def test_scrub_secret_path_template(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["pyramid_server"] + "/hello_user/oswald?secret=sshhh"
             )

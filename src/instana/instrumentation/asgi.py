@@ -8,11 +8,10 @@ Instana ASGI Middleware
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict
 
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.propagators.format import Format
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import extract_custom_headers
 
@@ -66,6 +65,7 @@ class InstanaASGIMiddleware:
         send: Callable[[Dict[str, Any]], Awaitable[None]],
     ) -> None:
         request_context = None
+        tracer = get_tracer()
 
         if scope["type"] not in ("http", "websocket"):
             return await self.app(scope, receive, send)
@@ -104,11 +104,14 @@ class InstanaASGIMiddleware:
                     if status_code:
                         if 500 <= int(status_code):
                             current_span.mark_as_errored()
-                        current_span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
+                        current_span.set_attribute(
+                            SpanAttributes.HTTP_STATUS_CODE, status_code
+                        )
 
                     headers = response.get("headers")
                     if headers:
                         extract_custom_headers(current_span, headers)
+                        tracer = get_tracer()
                         tracer.inject(current_span.context, Format.BINARY, headers)
                 except Exception:
                     logger.debug("ASGI send_wrapper error: ", exc_info=True)

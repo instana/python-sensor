@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import asyncio
 from typing import Generator
 
 import aiohttp
 import pytest
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.ids import hex_id
 from tests.helpers import testenv
 
@@ -27,8 +28,10 @@ class TestAiohttpServer:
         # Load test server application
         import tests.apps.aiohttp_app  # noqa: F401
 
+        self.tracer = get_tracer()
+
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         # New event loop for every test
@@ -38,7 +41,7 @@ class TestAiohttpServer:
 
     def test_server_get(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["aiohttp_server"] + "/")
 
@@ -87,7 +90,7 @@ class TestAiohttpServer:
 
     def test_server_get_204(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["aiohttp_server"] + "/204")
 
@@ -138,7 +141,7 @@ class TestAiohttpServer:
         async def test():
             headers = {"X-INSTANA-SYNTHETIC": "1"}
 
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(
                         session, testenv["aiohttp_server"] + "/", headers=headers
@@ -160,7 +163,7 @@ class TestAiohttpServer:
 
     def test_server_get_with_params_to_scrub(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(
                         session,
@@ -211,7 +214,7 @@ class TestAiohttpServer:
         original_extra_http_headers = agent.options.extra_http_headers
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     # Hack together a manual custom headers list
                     agent.options.extra_http_headers = [
@@ -280,7 +283,7 @@ class TestAiohttpServer:
         original_extra_http_headers = agent.options.extra_http_headers
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     # Hack together a manual custom headers list
                     agent.options.extra_http_headers = [
@@ -289,8 +292,7 @@ class TestAiohttpServer:
                     ]
 
                     return await self.fetch(
-                        session,
-                        testenv["aiohttp_server"] + "/response_headers"
+                        session, testenv["aiohttp_server"] + "/response_headers"
                     )
 
         response = self.loop.run_until_complete(test())
@@ -318,7 +320,10 @@ class TestAiohttpServer:
 
         assert aioserver_span.n == "aiohttp-server"
         assert aioserver_span.data["http"]["status"] == 200
-        assert aioserver_span.data["http"]["url"] == f"{testenv['aiohttp_server']}/response_headers"
+        assert (
+            aioserver_span.data["http"]["url"]
+            == f"{testenv['aiohttp_server']}/response_headers"
+        )
         assert aioserver_span.data["http"]["method"] == "GET"
         assert not aioserver_span.stack
 
@@ -340,7 +345,7 @@ class TestAiohttpServer:
 
     def test_server_get_401(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["aiohttp_server"] + "/401")
 
@@ -384,7 +389,7 @@ class TestAiohttpServer:
 
     def test_server_get_500(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["aiohttp_server"] + "/500")
 
@@ -428,7 +433,7 @@ class TestAiohttpServer:
 
     def test_server_get_exception(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(
                         session, testenv["aiohttp_server"] + "/exception"
@@ -490,8 +495,9 @@ class TestAiohttpServerMiddleware:
         # Load test server application
         import tests.apps.aiohttp_app2  # noqa: F401
 
+        self.tracer = get_tracer()
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         # New event loop for every test
@@ -501,7 +507,7 @@ class TestAiohttpServerMiddleware:
 
     def test_server_get(self):
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["aiohttp_server"] + "/")
 

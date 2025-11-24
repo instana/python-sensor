@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+
 from typing import (
     Optional,
     Tuple,
@@ -13,7 +14,7 @@ from typing import (
 )
 
 from instana.log import logger
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 
 if TYPE_CHECKING:
@@ -68,7 +69,7 @@ def get_active_tracer() -> Optional["InstanaTracer"]:
         if current_span:
             # asyncio Spans are used as NonRecording Spans solely for context propagation
             if current_span.is_recording() or current_span.name == "asyncio":
-                return tracer
+                return get_tracer()
             return None
         return None
     except Exception:
@@ -90,7 +91,7 @@ def get_tracer_tuple() -> (
     if active_tracer:
         return (active_tracer, current_span, current_span.name)
     elif agent.options.allow_exit_as_root:
-        return (tracer, None, None)
+        return (get_tracer(), None, None)
     return (None, None, None)
 
 

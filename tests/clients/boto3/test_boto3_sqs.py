@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import os
 import boto3
 import pytest
@@ -10,7 +11,7 @@ from typing import Generator
 from moto import mock_aws
 
 import tests.apps.flask_app  # noqa: F401
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_filter, get_first_span_by_name, testenv
 
 pwd = os.path.dirname(os.path.abspath(__file__))
@@ -21,7 +22,8 @@ class TestSqs:
     def _resource(self) -> Generator[None, None, None]:
         """Setup and Teardown"""
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws()
         self.mock.start()
@@ -49,7 +51,7 @@ class TestSqs:
         assert response["QueueUrl"]
         queue_url = response["QueueUrl"]
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -166,7 +168,7 @@ class TestSqs:
         )
 
     def test_app_boto3_sqs(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.http_client.request("GET", testenv["flask_server"] + "/boto3/sqs")
 
         spans = self.recorder.queued_spans()
@@ -238,7 +240,7 @@ class TestSqs:
         )
 
         queue_url = response["QueueUrl"]
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -329,7 +331,7 @@ class TestSqs:
         )
 
         queue_url = response["QueueUrl"]
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,
@@ -420,7 +422,7 @@ class TestSqs:
         event_system.register("after-call.sqs.SendMessage", modify_after_call_args)
 
         queue_url = response["QueueUrl"]
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.sqs.send_message(
                 QueueUrl=queue_url,
                 DelaySeconds=10,

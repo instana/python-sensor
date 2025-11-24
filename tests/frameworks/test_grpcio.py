@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import time
 import random
 from typing import Generator
@@ -15,7 +16,7 @@ import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
 from tests.helpers import testenv, get_first_span_by_name
 
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 
 
@@ -23,7 +24,8 @@ class TestGRPCIO:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """Clear all spans before a test run"""
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.channel = grpc.insecure_channel(testenv["grpc_server"])
         self.server_stub = stan_pb2_grpc.StanStub(self.channel)
@@ -71,7 +73,7 @@ class TestGRPCIO:
         )
 
     def test_unary_one_to_one(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.server_stub.OneQuestionOneResponse(
                 stan_pb2.QuestionRequest(question="Are you there?")
             )
@@ -134,7 +136,7 @@ class TestGRPCIO:
         assert test_span.data["sdk"]["name"] == "test"
 
     def test_streaming_many_to_one(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.server_stub.ManyQuestionsOneResponse(
                 self.generate_questions()
             )
@@ -195,7 +197,7 @@ class TestGRPCIO:
         assert test_span.data["sdk"]["name"] == "test"
 
     def test_streaming_one_to_many(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             responses = self.server_stub.OneQuestionManyResponses(
                 stan_pb2.QuestionRequest(question="Are you there?")
             )
@@ -259,7 +261,7 @@ class TestGRPCIO:
         assert test_span.data["sdk"]["name"] == "test"
 
     def test_streaming_many_to_many(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             responses = self.server_stub.ManyQuestionsManyReponses(
                 self.generate_questions()
             )
@@ -323,7 +325,7 @@ class TestGRPCIO:
         assert test_span.data["sdk"]["name"] == "test"
 
     def test_unary_one_to_one_with_call(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.server_stub.OneQuestionOneResponse.with_call(
                 stan_pb2.QuestionRequest(question="Are you there?")
             )
@@ -386,7 +388,7 @@ class TestGRPCIO:
         assert test_span.data["sdk"]["name"] == "test"
 
     def test_streaming_many_to_one_with_call(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.server_stub.ManyQuestionsOneResponse.with_call(
                 self.generate_questions()
             )
@@ -456,7 +458,7 @@ class TestGRPCIO:
                 == "Invention, my dear friends, is 93% perspiration, 6% electricity, 4% evaporation, and 2% butterscotch ripple. – Willy Wonka"
             )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             future = self.server_stub.OneQuestionOneResponse.future(
                 stan_pb2.QuestionRequest(question="Are you there?")
             )
@@ -520,7 +522,7 @@ class TestGRPCIO:
             assert result.was_answered
             assert result.answer == "Ok"
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             future = self.server_stub.ManyQuestionsOneResponse.future(
                 self.generate_questions()
             )
@@ -582,7 +584,7 @@ class TestGRPCIO:
 
     def test_server_error(self) -> None:
         response = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 response = self.server_stub.OneQuestionOneErrorResponse(
                     stan_pb2.QuestionRequest(question="Do u error?")

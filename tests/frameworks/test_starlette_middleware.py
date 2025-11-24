@@ -1,10 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 from typing import Generator
 
 import pytest
-from instana.singletons import agent, tracer
+from instana.singletons import get_tracer
 from starlette.testclient import TestClient
 
 from instana.util.ids import hex_id
@@ -22,9 +23,10 @@ class TestStarletteMiddleware:
         """SetUp and TearDown"""
         # setup
         # We are using the TestClient from Starlette to make it easier.
+        self.tracer = get_tracer()
         self.client = TestClient(starlette_server)
         # Clear all spans before a test run.
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         yield
 
@@ -47,7 +49,7 @@ class TestStarletteMiddleware:
 
     def test_basic_get(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -96,7 +98,7 @@ class TestStarletteMiddleware:
 
     def test_basic_get_500(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()

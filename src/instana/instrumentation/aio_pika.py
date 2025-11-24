@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
-    import aio_pika
+    import aio_pika  # noqa: F401
     import wrapt
     from typing import (
         TYPE_CHECKING,
@@ -16,7 +16,7 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.util.traceutils import get_tracer_tuple, tracing_is_off
-    from instana.singletons import tracer
+    from instana.singletons import get_tracer
 
     if TYPE_CHECKING:
         from instana.span.span import InstanaSpan
@@ -54,10 +54,8 @@ try:
             **kwargs: object,
         ) -> Tuple[object, ...]:
             return (message, routing_key, args, kwargs)
-        
-        (message, routing_key, args, kwargs) = _bind_args(
-            *args, **kwargs
-        )
+
+        (message, routing_key, args, kwargs) = _bind_args(*args, **kwargs)
 
         with tracer.start_as_current_span(
             "rabbitmq", span_context=parent_context
@@ -102,6 +100,7 @@ try:
             kwargs: Dict[str, Any],
         ) -> Callable[[Type["AbstractMessage"]], Any]:
             message = args[0]
+            tracer = get_tracer()
             parent_context = tracer.extract(
                 Format.HTTP_HEADERS, message.headers, disable_w3c_trace_context=True
             )

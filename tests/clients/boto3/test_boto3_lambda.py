@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import pytest
 import json
 from typing import Generator
 import boto3
 from moto import mock_aws
 
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_filter
 
 
@@ -16,7 +17,8 @@ class TestLambda:
     def _resource(self) -> Generator[None, None, None]:
         """Setup and Teardown"""
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws(config={"lambda": {"use_docker": False}})
         self.mock.start()
@@ -29,7 +31,7 @@ class TestLambda:
         agent.options.allow_exit_as_root = False
 
     def test_lambda_invoke(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(
                 FunctionName=self.function_name,
                 Payload=json.dumps({"message": "success"}),
@@ -43,11 +45,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -114,7 +120,7 @@ class TestLambda:
             "before-call.lambda.Invoke", add_custom_header_before_call
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(
                 FunctionName=self.function_name,
                 Payload=json.dumps({"message": "success"}),
@@ -128,11 +134,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -178,7 +188,7 @@ class TestLambda:
             "before-sign.lambda.Invoke", add_custom_header_before_sign
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(
                 FunctionName=self.function_name,
                 Payload=json.dumps({"message": "success"}),
@@ -192,11 +202,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 
@@ -242,7 +256,7 @@ class TestLambda:
         # Register the function to an event
         event_system.register("after-call.lambda.Invoke", modify_after_call_args)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.aws_lambda.invoke(
                 FunctionName=self.function_name,
                 Payload=json.dumps({"message": "success"}),
@@ -256,11 +270,15 @@ class TestLambda:
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
 
-        filter = lambda span: span.n == "sdk"
+        def filter(span):
+            return span.n == "sdk"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "boto3"
+        def filter(span):
+            return span.n == "boto3"
+
         boto_span = get_first_span_by_filter(spans, filter)
         assert boto_span
 

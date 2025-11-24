@@ -1,12 +1,13 @@
 # (c) Copyright IBM Corp. 2025
 
+
 from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
 if TYPE_CHECKING:
     from botocore.client import BaseClient
 
 from instana.log import logger
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from instana.span_context import SpanContext
 
 
@@ -17,6 +18,7 @@ def create_dynamodb_span(
     kwargs: Dict[str, Any],
     parent_context: SpanContext,
 ) -> None:
+    tracer = get_tracer()
     with tracer.start_as_current_span("dynamodb", span_context=parent_context) as span:
         try:
             span.set_attribute("dynamodb.op", args[0])

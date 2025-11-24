@@ -5,7 +5,7 @@ from typing import Generator, TYPE_CHECKING
 import asyncio
 from aio_pika import Message, connect, connect_robust
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 
 if TYPE_CHECKING:
     from instana.span.readable_span import ReadableSpan
@@ -16,7 +16,8 @@ class TestAioPika:
     def _resource(self) -> Generator[None, None, None]:
         """SetUp and TearDown"""
         # setup
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         self.loop = asyncio.new_event_loop()
@@ -58,7 +59,7 @@ class TestAioPika:
                 kwargs = {"routing_key": queue_name}
             elif params_combination == "arg_kwarg_empty_key":
                 args = (message,)
-                kwargs = {"routing_key": ""} 
+                kwargs = {"routing_key": ""}
             else:
                 # params_combination == "both_args"
                 args = (message, queue_name)
@@ -105,7 +106,9 @@ class TestAioPika:
             await queue.consume(on_message)
             await asyncio.sleep(1)  # Wait to ensure the message is processed
 
-    def assert_span_info(self, rabbitmq_span: "ReadableSpan", sort: str, key: str = "test.queue") -> None:
+    def assert_span_info(
+        self, rabbitmq_span: "ReadableSpan", sort: str, key: str = "test.queue"
+    ) -> None:
         assert rabbitmq_span.data["rabbitmq"]["exchange"] == "test.exchange"
         assert rabbitmq_span.data["rabbitmq"]["sort"] == sort
         assert rabbitmq_span.data["rabbitmq"]["address"]
@@ -119,7 +122,7 @@ class TestAioPika:
         ["both_args", "both_kwargs", "arg_kwarg"],
     )
     def test_basic_publish(self, params_combination) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.loop.run_until_complete(self.publish_message(params_combination))
 
         spans = self.recorder.queued_spans()
@@ -165,7 +168,7 @@ class TestAioPika:
         [connect, connect_robust],
     )
     def test_basic_consume(self, connect_method) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.loop.run_until_complete(self.publish_message())
             self.loop.run_until_complete(self.consume_message(connect_method))
 
@@ -198,7 +201,7 @@ class TestAioPika:
         [connect, connect_robust],
     )
     def test_consume_with_exception(self, connect_method) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.loop.run_until_complete(self.publish_message())
             self.loop.run_until_complete(self.consume_with_exception(connect_method))
 

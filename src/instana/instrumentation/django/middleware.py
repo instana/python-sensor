@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
+
 try:
     import sys
 
@@ -11,7 +12,7 @@ try:
     from typing import TYPE_CHECKING, Dict, Any, Callable, Optional, List, Tuple, Type
 
     from instana.log import logger
-    from instana.singletons import agent, tracer
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
@@ -55,6 +56,7 @@ try:
 
         def process_request(self, request: Type["HttpRequest"]) -> None:
             try:
+                tracer = get_tracer()
                 env = request.META
 
                 span_context = tracer.extract(Format.HTTP_HEADERS, env)
@@ -81,7 +83,9 @@ try:
                     )
                     request.span.set_attribute("http.params", scrubbed_params)
                 if "HTTP_HOST" in env:
-                    request.span.set_attribute(SpanAttributes.HTTP_HOST, env["HTTP_HOST"])
+                    request.span.set_attribute(
+                        SpanAttributes.HTTP_HOST, env["HTTP_HOST"]
+                    )
             except Exception:
                 logger.debug("Django middleware @ process_request", exc_info=True)
 
@@ -118,6 +122,7 @@ try:
                         extract_custom_headers(
                             request.span, response.headers, format=False
                         )
+                    tracer = get_tracer()
                     tracer.inject(request.span.context, Format.HTTP_HEADERS, response)
             except Exception:
                 logger.debug("Instana middleware @ process_response", exc_info=True)

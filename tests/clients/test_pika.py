@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+
 import threading
 import time
 from typing import Generator, Optional
@@ -13,7 +14,7 @@ import pika.spec
 import pytest
 from opentelemetry.trace.span import format_span_id
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.ids import hex_id
 
 
@@ -31,7 +32,8 @@ class _TestPika:
         """SetUp and TearDown"""
         # setup
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         self.connection = self._create_connection()
@@ -342,7 +344,7 @@ class TestPikaChannel(_TestPika):
     def test_basic_publish(self, send_method, _unused) -> None:
         self.obj._set_state(self.obj.OPEN)
 
-        with tracer.start_as_current_span("testing"):
+        with self.tracer.start_as_current_span("testing"):
             self.obj.basic_publish("test.exchange", "test.queue", "Hello!")
 
         spans = self.recorder.queued_spans()
@@ -432,7 +434,7 @@ class TestPikaChannel(_TestPika):
     def test_basic_publish_with_headers(self, send_method, _unused) -> None:
         self.obj._set_state(self.obj.OPEN)
 
-        with tracer.start_as_current_span("testing"):
+        with self.tracer.start_as_current_span("testing"):
             self.obj.basic_publish(
                 "test.exchange",
                 "test.queue",
@@ -471,7 +473,7 @@ class TestPikaChannel(_TestPika):
 
         self.obj._set_state(self.obj.OPEN)
 
-        with tracer.start_as_current_span("testing"):
+        with self.tracer.start_as_current_span("testing"):
             self.obj.basic_publish("test.exchange", "test.queue", "Hello!")
 
         spans = self.recorder.queued_spans()

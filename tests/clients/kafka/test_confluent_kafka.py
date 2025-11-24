@@ -1,5 +1,6 @@
 # (c) Copyright IBM Corp. 2025
 
+
 import os
 import time
 from typing import Generator
@@ -21,7 +22,7 @@ from instana.instrumentation.kafka.confluent_kafka_python import (
     trace_kafka_close,
 )
 from instana.options import StandardOptions
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
 from instana.util.config import parse_ignored_endpoints_from_yaml
 from tests.helpers import get_first_span_by_filter, testenv
@@ -33,7 +34,8 @@ class TestConfluentKafka:
         """SetUp and TearDown"""
         # setup
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         # Kafka admin client
@@ -91,7 +93,7 @@ class TestConfluentKafka:
         time.sleep(3)
 
     def test_trace_confluent_kafka_produce(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes")
             self.producer.flush(timeout=10)
 
@@ -118,7 +120,7 @@ class TestConfluentKafka:
 
     def test_trace_confluent_kafka_produce_with_keyword_topic(self) -> None:
         """Test that tracing works when topic is passed as a keyword argument."""
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             # Pass topic as a keyword argument
             self.producer.produce(topic=testenv["kafka_topic"], value=b"raw_bytes")
             self.producer.flush(timeout=10)
@@ -146,7 +148,7 @@ class TestConfluentKafka:
 
     def test_trace_confluent_kafka_produce_with_keyword_args(self) -> None:
         """Test that tracing works when both topic and headers are passed as keyword arguments."""
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             # Pass both topic and headers as keyword arguments
             self.producer.produce(
                 topic=testenv["kafka_topic"],
@@ -190,7 +192,7 @@ class TestConfluentKafka:
         consumer = Consumer(consumer_config)
         consumer.subscribe([testenv["kafka_topic"]])
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             msgs = consumer.consume(num_messages=1, timeout=60)  # noqa: F841
 
         consumer.close()
@@ -212,7 +214,7 @@ class TestConfluentKafka:
         consumer = Consumer(consumer_config)
         consumer.subscribe([testenv["kafka_topic"]])
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             msg = consumer.poll(timeout=3)  # noqa: F841
 
         consumer.close()
@@ -250,7 +252,7 @@ class TestConfluentKafka:
         consumer = Consumer(consumer_config)
         consumer.subscribe(["inexistent_kafka_topic"])
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             consumer.consume(-10)
 
         consumer.close()
@@ -283,7 +285,7 @@ class TestConfluentKafka:
     @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka"})
     def test_ignore_confluent_kafka(self) -> None:
         agent.options.set_trace_configurations()
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes")
             self.producer.flush(timeout=10)
 
@@ -296,7 +298,7 @@ class TestConfluentKafka:
     @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:produce"})
     def test_ignore_confluent_kafka_producer(self) -> None:
         agent.options.set_trace_configurations()
-        with tracer.start_as_current_span("test-span"):
+        with self.tracer.start_as_current_span("test-span"):
             # Produce some events
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes2")
@@ -327,7 +329,7 @@ class TestConfluentKafka:
         self.producer.produce(testenv["kafka_topic"], b"raw_bytes2")
         self.producer.flush()
 
-        with tracer.start_as_current_span("test-span"):
+        with self.tracer.start_as_current_span("test-span"):
             # Consume the events
             consumer_config = self.kafka_config.copy()
             consumer_config["group.id"] = "my-group"
@@ -360,7 +362,7 @@ class TestConfluentKafka:
             ]
         )
 
-        with tracer.start_as_current_span("test-span"):
+        with self.tracer.start_as_current_span("test-span"):
             # Produce some events
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
             self.producer.produce(testenv["kafka_topic"] + "_1", b"raw_bytes1")
@@ -401,7 +403,7 @@ class TestConfluentKafka:
             "tests/util/test_configuration-1.yaml"
         )
 
-        with tracer.start_as_current_span("test-span"):
+        with self.tracer.start_as_current_span("test-span"):
             # Produce some events
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
             self.producer.flush()

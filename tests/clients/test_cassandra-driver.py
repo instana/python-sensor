@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import random
 import time
 from typing import Generator
@@ -10,7 +11,7 @@ from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, ResultSet
 from cassandra.query import SimpleStatement
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_name, testenv
 
 cluster = Cluster([testenv["cassandra_host"]], load_balancing_policy=None)
@@ -35,7 +36,8 @@ class TestCassandra:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """Clear all spans before a test run"""
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         yield
         agent.options.allow_exit_as_root = False
@@ -66,7 +68,7 @@ class TestCassandra:
 
     def test_execute(self) -> None:
         res = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = session.execute("SELECT name, age, email FROM users")
 
         assert isinstance(res, ResultSet)
@@ -125,7 +127,7 @@ class TestCassandra:
 
     def test_execute_async(self) -> None:
         res = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = session.execute_async("SELECT name, age, email FROM users").result()
 
         assert isinstance(res, ResultSet)
@@ -158,7 +160,7 @@ class TestCassandra:
 
     def test_simple_statement(self) -> None:
         res = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             query = SimpleStatement(
                 "SELECT name, age, email FROM users", is_idempotent=True
             )
@@ -196,7 +198,7 @@ class TestCassandra:
         res = None
 
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 res = session.execute("Not a real query")
         except Exception:
             pass
@@ -232,7 +234,7 @@ class TestCassandra:
     def test_prepared_statement(self) -> None:
         prepared = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             prepared = session.prepare(
                 "INSERT INTO users (id, name, age) VALUES (?, ?, ?)"
             )

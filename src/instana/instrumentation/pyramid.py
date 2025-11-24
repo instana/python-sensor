@@ -15,7 +15,7 @@ try:
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.singletons import agent, tracer
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
 
@@ -33,6 +33,7 @@ try:
             self.handler = handler
 
         def __call__(self, request: "Request") -> Optional["Response"]:
+            tracer = get_tracer()
             ctx = tracer.extract(Format.HTTP_HEADERS, dict(request.headers))
 
             with tracer.start_as_current_span("wsgi", span_context=ctx) as span:

@@ -9,7 +9,7 @@ from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
 from instana.propagators.format import Format
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import extract_custom_headers
 
@@ -29,6 +29,7 @@ try:
         handler: Callable[..., object],
     ) -> Awaitable["aiohttp.web.Response"]:
         try:
+            tracer = get_tracer()
             span_context = tracer.extract(Format.HTTP_HEADERS, request.headers)
             span: "InstanaSpan" = tracer.start_span(
                 "aiohttp-server", span_context=span_context

@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import sys
 from typing import Generator
 import json
@@ -8,7 +9,7 @@ import pytest
 import requests
 import io
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 from tests.test_utils import _TraceContextMixin
 from opentelemetry.trace import SpanKind
@@ -24,7 +25,8 @@ from google.auth.credentials import AnonymousCredentials
 class TestGoogleCloudStorage(_TraceContextMixin):
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         yield
         agent.options.allow_exit_as_root = False
@@ -40,7 +42,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             buckets = client.list_buckets()
             for _ in buckets:
                 pass
@@ -106,7 +108,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.create_bucket("test bucket")
 
         spans = self.recorder.queued_spans()
@@ -139,7 +141,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.get_bucket("test bucket")
 
         spans = self.recorder.queued_spans()
@@ -172,7 +174,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").patch()
 
         spans = self.recorder.queued_spans()
@@ -204,7 +206,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").update()
 
         spans = self.recorder.queued_spans()
@@ -236,7 +238,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").get_iam_policy()
 
         spans = self.recorder.queued_spans()
@@ -268,7 +270,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").set_iam_policy(iam.Policy())
 
         spans = self.recorder.queued_spans()
@@ -301,7 +303,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").test_iam_permissions("test-permission")
 
         spans = self.recorder.queued_spans()
@@ -341,7 +343,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         bucket = client.bucket("test bucket")
         bucket.reload()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             bucket.lock_retention_policy()
 
         spans = self.recorder.queued_spans()
@@ -371,7 +373,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").delete()
 
         spans = self.recorder.queued_spans()
@@ -403,7 +405,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("dest object").compose(
                 [
                     storage.blob.Blob("object 1", "test bucket"),
@@ -446,7 +448,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
         bucket = client.bucket("src bucket")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             bucket.copy_blob(
                 bucket.blob("src object"),
                 client.bucket("dest bucket"),
@@ -483,7 +485,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").delete()
 
         spans = self.recorder.queued_spans()
@@ -516,7 +518,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").exists()
 
         spans = self.recorder.queued_spans()
@@ -553,7 +555,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").download_to_file(
                 io.BytesIO(), raw_download=True
             )
@@ -588,7 +590,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").upload_from_string(
                 "CONTENT"
             )
@@ -623,7 +625,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             blobs = client.bucket("test bucket").list_blobs()
 
             for _ in blobs:
@@ -658,7 +660,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").patch()
 
         spans = self.recorder.queued_spans()
@@ -698,7 +700,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("dest bucket").blob("dest object").rewrite(
                 client.bucket("src bucket").blob("src object")
             )
@@ -735,7 +737,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").update()
 
         spans = self.recorder.queued_spans()
@@ -769,7 +771,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").default_object_acl.get_entities()
 
         spans = self.recorder.queued_spans()
@@ -802,7 +804,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.bucket("test bucket").blob("test object").acl.get_entities()
 
         spans = self.recorder.queued_spans()
@@ -836,7 +838,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.create_hmac_key("test@example.com")
 
         spans = self.recorder.queued_spans()
@@ -866,7 +868,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             key = storage.hmac_key.HMACKeyMetadata(client, access_id="test key")
             key.state = storage.hmac_key.HMACKeyMetadata.INACTIVE_STATE
             key.delete()
@@ -902,7 +904,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             storage.hmac_key.HMACKeyMetadata(client, access_id="test key").exists()
 
         spans = self.recorder.queued_spans()
@@ -936,7 +938,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             keys = client.list_hmac_keys()
 
             for _ in keys:
@@ -972,7 +974,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             storage.hmac_key.HMACKeyMetadata(client, access_id="test key").update()
 
         spans = self.recorder.queued_spans()
@@ -1009,7 +1011,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             client.get_service_account_email()
 
         spans = self.recorder.queued_spans()
@@ -1044,7 +1046,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
         bucket = client.bucket("test-bucket")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with client.batch():
                 for obj in ["obj1", "obj2"]:
                     bucket.delete_blob(obj)
@@ -1062,7 +1064,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.google.cloud.storage._collect_attributes",
             return_value=None,
         ):
@@ -1075,7 +1077,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.google.cloud.storage.tracing_is_off",
             return_value=True,
         ):
@@ -1094,7 +1096,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.google.cloud.storage.tracing_is_off",
             return_value=True,
         ):
@@ -1118,7 +1120,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.google.cloud.storage.tracing_is_off",
             return_value=True,
         ):
@@ -1142,7 +1144,7 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
         bucket = client.bucket("test-bucket")
 
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.google.cloud.storage.tracing_is_off",
             return_value=True,
         ):

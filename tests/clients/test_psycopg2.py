@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import logging
 import pytest
 
 from typing import Generator
 from instana.instrumentation.psycopg2 import register_json_with_instana
 from tests.helpers import testenv
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 
 import psycopg2
 import psycopg2.extras
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 class TestPsycoPG2:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.tracer = get_tracer()
         kwargs = {
             "host": testenv["postgresql_host"],
             "port": testenv["postgresql_port"],
@@ -52,9 +54,9 @@ class TestPsycoPG2:
         self.db.commit()
 
         self.cursor = self.db.cursor()
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
-        tracer.cur_ctx = None
+        self.tracer.cur_ctx = None
         yield
         if self.cursor and not self.cursor.connection.closed:
             self.cursor.close()
@@ -82,7 +84,7 @@ class TestPsycoPG2:
         assert len(spans) == 0
 
     def test_basic_query(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.cursor.execute("""SELECT * from users""")
             affected_rows = self.cursor.rowcount
             result = self.cursor.fetchone()
@@ -134,7 +136,7 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_basic_insert(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.cursor.execute(
                 """INSERT INTO users(name, email) VALUES(%s, %s)""",
                 ("beaker", "beaker@muppets.com"),
@@ -165,7 +167,7 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_executemany(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.cursor.executemany(
                 "INSERT INTO users(name, email) VALUES(%s, %s)",
                 [("beaker", "beaker@muppets.com"), ("beaker", "beaker@muppets.com")],
@@ -198,7 +200,7 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_call_proc(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             callproc_result = self.cursor.callproc("test_proc", ("beaker",))
 
         assert isinstance(callproc_result, tuple)
@@ -224,7 +226,7 @@ class TestPsycoPG2:
     def test_error_capture(self) -> None:
         affected_rows = result = None
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 self.cursor.execute("""SELECT * from blah""")
                 affected_rows = self.cursor.rowcount
                 self.cursor.fetchone()
@@ -302,7 +304,7 @@ class TestPsycoPG2:
         ext.register_type(ext.UUIDARRAY, self.cursor)
 
     def test_connect_cursor_ctx_mgr(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with self.db as connection:
                 with connection.cursor() as cursor:
                     cursor.execute("""SELECT * from users""")
@@ -331,7 +333,7 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_connect_ctx_mgr(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with self.db as connection:
                 cursor = connection.cursor()
                 cursor.execute("""SELECT * from users""")
@@ -360,7 +362,7 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_cursor_ctx_mgr(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             connection = self.db
             with connection.cursor() as cursor:
                 cursor.execute("""SELECT * from users""")
@@ -389,7 +391,7 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_deprecated_parameter_database(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.cursor.execute("""SELECT * from users""")
             affected_rows = self.cursor.rowcount
             result = self.cursor.fetchone()

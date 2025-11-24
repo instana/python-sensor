@@ -1,11 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 from typing import Generator
 
 from fastapi.testclient import TestClient
 import pytest
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 
 from instana.util.ids import hex_id
 from tests.apps.fastapi_app.app import fastapi_server
@@ -21,7 +22,8 @@ class TestFastAPI:
         self.client = TestClient(fastapi_server)
 
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         # Hack together a manual custom headers list; We'll use this in tests
@@ -52,7 +54,7 @@ class TestFastAPI:
 
     def test_basic_get(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -86,7 +88,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -103,7 +105,7 @@ class TestFastAPI:
 
     def test_400(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -137,7 +139,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -154,7 +156,7 @@ class TestFastAPI:
 
     def test_500(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -188,7 +190,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -204,7 +206,7 @@ class TestFastAPI:
 
     def test_path_templates(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -238,7 +240,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -254,7 +256,7 @@ class TestFastAPI:
 
     def test_secret_scrubbing(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -288,7 +290,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -304,7 +306,7 @@ class TestFastAPI:
         assert asgi_span.data["http"]["params"] == "secret=<redacted>"
 
     def test_synthetic_request(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -339,7 +341,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -358,14 +360,14 @@ class TestFastAPI:
         assert not test_span.sy
 
     def test_request_header_capture(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
             headers = {
                 "X-INSTANA-T": hex_id(span_context.trace_id),
                 "X-INSTANA-S": hex_id(span_context.span_id),
-                "X-Capture-This": "this", 
+                "X-Capture-This": "this",
                 "X-Capture-That": "that",
             }
             result = self.client.get("/", headers=headers)
@@ -394,9 +396,9 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
-        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)        
+        assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
 
         assert not asgi_span.ec
@@ -415,10 +417,10 @@ class TestFastAPI:
         assert asgi_span.data["http"]["header"]["X-Capture-That"] == "that"
 
     def test_response_header_capture(self) -> None:
-        # The background FastAPI server is pre-configured with custom headers 
+        # The background FastAPI server is pre-configured with custom headers
         # to capture.
 
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -452,7 +454,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"
@@ -473,7 +475,7 @@ class TestFastAPI:
         assert asgi_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
 
     def test_non_async_simple(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -536,7 +538,7 @@ class TestFastAPI:
         assert not asgi_span2.data["http"]["params"]
 
     def test_non_async_threadpool(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -570,7 +572,7 @@ class TestFastAPI:
 
         assert test_span.t == asgi_span.t
         assert test_span.s == asgi_span.p
-        
+
         assert result.headers["X-INSTANA-T"] == hex_id(asgi_span.t)
         assert result.headers["X-INSTANA-S"] == hex_id(asgi_span.s)
         assert result.headers["Server-Timing"] == f"intid;desc={hex_id(asgi_span.t)}"

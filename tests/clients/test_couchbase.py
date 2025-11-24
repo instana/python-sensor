@@ -1,14 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import os
+
 import time
 from typing import Generator
 from unittest.mock import patch
 
 import pytest
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from tests.helpers import testenv, get_first_span_by_name, get_first_span_by_filter
 
 from couchbase.admin import Admin
@@ -43,7 +43,8 @@ class TestStandardCouchDB:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """Clear all spans before a test run"""
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.cluster = Cluster("couchbase://%s" % testenv["couchdb_host"])
         self.bucket = Bucket(
             "couchbase://%s/travel-sample" % testenv["couchdb_host"],
@@ -62,7 +63,7 @@ class TestStandardCouchDB:
 
     def test_upsert(self) -> None:
         res = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.upsert("test_upsert", 1)
 
         assert res
@@ -122,7 +123,7 @@ class TestStandardCouchDB:
         kvs["first_test_upsert_multi"] = 1
         kvs["second_test_upsert_multi"] = 1
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.upsert_multi(kvs)
 
         assert res
@@ -159,7 +160,7 @@ class TestStandardCouchDB:
         except NotFoundError:
             pass
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.insert("test_insert_new", 1)
 
         assert res
@@ -196,7 +197,7 @@ class TestStandardCouchDB:
             pass
 
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 res = self.bucket.insert("test_insert", 1)
         except KeyExistsError:
             pass
@@ -242,7 +243,7 @@ class TestStandardCouchDB:
         except NotFoundError:
             pass
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.insert_multi(kvs)
 
         assert res
@@ -279,7 +280,7 @@ class TestStandardCouchDB:
         except KeyExistsError:
             pass
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.replace("test_replace", 2)
 
         assert res
@@ -317,7 +318,7 @@ class TestStandardCouchDB:
             pass
 
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 res = self.bucket.replace("test_replace", 2)
         except NotFoundError:
             pass
@@ -360,7 +361,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("first_test_replace_multi", "one")
         self.bucket.upsert("second_test_replace_multi", "two")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.replace_multi(kvs)
 
         assert res
@@ -394,7 +395,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("test_append", "one")
 
         res = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.append("test_append", "two")
 
         assert res
@@ -433,7 +434,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("first_test_append_multi", "one")
         self.bucket.upsert("second_test_append_multi", "two")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.append_multi(kvs)
 
         assert res
@@ -467,7 +468,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("test_prepend", "one")
 
         res = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.prepend("test_prepend", "two")
 
         assert res
@@ -506,7 +507,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("first_test_prepend_multi", "one")
         self.bucket.upsert("second_test_prepend_multi", "two")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.prepend_multi(kvs)
 
         assert res
@@ -539,7 +540,7 @@ class TestStandardCouchDB:
     def test_get(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.get("test-key")
 
         assert res
@@ -572,7 +573,7 @@ class TestStandardCouchDB:
         res = None
 
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 res = self.bucket.rget("test-key", replica_index=None)
         except CouchbaseTransientError:
             pass
@@ -613,7 +614,7 @@ class TestStandardCouchDB:
             pass
 
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 res = self.bucket.get("test_get_not_found")
         except NotFoundError:
             pass
@@ -652,7 +653,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("first_test_get_multi", "one")
         self.bucket.upsert("second_test_get_multi", "two")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.get_multi(
                 ["first_test_get_multi", "second_test_get_multi"]
             )
@@ -688,7 +689,7 @@ class TestStandardCouchDB:
         res = None
         self.bucket.upsert("test_touch", 1)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.touch("test_touch")
 
         assert res
@@ -723,7 +724,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("first_test_touch_multi", "one")
         self.bucket.upsert("second_test_touch_multi", "two")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.touch_multi(
                 ["first_test_touch_multi", "second_test_touch_multi"]
             )
@@ -759,7 +760,7 @@ class TestStandardCouchDB:
         res = None
         self.bucket.upsert("test_lock_unlock", "lock_this")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             rv = self.bucket.lock("test_lock_unlock", ttl=5)
             assert rv
             assert rv.success
@@ -817,7 +818,7 @@ class TestStandardCouchDB:
         res = None
         self.bucket.upsert("test_lock_unlock", "lock_this")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             rv = self.bucket.lock("test_lock_unlock", ttl=5)
             assert rv
             assert rv.success
@@ -878,7 +879,7 @@ class TestStandardCouchDB:
 
         keys_to_lock = ("test_lock_unlock_multi_1", "test_lock_unlock_multi_2")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             rv = self.bucket.lock_multi(keys_to_lock, ttl=5)
             assert rv
             assert rv["test_lock_unlock_multi_1"].success
@@ -940,7 +941,7 @@ class TestStandardCouchDB:
         res = None
         self.bucket.upsert("test_remove", 1)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.remove("test_remove")
 
         assert res
@@ -976,7 +977,7 @@ class TestStandardCouchDB:
 
         keys_to_remove = ("test_remove_multi_1", "test_remove_multi_2")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.remove_multi(keys_to_remove)
 
         assert res
@@ -1010,7 +1011,7 @@ class TestStandardCouchDB:
         res = None
         self.bucket.upsert("test_counter", 1)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.counter("test_counter", delta=10)
 
         assert res
@@ -1044,7 +1045,7 @@ class TestStandardCouchDB:
         self.bucket.upsert("first_test_counter", 1)
         self.bucket.upsert("second_test_counter", 1)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.counter_multi(
                 ("first_test_counter", "second_test_counter")
             )
@@ -1087,7 +1088,7 @@ class TestStandardCouchDB:
             },
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.mutate_in(
                 "king_arthur",
                 SD.array_addunique("interests", "Cats"),
@@ -1131,7 +1132,7 @@ class TestStandardCouchDB:
             },
         )
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.lookup_in(
                 "king_arthur", SD.get("email"), SD.get("interests")
             )
@@ -1165,7 +1166,7 @@ class TestStandardCouchDB:
     def test_stats(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.stats()
 
         assert res
@@ -1196,7 +1197,7 @@ class TestStandardCouchDB:
     def test_ping(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.ping()
 
         assert res
@@ -1227,7 +1228,7 @@ class TestStandardCouchDB:
     def test_diagnostics(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.diagnostics()
 
         assert res
@@ -1259,7 +1260,7 @@ class TestStandardCouchDB:
         res = None
         self.bucket.upsert("test_observe", 1)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.observe("test_observe")
 
         assert res
@@ -1295,7 +1296,7 @@ class TestStandardCouchDB:
 
         keys_to_observe = ("test_observe_multi_1", "test_observe_multi_2")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.observe_multi(keys_to_observe)
 
         assert res
@@ -1328,14 +1329,14 @@ class TestStandardCouchDB:
     def test_query_with_instana_tracing_off(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.couchbase_inst.tracing_is_off", return_value=True
         ):
             res = self.bucket.n1ql_query("SELECT 1")
         assert res
 
     def test_query_with_instana_exception(self) -> None:
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.couchbase_inst.collect_attributes",
             side_effect=Exception("test-error"),
         ):
@@ -1349,7 +1350,7 @@ class TestStandardCouchDB:
     def test_raw_n1ql_query(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.n1ql_query("SELECT 1")
 
         assert res
@@ -1381,7 +1382,7 @@ class TestStandardCouchDB:
     def test_n1ql_query(self) -> None:
         res = None
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.bucket.n1ql_query(
                 N1QLQuery(
                     'SELECT name FROM `travel-sample` WHERE brewery_id ="mishawaka_brewing"'

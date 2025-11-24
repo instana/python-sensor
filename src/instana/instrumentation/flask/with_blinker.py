@@ -1,88 +1,33 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2025
 # (c) Copyright Instana Inc. 2019
 
 
-import re
-import wrapt
-from typing import Any, Tuple, Dict, Callable
-
-from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry import context, trace
-
-from instana.log import logger
-from instana.util.secrets import strip_secrets_from_query
-from instana.singletons import agent, tracer
-from instana.util.traceutils import extract_custom_headers
-from instana.propagators.format import Format
+from typing import Any, Callable, Dict, Tuple
 
 import flask
-from flask import request_started, request_finished, got_request_exception
+import wrapt
+from flask import got_request_exception, request_finished, request_started
+from opentelemetry.semconv.trace import SpanAttributes
 
-path_tpl_re = re.compile("<.*>")
+from instana.instrumentation.flask.common import (
+    create_span,
+    inject_span,
+    teardown_request_with_instana,
+)
+from instana.log import logger
 
 
 def request_started_with_instana(sender: flask.app.Flask, **extra: Any) -> None:
     try:
-        env = flask.request.environ
-
-        span_context = tracer.extract(Format.HTTP_HEADERS, env)
-
-        span = tracer.start_span("wsgi", span_context=span_context)
-        flask.g.span = span
-
-        ctx = trace.set_span_in_context(span)
-        token = context.attach(ctx)
-        flask.g.token = token
-
-        extract_custom_headers(span, env, format=True)
-
-        span.set_attribute(SpanAttributes.HTTP_METHOD, flask.request.method)
-        if "PATH_INFO" in env:
-            span.set_attribute(SpanAttributes.HTTP_URL, env["PATH_INFO"])
-        if "QUERY_STRING" in env and len(env["QUERY_STRING"]):
-            scrubbed_params = strip_secrets_from_query(
-                env["QUERY_STRING"],
-                agent.options.secrets_matcher,
-                agent.options.secrets_list,
-            )
-            span.set_attribute("http.params", scrubbed_params)
-        if "HTTP_HOST" in env:
-            span.set_attribute("http.host", env["HTTP_HOST"])
-
-        if hasattr(flask.request.url_rule, "rule") and path_tpl_re.search(
-            flask.request.url_rule.rule
-        ):
-            path_tpl = flask.request.url_rule.rule.replace("<", "{")
-            path_tpl = path_tpl.replace(">", "}")
-            span.set_attribute("http.path_tpl", path_tpl)
-    except:
+        create_span()
+    except Exception:
         logger.debug("Flask request_started_with_instana", exc_info=True)
 
 
 def request_finished_with_instana(
     sender: flask.app.Flask, response: flask.wrappers.Response, **extra: Any
 ) -> None:
-    span = None
-    try:
-        if not hasattr(flask.g, "span"):
-            return
-
-        span = flask.g.span
-        if span:
-            if 500 <= response.status_code:
-                span.mark_as_errored()
-
-            span.set_attribute(
-                SpanAttributes.HTTP_STATUS_CODE, int(response.status_code)
-            )
-            extract_custom_headers(span, response.headers, format=False)
-
-            tracer.inject(span.context, Format.HTTP_HEADERS, response.headers)
-    except Exception:
-        logger.debug("Flask request_finished_with_instana", exc_info=True)
-    finally:
-        if span and span.is_recording():
-            span.end()
+    inject_span(response, "Flask request_finished_with_instana")
 
 
 def log_exception_with_instana(
@@ -100,26 +45,6 @@ def log_exception_with_instana(
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 500)
             if span.is_recording():
                 span.end()
-
-
-def teardown_request_with_instana(*argv: Any, **kwargs: Any) -> None:
-    """
-    In the case of exceptions, request_finished_with_instana isn't called
-    so we capture those cases here.
-    """
-    if hasattr(flask.g, "span") and flask.g.span:
-        if len(argv) > 0 and argv[0]:
-            span = flask.g.span
-            span.record_exception(argv[0])
-            if SpanAttributes.HTTP_STATUS_CODE not in span.attributes:
-                span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, 500)
-        if flask.g.span.is_recording():
-            flask.g.span.end()
-        flask.g.span = None
-
-    if hasattr(flask.g, "token") and flask.g.token:
-        context.detach(flask.g.token)
-        flask.g.token = None
 
 
 @wrapt.patch_function_wrapper("flask", "Flask.full_dispatch_request")

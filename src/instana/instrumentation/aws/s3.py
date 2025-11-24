@@ -15,7 +15,6 @@ try:
     from instana.singletons import get_tracer
     from instana.util.traceutils import (
         get_tracer_tuple,
-        tracing_is_off,
     )
 
     operations = {
@@ -48,11 +47,10 @@ try:
         args: Sequence[object],
         kwargs: Dict[str, Any],
     ) -> Callable[..., object]:
-        # If we're not tracing, just return
-        if tracing_is_off():
-            return wrapped(*args, **kwargs)
-
         tracer, parent_span, _ = get_tracer_tuple()
+        # If we're not tracing, just return
+        if not tracer:
+            return wrapped(*args, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
 

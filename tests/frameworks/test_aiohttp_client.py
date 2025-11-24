@@ -476,8 +476,8 @@ class TestAiohttpClient:
 
     def test_client_get_tracing_off(self, mocker) -> None:
         mocker.patch(
-            "instana.instrumentation.aiohttp.client.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.aiohttp.client.get_tracer_tuple",
+            return_value=(None, None, None),
         )
 
         async def test():

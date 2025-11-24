@@ -14,6 +14,7 @@ try:
         from botocore.client import BaseClient
 
         from instana.span.span import InstanaSpan
+        from instana.tracer import InstanaTracer
 
     import json
 
@@ -22,14 +23,16 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.singletons import get_tracer
-    from instana.span.span import get_current_span
     from instana.util.traceutils import (
         extract_custom_headers,
         get_tracer_tuple,
-        tracing_is_off,
     )
 
-    def lambda_inject_context(payload: Dict[str, Any], span: "InstanaSpan") -> None:
+    def lambda_inject_context(
+        tracer: "InstanaTracer",
+        payload: Dict[str, Any],
+        span: "InstanaSpan",
+    ) -> None:
         """
         When boto3 lambda client 'Invoke' is called, we want to inject the tracing context.
         boto3/botocore has specific requirements:
@@ -54,9 +57,9 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> Callable[..., None]:
-        current_span = get_current_span()
-        if not tracing_is_off() and current_span and current_span.is_recording():
-            extract_custom_headers(current_span, args[0].headers)
+        _, parent_span, _ = get_tracer_tuple()
+        if parent_span:
+            extract_custom_headers(parent_span, args[0].headers)
         return wrapped(*args, **kwargs)
 
     @wrapt.patch_function_wrapper("botocore.client", "BaseClient._make_api_call")
@@ -66,11 +69,10 @@ try:
         args: Sequence[Dict[str, Any]],
         kwargs: Dict[str, Any],
     ) -> Dict[str, Any]:
-        # If we're not tracing, just return
-        if tracing_is_off():
-            return wrapped(*args, **kwargs)
-
         tracer, parent_span, _ = get_tracer_tuple()
+        # If we're not tracing, just return
+        if not tracer:
+            return wrapped(*args, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None
 
@@ -101,7 +103,7 @@ try:
 
                 # Inject context when invoking lambdas
                 if "lambda" in instance._endpoint.host and operation == "Invoke":
-                    lambda_inject_context(payload, span)
+                    lambda_inject_context(tracer, payload, span)
 
                 try:
                     result = wrapped(*args, **kwargs)

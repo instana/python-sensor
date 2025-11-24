@@ -467,8 +467,8 @@ class TestPikaChannel(_TestPika):
     @mock.patch("pika.channel.Channel._send_method")
     def test_basic_publish_tracing_off(self, send_method, _unused, mocker) -> None:
         mocker.patch(
-            "instana.instrumentation.pika.tracing_is_off",
-            return_value=True,
+            "instana.instrumentation.pika.get_tracer_tuple",
+            return_value=(None, None, None),
         )
 
         self.obj._set_state(self.obj.OPEN)

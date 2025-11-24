@@ -4,7 +4,7 @@
 
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Iterator, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, Tuple
 
 import wrapt
 from opentelemetry.trace import use_span
@@ -13,10 +13,13 @@ from opentelemetry.trace.status import StatusCode
 from instana.configurator import config
 from instana.log import logger
 from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple
 
 try:
     import asyncio
+
+    if TYPE_CHECKING:
+        from instana.tracer import InstanaTracer
 
     @wrapt.patch_function_wrapper("asyncio", "ensure_future")
     def ensure_future_with_instana(
@@ -25,13 +28,11 @@ try:
         argv: Tuple[object, Tuple[object, ...]],
         kwargs: Dict[str, Any],
     ) -> object:
-        if (
-            not config["asyncio_task_context_propagation"]["enabled"]
-            or tracing_is_off()
-        ):
+        tracer, parent_span, _ = get_tracer_tuple()
+        if not config["asyncio_task_context_propagation"]["enabled"] or not tracer:
             return wrapped(*argv, **kwargs)
 
-        with _start_as_current_async_span() as span:
+        with _start_as_current_async_span(tracer, parent_span) as span:
             try:
                 span.set_status(StatusCode.OK)
                 return wrapped(*argv, **kwargs)
@@ -47,13 +48,11 @@ try:
             argv: Tuple[object, Tuple[object, ...]],
             kwargs: Dict[str, Any],
         ) -> object:
-            if (
-                not config["asyncio_task_context_propagation"]["enabled"]
-                or tracing_is_off()
-            ):
+            tracer, parent_span, _ = get_tracer_tuple()
+            if not config["asyncio_task_context_propagation"]["enabled"] or not tracer:
                 return wrapped(*argv, **kwargs)
 
-            with _start_as_current_async_span() as span:
+            with _start_as_current_async_span(tracer, parent_span) as span:
                 try:
                     span.set_status(StatusCode.OK)
                     return wrapped(*argv, **kwargs)
@@ -61,12 +60,14 @@ try:
                     logger.debug(f"asyncio create_task_with_instana error: {exc}")
 
     @contextmanager
-    def _start_as_current_async_span() -> Iterator[InstanaSpan]:
+    def _start_as_current_async_span(
+        tracer: "InstanaTracer",
+        parent_span: "InstanaSpan",
+    ) -> Iterator[InstanaSpan]:
         """
         Creates and yield a special InstanaSpan to only propagate the Asyncio
         context.
         """
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         _time = time.time_ns()

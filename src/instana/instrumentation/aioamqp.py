@@ -8,7 +8,7 @@ try:
     from opentelemetry.trace.status import StatusCode
 
     from instana.log import logger
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+    from instana.util.traceutils import get_tracer_tuple
 
     @wrapt.patch_function_wrapper("aioamqp.channel", "Channel.basic_publish")
     async def basic_publish_with_instana(
@@ -17,10 +17,10 @@ try:
         argv: Tuple[object, Tuple[object, ...]],
         kwargs: Dict[str, Any],
     ) -> object:
-        if tracing_is_off():
+        tracer, parent_span, _ = get_tracer_tuple()
+        if not tracer:
             return await wrapped(*argv, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
         with tracer.start_as_current_span(
             "aioamqp-publisher", span_context=parent_context
@@ -57,11 +57,11 @@ try:
         argv: Tuple[object, Tuple[object, ...]],
         kwargs: Dict[str, Any],
     ) -> object:
-        if tracing_is_off():
+        tracer, parent_span, _ = get_tracer_tuple()
+        if not tracer:
             return await wrapped(*argv, **kwargs)
 
         callback = argv[0]
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         @wrapt.decorator

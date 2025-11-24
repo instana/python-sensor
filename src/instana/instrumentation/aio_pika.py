@@ -15,7 +15,7 @@ try:
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+    from instana.util.traceutils import get_tracer_tuple
     from instana.singletons import get_tracer
 
     if TYPE_CHECKING:
@@ -41,10 +41,10 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> Optional["ConfirmationFrameType"]:
-        if tracing_is_off():
+        tracer, parent_span, _ = get_tracer_tuple()
+        if not tracer:
             return await wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         def _bind_args(

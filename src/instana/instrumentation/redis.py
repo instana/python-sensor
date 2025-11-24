@@ -2,15 +2,15 @@
 # (c) Copyright Instana Inc. 2018
 
 
-from typing import Any, Callable, Dict, Tuple
-import wrapt
-
-from instana.log import logger
-from instana.span.span import InstanaSpan
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
-
 try:
+    from typing import Any, Callable, Dict, Tuple
+
     import redis
+    import wrapt
+
+    from instana.log import logger
+    from instana.span.span import InstanaSpan
+    from instana.util.traceutils import get_tracer_tuple
 
     EXCLUDED_PARENT_SPANS = ["redis", "celery-client", "celery-worker"]
 
@@ -44,11 +44,12 @@ try:
         kwargs: Dict[str, Any],
     ) -> object:
         tracer, parent_span, operation_name = get_tracer_tuple()
-        parent_context = parent_span.get_span_context() if parent_span else None
 
         # If we're not tracing, just return
-        if tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS):
+        if not tracer or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
+
+        parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span("redis", span_context=parent_context) as span:
             try:
@@ -70,11 +71,12 @@ try:
         kwargs: Dict[str, Any],
     ) -> object:
         tracer, parent_span, operation_name = get_tracer_tuple()
-        parent_context = parent_span.get_span_context() if parent_span else None
 
         # If we're not tracing, just return
-        if tracing_is_off() or (operation_name in EXCLUDED_PARENT_SPANS):
+        if not tracer or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
+
+        parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span("redis", span_context=parent_context) as span:
             try:

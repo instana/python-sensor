@@ -14,7 +14,7 @@ try:
     import wrapt
 
     from instana.log import logger
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+    from instana.util.traceutils import get_tracer_tuple
 
     if TYPE_CHECKING:
         from cassandra.cluster import ResponseFuture, Session
@@ -73,10 +73,10 @@ try:
         fn: "ResponseFuture",
     ) -> None:
         tracer, parent_span, _ = get_tracer_tuple()
-        parent_context = parent_span.get_span_context() if parent_span else None
-
-        if tracing_is_off():
+        if not tracer:
             return
+
+        parent_context = parent_span.get_span_context() if parent_span else None
 
         attributes = {}
         if isinstance(fn.query, cassandra.query.SimpleStatement):

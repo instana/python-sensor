@@ -4,7 +4,7 @@
 
 from instana.span.span import InstanaSpan
 from instana.log import logger
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple
 
 try:
     import pymongo
@@ -18,7 +18,7 @@ try:
         def started(self, event: pymongo.monitoring.CommandStartedEvent) -> None:
             tracer, parent_span, _ = get_tracer_tuple()
             # return early if we're not tracing
-            if tracing_is_off():
+            if not tracer:
                 return
             parent_context = parent_span.get_span_context() if parent_span else None
 

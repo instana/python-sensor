@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import os
 from typing import Generator
 
@@ -9,14 +10,15 @@ import pytest
 from moto import mock_aws
 
 from instana.options import StandardOptions
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_filter
 
 
 class TestDynamoDB:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.mock = mock_aws()
         self.mock.start()
@@ -37,7 +39,7 @@ class TestDynamoDB:
         assert result["TableNames"][0] == "dynamodb-table"
 
     def test_dynamodb_create_table(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.create_table(
                 TableName="dynamodb-table",
                 KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -73,7 +75,7 @@ class TestDynamoDB:
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb"
         agent.options = StandardOptions()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.create_table(
                 TableName="dynamodb-table",
                 KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -97,7 +99,7 @@ class TestDynamoDB:
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb:createtable"
         agent.options = StandardOptions()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.create_table(
                 TableName="dynamodb-table",
                 KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -144,7 +146,7 @@ class TestDynamoDB:
         assert dynamodb_span.data["dynamodb"]["table"] == "dynamodb-table"
 
     def test_dynamodb_list_tables(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.dynamodb.list_tables()
 
         assert len(result["TableNames"]) == 0
@@ -177,7 +179,7 @@ class TestDynamoDB:
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
         )
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.put_item(
                 TableName="dynamodb-table",
                 Item={"id": {"S": "1"}, "name": {"S": "John"}},
@@ -216,7 +218,7 @@ class TestDynamoDB:
             TableName="dynamodb-table",
             Item=test_item,
         )
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.dynamodb.scan(TableName="dynamodb-table")
 
         assert result["Items"] == [test_item]
@@ -255,7 +257,7 @@ class TestDynamoDB:
             TableName="dynamodb-table",
             Item=test_item,
         )
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             result = self.dynamodb.get_item(
                 TableName="dynamodb-table", Key={"id": {"S": "1"}}
             )
@@ -296,7 +298,7 @@ class TestDynamoDB:
             TableName="dynamodb-table",
             Item=test_item,
         )
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.update_item(
                 TableName="dynamodb-table",
                 Key={"id": {"S": "1"}},  # Specify the key
@@ -339,7 +341,7 @@ class TestDynamoDB:
             TableName="dynamodb-table",
             Item=test_item,
         )
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.delete_item(
                 TableName="dynamodb-table", Key={"id": {"S": "1"}}
             )
@@ -380,7 +382,7 @@ class TestDynamoDB:
         self.dynamodb.put_item(
             TableName="dynamodb-table", Item={"id": {"S": "2"}, "name": {"S": "Jack"}}
         )
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.dynamodb.query(
                 TableName="dynamodb-table",
                 KeyConditionExpression="id = :pk_val",

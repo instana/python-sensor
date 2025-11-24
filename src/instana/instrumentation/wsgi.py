@@ -11,12 +11,13 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
 
 from instana.propagators.format import Format
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import extract_custom_headers
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
+
 
 class InstanaWSGIMiddleware(object):
     """Instana WSGI middleware"""
@@ -26,6 +27,7 @@ class InstanaWSGIMiddleware(object):
 
     def __call__(self, environ: Dict[str, Any], start_response: Callable) -> object:
         env = environ
+        tracer = get_tracer()
 
         # Extract context and start span
         span_context = tracer.extract(Format.HTTP_HEADERS, env)
@@ -98,6 +100,7 @@ def _end_span_after_iterating(
             span.end()
         if token:
             context.detach(token)
+
 
 def _set_request_attributes(span: "InstanaSpan", env: Dict[str, Any]) -> None:
     if "PATH_INFO" in env:

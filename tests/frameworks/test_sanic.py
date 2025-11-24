@@ -1,13 +1,18 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+
 import pytest
 from typing import Generator
 from sanic_testing.testing import SanicTestClient
 
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 from instana.util.ids import hex_id
-from tests.helpers import get_first_span_by_filter, get_first_span_by_name, filter_test_span
+from tests.helpers import (
+    get_first_span_by_filter,
+    get_first_span_by_name,
+    filter_test_span,
+)
 from tests.test_utils import _TraceContextMixin
 from tests.apps.sanic_app.server import app
 
@@ -17,6 +22,7 @@ class TestSanic(_TraceContextMixin):
     def setup_class(cls) -> None:
         cls.client = SanicTestClient(app, port=1337, host="127.0.0.1")
         cls.endpoint = f"{cls.client.host}:{cls.client.port}"
+        cls.tracer = get_tracer()
 
         # Hack together a manual custom headers list; We'll use this in tests
         agent.options.extra_http_headers = [
@@ -31,7 +37,8 @@ class TestSanic(_TraceContextMixin):
         """Setup and Teardown"""
         # setup
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
     def test_vanilla_get(self) -> None:
@@ -49,7 +56,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_basic_get(self) -> None:
         path = "/"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 200
@@ -100,7 +107,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_404(self) -> None:
         path = "/foo/not_an_int"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 404
@@ -151,7 +158,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_sanic_exception(self) -> None:
         path = "/wrong"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 400
@@ -202,7 +209,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_500_instana_exception(self) -> None:
         path = "/instana_exception"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 500
@@ -253,7 +260,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_500(self) -> None:
         path = "/test_request_args"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 500
@@ -304,7 +311,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_path_templates(self) -> None:
         path = "/foo/1"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 200
@@ -355,8 +362,8 @@ class TestSanic(_TraceContextMixin):
 
     def test_secret_scrubbing(self) -> None:
         path = "/"
-        with tracer.start_as_current_span("test"):
-            request, response = self.client.get(path+"?secret=shhh")
+        with self.tracer.start_as_current_span("test"):
+            request, response = self.client.get(path + "?secret=shhh")
 
         assert response.status_code == 200
 
@@ -406,7 +413,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_synthetic_request(self) -> None:
         path = "/"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             headers = {
                 "X-INSTANA-SYNTHETIC": "1",
             }
@@ -464,7 +471,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_request_header_capture(self) -> None:
         path = "/"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             headers = {
                 "X-Capture-This": "this",
                 "X-Capture-That": "that",
@@ -515,7 +522,7 @@ class TestSanic(_TraceContextMixin):
 
     def test_response_header_capture(self) -> None:
         path = "/response_headers"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             request, response = self.client.get(path)
 
         assert response.status_code == 200

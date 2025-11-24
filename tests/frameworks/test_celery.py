@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import time
 from typing import Generator, List
 
@@ -12,7 +13,7 @@ import celery.contrib.testing
 import celery.contrib.testing.worker
 import pytest
 
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from instana.span.span import InstanaSpan
 from tests.helpers import get_first_span_by_filter
 
@@ -48,7 +49,8 @@ def filter_out_ping_tasks(
 class TestCelery:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         yield
 
@@ -57,7 +59,7 @@ class TestCelery:
         celery_app: celery.app.base.Celery,
         celery_worker: celery.contrib.testing.worker.TestWorkController,
     ) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             _ = add.apply_async(args=(4, 5))
 
         # Wait for jobs to finish
@@ -110,7 +112,7 @@ class TestCelery:
         celery_app: celery.app.base.Celery,
         celery_worker: celery.contrib.testing.worker.TestWorkController,
     ) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             _ = add.delay(4, 5)
 
         # Wait for jobs to finish
@@ -163,7 +165,7 @@ class TestCelery:
         celery_app: celery.app.base.Celery,
         celery_worker: celery.contrib.testing.worker.TestWorkController,
     ) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             _ = celery_app.send_task("tests.frameworks.test_celery.add", (1, 2))
 
         # Wait for jobs to finish
@@ -216,7 +218,7 @@ class TestCelery:
         celery_app: celery.app.base.Celery,
         celery_worker: celery.contrib.testing.worker.TestWorkController,
     ) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             _ = will_raise_error.apply_async()
 
         # Wait for jobs to finish

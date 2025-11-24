@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import logging
 from typing import Generator
 from unittest.mock import patch
@@ -8,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from opentelemetry.trace import SpanKind
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.runtime import get_runtime_env_info
 
 
@@ -18,7 +19,8 @@ class TestLogging:
         """SetUp and TearDown"""
         # setup
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.logger = logging.getLogger("unit test")
         yield
@@ -28,7 +30,7 @@ class TestLogging:
 
     def test_no_span(self) -> None:
         self.logger.setLevel(logging.INFO)
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.info("info message")
 
         spans = self.recorder.queued_spans()
@@ -36,7 +38,7 @@ class TestLogging:
         assert len(spans) == 1
 
     def test_extra_span(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("foo %s", "bar")
 
         spans = self.recorder.queued_spans()
@@ -46,7 +48,7 @@ class TestLogging:
         assert spans[0].data["log"].get("message") == "foo bar"
 
     def test_log_with_tuple(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("foo %s", ("bar",))
 
         spans = self.recorder.queued_spans()
@@ -56,7 +58,7 @@ class TestLogging:
         assert spans[0].data["log"].get("message") == "foo ('bar',)"
 
     def test_log_with_dict(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("foo %s", {"bar": 18})
 
         spans = self.recorder.queued_spans()
@@ -66,7 +68,7 @@ class TestLogging:
         assert spans[0].data["log"].get("message") == "foo {'bar': 18}"
 
     def test_parameters(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 a = 42
                 b = 0
@@ -98,7 +100,7 @@ class TestLogging:
         assert spans[0].data["log"].get("message") == "foo bar"
 
     def test_exception(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with patch(
                 "instana.span.span.InstanaSpan.add_event",
                 side_effect=Exception("mocked error"),
@@ -121,7 +123,7 @@ class TestLogging:
         def log_custom_warning():
             self.logger.warning("foo %s", "bar")
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             log_custom_warning()
 
         assert caplog.records[-1].funcName == "log_custom_warning"
@@ -156,7 +158,7 @@ class TestLogging:
         def main():
             log_custom_warning()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             main()
 
         assert caplog.records[-1].funcName == expected_caller_name
@@ -174,7 +176,8 @@ class TestLoggingDisabling:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         # Setup
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.logger = logging.getLogger("unit test")
 
@@ -188,7 +191,7 @@ class TestLoggingDisabling:
         agent.options.allow_exit_as_root = False
 
     def test_logging_enabled(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("test message")
 
         spans = self.recorder.queued_spans()
@@ -200,7 +203,7 @@ class TestLoggingDisabling:
         # Disable logging spans
         agent.options.disabled_spans = ["logging"]
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("test message")
 
         spans = self.recorder.queued_spans()
@@ -214,7 +217,7 @@ class TestLoggingDisabling:
         original_options = agent.options
         agent.options = type(original_options)()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("test message")
 
         spans = self.recorder.queued_spans()
@@ -232,7 +235,7 @@ class TestLoggingDisabling:
         tracing_config = {"disable": [{"logging": True}]}
         agent.options.set_tracing(tracing_config)
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.logger.warning("test message")
 
         spans = self.recorder.queued_spans()

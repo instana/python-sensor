@@ -1,13 +1,14 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 from typing import Any, Dict, Generator, Optional
 import aiohttp
 import asyncio
 
 import pytest
 
-from instana.singletons import tracer, agent
+from instana.singletons import agent, get_tracer
 from instana.util.ids import hex_id
 
 import tests.apps.flask_app  # noqa: F401
@@ -34,7 +35,8 @@ class TestAiohttpClient:
         """SetUp and TearDown"""
         # setup
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         # New event loop for every test
@@ -47,7 +49,7 @@ class TestAiohttpClient:
 
     def test_client_get(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
@@ -136,7 +138,7 @@ class TestAiohttpClient:
 
     def test_client_get_301(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/301")
 
@@ -186,7 +188,7 @@ class TestAiohttpClient:
 
     def test_client_get_405(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/405")
 
@@ -232,7 +234,7 @@ class TestAiohttpClient:
 
     def test_client_get_500(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/500")
 
@@ -279,7 +281,7 @@ class TestAiohttpClient:
 
     def test_client_get_504(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/504")
 
@@ -326,7 +328,7 @@ class TestAiohttpClient:
 
     def test_client_get_with_params_to_scrub(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(
                         session, testenv["flask_server"], params={"secret": "yeah"}
@@ -378,7 +380,7 @@ class TestAiohttpClient:
         agent.options.extra_http_headers = ["X-Capture-This"]
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(
                         session, testenv["flask_server"] + "/response_headers"
@@ -409,7 +411,10 @@ class TestAiohttpClient:
 
         assert aiohttp_span.n == "aiohttp-client"
         assert aiohttp_span.data["http"]["status"] == 200
-        assert aiohttp_span.data["http"]["url"] == testenv["flask_server"] + "/response_headers"
+        assert (
+            aiohttp_span.data["http"]["url"]
+            == testenv["flask_server"] + "/response_headers"
+        )
         assert aiohttp_span.data["http"]["method"] == "GET"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
@@ -431,14 +436,14 @@ class TestAiohttpClient:
 
     def test_client_error(self) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, "http://doesnotexist:10/")
 
         response = None
         try:
             response = self.loop.run_until_complete(test())
-        except:
+        except Exception:
             pass
 
         spans = self.recorder.queued_spans()
@@ -476,7 +481,7 @@ class TestAiohttpClient:
         )
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
@@ -492,7 +497,7 @@ class TestAiohttpClient:
 
     def test_client_get_provided_tracing_config(self, mocker) -> None:
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession(trace_configs=[]) as session:
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
@@ -511,7 +516,7 @@ class TestAiohttpClient:
         }
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 async with aiohttp.ClientSession() as session:
                     return await self.fetch(
                         session, testenv["flask_server"] + "/", headers=request_headers

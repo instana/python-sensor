@@ -11,7 +11,7 @@ import pytest
 import redis
 
 from instana.options import StandardOptions
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 from tests.helpers import testenv
 
@@ -20,7 +20,8 @@ class TestRedis:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """Clear all spans before a test run"""
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.client = redis.Redis(host=testenv["redis_host"], db=testenv["redis_db"])
         yield
@@ -30,7 +31,7 @@ class TestRedis:
 
     def test_set_get(self) -> None:
         result = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.set("fooy", "barY")
             result = self.client.get("foox")
@@ -197,7 +198,7 @@ class TestRedis:
 
     def test_set_incr_get(self) -> None:
         result = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("counter", "10")
             self.client.incr("counter")
             result = self.client.get("counter")
@@ -284,7 +285,7 @@ class TestRedis:
 
     def test_old_redis_client(self) -> None:
         result = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.set("fooy", "barY")
             result = self.client.get("foox")
@@ -372,7 +373,7 @@ class TestRedis:
 
     def test_pipelined_requests(self) -> None:
         result = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             pipe = self.client.pipeline()
             pipe.set("foox", "barX")
             pipe.set("fooy", "barY")
@@ -424,20 +425,20 @@ class TestRedis:
     )
     @patch("instana.span.span.InstanaSpan.record_exception")
     def test_execute_command_with_instana_exception(self, mock_record_func, _) -> None:
-        with tracer.start_as_current_span("test"), pytest.raises(
+        with self.tracer.start_as_current_span("test"), pytest.raises(
             Exception, match="test-error"
         ):
             self.client.set("counter", "10")
         mock_record_func.assert_called()
 
     def test_execute_comand_with_instana_tracing_off(self) -> None:
-        with tracer.start_as_current_span("redis"):
+        with self.tracer.start_as_current_span("redis"):
             response = self.client.set("counter", "10")
             assert response
 
     def test_execute_with_instana_tracing_off(self) -> None:
         result = None
-        with tracer.start_as_current_span("redis"):
+        with self.tracer.start_as_current_span("redis"):
             pipe = self.client.pipeline()
             pipe.set("foox", "barX")
             pipe.set("fooy", "barY")
@@ -449,7 +450,7 @@ class TestRedis:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         caplog.set_level(logging.DEBUG, logger="instana")
-        with tracer.start_as_current_span("test"), patch(
+        with self.tracer.start_as_current_span("test"), patch(
             "instana.instrumentation.redis.collect_attributes",
             side_effect=Exception("test-error"),
         ):
@@ -466,7 +467,7 @@ class TestRedis:
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis"
         agent.options = StandardOptions()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.get("foox")
 
@@ -480,7 +481,7 @@ class TestRedis:
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set"
         agent.options = StandardOptions()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.get("foox")
 
@@ -501,7 +502,7 @@ class TestRedis:
     def test_ignore_redis_multiple_commands(self) -> None:
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set,get"
         agent.options = StandardOptions()
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.get("foox")
 
@@ -518,7 +519,7 @@ class TestRedis:
     def test_ignore_redis_with_another_instrumentation(self) -> None:
         os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set;something_else:something"
         agent.options = StandardOptions()
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.get("foox")
 

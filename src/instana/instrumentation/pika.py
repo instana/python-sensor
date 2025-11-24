@@ -2,6 +2,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+
 try:
     import types
     from typing import (
@@ -20,7 +21,7 @@ try:
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.singletons import tracer
+    from instana.singletons import get_tracer
     from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
     if TYPE_CHECKING:
@@ -142,6 +143,7 @@ try:
             properties: pika.BasicProperties,
             body: str,
         ) -> None:
+            tracer = get_tracer()
             parent_context = tracer.extract(
                 Format.HTTP_HEADERS, properties.headers, disable_w3c_trace_context=True
             )
@@ -189,6 +191,7 @@ try:
             properties: pika.BasicProperties,
             body: str,
         ) -> None:
+            tracer = get_tracer()
             parent_context = tracer.extract(
                 Format.HTTP_HEADERS, properties.headers, disable_w3c_trace_context=True
             )
@@ -230,6 +233,7 @@ try:
         (queue, args, kwargs) = _bind_args(*args, **kwargs)
 
         def _consume(gen: Iterator[object]) -> object:
+            tracer = get_tracer()
             for yielded in gen:
                 # Bypass the delivery created due to inactivity timeout
                 if not yielded or not any(yielded):

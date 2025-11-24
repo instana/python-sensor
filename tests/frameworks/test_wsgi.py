@@ -1,29 +1,31 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import time
 import urllib3
 import pytest
 from typing import Generator
 
 from instana.util.ids import hex_id
-from tests.apps import bottle_app
 from tests.helpers import testenv
-from instana.singletons import agent, tracer
+from tests.apps import bottle_app  # noqa: F401
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 
 
 class TestWSGI:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        """ Clear all spans before a test run """
+        """Clear all spans before a test run"""
         self.http = urllib3.PoolManager()
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         time.sleep(0.1)
 
     def test_vanilla_requests(self) -> None:
-        response = self.http.request('GET', testenv["wsgi_server"] + '/')
+        response = self.http.request("GET", testenv["wsgi_server"] + "/")
         spans = self.recorder.queued_spans()
 
         assert 1 == len(spans)
@@ -31,8 +33,8 @@ class TestWSGI:
         assert response.status == 200
 
     def test_get_request(self) -> None:
-        with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/')
+        with self.tracer.start_as_current_span("test"):
+            response = self.http.request("GET", testenv["wsgi_server"] + "/")
 
         spans = self.recorder.queued_spans()
 
@@ -46,20 +48,20 @@ class TestWSGI:
         assert response
         assert 200 == response.status
 
-        assert 'X-INSTANA-T' in response.headers
-        assert int(response.headers['X-INSTANA-T'], 16)
+        assert "X-INSTANA-T" in response.headers
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
-        assert 'X-INSTANA-S' in response.headers
-        assert int(response.headers['X-INSTANA-S'], 16)
+        assert "X-INSTANA-S" in response.headers
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
-        assert 'X-INSTANA-L' in response.headers
-        assert response.headers['X-INSTANA-L'] == '1'
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
 
-        assert 'Server-Timing' in response.headers
+        assert "Server-Timing" in response.headers
         server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
-        assert response.headers['Server-Timing'] == server_timing_value
+        assert response.headers["Server-Timing"] == server_timing_value
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -80,19 +82,19 @@ class TestWSGI:
 
         # wsgi
         assert "wsgi" == wsgi_span.n
-        assert '127.0.0.1:' + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
-        assert '/' == wsgi_span.data["http"]["path"]
-        assert 'GET' == wsgi_span.data["http"]["method"]
+        assert (
+            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+        )
+        assert "/" == wsgi_span.data["http"]["path"]
+        assert "GET" == wsgi_span.data["http"]["method"]
         assert "200" == wsgi_span.data["http"]["status"]
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
     def test_synthetic_request(self) -> None:
-        headers = {
-            'X-INSTANA-SYNTHETIC': '1'
-        }
-        with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=headers)
+        headers = {"X-INSTANA-SYNTHETIC": "1"}
+        with self.tracer.start_as_current_span("test"):
+            _ = self.http.request("GET", testenv["wsgi_server"] + "/", headers=headers)
 
         spans = self.recorder.queued_spans()
 
@@ -108,8 +110,10 @@ class TestWSGI:
         assert test_span.sy is None
 
     def test_secret_scrubbing(self) -> None:
-        with tracer.start_as_current_span("test"):
-            response = self.http.request('GET', testenv["wsgi_server"] + '/?secret=shhh')
+        with self.tracer.start_as_current_span("test"):
+            response = self.http.request(
+                "GET", testenv["wsgi_server"] + "/?secret=shhh"
+            )
 
         spans = self.recorder.queued_spans()
 
@@ -123,20 +127,20 @@ class TestWSGI:
         assert response
         assert 200 == response.status
 
-        assert 'X-INSTANA-T' in response.headers
-        assert int(response.headers['X-INSTANA-T'], 16)
+        assert "X-INSTANA-T" in response.headers
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
-        assert 'X-INSTANA-S' in response.headers
-        assert int(response.headers['X-INSTANA-S'], 16)
+        assert "X-INSTANA-S" in response.headers
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
-        assert 'X-INSTANA-L' in response.headers
-        assert response.headers['X-INSTANA-L'] == '1'
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
 
-        assert 'Server-Timing' in response.headers
+        assert "Server-Timing" in response.headers
         server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
-        assert response.headers['Server-Timing'] == server_timing_value
+        assert response.headers["Server-Timing"] == server_timing_value
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -153,20 +157,24 @@ class TestWSGI:
 
         # wsgi
         assert "wsgi" == wsgi_span.n
-        assert '127.0.0.1:' + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
-        assert '/' == wsgi_span.data["http"]["path"]
-        assert 'secret=<redacted>' == wsgi_span.data["http"]["params"]
-        assert 'GET' == wsgi_span.data["http"]["method"]
+        assert (
+            "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
+        )
+        assert "/" == wsgi_span.data["http"]["path"]
+        assert "secret=<redacted>" == wsgi_span.data["http"]["params"]
+        assert "GET" == wsgi_span.data["http"]["method"]
         assert "200" == wsgi_span.data["http"]["status"]
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
     def test_with_incoming_context(self) -> None:
         request_headers = dict()
-        request_headers['X-INSTANA-T'] = '0000000000000001'
-        request_headers['X-INSTANA-S'] = '0000000000000001'
+        request_headers["X-INSTANA-T"] = "0000000000000001"
+        request_headers["X-INSTANA-S"] = "0000000000000001"
 
-        response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=request_headers)
+        response = self.http.request(
+            "GET", testenv["wsgi_server"] + "/", headers=request_headers
+        )
 
         assert response
         assert 200 == response.status
@@ -181,27 +189,29 @@ class TestWSGI:
         assert wsgi_span.t == 1
         assert wsgi_span.p == 1
 
-        assert 'X-INSTANA-T' in response.headers
-        assert int(response.headers['X-INSTANA-T'], 16)
+        assert "X-INSTANA-T" in response.headers
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
-        assert 'X-INSTANA-S' in response.headers
-        assert int(response.headers['X-INSTANA-S'], 16)
+        assert "X-INSTANA-S" in response.headers
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
-        assert 'X-INSTANA-L' in response.headers
-        assert response.headers['X-INSTANA-L'] == '1'
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
 
-        assert 'Server-Timing' in response.headers
+        assert "Server-Timing" in response.headers
         server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
-        assert response.headers['Server-Timing'] == server_timing_value
+        assert response.headers["Server-Timing"] == server_timing_value
 
     def test_with_incoming_mixed_case_context(self) -> None:
         request_headers = dict()
-        request_headers['X-InSTANa-T'] = '0000000000000001'
-        request_headers['X-instana-S'] = '0000000000000001'
+        request_headers["X-InSTANa-T"] = "0000000000000001"
+        request_headers["X-instana-S"] = "0000000000000001"
 
-        response = self.http.request('GET', testenv["wsgi_server"] + '/', headers=request_headers)
+        response = self.http.request(
+            "GET", testenv["wsgi_server"] + "/", headers=request_headers
+        )
 
         assert response
         assert 200 == response.status
@@ -216,27 +226,27 @@ class TestWSGI:
         assert wsgi_span.t == 1
         assert wsgi_span.p == 1
 
-        assert 'X-INSTANA-T' in response.headers
-        assert int(response.headers['X-INSTANA-T'], 16)
+        assert "X-INSTANA-T" in response.headers
+        assert int(response.headers["X-INSTANA-T"], 16)
         assert response.headers["X-INSTANA-T"] == hex_id(wsgi_span.t)
 
-        assert 'X-INSTANA-S' in response.headers
-        assert int(response.headers['X-INSTANA-S'], 16)
+        assert "X-INSTANA-S" in response.headers
+        assert int(response.headers["X-INSTANA-S"], 16)
         assert response.headers["X-INSTANA-S"] == hex_id(wsgi_span.s)
 
-        assert 'X-INSTANA-L' in response.headers
-        assert response.headers['X-INSTANA-L'] == '1'
+        assert "X-INSTANA-L" in response.headers
+        assert response.headers["X-INSTANA-L"] == "1"
 
-        assert 'Server-Timing' in response.headers
+        assert "Server-Timing" in response.headers
         server_timing_value = f"intid;desc={hex_id(wsgi_span.t)}"
-        assert response.headers['Server-Timing'] == server_timing_value
+        assert response.headers["Server-Timing"] == server_timing_value
 
     def test_response_header_capture(self) -> None:
         # Hack together a manual custom headers list
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["wsgi_server"] + "/response_headers"
             )
@@ -271,7 +281,9 @@ class TestWSGI:
 
         # wsgi
         assert wsgi_span.n == "wsgi"
-        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["wsgi_port"])
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
         assert wsgi_span.data["http"]["path"] == "/response_headers"
         assert wsgi_span.data["http"]["method"] == "GET"
         assert wsgi_span.data["http"]["status"] == "200"
@@ -294,7 +306,7 @@ class TestWSGI:
             "X-Capture-That-Too": "that too",
         }
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", testenv["wsgi_server"] + "/", headers=request_headers
             )
@@ -328,7 +340,9 @@ class TestWSGI:
 
         # wsgi
         assert wsgi_span.n == "wsgi"
-        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(testenv["wsgi_port"])
+        assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
+            testenv["wsgi_port"]
+        )
         assert wsgi_span.data["http"]["path"] == "/"
         assert wsgi_span.data["http"]["method"] == "GET"
         assert wsgi_span.data["http"]["status"] == "200"

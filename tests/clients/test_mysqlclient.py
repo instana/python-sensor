@@ -1,11 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import sys
 import MySQLdb
 import pytest
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from tests.helpers import testenv
 
 
@@ -42,9 +43,10 @@ class TestMySQLPython:
         setup_cursor.close()
 
         self.cursor = self.db.cursor()
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
-        tracer.cur_ctx = None
+        self.tracer.cur_ctx = None
         yield
         if self.cursor and self.cursor.connection.open:
             self.cursor.close()
@@ -62,7 +64,7 @@ class TestMySQLPython:
         assert len(spans) == 0
 
     def test_basic_query(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             affected_rows = self.cursor.execute("""SELECT * from users""")
             result = self.cursor.fetchone()
 
@@ -110,7 +112,7 @@ class TestMySQLPython:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_basic_insert(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             affected_rows = self.cursor.execute(
                 """INSERT INTO users(name, email) VALUES(%s, %s)""",
                 ("beaker", "beaker@muppets.com"),
@@ -140,7 +142,7 @@ class TestMySQLPython:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_executemany(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             affected_rows = self.cursor.executemany(
                 "INSERT INTO users(name, email) VALUES(%s, %s)",
                 [("beaker", "beaker@muppets.com"), ("beaker", "beaker@muppets.com")],
@@ -171,7 +173,7 @@ class TestMySQLPython:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_call_proc(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             callproc_result = self.cursor.callproc("test_proc", ("beaker",))
 
         assert isinstance(callproc_result, tuple)
@@ -197,7 +199,7 @@ class TestMySQLPython:
     def test_error_capture(self):
         affected_rows = None
         try:
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 affected_rows = self.cursor.execute("""SELECT * from blah""")
         except Exception:
             pass
@@ -227,7 +229,7 @@ class TestMySQLPython:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_connect_cursor_ctx_mgr(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with self.db as connection:
                 with connection.cursor() as cursor:
                     affected_rows = cursor.execute("""SELECT * from users""")
@@ -252,7 +254,7 @@ class TestMySQLPython:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_connect_ctx_mgr(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with self.db as connection:
                 cursor = connection.cursor()
                 cursor.execute("""SELECT * from users""")
@@ -276,7 +278,7 @@ class TestMySQLPython:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_cursor_ctx_mgr(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             connection = self.db
             with connection.cursor() as cursor:
                 affected_rows = cursor.execute("""SELECT * from users""")

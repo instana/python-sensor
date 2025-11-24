@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import asyncio
 from typing import Any, Dict, Generator, Optional
 
@@ -9,7 +10,7 @@ import pytest
 
 import tests.apps.flask_app  # noqa: F401
 from instana.configurator import config
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from tests.helpers import testenv
 
 
@@ -32,7 +33,8 @@ class TestAsyncio:
         """SetUp and TearDown"""
         # setup
         # Clear all spans before a test run
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         # New event loop for every test
@@ -53,7 +55,7 @@ class TestAsyncio:
                 return await self.fetch(session, testenv["flask_server"] + "/")
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 asyncio.ensure_future(run_later("Hello OTel"))
             await asyncio.sleep(0.5)
 
@@ -82,7 +84,7 @@ class TestAsyncio:
                 return await self.fetch(session, testenv["flask_server"] + "/")
 
         async def test():
-            with tracer.start_as_current_span("test"):
+            with self.tracer.start_as_current_span("test"):
                 asyncio.ensure_future(run_later("Hello OTel"))
             await asyncio.sleep(0.5)
 
@@ -105,7 +107,7 @@ class TestAsyncio:
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
             async def test():
-                with tracer.start_as_current_span("test"):
+                with self.tracer.start_as_current_span("test"):
                     asyncio.create_task(run_later("Hello OTel"))
                 await asyncio.sleep(0.5)
 
@@ -134,7 +136,7 @@ class TestAsyncio:
                     return await self.fetch(session, testenv["flask_server"] + "/")
 
             async def test():
-                with tracer.start_as_current_span("test"):
+                with self.tracer.start_as_current_span("test"):
                     asyncio.create_task(run_later("Hello OTel"))
                 await asyncio.sleep(0.5)
 

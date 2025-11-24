@@ -8,7 +8,7 @@ import wrapt
 
 from instana.log import logger
 from instana.propagators.format import Format
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from instana.util.traceutils import get_tracer_tuple, tracing_is_off
 
 if TYPE_CHECKING:
@@ -98,6 +98,7 @@ try:
 
         def callback_with_instana(message):
             if message.attributes:
+                tracer = get_tracer()
                 parent_context = tracer.extract(
                     Format.TEXT_MAP, message.attributes, disable_w3c_trace_context=True
                 )

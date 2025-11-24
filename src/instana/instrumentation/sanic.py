@@ -23,7 +23,7 @@ try:
     from opentelemetry import context, trace
     from opentelemetry.semconv.trace import SpanAttributes
 
-    from instana.singletons import tracer, agent
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
     from instana.propagators.format import Format
@@ -44,6 +44,7 @@ try:
         @app.middleware("request")
         def request_with_instana(request: Request) -> None:
             try:
+                tracer = get_tracer()
                 if "http" not in request.scheme:
                     return
 
@@ -99,6 +100,7 @@ try:
         @app.middleware("response")
         def response_with_instana(request: Request, response: HTTPResponse) -> None:
             try:
+                tracer = get_tracer()
                 if not hasattr(request.ctx, "span"):  # pragma: no cover
                     return
                 span = request.ctx.span

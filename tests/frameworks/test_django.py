@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import os
 
 import urllib3
@@ -11,7 +12,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 from instana.util.ids import hex_id
 from tests.apps.app_django import INSTALLED_APPS
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from tests.helpers import (
     fail_with_message_and_span_dump,
     get_first_span_by_filter,
@@ -27,7 +28,8 @@ class TestDjango(StaticLiveServerTestCase):
     def _resource(self) -> Generator[None, None, None]:
         """Setup and Teardown"""
         self.http = urllib3.PoolManager()
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         # clear all spans before a test run
         self.recorder.clear_spans()
         yield
@@ -35,7 +37,7 @@ class TestDjango(StaticLiveServerTestCase):
         os.environ["INSTANA_DISABLE_W3C_TRACE_CORRELATION"] = ""
 
     def test_basic_request(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", self.live_server_url + "/", fields={"test": 1}
             )
@@ -91,7 +93,7 @@ class TestDjango(StaticLiveServerTestCase):
     def test_synthetic_request(self) -> None:
         headers = {"X-INSTANA-SYNTHETIC": "1"}
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", self.live_server_url + "/", headers=headers
             )
@@ -113,7 +115,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert test_span.sy is None
 
     def test_request_with_error(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", self.live_server_url + "/cause_error")
 
         assert response
@@ -127,15 +129,21 @@ class TestDjango(StaticLiveServerTestCase):
             msg = "Expected 3 spans but got %d" % span_count
             fail_with_message_and_span_dump(msg, spans)
 
-        filter = lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
+        def filter(span):
+            return span.n == "sdk" and span.data["sdk"]["name"] == "test"
+
         test_span = get_first_span_by_filter(spans, filter)
         assert test_span
 
-        filter = lambda span: span.n == "urllib3"
+        def filter(span):
+            return span.n == "urllib3"
+
         urllib3_span = get_first_span_by_filter(spans, filter)
         assert urllib3_span
 
-        filter = lambda span: span.n == "django"
+        def filter(span):
+            return span.n == "django"
+
         django_span = get_first_span_by_filter(spans, filter)
         assert django_span
 
@@ -174,7 +182,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert django_span.stack is None
 
     def test_request_with_not_found(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", self.live_server_url + "/not_found")
 
         assert response
@@ -188,7 +196,9 @@ class TestDjango(StaticLiveServerTestCase):
             msg = "Expected 3 spans but got %d" % span_count
             fail_with_message_and_span_dump(msg, spans)
 
-        filter = lambda span: span.n == "django"
+        def filter(span):
+            return span.n == "django"
+
         django_span = get_first_span_by_filter(spans, filter)
         assert django_span
 
@@ -196,7 +206,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert 404 == django_span.data["http"]["status"]
 
     def test_request_with_not_found_no_route(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", self.live_server_url + "/no_route")
 
         assert response
@@ -210,7 +220,9 @@ class TestDjango(StaticLiveServerTestCase):
             msg = "Expected 3 spans but got %d" % span_count
             fail_with_message_and_span_dump(msg, spans)
 
-        filter = lambda span: span.n == "django"
+        def filter(span):
+            return span.n == "django"
+
         django_span = get_first_span_by_filter(spans, filter)
         assert django_span
         assert django_span.data["http"]["path_tpl"] is None
@@ -218,7 +230,7 @@ class TestDjango(StaticLiveServerTestCase):
         assert 404 == django_span.data["http"]["status"]
 
     def test_complex_request(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", self.live_server_url + "/complex")
 
         assert response
@@ -283,7 +295,7 @@ class TestDjango(StaticLiveServerTestCase):
 
         request_headers = {"X-Capture-This": "this", "X-Capture-That": "that"}
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", self.live_server_url + "/", headers=request_headers
             )
@@ -329,7 +341,7 @@ class TestDjango(StaticLiveServerTestCase):
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This-Too", "X-Capture-That-Too"]
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             response = self.http.request(
                 "GET", self.live_server_url + "/response_with_headers"
             )

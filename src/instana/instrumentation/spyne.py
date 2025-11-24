@@ -1,14 +1,23 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
-    import spyne
+    import spyne  # noqa: F401
     import wrapt
-    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple, Iterable, Type, Optional
+    from typing import (
+        TYPE_CHECKING,
+        Dict,
+        Any,
+        Callable,
+        Tuple,
+        Iterable,
+        Type,
+        Optional,
+    )
 
     from types import SimpleNamespace
 
     from instana.log import logger
-    from instana.singletons import agent, tracer
+    from instana.singletons import agent, get_tracer
     from instana.propagators.format import Format
     from instana.util.secrets import strip_secrets_from_query
 
@@ -32,12 +41,13 @@ try:
         if "SERVER_PORT" in headers:
             span.set_attribute("rpc.port", headers["SERVER_PORT"])
 
-    def record_error(span: "InstanaSpan", response_string: str, error: Optional[Type[Exception]]) -> None:
+    def record_error(
+        span: "InstanaSpan", response_string: str, error: Optional[Type[Exception]]
+    ) -> None:
         resp_code = int(response_string.split()[0])
 
         if 500 <= resp_code:
             span.record_exception(error)
-
 
     @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication.handle_error")
     def handle_error_with_instana(
@@ -47,6 +57,7 @@ try:
         kwargs: Dict[str, Any],
     ) -> Iterable[object]:
         ctx = args[0]
+        tracer = get_tracer()
 
         # span created inside process_request() will be handled by finalize() method
         if ctx.udc and ctx.udc.span:
@@ -55,7 +66,9 @@ try:
         headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-        with tracer.start_as_current_span("rpc-server", span_context=span_context) as span:
+        with tracer.start_as_current_span(
+            "rpc-server", span_context=span_context
+        ) as span:
             set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
@@ -96,6 +109,7 @@ try:
         kwargs: Dict[str, Any],
     ) -> None:
         ctx = args[0]
+        tracer = get_tracer()
         headers = ctx.transport.req_env
         span_context = tracer.extract(Format.HTTP_HEADERS, headers)
 

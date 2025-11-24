@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 import logging
 import sys
 from multiprocessing.pool import ThreadPool
@@ -15,7 +16,7 @@ from instana.instrumentation.urllib3 import (
     extract_custom_headers,
     collect_response,
 )
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 
 import tests.apps.flask_app  # noqa: F401
 from tests.helpers import testenv
@@ -29,10 +30,11 @@ class TestUrllib3:
     @pytest.fixture(autouse=True)
     def _setup(self) -> Generator[None, None, None]:
         """SetUp and TearDown"""
+        self.tracer = get_tracer()
         # setup
         # Clear all spans before a test run
         self.http = urllib3.PoolManager()
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         yield
         # teardown
@@ -89,7 +91,7 @@ class TestUrllib3:
         assert len(spans) == 16
 
     def test_get_request(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", testenv["flask_server"] + "/")
 
         spans = self.recorder.queued_spans()
@@ -138,7 +140,7 @@ class TestUrllib3:
 
     def test_get_request_https(self):
         request_url = "https://jsonplaceholder.typicode.com:443/todos/1"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", request_url)
 
         spans = self.recorder.queued_spans()
@@ -182,7 +184,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert urllib3_span.t == wsgi_span.t
@@ -216,7 +218,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_get_request_with_query(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", testenv["flask_server"] + "/?one=1&two=2")
 
         spans = self.recorder.queued_spans()
@@ -228,7 +230,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -266,7 +268,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_get_request_with_alt_query(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request(
                 "GET", testenv["flask_server"] + "/", fields={"one": "1", "two": 2}
             )
@@ -280,7 +282,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -318,7 +320,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_put_request(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("PUT", testenv["flask_server"] + "/notfound")
 
         spans = self.recorder.queued_spans()
@@ -330,7 +332,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 404
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -367,7 +369,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_301_redirect(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", testenv["flask_server"] + "/301")
 
         spans = self.recorder.queued_spans()
@@ -381,7 +383,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         traceId = test_span.t
@@ -443,7 +445,7 @@ class TestUrllib3:
         assert len(urllib3_span2.stack) > 1
 
     def test_302_redirect(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", testenv["flask_server"] + "/302")
 
         spans = self.recorder.queued_spans()
@@ -457,7 +459,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         traceId = test_span.t
@@ -519,7 +521,7 @@ class TestUrllib3:
         assert len(urllib3_span2.stack) > 1
 
     def test_5xx_request(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", testenv["flask_server"] + "/504")
 
         spans = self.recorder.queued_spans()
@@ -531,7 +533,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 504
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         traceId = test_span.t
@@ -569,7 +571,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_exception_logging(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 r = self.http.request("GET", testenv["flask_server"] + "/exception")
             except Exception:
@@ -597,7 +599,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 500
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         traceId = test_span.t
@@ -641,7 +643,7 @@ class TestUrllib3:
 
     def test_client_error(self):
         r = None
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 r = self.http.request(
                     "GET",
@@ -683,7 +685,7 @@ class TestUrllib3:
     def test_requests_pkg_get(self):
         self.recorder.clear_spans()
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = requests.get(testenv["flask_server"] + "/", timeout=2)
 
         spans = self.recorder.queued_spans()
@@ -695,7 +697,7 @@ class TestUrllib3:
 
         assert r
         assert r.status_code == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -735,7 +737,7 @@ class TestUrllib3:
         my_custom_headers = dict()
         my_custom_headers["X-PGL-1"] = "1"
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = requests.get(
                 testenv["flask_server"] + "/", timeout=2, headers=my_custom_headers
             )
@@ -749,7 +751,7 @@ class TestUrllib3:
 
         assert r
         assert r.status_code == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -786,7 +788,7 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_requests_pkg_put(self):
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = requests.put(testenv["flask_server"] + "/notfound")
 
         spans = self.recorder.queued_spans()
@@ -797,7 +799,7 @@ class TestUrllib3:
         test_span = spans[2]
 
         assert r.status_code == 404
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -837,7 +839,7 @@ class TestUrllib3:
         original_extra_http_headers = agent.options.extra_http_headers
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request("GET", testenv["flask_server"] + "/response_headers")
 
         spans = self.recorder.queued_spans()
@@ -849,7 +851,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -903,7 +905,7 @@ class TestUrllib3:
             "X-Capture-This-Too": "this too",
             "X-Capture-That-Too": "that too",
         }
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             r = self.http.request(
                 "GET", testenv["flask_server"] + "/", headers=request_headers
             )
@@ -917,7 +919,7 @@ class TestUrllib3:
 
         assert r
         assert r.status == 200
-        # assert not tracer.active_span
+        # assert not self.tracer.active_span
 
         # Same traceId
         assert test_span.t == urllib3_span.t
@@ -996,7 +998,7 @@ class TestUrllib3:
     def test_internal_span_creation_with_url_in_hostname(self) -> None:
         internal_url = "https://com.instana.example.com/api/test"
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 self.http.request("GET", internal_url, retries=False, timeout=1)
             except Exception:
@@ -1015,7 +1017,7 @@ class TestUrllib3:
     def test_internal_span_creation_with_url_in_path(self) -> None:
         internal_url_path = "https://example.com/com.instana/api/test"
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 self.http.request("GET", internal_url_path, retries=False, timeout=1)
             except Exception:

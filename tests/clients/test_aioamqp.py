@@ -1,10 +1,13 @@
+# (c) Copyright IBM Corp. 2025
+
+
 import asyncio
 from typing import Any, Generator
 
 import aioamqp
 import pytest
 
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from tests.helpers import testenv
 from aioamqp.properties import Properties
 from aioamqp.envelope import Envelope
@@ -16,7 +19,8 @@ testenv["rabbitmq_port"] = 5672
 class TestAioamqp:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         self.loop = asyncio.new_event_loop()
@@ -59,7 +63,7 @@ class TestAioamqp:
             envelope: Envelope,
             properties: Properties,
         ) -> None:
-            with tracer.start_as_current_span("callback-span"):
+            with self.tracer.start_as_current_span("callback-span"):
                 await channel.basic_client_ack(delivery_tag=envelope.delivery_tag)
 
         _, protocol = await aioamqp.connect(
@@ -70,7 +74,7 @@ class TestAioamqp:
         await channel.basic_consume(callback, queue_name="message_queue", no_ack=False)
 
     def test_basic_publish(self) -> None:
-        with tracer.start_as_current_span("test-span"):
+        with self.tracer.start_as_current_span("test-span"):
             self.loop.run_until_complete(self.publish_message())
 
         spans = self.recorder.queued_spans()
@@ -90,7 +94,7 @@ class TestAioamqp:
         assert not test_span.p
 
     def test_basic_consumer(self) -> None:
-        with tracer.start_as_current_span("test-span"):
+        with self.tracer.start_as_current_span("test-span"):
             self.loop.run_until_complete(self.publish_message())
             self.loop.run_until_complete(self.consume_message())
 

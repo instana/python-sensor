@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+
 import os
 import threading
 import time
@@ -12,7 +13,7 @@ from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from google.cloud.pubsub_v1.publisher import exceptions
 from opentelemetry.trace import SpanKind
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 from tests.test_utils import _TraceContextMixin
 
@@ -25,7 +26,8 @@ class TestPubSubPublish(_TraceContextMixin):
 
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         self.project_id = "test-project"
@@ -44,7 +46,7 @@ class TestPubSubPublish(_TraceContextMixin):
 
     def test_publish(self) -> None:
         # publish a single message
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             future = self.publisher.publish(
                 self.topic_path, b"Test Message", origin="instana"
             )
@@ -114,10 +116,11 @@ class TestPubSubSubscribe(_TraceContextMixin):
     def setup_class(cls) -> None:
         cls.publisher = PublisherClient()
         cls.subscriber = SubscriberClient()
+        cls.tracer = get_tracer()
 
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
         self.project_id = "test-project"
@@ -155,7 +158,7 @@ class TestPubSubSubscribe(_TraceContextMixin):
         )
 
     def test_subscribe(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             # Publish a message
             future = self.publisher.publish(
                 self.topic_path, b"Test Message to PubSub", origin="instana"

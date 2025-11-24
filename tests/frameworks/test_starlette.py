@@ -1,10 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 from typing import Generator
 
 import pytest
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from starlette.testclient import TestClient
 
 from instana.util.ids import hex_id
@@ -19,15 +20,16 @@ class TestStarlette:
         # setup
         # We are using the TestClient from Starlette to make it easier.
         self.client = TestClient(starlette_server)
+        self.tracer = get_tracer()
         # Configure to capture custom headers
         agent.options.extra_http_headers = [
             "X-Capture-This",
             "X-Capture-That",
             "X-Capture-This-Too",
-            "X-Capture-That-Too"
+            "X-Capture-That-Too",
         ]
         # Clear all spans before a test run.
-        self.recorder = tracer.span_processor
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
 
     def test_vanilla_get(self) -> None:
@@ -49,7 +51,7 @@ class TestStarlette:
 
     def test_basic_get(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -98,7 +100,7 @@ class TestStarlette:
 
     def test_path_templates(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -147,7 +149,7 @@ class TestStarlette:
 
     def test_secret_scrubbing(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -195,7 +197,7 @@ class TestStarlette:
         assert asgi_span.data["http"]["params"] == "secret=<redacted>"
 
     def test_synthetic_request(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -247,7 +249,7 @@ class TestStarlette:
         assert not test_span.sy
 
     def test_request_header_capture(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()
@@ -302,7 +304,7 @@ class TestStarlette:
         assert "that" == asgi_span.data["http"]["header"]["X-Capture-That"]
 
     def test_response_header_capture(self) -> None:
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()

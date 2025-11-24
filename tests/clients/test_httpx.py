@@ -1,13 +1,13 @@
 # (c) Copyright IBM Corp. 2025
 
+
 import pytest
 import httpx
 from typing import Generator
 import asyncio
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.util.ids import hex_id
-import tests.apps.flask_app
 from tests.helpers import testenv
 
 
@@ -17,7 +17,8 @@ class TestHttpxClients:
     def setup_class(cls) -> None:
         cls.client = httpx.Client()
         cls.host = "127.0.0.1"
-        cls.recorder = tracer.span_processor
+        cls.tracer = get_tracer()
+        cls.recorder = cls.tracer.span_processor
 
     def teardown_class(cls) -> None:
         cls.client.close()
@@ -73,7 +74,7 @@ class TestHttpxClients:
 
     def test_get_request(self, request_mode) -> None:
         path = "/"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
@@ -185,7 +186,7 @@ class TestHttpxClients:
 
     def test_get_request_with_query(self, request_mode) -> None:
         path = "/"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.execute_request(
                 request_mode, path + "?user=instana&pass=itsasecret"
             )
@@ -231,7 +232,7 @@ class TestHttpxClients:
 
     def test_post_request(self, request_mode) -> None:
         path = "/notfound"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.execute_request(request_mode, path, request_method="POST")
 
         spans = self.recorder.queued_spans()
@@ -274,7 +275,7 @@ class TestHttpxClients:
 
     def test_5xx_request(self, request_mode) -> None:
         path = "/500"
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
@@ -335,7 +336,7 @@ class TestHttpxClients:
         agent.options.extra_http_headers = ["X-Capture-This", "X-Capture-That"]
         path = "/response_headers"
 
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.execute_request(request_mode, path)
 
         spans = self.recorder.queued_spans()
@@ -392,7 +393,7 @@ class TestHttpxClients:
             "X-Capture-This-Too": "this too",
             "X-Capture-That-Too": "that too",
         }
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             res = self.execute_request(request_mode, path, headers=request_headers)
 
         spans = self.recorder.queued_spans()

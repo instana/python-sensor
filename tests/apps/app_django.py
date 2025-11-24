@@ -4,6 +4,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
+
 import os
 import sys
 import time
@@ -17,7 +18,7 @@ from django.http import HttpResponse, Http404
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind
 
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 
 filepath, extension = os.path.splitext(__file__)
 os.environ["DJANGO_SETTINGS_MODULE"] = os.path.basename(filepath)
@@ -110,6 +111,7 @@ def not_found(request):
 
 
 def complex(request):
+    tracer = get_tracer()
     with tracer.start_as_current_span("asteroid") as pspan:
         pspan.set_attribute("component", "Python simple example app")
         pspan.set_attribute("span.kind", SpanKind.CLIENT)

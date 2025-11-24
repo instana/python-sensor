@@ -10,9 +10,10 @@ from opentelemetry.trace import SpanKind
 from moto import mock_aws
 import tests.apps.flask_app
 from tests.helpers import testenv
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 
 http_client = urllib3.PoolManager()
+tracer = get_tracer()
 
 @mock_aws
 def test_app_boto3_sqs():

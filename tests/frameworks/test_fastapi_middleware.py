@@ -1,11 +1,11 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-import logging
+
 from typing import Generator
 
 import pytest
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from fastapi.testclient import TestClient
 
 from instana.util.ids import hex_id
@@ -23,9 +23,11 @@ class TestFastAPIMiddleware:
         # setup
         # We are using the TestClient from FastAPI to make it easier.
         from tests.apps.fastapi_app.app2 import fastapi_server
+
         self.client = TestClient(fastapi_server)
         # Clear all spans before a test run.
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         yield
         del fastapi_server
@@ -49,7 +51,7 @@ class TestFastAPIMiddleware:
 
     def test_basic_get(self) -> None:
         result = None
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             # As TestClient() is based on httpx, and we don't support it yet,
             # we must pass the SDK trace_id and span_id to the ASGI server.
             span_context = span.get_span_context()

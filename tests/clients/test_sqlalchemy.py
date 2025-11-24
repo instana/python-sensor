@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
+
 from typing import Generator
 
 import pytest
@@ -8,7 +9,7 @@ from sqlalchemy import Column, Integer, String, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from instana.singletons import agent, tracer
+from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
 from tests.helpers import testenv
 
@@ -39,6 +40,7 @@ class StanUser(Base):
 
 @pytest.fixture(scope="class")
 def db_setup() -> None:
+    tracer = get_tracer()
     with tracer.start_as_current_span("metadata") as span:
         Base.metadata.create_all(engine)
         span.end()
@@ -63,7 +65,8 @@ class TestSQLAlchemy:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         """Clear all spans before a test run"""
-        self.recorder = tracer.span_processor
+        self.tracer = get_tracer()
+        self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
         self.session = Session()
         yield
@@ -72,7 +75,7 @@ class TestSQLAlchemy:
         agent.options.allow_exit_as_root = False
 
     def test_session_add(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             self.session.add(stan_user)
             self.session.commit()
 
@@ -148,7 +151,7 @@ class TestSQLAlchemy:
         assert len(sql_span.stack) > 0
 
     def test_transaction(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             with engine.begin() as connection:
                 connection.execute(text("select 1"))
                 connection.execute(
@@ -212,7 +215,7 @@ class TestSQLAlchemy:
         assert len(sql_span1.stack) > 0
 
     def test_error_logging(self) -> None:
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             try:
                 self.session.execute(text("htVwGrCwVThisIsInvalidSQLaw4ijXd88"))
                 # self.session.commit()

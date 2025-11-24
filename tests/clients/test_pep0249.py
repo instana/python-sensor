@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2025
+
+
 import logging
 from typing import Generator
 from unittest.mock import patch
@@ -10,9 +13,8 @@ from instana.instrumentation.pep0249 import (
     ConnectionWrapper,
     CursorWrapper,
 )
-from instana.singletons import tracer
+from instana.singletons import get_tracer
 from instana.span.span import InstanaSpan
-from opentelemetry.trace import SpanKind
 from pytest import LogCaptureFixture
 
 from tests.helpers import testenv
@@ -21,6 +23,7 @@ from tests.helpers import testenv
 class TestCursorWrapper:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
+        self.tracer = get_tracer()
         self.connect_params = [
             "db",
             {
@@ -111,7 +114,7 @@ class TestCursorWrapper:
 
     def test_collect_kvs(self) -> None:
         self.reset_table()
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             sample_sql = """
                 select * from tests;
             """
@@ -124,7 +127,7 @@ class TestCursorWrapper:
 
     def test_collect_kvs_error(self, caplog: LogCaptureFixture) -> None:
         self.reset_table()
-        with tracer.start_as_current_span("test") as span:
+        with self.tracer.start_as_current_span("test") as span:
             connect_params = "sample"
             sample_wrapper = CursorWrapper(
                 self.test_cursor,
@@ -143,7 +146,7 @@ class TestCursorWrapper:
 
     def test_execute_with_tracing_off(self) -> None:
         self.reset_table()
-        with tracer.start_as_current_span("sqlalchemy"):
+        with self.tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_params = (2, "sample-name", "sample-email@mail.com")
             self.test_wrapper.execute(sample_sql, sample_params)
@@ -154,7 +157,7 @@ class TestCursorWrapper:
 
     def test_execute_with_tracing(self) -> None:
         self.reset_table()
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_params = (3, "sample-name", "sample-email@mail.com")
             self.test_wrapper.execute(sample_sql, sample_params)
@@ -176,7 +179,7 @@ class TestCursorWrapper:
 
     def test_executemany_with_tracing_off(self) -> None:
         self.reset_table()
-        with tracer.start_as_current_span("sqlalchemy"):
+        with self.tracer.start_as_current_span("sqlalchemy"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_seq_of_params = [
                 (4, "sample-name-3", "sample-email-3@mail.com"),
@@ -191,7 +194,7 @@ class TestCursorWrapper:
 
     def test_executemany_with_tracing(self) -> None:
         self.reset_table()
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             sample_sql = """insert into tests (id, name, email) values (%s, %s, %s) returning id, name, email;"""
             sample_seq_of_params = [
                 (6, "sample-name-3", "sample-email-3@mail.com"),
@@ -217,7 +220,7 @@ class TestCursorWrapper:
     def test_callproc_with_tracing_off(self) -> None:
         self.reset_table()
         self.reset_procedure()
-        with tracer.start_as_current_span("sqlalchemy"):
+        with self.tracer.start_as_current_span("sqlalchemy"):
             sample_proc_name = "call insert_user(%s, %s, %s);"
             sample_params = (8, "sample-name-8", "sample-email-8@mail.com")
             self.test_wrapper.callproc(sample_proc_name, sample_params)
@@ -230,7 +233,7 @@ class TestCursorWrapper:
     def test_callproc_with_tracing(self) -> None:
         self.reset_table()
         self.reset_procedure()
-        with tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):
             sample_proc_name = "call insert_user(%s, %s, %s);"
             sample_params = (9, "sample-name-9", "sample-email-9@mail.com")
             self.test_wrapper.callproc(sample_proc_name, sample_params)

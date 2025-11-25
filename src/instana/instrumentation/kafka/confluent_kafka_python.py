@@ -251,7 +251,8 @@ try:
 
         try:
             res = wrapped(*args, **kwargs)
-            create_span("poll", res.topic(), res.headers())
+            if res:
+                create_span("poll", res.topic(), res.headers())
             return res
         except Exception as exc:
             exception = exc

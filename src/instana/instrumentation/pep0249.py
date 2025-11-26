@@ -7,10 +7,9 @@ from typing import TYPE_CHECKING, Dict, Any, List, Tuple, Union, Callable, Optio
 from typing_extensions import Self
 
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind
 
 from instana.log import logger
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple
 from instana.util.sql import sql_sanitizer
 
 if TYPE_CHECKING:
@@ -70,7 +69,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
-        if tracing_is_off() or (operation_name == "sqlalchemy"):
+        if not tracer or (operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(sql, params)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -95,7 +94,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
-        if tracing_is_off() or (operation_name == "sqlalchemy"):
+        if not tracer or (operation_name == "sqlalchemy"):
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
         parent_context = parent_span.get_span_context() if parent_span else None
@@ -120,7 +119,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         tracer, parent_span, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
-        if tracing_is_off() or (operation_name == "sqlalchemy"):
+        if not tracer or (operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(proc_name, params)
 
         parent_context = parent_span.get_span_context() if parent_span else None

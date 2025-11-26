@@ -8,7 +8,7 @@ import re
 from typing import Any, Callable, Dict, Tuple, Union
 from instana.log import logger
 from instana.instrumentation.google.cloud.collectors import _storage_api
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple
 
 try:
     from google.cloud import storage
@@ -60,12 +60,13 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer, parent_span, _ = get_tracer_tuple()
+
         # batch requests are traced with finish_batch_with_instana()
         # also return early if we're not tracing
-        if isinstance(instance, storage.Batch) or tracing_is_off():
+        if isinstance(instance, storage.Batch) or not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
@@ -91,11 +92,11 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer, parent_span, _ = get_tracer_tuple()
         # return early if we're not tracing
-        if tracing_is_off():
+        if not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
@@ -127,11 +128,11 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer, parent_span, _ = get_tracer_tuple()
         # return early if we're not tracing
-        if tracing_is_off():
+        if not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
@@ -152,11 +153,11 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer, parent_span, _ = get_tracer_tuple()
         # return early if we're not tracing
-        if tracing_is_off():
+        if not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         with tracer.start_as_current_span("gcs", span_context=parent_context) as span:

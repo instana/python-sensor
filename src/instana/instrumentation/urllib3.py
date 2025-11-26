@@ -13,7 +13,6 @@ from instana.singletons import agent
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import (
     get_tracer_tuple,
-    tracing_is_off,
     extract_custom_headers,
 )
 
@@ -107,7 +106,7 @@ try:
         host = getattr(instance, "host", "") or ""
 
         if (
-            tracing_is_off()
+            not tracer
             or span_name == "boto3"
             or "com.instana" in request_url_or_path
             or "com.instana" in host

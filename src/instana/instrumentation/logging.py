@@ -12,7 +12,7 @@ import wrapt
 from instana.log import logger
 from instana.singletons import agent
 from instana.util.runtime import get_runtime_env_info
-from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+from instana.util.traceutils import get_tracer_tuple
 
 
 @wrapt.patch_function_wrapper("logging", "Logger._log")
@@ -34,15 +34,14 @@ def log_with_instana(
     stacklevel = stacklevel_in + 1
 
     try:
+        tracer, parent_span, _ = get_tracer_tuple()
         # Only needed if we're tracing and serious log and logging spans are not disabled
         if (
-            tracing_is_off()
+            not tracer
             or argv[0] < logging.WARN
             or agent.options.is_span_disabled(category="logging")
         ):
             return wrapped(*argv, **kwargs, stacklevel=stacklevel)
-
-        tracer, parent_span, _ = get_tracer_tuple()
 
         msg = str(argv[1])
         args = argv[2]

@@ -22,7 +22,7 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.singletons import get_tracer
-    from instana.util.traceutils import get_tracer_tuple, tracing_is_off
+    from instana.util.traceutils import get_tracer_tuple
 
     if TYPE_CHECKING:
         import pika.adapters.blocking_connection
@@ -73,11 +73,12 @@ try:
         ) -> Tuple[object, ...]:
             return (exchange, routing_key, body, properties, args, kwargs)
 
+        tracer, parent_span, _ = get_tracer_tuple()
+
         # If we're not tracing, just return
-        if tracing_is_off():
+        if not tracer:
             return wrapped(*args, **kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
         parent_context = parent_span.get_span_context() if parent_span else None
 
         (exchange, routing_key, body, properties, args, kwargs) = _bind_args(
@@ -125,6 +126,11 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer = get_tracer()
+
+        if not tracer:
+            return wrapped(*args, **kwargs)
+
         def _bind_args(*args: object, **kwargs: object) -> Tuple[object, ...]:
             args = list(args)
             queue = kwargs.pop("queue", None) or args.pop(0)
@@ -175,6 +181,11 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer = get_tracer()
+
+        if not tracer:
+            return wrapped(*args, **kwargs)
+
         def _bind_args(
             queue: str,
             on_message_callback: object,
@@ -225,6 +236,11 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
+        tracer = get_tracer()
+
+        if not tracer:
+            return wrapped(*args, **kwargs)
+
         def _bind_args(
             queue: str, *args: object, **kwargs: object
         ) -> Tuple[object, ...]:

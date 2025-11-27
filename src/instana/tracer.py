@@ -138,6 +138,10 @@ class InstanaTracer(Tracer):
             # events: Sequence[Event] = None,
         )
 
+        # Auto add span kind if provided
+        if kind:
+            span.set_attribute("span.kind", kind)
+
         if name in EXIT_SPANS:
             self._add_stack(span)
 

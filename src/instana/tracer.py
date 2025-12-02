@@ -2,10 +2,7 @@
 # (c) Copyright Instana Inc. 2016
 
 
-import os
-import re
 import time
-import traceback
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator, Mapping, Optional, Type, Union
 
@@ -30,7 +27,6 @@ from instana.propagators.kafka_propagator import KafkaPropagator
 from instana.propagators.text_propagator import TextPropagator
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
-from instana.span.kind import EXIT_SPANS
 from instana.span.span import InstanaSpan, get_current_span
 from instana.span_context import SpanContext
 from instana.util.ids import generate_id
@@ -138,9 +134,6 @@ class InstanaTracer(Tracer):
             # events: Sequence[Event] = None,
         )
 
-        if name in EXIT_SPANS:
-            self._add_stack(span)
-
         return span
 
     @contextmanager
@@ -173,39 +166,6 @@ class InstanaTracer(Tracer):
             set_status_on_exception=set_status_on_exception,
         ) as span:
             yield span
-
-    def _add_stack(self, span: InstanaSpan, limit: Optional[int] = 30) -> None:
-        """
-        Adds a backtrace to <span>.  The default length limit for
-        stack traces is 30 frames.  A hard limit of 40 frames is enforced.
-        """
-        try:
-            sanitized_stack = []
-            if limit > 40:
-                limit = 40
-
-            trace_back = traceback.extract_stack()
-            trace_back.reverse()
-            for frame in trace_back:
-                # Exclude Instana frames unless we're in dev mode
-                if "INSTANA_DEBUG" not in os.environ:
-                    if re_tracer_frame.search(frame[0]) is not None:
-                        continue
-
-                    if re_with_stan_frame.search(frame[2]) is not None:
-                        continue
-
-                sanitized_stack.append({"c": frame[0], "n": frame[1], "m": frame[2]})
-
-            if len(sanitized_stack) > limit:
-                # (limit * -1) gives us negative form of <limit> used for
-                # slicing from the end of the list. e.g. stack[-30:]
-                span.stack = sanitized_stack[(limit * -1) :]
-            else:
-                span.stack = sanitized_stack
-        except Exception:
-            # No fail
-            pass
 
     def _create_span_context(self, parent_context: SpanContext) -> SpanContext:
         """Creates a new SpanContext based on the given parent context."""
@@ -270,8 +230,3 @@ class InstanaTracer(Tracer):
             return self._propagators[format].extract(carrier, disable_w3c_trace_context)
 
         raise UnsupportedFormatException()
-
-
-# Used by __add_stack
-re_tracer_frame = re.compile(r"/instana/.*\.py$")
-re_with_stan_frame = re.compile("with_instana")

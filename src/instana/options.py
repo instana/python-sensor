@@ -1,4 +1,4 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2025
 # (c) Copyright Instana Inc. 2016
 
 """
@@ -49,6 +49,10 @@ class BaseOptions(object):
         self.disabled_spans = []
         # enabled_spans lists all categories and types that should be enabled, preceding disabled_spans
         self.enabled_spans = []
+
+        # Stack trace configuration - global defaults
+        self.stack_trace_level = "all"  # Options: "all", "error", "none"
+        self.stack_trace_length = 30  # Default: 30, recommended range: 10-40
 
         self.set_trace_configurations()
 
@@ -120,6 +124,35 @@ class BaseOptions(object):
             self.kafka_trace_correlation = config["tracing"]["kafka"].get(
                 "trace_correlation", True
             )
+
+        # Stack trace level configuration
+        if "INSTANA_STACK_TRACE" in os.environ:
+            level = os.environ["INSTANA_STACK_TRACE"].lower()
+            if level in ["all", "error", "none"]:
+                self.stack_trace_level = level
+            else:
+                logger.warning(
+                    f"Invalid INSTANA_STACK_TRACE value: {level}. Must be 'all', 'error', or 'none'. Using default 'all'"
+                )
+
+        # Stack trace length configuration
+        if "INSTANA_STACK_TRACE_LENGTH" in os.environ:
+            try:
+                length = int(os.environ["INSTANA_STACK_TRACE_LENGTH"])
+                if length >= 1:
+                    self.stack_trace_length = min(length, 40)  # Enforce max of 40
+                    if length > 40:
+                        logger.warning(
+                            f"INSTANA_STACK_TRACE_LENGTH of {length} exceeds maximum of 40. Using 40."
+                        )
+                else:
+                    logger.warning(
+                        "INSTANA_STACK_TRACE_LENGTH must be positive. Using default 30"
+                    )
+            except ValueError:
+                logger.warning(
+                    "Invalid INSTANA_STACK_TRACE_LENGTH value. Must be an integer. Using default 30"
+                )
 
         self.set_disable_trace_configurations()
 

@@ -125,6 +125,10 @@ class BaseOptions(object):
                 "trace_correlation", True
             )
 
+        self.set_disable_trace_configurations()
+        self.set_stack_trace_configurations()
+
+    def set_stack_trace_configurations(self) -> None:
         # Stack trace level configuration
         if "INSTANA_STACK_TRACE" in os.environ:
             level = os.environ["INSTANA_STACK_TRACE"].lower()
@@ -149,8 +153,6 @@ class BaseOptions(object):
                 logger.warning(
                     "Invalid INSTANA_STACK_TRACE_LENGTH value. Must be an integer. Using default 30"
                 )
-
-        self.set_disable_trace_configurations()
 
     def set_disable_trace_configurations(self) -> None:
         disabled_spans = []

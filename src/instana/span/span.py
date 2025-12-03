@@ -199,6 +199,32 @@ class InstanaSpan(Span, ReadableSpan):
             # kind=self.kind,
         )
 
+    def _should_collect_stack(self, level: str, is_errored: bool) -> bool:
+        """Determine if stack trace should be collected based on level and error state."""
+        if level == "all":
+            return True
+        if level == "error" and is_errored:
+            return True
+        return False
+
+    def _should_exclude_frame(self, frame) -> bool:
+        """Check if a frame should be excluded from the stack trace."""
+        if "INSTANA_DEBUG" in os.environ:
+            return False
+        if _re_tracer_frame.search(frame[0]):
+            return True
+        if _re_with_stan_frame.search(frame[2]):
+            return True
+        return False
+
+    def _apply_stack_limit(self, sanitized_stack: list, limit: int, use_full_stack: bool) -> list:
+        """Apply frame limit to the sanitized stack."""
+        if use_full_stack or len(sanitized_stack) <= limit:
+            return sanitized_stack
+        # (limit * -1) gives us negative form of <limit> used for
+        # slicing from the end of the list. e.g. stack[-25:]
+        return sanitized_stack[(limit * -1) :]
+
     def _add_stack(self, is_errored: bool = False) -> None:
         """
         Adds a backtrace to <span> based on configuration.
@@ -210,16 +236,7 @@ class InstanaSpan(Span, ReadableSpan):
             limit = options.stack_trace_length
 
             # Determine if we should collect stack trace
-            should_collect = False
-
-            if level == "all":
-                should_collect = True
-            elif level == "error" and is_errored:
-                should_collect = True
-            elif level == "none":
-                should_collect = False
-
-            if not should_collect:
+            if not self._should_collect_stack(level, is_errored):
                 return
 
             # For erroneous EXIT spans, MAY consider the whole stack
@@ -234,22 +251,12 @@ class InstanaSpan(Span, ReadableSpan):
             trace_back.reverse()
 
             for frame in trace_back:
-                # Exclude Instana frames unless we're in dev mode
-                if "INSTANA_DEBUG" not in os.environ:
-                    if _re_tracer_frame.search(frame[0]):
-                        continue
-                    if _re_with_stan_frame.search(frame[2]):
-                        continue
-
+                if self._should_exclude_frame(frame):
+                    continue
                 sanitized_stack.append({"c": frame[0], "n": frame[1], "m": frame[2]})
 
             # Apply limit (unless it's an errored span and we want full stack)
-            if not use_full_stack and len(sanitized_stack) > limit:
-                # (limit * -1) gives us negative form of <limit> used for
-                # slicing from the end of the list. e.g. stack[-25:]
-                self.stack = sanitized_stack[(limit * -1) :]
-            else:
-                self.stack = sanitized_stack
+            self.stack = self._apply_stack_limit(sanitized_stack, limit, use_full_stack)
 
         except Exception:
             logger.debug("span._add_stack: ", exc_info=True)

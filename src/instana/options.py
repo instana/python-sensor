@@ -140,11 +140,7 @@ class BaseOptions(object):
             try:
                 length = int(os.environ["INSTANA_STACK_TRACE_LENGTH"])
                 if length >= 1:
-                    self.stack_trace_length = min(length, 40)  # Enforce max of 40
-                    if length > 40:
-                        logger.warning(
-                            f"INSTANA_STACK_TRACE_LENGTH of {length} exceeds maximum of 40. Using 40."
-                        )
+                    self.stack_trace_length = length
                 else:
                     logger.warning(
                         "INSTANA_STACK_TRACE_LENGTH must be positive. Using default 30"

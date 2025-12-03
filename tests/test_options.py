@@ -637,4 +637,105 @@ class TestGCROptions:
         assert self.gcr_options.log_level == logging.INFO
 
 
-# Made with Bob
+class TestStackTraceConfiguration:
+    """Test stack trace configuration options."""
+
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        self.options = None
+        yield
+        if "tracing" in config.keys():
+            del config["tracing"]
+
+    def test_stack_trace_defaults(self) -> None:
+        """Test default stack trace configuration."""
+        self.options = BaseOptions()
+        
+        assert self.options.stack_trace_level == "all"
+        assert self.options.stack_trace_length == 30
+
+    @pytest.mark.parametrize(
+        "level_value,expected_level",
+        [
+            ("error", "error"),
+            ("none", "none"),
+            ("all", "all"),
+            ("ERROR", "error"),  # Case insensitive
+        ],
+    )
+    def test_stack_trace_level_env_var(
+        self,
+        level_value: str,
+        expected_level: str,
+    ) -> None:
+        """Test INSTANA_STACK_TRACE environment variable with valid values."""
+        with patch.dict(os.environ, {"INSTANA_STACK_TRACE": level_value}):
+            self.options = BaseOptions()
+            assert self.options.stack_trace_level == expected_level
+            assert self.options.stack_trace_length == 30  # Default
+
+    def test_stack_trace_level_env_var_invalid(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test INSTANA_STACK_TRACE with invalid value falls back to default."""
+        caplog.set_level(logging.WARNING, logger="instana")
+        with patch.dict(os.environ, {"INSTANA_STACK_TRACE": "INVALID"}):
+            self.options = BaseOptions()
+            assert self.options.stack_trace_level == "all"  # Falls back to default
+            assert any(
+                "Invalid INSTANA_STACK_TRACE value" in message
+                for message in caplog.messages
+            )
+
+    @pytest.mark.parametrize(
+        "length_value,expected_length",
+        [
+            ("25", 25),  
+            ("60", 60),  # Not capped here, capped when _add_stack() is called
+        ],
+    )
+    def test_stack_trace_length_env_var(
+        self,
+        length_value: str,
+        expected_length: int,
+    ) -> None:
+        """Test INSTANA_STACK_TRACE_LENGTH environment variable with valid values."""
+        with patch.dict(os.environ, {"INSTANA_STACK_TRACE_LENGTH": length_value}):
+            self.options = BaseOptions()
+            assert self.options.stack_trace_level == "all"  # Default
+            assert self.options.stack_trace_length == expected_length
+
+    @pytest.mark.parametrize(
+        "length_value,expected_warning",
+        [
+            ("0", "must be positive"),
+            ("-5", "must be positive"),
+            ("invalid", "Invalid INSTANA_STACK_TRACE_LENGTH"),
+        ],
+    )
+    def test_stack_trace_length_env_var_invalid(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        length_value: str,
+        expected_warning: str,
+    ) -> None:
+        """Test INSTANA_STACK_TRACE_LENGTH with invalid values."""
+        caplog.set_level(logging.WARNING, logger="instana")
+        with patch.dict(os.environ, {"INSTANA_STACK_TRACE_LENGTH": length_value}):
+            self.options = BaseOptions()
+            assert self.options.stack_trace_length == 30  # Falls back to default
+            assert any(expected_warning in message for message in caplog.messages)
+
+    def test_stack_trace_both_env_vars(self) -> None:
+        """Test both INSTANA_STACK_TRACE and INSTANA_STACK_TRACE_LENGTH."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_STACK_TRACE": "error",
+                "INSTANA_STACK_TRACE_LENGTH": "15",
+            },
+        ):
+            self.options = BaseOptions()
+            assert self.options.stack_trace_level == "error"
+            assert self.options.stack_trace_length == 15

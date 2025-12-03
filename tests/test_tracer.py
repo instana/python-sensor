@@ -48,28 +48,6 @@ def test_tracer_start_span(
     assert not span.stack
 
 
-def test_tracer_start_span_with_stack(tracer_provider: InstanaTracerProvider) -> None:
-    span_name = "log"
-    tracer = InstanaTracer(
-        tracer_provider.sampler,
-        tracer_provider._span_processor,
-        tracer_provider._exporter,
-        tracer_provider._propagators,
-    )
-    span = tracer.start_span(name=span_name)
-
-    assert span
-    assert isinstance(span, InstanaSpan)
-    assert span.name == span_name
-    assert span.stack
-
-    stack_0 = span.stack[0]
-    assert 3 == len(stack_0)
-    assert "c" in stack_0.keys()
-    assert "n" in stack_0.keys()
-    assert "m" in stack_0.keys()
-
-
 def test_tracer_start_span_Exception(
     mocker, tracer_provider: InstanaTracerProvider, span_context: SpanContext
 ) -> None:
@@ -164,43 +142,3 @@ def test_tracer_create_span_context_root(
     assert new_span_context.trace_id == new_span_context.span_id
 
 
-def test_tracer_add_stack_high_limit(
-    span: InstanaSpan, tracer_provider: InstanaTracerProvider
-) -> None:
-    tracer = InstanaTracer(
-        tracer_provider.sampler,
-        tracer_provider._span_processor,
-        tracer_provider._exporter,
-        tracer_provider._propagators,
-    )
-    tracer._add_stack(span, 50)
-
-    assert span.stack
-    assert 40 >= len(span.stack)
-
-    stack_0 = span.stack[0]
-    assert 3 == len(stack_0)
-    assert "c" in stack_0.keys()
-    assert "n" in stack_0.keys()
-    assert "m" in stack_0.keys()
-
-
-def test_tracer_add_stack_low_limit(
-    span: InstanaSpan, tracer_provider: InstanaTracerProvider
-) -> None:
-    tracer = InstanaTracer(
-        tracer_provider.sampler,
-        tracer_provider._span_processor,
-        tracer_provider._exporter,
-        tracer_provider._propagators,
-    )
-    tracer._add_stack(span, 5)
-
-    assert span.stack
-    assert 5 >= len(span.stack)
-
-    stack_0 = span.stack[0]
-    assert 3 == len(stack_0)
-    assert "c" in stack_0.keys()
-    assert "n" in stack_0.keys()
-    assert "m" in stack_0.keys()

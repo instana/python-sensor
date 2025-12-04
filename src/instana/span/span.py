@@ -14,9 +14,6 @@ BaseSpan: Base class containing the commonalities for the two descendants
   - RegisteredSpan: Class that represents a Registered type span
 """
 
-import os
-import re
-import traceback
 from threading import Lock
 from time import time_ns
 from typing import Dict, Optional, Sequence, Union
@@ -37,13 +34,10 @@ from opentelemetry.util import types
 
 from instana.log import logger
 from instana.recorder import StanRecorder
-from instana.span.kind import HTTP_SPANS, EXIT_SPANS
+from instana.span.kind import HTTP_SPANS
 from instana.span.readable_span import Event, ReadableSpan
+from instana.span.stack_trace import add_stack_trace_if_needed
 from instana.span_context import SpanContext
-
-# Used by _add_stack for filtering Instana internal frames
-_re_tracer_frame = re.compile(r"/instana/.*\.py$")
-_re_with_stan_frame = re.compile("with_instana")
 
 
 class InstanaSpan(Span, ReadableSpan):
@@ -199,81 +193,12 @@ class InstanaSpan(Span, ReadableSpan):
             # kind=self.kind,
         )
 
-    def _should_collect_stack(self, level: str, is_errored: bool) -> bool:
-        """Determine if stack trace should be collected based on level and error state."""
-        if level == "all":
-            return True
-        if level == "error" and is_errored:
-            return True
-        return False
-
-    def _should_exclude_frame(self, frame) -> bool:
-        """Check if a frame should be excluded from the stack trace."""
-        if "INSTANA_DEBUG" in os.environ:
-            return False
-        if _re_tracer_frame.search(frame[0]):
-            return True
-        if _re_with_stan_frame.search(frame[2]):
-            return True
-        return False
-
-    def _apply_stack_limit(self, sanitized_stack: list, limit: int, use_full_stack: bool) -> list:
-        """Apply frame limit to the sanitized stack."""
-        if use_full_stack or len(sanitized_stack) <= limit:
-            return sanitized_stack
-        # (limit * -1) gives us negative form of <limit> used for
-        # slicing from the end of the list. e.g. stack[-25:]
-        return sanitized_stack[(limit * -1) :]
-
-    def _add_stack(self, is_errored: bool = False) -> None:
-        """
-        Adds a backtrace to <span> based on configuration.
-        """
-        try:
-            # Get configuration from agent options
-            options = self._span_processor.agent.options
-            level = options.stack_trace_level
-            limit = options.stack_trace_length
-
-            # Determine if we should collect stack trace
-            if not self._should_collect_stack(level, is_errored):
-                return
-
-            # For erroneous EXIT spans, MAY consider the whole stack
-            use_full_stack = is_errored
-
-            # Enforce hard limit of 40 frames (unless errored and using full stack)
-            if not use_full_stack and limit > 40:
-                limit = 40
-
-            sanitized_stack = []
-            trace_back = traceback.extract_stack()
-            trace_back.reverse()
-
-            for frame in trace_back:
-                if self._should_exclude_frame(frame):
-                    continue
-                sanitized_stack.append({"c": frame[0], "n": frame[1], "m": frame[2]})
-
-            # Apply limit (unless it's an errored span and we want full stack)
-            self.stack = self._apply_stack_limit(sanitized_stack, limit, use_full_stack)
-
-        except Exception:
-            logger.debug("span._add_stack: ", exc_info=True)
-
-    def _add_stack_trace_if_needed(self) -> None:
-        """Add stack trace based on configuration before span ends."""
-        if self.name in EXIT_SPANS:
-            # Check if span is errored
-            is_errored = self.attributes.get("ec", 0) > 0
-            self._add_stack(is_errored=is_errored)
-
     def end(self, end_time: Optional[int] = None) -> None:
         with self._lock:
             self._end_time = end_time if end_time else time_ns()
             self._duration = self._end_time - self._start_time
 
-        self._add_stack_trace_if_needed()
+        add_stack_trace_if_needed(self)
 
         self._span_processor.record_span(self._readable_span())
 

@@ -1,0 +1,7 @@
+# (c) Copyright IBM Corp. 2025
+
+# Test configuration file for stack trace - disabled configuration
+tracing:
+  global:
+    stack-trace: none
+    stack-trace-length: 5

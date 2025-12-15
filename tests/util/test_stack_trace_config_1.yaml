@@ -1,0 +1,7 @@
+# (c) Copyright IBM Corp. 2025
+
+# Test configuration file for stack trace - basic global configuration
+tracing:
+  global:
+    stack-trace: all
+    stack-trace-length: 15

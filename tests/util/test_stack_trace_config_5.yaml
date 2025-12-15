@@ -1,0 +1,6 @@
+# (c) Copyright IBM Corp. 2025
+
+# Test configuration file for stack trace - only stack-trace without length
+tracing:
+  global:
+    stack-trace: error

@@ -1,0 +1,7 @@
+# (c) Copyright IBM Corp. 2025
+
+# Test configuration file for stack trace - invalid values for testing validation
+tracing:
+  global:
+    stack-trace: invalid-value
+    stack-trace-length: -10

@@ -23,7 +23,7 @@ SPEC_MAP = {
 
 
 def estimate_days_behind(release_date):
-    return datetime.today() - datetime.strptime(release_date, "%Y-%m-%d")
+    return (datetime.today().date() - datetime.strptime(release_date, "%Y-%m-%d").date()).days
 
 
 def get_upstream_version(dependency, last_supported_version):

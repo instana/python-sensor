@@ -709,19 +709,19 @@ class TestConfluentKafka:
         """Test save_consumer_span_into_context function."""
         # Verify initial state
         assert consumer_span.get(None) is None
-        assert confluent_kafka_python.consumer_token is None
+        assert confluent_kafka_python.consumer_token.get(None) is None
 
         # Save span into context
         save_consumer_span_into_context(span)
 
         # Verify token is stored
-        assert confluent_kafka_python.consumer_token is not None
+        assert confluent_kafka_python.consumer_token.get(None) is not None
 
     def test_close_consumer_span_recording_span(self, span: "InstanaSpan") -> None:
         """Test close_consumer_span with a recording span."""
         # Save span into context first
         save_consumer_span_into_context(span)
-        assert confluent_kafka_python.consumer_token is not None
+        assert confluent_kafka_python.consumer_token.get(None) is not None
 
         # Verify span is recording
         assert span.is_recording()
@@ -732,7 +732,7 @@ class TestConfluentKafka:
         # Verify span was ended and context cleared
         assert not span.is_recording()
         assert consumer_span.get(None) is None
-        assert confluent_kafka_python.consumer_token is None
+        assert confluent_kafka_python.consumer_token.get(None) is None
 
     def test_clear_context(self, span: "InstanaSpan") -> None:
         """Test clear_context function."""
@@ -741,14 +741,14 @@ class TestConfluentKafka:
 
         # Verify context has data
         assert consumer_span.get(None) == span
-        assert confluent_kafka_python.consumer_token is not None
+        assert confluent_kafka_python.consumer_token.get(None) is not None
 
         # Clear context
         clear_context()
 
         # Verify all context is cleared
         assert consumer_span.get(None) is None
-        assert confluent_kafka_python.consumer_token is None
+        assert confluent_kafka_python.consumer_token.get(None) is None
 
     def test_trace_kafka_close_exception_handling(self, span: "InstanaSpan") -> None:
         """Test trace_kafka_close handles exceptions and still cleans up spans."""
@@ -757,7 +757,7 @@ class TestConfluentKafka:
 
         # Verify span is in context
         assert consumer_span.get(None) == span
-        assert confluent_kafka_python.consumer_token is not None
+        assert confluent_kafka_python.consumer_token.get(None) is not None
 
         # Mock a wrapped function that raises an exception
         mock_wrapped = Mock(side_effect=Exception("Close operation failed"))
@@ -772,7 +772,7 @@ class TestConfluentKafka:
 
         # Verify that despite the exception, the span was cleaned up
         assert consumer_span.get(None) is None
-        assert confluent_kafka_python.consumer_token is None
+        assert confluent_kafka_python.consumer_token.get(None) is None
 
         # Verify span was ended
         assert not span.is_recording()

@@ -29,12 +29,9 @@ try:
         try:
             span_context = None
             tracer = get_tracer()
-            if (
-                hasattr(instance.request.headers, "__dict__")
-                and "_dict" in instance.request.headers.__dict__
-            ):
+            if instance.request.headers:
                 span_context = tracer.extract(
-                    Format.HTTP_HEADERS, instance.request.headers.__dict__["_dict"]
+                    Format.HTTP_HEADERS, dict(instance.request.headers.items())
                 )
 
             span = tracer.start_span("tornado-server", span_context=span_context)

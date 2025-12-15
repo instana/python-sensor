@@ -83,13 +83,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_post(self) -> None:
@@ -140,13 +140,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_301(self) -> None:
@@ -242,13 +242,13 @@ class TestTornadoClient:
         assert type(client301_span.stack) is list
         assert len(client301_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_405(self) -> None:
@@ -302,13 +302,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_500(self) -> None:
@@ -362,13 +362,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_504(self) -> None:
@@ -422,13 +422,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_get_with_params_to_scrub(self) -> None:
@@ -480,13 +480,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
     def test_request_header_capture(self) -> None:
@@ -547,13 +547,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
         assert "X-Capture-This" in client_span.data["http"]["header"]
@@ -622,13 +622,13 @@ class TestTornadoClient:
         assert type(client_span.stack) is list
         assert len(client_span.stack) > 1
 
-        assert "X-INSTANA-T" in response.headers
+        assert response.headers.get("X-INSTANA-T")
         assert response.headers["X-INSTANA-T"] == hex_id(traceId)
-        assert "X-INSTANA-S" in response.headers
+        assert response.headers.get("X-INSTANA-S")
         assert response.headers["X-INSTANA-S"] == hex_id(server_span.s)
-        assert "X-INSTANA-L" in response.headers
+        assert response.headers.get("X-INSTANA-L")
         assert response.headers["X-INSTANA-L"] == "1"
-        assert "Server-Timing" in response.headers
+        assert response.headers.get("Server-Timing")
         assert response.headers["Server-Timing"] == f"intid;desc={hex_id(traceId)}"
 
         assert "X-Capture-This-Too" in client_span.data["http"]["header"]

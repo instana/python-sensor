@@ -16,7 +16,7 @@ BaseOptions - base class for all environments.  Holds settings common to all.
 
 import logging
 import os
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Sequence, Tuple
 
 from instana.configurator import config
 from instana.log import logger
@@ -25,6 +25,7 @@ from instana.util.config import (
     get_disable_trace_configurations_from_env,
     get_disable_trace_configurations_from_local,
     get_disable_trace_configurations_from_yaml,
+    get_stack_trace_config_from_yaml,
     is_truthy,
     parse_ignored_endpoints,
     parse_ignored_endpoints_from_yaml,
@@ -53,6 +54,10 @@ class BaseOptions(object):
         # Stack trace configuration - global defaults
         self.stack_trace_level = "all"  # Options: "all", "error", "none"
         self.stack_trace_length = 30  # Default: 30, recommended range: 10-40
+
+        # Technology-specific stack trace overrides
+        # Format: {"kafka": {"level": "all", "length": 25}, "redis": {"level": "error", "length": 20}}
+        self.stack_trace_technology_config = {}
 
         self.set_trace_configurations()
 
@@ -129,7 +134,11 @@ class BaseOptions(object):
         self.set_stack_trace_configurations()
 
     def set_stack_trace_configurations(self) -> None:
-        # Stack trace level configuration
+        """
+        Set stack trace configurations following precedence:
+        environment variables > INSTANA_CONFIG_PATH > in-code config > agent config > defaults
+        """
+        # 1. Environment variables (highest priority)
         if "INSTANA_STACK_TRACE" in os.environ:
             level = os.environ["INSTANA_STACK_TRACE"].lower()
             if level in ["all", "error", "none"]:
@@ -139,7 +148,6 @@ class BaseOptions(object):
                     f"Invalid INSTANA_STACK_TRACE value: {level}. Must be 'all', 'error', or 'none'. Using default 'all'"
                 )
 
-        # Stack trace length configuration
         if "INSTANA_STACK_TRACE_LENGTH" in os.environ:
             try:
                 length = int(os.environ["INSTANA_STACK_TRACE_LENGTH"])
@@ -153,6 +161,76 @@ class BaseOptions(object):
                 logger.warning(
                     "Invalid INSTANA_STACK_TRACE_LENGTH value. Must be an integer. Using default 30"
                 )
+        
+        # 2. INSTANA_CONFIG_PATH (YAML file) - includes tech-specific overrides
+        elif "INSTANA_CONFIG_PATH" in os.environ:
+            yaml_level, yaml_length, yaml_tech_config = get_stack_trace_config_from_yaml()
+            if "INSTANA_STACK_TRACE" not in os.environ:
+                self.stack_trace_level = yaml_level
+            if "INSTANA_STACK_TRACE_LENGTH" not in os.environ:
+                self.stack_trace_length = yaml_length
+            # Technology-specific overrides from YAML
+            self.stack_trace_technology_config.update(yaml_tech_config)
+        
+        # 3. In-code (local) configuration - includes tech-specific overrides
+        elif isinstance(config.get("tracing"), dict) and "global" in config["tracing"]:
+            global_config = config["tracing"]["global"]
+            
+            if "INSTANA_STACK_TRACE" not in os.environ and "stack_trace" in global_config:
+                level = str(global_config["stack_trace"]).lower()
+                if level in ["all", "error", "none"]:
+                    self.stack_trace_level = level
+                else:
+                    logger.warning(
+                        f"Invalid stack_trace value in config: {level}. Must be 'all', 'error', or 'none'. Using default 'all'"
+                    )
+            
+            if "INSTANA_STACK_TRACE_LENGTH" not in os.environ and "stack_trace_length" in global_config:
+                try:
+                    length = int(global_config["stack_trace_length"])
+                    if length >= 1:
+                        self.stack_trace_length = length
+                    else:
+                        logger.warning(
+                            "stack_trace_length must be positive. Using default 30"
+                        )
+                except (ValueError, TypeError):
+                    logger.warning(
+                        "Invalid stack_trace_length in config. Must be an integer. Using default 30"
+                    )
+            
+            # Technology-specific overrides from in-code config
+            for tech_name, tech_data in config["tracing"].items():
+                if tech_name == "global" or not isinstance(tech_data, dict):
+                    continue
+                
+                tech_stack_config = {}
+                
+                if "stack_trace" in tech_data:
+                    tech_level = str(tech_data["stack_trace"]).lower()
+                    if tech_level in ["all", "error", "none"]:
+                        tech_stack_config["level"] = tech_level
+                    else:
+                        logger.warning(
+                            f"Invalid stack_trace value for {tech_name}: {tech_level}. Ignoring."
+                        )
+                
+                if "stack_trace_length" in tech_data:
+                    try:
+                        tech_length = int(tech_data["stack_trace_length"])
+                        if tech_length >= 1:
+                            tech_stack_config["length"] = tech_length
+                        else:
+                            logger.warning(
+                                f"stack_trace_length for {tech_name} must be positive. Ignoring."
+                            )
+                    except (ValueError, TypeError):
+                        logger.warning(
+                            f"Invalid stack_trace_length for {tech_name}. Must be an integer. Ignoring."
+                        )
+                
+                if tech_stack_config:
+                    self.stack_trace_technology_config[tech_name] = tech_stack_config
 
     def set_disable_trace_configurations(self) -> None:
         disabled_spans = []
@@ -206,6 +284,35 @@ class BaseOptions(object):
 
         # Default: not disabled
         return False
+
+    def get_stack_trace_config(self, span_name: str) -> Tuple[str, int]:
+        """
+        Get stack trace configuration for a specific span type.
+        Technology-specific configuration overrides global configuration.
+        
+        Args:
+            span_name: The name of the span (e.g., "kafka-producer", "redis", "mysql")
+        
+        Returns:
+            Tuple of (level, length) where:
+            - level: "all", "error", or "none"
+            - length: positive integer (1-40)
+        """
+        # Start with global defaults
+        level = self.stack_trace_level
+        length = self.stack_trace_length
+        
+        # Check for technology-specific overrides
+        # Extract base technology name from span name
+        # Examples: "kafka-producer" -> "kafka", "mysql" -> "mysql"
+        tech_name = span_name.split("-")[0] if "-" in span_name else span_name
+        
+        if tech_name in self.stack_trace_technology_config:
+            tech_config = self.stack_trace_technology_config[tech_name]
+            level = tech_config.get("level", level)
+            length = tech_config.get("length", length)
+        
+        return level, length
 
 
 class StandardOptions(BaseOptions):
@@ -282,6 +389,94 @@ class StandardOptions(BaseOptions):
         # Handle span disabling configuration
         if "disable" in tracing:
             self.set_disable_tracing(tracing["disable"])
+        
+        # Handle stack trace configuration from agent config
+        self.set_stack_trace_from_agent(tracing)
+
+    def set_stack_trace_from_agent(self, tracing: Dict[str, Any]) -> None:
+        """
+        Set stack trace configuration from agent config (configuration.yaml).
+        Only applies if not already set by higher priority sources.
+        
+        @param tracing: tracing configuration dictionary from agent
+        """
+        # Check if we should apply agent config (lowest priority)
+        should_apply_agent_config = (
+            "INSTANA_STACK_TRACE" not in os.environ
+            and "INSTANA_STACK_TRACE_LENGTH" not in os.environ
+            and "INSTANA_CONFIG_PATH" not in os.environ
+            and not (
+                isinstance(config.get("tracing"), dict)
+                and "global" in config["tracing"]
+                and ("stack_trace" in config["tracing"]["global"] or "stack_trace_length" in config["tracing"]["global"])
+            )
+        )
+        
+        if should_apply_agent_config and "global" in tracing:
+            global_config = tracing["global"]
+            
+            # Set stack-trace level from agent config
+            if "stack-trace" in global_config:
+                level = str(global_config["stack-trace"]).lower()
+                if level in ["all", "error", "none"]:
+                    self.stack_trace_level = level
+                else:
+                    logger.warning(
+                        f"Invalid stack-trace value in agent config: {level}. Must be 'all', 'error', or 'none'. Using default 'all'"
+                    )
+            
+            # Set stack-trace length from agent config
+            if "stack-trace-length" in global_config:
+                try:
+                    length = int(global_config["stack-trace-length"])
+                    if length >= 1:
+                        self.stack_trace_length = length
+                    else:
+                        logger.warning(
+                            "stack-trace-length must be positive. Using default 30"
+                        )
+                except (ValueError, TypeError):
+                    logger.warning(
+                        "Invalid stack-trace-length in agent config. Must be an integer. Using default 30"
+                    )
+        
+        # Technology-specific stack trace configuration from agent config
+        # Only apply if not already set by higher priority sources (YAML or in-code config)
+        # If stack_trace_technology_config is already populated, it means YAML or in-code config set it
+        if not self.stack_trace_technology_config:
+            # Apply technology-specific overrides from agent config
+            # Example: kafka, redis, mysql, postgres, mongo, etc.
+            for tech_name, tech_config in tracing.items():
+                if tech_name == "global" or not isinstance(tech_config, dict):
+                    continue
+                
+                tech_stack_config = {}
+                
+                if "stack-trace" in tech_config:
+                    level = str(tech_config["stack-trace"]).lower()
+                    if level in ["all", "error", "none"]:
+                        tech_stack_config["level"] = level
+                    else:
+                        logger.warning(
+                            f"Invalid stack-trace value for {tech_name}: {level}. Ignoring."
+                        )
+                
+                if "stack-trace-length" in tech_config:
+                    try:
+                        length = int(tech_config["stack-trace-length"])
+                        if length >= 1:
+                            tech_stack_config["length"] = length
+                        else:
+                            logger.warning(
+                                f"stack-trace-length for {tech_name} must be positive. Ignoring."
+                            )
+                    except (ValueError, TypeError):
+                        logger.warning(
+                            f"Invalid stack-trace-length for {tech_name}. Must be an integer. Ignoring."
+                        )
+                
+                if tech_stack_config:
+                    self.stack_trace_technology_config[tech_name] = tech_stack_config
 
     def set_disable_tracing(self, tracing_config: Sequence[Dict[str, Any]]) -> None:
         # The precedence is as follows:

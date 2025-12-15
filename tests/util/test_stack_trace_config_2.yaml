@@ -1,0 +1,7 @@
+# (c) Copyright IBM Corp. 2025
+
+# Test configuration file for stack trace - with com.instana prefix
+com.instana.tracing:
+  global:
+    stack-trace: error
+    stack-trace-length: 20

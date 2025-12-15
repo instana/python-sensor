@@ -319,4 +319,95 @@ def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]
     return [], []
 
 
+def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]:
+    """
+    Get stack trace configuration from YAML file specified by INSTANA_CONFIG_PATH.
+    
+    Returns:
+        Tuple of (level, length, tech_config) where:
+        - level: "all", "error", or "none"
+        - length: positive integer
+        - tech_config: Dict of technology-specific overrides
+          Format: {"kafka": {"level": "all", "length": 35}, "redis": {"level": "none"}}
+    """
+    config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
+    
+    level = "all"
+    length = 30
+    tech_config = {}
+    
+    if "tracing" in config_reader.data:
+        root_key = "tracing"
+    elif "com.instana.tracing" in config_reader.data:
+        logger.warning(
+            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
+        )
+        root_key = "com.instana.tracing"
+    else:
+        return level, length, tech_config
+    
+    tracing_data = config_reader.data[root_key]
+    
+    # Read global configuration
+    if "global" in tracing_data:
+        global_config = tracing_data["global"]
+        
+        if "stack-trace" in global_config:
+            config_level = global_config["stack-trace"].lower()
+            if config_level in ["all", "error", "none"]:
+                level = config_level
+            else:
+                logger.warning(
+                    f"Invalid stack-trace value in config: {config_level}. Must be 'all', 'error', or 'none'. Using default 'all'"
+                )
+        
+        if "stack-trace-length" in global_config:
+            try:
+                config_length = int(global_config["stack-trace-length"])
+                if config_length >= 1:
+                    length = config_length
+                else:
+                    logger.warning(
+                        "stack-trace-length must be positive. Using default 30"
+                    )
+            except (ValueError, TypeError):
+                logger.warning(
+                    "Invalid stack-trace-length in config. Must be an integer. Using default 30"
+                )
+    
+    # Read technology-specific overrides
+    for tech_name, tech_data in tracing_data.items():
+        if tech_name == "global" or not isinstance(tech_data, dict):
+            continue
+        
+        tech_stack_config = {}
+        
+        if "stack-trace" in tech_data:
+            tech_level = str(tech_data["stack-trace"]).lower()
+            if tech_level in ["all", "error", "none"]:
+                tech_stack_config["level"] = tech_level
+            else:
+                logger.warning(
+                    f"Invalid stack-trace value for {tech_name} in YAML: {tech_level}. Ignoring."
+                )
+        
+        if "stack-trace-length" in tech_data:
+            try:
+                tech_length = int(tech_data["stack-trace-length"])
+                if tech_length >= 1:
+                    tech_stack_config["length"] = tech_length
+                else:
+                    logger.warning(
+                        f"stack-trace-length for {tech_name} must be positive. Ignoring."
+                    )
+            except (ValueError, TypeError):
+                logger.warning(
+                    f"Invalid stack-trace-length for {tech_name} in YAML. Must be an integer. Ignoring."
+                )
+        
+        if tech_stack_config:
+            tech_config[tech_name] = tech_stack_config
+    
+    return level, length, tech_config
+
 # Made with Bob

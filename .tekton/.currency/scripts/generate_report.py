@@ -141,8 +141,13 @@ def is_up_to_date(
 
     return up_to_date, days_behind
 
-
-def get_taskruns(namespace, task_name, taskrun_filter):
+def taskrun_filter(taskrun):
+    return any(
+        condition["type"] == "Succeeded" and condition["status"] == "True"
+        for condition in taskrun["status"]["conditions"]
+    )
+    
+def get_taskruns(namespace, task_name):
     """Get sorted taskruns filtered based on label_selector"""
     group = "tekton.dev"
     version = "v1"
@@ -213,8 +218,6 @@ def get_tekton_ci_output():
     namespace = "default"
     core_v1_client = client.CoreV1Api()
 
-    taskrun_filter = lambda tr: tr["status"]["conditions"][0]["type"] == "Succeeded"  # noqa: E731
-
     tasks = [
         "python-tracer-unittest-gevent-starlette-task",
         "python-tracer-unittest-kafka-task",
@@ -226,7 +229,7 @@ def get_tekton_ci_output():
 
     for task_name in tasks:
         try:
-            taskruns = get_taskruns(namespace, task_name, taskrun_filter)
+            taskruns = get_taskruns(namespace, task_name)
                 
             tekton_ci_output = process_taskrun_logs(
                 taskruns, core_v1_client, namespace, task_name, tekton_ci_output

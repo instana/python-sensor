@@ -136,21 +136,23 @@ def add_stack_trace_if_needed(span: "InstanaSpan") -> None:
     Add stack trace to span based on configuration before span ends.
     
     This function checks if the span is an EXIT span and if so, captures
-    a stack trace based on the configured level and limit.
+    a stack trace based on the configured level and limit. It supports
+    technology-specific configuration overrides via get_stack_trace_config().
     
     Args:
         span: The InstanaSpan to potentially add stack trace to
     """
     if span.name in EXIT_SPANS:
-        # Get configuration from agent options
+        # Get configuration from agent options (with technology-specific overrides)
         options = span._span_processor.agent.options
+        level, limit = options.get_stack_trace_config(span.name)
         
         # Check if span is errored
         is_errored = span.attributes.get("ec", 0) > 0
         
         # Capture stack trace using add_stack function
         span.stack = add_stack(
-            level=options.stack_trace_level,
-            limit=options.stack_trace_length,
+            level=level,
+            limit=limit,
             is_errored=is_errored
         )

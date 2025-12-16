@@ -685,7 +685,7 @@ class TestStackTraceConfiguration:
             self.options = BaseOptions()
             assert self.options.stack_trace_level == "all"  # Falls back to default
             assert any(
-                "Invalid INSTANA_STACK_TRACE value" in message
+                "Invalid stack-trace value from INSTANA_STACK_TRACE" in message
                 for message in caplog.messages
             )
 
@@ -712,7 +712,7 @@ class TestStackTraceConfiguration:
         [
             ("0", "must be positive"),
             ("-5", "must be positive"),
-            ("invalid", "Invalid INSTANA_STACK_TRACE_LENGTH"),
+            ("invalid", "Invalid stack-trace-length from INSTANA_STACK_TRACE_LENGTH"),
         ],
     )
     def test_stack_trace_length_env_var_invalid(

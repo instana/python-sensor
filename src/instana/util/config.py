@@ -8,6 +8,11 @@ from instana.configurator import config
 from instana.log import logger
 from instana.util.config_reader import ConfigReader
 
+# Constants
+DEPRECATED_CONFIG_KEY_WARNING = (
+    'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
+)
+
 # List of supported span categories (technology or protocol)
 SPAN_CATEGORIES = [
     "logging",
@@ -295,17 +300,30 @@ def get_disable_trace_configurations_from_env() -> Tuple[List[str], List[str]]:
     return [], []
 
 
+def get_tracing_root_key(config_data: Dict[str, Any]) -> Union[str, None]:
+    """
+    Get the root key for tracing configuration from config data.
+    Handles both 'tracing' and deprecated 'com.instana.tracing' keys.
+    
+    Args:
+        config_data: Configuration data dictionary
+    
+    Returns:
+        Root key string or None if not found
+    """
+    if "tracing" in config_data:
+        return "tracing"
+    elif "com.instana.tracing" in config_data:
+        logger.warning(DEPRECATED_CONFIG_KEY_WARNING)
+        return "com.instana.tracing"
+    return None
+
+
 def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
     config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
-
-    if "tracing" in config_reader.data:
-        root_key = "tracing"
-    elif "com.instana.tracing" in config_reader.data:
-        logger.warning(
-            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-        )
-        root_key = "com.instana.tracing"
-    else:
+    
+    root_key = get_tracing_root_key(config_reader.data)
+    if not root_key:
         return [], []
 
     tracing_disable_config = config_reader.data[root_key].get("disable", "")
@@ -317,6 +335,144 @@ def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]
         if tracing_disable_config := config["tracing"].get("disable", None):
             return parse_span_disabling(tracing_disable_config)
     return [], []
+
+
+def validate_stack_trace_level(level_value: Any, context: str = "") -> Union[str, None]:
+    """
+    Validate stack trace level value.
+    
+    Args:
+        level_value: The level value to validate
+        context: Context string for error messages (e.g., "for kafka", "in agent config")
+    
+    Returns:
+        Validated level string ("all", "error", or "none"), or None if invalid
+    """
+    level = str(level_value).lower()
+    if level in ["all", "error", "none"]:
+        return level
+    
+    context_msg = f" {context}" if context else ""
+    logger.warning(
+        f"Invalid stack-trace value{context_msg}: {level}. Must be 'all', 'error', or 'none'. Using default 'all'."
+    )
+    return None
+
+
+def validate_stack_trace_length(length_value: Any, context: str = "") -> Union[int, None]:
+    """
+    Validate stack trace length value.
+    
+    Args:
+        length_value: The length value to validate
+        context: Context string for error messages (e.g., "for kafka", "in agent config")
+    
+    Returns:
+        Validated length integer (>= 1), or None if invalid
+    """
+    try:
+        length = int(length_value)
+        if length >= 1:
+            return length
+        
+        context_msg = f" {context}" if context else ""
+        logger.warning(
+            f"stack-trace-length{context_msg} must be positive. Using default 30."
+        )
+        return None
+    except (ValueError, TypeError):
+        context_msg = f" {context}" if context else ""
+        logger.warning(
+            f"Invalid stack-trace-length{context_msg}. Must be an integer. Using default 30."
+        )
+        return None
+
+
+def parse_technology_stack_trace_config(
+    tech_data: Dict[str, Any],
+    level_key: str = "stack-trace",
+    length_key: str = "stack-trace-length",
+    tech_name: str = "",
+) -> Dict[str, Union[str, int]]:
+    """
+    Parse technology-specific stack trace configuration from a dictionary.
+    
+    Args:
+        tech_data: Dictionary containing stack trace configuration
+        level_key: Key name for level configuration (e.g., "stack-trace" or "stack_trace")
+        length_key: Key name for length configuration (e.g., "stack-trace-length" or "stack_trace_length")
+        tech_name: Technology name for error messages (e.g., "kafka", "redis")
+    
+    Returns:
+        Dictionary with "level" and/or "length" keys, or empty dict if no valid config
+    """
+    tech_stack_config = {}
+    context = f"for {tech_name}" if tech_name else ""
+    
+    if level_key in tech_data:
+        if validated_level := validate_stack_trace_level(tech_data[level_key], context):
+            tech_stack_config["level"] = validated_level
+    
+    if length_key in tech_data:
+        if validated_length := validate_stack_trace_length(tech_data[length_key], context):
+            tech_stack_config["length"] = validated_length
+    
+    return tech_stack_config
+
+
+def parse_global_stack_trace_config(global_config: Dict[str, Any]) -> Tuple[str, int]:
+    """
+    Parse global stack trace configuration from a config dictionary.
+    
+    Args:
+        global_config: Global configuration dictionary
+    
+    Returns:
+        Tuple of (level, length) with defaults if not found
+    """
+    level = "all"
+    length = 30
+    
+    if "stack-trace" in global_config:
+        if validated_level := validate_stack_trace_level(global_config["stack-trace"], "in YAML config"):
+            level = validated_level
+    
+    if "stack-trace-length" in global_config:
+        if validated_length := validate_stack_trace_length(global_config["stack-trace-length"], "in YAML config"):
+            length = validated_length
+    
+    return level, length
+
+
+def parse_tech_specific_stack_trace_configs(
+    tracing_data: Dict[str, Any]
+) -> Dict[str, Dict[str, Union[str, int]]]:
+    """
+    Parse technology-specific stack trace configurations from tracing data.
+    
+    Args:
+        tracing_data: Tracing configuration dictionary
+    
+    Returns:
+        Dictionary of technology-specific overrides
+    """
+    tech_config = {}
+    
+    for tech_name, tech_data in tracing_data.items():
+        if tech_name == "global" or not isinstance(tech_data, dict):
+            continue
+        
+        tech_stack_config = parse_technology_stack_trace_config(
+            tech_data,
+            level_key="stack-trace",
+            length_key="stack-trace-length",
+            tech_name=tech_name
+        )
+        
+        if tech_stack_config:
+            tech_config[tech_name] = tech_stack_config
+    
+    return tech_config
 
 
 def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]:
@@ -336,77 +492,18 @@ def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Un
     length = 30
     tech_config = {}
     
-    if "tracing" in config_reader.data:
-        root_key = "tracing"
-    elif "com.instana.tracing" in config_reader.data:
-        logger.warning(
-            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-        )
-        root_key = "com.instana.tracing"
-    else:
+    root_key = get_tracing_root_key(config_reader.data)
+    if not root_key:
         return level, length, tech_config
     
     tracing_data = config_reader.data[root_key]
     
     # Read global configuration
     if "global" in tracing_data:
-        global_config = tracing_data["global"]
-        
-        if "stack-trace" in global_config:
-            config_level = global_config["stack-trace"].lower()
-            if config_level in ["all", "error", "none"]:
-                level = config_level
-            else:
-                logger.warning(
-                    f"Invalid stack-trace value in config: {config_level}. Must be 'all', 'error', or 'none'. Using default 'all'"
-                )
-        
-        if "stack-trace-length" in global_config:
-            try:
-                config_length = int(global_config["stack-trace-length"])
-                if config_length >= 1:
-                    length = config_length
-                else:
-                    logger.warning(
-                        "stack-trace-length must be positive. Using default 30"
-                    )
-            except (ValueError, TypeError):
-                logger.warning(
-                    "Invalid stack-trace-length in config. Must be an integer. Using default 30"
-                )
+        level, length = parse_global_stack_trace_config(tracing_data["global"])
     
     # Read technology-specific overrides
-    for tech_name, tech_data in tracing_data.items():
-        if tech_name == "global" or not isinstance(tech_data, dict):
-            continue
-        
-        tech_stack_config = {}
-        
-        if "stack-trace" in tech_data:
-            tech_level = str(tech_data["stack-trace"]).lower()
-            if tech_level in ["all", "error", "none"]:
-                tech_stack_config["level"] = tech_level
-            else:
-                logger.warning(
-                    f"Invalid stack-trace value for {tech_name} in YAML: {tech_level}. Ignoring."
-                )
-        
-        if "stack-trace-length" in tech_data:
-            try:
-                tech_length = int(tech_data["stack-trace-length"])
-                if tech_length >= 1:
-                    tech_stack_config["length"] = tech_length
-                else:
-                    logger.warning(
-                        f"stack-trace-length for {tech_name} must be positive. Ignoring."
-                    )
-            except (ValueError, TypeError):
-                logger.warning(
-                    f"Invalid stack-trace-length for {tech_name} in YAML. Must be an integer. Ignoring."
-                )
-        
-        if tech_stack_config:
-            tech_config[tech_name] = tech_stack_config
+    tech_config = parse_tech_specific_stack_trace_configs(tracing_data)
     
     return level, length, tech_config
 

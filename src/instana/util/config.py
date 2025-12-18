@@ -2,7 +2,7 @@
 
 import itertools
 import os
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union, Optional
 
 from instana.configurator import config
 from instana.log import logger
@@ -172,9 +172,7 @@ def parse_ignored_endpoints_from_yaml(file_path: str) -> List[str]:
     if "tracing" in config_reader.data:
         ignore_endpoints_dict = config_reader.data["tracing"].get("ignore-endpoints")
     elif "com.instana.tracing" in config_reader.data:
-        logger.warning(
-            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-        )
+        logger.warning(DEPRECATED_CONFIG_KEY_WARNING)
         ignore_endpoints_dict = config_reader.data["com.instana.tracing"].get(
             "ignore-endpoints"
         )
@@ -300,7 +298,7 @@ def get_disable_trace_configurations_from_env() -> Tuple[List[str], List[str]]:
     return [], []
 
 
-def get_tracing_root_key(config_data: Dict[str, Any]) -> Union[str, None]:
+def get_tracing_root_key(config_data: Dict[str, Any]) -> Optional[str]:
     """
     Get the root key for tracing configuration from config data.
     Handles both 'tracing' and deprecated 'com.instana.tracing' keys.
@@ -326,8 +324,9 @@ def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
     if not root_key:
         return [], []
 
-    tracing_disable_config = config_reader.data[root_key].get("disable", "")
-    return parse_span_disabling(tracing_disable_config)
+    if tracing_disable_config := config_reader.data[root_key].get("disable", None):
+        return parse_span_disabling(tracing_disable_config)
+    return [], []
 
 
 def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]:
@@ -337,7 +336,7 @@ def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]
     return [], []
 
 
-def validate_stack_trace_level(level_value: Any, context: str = "") -> Union[str, None]:
+def validate_stack_trace_level(level_value: Any, context: str = "") -> Optional[str]:
     """
     Validate stack trace level value.
     
@@ -359,7 +358,7 @@ def validate_stack_trace_level(level_value: Any, context: str = "") -> Union[str
     return None
 
 
-def validate_stack_trace_length(length_value: Any, context: str = "") -> Union[int, None]:
+def validate_stack_trace_length(length_value: Any, context: str = "") -> Optional[int]:
     """
     Validate stack trace length value.
     

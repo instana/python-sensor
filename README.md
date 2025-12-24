@@ -55,9 +55,29 @@ You can find more documentation covering supported components and minimum versio
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/instana/python-sensor.
 
-## More
+## Run Tests with Docker
+Docker compose file currently supports up to Python version 3.14.
 
-Want to instrument other languages?  See our [Node.js], [Go], [Ruby] instrumentation or many other [supported technologies].
+Run tests for all Python versions:
+- `docker compose --profile infra-general --profile tests-general up --build --abort-on-container-exit | grep python-sensor-test`
+
+To run tests for a specific Python version using Docker, 3.12 for example:
+- `docker compose --profile infra-general --profile py312 up --build --abort-on-container-exit | grep python-sensor-test`
+
+Cassandra Tests:
+- `docker compose --profile infra-cassandra --profile tests-cassandra up --build --abort-on-container-exit | grep python-sensor-test`
+
+Kafka Tests:
+- `docker compose --profile infra-kafka --profile tests-kafka up --build --abort-on-container-exit | grep python-sensor-test`
+
+Gevent Tests:
+- `docker compose --profile tests-gevent up --build --abort-on-container-exit | grep python-sensor-test`
+
+AWS Tests:
+- `docker compose --profile tests-aws up --build --abort-on-container-exit | grep python-sensor-test`
+
+## More
+Want to instrument other languages? See our [Node.js], [Go], [Ruby] instrumentation or many other [supported technologies].
 
 <!-- Reference links -->
 [Instana]: https://www.instana.com/ "IBM Instana Observability"

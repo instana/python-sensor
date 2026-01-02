@@ -77,6 +77,7 @@ class HostAgent(BaseAgent):
         This method is called after a successful announce.  See fsm.py
         """
         logger.debug("Starting Host Collector")
+        logger.debug("Cagri is here")
         self.collector.start()
 
     def handle_fork(self) -> None:

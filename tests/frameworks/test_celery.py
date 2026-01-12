@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 
+import os
 import time
 from typing import Generator, List
 
@@ -52,6 +53,7 @@ class TestCelery:
         self.tracer = get_tracer()
         self.recorder = self.tracer.span_processor
         self.recorder.clear_spans()
+        self.redis_host = os.environ.get("REDIS_HOST", "localhost")
         yield
 
     def test_apply_async(
@@ -92,7 +94,7 @@ class TestCelery:
 
         assert client_span.data["celery"]["task"] == "tests.frameworks.test_celery.add"
         assert client_span.data["celery"]["scheme"] == "redis"
-        assert client_span.data["celery"]["host"] == "localhost"
+        assert client_span.data["celery"]["host"] == self.redis_host
         assert client_span.data["celery"]["port"] == "6379"
         assert client_span.data["celery"]["task_id"]
         assert not client_span.data["celery"]["error"]
@@ -100,7 +102,7 @@ class TestCelery:
 
         assert worker_span.data["celery"]["task"] == "tests.frameworks.test_celery.add"
         assert worker_span.data["celery"]["scheme"] == "redis"
-        assert worker_span.data["celery"]["host"] == "localhost"
+        assert worker_span.data["celery"]["host"] == self.redis_host
         assert worker_span.data["celery"]["port"] == "6379"
         assert worker_span.data["celery"]["task_id"]
         assert not worker_span.data["celery"]["error"]
@@ -145,7 +147,7 @@ class TestCelery:
 
         assert client_span.data["celery"]["task"] == "tests.frameworks.test_celery.add"
         assert client_span.data["celery"]["scheme"] == "redis"
-        assert client_span.data["celery"]["host"] == "localhost"
+        assert client_span.data["celery"]["host"] == self.redis_host
         assert client_span.data["celery"]["port"] == "6379"
         assert client_span.data["celery"]["task_id"]
         assert not client_span.data["celery"]["error"]
@@ -153,7 +155,7 @@ class TestCelery:
 
         assert worker_span.data["celery"]["task"] == "tests.frameworks.test_celery.add"
         assert worker_span.data["celery"]["scheme"] == "redis"
-        assert worker_span.data["celery"]["host"] == "localhost"
+        assert worker_span.data["celery"]["host"] == self.redis_host
         assert worker_span.data["celery"]["port"] == "6379"
         assert worker_span.data["celery"]["task_id"]
         assert not worker_span.data["celery"]["error"]
@@ -198,7 +200,7 @@ class TestCelery:
 
         assert client_span.data["celery"]["task"] == "tests.frameworks.test_celery.add"
         assert client_span.data["celery"]["scheme"] == "redis"
-        assert client_span.data["celery"]["host"] == "localhost"
+        assert client_span.data["celery"]["host"] == self.redis_host
         assert client_span.data["celery"]["port"] == "6379"
         assert client_span.data["celery"]["task_id"]
         assert not client_span.data["celery"]["error"]
@@ -206,7 +208,7 @@ class TestCelery:
 
         assert worker_span.data["celery"]["task"] == "tests.frameworks.test_celery.add"
         assert worker_span.data["celery"]["scheme"] == "redis"
-        assert worker_span.data["celery"]["host"] == "localhost"
+        assert worker_span.data["celery"]["host"] == self.redis_host
         assert worker_span.data["celery"]["port"] == "6379"
         assert worker_span.data["celery"]["task_id"]
         assert not worker_span.data["celery"]["error"]
@@ -264,7 +266,7 @@ class TestCelery:
             == "tests.frameworks.test_celery.will_raise_error"
         )
         assert client_span.data["celery"]["scheme"] == "redis"
-        assert client_span.data["celery"]["host"] == "localhost"
+        assert client_span.data["celery"]["host"] == self.redis_host
         assert client_span.data["celery"]["port"] == "6379"
         assert client_span.data["celery"]["task_id"]
         assert not client_span.data["celery"]["error"]
@@ -275,7 +277,7 @@ class TestCelery:
             == "tests.frameworks.test_celery.will_raise_error"
         )
         assert worker_span.data["celery"]["scheme"] == "redis"
-        assert worker_span.data["celery"]["host"] == "localhost"
+        assert worker_span.data["celery"]["host"] == self.redis_host
         assert worker_span.data["celery"]["port"] == "6379"
         assert worker_span.data["celery"]["task_id"]
         assert worker_span.data["celery"]["error"] == "This is a simulated error"

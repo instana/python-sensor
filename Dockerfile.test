@@ -1,0 +1,17 @@
+ARG PYTHON_VERSION=3.12
+FROM public.ecr.aws/docker/library/python:${PYTHON_VERSION}-slim
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    git \
+    pkg-config \
+    default-libmysqlclient-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir --upgrade pip
+
+CMD ["echo", "Container ready..."]

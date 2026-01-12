@@ -12,9 +12,6 @@ from tests.helpers import testenv
 from aioamqp.properties import Properties
 from aioamqp.envelope import Envelope
 
-testenv["rabbitmq_host"] = "127.0.0.1"
-testenv["rabbitmq_port"] = 5672
-
 
 class TestAioamqp:
     @pytest.fixture(autouse=True)
@@ -25,19 +22,39 @@ class TestAioamqp:
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(None)
+        self.transport = None
+        self.protocol = None
         yield
-        self.loop.run_until_complete(self.delete_queue())
-        if self.loop.is_running():
-            self.loop.close()
+        # Cleanup
+        try:
+            self.loop.run_until_complete(self.delete_queue())
+            # Cancel all pending tasks
+            pending = asyncio.all_tasks(self.loop)
+            for task in pending:
+                task.cancel()
+            # Wait for all tasks to be cancelled
+            if pending:
+                self.loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True)
+                )
+        except Exception:
+            pass
+        finally:
+            if not self.loop.is_closed():
+                self.loop.close()
 
     async def delete_queue(self) -> None:
-        _, protocol = await aioamqp.connect(
-            testenv["rabbitmq_host"],
-            testenv["rabbitmq_port"],
-        )
-        channel = await protocol.channel()
-        await channel.queue_delete("message_queue")
-        await asyncio.sleep(1)
+        try:
+            transport, protocol = await aioamqp.connect(
+                testenv["rabbitmq_host"],
+                testenv["rabbitmq_port"],
+            )
+            channel = await protocol.channel()
+            await channel.queue_delete("message_queue")
+            await protocol.close()
+            transport.close()
+        except Exception:
+            pass  # Queue might not exist or connection might fail during cleanup
 
     async def publish_message(self) -> None:
         transport, protocol = await aioamqp.connect(
@@ -66,12 +83,19 @@ class TestAioamqp:
             with self.tracer.start_as_current_span("callback-span"):
                 await channel.basic_client_ack(delivery_tag=envelope.delivery_tag)
 
-        _, protocol = await aioamqp.connect(
+        self.transport, self.protocol = await aioamqp.connect(
             testenv["rabbitmq_host"], testenv["rabbitmq_port"]
         )
-        channel = await protocol.channel()
+        channel = await self.protocol.channel()
         await channel.queue_declare(queue_name="message_queue")
         await channel.basic_consume(callback, queue_name="message_queue", no_ack=False)
+
+        # Wait for the message to be consumed
+        await asyncio.sleep(0.5)
+
+        # Close the consumer connection
+        await self.protocol.close()
+        self.transport.close()
 
     def test_basic_publish(self) -> None:
         with self.tracer.start_as_current_span("test-span"):
@@ -86,7 +110,10 @@ class TestAioamqp:
         assert publisher_span.n == "amqp"
         assert publisher_span.data["amqp"]["command"] == "publish"
         assert publisher_span.data["amqp"]["routingkey"] == "message_queue"
-        assert publisher_span.data["amqp"]["connection"] == "127.0.0.1:5672"
+        assert publisher_span.data["amqp"]["connection"]
+        assert (
+            str(testenv["rabbitmq_port"]) in publisher_span.data["amqp"]["connection"]
+        )
 
         assert publisher_span.p == test_span.s
 
@@ -110,7 +137,10 @@ class TestAioamqp:
         assert publisher_span.n == "amqp"
         assert publisher_span.data["amqp"]["command"] == "publish"
         assert publisher_span.data["amqp"]["routingkey"] == "message_queue"
-        assert publisher_span.data["amqp"]["connection"] == "127.0.0.1:5672"
+        assert publisher_span.data["amqp"]["connection"]
+        assert (
+            str(testenv["rabbitmq_port"]) in publisher_span.data["amqp"]["connection"]
+        )
         assert publisher_span.p == test_span.s
 
         assert callback_span.n == "sdk"
@@ -121,7 +151,8 @@ class TestAioamqp:
         assert consumer_span.n == "amqp"
         assert consumer_span.data["amqp"]["command"] == "consume"
         assert consumer_span.data["amqp"]["routingkey"] == "message_queue"
-        assert consumer_span.data["amqp"]["connection"] == "127.0.0.1:5672"
+        assert consumer_span.data["amqp"]["connection"]
+        assert str(testenv["rabbitmq_port"]) in consumer_span.data["amqp"]["connection"]
         assert (
             consumer_span.data["amqp"]["connection"]
             == publisher_span.data["amqp"]["connection"]

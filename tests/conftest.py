@@ -91,10 +91,11 @@ if sys.version_info >= (3, 14):
 
 @pytest.fixture(scope="session")
 def celery_config():
+    redis_host = os.environ.get("REDIS_HOST", "localhost")
     return {
         "broker_connection_retry_on_startup": True,
-        "broker_url": "redis://localhost:6379",
-        "result_backend": "redis://localhost:6379",
+        "broker_url": f"redis://{redis_host}:6379",
+        "result_backend": f"redis://{redis_host}:6379",
     }
 
 

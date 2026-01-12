@@ -93,12 +93,12 @@ class TestCursorWrapper:
         # Test Connection
         assert (
             self.test_conn.dsn
-            == "user=root password=xxx dbname=instana_test_db host=127.0.0.1 port=5432"
+            == f'user=root password=xxx dbname=instana_test_db host={testenv["postgresql_host"]} port=5432'
         )
         assert not self.test_conn.autocommit
         assert self.test_conn.status == 1
         assert self.test_conn.info.dbname == "instana_test_db"
-        assert self.test_conn.info.host == "127.0.0.1"
+        assert self.test_conn.info.host == testenv["postgresql_host"]
         assert self.test_conn.info.user == "root"
         assert self.test_conn.info.port == 5432
 
@@ -122,7 +122,7 @@ class TestCursorWrapper:
             assert span.attributes["db.name"] == "instana_test_db"
             assert span.attributes["db.statement"] == sample_sql
             assert span.attributes["db.user"] == "root"
-            assert span.attributes["host"] == "127.0.0.1"
+            assert span.attributes["host"] == testenv["postgresql_host"]
             assert span.attributes["port"] == 5432
 
     def test_collect_kvs_error(self, caplog: LogCaptureFixture) -> None:
@@ -260,11 +260,11 @@ class TestConnectionWrapper:
         self.connect_params = [
             "db",
             {
-                "db": "instana_test_db",
-                "host": "localhost",
-                "port": "5432",
-                "user": "root",
-                "password": "passw0rd",
+                "db": testenv["postgresql_db"],
+                "host": testenv["postgresql_host"],
+                "port": testenv["postgresql_port"],
+                "user": testenv["postgresql_user"],
+                "password": testenv["postgresql_pw"],
             },
         ]
         self.test_conn = psycopg2.connect(
@@ -319,7 +319,7 @@ class TestConnectionFactory:
 
     def test_call(self) -> None:
         response = self.conn_fact(
-            dsn="user=root password=passw0rd dbname=instana_test_db host=localhost port=5432"
+            dsn=f'user=root password=passw0rd dbname=instana_test_db host={testenv["postgresql_host"]} port=5432'
         )
         assert isinstance(self.conn_fact._wrapper_ctor, ConnectionWrapper.__class__)
         assert self.conn_fact._connect_func == self.test_conn_func

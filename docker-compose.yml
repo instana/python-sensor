@@ -1,27 +1,65 @@
+x-common-env: &common-env
+  PYTHONUNBUFFERED: "1"
+  REDIS_HOST: redis
+  MYSQL_HOST: mariadb
+  MONGO_HOST: mongodb
+  POSTGRES_HOST: postgres
+  RABBITMQ_HOST: rabbitmq
+  PUBSUB_EMULATOR_HOST: pubsub:8681
+
+x-general-deps: &general-deps
+  redis: { condition: service_healthy }
+  mariadb: { condition: service_healthy }
+  mongodb: { condition: service_healthy }
+  postgres: { condition: service_healthy }
+  rabbitmq: { condition: service_healthy }
+  pubsub: { condition: service_started }
+
+x-cassandra-deps: &cassandra-deps
+  cassandra: { condition: service_healthy }
+
+x-kafka-deps: &kafka-deps
+  kafka: { condition: service_healthy }
+
+x-test-template: &test-template
+  build:
+    context: .
+    dockerfile: Dockerfile.test
+  environment:
+    <<: *common-env
+  networks:
+    - default
+
+x-standard-test-command: &standard-test-command >
+  /bin/bash -c "
+  pip install --upgrade pip setuptools wheel &&
+  pip install wrapt --upgrade --force-reinstall &&
+  pip install -r requirements.txt &&
+  pip install -r tests/requirements.txt &&
+
+  coverage run --source=instana -m pytest -v --junitxml=test-results/junit.xml tests &&
+  coverage report -m
+  "
+
 services:
+
   redis:
     image: public.ecr.aws/docker/library/redis
+    profiles: ["infra-general", "all-infra"]
     volumes:
       - ./tests/conf/redis.conf:/usr/local/etc/redis/redis.conf:Z
     command: redis-server /usr/local/etc/redis/redis.conf
-    ports:
-      - "0.0.0.0:6379:6379"
-
-  cassandra:
-    image: public.ecr.aws/docker/library/cassandra
-    ports:
-      - 9042:9042
-
-  couchbase:
-    image: public.ecr.aws/docker/library/couchbase:community
-    ports:
-      - 8091-8094:8091-8094
-      - 11210:11210
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   mariadb:
     image: public.ecr.aws/docker/library/mariadb
-    ports:
-      - 3306:3306
+    profiles: ["infra-general", "all-infra"]
+    ports: ["3306:3306"]
     environment:
       MYSQL_DATABASE: 'instana_test_db'
       MYSQL_USER: 'root'
@@ -29,55 +67,86 @@ services:
       MYSQL_ROOT_HOST: '%'
     volumes:
       - ./tests/config/database/mysql/conf.d/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:Z
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   mongodb:
     image: public.ecr.aws/docker/library/mongo
-    ports:
-      - '27017:27017'
+    profiles: ["infra-general", "all-infra"]
+    ports: ["27017:27017"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   postgres:
     image: public.ecr.aws/docker/library/postgres
-    ports:
-      - 5432:5432
+    profiles: ["infra-general", "all-infra"]
+    ports: ["5432:5432"]
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: passw0rd
       POSTGRES_DB: instana_test_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d instana_test_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   rabbitmq:
     image: public.ecr.aws/docker/library/rabbitmq
+    profiles: ["infra-general", "all-infra"]
     environment:
       - RABBITMQ_NODENAME=rabbit@localhost
-    ports:
-      - 5671:5671
-      - 5672:5672
+    ports: ["5671:5671", "5672:5672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
 
   pubsub:
     image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+    profiles: ["infra-general", "all-infra"]
     environment:
       - PUBSUB_EMULATOR_HOST=0.0.0.0:8681
       - PUBSUB_PROJECT1=test-project,test-topic
-    ports:
-      - "8681:8681"
-      - "8682:8682"
+    ports: ["8681:8681", "8682:8682"]
 
-  # Sidecar container for Kafka
+  cassandra:
+    image: public.ecr.aws/docker/library/cassandra
+    profiles: ["infra-cassandra", "all-infra"]
+    ports: ["9042:9042"]
+    environment:
+      MAX_HEAP_SIZE: 2048m
+      HEAP_NEWSIZE: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
   zookeeper:
     image: public.ecr.aws/ubuntu/zookeeper:3.1-22.04_edge
+    profiles: ["infra-kafka", "all-infra"]
     ports: ["2181:2181"]
     environment: [ "TZ=UTC" ]
 
   kafka:
     image: public.ecr.aws/ubuntu/kafka:3.1-22.04_edge
+    profiles: ["infra-kafka", "all-infra"]
     depends_on: [zookeeper]
-    ports: 
-      - "9094:9094"
-      - "9093:9093"
+    ports: ["9094:9094", "9093:9093"]
     environment:
       - TZ=UTC
       - ZOOKEEPER_HOST=zookeeper
       - ZOOKEEPER_PORT=2181
-    command: 
+    command:
       - /opt/kafka/config/server.properties
       - --override
       - listeners=INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
@@ -97,3 +166,201 @@ services:
       - transaction.state.log.min.isr=1
       - --override
       - auto.create.topics.enable=true
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9093 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # ================================================================
+  # GENERAL TEST MATRIX
+  # ================================================================
+
+  test-py39:
+    <<: *test-template
+    image: python-sensor-test:3.9
+    container_name: python-sensor-test-py39
+    profiles: ["tests-general", "py39"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.9"
+    depends_on: *general-deps
+    volumes: [".:/app", "test-results-py39:/app/test-results"]
+    command: *standard-test-command
+
+  test-py310:
+    <<: *test-template
+    image: python-sensor-test:3.10
+    container_name: python-sensor-test-py310
+    profiles: ["tests-general", "py310"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.10"
+    depends_on: *general-deps
+    volumes: [".:/app", "test-results-py310:/app/test-results"]
+    command: *standard-test-command
+
+  test-py311:
+    <<: *test-template
+    image: python-sensor-test:3.11
+    container_name: python-sensor-test-py311
+    profiles: ["tests-general", "py311"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.11"
+    depends_on: *general-deps
+    volumes: [".:/app", "test-results-py311:/app/test-results"]
+    command: *standard-test-command
+
+  test-py312:
+    <<: *test-template
+    image: python-sensor-test:3.12
+    container_name: python-sensor-test-py312
+    profiles: ["tests-general", "py312"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.12"
+    depends_on: *general-deps
+    volumes: [".:/app", "test-results-py312:/app/test-results"]
+    command: *standard-test-command
+
+  test-py313:
+    <<: *test-template
+    image: python-sensor-test:3.13
+    container_name: python-sensor-test-py313
+    profiles: ["tests-general", "py313"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.13"
+    depends_on: *general-deps
+    volumes: [".:/app", "test-results-py313:/app/test-results"]
+    command: *standard-test-command
+
+  # ================================================================
+  # SPECIALIZED TESTS
+  # ================================================================
+
+  test-cassandra:
+    <<: *test-template
+    image: python-sensor-test:3.9
+    container_name: python-sensor-test-cassandra
+    profiles: ["tests-cassandra"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.9"
+    depends_on: *cassandra-deps
+    volumes: [".:/app", "test-results-cassandra:/app/test-results"]
+    environment:
+      <<: *common-env
+      CASSANDRA_HOST: cassandra
+      CASSANDRA_TEST: "true"
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip setuptools wheel &&
+      pip install wrapt --upgrade --force-reinstall &&
+      pip install -r requirements.txt &&
+      pip install -r tests/requirements-cassandra.txt &&
+      
+      coverage run --source=instana -m pytest -v --junitxml=test-results/junit.xml tests/clients/test_cassandra-driver.py &&
+      coverage report -m
+      "
+
+  test-kafka:
+    <<: *test-template
+    image: python-sensor-test:3.13
+    container_name: python-sensor-test-kafka
+    profiles: ["tests-kafka"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.13"
+    depends_on: *kafka-deps
+    volumes: [".:/app", "test-results-kafka:/app/test-results"]
+    environment:
+      <<: *common-env
+      KAFKA_HOST: kafka
+      KAFKA_PORT: "9093"
+      KAFKA_TEST: "true"
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip setuptools wheel &&
+      pip install wrapt --upgrade --force-reinstall &&
+      pip install -r requirements.txt &&
+      pip install -r tests/requirements-kafka.txt &&
+      
+      coverage run --source=instana -m pytest -v --junitxml=test-results/junit.xml tests/clients/kafka/test*.py &&
+      coverage report -m
+      "
+
+  test-gevent:
+    <<: *test-template
+    image: python-sensor-test:3.9
+    container_name: python-sensor-test-gevent
+    profiles: ["tests-gevent"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.9"
+    volumes: [".:/app", "test-results-gevent:/app/test-results"]
+    environment:
+      <<: *common-env
+      GEVENT_TEST: "true"
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip setuptools wheel &&
+      pip install wrapt --upgrade --force-reinstall &&
+      pip install -r requirements.txt &&
+      pip install -r tests/requirements-gevent-starlette.txt &&
+      
+      coverage run --source=instana -m pytest -v --junitxml=test-results/junit.xml tests/frameworks/test_gevent.py &&
+      coverage report -m
+      "
+
+  test-aws:
+    <<: *test-template
+    image: python-sensor-test:3.12
+    container_name: python-sensor-test-aws
+    profiles: ["tests-aws"]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_VERSION: "3.12"
+    volumes: [".:/app", "test-results-aws:/app/test-results"]
+    # AWS test uses common env, no extra vars needed, so we rely on template
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip setuptools wheel &&
+      pip install wrapt --upgrade --force-reinstall &&
+      pip install -r requirements.txt &&
+      pip install -r tests/requirements-aws.txt &&
+      
+      coverage run --source=instana -m pytest -v --junitxml=test-results/junit.xml tests_aws &&
+      coverage report -m
+      "
+
+volumes:
+  test-results-py39:
+  test-results-py310:
+  test-results-py311:
+  test-results-py312:
+  test-results-py313:
+  test-results-general:
+  test-results-cassandra:
+  test-results-kafka:
+  test-results-gevent:
+  test-results-aws:

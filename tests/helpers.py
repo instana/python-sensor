@@ -25,11 +25,7 @@ testenv["couchdb_password"] = os.environ.get("COUCHDB_PASSWORD", "password")
 """
 MySQL Environment
 """
-if "MYSQL_HOST" in os.environ:
-    testenv["mysql_host"] = os.environ["MYSQL_HOST"]
-else:
-    testenv["mysql_host"] = "127.0.0.1"
-
+testenv["mysql_host"] = os.environ.get("MYSQL_HOST", "127.0.0.1")
 testenv["mysql_port"] = int(os.environ.get("MYSQL_PORT", "3306"))
 testenv["mysql_db"] = os.environ.get("MYSQL_DATABASE", "instana_test_db")
 testenv["mysql_user"] = os.environ.get("MYSQL_USER", "root")
@@ -62,7 +58,7 @@ testenv["mongodb_pw"] = os.environ.get("MONGO_PW", None)
 RabbitMQ Environment
 """
 testenv["rabbitmq_host"] = os.environ.get("RABBITMQ_HOST", "127.0.0.1")
-testenv["rabbitmq_port"] = os.environ.get("RABBITMQ_PORT", 5672)
+testenv["rabbitmq_port"] = int(os.environ.get("RABBITMQ_PORT", "5672"))
 
 
 """

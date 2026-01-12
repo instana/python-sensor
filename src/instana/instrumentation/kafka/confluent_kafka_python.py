@@ -17,8 +17,12 @@ try:
     from instana.span.span import InstanaSpan
     from instana.util.traceutils import get_tracer_tuple
 
-    consumer_token = None
-    consumer_span = contextvars.ContextVar("confluent_kafka_consumer_span")
+    consumer_token = contextvars.ContextVar(
+        "confluent_kafka_consumer_token", default=None
+    )
+    consumer_span = contextvars.ContextVar(
+        "confluent_kafka_consumer_span", default=None
+    )
 
     # As confluent_kafka is a wrapper around the C-developed librdkafka
     # (provided automatically via binary wheels), we have to create new classes
@@ -178,24 +182,23 @@ try:
             )  # pragma: no cover
 
     def save_consumer_span_into_context(span: "InstanaSpan") -> None:
-        global consumer_token
         ctx = trace.set_span_in_context(span)
-        consumer_token = context.attach(ctx)
+        token = context.attach(ctx)
+        consumer_token.set(token)
         consumer_span.set(span)
 
     def close_consumer_span(span: "InstanaSpan") -> None:
-        global consumer_token
         if span.is_recording():
             span.end()
             consumer_span.set(None)
-        if consumer_token is not None:
-            context.detach(consumer_token)
-            consumer_token = None
+        token = consumer_token.get(None)
+        if token is not None:
+            context.detach(token)
+            consumer_token.set(None)
 
     def clear_context() -> None:
-        global consumer_token
         context.attach(trace.set_span_in_context(None))
-        consumer_token = None
+        consumer_token.set(None)
         consumer_span.set(None)
 
     def trace_kafka_consume(
@@ -253,6 +256,10 @@ try:
             res = wrapped(*args, **kwargs)
             if res:
                 create_span("poll", res.topic(), res.headers())
+            else:
+                span = consumer_span.get(None)
+                if span is not None:
+                    close_consumer_span(span)
             return res
         except Exception as exc:
             exception = exc

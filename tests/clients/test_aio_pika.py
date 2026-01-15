@@ -6,6 +6,7 @@ import asyncio
 from aio_pika import Message, connect, connect_robust
 
 from instana.singletons import agent, get_tracer
+from tests.helpers import testenv
 
 if TYPE_CHECKING:
     from instana.span.readable_span import ReadableSpan
@@ -33,7 +34,9 @@ class TestAioPika:
 
     async def publish_message(self, params_combination: str = "both_args") -> None:
         # Perform connection
-        connection = await connect()
+        connection = await connect(
+            host=testenv["rabbitmq_host"], port=testenv["rabbitmq_port"]
+        )
 
         async with connection:
             # Creating a channel
@@ -68,14 +71,18 @@ class TestAioPika:
             await exchange.publish(*args, **kwargs)
 
     async def delete_queue(self) -> None:
-        connection = await connect()
+        connection = await connect(
+            host=testenv["rabbitmq_host"], port=testenv["rabbitmq_port"]
+        )
 
         async with connection:
             channel = await connection.channel()
             await channel.queue_delete(self.queue_name)
 
     async def consume_message(self, connect_method) -> None:
-        connection = await connect_method()
+        connection = await connect_method(
+            host=testenv["rabbitmq_host"], port=testenv["rabbitmq_port"]
+        )
 
         async with connection:
             # Creating channel
@@ -91,7 +98,9 @@ class TestAioPika:
                             break
 
     async def consume_with_exception(self, connect_method) -> None:
-        connection = await connect_method()
+        connection = await connect_method(
+            host=testenv["rabbitmq_host"], port=testenv["rabbitmq_port"]
+        )
 
         async def on_message(msg):
             raise RuntimeError("Simulated Exception")

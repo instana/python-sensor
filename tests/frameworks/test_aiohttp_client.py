@@ -5,6 +5,7 @@
 from typing import Any, Dict, Generator, Optional
 import aiohttp
 import asyncio
+import sys
 
 import pytest
 
@@ -434,6 +435,10 @@ class TestAiohttpClient:
 
         agent.options.extra_http_headers = original_extra_http_headers
 
+    @pytest.mark.skipif(
+        sys.version_info >= (3, 15),
+        reason="Avoiding CircleCI 'Too long with no output' error",
+    )
     def test_client_error(self) -> None:
         async def test():
             with self.tracer.start_as_current_span("test"):

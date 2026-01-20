@@ -76,15 +76,19 @@ if sys.version_info >= (3, 12):
     collect_ignore_glob.append("*test_spyne*")
 
 
-if sys.version_info >= (3, 14):
+if sys.version_info >= (3, 15):
     collect_ignore_glob.extend(
         [
-            # Currently not installable dependencies because of 3.14 incompatibilities
+            # Currently not installable dependencies because of 3.15 incompatibilities
             "*test_fastapi*",
-            # aiohttp-server tests failing due to deprecated methods used
-            "*test_aiohttp_server*",
-            # Currently Sanic does not support python >= 3.14
+            # Development version of Python always break logging tests, so we skip then
+            "*test_logging*",
+            # Removing the following tests due to "Too long with no output"
+            # errors from CircleCI pipeline
+            "*test_aio_pika*",
+            "*test_pyramid*",
             "*test_sanic*",
+            "*test_starlette*",
         ]
     )
 

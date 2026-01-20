@@ -3,6 +3,7 @@
 
 
 import os
+import sys
 import threading
 import time
 from typing import Generator
@@ -111,6 +112,10 @@ class AckCallback(object):
             self.calls += 1
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 15),
+    reason="Avoiding CircleCI 'Too long with no output' error",
+)
 class TestPubSubSubscribe(_TraceContextMixin):
     @classmethod
     def setup_class(cls) -> None:

@@ -276,6 +276,35 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
+  python3150:
+    parameters:
+    docker:
+      - image: ghcr.io/pvital/pvital-python:latest
+      - image: public.ecr.aws/docker/library/postgres:16.10-trixie
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: passw0rd
+          POSTGRES_DB: instana_test_db
+      - image: public.ecr.aws/docker/library/mariadb:11.3.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
+      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      - image: public.ecr.aws/docker/library/mongo:7.0.6
+      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps
+      - run-tests-with-coverage-report
+      - store-pytest-results
+      - store-coverage-report
+
   final_job:
     docker:
       - image: public.ecr.aws/docker/library/python:3.13
@@ -301,6 +330,7 @@ workflows:
           matrix:
             parameters:
               py-version: ["3.11", "3.12", "3.13", "3.14"]
+      - python3150
       - final_job:
           requires:
             - python3x

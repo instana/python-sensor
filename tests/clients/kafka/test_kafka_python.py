@@ -23,8 +23,7 @@ from instana.instrumentation.kafka.kafka_python import (
 from instana.options import StandardOptions
 from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
-from instana.util.config import parse_ignored_endpoints_from_yaml
-from tests.helpers import get_first_span_by_filter, testenv
+from tests.helpers import drop_log_spans_from_list, get_first_span_by_filter, testenv
 
 
 class TestKafkaPython:
@@ -351,9 +350,12 @@ class TestKafkaPython:
 
         consumer.close()
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka"})
+    @patch.dict(
+        os.environ,
+        {"INSTANA_TRACING_FILTER_EXCLUDE_1_ATTRIBUTES": "type;kafka;strict"},
+    )
     def test_ignore_kafka(self) -> None:
-        agent.options.set_trace_configurations()
+        agent.options.set_span_filtering_configurations()
         with self.tracer.start_as_current_span("test"):
             self.producer.send(testenv["kafka_topic"], b"raw_bytes")
             self.producer.flush()
@@ -364,9 +366,14 @@ class TestKafkaPython:
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 1
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:send"})
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_2_ATTRIBUTES": "type;kafka;strict|kafka.access;send;contains"
+        },
+    )
     def test_ignore_kafka_producer(self) -> None:
-        agent.options.set_trace_configurations()
+        agent.options.set_span_filtering_configurations()
         with self.tracer.start_as_current_span("test-span"):
             # Produce some events
             self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
@@ -389,14 +396,19 @@ class TestKafkaPython:
         consumer.close()
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+        assert len(spans) == 5
 
         filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 1
+        assert len(filtered_spans) == 3
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:consume"})
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_3_ATTRIBUTES": "type;kafka;strict|kafka.access;consume;contains"
+        },
+    )
     def test_ignore_kafka_consumer(self) -> None:
-        agent.options.set_trace_configurations()
+        agent.options.set_span_filtering_configurations()
         # Produce some events
         self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
         self.producer.send(testenv["kafka_topic"], b"raw_bytes2")
@@ -406,16 +418,40 @@ class TestKafkaPython:
         self.consume_from_topic(testenv["kafka_topic"])
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 1
+        assert len(spans) == 3
 
-    @patch.dict(
-        os.environ,
-        {
-            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
-        },
-    )
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
+
     def test_ignore_specific_topic(self) -> None:
-        agent.options.set_trace_configurations()
+        # Load filter configuration directly into config
+        config["tracing"] = {
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "Kafka Specific Topic Send",
+                        "attributes": [
+                            {
+                                "key": "type",
+                                "values": ["kafka"],
+                                "match_type": "strict",
+                            },
+                            {
+                                "key": "kafka.service",
+                                "values": ["span-topic"],
+                                "match_type": "strict",
+                            },
+                            {
+                                "key": "kafka.access",
+                                "values": ["send"],
+                                "match_type": "strict",
+                            },
+                        ],
+                    }
+                ]
+            }
+        }
+        agent.options.set_span_filtering_configurations()
         with self.tracer.start_as_current_span("test-span"):
             # Produce some events
             self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
@@ -440,9 +476,34 @@ class TestKafkaPython:
         assert span_to_be_filtered not in filtered_spans
 
     def test_ignore_specific_topic_with_config_file(self) -> None:
-        agent.options.ignore_endpoints = parse_ignored_endpoints_from_yaml(
-            "tests/util/test_configuration-1.yaml"
-        )
+        # Load filter configuration directly into config
+        config["tracing"] = {
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "Kafka Specific Topic Send",
+                        "attributes": [
+                            {
+                                "key": "type",
+                                "values": ["kafka"],
+                                "match_type": "strict",
+                            },
+                            {
+                                "key": "kafka.service",
+                                "values": ["span-topic"],
+                                "match_type": "strict",
+                            },
+                            {
+                                "key": "kafka.access",
+                                "values": ["send"],
+                                "match_type": "strict",
+                            },
+                        ],
+                    }
+                ]
+            }
+        }
+        agent.options.set_span_filtering_configurations()
 
         # Produce some events
         self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
@@ -452,7 +513,43 @@ class TestKafkaPython:
         self.consume_from_topic(testenv["kafka_topic"])
 
         spans = self.recorder.queued_spans()
-        assert len(spans) == 1
+        assert len(spans) == 2
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 2
+
+    @patch.dict(
+        os.environ,
+        {"INSTANA_CONFIG_PATH": "tests/util/test_kafka_filtering_configuration.yaml"},
+    )
+    def test_ignore_specific_topic_with_config_path(self) -> None:
+        agent.options.set_span_filtering_configurations()
+
+        with self.tracer.start_as_current_span("test-span"):
+            # Produce some events
+            self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
+            self.producer.flush()
+
+            # Consume the events
+            consumer = KafkaConsumer(
+                testenv["kafka_topic"],
+                bootstrap_servers=testenv["kafka_bootstrap_servers"],
+                auto_offset_reset="earliest",
+                enable_auto_commit=False,
+                consumer_timeout_ms=1000,
+            )
+            for msg in consumer:
+                if msg is None:
+                    break
+            consumer.close()
+
+        spans = self.recorder.queued_spans()
+        # Filter out log spans that may appear due to Kafka errors
+        spans = drop_log_spans_from_list(spans)
+        assert len(spans) == 2
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
 
     def test_kafka_consumer_root_exit(self) -> None:
         agent.options.allow_exit_as_root = True
@@ -700,12 +797,39 @@ class TestKafkaPython:
 
     @patch.dict(os.environ, {"INSTANA_ALLOW_ROOT_EXIT_SPAN": "1"})
     def test_kafka_downstream_suppression(self) -> None:
-        config["tracing"]["ignore_endpoints"] = {
-            "kafka": [
-                {"methods": ["send"], "endpoints": [f"{testenv['kafka_topic']}_1"]},
+        config["tracing"]["filter"] = {
+            "exclude": [
                 {
-                    "methods": ["consume"],
-                    "endpoints": [f"{testenv['kafka_topic']}_2"],
+                    "name": "Kafka send to topic_1",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.access",
+                            "values": ["send"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": [f"{testenv['kafka_topic']}_1"],
+                            "match_type": "strict",
+                        },
+                    ],
+                },
+                {
+                    "name": "Kafka consume from topic_2",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.access",
+                            "values": ["poll"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": [f"{testenv['kafka_topic']}_2"],
+                            "match_type": "strict",
+                        },
+                    ],
                 },
             ]
         }

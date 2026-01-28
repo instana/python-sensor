@@ -10,6 +10,7 @@ from yaml import YAMLError
 from instana.util.config import (
     get_disable_trace_configurations_from_yaml,
     parse_ignored_endpoints_from_yaml,
+    get_span_filter_config_from_yaml,
 )
 from instana.util.config_reader import ConfigReader
 
@@ -41,7 +42,7 @@ class TestConfigReader:
         config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
         assert config_reader.file_path == filename
         assert "tracing" in config_reader.data
-        assert len(config_reader.data["tracing"]) == 2
+        assert len(config_reader.data["tracing"]) == 3
 
     def test_config_reader_file_not_found_error(
         self, caplog: "LogCaptureFixture"
@@ -141,3 +142,37 @@ class TestConfigReader:
             'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
             in caplog.messages
         )
+
+    def test_load_span_filter_configuration(self) -> None:
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
+        span_filters = get_span_filter_config_from_yaml()
+
+        assert span_filters["deactivate"] is False
+        assert len(span_filters["exclude"]) == 1
+        assert len(span_filters["include"]) == 0
+
+        exclude_rule = span_filters["exclude"][0]
+        assert exclude_rule["name"] == "Health Check"
+        assert len(exclude_rule["attributes"]) == 1
+        assert exclude_rule["attributes"][0] == {
+            "key": "http.target",
+            "values": ["/health"],
+            "match_type": "contains",
+        }
+
+    def test_load_span_filter_configuration_legacy(self) -> None:
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-2.yaml"
+        span_filters = get_span_filter_config_from_yaml()
+
+        assert span_filters["deactivate"] is False
+        assert len(span_filters["exclude"]) == 0
+        assert len(span_filters["include"]) == 1
+
+        include_rule = span_filters["include"][0]
+        assert include_rule["name"] == "Important Endpoint"
+        assert len(include_rule["attributes"]) == 1
+        assert include_rule["attributes"][0] == {
+            "key": "http.url",
+            "values": ["/api/v1/important"],
+            "match_type": "strict",
+        }

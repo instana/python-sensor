@@ -22,3 +22,10 @@ com.instana.tracing:
     - "logging": true
     - "databases": true
     - "redis": false
+  filter:
+    include:
+      - name: "Important Endpoint"
+        attributes:
+          - key: "http.url"
+            values: ["/api/v1/important"]
+            match_type: "strict"

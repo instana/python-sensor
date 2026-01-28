@@ -21,12 +21,19 @@ from instana.fsm import TheMachine
 from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
+from instana.util.config import SPAN_TYPE_TO_CATEGORY
 from instana.util.runtime import get_py_source, log_runtime_env_info
 from instana.util.span_utils import get_operation_specifiers
 from instana.version import VERSION
 
 if TYPE_CHECKING:
     from instana.util.process_discovery import Discovery
+
+
+# Span kind constants for filtering
+SPAN_KIND_ENTRY = 1
+SPAN_KIND_EXIT = 2
+SPAN_KIND_INTERMEDIATE = 3
 
 
 class AnnounceData(object):
@@ -357,28 +364,175 @@ class HostAgent(BaseAgent):
 
     def filter_spans(self, spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Filters given span list using ignore-endpoint variable and returns the list of filtered spans.
+        Filters given span list using new span filtering and legacy ignore-endpoint variable.
         """
         filtered_spans = []
-        endpoint = ""
+        include_rules = self.options.span_filter_configs.get("include", [])
+        exclude_rules = self.options.span_filter_configs.get("exclude", [])
+
         for span in spans:
-            if (hasattr(span, "n") or hasattr(span, "name")) and hasattr(span, "data"):
-                service = span.n
-                operation_specifier_key, service_specifier_key = (
-                    get_operation_specifiers(service)
-                )
-                if service == "kafka":
-                    endpoint = span.data[service][service_specifier_key]
-                method = span.data[service][operation_specifier_key]
-                if isinstance(method, str) and self.__is_endpoint_ignored(
-                    service, method, endpoint
-                ):
+            try:
+                keep_span = self._apply_include_rules(span, include_rules)
+
+                if keep_span is None:
+                    keep_span = self._apply_exclude_rules(span, exclude_rules)
+
+                if keep_span is False:
                     continue
-                else:
+
+                if keep_span is True:
                     filtered_spans.append(span)
-            else:
-                filtered_spans.append(span)
+                    continue
+
+                if self._apply_legacy_filtering(span):
+                    filtered_spans.append(span)
+            except Exception as e:
+                logger.debug(f"Error filtering span: {e}")
+                filtered_spans.append(span)  # Keep span on error
+                continue
+
         return filtered_spans
+
+    def _apply_include_rules(
+        self, span: Any, include_rules: List[Dict[str, Any]]
+    ) -> Optional[bool]:
+        """Apply include rules to a span. Returns True if included, None if no match."""
+        if not include_rules:
+            return None
+
+        for rule in include_rules:
+            if self._matches_rule(span, rule):
+                return True
+        return None
+
+    def _apply_exclude_rules(
+        self, span: Any, exclude_rules: List[Dict[str, Any]]
+    ) -> Optional[bool]:
+        """Apply exclude rules to a span. Returns False if excluded, None if no match."""
+        if not exclude_rules:
+            return None
+
+        for rule in exclude_rules:
+            if self._matches_rule(span, rule):
+                return False
+        return None
+
+    def _matches_rule(self, span: Any, rule: Dict[str, Any]) -> bool:
+        """Check if a span matches all attributes in a rule."""
+        for attr_rule in rule.get("attributes", []):
+            key = attr_rule.get("key")
+            values = attr_rule.get("values")
+            match_type = attr_rule.get("match_type")
+
+            if key is None or values is None or match_type is None:
+                return False
+
+            actual_value = self._extract_span_attribute(span, key)
+            if actual_value is None:
+                return False
+
+            if not self._matches_attribute_values(actual_value, values, match_type):
+                return False
+        return True
+
+    def _extract_span_attribute(self, span: Any, key: str) -> Optional[str]:
+        """Extract attribute value from span based on key."""
+        # Simple attribute extraction
+        if key == "category":
+            span_type = getattr(span, "n", None)
+            return SPAN_TYPE_TO_CATEGORY.get(span_type)
+
+        if key == "kind":
+            kind_map = {
+                SPAN_KIND_ENTRY: "entry",
+                SPAN_KIND_EXIT: "exit",
+                SPAN_KIND_INTERMEDIATE: "intermediate",
+            }
+            return kind_map.get(getattr(span, "k", None))
+
+        if key == "type":
+            return getattr(span, "n", None)
+
+        # Handle nested attributes (e.g., "http.url", "db.statement")
+        if "." not in key:
+            return None
+
+        span_data = getattr(span, "data", {})
+        if not isinstance(span_data, dict):
+            return None
+
+        # Traverse nested path
+        keys = key.split(".")
+        val = span_data
+        for k in keys:
+            if val is None or not isinstance(val, dict) or k not in val:
+                return None
+            val = val[k]
+
+        return val
+
+    def _matches_attribute_values(
+        self, actual_value: Any, values: List[str], match_type: str
+    ) -> bool:
+        """Check if actual_value matches any of the provided values using match_type."""
+        # Validate match_type and default to 'strict' if invalid
+        valid_match_types = {"strict", "startswith", "endswith", "contains"}
+        if match_type not in valid_match_types:
+            logger.warning(
+                "Invalid match_type '%s'. Defaulting to 'strict'. Valid types: %s",
+                match_type,
+                valid_match_types,
+            )
+            match_type = "strict"
+
+        s_val = str(actual_value)
+
+        # Use set lookup for strict match (O(1) instead of O(n))
+        if match_type == "strict":
+            return s_val in set(values)
+
+        for v in values:
+            if match_type == "startswith" and s_val.startswith(v):
+                return True
+            if match_type == "endswith" and s_val.endswith(v):
+                return True
+            if match_type == "contains" and v in s_val:
+                return True
+        return False
+
+    def _apply_legacy_filtering(self, span: Any) -> bool:
+        """Apply legacy ignore-endpoint filtering. Returns True if span should be kept."""
+        if not (
+            (hasattr(span, "n") or hasattr(span, "name")) and hasattr(span, "data")
+        ):
+            return True
+
+        service = span.n
+        operation_specifier_key, service_specifier_key = get_operation_specifiers(
+            service
+        )
+
+        if not operation_specifier_key:
+            return True
+
+        endpoint = ""
+        if service == "kafka":
+            if service in span.data and service_specifier_key in span.data[service]:
+                endpoint = span.data[service][service_specifier_key]
+
+        if (
+            service not in span.data
+            or operation_specifier_key not in span.data[service]
+        ):
+            return True
+
+        method = span.data[service][operation_specifier_key]
+        if isinstance(method, str) and self.__is_endpoint_ignored(
+            service, method, endpoint
+        ):
+            return False
+
+        return True
 
     def __is_endpoint_ignored(
         self,
@@ -390,6 +544,8 @@ class HostAgent(BaseAgent):
         service = service.lower()
         method = method.lower()
         endpoint = endpoint.lower()
+
+        # Check legacy ignore_endpoints
         filter_rules = [
             f"{service}.{method}",  # service.method
             f"{service}.*",  # service.*
@@ -401,7 +557,32 @@ class HostAgent(BaseAgent):
                 f"{service}.*.{endpoint}",  # service.*.endpoint
                 f"{service}.{method}.*",  # service.method.*
             ]
-        return any(rule in self.options.ignore_endpoints for rule in filter_rules)
+
+        if any(rule in self.options.ignore_endpoints for rule in filter_rules):
+            return True
+
+        # Check new span filtering rules
+        exclude_rules = self.options.span_filter_configs.get("exclude", [])
+        if exclude_rules:
+            # Create a mock span object for filtering
+            mock_span = type(
+                "obj",
+                (object,),
+                {
+                    "n": service,
+                    "data": {
+                        service: {"access": method, "service": endpoint}
+                        if service == "kafka"
+                        else {}
+                    },
+                },
+            )()
+
+            for rule in exclude_rules:
+                if self._matches_rule(mock_span, rule):
+                    return True
+
+        return False
 
     def handle_agent_tasks(self, task: Dict[str, Any]) -> None:
         """

@@ -21,4 +21,11 @@ tracing:
     - "logging": true
     - "databases": true
     - "redis": false
+  filter:
+    exclude:
+      - name: "Health Check"
+        attributes:
+          - key: "http.target"
+            values: ["/health"]
+            match_type: "contains"
     

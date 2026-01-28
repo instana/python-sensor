@@ -1,0 +1,16 @@
+# (c) Copyright IBM Corp. 2026
+
+tracing:
+  filter:
+    exclude:
+      # Kafka filtering examples for testing
+      - name: "Kafka Specific Topic"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+            match_type: "strict"
+          - key: "kafka.service"
+            values: ["span-topic"]
+            match_type: "strict"
+
+# Made with Bob

@@ -326,6 +326,43 @@ class TestBaseOptions:
         assert self.base_options.is_span_disabled(span_type="mysql")
         assert not self.base_options.is_span_disabled(span_type="redis")
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_AGENT_HTTP_URL_ATTRIBUTES": "key;value;strict",
+            "INSTANA_TRACING_FILTER_EXCLUDE_AGENT_HTTP_URL_SUPPRESSION": "true",
+            "INSTANA_TRACING_FILTER_INCLUDE_BY_HEADER_ATTRIBUTES": "header;value;contains",
+        },
+    )
+    def test_tracing_filter_environment_variables(self) -> None:
+        self.base_options = BaseOptions()
+
+        expected_config = {
+            "exclude": [
+                {
+                    "name": "AGENT_HTTP_URL",
+                    "attributes": [
+                        {"key": "key", "values": ["value"], "match_type": "strict"}
+                    ],
+                    "suppression": True,
+                }
+            ],
+            "include": [
+                {
+                    "name": "BY_HEADER",
+                    "attributes": [
+                        {"key": "header", "values": ["value"], "match_type": "contains"}
+                    ],
+                }
+            ],
+        }
+
+        # Sort lists for comparison as order might vary depending on dict iteration
+        self.base_options.span_filter_configs["exclude"].sort(key=lambda x: x["name"])
+        self.base_options.span_filter_configs["include"].sort(key=lambda x: x["name"])
+
+        assert self.base_options.span_filter_configs == expected_config
+
 
 class TestStandardOptions:
     @pytest.fixture(autouse=True)
@@ -650,7 +687,7 @@ class TestStackTraceConfiguration:
     def test_stack_trace_defaults(self) -> None:
         """Test default stack trace configuration."""
         self.options = BaseOptions()
-        
+
         assert self.options.stack_trace_level == "all"
         assert self.options.stack_trace_length == 30
         assert self.options.stack_trace_technology_config == {}
@@ -692,7 +729,7 @@ class TestStackTraceConfiguration:
     @pytest.mark.parametrize(
         "length_value,expected_length",
         [
-            ("25", 25),  
+            ("25", 25),
             ("60", 60),  # Not capped here, capped when add_stack() is called
         ],
     )
@@ -744,10 +781,7 @@ class TestStackTraceConfiguration:
     def test_stack_trace_in_code_config(self) -> None:
         """Test in-code configuration for stack trace."""
         config["tracing"] = {
-            "global": {
-                "stack_trace": "error",
-                "stack_trace_length": 20
-            }
+            "global": {"stack_trace": "error", "stack_trace_length": 20}
         }
         self.options = BaseOptions()
         assert self.options.stack_trace_level == "error"
@@ -756,27 +790,17 @@ class TestStackTraceConfiguration:
     def test_stack_trace_agent_config(self) -> None:
         """Test agent configuration for stack trace."""
         self.options = StandardOptions()
-        
-        test_tracing = {
-            "global": {
-                "stack-trace": "error",
-                "stack-trace-length": 15
-            }
-        }
+
+        test_tracing = {"global": {"stack-trace": "error", "stack-trace-length": 15}}
         self.options.set_tracing(test_tracing)
-        
+
         assert self.options.stack_trace_level == "error"
         assert self.options.stack_trace_length == 15
 
     def test_stack_trace_precedence_env_over_in_code(self) -> None:
         """Test environment variables take precedence over in-code config."""
-        config["tracing"] = {
-            "global": {
-                "stack_trace": "all",
-                "stack_trace_length": 10
-            }
-        }
-        
+        config["tracing"] = {"global": {"stack_trace": "all", "stack_trace_length": 10}}
+
         with patch.dict(
             os.environ,
             {
@@ -791,22 +815,14 @@ class TestStackTraceConfiguration:
     def test_stack_trace_precedence_in_code_over_agent(self) -> None:
         """Test in-code config takes precedence over agent config."""
         config["tracing"] = {
-            "global": {
-                "stack_trace": "error",
-                "stack_trace_length": 20
-            }
+            "global": {"stack_trace": "error", "stack_trace_length": 20}
         }
-        
+
         self.options = StandardOptions()
-        
-        test_tracing = {
-            "global": {
-                "stack-trace": "all",
-                "stack-trace-length": 10
-            }
-        }
+
+        test_tracing = {"global": {"stack-trace": "all", "stack-trace-length": 10}}
         self.options.set_tracing(test_tracing)
-        
+
         # In-code config should win
         assert self.options.stack_trace_level == "error"
         assert self.options.stack_trace_length == 20
@@ -814,36 +830,28 @@ class TestStackTraceConfiguration:
     def test_stack_trace_technology_specific_override(self) -> None:
         """Test technology-specific stack trace configuration."""
         self.options = StandardOptions()
-        
+
         test_tracing = {
-            "global": {
-                "stack-trace": "error",
-                "stack-trace-length": 25
-            },
-            "kafka": {
-                "stack-trace": "all",
-                "stack-trace-length": 35
-            },
-            "redis": {
-                "stack-trace": "none"
-            }
+            "global": {"stack-trace": "error", "stack-trace-length": 25},
+            "kafka": {"stack-trace": "all", "stack-trace-length": 35},
+            "redis": {"stack-trace": "none"},
         }
         self.options.set_tracing(test_tracing)
-        
+
         # Global config
         assert self.options.stack_trace_level == "error"
         assert self.options.stack_trace_length == 25
-        
+
         # Kafka-specific override
         level, length = self.options.get_stack_trace_config("kafka-producer")
         assert level == "all"
         assert length == 35
-        
+
         # Redis-specific override (inherits length from global)
         level, length = self.options.get_stack_trace_config("redis")
         assert level == "none"
         assert length == 25
-        
+
         # Non-overridden span uses global
         level, length = self.options.get_stack_trace_config("mysql")
         assert level == "error"
@@ -855,12 +863,12 @@ class TestStackTraceConfiguration:
         self.options.stack_trace_technology_config = {
             "kafka": {"level": "all", "length": 35}
         }
-        
+
         # Should match "kafka" from "kafka-producer"
         level, length = self.options.get_stack_trace_config("kafka-producer")
         assert level == "all"
         assert length == 35
-        
+
         # Should match "kafka" from "kafka-consumer"
         level, length = self.options.get_stack_trace_config("kafka-consumer")
         assert level == "all"
@@ -891,9 +899,9 @@ class TestStackTraceConfiguration:
             assert self.options.stack_trace_length == 20
 
             assert (
-            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-            in caplog.messages
-        )
+                'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
+                in caplog.messages
+            )
 
     def test_stack_trace_yaml_config_disabled(self) -> None:
         """Test YAML configuration with stack trace disabled."""
@@ -920,13 +928,9 @@ class TestStackTraceConfiguration:
             assert self.options.stack_trace_level == "all"
             assert self.options.stack_trace_length == 30
             assert any(
-                "Invalid stack-trace value" in message
-                for message in caplog.messages
+                "Invalid stack-trace value" in message for message in caplog.messages
             )
-            assert any(
-                "must be positive" in message
-                for message in caplog.messages
-            )
+            assert any("must be positive" in message for message in caplog.messages)
 
     def test_stack_trace_yaml_config_partial(self) -> None:
         """Test YAML configuration with only stack-trace (no length)."""
@@ -956,12 +960,9 @@ class TestStackTraceConfiguration:
     def test_stack_trace_precedence_yaml_over_in_code(self) -> None:
         """Test YAML config takes precedence over in-code config."""
         config["tracing"] = {
-            "global": {
-                "stack_trace": "error",
-                "stack_trace_length": 10
-            }
+            "global": {"stack_trace": "error", "stack_trace_length": 10}
         }
-        
+
         with patch.dict(
             os.environ,
             {"INSTANA_CONFIG_PATH": "tests/util/test_stack_trace_config_1.yaml"},
@@ -978,15 +979,10 @@ class TestStackTraceConfiguration:
             {"INSTANA_CONFIG_PATH": "tests/util/test_stack_trace_config_2.yaml"},
         ):
             self.options = StandardOptions()
-            
-            test_tracing = {
-                "global": {
-                    "stack-trace": "all",
-                    "stack-trace-length": 30
-                }
-            }
+
+            test_tracing = {"global": {"stack-trace": "all", "stack-trace-length": 30}}
             self.options.set_tracing(test_tracing)
-            
+
             # YAML should override agent config
             assert self.options.stack_trace_level == "error"
             assert self.options.stack_trace_length == 20

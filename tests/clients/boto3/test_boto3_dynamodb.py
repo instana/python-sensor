@@ -7,9 +7,9 @@ from typing import Generator
 
 import boto3
 import pytest
+from mock import patch
 from moto import mock_aws
 
-from instana.options import StandardOptions
 from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_filter
 
@@ -71,9 +71,12 @@ class TestDynamoDB:
         assert dynamodb_span.data["dynamodb"]["region"] == "us-west-2"
         assert dynamodb_span.data["dynamodb"]["table"] == "dynamodb-table"
 
+    @patch.dict(
+        os.environ,
+        {"INSTANA_TRACING_FILTER_EXCLUDE_1_ATTRIBUTES": "type;dynamodb;strict"},
+    )
     def test_ignore_dynamodb(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb"
-        agent.options = StandardOptions()
+        agent.options.set_span_filtering_configurations()
 
         with self.tracer.start_as_current_span("test"):
             self.dynamodb.create_table(
@@ -95,9 +98,14 @@ class TestDynamoDB:
 
         assert dynamodb_span not in filtered_spans
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_2_ATTRIBUTES": "type;dynamodb;strict|dynamodb.op;CreateTable;contains"
+        },
+    )
     def test_ignore_create_table(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb:createtable"
-        agent.options = StandardOptions()
+        agent.options.set_span_filtering_configurations()
 
         with self.tracer.start_as_current_span("test"):
             self.dynamodb.create_table(

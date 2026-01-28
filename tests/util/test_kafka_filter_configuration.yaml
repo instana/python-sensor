@@ -1,0 +1,19 @@
+# (c) Copyright IBM Corp. 2025
+
+# Kafka-specific filter configuration for testing
+tracing:
+  filter:
+    exclude:
+      - name: "Kafka Specific Topic Send"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+            match_type: "strict"
+          - key: "kafka.service"
+            values: ["span-topic"]
+            match_type: "strict"
+          - key: "kafka.access"
+            values: ["send"]
+            match_type: "strict"
+
+# Made with Bob

@@ -1,0 +1,411 @@
+# (c) Copyright IBM Corp. 2025
+com.instana.tracing:
+  filter:
+    exclude:
+      # HTTP Examples
+      - name: "HTTP for filtering context root"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.context_root"
+            values: ["/health"]
+            match_type: "strict"
+      - name: "HTTP Context Root and Endswith URL"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.context_root"
+            values: ["/jetty"]
+            match_type: "strict"
+          - key: "http.url"
+            match_type: "endswith"
+            values: ["/dawg"]
+      - name: "HTTP Specific Context, URL, Method"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.context_root"
+            values: ["/jetty"]
+            match_type: "strict"
+          - key: "http.url"
+            match_type: "strict"
+            values: ["/jetty/controller/hello/dawg"]
+          - key: "http.method"
+            match_type: "strict"
+            values: ["GET"]
+      - name: "HTTP Non-Strict Match"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.context_root"
+            values: ["/jetty"]
+            match_type: "strict"
+          - key: "http.url"
+            match_type: "contains"
+            values: ["/hello/dawg"]
+          - key: "http.method"
+            match_type: "strict"
+            values: ["GET"]
+      - name: "HTTP Error"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.error"
+            values: ["*"]
+            match_type: "strict"
+      - name: "HTTP Header x-instana-test"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.header.x-instana-test"
+            values: ["foo"]
+            match_type: "contains"
+      - name: "HTTP Multiple Attributes"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.url"
+            values: ["/jetty"]
+            match_type: "startswith"
+          - key: "http.url"
+            values: ["/dawg"]
+            match_type: "endswith"
+            
+      # Kafka Examples
+      - name: "Kafka Specific Topics"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"
+      - name: "Kafka Topics and Access"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.access"
+            values: ["publish", "consume"]
+            match_type: "contains"
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"
+      - name: "Kafka Kind"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kind"
+            values: ["entry", "exit"]
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"
+      - name: "Kafka Publisher/Consumer All Topics"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.access"
+            values: ["publish", "consume"]
+            match_type: "contains"
+          - key: "kafka.service"
+            values: ["*"]
+            match_type: "strict"
+      - name: "Kafka Kind All Topics"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kind"
+            values: ["entry", "exit"]
+          - key: "kafka.service"
+            values: ["*"]
+            match_type: "strict"
+      - name: "Kafka Producer"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.access"
+            values: ["publish"]
+            match_type: "contains"
+          - key: "kafka.service"
+            values: ["topic1"]
+            match_type: "contains"
+      - name: "Kafka Consumer"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.access"
+            values: ["consume"]
+            match_type: "contains"
+          - key: "kafka.service"
+            values: ["topic2"]
+            match_type: "contains"
+      - name: "Kafka Producer Kind"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kind"
+            values: ["exit"]
+          - key: "kafka.service"
+            values: ["topic1"]
+            match_type: "contains"
+      - name: "Kafka Consumer Kind"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kind"
+            values: ["entry"]
+          - key: "kafka.service"
+            values: ["topic2"]
+            match_type: "contains"
+      - name: "Kafka All"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.access"
+            values: ["*"]
+            match_type: "strict"
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"
+      - name: "Kafka All Kind"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kind"
+            values: ["*"]
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"
+
+      # JMS Examples
+      - name: "JMS Destination"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+      - name: "JMS Sort Entry"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "jms.sort"
+            values: ["entry"]
+            match_type: "contains"
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+      - name: "JMS Kind Entry"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "kind"
+            values: ["entry"]
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+      - name: "JMS Sort Entry/Exit"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "jms.sort"
+            values: ["entry", "exit"]
+            match_type: "contains"
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+      - name: "JMS Kind Entry/Exit"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "kind"
+            values: ["entry", "exit"]
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+
+      # Database Examples
+      - name: "JDBC statement for filtering PostgreSQL"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["postgresql"]
+            match_type: "contains"
+      - name: "JDBC statement for filtering Oracle Dual Table"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["oracle"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["DUAL"]
+            match_type: "contains"
+      - name: "JDBC statement for filtering Oracle"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["oracle"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["DUAL"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["SELECT"]
+            match_type: "startswith"
+      - name: "JDBC statement for Select Oracle"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["oracle"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["DUAL"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["SELECT"]
+            match_type: "startswith"
+      - name: "JDBC statement for Drop Oracle"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["oracle"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["DROP"]
+            match_type: "startswith"
+      - name: "JDBC Statement Filter foo or bar tables"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.statement"
+            values: ["foo", "bar"]
+            match_type: "contains"
+      - name: "JDBC"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.statement"
+            values: ["UPDATE", "SELECT"]
+            match_type: "startswith"
+          - key: "jdbc.connection"
+            values: ["oracle", "postgresql"]
+            match_type: "contains"
+      - name: "JDBC Oracle strict filtering out"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.statement"
+            values: ["select qux from Foo where bar = 42","insert into Foo(bar, qux) values (?, ?)"]
+            match_type: "strict"
+          - key: "jdbc.connection"
+            values: ["oracle"]
+            match_type: "contains"
+      - name: "JDBC Disable All"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["jdbc"]
+            match_type: "startswith"
+      - name: "JDBC Postgres Drop"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["postgresql"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["DROP"]
+            match_type: "contains"
+
+    include:
+      # HTTP Examples
+      - name: "HTTP Include Endswith URL"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.context_root"
+            values: ["/jetty"]
+            match_type: "strict"
+          - key: "http.url"
+            match_type: "endswith"
+            values: ["/dawg"]
+      - name: "HTTP Include Error"
+        attributes:
+          - key: "category"
+            values: ["protocols"]
+          - key: "http.error"
+            values: ["*"]
+            match_type: "strict"
+            
+      # JMS Examples
+      - name: "JMS Include Sort"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "jms.sort"
+            values: ["entry", "exit"]
+            match_type: "contains"
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+      - name: "JMS Include Kind"
+        attributes:
+          - key: "type"
+            values: ["jms"]
+          - key: "kind"
+            values: ["entry", "exit"]
+          - key: "jms.destination"
+            values: ["destination1", "destination2"]
+            match_type: "contains"
+            
+      # Database Examples
+      - name: "JDBC Select Statement"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.statement"
+            values: ["SELECT"]
+            match_type: "contains"
+      - name: "JDBC Statement Filter foo or bar tables"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.statement"
+            values: ["foo", "bar"]
+            match_type: "contains"
+      - name: "JDBC Statement Filter foo and bar table"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.statement"
+            values: ["foo"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["bar"]
+            match_type: "contains"
+      - name: "JDBC Error"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["postgresql"]
+            match_type: "contains"
+          - key: "jdbc.error"
+            values: ["*"]
+            match_type: "strict"
+      - name: "JDBC Oracle Select Include"
+        attributes:
+          - key: "category"
+            values: ["database"]
+          - key: "jdbc.connection"
+            values: ["oracle"]
+            match_type: "contains"
+          - key: "jdbc.statement"
+            values: ["SELECT"]
+            match_type: "contains"
+
+# Made with Bob

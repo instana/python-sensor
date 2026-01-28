@@ -2,10 +2,15 @@
 
 import pytest
 
-from instana.util.config import (is_truthy, parse_endpoints_of_service,
-                                 parse_ignored_endpoints,
-                                 parse_ignored_endpoints_dict,
-                                 parse_kafka_methods, parse_service_pair)
+from instana.util.config import (
+    is_truthy,
+    parse_endpoints_of_service,
+    parse_ignored_endpoints,
+    parse_ignored_endpoints_dict,
+    parse_kafka_methods,
+    parse_service_pair,
+    parse_span_filter_rules,
+)
 
 
 class TestConfig:
@@ -167,24 +172,77 @@ class TestConfig:
         test_rule_as_str = ["send"]
         parsed_rule = parse_kafka_methods(test_rule_as_str)
         assert parsed_rule == ["kafka.send.*"]
-        
-    @pytest.mark.parametrize("value, expected", [
-        (True, True),
-        (False, False),
-        ("True", True),
-        ("true", True),
-        ("1", True),
-        (1, True),
-        ("False", False),
-        ("false", False),
-        ("0", False),
-        (0, False),
-        (None, False),
-        ("TRUE", True),
-        ("FALSE", False),
-        ("yes", False),  # Only "true" and "1" are considered truthy
-        ("no", False),
-    ])
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (True, True),
+            (False, False),
+            ("True", True),
+            ("true", True),
+            ("1", True),
+            (1, True),
+            ("False", False),
+            ("false", False),
+            ("0", False),
+            (0, False),
+            (None, False),
+            ("TRUE", True),
+            ("FALSE", False),
+            ("yes", False),  # Only "true" and "1" are considered truthy
+            ("no", False),
+        ],
+    )
     def test_is_truthy(self, value, expected) -> None:
         """Test the is_truthy function with various input values."""
         assert is_truthy(value) == expected
+
+    def test_parse_span_filter_rules(self) -> None:
+        # Test basic rule
+        rule_str = "http.target;/health"
+        rules = parse_span_filter_rules(rule_str)
+        assert len(rules) == 1
+        assert rules[0] == {
+            "key": "http.target",
+            "values": ["/health"],
+            "match_type": "strict",
+        }
+
+        # Test rule with match type
+        rule_str = "http.target;/health;startswith"
+        rules = parse_span_filter_rules(rule_str)
+        assert len(rules) == 1
+        assert rules[0] == {
+            "key": "http.target",
+            "values": ["/health"],
+            "match_type": "startswith",
+        }
+
+        # Test multiple values (comma separated)
+        rule_str = "http.target;/health,/ready;contains"
+        rules = parse_span_filter_rules(rule_str)
+        assert len(rules) == 1
+        assert rules[0] == {
+            "key": "http.target",
+            "values": ["/health", "/ready"],
+            "match_type": "contains",
+        }
+
+        # Test multiple rules (pipe separated)
+        rule_str = "kafka.topic;topic1;strict|kafka.methods;publish"
+        rules = parse_span_filter_rules(rule_str)
+        assert len(rules) == 2
+        assert rules[0] == {
+            "key": "kafka.topic",
+            "values": ["topic1"],
+            "match_type": "strict",
+        }
+        assert rules[1] == {
+            "key": "kafka.methods",
+            "values": ["publish"],
+            "match_type": "strict",
+        }
+
+        # Test empty input
+        assert parse_span_filter_rules("") == []
+        assert parse_span_filter_rules(None) == []

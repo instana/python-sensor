@@ -25,7 +25,6 @@ from instana.instrumentation.kafka.confluent_kafka_python import (
 from instana.options import StandardOptions
 from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
-from instana.util.config import parse_ignored_endpoints_from_yaml
 from tests.helpers import get_first_span_by_filter, testenv
 
 
@@ -283,9 +282,12 @@ class TestConfluentKafka:
             == "num_messages must be between 0 and 1000000 (1M)"
         )
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka"})
+    @patch.dict(
+        os.environ,
+        {"INSTANA_TRACING_FILTER_EXCLUDE_1_ATTRIBUTES": "type;kafka;strict"},
+    )
     def test_ignore_confluent_kafka(self) -> None:
-        agent.options.set_trace_configurations()
+        agent.options.set_span_filtering_configurations()
         with self.tracer.start_as_current_span("test"):
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes")
             self.producer.flush(timeout=10)
@@ -296,9 +298,14 @@ class TestConfluentKafka:
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 1
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:produce"})
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_2_ATTRIBUTES": "type;kafka;strict|kafka.access;produce;contains"
+        },
+    )
     def test_ignore_confluent_kafka_producer(self) -> None:
-        agent.options.set_trace_configurations()
+        agent.options.set_span_filtering_configurations()
         with self.tracer.start_as_current_span("test-span"):
             # Produce some events
             self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
@@ -322,9 +329,14 @@ class TestConfluentKafka:
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 1
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:consume"})
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_3_ATTRIBUTES": "type;kafka;strict|kafka.access;consume;contains"
+        },
+    )
     def test_ignore_confluent_kafka_consumer(self) -> None:
-        agent.options.set_trace_configurations()
+        agent.options.set_span_filtering_configurations()
         # Produce some events
         self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
         self.producer.produce(testenv["kafka_topic"], b"raw_bytes2")
@@ -345,14 +357,30 @@ class TestConfluentKafka:
         spans = self.recorder.queued_spans()
         assert len(spans) == 1
 
-    @patch.dict(
-        os.environ,
-        {
-            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
-        },
-    )
     def test_ignore_confluent_specific_topic(self) -> None:
-        agent.options.set_trace_configurations()
+        # Load filter configuration directly into config
+        config["tracing"] = {
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "Kafka Specific Topic",
+                        "attributes": [
+                            {
+                                "key": "type",
+                                "values": ["kafka"],
+                                "match_type": "strict",
+                            },
+                            {
+                                "key": "kafka.service",
+                                "values": ["span-topic"],
+                                "match_type": "strict",
+                            },
+                        ],
+                    }
+                ]
+            }
+        }
+        agent.options.set_span_filtering_configurations()
         self.kafka_client.create_topics(  # noqa: F841
             [
                 NewTopic(
@@ -400,9 +428,57 @@ class TestConfluentKafka:
         )
 
     def test_ignore_confluent_specific_topic_with_config_file(self) -> None:
-        agent.options.ignore_endpoints = parse_ignored_endpoints_from_yaml(
-            "tests/util/test_configuration-1.yaml"
-        )
+        # Load filter configuration directly into config
+        config["tracing"] = {
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "Kafka Specific Topic",
+                        "attributes": [
+                            {
+                                "key": "type",
+                                "values": ["kafka"],
+                                "match_type": "strict",
+                            },
+                            {
+                                "key": "kafka.service",
+                                "values": ["span-topic"],
+                                "match_type": "strict",
+                            },
+                        ],
+                    }
+                ]
+            }
+        }
+        agent.options.set_span_filtering_configurations()
+
+        with self.tracer.start_as_current_span("test-span"):
+            # Produce some events
+            self.producer.produce(testenv["kafka_topic"], b"raw_bytes1")
+            self.producer.flush()
+
+            # Consume the events
+            consumer_config = self.kafka_config.copy()
+            consumer_config["group.id"] = "my-group"
+            consumer_config["auto.offset.reset"] = "earliest"
+
+            consumer = Consumer(consumer_config)
+            consumer.subscribe([testenv["kafka_topic"]])
+            consumer.consume(num_messages=1, timeout=60)
+        consumer.close()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
+
+    @patch.dict(
+        os.environ,
+        {"INSTANA_CONFIG_PATH": "tests/util/test_kafka_filtering_configuration.yaml"},
+    )
+    def test_ignore_confluent_specific_topic_with_config_path(self) -> None:
+        agent.options.set_span_filtering_configurations()
 
         with self.tracer.start_as_current_span("test-span"):
             # Produce some events

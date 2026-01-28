@@ -750,3 +750,109 @@ class TestHostAgent:
         assert agent.announce_data is None
         assert "Missing required keys in announce response" in caplog.messages[-1]
         assert str(res_data) in caplog.messages[-1]
+
+    def test_filter_spans_new_exclude(self) -> None:
+        agent = HostAgent()
+        # Mock config: Exclude http.url contains "/health"
+        agent.options.span_filter_configs = {
+            "exclude": [
+                {
+                    "name": "rule1",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "contains",
+                        }
+                    ],
+                }
+            ]
+        }
+
+        span1 = MagicMock()
+        span1.n = "http"
+        span1.data = {"http": {"url": "http://localhost/health"}}
+
+        span2 = MagicMock()
+        span2.n = "http"
+        span2.data = {"http": {"url": "http://localhost/api"}}
+
+        filtered = agent.filter_spans([span1, span2])
+        assert len(filtered) == 1
+        assert filtered[0].data["http"]["url"] == "http://localhost/api"
+
+    def test_filter_spans_new_include(self) -> None:
+        agent = HostAgent()
+        # Mock config: Include category "protocols"
+        # AND legacy ignore of everything via wildcard * (hypothetically, checking precedence)
+
+        agent.options.span_filter_configs = {
+            "include": [
+                {
+                    "name": "rule1",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        }
+                    ],
+                }
+            ]
+        }
+
+        # Add legacy ignore for "http" to ensure Include overrides it?
+        # My implementation: If keep=True, we continue (skip legacy).
+        # So legacy rule shouldn't matter.
+        agent.options.ignore_endpoints = ["http.*"]
+
+        span1 = MagicMock()
+        span1.n = "http"  # protocols
+        span1.k = 1
+
+        span2 = MagicMock()
+        span2.n = "custom"  # not protocols
+        span2.k = 1
+
+        # span1 matches Include -> Keep (skip legacy ignore)
+        # span2 matches nothing -> Check legacy ignore (none) -> Keep
+
+        filtered = agent.filter_spans([span1, span2])
+        assert len(filtered) == 2
+
+    def test_filter_spans_multiple_attributes(self) -> None:
+        agent = HostAgent()
+        # Exclude: Category=protocols AND http.method=GET
+        agent.options.span_filter_configs = {
+            "exclude": [
+                {
+                    "name": "rule1",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "http.method",
+                            "values": ["GET"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        span1 = MagicMock()
+        span1.n = "http"  # protocols
+        span1.data = {"http": {"method": "GET"}}
+        # Matches both -> Exclude
+
+        span2 = MagicMock()
+        span2.n = "http"
+        span2.data = {"http": {"method": "POST"}}
+        # Matches category but not method -> Keep
+
+        filtered = agent.filter_spans([span1, span2])
+        assert len(filtered) == 1
+        assert filtered[0].data["http"]["method"] == "POST"

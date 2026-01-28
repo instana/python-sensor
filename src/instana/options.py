@@ -25,11 +25,13 @@ from instana.util.config import (
     get_disable_trace_configurations_from_env,
     get_disable_trace_configurations_from_local,
     get_disable_trace_configurations_from_yaml,
+    get_span_filter_config_from_yaml,
     get_stack_trace_config_from_yaml,
     is_truthy,
     parse_ignored_endpoints,
     parse_ignored_endpoints_from_yaml,
     parse_span_disabling,
+    parse_span_filter_rules,
     parse_technology_stack_trace_config,
     validate_stack_trace_length,
     validate_stack_trace_level,
@@ -53,6 +55,8 @@ class BaseOptions(object):
         self.disabled_spans = []
         # enabled_spans lists all categories and types that should be enabled, preceding disabled_spans
         self.enabled_spans = []
+
+        self.span_filter_configs = {}
 
         # Stack trace configuration - global defaults
         self.stack_trace_level = "all"  # Options: "all", "error", "none"
@@ -135,6 +139,7 @@ class BaseOptions(object):
 
         self.set_disable_trace_configurations()
         self.set_stack_trace_configurations()
+        self.set_span_filtering_configurations()
 
     def _apply_env_stack_trace_config(self) -> None:
         """Apply stack trace configuration from environment variables."""
@@ -146,7 +151,8 @@ class BaseOptions(object):
 
         if "INSTANA_STACK_TRACE_LENGTH" in os.environ:
             if validated_length := validate_stack_trace_length(
-                os.environ["INSTANA_STACK_TRACE_LENGTH"], "from INSTANA_STACK_TRACE_LENGTH"
+                os.environ["INSTANA_STACK_TRACE_LENGTH"],
+                "from INSTANA_STACK_TRACE_LENGTH",
             ):
                 self.stack_trace_length = validated_length
 
@@ -161,31 +167,41 @@ class BaseOptions(object):
 
     def _apply_in_code_stack_trace_config(self) -> None:
         """Apply stack trace configuration from in-code config."""
-        if not isinstance(config.get("tracing"), dict) or "global" not in config["tracing"]:
+        if (
+            not isinstance(config.get("tracing"), dict)
+            or "global" not in config["tracing"]
+        ):
             return
-        
+
         global_config = config["tracing"]["global"]
-        
+
         if "INSTANA_STACK_TRACE" not in os.environ and "stack_trace" in global_config:
-            if validated_level := validate_stack_trace_level(global_config["stack_trace"], "from in-code config"):
+            if validated_level := validate_stack_trace_level(
+                global_config["stack_trace"], "from in-code config"
+            ):
                 self.stack_trace_level = validated_level
-        
-        if "INSTANA_STACK_TRACE_LENGTH" not in os.environ and "stack_trace_length" in global_config:
-            if validated_length := validate_stack_trace_length(global_config["stack_trace_length"], "from in-code config"):
+
+        if (
+            "INSTANA_STACK_TRACE_LENGTH" not in os.environ
+            and "stack_trace_length" in global_config
+        ):
+            if validated_length := validate_stack_trace_length(
+                global_config["stack_trace_length"], "from in-code config"
+            ):
                 self.stack_trace_length = validated_length
-        
+
         # Technology-specific overrides from in-code config
         for tech_name, tech_data in config["tracing"].items():
             if tech_name == "global" or not isinstance(tech_data, dict):
                 continue
-            
+
             tech_stack_config = parse_technology_stack_trace_config(
                 tech_data,
                 level_key="stack_trace",
                 length_key="stack_trace_length",
-                tech_name=tech_name
+                tech_name=tech_name,
             )
-            
+
             if tech_stack_config:
                 self.stack_trace_technology_config[tech_name] = tech_stack_config
 
@@ -196,7 +212,7 @@ class BaseOptions(object):
         """
         # 1. Environment variables (highest priority)
         self._apply_env_stack_trace_config()
-        
+
         # 2. INSTANA_CONFIG_PATH (YAML file) - includes tech-specific overrides
         if "INSTANA_CONFIG_PATH" in os.environ:
             self._apply_yaml_stack_trace_config()
@@ -224,6 +240,130 @@ class BaseOptions(object):
 
         self.disabled_spans.extend(disabled_spans)
         self.enabled_spans.extend(enabled_spans)
+
+    def _parse_yaml_filter_config(self, filter_config: Dict[str, list]) -> bool:
+        """
+        Parse span filtering configuration from YAML config file.
+
+        Args:
+            filter_config: Dictionary to populate with filter rules
+
+        Returns:
+            True if filtering is deactivated, False otherwise
+        """
+        tracing_config = {}
+
+        # Check if INSTANA_CONFIG_PATH is set, use YAML file
+        if "INSTANA_CONFIG_PATH" in os.environ:
+            yaml_filter_config = get_span_filter_config_from_yaml()
+            if yaml_filter_config:
+                if is_truthy(yaml_filter_config.get("deactivate")):
+                    logger.debug(
+                        "Span filtering is deactivated via YAML configuration."
+                    )
+                    return True
+                for policy in ["exclude", "include"]:
+                    if policy in yaml_filter_config:
+                        filter_config[policy].extend(yaml_filter_config[policy])
+                return False
+
+        # Otherwise, use in-code config
+        if isinstance(config.get("tracing"), dict):
+            tracing_config = config["tracing"]
+
+        if "filter" in tracing_config:
+            filter_rules = tracing_config["filter"]
+            if is_truthy(filter_rules.get("deactivate")):
+                logger.debug("Span filtering is deactivated via configuration.")
+                return True
+
+            for policy in ["exclude", "include"]:
+                if policy in filter_rules:
+                    rules = filter_rules[policy]
+                    if isinstance(rules, list):
+                        filter_config[policy].extend(rules)
+
+        return False
+
+    def _parse_env_filter_config(self, filter_config: Dict[str, list]) -> None:
+        """
+        Parse span filtering configuration from environment variables.
+
+        Args:
+            filter_config: Dictionary to populate with filter rules
+        """
+        env_rules = {}  # (policy, name) -> {attributes: ..., suppression: ...}
+
+        for env_key, env_value in os.environ.items():
+            if isinstance(env_key, str) and env_key.startswith(
+                "INSTANA_TRACING_FILTER_"
+            ):
+                parts = env_key.replace("INSTANA_TRACING_FILTER_", "").split("_")
+                # Minimum parts: POLICY, NAME (can be multiple), TYPE
+                if len(parts) < 3:
+                    logger.debug(
+                        "Skipping misconfigured filter env var '%s': "
+                        "Expected format INSTANA_TRACING_FILTER_<POLICY>_<NAME>_<TYPE>",
+                        env_key,
+                    )
+                    continue
+
+                suffix = parts[-1]
+                if suffix not in ["ATTRIBUTES", "SUPPRESSION"]:
+                    logger.debug(
+                        "Skipping filter env var '%s': "
+                        "TYPE must be 'ATTRIBUTES' or 'SUPPRESSION', got '%s'",
+                        env_key,
+                        suffix,
+                    )
+                    continue
+
+                policy = parts[0].lower()
+                if policy not in ["exclude", "include"]:
+                    logger.debug(
+                        "Skipping filter env var '%s': "
+                        "POLICY must be 'EXCLUDE' or 'INCLUDE', got '%s'",
+                        env_key,
+                        parts[0],
+                    )
+                    continue
+
+                name = "_".join(parts[1:-1])
+                if not name:
+                    logger.debug(
+                        "Skipping filter env var '%s': NAME cannot be empty", env_key
+                    )
+                    continue
+
+                key = (policy, name)
+                if key not in env_rules:
+                    env_rules[key] = {"name": name}
+
+                if suffix == "ATTRIBUTES":
+                    env_rules[key]["attributes"] = parse_span_filter_rules(env_value)
+                elif suffix == "SUPPRESSION":
+                    env_rules[key]["suppression"] = is_truthy(env_value)
+
+        # Convert env_rules dict to list and append to filter_config
+        for (policy, name), rule_data in env_rules.items():
+            if "attributes" in rule_data and rule_data["attributes"]:
+                filter_config[policy].append(rule_data)
+
+    def set_span_filtering_configurations(self) -> None:
+        """
+        Set span filtering configurations from environment variables and config file.
+        """
+        filter_config = {"exclude": [], "include": []}
+
+        # Parse YAML configuration
+        if self._parse_yaml_filter_config(filter_config):
+            self.span_filter_configs = {}
+            return
+
+        # Parse environment variables
+        self._parse_env_filter_config(filter_config)
+
+        self.span_filter_configs = filter_config
 
     def is_span_disabled(self, category=None, span_type=None) -> bool:
         """
@@ -261,10 +401,10 @@ class BaseOptions(object):
         """
         Get stack trace configuration for a specific span type.
         Technology-specific configuration overrides global configuration.
-        
+
         Args:
             span_name: The name of the span (e.g., "kafka-producer", "redis", "mysql")
-        
+
         Returns:
             Tuple of (level, length) where:
             - level: "all", "error", or "none"
@@ -273,17 +413,17 @@ class BaseOptions(object):
         # Start with global defaults
         level = self.stack_trace_level
         length = self.stack_trace_length
-        
+
         # Check for technology-specific overrides
         # Extract base technology name from span name
         # Examples: "kafka-producer" -> "kafka", "mysql" -> "mysql"
         tech_name = span_name.split("-")[0] if "-" in span_name else span_name
-        
+
         if tech_name in self.stack_trace_technology_config:
             tech_config = self.stack_trace_technology_config[tech_name]
             level = tech_config.get("level", level)
             length = tech_config.get("length", length)
-        
+
         return level, length
 
 
@@ -361,7 +501,7 @@ class StandardOptions(BaseOptions):
         # Handle span disabling configuration
         if "disable" in tracing:
             self.set_disable_tracing(tracing["disable"])
-        
+
         # Handle stack trace configuration from agent config
         self.set_stack_trace_from_agent(tracing)
 
@@ -375,19 +515,27 @@ class StandardOptions(BaseOptions):
         has_in_code_config = (
             isinstance(config.get("tracing"), dict)
             and "global" in config["tracing"]
-            and ("stack_trace" in config["tracing"]["global"]
-                 or "stack_trace_length" in config["tracing"]["global"])
+            and (
+                "stack_trace" in config["tracing"]["global"]
+                or "stack_trace_length" in config["tracing"]["global"]
+            )
         )
         return not (has_env_vars or has_yaml_config or has_in_code_config)
 
-    def _apply_agent_global_stack_trace_config(self, global_config: Dict[str, Any]) -> None:
+    def _apply_agent_global_stack_trace_config(
+        self, global_config: Dict[str, Any]
+    ) -> None:
         """Apply global stack trace configuration from agent config."""
         if "stack-trace" in global_config:
-            if validated_level := validate_stack_trace_level(global_config["stack-trace"], "in agent config"):
+            if validated_level := validate_stack_trace_level(
+                global_config["stack-trace"], "in agent config"
+            ):
                 self.stack_trace_level = validated_level
-        
+
         if "stack-trace-length" in global_config:
-            if validated_length := validate_stack_trace_length(global_config["stack-trace-length"], "in agent config"):
+            if validated_length := validate_stack_trace_length(
+                global_config["stack-trace-length"], "in agent config"
+            ):
                 self.stack_trace_length = validated_length
 
     def _apply_agent_tech_stack_trace_config(self, tracing: Dict[str, Any]) -> None:
@@ -395,14 +543,14 @@ class StandardOptions(BaseOptions):
         for tech_name, tech_config in tracing.items():
             if tech_name == "global" or not isinstance(tech_config, dict):
                 continue
-            
+
             tech_stack_config = parse_technology_stack_trace_config(
                 tech_config,
                 level_key="stack-trace",
                 length_key="stack-trace-length",
-                tech_name=tech_name
+                tech_name=tech_name,
             )
-            
+
             if tech_stack_config:
                 self.stack_trace_technology_config[tech_name] = tech_stack_config
 
@@ -410,13 +558,13 @@ class StandardOptions(BaseOptions):
         """
         Set stack trace configuration from agent config (configuration.yaml).
         Only applies if not already set by higher priority sources.
-        
+
         @param tracing: tracing configuration dictionary from agent
         """
         # Apply global config if no higher priority source exists
         if self._should_apply_agent_global_config() and "global" in tracing:
             self._apply_agent_global_stack_trace_config(tracing["global"])
-        
+
         # Apply technology-specific config if not already set by YAML or in-code config
         if not self.stack_trace_technology_config:
             self._apply_agent_tech_stack_trace_config(tracing)

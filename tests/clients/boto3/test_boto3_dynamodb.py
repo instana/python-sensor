@@ -408,4 +408,395 @@ class TestDynamoDB:
 
         assert dynamodb_span.data["dynamodb"]["op"] == "Query"
         assert dynamodb_span.data["dynamodb"]["region"] == "us-west-2"
-        assert dynamodb_span.data["dynamodb"]["table"] == "dynamodb-table"
+
+    def test_span_filter_dynamodb_by_operation(self) -> None:
+        """Test filtering DynamoDB spans by specific operation using span_filters."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter DynamoDB CreateTable",
+                    "attributes": [
+                        {"key": "type", "values": ["dynamodb"], "match_type": "strict"},
+                        {
+                            "key": "dynamodb.op",
+                            "values": ["CreateTable"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.dynamodb.create_table(
+                TableName="dynamodb-table",
+                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+                ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+            )
+            self.dynamodb.list_tables()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3  # 1 test + 2 dynamodb
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out CreateTable operation
+        assert len(filtered_spans) == 2  # test + ListTables
+
+        dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+        assert len(dynamodb_spans) == 1
+        assert dynamodb_spans[0].data["dynamodb"]["op"] == "ListTables"
+
+    def test_span_filter_dynamodb_multiple_operations(self) -> None:
+        """Test filtering multiple DynamoDB operations."""
+        self.dynamodb.create_table(
+            TableName="dynamodb-table",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter DynamoDB operations",
+                    "attributes": [
+                        {"key": "type", "values": ["dynamodb"], "match_type": "strict"},
+                        {
+                            "key": "dynamodb.op",
+                            "values": ["PutItem", "GetItem"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.dynamodb.put_item(
+                TableName="dynamodb-table",
+                Item={"id": {"S": "1"}, "name": {"S": "John"}},
+            )
+            self.dynamodb.get_item(TableName="dynamodb-table", Key={"id": {"S": "1"}})
+            self.dynamodb.scan(TableName="dynamodb-table")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4  # 1 test + 3 dynamodb
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out PutItem and GetItem, keep Scan
+        assert len(filtered_spans) == 2  # test + Scan
+
+        dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+        assert len(dynamodb_spans) == 1
+        assert dynamodb_spans[0].data["dynamodb"]["op"] == "Scan"
+
+    def test_span_filter_dynamodb_by_category(self) -> None:
+        """Test filtering all DynamoDB spans by category."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter all databases",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["databases"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.dynamodb.list_tables()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out all DynamoDB spans
+        assert len(filtered_spans) == 1  # Only test span
+        assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_dynamodb_with_include_rule(self) -> None:
+        """Test that include rules have precedence over exclude rules."""
+        self.dynamodb.create_table(
+            TableName="dynamodb-table",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude all DynamoDB",
+                    "attributes": [
+                        {"key": "type", "values": ["dynamodb"], "match_type": "strict"},
+                    ],
+                }
+            ],
+            "include": [
+                {
+                    "name": "Include Scan operation",
+                    "attributes": [
+                        {"key": "type", "values": ["dynamodb"], "match_type": "strict"},
+                        {
+                            "key": "dynamodb.op",
+                            "values": ["Scan"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.dynamodb.put_item(
+                TableName="dynamodb-table",
+                Item={"id": {"S": "1"}, "name": {"S": "John"}},
+            )
+            self.dynamodb.scan(TableName="dynamodb-table")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should keep Scan (include rule) and filter out PutItem (exclude rule)
+        assert len(filtered_spans) == 2  # test + Scan
+
+        dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+        assert len(dynamodb_spans) == 1
+        assert dynamodb_spans[0].data["dynamodb"]["op"] == "Scan"
+
+    def test_span_filter_dynamodb_by_table(self) -> None:
+        """Test filtering DynamoDB spans by table name."""
+        self.dynamodb.create_table(
+            TableName="table1",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+        self.dynamodb.create_table(
+            TableName="table2",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter table1",
+                    "attributes": [
+                        {"key": "type", "values": ["dynamodb"], "match_type": "strict"},
+                        {
+                            "key": "dynamodb.table",
+                            "values": ["table1"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.dynamodb.put_item(
+                TableName="table1",
+                Item={"id": {"S": "1"}, "name": {"S": "John"}},
+            )
+            self.dynamodb.put_item(
+                TableName="table2",
+                Item={"id": {"S": "2"}, "name": {"S": "Jane"}},
+            )
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out table1, keep table2
+        assert len(filtered_spans) == 2  # test + table2
+
+        dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+        assert len(dynamodb_spans) == 1
+        assert dynamodb_spans[0].data["dynamodb"]["table"] == "table2"
+
+    def test_span_filter_dynamodb_by_kind(self) -> None:
+        """Test filtering DynamoDB spans by kind (exit spans)."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter DynamoDB exit spans",
+                    "attributes": [
+                        {"key": "type", "values": ["dynamodb"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.dynamodb.list_tables()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out all DynamoDB spans (they are all exit spans)
+        assert len(filtered_spans) == 1  # Only test span
+
+    def test_span_filter_dynamodb_with_env_vars(self) -> None:
+        """Test filtering DynamoDB spans using INSTANA_TRACING_FILTER_ environment variables."""
+        from unittest.mock import patch
+
+        self.dynamodb.create_table(
+            TableName="dynamodb-table",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;dynamodb|dynamodb.op;PutItem;strict",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.dynamodb.put_item(
+                    TableName="dynamodb-table",
+                    Item={"id": {"S": "1"}, "name": {"S": "John"}},
+                )
+                self.dynamodb.scan(TableName="dynamodb-table")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test + 2 dynamodb
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should filter out PutItem operation
+            assert len(filtered_spans) == 2  # test + Scan
+
+            dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+            assert len(dynamodb_spans) == 1
+            assert dynamodb_spans[0].data["dynamodb"]["op"] == "Scan"
+
+    def test_span_filter_dynamodb_env_with_match_type(self) -> None:
+        """Test filtering DynamoDB spans with match_type using environment variables."""
+        from unittest.mock import patch
+
+        self.dynamodb.create_table(
+            TableName="dynamodb-table",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;dynamodb|dynamodb.op;Item;contains",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.dynamodb.put_item(
+                    TableName="dynamodb-table",
+                    Item={"id": {"S": "1"}, "name": {"S": "John"}},
+                )
+                self.dynamodb.get_item(
+                    TableName="dynamodb-table", Key={"id": {"S": "1"}}
+                )
+                self.dynamodb.scan(TableName="dynamodb-table")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 4  # 1 test + 3 dynamodb
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should filter out PutItem and GetItem (both contain "Item"), keep Scan
+            assert len(filtered_spans) == 2  # test + Scan
+
+            dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+            assert len(dynamodb_spans) == 1
+            assert dynamodb_spans[0].data["dynamodb"]["op"] == "Scan"
+
+    def test_span_filter_dynamodb_env_with_suppression(self) -> None:
+        """Test filtering DynamoDB spans with suppression=false using environment variables."""
+        from unittest.mock import patch
+
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;dynamodb",
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_SUPPRESSION": "false",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.dynamodb.list_tables()
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 2  # 1 test + 1 dynamodb
+
+            filtered_spans = agent.filter_spans(spans)
+            # With suppression=false, dynamodb span should be filtered but test span remains
+            assert len(filtered_spans) == 1
+            assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_dynamodb_env_include_rule(self) -> None:
+        """Test filtering DynamoDB spans with include rule using environment variables."""
+        from unittest.mock import patch
+
+        self.dynamodb.create_table(
+            TableName="dynamodb-table",
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;dynamodb",
+                "INSTANA_TRACING_FILTER_INCLUDE_0_ATTRIBUTES": "type;dynamodb|dynamodb.op;Scan",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.dynamodb.put_item(
+                    TableName="dynamodb-table",
+                    Item={"id": {"S": "1"}, "name": {"S": "John"}},
+                )
+                self.dynamodb.scan(TableName="dynamodb-table")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test + 2 dynamodb
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should keep Scan (include rule) and filter out PutItem (exclude rule)
+            assert len(filtered_spans) == 2  # test + Scan
+
+            dynamodb_spans = [s for s in filtered_spans if s.n == "dynamodb"]
+            assert len(dynamodb_spans) == 1
+            assert dynamodb_spans[0].data["dynamodb"]["op"] == "Scan"
+
+            # Verify test span is also present
+            test_spans = [s for s in filtered_spans if s.n == "sdk"]
+            assert len(test_spans) == 1

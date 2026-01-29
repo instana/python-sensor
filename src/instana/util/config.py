@@ -9,9 +9,7 @@ from instana.log import logger
 from instana.util.config_reader import ConfigReader
 
 # Constants
-DEPRECATED_CONFIG_KEY_WARNING = (
-    'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-)
+DEPRECATED_CONFIG_KEY_WARNING = 'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
 
 # List of supported span categories (technology or protocol)
 SPAN_CATEGORIES = [
@@ -38,8 +36,18 @@ SPAN_TYPE_TO_CATEGORY = {
     "pika": "messaging",
     "aio_pika": "messaging",
     "aioamqp": "messaging",
-    # Protocol types
+    # Protocol types (HTTP)
+    "aiohttp-client": "protocols",
+    "aiohttp-server": "protocols",
+    "django": "protocols",
     "http": "protocols",
+    "httpx": "protocols",
+    "tornado-client": "protocols",
+    "tornado-server": "protocols",
+    "urllib3": "protocols",
+    "wsgi": "protocols",
+    "asgi": "protocols",
+    # Protocol types (other)
     "grpc": "protocols",
     "graphql": "protocols",
 }
@@ -302,10 +310,10 @@ def get_tracing_root_key(config_data: Dict[str, Any]) -> Optional[str]:
     """
     Get the root key for tracing configuration from config data.
     Handles both 'tracing' and deprecated 'com.instana.tracing' keys.
-    
+
     Args:
         config_data: Configuration data dictionary
-    
+
     Returns:
         Root key string or None if not found
     """
@@ -319,7 +327,7 @@ def get_tracing_root_key(config_data: Dict[str, Any]) -> Optional[str]:
 
 def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
     config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
-    
+
     root_key = get_tracing_root_key(config_reader.data)
     if not root_key:
         return [], []
@@ -339,18 +347,18 @@ def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]
 def validate_stack_trace_level(level_value: Any, context: str = "") -> Optional[str]:
     """
     Validate stack trace level value.
-    
+
     Args:
         level_value: The level value to validate
         context: Context string for error messages (e.g., "for kafka", "in agent config")
-    
+
     Returns:
         Validated level string ("all", "error", or "none"), or None if invalid
     """
     level = str(level_value).lower()
     if level in ["all", "error", "none"]:
         return level
-    
+
     context_msg = f" {context}" if context else ""
     logger.warning(
         f"Invalid stack-trace value{context_msg}: {level}. Must be 'all', 'error', or 'none'. Using default 'all'."
@@ -361,11 +369,11 @@ def validate_stack_trace_level(level_value: Any, context: str = "") -> Optional[
 def validate_stack_trace_length(length_value: Any, context: str = "") -> Optional[int]:
     """
     Validate stack trace length value.
-    
+
     Args:
         length_value: The length value to validate
         context: Context string for error messages (e.g., "for kafka", "in agent config")
-    
+
     Returns:
         Validated length integer (>= 1), or None if invalid
     """
@@ -373,7 +381,7 @@ def validate_stack_trace_length(length_value: Any, context: str = "") -> Optiona
         length = int(length_value)
         if length >= 1:
             return length
-        
+
         context_msg = f" {context}" if context else ""
         logger.warning(
             f"stack-trace-length{context_msg} must be positive. Using default 30."
@@ -395,89 +403,97 @@ def parse_technology_stack_trace_config(
 ) -> Dict[str, Union[str, int]]:
     """
     Parse technology-specific stack trace configuration from a dictionary.
-    
+
     Args:
         tech_data: Dictionary containing stack trace configuration
         level_key: Key name for level configuration (e.g., "stack-trace" or "stack_trace")
         length_key: Key name for length configuration (e.g., "stack-trace-length" or "stack_trace_length")
         tech_name: Technology name for error messages (e.g., "kafka", "redis")
-    
+
     Returns:
         Dictionary with "level" and/or "length" keys, or empty dict if no valid config
     """
     tech_stack_config = {}
     context = f"for {tech_name}" if tech_name else ""
-    
+
     if level_key in tech_data:
         if validated_level := validate_stack_trace_level(tech_data[level_key], context):
             tech_stack_config["level"] = validated_level
-    
+
     if length_key in tech_data:
-        if validated_length := validate_stack_trace_length(tech_data[length_key], context):
+        if validated_length := validate_stack_trace_length(
+            tech_data[length_key], context
+        ):
             tech_stack_config["length"] = validated_length
-    
+
     return tech_stack_config
 
 
 def parse_global_stack_trace_config(global_config: Dict[str, Any]) -> Tuple[str, int]:
     """
     Parse global stack trace configuration from a config dictionary.
-    
+
     Args:
         global_config: Global configuration dictionary
-    
+
     Returns:
         Tuple of (level, length) with defaults if not found
     """
     level = "all"
     length = 30
-    
+
     if "stack-trace" in global_config:
-        if validated_level := validate_stack_trace_level(global_config["stack-trace"], "in YAML config"):
+        if validated_level := validate_stack_trace_level(
+            global_config["stack-trace"], "in YAML config"
+        ):
             level = validated_level
-    
+
     if "stack-trace-length" in global_config:
-        if validated_length := validate_stack_trace_length(global_config["stack-trace-length"], "in YAML config"):
+        if validated_length := validate_stack_trace_length(
+            global_config["stack-trace-length"], "in YAML config"
+        ):
             length = validated_length
-    
+
     return level, length
 
 
 def parse_tech_specific_stack_trace_configs(
-    tracing_data: Dict[str, Any]
+    tracing_data: Dict[str, Any],
 ) -> Dict[str, Dict[str, Union[str, int]]]:
     """
     Parse technology-specific stack trace configurations from tracing data.
-    
+
     Args:
         tracing_data: Tracing configuration dictionary
-    
+
     Returns:
         Dictionary of technology-specific overrides
     """
     tech_config = {}
-    
+
     for tech_name, tech_data in tracing_data.items():
         if tech_name == "global" or not isinstance(tech_data, dict):
             continue
-        
+
         tech_stack_config = parse_technology_stack_trace_config(
             tech_data,
             level_key="stack-trace",
             length_key="stack-trace-length",
-            tech_name=tech_name
+            tech_name=tech_name,
         )
-        
+
         if tech_stack_config:
             tech_config[tech_name] = tech_stack_config
-    
+
     return tech_config
 
 
-def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]:
+def get_stack_trace_config_from_yaml() -> (
+    Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]
+):
     """
     Get stack trace configuration from YAML file specified by INSTANA_CONFIG_PATH.
-    
+
     Returns:
         Tuple of (level, length, tech_config) where:
         - level: "all", "error", or "none"
@@ -486,24 +502,367 @@ def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Un
           Format: {"kafka": {"level": "all", "length": 35}, "redis": {"level": "none"}}
     """
     config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
-    
+
     level = "all"
     length = 30
     tech_config = {}
-    
+
     root_key = get_tracing_root_key(config_reader.data)
     if not root_key:
         return level, length, tech_config
-    
+
     tracing_data = config_reader.data[root_key]
-    
+
     # Read global configuration
     if "global" in tracing_data:
         level, length = parse_global_stack_trace_config(tracing_data["global"])
-    
+
     # Read technology-specific overrides
     tech_config = parse_tech_specific_stack_trace_configs(tracing_data)
-    
+
     return level, length, tech_config
+
+
+def parse_span_filter_config(filter_config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Parse span filter configuration from YAML.
+    filter:
+    deactivate: <boolean>
+    <policy>: exclude | include
+      - name: <string>
+        suppression: <boolean>
+        attributes:
+          - key: <string> # category | kind | type | span attribute (like jdbc.statement, http.host, etc)
+            values: List <string>
+            match_type: <string> # strict | startswith | endswith | contains
+    """
+    if not isinstance(filter_config, dict):
+        logger.debug(
+            f"parse_span_filter_config: Invalid filter_config type: {type(filter_config)}"
+        )
+        return {}
+
+    # Check if filter is deactivated
+    deactivate = filter_config.get("deactivate", False)
+    if is_truthy(deactivate):
+        return {"deactivated": True}
+
+    parsed_config = {"deactivated": False, "exclude": [], "include": []}
+
+    # Parse exclude policy
+    if "exclude" in filter_config:
+        exclude_rules = filter_config["exclude"]
+        if isinstance(exclude_rules, list):
+            for rule in exclude_rules:
+                if parsed_rule := parse_filter_rule(rule, "exclude"):
+                    parsed_config["exclude"].append(parsed_rule)
+
+    # Parse include policy
+    if "include" in filter_config:
+        include_rules = filter_config["include"]
+        if isinstance(include_rules, list):
+            for rule in include_rules:
+                if parsed_rule := parse_filter_rule(rule, "include"):
+                    parsed_config["include"].append(parsed_rule)
+
+    return parsed_config
+
+
+def parse_filter_rule(rule: Dict[str, Any], policy: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse a single filter rule.
+
+    Args:
+        rule: Dictionary containing filter rule configuration
+        policy: "exclude" or "include"
+
+    Returns:
+        Parsed rule dictionary or None if invalid
+    """
+    if not isinstance(rule, dict):
+        logger.debug(f"parse_filter_rule: Invalid rule type: {type(rule)}")
+        return None
+
+    # name is mandatory
+    if "name" not in rule:
+        logger.debug("parse_filter_rule: Missing mandatory 'name' field")
+        return None
+
+    # attributes is mandatory
+    if "attributes" not in rule or not isinstance(rule["attributes"], list):
+        logger.debug(
+            f"parse_filter_rule: Missing or invalid 'attributes' field for rule '{rule.get('name')}'"
+        )
+        return None
+
+    parsed_rule = {
+        "name": rule["name"],
+        "suppression": rule.get("suppression", True) if policy == "exclude" else None,
+        "attributes": [],
+    }
+
+    # Parse attributes
+    for attr in rule["attributes"]:
+        if parsed_attr := parse_filter_attribute(attr, rule["name"]):
+            parsed_rule["attributes"].append(parsed_attr)
+
+    # If no valid attributes, return None
+    if not parsed_rule["attributes"]:
+        logger.debug(
+            f"parse_filter_rule: No valid attributes for rule '{rule.get('name')}'"
+        )
+        return None
+
+    return parsed_rule
+
+
+def parse_filter_attribute(
+    attr: Dict[str, Any], rule_name: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Parse a single filter attribute.
+
+    Args:
+        attr: Dictionary containing attribute configuration
+        rule_name: Name of the parent rule (for logging)
+
+    Returns:
+        Parsed attribute dictionary or None if invalid
+    """
+    if not isinstance(attr, dict):
+        logger.debug(
+            f"parse_filter_attribute: Invalid attribute type for rule '{rule_name}': {type(attr)}"
+        )
+        return None
+
+    # key is mandatory
+    if "key" not in attr:
+        logger.debug(
+            f"parse_filter_attribute: Missing mandatory 'key' field in rule '{rule_name}'"
+        )
+        return None
+
+    # values is mandatory
+    if "values" not in attr or not isinstance(attr["values"], list):
+        logger.debug(
+            f"parse_filter_attribute: Missing or invalid 'values' field in rule '{rule_name}'"
+        )
+        return None
+
+    key = attr["key"]
+    values = attr["values"]
+    match_type = attr.get("match_type", "strict")
+
+    # Validate match_type
+    if match_type not in ["strict", "startswith", "endswith", "contains"]:
+        logger.debug(
+            f"parse_filter_attribute: Invalid match_type '{match_type}' in rule '{rule_name}'. Using 'strict'."
+        )
+        match_type = "strict"
+
+    # Validate key
+    valid_keys = ["category", "kind", "type"]
+    if key not in valid_keys:
+        # Assume it's a span attribute (like jdbc.statement, http.host, etc.)
+        # Custom annotations (sdk.*) may be ignored in implementation
+        pass
+
+    return {"key": key, "values": values, "match_type": match_type}
+
+
+def get_span_filter_config_from_yaml() -> Dict[str, Any]:
+    config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
+
+    root_key = get_tracing_root_key(config_reader.data)
+    if not root_key:
+        return {}
+
+    tracing_data = config_reader.data[root_key]
+
+    if "filter" in tracing_data:
+        return parse_span_filter_config(tracing_data["filter"])
+
+    return {}
+
+
+def parse_env_filter_rule(rule_str: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse a single rule string from environment variable.
+
+    Format: <key>;<values>;<match_type>
+    Example: "http.target;/health,/ready;startswith"
+
+    Args:
+        rule_str: Rule string to parse
+
+    Returns:
+        Parsed attribute dict or None if invalid
+    """
+    if not rule_str or not isinstance(rule_str, str):
+        return None
+
+    parts = rule_str.split(";")
+    if len(parts) < 2:
+        logger.debug(
+            f"parse_env_filter_rule: Invalid rule format (need at least key;values): {rule_str}"
+        )
+        return None
+
+    key = parts[0].strip()
+    values_str = parts[1].strip()
+    match_type = parts[2].strip() if len(parts) >= 3 else "strict"
+
+    if not key or not values_str:
+        logger.debug(f"parse_env_filter_rule: Empty key or values in rule: {rule_str}")
+        return None
+
+    # Parse comma-separated values
+    values = [v.strip() for v in values_str.split(",") if v.strip()]
+    if not values:
+        logger.debug(f"parse_env_filter_rule: No valid values in rule: {rule_str}")
+        return None
+
+    # Validate match_type
+    if match_type not in ["strict", "startswith", "endswith", "contains"]:
+        logger.debug(
+            f"parse_env_filter_rule: Invalid match_type '{match_type}', using 'strict'"
+        )
+        match_type = "strict"
+
+    return {"key": key, "values": values, "match_type": match_type}
+
+
+def group_env_filter_vars() -> Dict[str, Dict[str, Dict[str, str]]]:
+    """
+    Group environment variables by policy and name.
+
+    Returns:
+        {
+            "exclude": {
+                "0": {"attributes": "...", "suppression": "..."},
+                "1": {"attributes": "..."}
+            },
+            "include": {
+                "0": {"attributes": "..."}
+            }
+        }
+    """
+    grouped = {"exclude": {}, "include": {}}
+
+    for key, value in os.environ.items():
+        if not key.startswith("INSTANA_TRACING_FILTER_"):
+            continue
+
+        # Remove prefix
+        remainder = key[len("INSTANA_TRACING_FILTER_") :]
+        parts = remainder.split("_")
+
+        if len(parts) < 3:
+            logger.debug(f"group_env_filter_vars: Invalid env var format: {key}")
+            continue
+
+        policy = parts[0].lower()
+        name = parts[1]
+        field = "_".join(parts[2:]).lower()
+
+        if policy not in ["exclude", "include"]:
+            logger.debug(f"group_env_filter_vars: Invalid policy '{policy}' in {key}")
+            continue
+
+        if field not in ["attributes", "suppression"]:
+            logger.debug(f"group_env_filter_vars: Invalid field '{field}' in {key}")
+            continue
+
+        if name not in grouped[policy]:
+            grouped[policy][name] = {}
+
+        grouped[policy][name][field] = value
+
+    return grouped
+
+
+def build_filter_rule_from_env(
+    name: str, env_data: Dict[str, str], policy: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Build a complete filter rule from grouped environment data.
+
+    Args:
+        name: Rule name (numeric index)
+        env_data: Dict with "attributes" and optionally "suppression"
+        policy: "exclude" or "include"
+
+    Returns:
+        Complete rule dict matching parse_filter_rule() output
+    """
+    if "attributes" not in env_data:
+        logger.debug(
+            f"build_filter_rule_from_env: Missing 'attributes' for rule '{name}'"
+        )
+        return None
+
+    attributes_str = env_data["attributes"]
+
+    # Parse pipe-separated attributes
+    attribute_rules = attributes_str.split("|")
+    parsed_attributes = []
+
+    for attr_rule in attribute_rules:
+        if parsed_attr := parse_env_filter_rule(attr_rule.strip()):
+            parsed_attributes.append(parsed_attr)
+
+    if not parsed_attributes:
+        logger.debug(
+            f"build_filter_rule_from_env: No valid attributes for rule '{name}'"
+        )
+        return None
+
+    # Build rule
+    rule = {
+        "name": f"env_filter_{policy}_{name}",
+        "attributes": parsed_attributes,
+    }
+
+    # Handle suppression (only for exclude policy)
+    if policy == "exclude":
+        suppression_str = env_data.get("suppression", "true")
+        rule["suppression"] = is_truthy(suppression_str)
+    else:
+        rule["suppression"] = None
+
+    return rule
+
+
+def parse_span_filter_from_env() -> Dict[str, Any]:
+    """
+    Parse INSTANA_TRACING_FILTER_* environment variables.
+
+    Pattern: INSTANA_TRACING_FILTER_<policy>_<name>_ATTRIBUTES=<rule>
+    Pattern: INSTANA_TRACING_FILTER_<policy>_<name>_SUPPRESSION=<boolean>
+
+    Returns:
+        Dictionary with same structure as parse_span_filter_config():
+        {
+            "deactivated": False,
+            "exclude": [...],
+            "include": [...]
+        }
+    """
+    grouped = group_env_filter_vars()
+
+    parsed_config = {"deactivated": False, "exclude": [], "include": []}
+
+    # Parse exclude rules
+    for name, env_data in grouped["exclude"].items():
+        if rule := build_filter_rule_from_env(name, env_data, "exclude"):
+            parsed_config["exclude"].append(rule)
+
+    # Parse include rules
+    for name, env_data in grouped["include"].items():
+        if rule := build_filter_rule_from_env(name, env_data, "include"):
+            parsed_config["include"].append(rule)
+
+    return parsed_config
+
 
 # Made with Bob

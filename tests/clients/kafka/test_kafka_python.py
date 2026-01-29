@@ -32,6 +32,10 @@ class TestKafkaPython:
     def _resource(self) -> Generator[None, None, None]:
         """SetUp and TearDown"""
         # setup
+        # Clear global config to prevent pollution from previous tests
+        if "tracing" in config:
+            del config["tracing"]
+
         # Clear all spans before a test run
         self.tracer = get_tracer()
         self.recorder = self.tracer.span_processor
@@ -857,4 +861,332 @@ class TestKafkaPython:
 
         # Verify all context is cleared
         assert consumer_span.get(None) is None
+
+    def test_span_filter_kafka_by_topic(self) -> None:
+        """Test filtering Kafka spans by specific topic using span_filters."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Kafka topic",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": [testenv["kafka_topic"]],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            # Send to filtered topic
+            self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
+            # Send to non-filtered topic
+            self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes2")
+            self.producer.flush()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3  # 1 test span + 2 kafka spans
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out kafka span for testenv["kafka_topic"]
+        assert len(filtered_spans) == 2  # 1 test span + 1 kafka span
+
+        # Verify the filtered span is not in the result
+        kafka_spans = [s for s in filtered_spans if s.n == "kafka"]
+        assert len(kafka_spans) == 1
+        assert kafka_spans[0].data["kafka"]["service"] == testenv["kafka_topic"] + "_1"
+
+    def test_span_filter_kafka_by_access_type(self) -> None:
+        """Test filtering Kafka spans by access type (send/consume)."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Kafka send",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.access",
+                            "values": ["send"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.producer.send(testenv["kafka_topic"], b"raw_bytes")
+            self.producer.flush()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2  # 1 test span + 1 kafka span
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out kafka send span
+        assert len(filtered_spans) == 1  # Only test span remains
+        assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_kafka_by_kind(self) -> None:
+        """Test filtering Kafka spans by kind (entry/exit)."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Kafka exit spans",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            # Producer creates exit span (CLIENT)
+            self.producer.send(testenv["kafka_topic"], b"raw_bytes")
+            self.producer.flush()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out kafka producer (exit) span
+        assert len(filtered_spans) == 1
+        assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_kafka_with_include_rule(self) -> None:
+        """Test that include rules have precedence over exclude rules."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude all Kafka",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                    ],
+                }
+            ],
+            "include": [
+                {
+                    "name": "Include specific topic",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": [testenv["kafka_topic"] + "_1"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            # Send to included topic
+            self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes1")
+            # Send to excluded topic
+            self.producer.send(testenv["kafka_topic"] + "_2", b"raw_bytes2")
+            self.producer.flush()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should keep topic_1 (include rule) and filter out topic_2 (exclude rule)
+        assert len(filtered_spans) == 2  # test span + topic_1 kafka span
+
+        kafka_spans = [s for s in filtered_spans if s.n == "kafka"]
+        assert len(kafka_spans) == 1
+        assert kafka_spans[0].data["kafka"]["service"] == testenv["kafka_topic"] + "_1"
+
+    def test_span_filter_kafka_multiple_topics(self) -> None:
+        """Test filtering multiple Kafka topics."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter multiple topics",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": [
+                                testenv["kafka_topic"] + "_1",
+                                testenv["kafka_topic"] + "_2",
+                            ],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes1")
+            self.producer.send(testenv["kafka_topic"] + "_2", b"raw_bytes2")
+            self.producer.send(testenv["kafka_topic"] + "_3", b"raw_bytes3")
+            self.producer.flush()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4  # 1 test + 3 kafka
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out topic_1 and topic_2, keep topic_3
+        assert len(filtered_spans) == 2  # test span + topic_3
+
+        kafka_spans = [s for s in filtered_spans if s.n == "kafka"]
+        assert len(kafka_spans) == 1
+        assert kafka_spans[0].data["kafka"]["service"] == testenv["kafka_topic"] + "_3"
+
+    def test_span_filter_kafka_with_match_types(self) -> None:
+        """Test filtering Kafka spans with different match types."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter topics starting with span-topic",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["span-topic"],
+                            "match_type": "startswith",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.producer.send(testenv["kafka_topic"], b"raw_bytes1")  # span-topic
+            self.producer.send(
+                testenv["kafka_topic"] + "_1", b"raw_bytes2"
+            )  # span-topic_1
+            self.producer.flush()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out both topics (both start with "span-topic")
+        assert len(filtered_spans) == 1  # Only test span
+        assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_kafka_with_env_vars(self) -> None:
+        """Test filtering Kafka spans using INSTANA_TRACING_FILTER_ environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": f"type;kafka|kafka.service;{testenv['kafka_topic']};strict",
+            },
+        ):
+            # Reinitialize agent options to pick up env vars
+            agent.options = StandardOptions()
+
+            with self.tracer.start_as_current_span("test"):
+                # Send to filtered topic
+                self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
+                # Send to non-filtered topic
+                self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes2")
+                self.producer.flush()
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test span + 2 kafka spans
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should filter out kafka span for testenv["kafka_topic"]
+            assert len(filtered_spans) == 2  # 1 test span + 1 kafka span
+
+            # Verify the filtered span is not in the result
+            kafka_spans = [s for s in filtered_spans if s.n == "kafka"]
+            assert len(kafka_spans) == 1
+            assert (
+                kafka_spans[0].data["kafka"]["service"] == testenv["kafka_topic"] + "_1"
+            )
+
+    def test_span_filter_kafka_env_with_match_type(self) -> None:
+        """Test filtering Kafka spans with match_type using environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;kafka|kafka.service;span;contains",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                # Both topics contain "span" so both should be filtered
+                self.producer.send(testenv["kafka_topic"], b"raw_bytes1")
+                self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes2")
+                self.producer.flush()
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test span + 2 kafka spans
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should filter out both kafka spans (both contain "span")
+            assert len(filtered_spans) == 1  # Only test span remains
+            assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_kafka_env_with_suppression(self) -> None:
+        """Test filtering Kafka spans with suppression=false using environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;kafka",
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_SUPPRESSION": "false",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.producer.send(testenv["kafka_topic"], b"raw_bytes")
+                self.producer.flush()
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 2  # 1 test span + 1 kafka span
+
+            filtered_spans = agent.filter_spans(spans)
+            # With suppression=false, kafka span should be filtered but test span remains
+            assert len(filtered_spans) == 1
+            assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_kafka_env_include_rule(self) -> None:
+        """Test filtering Kafka spans with include rule using environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;kafka",
+                "INSTANA_TRACING_FILTER_INCLUDE_0_ATTRIBUTES": f"type;kafka|kafka.service;{testenv['kafka_topic']}_1",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                # Send to included topic
+                self.producer.send(testenv["kafka_topic"] + "_1", b"raw_bytes1")
+                # Send to excluded topic
+                self.producer.send(testenv["kafka_topic"] + "_2", b"raw_bytes2")
+                self.producer.flush()
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test span + 2 kafka spans
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should keep topic_1 (include rule) and filter out topic_2 (exclude rule)
+            assert len(filtered_spans) == 2  # 1 test span + 1 kafka span
+
+            kafka_spans = [s for s in filtered_spans if s.n == "kafka"]
+            assert len(kafka_spans) == 1
+            assert (
+                kafka_spans[0].data["kafka"]["service"] == testenv["kafka_topic"] + "_1"
+            )
         assert kafka_python.consumer_token is None

@@ -28,6 +28,7 @@ class TestRedis:
         if "INSTANA_IGNORE_ENDPOINTS" in os.environ.keys():
             del os.environ["INSTANA_IGNORE_ENDPOINTS"]
         agent.options.allow_exit_as_root = False
+        agent.options = StandardOptions()
 
     def test_set_get(self) -> None:
         result = None
@@ -464,61 +465,163 @@ class TestRedis:
     def test_ignore_redis(
         self,
     ) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis"
-        agent.options = StandardOptions()
+        with patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "redis"}):
+            agent.options = StandardOptions()
 
-        with self.tracer.start_as_current_span("test"):
-            self.client.set("foox", "barX")
-            self.client.get("foox")
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
 
-        spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3
 
-        filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 1
+            filtered_spans = agent.filter_spans(spans)
+            assert len(filtered_spans) == 1
 
     def test_ignore_redis_single_command(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set"
-        agent.options = StandardOptions()
+        with patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "redis:set"}):
+            agent.options = StandardOptions()
 
-        with self.tracer.start_as_current_span("test"):
-            self.client.set("foox", "barX")
-            self.client.get("foox")
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
 
-        spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3
 
-        filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 2
+            filtered_spans = agent.filter_spans(spans)
+            assert len(filtered_spans) == 2
 
-        redis_get_span = filtered_spans[0]
-        sdk_span = filtered_spans[1]
+            redis_get_span = filtered_spans[0]
+            sdk_span = filtered_spans[1]
 
-        assert redis_get_span.n == "redis"
-        assert redis_get_span.data["redis"]["command"] == "GET"
+            assert redis_get_span.n == "redis"
+            assert redis_get_span.data["redis"]["command"] == "GET"
 
-        assert sdk_span.n == "sdk"
+            assert sdk_span.n == "sdk"
 
     def test_ignore_redis_multiple_commands(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set,get"
-        agent.options = StandardOptions()
-        with self.tracer.start_as_current_span("test"):
-            self.client.set("foox", "barX")
-            self.client.get("foox")
+        with patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "redis:set,get"}):
+            agent.options = StandardOptions()
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
 
-        spans = self.recorder.queued_spans()
-        assert len(spans) == 3
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3
 
-        filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 1
+            filtered_spans = agent.filter_spans(spans)
+            assert len(filtered_spans) == 1
 
-        sdk_span = filtered_spans[0]
+            sdk_span = filtered_spans[0]
 
-        assert sdk_span.n == "sdk"
+            assert sdk_span.n == "sdk"
 
     def test_ignore_redis_with_another_instrumentation(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set;something_else:something"
-        agent.options = StandardOptions()
+        with patch.dict(
+            os.environ,
+            {"INSTANA_IGNORE_ENDPOINTS": "redis:set;something_else:something"},
+        ):
+            agent.options = StandardOptions()
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3
+
+            filtered_spans = agent.filter_spans(spans)
+            assert len(filtered_spans) == 2
+
+            redis_get_span = filtered_spans[0]
+
+            assert redis_get_span.n == "redis"
+            assert redis_get_span.data["redis"]["command"] == "GET"
+
+    def test_span_filter_redis_by_command(self) -> None:
+        """Test filtering Redis spans by specific command using span_filters."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Redis SET command",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["SET"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3  # 1 test + 1 SET + 1 GET
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out SET command
+        assert len(filtered_spans) == 2  # test + GET
+
+        redis_spans = [s for s in filtered_spans if s.n == "redis"]
+        assert len(redis_spans) == 1
+        assert redis_spans[0].data["redis"]["command"] == "GET"
+
+    def test_span_filter_redis_multiple_commands(self) -> None:
+        """Test filtering multiple Redis commands."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Redis commands",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["SET", "INCRBY"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.client.set("counter", "10")
+            self.client.incr("counter")
+            self.client.get("counter")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4  # 1 test + 3 redis
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out SET and INCRBY, keep GET
+        assert len(filtered_spans) == 2  # test + GET
+
+        redis_spans = [s for s in filtered_spans if s.n == "redis"]
+        assert len(redis_spans) == 1
+        assert redis_spans[0].data["redis"]["command"] == "GET"
+
+    def test_span_filter_redis_by_category(self) -> None:
+        """Test filtering all Redis spans by category."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter all databases",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["databases"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
         with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
             self.client.get("foox")
@@ -527,12 +630,221 @@ class TestRedis:
         assert len(spans) == 3
 
         filtered_spans = agent.filter_spans(spans)
-        assert len(filtered_spans) == 2
+        # Should filter out all Redis spans
+        assert len(filtered_spans) == 1  # Only test span
+        assert filtered_spans[0].n == "sdk"
 
-        redis_get_span = filtered_spans[0]
-        sdk_span = filtered_spans[1]
+    def test_span_filter_redis_with_include_rule(self) -> None:
+        """Test that include rules have precedence over exclude rules."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude all Redis",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                    ],
+                }
+            ],
+            "include": [
+                {
+                    "name": "Include GET command",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["GET"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ],
+        }
 
-        assert redis_get_span.n == "redis"
-        assert redis_get_span.data["redis"]["command"] == "GET"
+        with self.tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
 
-        assert sdk_span.n == "sdk"
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should keep GET (include rule) and filter out SET (exclude rule)
+        assert len(filtered_spans) == 2  # test + GET
+
+        redis_spans = [s for s in filtered_spans if s.n == "redis"]
+        assert len(redis_spans) == 1
+        assert redis_spans[0].data["redis"]["command"] == "GET"
+
+    def test_span_filter_redis_by_kind(self) -> None:
+        """Test filtering Redis spans by kind (exit spans)."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Redis exit spans",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            self.client.set("foox", "barX")
+            self.client.get("foox")
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 3
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out all Redis spans (they are all exit spans)
+        assert len(filtered_spans) == 1  # Only test span
+        assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_redis_pipeline(self) -> None:
+        """Test filtering Redis PIPELINE command."""
+        agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter Redis PIPELINE",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["PIPELINE"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        with self.tracer.start_as_current_span("test"):
+            pipe = self.client.pipeline()
+            pipe.set("foox", "barX")
+            pipe.set("fooy", "barY")
+            pipe.get("foox")
+            pipe.execute()
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 2  # test + pipeline
+
+        filtered_spans = agent.filter_spans(spans)
+        # Should filter out PIPELINE command
+        assert len(filtered_spans) == 1  # Only test span
+
+    def test_span_filter_redis_with_env_vars(self) -> None:
+        """Test filtering Redis spans using INSTANA_TRACING_FILTER_ environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;redis|redis.command;SET;strict",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test + 1 SET + 1 GET
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should filter out SET command
+            assert len(filtered_spans) == 2  # test + GET
+
+            redis_spans = [s for s in filtered_spans if s.n == "redis"]
+            assert len(redis_spans) == 1
+            assert redis_spans[0].data["redis"]["command"] == "GET"
+
+    def test_span_filter_redis_env_with_match_type(self) -> None:
+        """Test filtering Redis spans with match_type using environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;redis|redis.command;GET;contains",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test + 1 SET + 1 GET
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should filter out GET command (contains match)
+            assert len(filtered_spans) == 2  # test + SET
+
+            redis_spans = [s for s in filtered_spans if s.n == "redis"]
+            assert len(redis_spans) == 1
+            assert redis_spans[0].data["redis"]["command"] == "SET"
+
+    def test_span_filter_redis_env_with_suppression(self) -> None:
+        """Test filtering Redis spans with suppression=false using environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;redis",
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_SUPPRESSION": "false",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test + 2 redis
+
+            filtered_spans = agent.filter_spans(spans)
+            # With suppression=false, redis spans should be filtered but test span remains
+            assert len(filtered_spans) == 1
+            assert filtered_spans[0].n == "sdk"
+
+    def test_span_filter_redis_env_include_rule(self) -> None:
+        """Test filtering Redis spans with include rule using environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "INSTANA_TRACING_FILTER_EXCLUDE_0_ATTRIBUTES": "type;redis",
+                "INSTANA_TRACING_FILTER_INCLUDE_0_ATTRIBUTES": "type;redis|redis.command;GET",
+            },
+        ):
+            # Create new options to pick up env vars
+            options = StandardOptions()
+            # Set the parsed filters on agent
+            agent.options.span_filters = options.span_filters
+
+            with self.tracer.start_as_current_span("test"):
+                self.client.set("foox", "barX")
+                self.client.get("foox")
+
+            spans = self.recorder.queued_spans()
+            assert len(spans) == 3  # 1 test + 2 redis
+
+            filtered_spans = agent.filter_spans(spans)
+            # Should keep GET (include rule) and filter out SET (exclude rule)
+            assert len(filtered_spans) == 2  # test + GET
+
+            redis_spans = [s for s in filtered_spans if s.n == "redis"]
+            assert len(redis_spans) == 1
+            assert redis_spans[0].data["redis"]["command"] == "GET"
+
+            # Verify test span is also present
+            test_spans = [s for s in filtered_spans if s.n == "sdk"]
+            assert len(test_spans) == 1
+        assert filtered_spans[0].n == "redis"

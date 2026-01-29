@@ -22,7 +22,11 @@ from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
 from instana.util.runtime import get_py_source, log_runtime_env_info
-from instana.util.span_utils import get_operation_specifiers
+from instana.util.span_utils import (
+    extract_span_attributes,
+    get_operation_specifiers,
+    matches_filter_rule,
+)
 from instana.version import VERSION
 
 if TYPE_CHECKING:
@@ -357,27 +361,41 @@ class HostAgent(BaseAgent):
 
     def filter_spans(self, spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Filters given span list using ignore-endpoint variable and returns the list of filtered spans.
+        Filters given span list using span_filters and ignore-endpoint configurations.
+
+        Returns the list of spans that should be kept (not filtered out).
         """
         filtered_spans = []
         endpoint = ""
+
         for span in spans:
-            if (hasattr(span, "n") or hasattr(span, "name")) and hasattr(span, "data"):
-                service = span.n
-                operation_specifier_key, service_specifier_key = (
-                    get_operation_specifiers(service)
-                )
-                if service == "kafka":
-                    endpoint = span.data[service][service_specifier_key]
-                method = span.data[service][operation_specifier_key]
-                if isinstance(method, str) and self.__is_endpoint_ignored(
-                    service, method, endpoint
-                ):
+            try:
+                # Check new span_filters first (if configured)
+                if self.options.span_filters and self.__is_span_filtered(span):
                     continue
-                else:
-                    filtered_spans.append(span)
-            else:
+
+                # Backward compatibility: check ignore_endpoints
+                if (hasattr(span, "n") or hasattr(span, "name")) and hasattr(
+                    span, "data"
+                ):
+                    service = span.n
+                    operation_specifier_key, service_specifier_key = (
+                        get_operation_specifiers(service)
+                    )
+                    if service == "kafka":
+                        endpoint = span.data[service][service_specifier_key]
+                    method = span.data[service][operation_specifier_key]
+                    if isinstance(method, str) and self.__is_endpoint_ignored(
+                        service, method, endpoint
+                    ):
+                        continue
+
+                # Keep the span
                 filtered_spans.append(span)
+            except Exception:
+                # Defensive: if filtering fails, keep the span
+                filtered_spans.append(span)
+
         return filtered_spans
 
     def __is_endpoint_ignored(
@@ -402,6 +420,47 @@ class HostAgent(BaseAgent):
                 f"{service}.{method}.*",  # service.method.*
             ]
         return any(rule in self.options.ignore_endpoints for rule in filter_rules)
+
+    def __is_span_filtered(self, span: Dict[str, Any]) -> bool:
+        """
+        Check if span should be filtered based on span_filters configuration.
+
+        Implements the span filtering logic following the specification:
+        - include rules have higher precedence than exclude rules
+        - Within a rule, attributes use AND logic (all must match)
+        - Between rules, use OR logic (any rule can match)
+
+        Args:
+            span: Span dictionary to check
+
+        Returns:
+            True if span should be EXCLUDED (filtered out)
+            False if span should be INCLUDED (kept)
+        """
+        if not self.options.span_filters:
+            return False
+
+        try:
+            # Extract span attributes for filtering
+            span_attrs = extract_span_attributes(span)
+
+            # Check include rules first (higher precedence)
+            if "include" in self.options.span_filters:
+                for rule in self.options.span_filters["include"]:
+                    if matches_filter_rule(span_attrs, rule):
+                        return False  # Keep span (include match)
+
+            # Check exclude rules
+            if "exclude" in self.options.span_filters:
+                for rule in self.options.span_filters["exclude"]:
+                    if matches_filter_rule(span_attrs, rule):
+                        return True  # Filter out span (exclude match)
+
+            # Default: keep span
+            return False
+        except Exception:
+            # Defensive: if filtering fails, keep the span
+            return False
 
     def handle_agent_tasks(self, task: Dict[str, Any]) -> None:
         """

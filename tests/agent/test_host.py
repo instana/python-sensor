@@ -15,10 +15,11 @@ from mock import MagicMock, patch
 from instana.agent.host import AnnounceData, HostAgent
 from instana.collector.host import HostCollector
 from instana.fsm import TheMachine
-from instana.options import StandardOptions
+from instana.options import BaseOptions, StandardOptions
 from instana.recorder import StanRecorder
 from instana.singletons import get_agent
 from instana.span.span import InstanaSpan
+from instana.span.registered_span import RegisteredSpan
 from instana.span_context import SpanContext
 from instana.util.process_discovery import Discovery
 from instana.util.runtime import is_windows
@@ -398,6 +399,119 @@ class TestHostAgent:
         assert agent.announce_data.agentUuid == "value-4"
         assert agent.announce_data.pid == 1234
 
+    def test_set_span_filters_from_agent_config(
+        self,
+    ) -> None:
+        agent = HostAgent()
+        sample_res_data = {
+            "agentUuid": "value-4",
+            "pid": 1234,
+            "tracing": {
+                "filter": {
+                    "exclude": [
+                        {
+                            "name": "HTTP for filtering context root",
+                            "attributes": [
+                                {"key": "category", "values": ["protocols"]},
+                                {
+                                    "key": "http.context_root",
+                                    "values": ["/health"],
+                                    "match_type": "strict",
+                                },
+                            ],
+                        },
+                        {
+                            "name": "HTTP",
+                            "attributes": [
+                                {"key": "category", "values": ["protocols"]},
+                                {
+                                    "key": "http.context_root",
+                                    "values": ["/jetty"],
+                                    "match_type": "strict",
+                                },
+                                {
+                                    "key": "http.url",
+                                    "match_type": "endswith",
+                                    "values": ["/dawg"],
+                                },
+                            ],
+                        },
+                    ],
+                    "include": [
+                        {
+                            "name": "HTTP",
+                            "attributes": [
+                                {"key": "category", "values": ["protocols"]},
+                                {
+                                    "key": "http.context_root",
+                                    "values": ["/jetty"],
+                                    "match_type": "strict",
+                                },
+                                {
+                                    "key": "http.url",
+                                    "match_type": "endswith",
+                                    "values": ["/dawg"],
+                                },
+                            ],
+                        }
+                    ],
+                },
+            },
+        }
+        agent.options.extra_http_headers = None
+
+        agent.set_from(sample_res_data)
+        assert (
+            agent.options.span_filters["exclude"][0]["name"]
+            == sample_res_data["tracing"]["filter"]["exclude"][0]["name"]
+        )
+        assert agent.options.span_filters["exclude"][0]["attributes"] == [
+            {
+                "key": "category",
+                "values": ["protocols"],
+                "match_type": "strict",
+            },
+            {
+                "key": "http.context_root",
+                "values": ["/health"],
+                "match_type": "strict",
+            },
+        ]
+        assert (
+            agent.options.span_filters["exclude"][1]["name"]
+            == sample_res_data["tracing"]["filter"]["exclude"][1]["name"]
+        )
+        assert agent.options.span_filters["exclude"][1]["attributes"] == [
+            {"key": "category", "values": ["protocols"], "match_type": "strict"},
+            {
+                "key": "http.context_root",
+                "values": ["/jetty"],
+                "match_type": "strict",
+            },
+            {
+                "key": "http.url",
+                "match_type": "endswith",
+                "values": ["/dawg"],
+            },
+        ]
+        assert (
+            agent.options.span_filters["include"][0]["name"]
+            == sample_res_data["tracing"]["filter"]["include"][0]["name"]
+        )
+        assert agent.options.span_filters["include"][0]["attributes"] == [
+            {"key": "category", "values": ["protocols"], "match_type": "strict"},
+            {
+                "key": "http.context_root",
+                "values": ["/jetty"],
+                "match_type": "strict",
+            },
+            {
+                "key": "http.url",
+                "match_type": "endswith",
+                "values": ["/dawg"],
+            },
+        ]
+
     @pytest.mark.original
     def test_get_from_structure(
         self,
@@ -697,7 +811,12 @@ class TestHostAgent:
         assert f"report_interval: {agent.collector.report_interval}" in caplog.messages
         assert "should_send_snapshot_data: True" in caplog.messages
 
+    @patch.dict(
+        os.environ,
+        {"INSTANA_CONFIG_PATH": "tests/util/test_span_filter.yaml"},
+    )
     def test_is_service_or_endpoint_ignored(self) -> None:
+        self.agent.options = BaseOptions()
         self.agent.options.ignore_endpoints.append("service1.*")
         self.agent.options.ignore_endpoints.append("service2.method1")
 
@@ -717,6 +836,862 @@ class TestHostAgent:
         # don't ignore other services
         assert not self.agent._HostAgent__is_endpoint_ignored("service3")
         assert not self.agent._HostAgent__is_endpoint_ignored("service3")
+
+    def test_span_filtering_with_exclude_rule(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test span filtering with exclude rules."""
+        # Setup span_filters configuration
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Kafka filter",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic1", "topic2"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Create span that should be filtered
+        instana_span1 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span1.set_attribute("kafka.service", "topic1")
+        instana_span1.set_attribute("kafka.access", "consume")
+        filtered_span = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+
+        assert self.agent._HostAgent__is_span_filtered(filtered_span) is True
+
+        # Create span that should NOT be filtered (different topic)
+        instana_span2 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span2.set_attribute("kafka.service", "topic3")
+        instana_span2.set_attribute("kafka.access", "consume")
+        kept_span = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+
+        assert self.agent._HostAgent__is_span_filtered(kept_span) is False
+
+    def test_span_filtering_with_include_rule(self) -> None:
+        """Test span filtering with include rules (higher precedence)."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude all HTTP",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ],
+            "include": [
+                {
+                    "name": "Include specific URL",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        # Create HTTP span with /health URL - should be INCLUDED (not filtered)
+        class MockHttpSpan:
+            def __init__(self):
+                self.n = "http"
+                self.k = 0  # SpanKind.SERVER
+                self.data = {"http": {"url": "/api/health", "method": "GET"}}
+
+        health_span = MockHttpSpan()
+        assert self.agent._HostAgent__is_span_filtered(health_span) is False
+
+        # Create HTTP span without /health - should be EXCLUDED (filtered)
+        class MockHttpSpan2:
+            def __init__(self):
+                self.n = "http"
+                self.k = 0
+                self.data = {"http": {"url": "/api/users", "method": "GET"}}
+
+        other_span = MockHttpSpan2()
+        assert self.agent._HostAgent__is_span_filtered(other_span) is True
+
+    def test_span_filtering_match_types(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test different match types: strict, startswith, endswith, contains."""
+        # Test startswith
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter URLs starting with /api",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/api"],
+                            "match_type": "startswith",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.url", "/api/users")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/health")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+        # Test endswith
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter URLs ending with .json",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": [".json"],
+                            "match_type": "endswith",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        instana_span3 = InstanaSpan("django", span_context, span_processor)
+        instana_span3.set_attribute("http.url", "/data.json")
+        span3 = RegisteredSpan(
+            instana_span3, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span3) is True
+
+        instana_span4 = InstanaSpan("django", span_context, span_processor)
+        instana_span4.set_attribute("http.url", "/data.xml")
+        span4 = RegisteredSpan(
+            instana_span4, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span4) is False
+
+    def test_span_filtering_defensive_behavior(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test that filtering fails gracefully and keeps spans on error."""
+        # Empty span_filters should not filter
+        self.agent.options.span_filters = {}
+
+        instana_span = InstanaSpan("django", span_context, span_processor)
+        instana_span.set_attribute("http.url", "/test")
+        span = RegisteredSpan(instana_span, {"e": "test", "h": "test"}, "test-service")
+        assert self.agent._HostAgent__is_span_filtered(span) is False
+
+    def test_is_span_filtered_no_filters_configured(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test __is_span_filtered returns False when no filters are configured."""
+        self.agent.options.span_filters = None
+
+        instana_span = InstanaSpan("django", span_context, span_processor)
+        instana_span.set_attribute("http.url", "/test")
+        span = RegisteredSpan(instana_span, {"e": "test", "h": "test"}, "test-service")
+
+        assert self.agent._HostAgent__is_span_filtered(span) is False
+
+    def test_is_span_filtered_exclude_by_category(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test __is_span_filtered with category-based exclusion."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude databases",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["databases"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Database span should be filtered
+        instana_span1 = InstanaSpan("redis", span_context, span_processor)
+        instana_span1.set_attribute("redis.command", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # HTTP span should NOT be filtered
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/test")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+    def test_is_span_filtered_exclude_by_kind(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test __is_span_filtered with kind-based exclusion."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude exit spans",
+                    "attributes": [
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                    ],
+                }
+            ]
+        }
+
+        # Exit span should be filtered
+        instana_span1 = InstanaSpan("redis", span_context, span_processor)
+        instana_span1.set_attribute("redis.command", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+    def test_is_span_filtered_multiple_exclude_rules(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test __is_span_filtered with multiple exclude rules (OR logic)."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude Redis GET",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["GET"],
+                            "match_type": "strict",
+                        },
+                    ],
+                },
+                {
+                    "name": "Exclude HTTP /health",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "contains",
+                        },
+                    ],
+                },
+            ]
+        }
+
+        # Redis GET should be filtered (first rule)
+        instana_span1 = InstanaSpan("redis", span_context, span_processor)
+        instana_span1.set_attribute("redis.command", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # HTTP /health should be filtered (second rule)
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/api/health")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is True
+
+        # Redis SET should NOT be filtered
+        instana_span3 = InstanaSpan("redis", span_context, span_processor)
+        instana_span3.set_attribute("redis.command", "SET")
+        span3 = RegisteredSpan(
+            instana_span3, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span3) is False
+
+    def test_is_span_filtered_include_overrides_exclude(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test that include rules have higher precedence than exclude rules."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude all Redis",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                    ],
+                }
+            ],
+            "include": [
+                {
+                    "name": "Include Redis GET",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["GET"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        # Redis GET should NOT be filtered (include rule)
+        instana_span1 = InstanaSpan("redis", span_context, span_processor)
+        instana_span1.set_attribute("redis.command", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is False
+
+        # Redis SET should be filtered (exclude rule, no include match)
+        instana_span2 = InstanaSpan("redis", span_context, span_processor)
+        instana_span2.set_attribute("redis.command", "SET")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is True
+
+    def test_is_span_filtered_multiple_values_or_logic(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test that multiple values in an attribute use OR logic."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude specific commands",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["GET", "SET", "DEL"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # GET should be filtered
+        instana_span1 = InstanaSpan("redis", span_context, span_processor)
+        instana_span1.set_attribute("redis.command", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # SET should be filtered
+        instana_span2 = InstanaSpan("redis", span_context, span_processor)
+        instana_span2.set_attribute("redis.command", "SET")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is True
+
+        # DEL should be filtered
+        instana_span3 = InstanaSpan("redis", span_context, span_processor)
+        instana_span3.set_attribute("redis.command", "DEL")
+        span3 = RegisteredSpan(
+            instana_span3, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span3) is True
+
+        # INCR should NOT be filtered
+        instana_span4 = InstanaSpan("redis", span_context, span_processor)
+        instana_span4.set_attribute("redis.command", "INCR")
+        span4 = RegisteredSpan(
+            instana_span4, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span4) is False
+
+    def test_is_span_filtered_and_logic_within_rule(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test that attributes within a rule use AND logic (all must match)."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude specific Redis GET",
+                    "attributes": [
+                        {"key": "type", "values": ["redis"], "match_type": "strict"},
+                        {
+                            "key": "redis.command",
+                            "values": ["GET"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "category",
+                            "values": ["databases"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # All conditions match - should be filtered
+        instana_span1 = InstanaSpan("redis", span_context, span_processor)
+        instana_span1.set_attribute("redis.command", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # Only type and category match, command is SET - should NOT be filtered
+        instana_span2 = InstanaSpan("redis", span_context, span_processor)
+        instana_span2.set_attribute("redis.command", "SET")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+    def test_is_span_filtered_contains_match_type(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test __is_span_filtered with contains match type."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Filter URLs containing 'admin'",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["admin"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # URL containing 'admin' should be filtered
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.url", "/api/admin/users")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # URL not containing 'admin' should NOT be filtered
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/api/users")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+    def test_filter_spans_integration(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test filter_spans method with span_filters configuration."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Test Filter",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Create spans
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.url", "/api/health")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/api/users")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+
+        # Test filter_spans method
+        spans = [span1, span2]
+        filtered = self.agent.filter_spans(spans)
+
+        # Only span2 should remain (span1 filtered out)
+        assert len(filtered) == 1
+        assert filtered[0] == span2
+
+    def test_http_filter_context_root(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test filtering out a specific context root (/health)."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "HTTP for filtering context root",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "http.path",
+                            "values": ["/health"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Create span with /health path - should be filtered
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.path", "/health")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # Create span with different path - should NOT be filtered
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.path", "/api/users")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+    def test_http_filter_url_and_method(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test filtering with URL contains and specific method."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "HTTP",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/hello/dawg"],
+                            "match_type": "contains",
+                        },
+                        {
+                            "key": "http.method",
+                            "values": ["GET"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Should be filtered (contains /hello/dawg AND method is GET)
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.url", "/jetty/controller/hello/dawg")
+        instana_span1.set_attribute("http.method", "GET")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # Should NOT be filtered (contains /hello/dawg but method is POST)
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/jetty/controller/hello/dawg")
+        instana_span2.set_attribute("http.method", "POST")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+    def test_http_filter_multiple_url_conditions(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test filtering with URL starting with /jetty AND ending with /dawg."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "HTTP",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/jetty"],
+                            "match_type": "startswith",
+                        },
+                        {
+                            "key": "http.url",
+                            "values": ["/dawg"],
+                            "match_type": "endswith",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Should be filtered (starts with /jetty AND ends with /dawg)
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.url", "/jetty/controller/hello/dawg")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # Should NOT be filtered (starts with /jetty but doesn't end with /dawg)
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/jetty/controller/hello/cat")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is False
+
+    def test_kafka_filter_by_topics(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test filtering Kafka calls based on specific topics."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Kafka",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic1", "topic2"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Should be filtered (topic1)
+        instana_span1 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span1.set_attribute("kafka.service", "topic1")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+        # Should be filtered (topic2)
+        instana_span2 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span2.set_attribute("kafka.service", "topic2")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is True
+
+        # Should NOT be filtered (topic3)
+        instana_span3 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span3.set_attribute("kafka.service", "topic3")
+        span3 = RegisteredSpan(
+            instana_span3, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span3) is False
+
+    def test_kafka_filter_by_kind(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test filtering Kafka calls using kind (entry/exit)."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Kafka",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {
+                            "key": "kind",
+                            "values": ["entry", "exit"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic1"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ]
+        }
+
+        # Should be filtered (entry span with topic1)
+        instana_span1 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span1.set_attribute("kafka.service", "topic1")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        # kafka-consumer creates entry span (SpanKind.SERVER)
+        assert self.agent._HostAgent__is_span_filtered(span1) is True
+
+    def test_kafka_separate_producer_consumer_filters(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test separate filters for Kafka producer (topic1) and consumer (topic2)."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Kafka Producer",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic1"],
+                            "match_type": "contains",
+                        },
+                    ],
+                },
+                {
+                    "name": "Kafka Consumer",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {"key": "kind", "values": ["entry"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic2"],
+                            "match_type": "contains",
+                        },
+                    ],
+                },
+            ]
+        }
+
+        # Consumer with topic1 - should NOT be filtered (only producer topic1 is filtered)
+        instana_span1 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span1.set_attribute("kafka.service", "topic1")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is False
+
+        # Consumer with topic2 - should be filtered
+        instana_span2 = InstanaSpan("kafka-consumer", span_context, span_processor)
+        instana_span2.set_attribute("kafka.service", "topic2")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is True
+
+    def test_include_exclude_precedence(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test that include rules have higher precedence than exclude rules."""
+        self.agent.options.span_filters = {
+            "exclude": [
+                {
+                    "name": "Exclude all HTTP",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                    ],
+                }
+            ],
+            "include": [
+                {
+                    "name": "Include /health",
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        # Should be INCLUDED (include rule matches)
+        instana_span1 = InstanaSpan("django", span_context, span_processor)
+        instana_span1.set_attribute("http.url", "/api/health")
+        span1 = RegisteredSpan(
+            instana_span1, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span1) is False
+
+        # Should be EXCLUDED (only exclude rule matches)
+        instana_span2 = InstanaSpan("django", span_context, span_processor)
+        instana_span2.set_attribute("http.url", "/api/users")
+        span2 = RegisteredSpan(
+            instana_span2, {"e": "test", "h": "test"}, "test-service"
+        )
+        assert self.agent._HostAgent__is_span_filtered(span2) is True
 
     @pytest.mark.parametrize(
         "input_data",

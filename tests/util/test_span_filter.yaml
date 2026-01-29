@@ -1,0 +1,20 @@
+# com.instana.tracing:
+#   filter:
+#     exclude:
+#       - name: "HTTP for filtering context root"
+#         attributes:
+#           - key: "category"
+#             values: ["protocols"] # This attribute is not necessary. It was added just to exemplify the category
+#           - key: "http.context_root"
+#             values: ["/health"]
+#             match_type: "strict"
+com.instana.tracing:
+  filter:
+    exclude:
+      - name: "Kafka"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"

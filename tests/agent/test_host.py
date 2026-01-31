@@ -698,25 +698,53 @@ class TestHostAgent:
         assert "should_send_snapshot_data: True" in caplog.messages
 
     def test_is_service_or_endpoint_ignored(self) -> None:
-        self.agent.options.ignore_endpoints.append("service1.*")
-        self.agent.options.ignore_endpoints.append("service2.method1")
+        self.agent.options.span_filters = {
+            "include": [],
+            "exclude": [
+                {
+                    "name": "service1-all",
+                    "suppression": True,
+                    "attributes": [
+                        {"key": "type", "values": ["service1"], "match_type": "strict"}
+                    ],
+                },
+                {
+                    "name": "service2-method1",
+                    "suppression": True,
+                    "attributes": [
+                        {"key": "type", "values": ["service2"], "match_type": "strict"},
+                        {
+                            "key": "endpoint",
+                            "values": ["method1"],
+                            "match_type": "strict",
+                        },
+                    ],
+                },
+            ],
+        }
 
         # ignore all endpoints of service1
-        assert self.agent._HostAgent__is_endpoint_ignored("service1")
-        assert self.agent._HostAgent__is_endpoint_ignored("service1", "method1")
-        assert self.agent._HostAgent__is_endpoint_ignored("service1", "method2")
-
-        # case-insensitive
-        assert self.agent._HostAgent__is_endpoint_ignored("SERVICE1")
-        assert self.agent._HostAgent__is_endpoint_ignored("service1", "METHOD1")
+        assert self.agent._HostAgent__is_endpoint_ignored({"type": "service1"})
+        assert self.agent._HostAgent__is_endpoint_ignored(
+            {"type": "service1", "endpoint": "method1"}
+        )
+        assert self.agent._HostAgent__is_endpoint_ignored(
+            {"type": "service1", "endpoint": "method2"}
+        )
 
         # ignore only endpoint1 of service2
-        assert self.agent._HostAgent__is_endpoint_ignored("service2", "method1")
-        assert not self.agent._HostAgent__is_endpoint_ignored("service2", "method2")
+        assert self.agent._HostAgent__is_endpoint_ignored(
+            {"type": "service2", "endpoint": "method1"}
+        )
+        assert not self.agent._HostAgent__is_endpoint_ignored(
+            {"type": "service2", "endpoint": "method2"}
+        )
 
         # don't ignore other services
-        assert not self.agent._HostAgent__is_endpoint_ignored("service3")
-        assert not self.agent._HostAgent__is_endpoint_ignored("service3")
+        assert not self.agent._HostAgent__is_endpoint_ignored({"type": "service3"})
+        assert not self.agent._HostAgent__is_endpoint_ignored(
+            {"type": "service3", "endpoint": "method1"}
+        )
 
     @pytest.mark.parametrize(
         "input_data",

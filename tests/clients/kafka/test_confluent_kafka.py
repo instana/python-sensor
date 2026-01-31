@@ -25,7 +25,7 @@ from instana.instrumentation.kafka.confluent_kafka_python import (
 from instana.options import StandardOptions
 from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
-from instana.util.config import parse_ignored_endpoints_from_yaml
+from instana.util.config import parse_filtered_endpoints_from_yaml
 from tests.helpers import get_first_span_by_filter, testenv
 
 
@@ -283,7 +283,10 @@ class TestConfluentKafka:
             == "num_messages must be between 0 and 1000000 (1M)"
         )
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka"})
+    @patch.dict(
+        os.environ,
+        {"INSTANA_TRACING_FILTER_EXCLUDE_KAFKA_ATTRIBUTES": "type;kafka;strict"},
+    )
     def test_ignore_confluent_kafka(self) -> None:
         agent.options.set_trace_configurations()
         with self.tracer.start_as_current_span("test"):
@@ -296,7 +299,12 @@ class TestConfluentKafka:
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 1
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:produce"})
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_KAFKA_PRODUCER_ATTRIBUTES": "type;kafka;strict|kafka.access;produce;strict"
+        },
+    )
     def test_ignore_confluent_kafka_producer(self) -> None:
         agent.options.set_trace_configurations()
         with self.tracer.start_as_current_span("test-span"):
@@ -322,7 +330,12 @@ class TestConfluentKafka:
         filtered_spans = agent.filter_spans(spans)
         assert len(filtered_spans) == 1
 
-    @patch.dict(os.environ, {"INSTANA_IGNORE_ENDPOINTS": "kafka:consume"})
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_KAFKA_CONSUMER_ATTRIBUTES": "type;kafka;strict|kafka.access;consume;strict"
+        },
+    )
     def test_ignore_confluent_kafka_consumer(self) -> None:
         agent.options.set_trace_configurations()
         # Produce some events
@@ -348,7 +361,7 @@ class TestConfluentKafka:
     @patch.dict(
         os.environ,
         {
-            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
+            "INSTANA_TRACING_FILTER_EXCLUDE_KAFKA_ATTRIBUTES": "kafka.access;consume,send,produce;contains|kafka.service;span-topic,topic1,topic2;strict|kafka.access;*;strict",
         },
     )
     def test_ignore_confluent_specific_topic(self) -> None:
@@ -400,7 +413,7 @@ class TestConfluentKafka:
         )
 
     def test_ignore_confluent_specific_topic_with_config_file(self) -> None:
-        agent.options.ignore_endpoints = parse_ignored_endpoints_from_yaml(
+        agent.options.span_filters = parse_filtered_endpoints_from_yaml(
             "tests/util/test_configuration-1.yaml"
         )
 
@@ -608,12 +621,29 @@ class TestConfluentKafka:
 
     @patch.dict(os.environ, {"INSTANA_ALLOW_ROOT_EXIT_SPAN": "1"})
     def test_confluent_kafka_downstream_suppression(self) -> None:
-        config["tracing"]["ignore_endpoints"] = {
-            "kafka": [
-                {"methods": ["produce"], "endpoints": [f"{testenv['kafka_topic']}_1"]},
+        config["tracing"]["filter"] = {
+            "exclude": [
                 {
-                    "methods": ["consume"],
-                    "endpoints": [f"{testenv['kafka_topic']}_2"],
+                    "name": "Kafka",
+                    "attributes": [
+                        {
+                            "key": "kafka.service",
+                            "values": [f"{testenv['kafka_topic']}_1"],
+                        },
+                        {"key": "kafka.access", "values": ["produce"]},
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "Kafka",
+                    "attributes": [
+                        {
+                            "key": "kafka.service",
+                            "values": [f"{testenv['kafka_topic']}_2"],
+                        },
+                        {"key": "kafka.access", "values": ["consume"]},
+                    ],
+                    "suppression": True,
                 },
             ]
         }
@@ -784,6 +814,12 @@ class TestConfluentKafka:
 
         consumer = Consumer(consumer_config)
         consumer.subscribe([testenv["kafka_topic"] + "_3"])
+
+        # Consume any existing messages to ensure topic is empty
+        while True:
+            msg = consumer.poll(timeout=0.5)
+            if msg is None:
+                break
 
         with self.tracer.start_as_current_span("test"):
             msg = consumer.poll(timeout=0.1)

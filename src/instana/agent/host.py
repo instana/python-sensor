@@ -22,7 +22,7 @@ from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
 from instana.util.runtime import get_py_source, log_runtime_env_info
-from instana.util.span_utils import get_operation_specifiers
+from instana.util.span_utils import matches_rule
 from instana.version import VERSION
 
 if TYPE_CHECKING:
@@ -357,51 +357,61 @@ class HostAgent(BaseAgent):
 
     def filter_spans(self, spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Filters given span list using ignore-endpoint variable and returns the list of filtered spans.
+        Filters span list using new hierarchical filtering rules.
         """
         filtered_spans = []
-        endpoint = ""
+
         for span in spans:
-            if (hasattr(span, "n") or hasattr(span, "name")) and hasattr(span, "data"):
-                service = span.n
-                operation_specifier_key, service_specifier_key = (
-                    get_operation_specifiers(service)
-                )
-                if service == "kafka":
-                    endpoint = span.data[service][service_specifier_key]
-                method = span.data[service][operation_specifier_key]
-                if isinstance(method, str) and self.__is_endpoint_ignored(
-                    service, method, endpoint
-                ):
-                    continue
-                else:
-                    filtered_spans.append(span)
-            else:
+            if not (hasattr(span, "n") or hasattr(span, "name")) or not hasattr(
+                span, "data"
+            ):
                 filtered_spans.append(span)
+                continue
+
+            # Set the service name
+            service_name = getattr(span, "n", getattr(span, "name", ""))
+
+            # Set span attributes for filtering
+            attributes_to_check = {
+                "type": service_name,
+                "kind": "entry"
+                if span.k == 1
+                else "exit"
+                if span.k == 2
+                else "intermediate",
+            }
+
+            # Add operation specifiers to the attributes
+            if service_name in span.data:
+                service_data = span.data[service_name]
+                for key, value in service_data.items():
+                    attributes_to_check[f"{service_name}.{key}"] = value
+                    attributes_to_check[key] = value
+
+            # Check if the span need to be ignored
+            if self.__is_endpoint_ignored(attributes_to_check):
+                continue
+
+            filtered_spans.append(span)
+
         return filtered_spans
 
-    def __is_endpoint_ignored(
-        self,
-        service: str,
-        method: str = "",
-        endpoint: str = "",
-    ) -> bool:
-        """Check if the given service and endpoint combination should be ignored."""
-        service = service.lower()
-        method = method.lower()
-        endpoint = endpoint.lower()
-        filter_rules = [
-            f"{service}.{method}",  # service.method
-            f"{service}.*",  # service.*
-        ]
+    def __is_endpoint_ignored(self, span_attributes: dict) -> bool:
+        filters = self.options.span_filters
+        if not filters:
+            return False
 
-        if service == "kafka" and endpoint:
-            filter_rules += [
-                f"{service}.{method}.{endpoint}",  # service.method.endpoint
-                f"{service}.*.{endpoint}",  # service.*.endpoint
-                f"{service}.{method}.*",  # service.method.*
-            ]
-        return any(rule in self.options.ignore_endpoints for rule in filter_rules)
+        # Check include rules
+        for rule in filters.get("include", []):
+            if matches_rule(rule.get("attributes", []), span_attributes):
+                return False
+
+        # Check exclude rules
+        for rule in filters.get("exclude", []):
+            if matches_rule(rule.get("attributes", []), span_attributes):
+                return True
+
+        return False
 
     def handle_agent_tasks(self, task: Dict[str, Any]) -> None:
         """

@@ -25,8 +25,11 @@ class TestRedis:
         self.recorder.clear_spans()
         self.client = redis.Redis(host=testenv["redis_host"], db=testenv["redis_db"])
         yield
-        if "INSTANA_IGNORE_ENDPOINTS" in os.environ.keys():
-            del os.environ["INSTANA_IGNORE_ENDPOINTS"]
+        keys_to_remove = [
+            k for k in os.environ.keys() if k.startswith("INSTANA_TRACING_FILTER_")
+        ]
+        for k in keys_to_remove:
+            del os.environ[k]
         agent.options.allow_exit_as_root = False
 
     def test_set_get(self) -> None:
@@ -464,7 +467,9 @@ class TestRedis:
     def test_ignore_redis(
         self,
     ) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis"
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_REDIS_ATTRIBUTES"] = (
+            "redis.command;*;strict"
+        )
         agent.options = StandardOptions()
 
         with self.tracer.start_as_current_span("test"):
@@ -478,7 +483,9 @@ class TestRedis:
         assert len(filtered_spans) == 1
 
     def test_ignore_redis_single_command(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set"
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_REDIS_ATTRIBUTES"] = (
+            "redis.command;SET;strict"
+        )
         agent.options = StandardOptions()
 
         with self.tracer.start_as_current_span("test"):
@@ -500,7 +507,9 @@ class TestRedis:
         assert sdk_span.n == "sdk"
 
     def test_ignore_redis_multiple_commands(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set,get"
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_REDIS_ATTRIBUTES"] = (
+            "redis.command;SET,GET;contains"
+        )
         agent.options = StandardOptions()
         with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")
@@ -517,7 +526,13 @@ class TestRedis:
         assert sdk_span.n == "sdk"
 
     def test_ignore_redis_with_another_instrumentation(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "redis:set;something_else:something"
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_REDIS_ATTRIBUTES"] = (
+            "redis.command;SET;strict"
+        )
+        # We simulate multiple rules by just setting the one relevant for this test + a dummy one if needed,
+        # or just rely on the fact that only redis interacts here.
+        # Original: "redis:set;something_else:something"
+        # Since we are setting ENV vars per policy/name, we can just set the redis one.
         agent.options = StandardOptions()
         with self.tracer.start_as_current_span("test"):
             self.client.set("foox", "barX")

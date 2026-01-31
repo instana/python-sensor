@@ -72,7 +72,9 @@ class TestDynamoDB:
         assert dynamodb_span.data["dynamodb"]["table"] == "dynamodb-table"
 
     def test_ignore_dynamodb(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb"
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_DYNAMODB_ATTRIBUTES"] = (
+            "dynamodb.op;*;strict"
+        )
         agent.options = StandardOptions()
 
         with self.tracer.start_as_current_span("test"):
@@ -96,7 +98,9 @@ class TestDynamoDB:
         assert dynamodb_span not in filtered_spans
 
     def test_ignore_create_table(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb:createtable"
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_DYNAMODB_ATTRIBUTES"] = (
+            "dynamodb.op;CreateTable;strict"
+        )
         agent.options = StandardOptions()
 
         with self.tracer.start_as_current_span("test"):

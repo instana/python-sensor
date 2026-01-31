@@ -1,0 +1,10 @@
+com.instana.tracing:
+  filter:
+    exclude:
+      - name: "Kafka"
+        attributes:
+          - key: "type"
+            values: ["kafka"]
+          - key: "kafka.service"
+            values: ["topic1", "topic2"]
+            match_type: "contains"

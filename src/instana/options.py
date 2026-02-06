@@ -134,6 +134,36 @@ class BaseOptions(object):
 
         self.set_disable_trace_configurations()
         self.set_stack_trace_configurations()
+        if "INSTANA_ALLOW_INTERNAL_SPANS" not in os.environ:
+            self.add_internal_span_filter()
+
+    def add_internal_span_filter(self) -> None:
+        if "exclude" not in self.span_filters:
+            self.span_filters["exclude"] = []
+        self.span_filters["exclude"].extend(
+            [
+                {
+                    "name": "filter-internal-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-spans-by-host",
+                    "attributes": [
+                        {
+                            "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+            ]
+        )
 
     def _apply_env_stack_trace_config(self) -> None:
         """Apply stack trace configuration from environment variables."""

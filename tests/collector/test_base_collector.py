@@ -54,6 +54,9 @@ class TestBaseCollector:
             name=self.collector.THREAD_NAME, target=reporting_function
         )
         sample_thread.start()
+        # Set the required state for is_reporting_thread_running to return True
+        self.collector.started = True
+        self.collector.reporting_thread = sample_thread
         try:
             assert self.collector.is_reporting_thread_running()
         finally:

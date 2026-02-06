@@ -1,6 +1,5 @@
 # (c) Copyright IBM Corp. 2025
 
-import itertools
 import os
 from typing import Any, Dict, List, Sequence, Tuple, Union, Optional
 
@@ -9,9 +8,7 @@ from instana.log import logger
 from instana.util.config_reader import ConfigReader
 
 # Constants
-DEPRECATED_CONFIG_KEY_WARNING = (
-    'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-)
+DEPRECATED_CONFIG_KEY_WARNING = 'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
 
 # List of supported span categories (technology or protocol)
 SPAN_CATEGORIES = [
@@ -66,7 +63,7 @@ def parse_service_pair(pair: str) -> List[str]:
     return pair_list
 
 
-def parse_ignored_endpoints_string(params: Union[str, os.PathLike]) -> List[str]:
+def parse_filtered_endpoints_string(params: Union[str, os.PathLike]) -> List[str]:
     """
     Parses a string to prepare a list of ignored endpoints.
 
@@ -74,85 +71,83 @@ def parse_ignored_endpoints_string(params: Union[str, os.PathLike]) -> List[str]
         - "service1:method1,method2;service2:method3" or "service1;service2"
     @return: List of strings in format ["service1.method1", "service1.method2", "service2.*"]
     """
-    ignore_endpoints = []
+    span_filters = []
     if params:
         service_pairs = params.lower().split(";")
 
         for pair in service_pairs:
             if pair.strip():
-                ignore_endpoints += parse_service_pair(pair)
-    return ignore_endpoints
+                span_filters += parse_service_pair(pair)
+    return span_filters
 
 
-def parse_ignored_endpoints_dict(params: Dict[str, Any]) -> List[str]:
+def parse_filtered_endpoints_dict(filter_dict: dict[str, Any]) -> dict[str, list[Any]]:
     """
-    Parses a dictionary to prepare a list of ignored endpoints.
+    Parses 'exclude' and 'include' blocks from the filter dict.
 
-    @param params: Dict format:
-        - {"service1": ["method1", "method2"], "service2": ["method3"]}
-    @return: List of strings in format ["service1.method1", "service1.method2", "service2.*"]
+    @param filter_dict: config_reader.data["com.instana.tracing"].get("filter")
+    @return: Dict containing parsed rules for both exclude and include
     """
-    ignore_endpoints = []
+    parsed_config = {"exclude": [], "include": []}
 
-    for service, methods in params.items():
-        if not methods:  # filtering all service
-            ignore_endpoints.append(f"{service.lower()}.*")
-        else:  # filtering specific endpoints
-            ignore_endpoints = parse_endpoints_of_service(
-                ignore_endpoints, service, methods
-            )
+    if not filter_dict or not isinstance(filter_dict, dict):
+        return parsed_config
 
-    return ignore_endpoints
+    # Disable filtering
+    if filter_dict.get("deactivate", False):
+        return parsed_config
 
+    try:
+        for mode in ["exclude", "include"]:
+            raw_filters = filter_dict.get(mode, [])
 
-def parse_endpoints_of_service(
-    ignore_endpoints: List[str],
-    service: str,
-    methods: Union[str, List[str]],
-) -> List[str]:
-    """
-    Parses endpoints of each service.
+            if not isinstance(raw_filters, list):
+                continue
 
-    @param ignore_endpoints: A list of rules for endpoints to be filtered.
-    @param service: The name of the service to be filtered.
-    @param methods: A list of specific endpoints of the service to be filtered.
-    """
-    if service == "kafka" and isinstance(methods, list):
-        for rule in methods:
-            ignore_endpoints.extend(parse_kafka_methods(rule))
-    else:
-        for method in methods:
-            ignore_endpoints.append(f"{service.lower()}.{method.lower()}")
-    return ignore_endpoints
+            for item in raw_filters:
+                entry = {
+                    "name": item.get("name", "unnamed"),
+                    # Add suppression only for exclude mode
+                    "suppression": item.get("suppression", True)
+                    if mode == "exclude"
+                    else None,
+                    "attributes": [],
+                }
 
+                attributes = item.get("attributes", [])
+                if isinstance(attributes, list):
+                    for attr in attributes:
+                        attr_data = {
+                            "key": attr.get("key"),
+                            "values": attr.get("values", []),
+                            # match_type default: strict
+                            "match_type": attr.get("match_type", "strict"),
+                        }
+                        entry["attributes"].append(attr_data)
 
-def parse_kafka_methods(rule: Union[str, Dict[str, any]]) -> List[str]:
-    parsed_rule = []
-    if isinstance(rule, dict):
-        for method, endpoint in itertools.product(rule["methods"], rule["endpoints"]):
-            parsed_rule.append(f"kafka.{method.lower()}.{endpoint.lower()}")
-    elif isinstance(rule, list):
-        for method in rule:
-            parsed_rule.append(f"kafka.{method.lower()}.*")
-    else:
-        parsed_rule.append(f"kafka.{rule.lower()}.*")
-    return parsed_rule
+                parsed_config[mode].append(entry)
+
+        return parsed_config
+    except Exception:
+        return {"exclude": [], "include": []}
 
 
-def parse_ignored_endpoints(params: Union[Dict[str, Any], str]) -> List[str]:
+def parse_filtered_endpoints(
+    params: Union[Dict[str, Any], str],
+) -> Union[List[str], dict[str, list[Any]]]:
     """
     Parses input to prepare a list for ignored endpoints.
 
     @param params: Can be either:
         - String: "service1:method1,method2;service2:method3" or "service1;service2"
-        - Dict: {"service1": ["method1", "method2"], "service2": ["method3"]}
+        - Dict: {"exclude": [{"name": "foo", "attributes": ...}], "include": []}
     @return: List of strings in format ["service1.method1", "service1.method2", "service2.*"]
     """
     try:
         if isinstance(params, str):
-            return parse_ignored_endpoints_string(params)
+            return parse_filtered_endpoints_string(params)
         elif isinstance(params, dict):
-            return parse_ignored_endpoints_dict(params)
+            return parse_filtered_endpoints_dict(params)
         else:
             return []
     except Exception as e:
@@ -160,7 +155,9 @@ def parse_ignored_endpoints(params: Union[Dict[str, Any], str]) -> List[str]:
         return []
 
 
-def parse_ignored_endpoints_from_yaml(file_path: str) -> List[str]:
+def parse_filtered_endpoints_from_yaml(
+    file_path: str,
+) -> Union[List[str], dict[str, list[Any]]]:
     """
     Parses configuration yaml file and prepares a list of ignored endpoints.
 
@@ -168,19 +165,94 @@ def parse_ignored_endpoints_from_yaml(file_path: str) -> List[str]:
     @return: List of strings in format ["service1.method1", "service1.method2", "service2.*", "kafka.method.topic", "kafka.*.topic", "kafka.method.*"]
     """
     config_reader = ConfigReader(file_path)
-    ignore_endpoints_dict = None
+    span_filters_dict = None
     if "tracing" in config_reader.data:
-        ignore_endpoints_dict = config_reader.data["tracing"].get("ignore-endpoints")
+        span_filters_dict = config_reader.data["tracing"].get("filter")
     elif "com.instana.tracing" in config_reader.data:
         logger.warning(DEPRECATED_CONFIG_KEY_WARNING)
-        ignore_endpoints_dict = config_reader.data["com.instana.tracing"].get(
-            "ignore-endpoints"
-        )
-    if ignore_endpoints_dict:
-        ignored_endpoints = parse_ignored_endpoints(ignore_endpoints_dict)
-        return ignored_endpoints
+        span_filters_dict = config_reader.data["com.instana.tracing"].get("filter")
+    if span_filters_dict:
+        span_filters = parse_filtered_endpoints(span_filters_dict)
+        return span_filters
     else:
         return []
+
+
+def parse_span_filter_env_vars() -> Dict[str, List[Any]]:
+    """
+    Parses INSTANA_TRACING_FILTER_<POLICY>_<NAME>_ATTRIBUTES environment variables.
+
+    @return: Dict containing parsed rules for both exclude and include
+    """
+    parsed_config = {"exclude": [], "include": []}
+
+    # Intermediate storage: { "exclude": { "name": { "suppression": ..., "attributes": [] } } }
+    intermediate = {"exclude": {}, "include": {}}
+
+    for env_key, env_value in os.environ.items():
+        if not env_key.startswith("INSTANA_TRACING_FILTER_"):
+            continue
+
+        parts = env_key.split("_")
+
+        if len(parts) < 5:
+            continue
+
+        policy = parts[3].lower()
+        if policy not in ["exclude", "include"]:
+            continue
+
+        suffix = parts[-1]
+        name = "_".join(parts[4:-1])
+
+        if not name:
+            continue
+
+        if name not in intermediate[policy]:
+            intermediate[policy][name] = {
+                "name": name,
+                "attributes": [],
+                "suppression": None,
+            }
+
+        if suffix == "ATTRIBUTES":
+            # Rule format: key;values;match_type|key;values;match_type
+            rules = env_value.split("|")
+            for rule in rules:
+                rule_parts = rule.split(";")
+                if len(rule_parts) < 2:
+                    continue
+
+                key = rule_parts[0].strip()
+                values_str = rule_parts[1]
+                match_type = (
+                    rule_parts[2].strip().lower() if len(rule_parts) > 2 else "strict"
+                )
+
+                # Split values by comma (simple split, assuming no commas in values or user handles escaping if needed?)
+                # Spec says "values": Mandatory - List of Strings.
+                # Env var examples: "http.target;/health" -> values=["/health"]
+                # "kafka.service;topic1,topic2;strict" -> values=["topic1", "topic2"]
+                values = [v.strip() for v in values_str.split(",") if v.strip()]
+
+                attr_data = {"key": key, "values": values, "match_type": match_type}
+                intermediate[policy][name]["attributes"].append(attr_data)
+
+        elif suffix == "SUPPRESSION" and policy == "exclude":
+            intermediate[policy][name]["suppression"] = is_truthy(env_value)
+
+    # Convert intermediate to final list format
+    for mode in ["exclude", "include"]:
+        for name, data in intermediate[mode].items():
+            # If suppression not set for exclude, default to True (as per YAML spec)
+            if mode == "exclude" and data["suppression"] is None:
+                data["suppression"] = True
+
+            # Attributes are mandatory
+            if data["attributes"]:
+                parsed_config[mode].append(data)
+
+    return parsed_config
 
 
 def is_truthy(value: Any) -> bool:
@@ -302,10 +374,10 @@ def get_tracing_root_key(config_data: Dict[str, Any]) -> Optional[str]:
     """
     Get the root key for tracing configuration from config data.
     Handles both 'tracing' and deprecated 'com.instana.tracing' keys.
-    
+
     Args:
         config_data: Configuration data dictionary
-    
+
     Returns:
         Root key string or None if not found
     """
@@ -319,7 +391,7 @@ def get_tracing_root_key(config_data: Dict[str, Any]) -> Optional[str]:
 
 def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
     config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
-    
+
     root_key = get_tracing_root_key(config_reader.data)
     if not root_key:
         return [], []
@@ -339,18 +411,18 @@ def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]
 def validate_stack_trace_level(level_value: Any, context: str = "") -> Optional[str]:
     """
     Validate stack trace level value.
-    
+
     Args:
         level_value: The level value to validate
         context: Context string for error messages (e.g., "for kafka", "in agent config")
-    
+
     Returns:
         Validated level string ("all", "error", or "none"), or None if invalid
     """
     level = str(level_value).lower()
     if level in ["all", "error", "none"]:
         return level
-    
+
     context_msg = f" {context}" if context else ""
     logger.warning(
         f"Invalid stack-trace value{context_msg}: {level}. Must be 'all', 'error', or 'none'. Using default 'all'."
@@ -361,11 +433,11 @@ def validate_stack_trace_level(level_value: Any, context: str = "") -> Optional[
 def validate_stack_trace_length(length_value: Any, context: str = "") -> Optional[int]:
     """
     Validate stack trace length value.
-    
+
     Args:
         length_value: The length value to validate
         context: Context string for error messages (e.g., "for kafka", "in agent config")
-    
+
     Returns:
         Validated length integer (>= 1), or None if invalid
     """
@@ -373,7 +445,7 @@ def validate_stack_trace_length(length_value: Any, context: str = "") -> Optiona
         length = int(length_value)
         if length >= 1:
             return length
-        
+
         context_msg = f" {context}" if context else ""
         logger.warning(
             f"stack-trace-length{context_msg} must be positive. Using default 30."
@@ -395,89 +467,97 @@ def parse_technology_stack_trace_config(
 ) -> Dict[str, Union[str, int]]:
     """
     Parse technology-specific stack trace configuration from a dictionary.
-    
+
     Args:
         tech_data: Dictionary containing stack trace configuration
         level_key: Key name for level configuration (e.g., "stack-trace" or "stack_trace")
         length_key: Key name for length configuration (e.g., "stack-trace-length" or "stack_trace_length")
         tech_name: Technology name for error messages (e.g., "kafka", "redis")
-    
+
     Returns:
         Dictionary with "level" and/or "length" keys, or empty dict if no valid config
     """
     tech_stack_config = {}
     context = f"for {tech_name}" if tech_name else ""
-    
+
     if level_key in tech_data:
         if validated_level := validate_stack_trace_level(tech_data[level_key], context):
             tech_stack_config["level"] = validated_level
-    
+
     if length_key in tech_data:
-        if validated_length := validate_stack_trace_length(tech_data[length_key], context):
+        if validated_length := validate_stack_trace_length(
+            tech_data[length_key], context
+        ):
             tech_stack_config["length"] = validated_length
-    
+
     return tech_stack_config
 
 
 def parse_global_stack_trace_config(global_config: Dict[str, Any]) -> Tuple[str, int]:
     """
     Parse global stack trace configuration from a config dictionary.
-    
+
     Args:
         global_config: Global configuration dictionary
-    
+
     Returns:
         Tuple of (level, length) with defaults if not found
     """
     level = "all"
     length = 30
-    
+
     if "stack-trace" in global_config:
-        if validated_level := validate_stack_trace_level(global_config["stack-trace"], "in YAML config"):
+        if validated_level := validate_stack_trace_level(
+            global_config["stack-trace"], "in YAML config"
+        ):
             level = validated_level
-    
+
     if "stack-trace-length" in global_config:
-        if validated_length := validate_stack_trace_length(global_config["stack-trace-length"], "in YAML config"):
+        if validated_length := validate_stack_trace_length(
+            global_config["stack-trace-length"], "in YAML config"
+        ):
             length = validated_length
-    
+
     return level, length
 
 
 def parse_tech_specific_stack_trace_configs(
-    tracing_data: Dict[str, Any]
+    tracing_data: Dict[str, Any],
 ) -> Dict[str, Dict[str, Union[str, int]]]:
     """
     Parse technology-specific stack trace configurations from tracing data.
-    
+
     Args:
         tracing_data: Tracing configuration dictionary
-    
+
     Returns:
         Dictionary of technology-specific overrides
     """
     tech_config = {}
-    
+
     for tech_name, tech_data in tracing_data.items():
         if tech_name == "global" or not isinstance(tech_data, dict):
             continue
-        
+
         tech_stack_config = parse_technology_stack_trace_config(
             tech_data,
             level_key="stack-trace",
             length_key="stack-trace-length",
-            tech_name=tech_name
+            tech_name=tech_name,
         )
-        
+
         if tech_stack_config:
             tech_config[tech_name] = tech_stack_config
-    
+
     return tech_config
 
 
-def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]:
+def get_stack_trace_config_from_yaml() -> (
+    Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]
+):
     """
     Get stack trace configuration from YAML file specified by INSTANA_CONFIG_PATH.
-    
+
     Returns:
         Tuple of (level, length, tech_config) where:
         - level: "all", "error", or "none"
@@ -486,24 +566,25 @@ def get_stack_trace_config_from_yaml() -> Tuple[str, int, Dict[str, Dict[str, Un
           Format: {"kafka": {"level": "all", "length": 35}, "redis": {"level": "none"}}
     """
     config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
-    
+
     level = "all"
     length = 30
     tech_config = {}
-    
+
     root_key = get_tracing_root_key(config_reader.data)
     if not root_key:
         return level, length, tech_config
-    
+
     tracing_data = config_reader.data[root_key]
-    
+
     # Read global configuration
     if "global" in tracing_data:
         level, length = parse_global_stack_trace_config(tracing_data["global"])
-    
+
     # Read technology-specific overrides
     tech_config = parse_tech_specific_stack_trace_configs(tracing_data)
-    
+
     return level, length, tech_config
+
 
 # Made with Bob

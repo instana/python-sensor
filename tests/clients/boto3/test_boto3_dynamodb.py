@@ -71,8 +71,10 @@ class TestDynamoDB:
         assert dynamodb_span.data["dynamodb"]["region"] == "us-west-2"
         assert dynamodb_span.data["dynamodb"]["table"] == "dynamodb-table"
 
-    def test_ignore_dynamodb(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb"
+    def test_filter_dynamodb(self) -> None:
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_DYNAMODB_ATTRIBUTES"] = (
+            "dynamodb.op;*;strict"
+        )
         agent.options = StandardOptions()
 
         with self.tracer.start_as_current_span("test"):
@@ -95,8 +97,10 @@ class TestDynamoDB:
 
         assert dynamodb_span not in filtered_spans
 
-    def test_ignore_create_table(self) -> None:
-        os.environ["INSTANA_IGNORE_ENDPOINTS"] = "dynamodb:createtable"
+    def test_filter_create_table(self) -> None:
+        os.environ["INSTANA_TRACING_FILTER_EXCLUDE_DYNAMODB_ATTRIBUTES"] = (
+            "dynamodb.op;CreateTable;strict"
+        )
         agent.options = StandardOptions()
 
         with self.tracer.start_as_current_span("test"):

@@ -30,13 +30,16 @@ class TestBaseOptions:
     def test_base_options(self) -> None:
         if "INSTANA_DEBUG" in os.environ:
             del os.environ["INSTANA_DEBUG"]
+        for key in list(os.environ.keys()):
+            if key.startswith("INSTANA_TRACING_FILTER_"):
+                del os.environ[key]
         self.base_options = BaseOptions()
 
         assert not self.base_options.debug
         assert self.base_options.log_level == logging.WARN
         assert not self.base_options.extra_http_headers
         assert not self.base_options.allow_exit_as_root
-        assert not self.base_options.ignore_endpoints
+        assert not self.base_options.span_filters
         assert self.base_options.kafka_trace_correlation
         assert self.base_options.secrets_matcher == "contains-ignore-case"
         assert self.base_options.secrets_list == ["key", "pass", "secret"]
@@ -46,11 +49,11 @@ class TestBaseOptions:
 
     def test_base_options_with_config(self) -> None:
         config["tracing"] = {
-            "ignore_endpoints": "service1;service3:method1,method2",
+            "filter": "service1;service3:method1,method2",
             "kafka": {"trace_correlation": True},
         }
         self.base_options = BaseOptions()
-        assert self.base_options.ignore_endpoints == [
+        assert self.base_options.span_filters == [
             "service1.*",
             "service3.method1",
             "service3.method2",
@@ -62,7 +65,8 @@ class TestBaseOptions:
         {
             "INSTANA_DEBUG": "true",
             "INSTANA_EXTRA_HTTP_HEADERS": "SOMETHING;HERE",
-            "INSTANA_IGNORE_ENDPOINTS": "service1;service2:method1,method2",
+            "INSTANA_TRACING_FILTER_EXCLUDE_SERVICE1_ATTRIBUTES": "type;service1;strict",
+            "INSTANA_TRACING_FILTER_EXCLUDE_SERVICE2_ATTRIBUTES": "type;service2;strict",
             "INSTANA_SECRETS": "secret1:username,password",
             "INSTANA_TRACING_DISABLE": "logging, redis,kafka",
         },
@@ -74,11 +78,25 @@ class TestBaseOptions:
 
         assert self.base_options.extra_http_headers == ["something", "here"]
 
-        assert self.base_options.ignore_endpoints == [
-            "service1.*",
-            "service2.method1",
-            "service2.method2",
-        ]
+        assert self.base_options.span_filters == {
+            "include": [],
+            "exclude": [
+                {
+                    "name": "SERVICE1",
+                    "attributes": [
+                        {"key": "type", "values": ["service1"], "match_type": "strict"}
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "SERVICE2",
+                    "attributes": [
+                        {"key": "type", "values": ["service2"], "match_type": "strict"}
+                    ],
+                    "suppression": True,
+                },
+            ],
+        }
 
         assert self.base_options.secrets_matcher == "secret1"
         assert self.base_options.secrets_list == ["username", "password"]
@@ -90,32 +108,95 @@ class TestBaseOptions:
 
     @patch.dict(
         os.environ,
-        {"INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml"},
+        {"INSTANA_CONFIG_PATH": "tests/util/test_configuration-1.yaml"},
     )
     def test_base_options_with_endpoint_file(self) -> None:
         self.base_options = BaseOptions()
-        assert self.base_options.ignore_endpoints == [
-            "redis.get",
-            "redis.type",
-            "dynamodb.query",
-            "kafka.consume.span-topic",
-            "kafka.consume.topic1",
-            "kafka.consume.topic2",
-            "kafka.send.span-topic",
-            "kafka.send.topic1",
-            "kafka.send.topic2",
-            "kafka.consume.topic3",
-            "kafka.*.span-topic",
-            "kafka.*.topic4",
-        ]
+        assert self.base_options.span_filters == {
+            "include": [
+                {
+                    "name": "Kafka Producer",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic"],
+                            "match_type": "contains",
+                        },
+                    ],
+                    "suppression": None,
+                }
+            ],
+            "exclude": [
+                {
+                    "name": "Redis",
+                    "attributes": [
+                        {"key": "command", "values": ["get"], "match_type": "strict"},
+                        {"key": "get", "values": ["type"], "match_type": "strict"},
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "DynamoDB",
+                    "attributes": [
+                        {"key": "op", "values": ["query"], "match_type": "strict"}
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "Kafka",
+                    "attributes": [
+                        {
+                            "key": "kafka.access",
+                            "values": ["consume", "send", "produce"],
+                            "match_type": "contains",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": ["span-topic", "topic1", "topic2"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.access",
+                            "values": ["*"],
+                            "match_type": "strict",
+                        },
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "Protocols Category",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+                {
+                    "name": "Entry Span Kind",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "kind",
+                            "values": ["intermediate"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+            ],
+        }
         del self.base_options
 
     @patch.dict(
         os.environ,
         {
-            "INSTANA_IGNORE_ENDPOINTS": "env_service1;env_service2:method1,method2",
+            "INSTANA_TRACING_FILTER_EXCLUDE_SERVICE1_ATTRIBUTES": "type;env_service1;strict",
+            "INSTANA_TRACING_FILTER_EXCLUDE_SERVICE2_ATTRIBUTES": "type;env_service2.method1,env_service2.method2;strict",
             "INSTANA_KAFKA_TRACE_CORRELATION": "false",
-            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
             "INSTANA_TRACING_DISABLE": "logging,redis, kafka",
         },
     )
@@ -126,15 +207,13 @@ class TestBaseOptions:
 
         # in-code configuration
         config["tracing"] = {}
-        config["tracing"]["ignore_endpoints"] = (
-            "config_service1;config_service2:method1,method2"
-        )
+        config["tracing"]["filter"] = "config_service1;config_service2:method1,method2"
         config["tracing"]["kafka"] = {"trace_correlation": True}
         config["tracing"]["disable"] = [{"databases": True}]
 
         # agent config (configuration.yaml)
         test_tracing = {
-            "ignore-endpoints": "service1;service2:method1,method2",
+            "filter": "service1;service2:method1,method2",
             "disable": [
                 {"messaging": True},
             ],
@@ -144,11 +223,33 @@ class TestBaseOptions:
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
 
-        assert self.base_options.ignore_endpoints == [
-            "env_service1.*",
-            "env_service2.method1",
-            "env_service2.method2",
-        ]
+        assert self.base_options.span_filters == {
+            "include": [],
+            "exclude": [
+                {
+                    "name": "SERVICE1",
+                    "attributes": [
+                        {
+                            "key": "type",
+                            "values": ["env_service1"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "SERVICE2",
+                    "attributes": [
+                        {
+                            "key": "type",
+                            "values": ["env_service2.method1", "env_service2.method2"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+            ],
+        }
         assert not self.base_options.kafka_trace_correlation
 
         # Check disabled_spans list
@@ -163,24 +264,22 @@ class TestBaseOptions:
         os.environ,
         {
             "INSTANA_KAFKA_TRACE_CORRELATION": "false",
-            "INSTANA_IGNORE_ENDPOINTS_PATH": "tests/util/test_configuration-1.yaml",
+            "INSTANA_CONFIG_PATH": "tests/util/test_configuration-1.yaml",
         },
     )
     def test_set_trace_configurations_by_in_code_configuration(self) -> None:
         # The priority is as follows:
-        # in-code configuration > agent config (configuration.yaml) > default value
+        # environment variables (INSTANA_CONFIG_PATH) > in-code configuration > agent config (configuration.yaml) > default value
 
         # in-code configuration
         config["tracing"] = {}
-        config["tracing"]["ignore_endpoints"] = (
-            "config_service1;config_service2:method1,method2"
-        )
+        config["tracing"]["filter"] = "config_service1;config_service2:method1,method2"
         config["tracing"]["kafka"] = {"trace_correlation": True}
         config["tracing"]["disable"] = [{"databases": True}]
 
         # agent config (configuration.yaml)
         test_tracing = {
-            "ignore-endpoints": "service1;service2:method1,method2",
+            "filter": "service1;service2:method1,method2",
             "disable": [
                 {"messaging": True},
             ],
@@ -189,41 +288,102 @@ class TestBaseOptions:
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
 
-        assert self.base_options.ignore_endpoints == [
-            "redis.get",
-            "redis.type",
-            "dynamodb.query",
-            "kafka.consume.span-topic",
-            "kafka.consume.topic1",
-            "kafka.consume.topic2",
-            "kafka.send.span-topic",
-            "kafka.send.topic1",
-            "kafka.send.topic2",
-            "kafka.consume.topic3",
-            "kafka.*.span-topic",
-            "kafka.*.topic4",
-        ]
+        assert self.base_options.span_filters == {
+            "include": [
+                {
+                    "name": "Kafka Producer",
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic"],
+                            "match_type": "contains",
+                        },
+                    ],
+                    "suppression": None,
+                }
+            ],
+            "exclude": [
+                {
+                    "name": "Redis",
+                    "attributes": [
+                        {"key": "command", "values": ["get"], "match_type": "strict"},
+                        {"key": "get", "values": ["type"], "match_type": "strict"},
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "DynamoDB",
+                    "attributes": [
+                        {"key": "op", "values": ["query"], "match_type": "strict"}
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "Kafka",
+                    "attributes": [
+                        {
+                            "key": "kafka.access",
+                            "values": ["consume", "send", "produce"],
+                            "match_type": "contains",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": ["span-topic", "topic1", "topic2"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.access",
+                            "values": ["*"],
+                            "match_type": "strict",
+                        },
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "Protocols Category",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+                {
+                    "name": "Entry Span Kind",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "kind",
+                            "values": ["intermediate"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+            ],
+        }
 
         # Check disabled_spans list
         assert "databases" in self.base_options.disabled_spans
-        assert "logging" not in self.base_options.disabled_spans
+        assert "logging" in self.base_options.disabled_spans
         assert "redis" not in self.base_options.disabled_spans
         assert "kafka" not in self.base_options.disabled_spans
         assert "messaging" not in self.base_options.disabled_spans
-        assert len(self.base_options.enabled_spans) == 0
+        assert "redis" in self.base_options.enabled_spans
 
     def test_set_trace_configurations_by_in_code_variable(self) -> None:
         config["tracing"] = {}
-        config["tracing"]["ignore_endpoints"] = (
-            "config_service1;config_service2:method1,method2"
-        )
+        config["tracing"]["filter"] = "config_service1;config_service2:method1,method2"
         config["tracing"]["kafka"] = {"trace_correlation": True}
-        test_tracing = {"ignore-endpoints": "service1;service2:method1,method2"}
+        test_tracing = {"filter": "service1;service2:method1,method2"}
 
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
 
-        assert self.base_options.ignore_endpoints == [
+        assert self.base_options.span_filters == [
             "config_service1.*",
             "config_service2.method1",
             "config_service2.method2",
@@ -232,7 +392,7 @@ class TestBaseOptions:
 
     def test_set_trace_configurations_by_agent_configuration(self) -> None:
         test_tracing = {
-            "ignore-endpoints": "service1;service2:method1,method2",
+            "filter": "service1;service2:method1,method2",
             "trace-correlation": True,
             "disable": [
                 {
@@ -246,7 +406,7 @@ class TestBaseOptions:
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
 
-        assert self.base_options.ignore_endpoints == [
+        assert self.base_options.span_filters == [
             "service1.*",
             "service2.method1",
             "service2.method2",
@@ -263,7 +423,7 @@ class TestBaseOptions:
         self.base_options = StandardOptions()
         self.base_options.set_tracing({})
 
-        assert not self.base_options.ignore_endpoints
+        assert not self.base_options.span_filters
         assert self.base_options.kafka_trace_correlation
         assert len(self.base_options.disabled_spans) == 0
         assert len(self.base_options.enabled_spans) == 0
@@ -326,6 +486,52 @@ class TestBaseOptions:
         assert self.base_options.is_span_disabled(span_type="mysql")
         assert not self.base_options.is_span_disabled(span_type="redis")
 
+    @patch.dict(
+        os.environ,
+        {
+            "INSTANA_TRACING_FILTER_EXCLUDE_KAFKA_ATTRIBUTES": "kafka.service;kafka;strict",
+            "INSTANA_TRACING_FILTER_EXCLUDE_REDIS_ATTRIBUTES": "redis.command;SET,GET;contains",
+            "INSTANA_TRACING_FILTER_INCLUDE_FOO_ATTRIBUTES": "http.url;foo;contains",
+        },
+    )
+    def test_tracing_filter_environment_variables(self) -> None:
+        self.base_options = StandardOptions()
+        assert self.base_options.span_filters == {
+            "include": [
+                {
+                    "name": "FOO",
+                    "attributes": [
+                        {"key": "http.url", "values": ["foo"], "match_type": "contains"}
+                    ],
+                    "suppression": None,
+                }
+            ],
+            "exclude": [
+                {
+                    "name": "KAFKA",
+                    "attributes": [
+                        {
+                            "key": "kafka.service",
+                            "values": ["kafka"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "REDIS",
+                    "attributes": [
+                        {
+                            "key": "redis.command",
+                            "values": ["SET", "GET"],
+                            "match_type": "contains",
+                        }
+                    ],
+                    "suppression": True,
+                },
+            ],
+        }
+
 
 class TestStandardOptions:
     @pytest.fixture(autouse=True)
@@ -364,12 +570,12 @@ class TestStandardOptions:
         self.standart_options = StandardOptions()
 
         test_tracing = {
-            "ignore-endpoints": "service1;service2:method1,method2",
+            "filter": "service1;service2:method1,method2",
             "kafka": {"trace-correlation": "false", "header-format": "binary"},
         }
         self.standart_options.set_tracing(test_tracing)
 
-        assert self.standart_options.ignore_endpoints == [
+        assert self.standart_options.span_filters == [
             "service1.*",
             "service2.method1",
             "service2.method2",
@@ -404,7 +610,7 @@ class TestStandardOptions:
         self.standart_options = StandardOptions()
         test_res_data = {
             "secrets": {"matcher": "sample-match", "list": ["sample", "list"]},
-            "tracing": {"ignore-endpoints": "service1;service2:method1,method2"},
+            "tracing": {"filter": "service1;service2:method1,method2"},
         }
         self.standart_options.set_from(test_res_data)
 
@@ -412,7 +618,7 @@ class TestStandardOptions:
             self.standart_options.secrets_matcher == test_res_data["secrets"]["matcher"]
         )
         assert self.standart_options.secrets_list == test_res_data["secrets"]["list"]
-        assert self.standart_options.ignore_endpoints == [
+        assert self.standart_options.span_filters == [
             "service1.*",
             "service2.method1",
             "service2.method2",
@@ -443,7 +649,7 @@ class TestStandardOptions:
         )
 
         assert self.standart_options.secrets_list == ["key", "pass", "secret"]
-        assert self.standart_options.ignore_endpoints == []
+        assert self.standart_options.span_filters == {}
         assert not self.standart_options.extra_http_headers
 
 
@@ -460,7 +666,7 @@ class TestServerlessOptions:
         assert self.serverless_options.log_level == logging.WARN
         assert not self.serverless_options.extra_http_headers
         assert not self.serverless_options.allow_exit_as_root
-        assert not self.serverless_options.ignore_endpoints
+        assert not self.serverless_options.span_filters
         assert self.serverless_options.secrets_matcher == "contains-ignore-case"
         assert self.serverless_options.secrets_list == ["key", "pass", "secret"]
         assert not self.serverless_options.secrets
@@ -605,7 +811,7 @@ class TestGCROptions:
         assert self.gcr_options.log_level == logging.WARN
         assert not self.gcr_options.extra_http_headers
         assert not self.gcr_options.allow_exit_as_root
-        assert not self.gcr_options.ignore_endpoints
+        assert not self.gcr_options.span_filters
         assert self.gcr_options.secrets_matcher == "contains-ignore-case"
         assert self.gcr_options.secrets_list == ["key", "pass", "secret"]
         assert not self.gcr_options.secrets
@@ -650,7 +856,7 @@ class TestStackTraceConfiguration:
     def test_stack_trace_defaults(self) -> None:
         """Test default stack trace configuration."""
         self.options = BaseOptions()
-        
+
         assert self.options.stack_trace_level == "all"
         assert self.options.stack_trace_length == 30
         assert self.options.stack_trace_technology_config == {}
@@ -692,7 +898,7 @@ class TestStackTraceConfiguration:
     @pytest.mark.parametrize(
         "length_value,expected_length",
         [
-            ("25", 25),  
+            ("25", 25),
             ("60", 60),  # Not capped here, capped when add_stack() is called
         ],
     )
@@ -744,10 +950,7 @@ class TestStackTraceConfiguration:
     def test_stack_trace_in_code_config(self) -> None:
         """Test in-code configuration for stack trace."""
         config["tracing"] = {
-            "global": {
-                "stack_trace": "error",
-                "stack_trace_length": 20
-            }
+            "global": {"stack_trace": "error", "stack_trace_length": 20}
         }
         self.options = BaseOptions()
         assert self.options.stack_trace_level == "error"
@@ -756,27 +959,17 @@ class TestStackTraceConfiguration:
     def test_stack_trace_agent_config(self) -> None:
         """Test agent configuration for stack trace."""
         self.options = StandardOptions()
-        
-        test_tracing = {
-            "global": {
-                "stack-trace": "error",
-                "stack-trace-length": 15
-            }
-        }
+
+        test_tracing = {"global": {"stack-trace": "error", "stack-trace-length": 15}}
         self.options.set_tracing(test_tracing)
-        
+
         assert self.options.stack_trace_level == "error"
         assert self.options.stack_trace_length == 15
 
     def test_stack_trace_precedence_env_over_in_code(self) -> None:
         """Test environment variables take precedence over in-code config."""
-        config["tracing"] = {
-            "global": {
-                "stack_trace": "all",
-                "stack_trace_length": 10
-            }
-        }
-        
+        config["tracing"] = {"global": {"stack_trace": "all", "stack_trace_length": 10}}
+
         with patch.dict(
             os.environ,
             {
@@ -791,22 +984,14 @@ class TestStackTraceConfiguration:
     def test_stack_trace_precedence_in_code_over_agent(self) -> None:
         """Test in-code config takes precedence over agent config."""
         config["tracing"] = {
-            "global": {
-                "stack_trace": "error",
-                "stack_trace_length": 20
-            }
+            "global": {"stack_trace": "error", "stack_trace_length": 20}
         }
-        
+
         self.options = StandardOptions()
-        
-        test_tracing = {
-            "global": {
-                "stack-trace": "all",
-                "stack-trace-length": 10
-            }
-        }
+
+        test_tracing = {"global": {"stack-trace": "all", "stack-trace-length": 10}}
         self.options.set_tracing(test_tracing)
-        
+
         # In-code config should win
         assert self.options.stack_trace_level == "error"
         assert self.options.stack_trace_length == 20
@@ -814,36 +999,28 @@ class TestStackTraceConfiguration:
     def test_stack_trace_technology_specific_override(self) -> None:
         """Test technology-specific stack trace configuration."""
         self.options = StandardOptions()
-        
+
         test_tracing = {
-            "global": {
-                "stack-trace": "error",
-                "stack-trace-length": 25
-            },
-            "kafka": {
-                "stack-trace": "all",
-                "stack-trace-length": 35
-            },
-            "redis": {
-                "stack-trace": "none"
-            }
+            "global": {"stack-trace": "error", "stack-trace-length": 25},
+            "kafka": {"stack-trace": "all", "stack-trace-length": 35},
+            "redis": {"stack-trace": "none"},
         }
         self.options.set_tracing(test_tracing)
-        
+
         # Global config
         assert self.options.stack_trace_level == "error"
         assert self.options.stack_trace_length == 25
-        
+
         # Kafka-specific override
         level, length = self.options.get_stack_trace_config("kafka-producer")
         assert level == "all"
         assert length == 35
-        
+
         # Redis-specific override (inherits length from global)
         level, length = self.options.get_stack_trace_config("redis")
         assert level == "none"
         assert length == 25
-        
+
         # Non-overridden span uses global
         level, length = self.options.get_stack_trace_config("mysql")
         assert level == "error"
@@ -855,12 +1032,12 @@ class TestStackTraceConfiguration:
         self.options.stack_trace_technology_config = {
             "kafka": {"level": "all", "length": 35}
         }
-        
+
         # Should match "kafka" from "kafka-producer"
         level, length = self.options.get_stack_trace_config("kafka-producer")
         assert level == "all"
         assert length == 35
-        
+
         # Should match "kafka" from "kafka-consumer"
         level, length = self.options.get_stack_trace_config("kafka-consumer")
         assert level == "all"
@@ -891,9 +1068,9 @@ class TestStackTraceConfiguration:
             assert self.options.stack_trace_length == 20
 
             assert (
-            'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
-            in caplog.messages
-        )
+                'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
+                in caplog.messages
+            )
 
     def test_stack_trace_yaml_config_disabled(self) -> None:
         """Test YAML configuration with stack trace disabled."""
@@ -920,13 +1097,9 @@ class TestStackTraceConfiguration:
             assert self.options.stack_trace_level == "all"
             assert self.options.stack_trace_length == 30
             assert any(
-                "Invalid stack-trace value" in message
-                for message in caplog.messages
+                "Invalid stack-trace value" in message for message in caplog.messages
             )
-            assert any(
-                "must be positive" in message
-                for message in caplog.messages
-            )
+            assert any("must be positive" in message for message in caplog.messages)
 
     def test_stack_trace_yaml_config_partial(self) -> None:
         """Test YAML configuration with only stack-trace (no length)."""
@@ -956,12 +1129,9 @@ class TestStackTraceConfiguration:
     def test_stack_trace_precedence_yaml_over_in_code(self) -> None:
         """Test YAML config takes precedence over in-code config."""
         config["tracing"] = {
-            "global": {
-                "stack_trace": "error",
-                "stack_trace_length": 10
-            }
+            "global": {"stack_trace": "error", "stack_trace_length": 10}
         }
-        
+
         with patch.dict(
             os.environ,
             {"INSTANA_CONFIG_PATH": "tests/util/test_stack_trace_config_1.yaml"},
@@ -978,15 +1148,10 @@ class TestStackTraceConfiguration:
             {"INSTANA_CONFIG_PATH": "tests/util/test_stack_trace_config_2.yaml"},
         ):
             self.options = StandardOptions()
-            
-            test_tracing = {
-                "global": {
-                    "stack-trace": "all",
-                    "stack-trace-length": 30
-                }
-            }
+
+            test_tracing = {"global": {"stack-trace": "all", "stack-trace-length": 30}}
             self.options.set_tracing(test_tracing)
-            
+
             # YAML should override agent config
             assert self.options.stack_trace_level == "error"
             assert self.options.stack_trace_length == 20

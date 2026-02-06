@@ -9,7 +9,7 @@ from yaml import YAMLError
 
 from instana.util.config import (
     get_disable_trace_configurations_from_yaml,
-    parse_ignored_endpoints_from_yaml,
+    parse_filtered_endpoints_from_yaml,
 )
 from instana.util.config_reader import ConfigReader
 
@@ -75,24 +75,87 @@ class TestConfigReader:
     def test_load_configuration_with_tracing(self, caplog: "LogCaptureFixture") -> None:
         caplog.set_level(logging.DEBUG, logger="instana")
 
-        ignore_endpoints = parse_ignored_endpoints_from_yaml(
+        span_filters = parse_filtered_endpoints_from_yaml(
             "tests/util/test_configuration-1.yaml"
         )
         # test with tracing
-        assert ignore_endpoints == [
-            "redis.get",
-            "redis.type",
-            "dynamodb.query",
-            "kafka.consume.span-topic",
-            "kafka.consume.topic1",
-            "kafka.consume.topic2",
-            "kafka.send.span-topic",
-            "kafka.send.topic1",
-            "kafka.send.topic2",
-            "kafka.consume.topic3",
-            "kafka.*.span-topic",
-            "kafka.*.topic4",
-        ]
+        assert span_filters == {
+            "exclude": [
+                {
+                    "name": "Redis",
+                    "suppression": True,
+                    "attributes": [
+                        {"key": "command", "values": ["get"], "match_type": "strict"},
+                        {"key": "get", "values": ["type"], "match_type": "strict"},
+                    ],
+                },
+                {
+                    "name": "DynamoDB",
+                    "suppression": True,
+                    "attributes": [
+                        {"key": "op", "values": ["query"], "match_type": "strict"},
+                    ],
+                },
+                {
+                    "name": "Kafka",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "kafka.access",
+                            "values": ["consume", "send", "produce"],
+                            "match_type": "contains",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": ["span-topic", "topic1", "topic2"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.access",
+                            "values": ["*"],
+                            "match_type": "strict",
+                        },
+                    ],
+                },
+                {
+                    "name": "Protocols Category",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "category",
+                            "values": ["protocols"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+                {
+                    "name": "Entry Span Kind",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "kind",
+                            "values": ["intermediate"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+            ],
+            "include": [
+                {
+                    "name": "Kafka Producer",
+                    "suppression": None,
+                    "attributes": [
+                        {"key": "type", "values": ["kafka"], "match_type": "strict"},
+                        {"key": "kind", "values": ["exit"], "match_type": "strict"},
+                        {
+                            "key": "kafka.service",
+                            "values": ["topic"],
+                            "match_type": "contains",
+                        },
+                    ],
+                }
+            ],
+        }
 
         os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
         disabled_spans, enabled_spans = get_disable_trace_configurations_from_yaml()
@@ -110,24 +173,50 @@ class TestConfigReader:
     def test_load_configuration_legacy(self, caplog: "LogCaptureFixture") -> None:
         caplog.set_level(logging.DEBUG, logger="instana")
 
-        ignore_endpoints = parse_ignored_endpoints_from_yaml(
+        span_filters = parse_filtered_endpoints_from_yaml(
             "tests/util/test_configuration-2.yaml"
         )
-        assert ignore_endpoints == [
-            "redis.get",
-            "redis.type",
-            "dynamodb.query",
-            "kafka.send.*",
-            "kafka.consume.span-topic",
-            "kafka.consume.topic1",
-            "kafka.consume.topic2",
-            "kafka.send.span-topic",
-            "kafka.send.topic1",
-            "kafka.send.topic2",
-            "kafka.consume.topic3",
-            "kafka.*.span-topic",
-            "kafka.*.topic4",
-        ]
+        assert span_filters == {
+            "exclude": [
+                {
+                    "name": "Redis",
+                    "suppression": True,
+                    "attributes": [
+                        {"key": "command", "values": ["get"], "match_type": "strict"},
+                        {"key": "get", "values": ["type"], "match_type": "strict"},
+                    ],
+                },
+                {
+                    "name": "DynamoDB",
+                    "suppression": True,
+                    "attributes": [
+                        {"key": "op", "values": ["query"], "match_type": "strict"},
+                    ],
+                },
+                {
+                    "name": "Kafka",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "kafka.access",
+                            "values": ["consume", "send", "produce"],
+                            "match_type": "contains",
+                        },
+                        {
+                            "key": "kafka.service",
+                            "values": ["span-topic", "topic1", "topic2"],
+                            "match_type": "strict",
+                        },
+                        {
+                            "key": "kafka.access",
+                            "values": ["*"],
+                            "match_type": "strict",
+                        },
+                    ],
+                },
+            ],
+            "include": [],
+        }
 
         os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-2.yaml"
         disabled_spans, enabled_spans = get_disable_trace_configurations_from_yaml()

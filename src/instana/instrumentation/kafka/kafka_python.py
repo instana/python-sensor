@@ -39,20 +39,26 @@ try:
 
         # Get the topic from either args or kwargs
         topic = args[0] if args else kwargs.get("topic", "")
+        attributes_to_check = {
+            "type": "kafka",
+            "kind": "exit",
+            "kafka.service": topic,
+            "kafka.access": "send",
+        }
 
         is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
-            "kafka",
-            "send",
-            topic,
+            attributes_to_check
         )
+
         with tracer.start_as_current_span(
             "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
             span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", "send")
 
-            # context propagation
+            # Context propagation
             headers = kwargs.get("headers", [])
+
             if not is_suppressed and ("x_instana_l_s", b"0") in headers:
                 is_suppressed = True
 
@@ -70,6 +76,7 @@ try:
 
             if tracer.exporter.options.kafka_trace_correlation:
                 kwargs["headers"] = headers
+
             try:
                 res = wrapped(*args, **kwargs)
                 return res
@@ -94,10 +101,14 @@ try:
 
             is_suppressed = False
             if topic:
+                attributes_to_check = {
+                    "type": "kafka",
+                    "kind": "entry",
+                    "kafka.service": topic,
+                    "kafka.access": span_type,
+                }
                 is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
-                    "kafka",
-                    span_type,
-                    topic,
+                    attributes_to_check
                 )
 
             if not is_suppressed and headers:

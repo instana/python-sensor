@@ -2,10 +2,12 @@
 
 import pytest
 
-from instana.util.config import (is_truthy, parse_endpoints_of_service,
-                                 parse_ignored_endpoints,
-                                 parse_ignored_endpoints_dict,
-                                 parse_kafka_methods, parse_service_pair)
+from instana.util.config import (
+    is_truthy,
+    parse_filtered_endpoints,
+    parse_filtered_endpoints_dict,
+    parse_service_pair,
+)
 
 
 class TestConfig:
@@ -15,19 +17,19 @@ class TestConfig:
         assert response == ["service1.method1", "service1.method2"]
 
         test_string = "service1;service2"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == ["service1.*", "service2.*"]
 
         test_string = "service1"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == ["service1.*"]
 
         test_string = ";"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == []
 
         test_string = "service1:method1,method2;;;service2:method1;;"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == [
             "service1.method1",
             "service1.method2",
@@ -35,28 +37,28 @@ class TestConfig:
         ]
 
         test_string = ""
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == []
 
-    def test_parse_ignored_endpoints_string(self) -> None:
+    def test_parse_filtered_endpoints_string(self) -> None:
         test_string = "service1:method1,method2"
         response = parse_service_pair(test_string)
         assert response == ["service1.method1", "service1.method2"]
 
         test_string = "service1;service2"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == ["service1.*", "service2.*"]
 
         test_string = "service1"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == ["service1.*"]
 
         test_string = ";"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == []
 
         test_string = "service1:method1,method2;;;service2:method1;;"
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == [
             "service1.method1",
             "service1.method2",
@@ -64,49 +66,66 @@ class TestConfig:
         ]
 
         test_string = ""
-        response = parse_ignored_endpoints(test_string)
+        response = parse_filtered_endpoints(test_string)
         assert response == []
 
-    def test_parse_ignored_endpoints_dict(self) -> None:
-        test_dict = {"service1": ["method1", "method2"]}
-        response = parse_ignored_endpoints_dict(test_dict)
-        assert response == ["service1.method1", "service1.method2"]
-
-        test_dict = {"SERVICE1": ["method1", "method2"]}
-        response = parse_ignored_endpoints_dict(test_dict)
-        assert response == ["service1.method1", "service1.method2"]
-
-        test_dict = {"service1": [], "service2": []}
-        response = parse_ignored_endpoints_dict(test_dict)
-        assert response == ["service1.*", "service2.*"]
-
-        test_dict = {"service1": []}
-        response = parse_ignored_endpoints_dict(test_dict)
-        assert response == ["service1.*"]
+    def test_parse_filtered_endpoints_dict(self) -> None:
+        test_dict = {
+            "exclude": [
+                {
+                    "name": "test_exclude",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "equals",
+                        }
+                    ],
+                }
+            ],
+            "include": [],
+        }
+        response = parse_filtered_endpoints_dict(test_dict)
+        assert response == {
+            "exclude": [
+                {
+                    "name": "test_exclude",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "equals",
+                        }
+                    ],
+                }
+            ],
+            "include": [],
+        }
 
         test_dict = {}
-        response = parse_ignored_endpoints_dict(test_dict)
-        assert response == []
+        response = parse_filtered_endpoints_dict(test_dict)
+        assert response == {"exclude": [], "include": []}
 
-    def test_parse_ignored_endpoints(self) -> None:
+    def test_parse_filtered_endpoints(self) -> None:
         test_pair = "service1:method1,method2"
-        response = parse_ignored_endpoints(test_pair)
+        response = parse_filtered_endpoints(test_pair)
         assert response == ["service1.method1", "service1.method2"]
 
         test_pair = "service1;service2"
-        response = parse_ignored_endpoints(test_pair)
+        response = parse_filtered_endpoints(test_pair)
         assert response == ["service1.*", "service2.*"]
 
         test_pair = "service1"
-        response = parse_ignored_endpoints(test_pair)
+        response = parse_filtered_endpoints(test_pair)
         assert response == ["service1.*"]
 
         test_pair = ";"
-        response = parse_ignored_endpoints(test_pair)
+        response = parse_filtered_endpoints(test_pair)
         assert response == []
 
         test_pair = "service1:method1,method2;;;service2:method1;;"
-        response = parse_ignored_endpoints(test_pair)
+        response = parse_filtered_endpoints(test_pair)
         assert response == [
             "service1.method1",
             "service1.method2",
@@ -114,77 +133,66 @@ class TestConfig:
         ]
 
         test_pair = ""
-        response = parse_ignored_endpoints(test_pair)
+        response = parse_filtered_endpoints(test_pair)
         assert response == []
 
-        test_dict = {"service1": ["method1", "method2"]}
-        response = parse_ignored_endpoints(test_dict)
-        assert response == ["service1.method1", "service1.method2"]
-
-        test_dict = {"service1": [], "service2": []}
-        response = parse_ignored_endpoints(test_dict)
-        assert response == ["service1.*", "service2.*"]
-
-        test_dict = {"service1": []}
-        response = parse_ignored_endpoints(test_dict)
-        assert response == ["service1.*"]
-
-        test_dict = {}
-        response = parse_ignored_endpoints(test_dict)
-        assert response == []
-
-    def test_parse_endpoints_of_service(self) -> None:
-        test_ignore_endpoints = {
-            "service1": ["method1", "method2"],
-            "service2": ["method3", "method4"],
-            "kafka": [
+        test_dict = {
+            "exclude": [
                 {
-                    "methods": ["method5", "method6"],
-                    "endpoints": ["endpoint1", "endpoint2"],
+                    "name": "test_exclude",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "equals",
+                        }
+                    ],
                 }
             ],
+            "include": [],
         }
-        ignore_endpoints = []
-        for service, methods in test_ignore_endpoints.items():
-            ignore_endpoints.extend(parse_endpoints_of_service([], service, methods))
-        assert ignore_endpoints == [
-            "service1.method1",
-            "service1.method2",
-            "service2.method3",
-            "service2.method4",
-            "kafka.method5.endpoint1",
-            "kafka.method5.endpoint2",
-            "kafka.method6.endpoint1",
-            "kafka.method6.endpoint2",
-        ]
+        response = parse_filtered_endpoints(test_dict)
+        assert response == {
+            "exclude": [
+                {
+                    "name": "test_exclude",
+                    "suppression": True,
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["/health"],
+                            "match_type": "equals",
+                        }
+                    ],
+                }
+            ],
+            "include": [],
+        }
 
-    def test_parse_kafka_methods_as_dict(self) -> None:
-        test_rule_as_dict = {"methods": ["send"], "endpoints": ["topic1"]}
-        parsed_rule = parse_kafka_methods(test_rule_as_dict)
-        assert parsed_rule == ["kafka.send.topic1"]
+        test_dict = {}
+        response = parse_filtered_endpoints(test_dict)
+        assert response == {"exclude": [], "include": []}
 
-    def test_parse_kafka_methods_as_str(self) -> None:
-        test_rule_as_str = ["send"]
-        parsed_rule = parse_kafka_methods(test_rule_as_str)
-        assert parsed_rule == ["kafka.send.*"]
-        
-    @pytest.mark.parametrize("value, expected", [
-        (True, True),
-        (False, False),
-        ("True", True),
-        ("true", True),
-        ("1", True),
-        (1, True),
-        ("False", False),
-        ("false", False),
-        ("0", False),
-        (0, False),
-        (None, False),
-        ("TRUE", True),
-        ("FALSE", False),
-        ("yes", False),  # Only "true" and "1" are considered truthy
-        ("no", False),
-    ])
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (True, True),
+            (False, False),
+            ("True", True),
+            ("true", True),
+            ("1", True),
+            (1, True),
+            ("False", False),
+            ("false", False),
+            ("0", False),
+            (0, False),
+            (None, False),
+            ("TRUE", True),
+            ("FALSE", False),
+            ("yes", False),  # Only "true" and "1" are considered truthy
+            ("no", False),
+        ],
+    )
     def test_is_truthy(self, value, expected) -> None:
         """Test the is_truthy function with various input values."""
         assert is_truthy(value) == expected

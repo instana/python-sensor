@@ -74,10 +74,15 @@ try:
         # Get the topic from either args or kwargs
         topic = args[0] if args else kwargs.get("topic", "")
 
+        attributes_to_check = {
+            "type": "kafka",
+            "kind": "exit",
+            "kafka.service": topic,
+            "kafka.access": "produce",
+        }
+
         is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
-            "kafka",
-            "produce",
-            topic,
+            attributes_to_check
         )
 
         with tracer.start_as_current_span(
@@ -137,10 +142,14 @@ try:
             is_suppressed = False
 
             if topic:
+                attributes_to_check = {
+                    "type": "kafka",
+                    "kind": "entry",
+                    "kafka.service": topic,
+                    "kafka.access": span_type,
+                }
                 is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
-                    "kafka",
-                    span_type,
-                    topic,
+                    attributes_to_check
                 )
 
             if not is_suppressed and headers:

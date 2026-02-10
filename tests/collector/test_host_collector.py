@@ -278,3 +278,96 @@ class TestHostCollector:
                 package in snapshot["versions"]
             ), f"{package} not found in snapshot['versions']"
         assert snapshot["versions"]["instana"] == VERSION
+
+    def test_prepare_and_report_data_without_lock(
+        self, caplog: LogCaptureFixture
+    ) -> None:
+        """Test prepare_and_report_data when machine._lock is missing."""
+        caplog.set_level(logging.DEBUG, logger="instana")
+
+        # Remove the _lock attribute to simulate older code or edge cases
+        if hasattr(self.agent.machine, "_lock"):
+            delattr(self.agent.machine, "_lock")
+
+        self.agent.collector.agent.machine.fsm.current = "wait4init"
+
+        with patch("instana.agent.host.HostAgent.is_agent_ready", return_value=True):
+            # Should handle missing lock gracefully and log the harmless disagreement
+            self.agent.collector.prepare_and_report_data()
+            assert (
+                "Harmless state machine thread disagreement.  Will self-correct on next timer cycle."
+                in caplog.messages
+            )
+
+    def test_prepare_and_report_data_lock_acquisition_wait4init(
+        self, caplog: LogCaptureFixture
+    ) -> None:
+        """Test prepare_and_report_data with lock during wait4init state."""
+        caplog.set_level(logging.DEBUG, logger="instana")
+
+        # Ensure lock exists
+        import threading
+
+        if not hasattr(self.agent.machine, "_lock"):
+            self.agent.machine._lock = threading.RLock()
+
+        self.agent.collector.agent.machine.fsm.current = "wait4init"
+
+        with patch("instana.agent.host.HostAgent.is_agent_ready", return_value=True):
+            self.agent.collector.prepare_and_report_data()
+            assert "Agent is ready.  Getting to work." in caplog.messages
+
+    def test_prepare_and_report_data_lock_acquisition_good2go(
+        self, caplog: LogCaptureFixture
+    ) -> None:
+        """Test prepare_and_report_data with lock during good2go state."""
+        caplog.set_level(logging.DEBUG, logger="instana")
+
+        # Ensure lock exists
+        import threading
+
+        if not hasattr(self.agent.machine, "_lock"):
+            self.agent.machine._lock = threading.RLock()
+
+        self.agent.collector.agent.machine.fsm.current = "good2go"
+
+        with patch("instana.agent.host.HostAgent.is_timed_out", return_value=True):
+            self.agent.collector.prepare_and_report_data()
+            assert (
+                "The Instana host agent has gone offline or is no longer reachable for > 1 min.  Will retry periodically."
+                in caplog.messages
+            )
+
+    def test_prepare_and_report_data_concurrent_state_change(
+        self, caplog: LogCaptureFixture
+    ) -> None:
+        """Test prepare_and_report_data when state changes between lock acquisitions."""
+        caplog.set_level(logging.DEBUG, logger="instana")
+
+        # Ensure lock exists
+        import threading
+
+        if not hasattr(self.agent.machine, "_lock"):
+            self.agent.machine._lock = threading.RLock()
+
+        # Start in wait4init
+        self.agent.collector.agent.machine.fsm.current = "wait4init"
+
+        # Mock is_agent_ready to change state during execution
+        call_count = [0]
+
+        def mock_is_agent_ready():
+            call_count[0] += 1
+            # Change state after first check to simulate concurrent modification
+            if call_count[0] == 1:
+                self.agent.collector.agent.machine.fsm.current = "good2go"
+            return True
+
+        with patch(
+            "instana.agent.host.HostAgent.is_agent_ready",
+            side_effect=mock_is_agent_ready,
+        ):
+            # Should handle state change gracefully
+            self.agent.collector.prepare_and_report_data()
+            # The second lock acquisition should see the new state
+            assert self.agent.collector.agent.machine.fsm.current == "good2go"

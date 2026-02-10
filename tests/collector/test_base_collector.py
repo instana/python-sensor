@@ -54,6 +54,9 @@ class TestBaseCollector:
             name=self.collector.THREAD_NAME, target=reporting_function
         )
         sample_thread.start()
+        # Set the required state for is_reporting_thread_running to return True
+        self.collector.started = True
+        self.collector.reporting_thread = sample_thread
         try:
             assert self.collector.is_reporting_thread_running()
         finally:
@@ -86,7 +89,7 @@ class TestBaseCollector:
         ):
             self.collector.start()
             assert (
-                "BaseCollector.start non-fatal: call but thread already running (started: False)"
+                "BaseCollector.start: Skipping start call - reporting thread already running (started: False)"
                 in caplog.messages
             )
 
@@ -207,3 +210,41 @@ class TestBaseCollector:
         time.sleep(0.1)
         profiles = self.collector.queued_profiles()
         assert len(profiles) == 3
+
+    def test_is_reporting_thread_running_when_thread_is_none(self) -> None:
+        """Test is_reporting_thread_running when reporting_thread is None."""
+        self.collector.reporting_thread = None
+        assert not self.collector.is_reporting_thread_running()
+
+    def test_is_reporting_thread_running_when_thread_is_dead(self) -> None:
+        """Test is_reporting_thread_running when thread has finished."""
+
+        def quick_function():
+            pass
+
+        sample_thread = threading.Thread(target=quick_function)
+        sample_thread.start()
+        sample_thread.join()  # Wait for thread to finish
+
+        self.collector.reporting_thread = sample_thread
+        assert not self.collector.is_reporting_thread_running()
+
+    def test_is_reporting_thread_running_when_started_false(self) -> None:
+        """Test is_reporting_thread_running when started is False but thread exists."""
+        stop_event = threading.Event()
+
+        def reporting_function():
+            stop_event.wait()
+
+        sample_thread = threading.Thread(target=reporting_function)
+        sample_thread.start()
+
+        self.collector.started = False
+        self.collector.reporting_thread = sample_thread
+
+        try:
+            # Should still return True if thread is alive, regardless of started flag
+            assert self.collector.is_reporting_thread_running()
+        finally:
+            stop_event.set()
+            sample_thread.join()

@@ -55,7 +55,7 @@ class BaseCollector(object):
         # Lock used synchronize reporting - no updates when sending
         # Used by the background reporting thread.  Used to synchronize report attempts and so
         # that we never have two in progress at once.
-        self.background_report_lock = threading.Lock()
+        self.background_report_lock = threading.RLock()
 
         # Reporting interval for the background thread(s)
         self.report_interval = 1
@@ -68,12 +68,9 @@ class BaseCollector(object):
 
     def is_reporting_thread_running(self) -> bool:
         """
-        Indicates if there is a thread running with the name self.THREAD_NAME
+        Checks if the collector is started and the reporting thread is alive.
         """
-        for thread in threading.enumerate():
-            if thread.name == self.THREAD_NAME:
-                return True
-        return False
+        return bool(self.reporting_thread and self.reporting_thread.is_alive())
 
     def start(self) -> None:
         """
@@ -91,8 +88,9 @@ class BaseCollector(object):
                 timer.start()
                 return
             logger.debug(
-                f"BaseCollector.start non-fatal: call but thread already running (started: {self.started})"
+                f"BaseCollector.start: Skipping start call - reporting thread already running (started: {self.started})"
             )
+            return
 
         if self.agent.can_send():
             logger.debug("BaseCollector.start: launching collection thread")
@@ -120,6 +118,8 @@ class BaseCollector(object):
             logger.debug("Collector.shutdown: Reporting final data.")
             self.prepare_and_report_data()
         self.started = False
+        # Clear the thread reference to ensure clean restart after fork
+        self.reporting_thread = None
 
     def background_report(self) -> None:
         """

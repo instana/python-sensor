@@ -457,9 +457,13 @@ class HostAgent(BaseAgent):
             logger.warning(
                 f"is_collector_thread_running?: {self.collector.is_reporting_thread_running()}"
             )
-            logger.warning(
-                f"background_report_lock.locked?: {self.collector.background_report_lock.locked()}"
+            # RLock doesn't have a locked() method, so we check by trying to acquire
+            lock_acquired = self.collector.background_report_lock.acquire(
+                blocking=False
             )
+            if lock_acquired:
+                self.collector.background_report_lock.release()
+            logger.warning(f"background_report_lock.locked?: {not lock_acquired}")
             logger.warning(f"ready_to_start: {self.collector.ready_to_start}")
             logger.warning(f"reporting_thread: {self.collector.reporting_thread}")
             logger.warning(f"report_interval: {self.collector.report_interval}")

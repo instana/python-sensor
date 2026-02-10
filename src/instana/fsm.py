@@ -26,14 +26,16 @@ class TheMachine:
     RETRY_PERIOD = 30
     THREAD_NAME = "Instana Machine"
 
-    warnedPeriodic = False
-
     def __init__(self, agent: "HostAgent") -> None:
         logger.debug("Initializing host agent state machine")
+
+        self._lock = threading.RLock()
+        self._warned_periodic = False
 
         self.agent = agent
         self.fsm = Fysom(
             {
+                "initial": "*",
                 "events": [
                     ("lookup", "*", "found"),
                     ("announce", "found", "announced"),
@@ -42,7 +44,7 @@ class TheMachine:
                 ],
                 "callbacks": {
                     # Can add the following to debug
-                    # "onchangestate":  self.print_state_change,
+                    # "onchangestate": self.print_state_change,
                     "onlookup": self.lookup_agent_host,
                     "onannounce": self.announce_sensor,
                     "onpending": self.on_ready,
@@ -51,16 +53,32 @@ class TheMachine:
             }
         )
 
-        self.timer = threading.Timer(1, self.fsm.lookup)
-        self.timer.daemon = True
-        self.timer.name = self.THREAD_NAME
-        self.timer.start()
+        with self._lock:
+            self.timer = threading.Timer(1, self._safe_fsm_lookup)
+            self.timer.daemon = True
+            self.timer.name = self.THREAD_NAME
+            self.timer.start()
 
     @staticmethod
     def print_state_change(e: Any) -> None:
         logger.debug(
             f"========= ({os.getpid()}#{threading.current_thread().name}) FSM event: {e.event}, src: {e.src}, dst: {e.dst} =========="
         )
+
+    def _safe_fsm_lookup(self) -> None:
+        """Thread-safe wrapper for FSM lookup."""
+        with self._lock:
+            self.fsm.lookup()
+
+    def _safe_fsm_announce(self) -> None:
+        """Thread-safe wrapper for FSM announce."""
+        with self._lock:
+            self.fsm.announce()
+
+    def _safe_fsm_pending(self) -> None:
+        """Thread-safe wrapper for FSM pending."""
+        with self._lock:
+            self.fsm.pending()
 
     def reset(self) -> None:
         """
@@ -73,14 +91,14 @@ class TheMachine:
         :return: void
         """
         logger.debug("State machine being reset.  Will start a new announce cycle.")
-        self.fsm.lookup()
+        self._safe_fsm_lookup()
 
     def lookup_agent_host(self, e: Any) -> bool:
         host = self.agent.options.agent_host
         port = self.agent.options.agent_port
 
         if self.agent.is_agent_listening(host, port):
-            self.fsm.announce()
+            self._safe_fsm_announce()
             return True
 
         if os.path.exists("/proc/"):
@@ -89,14 +107,15 @@ class TheMachine:
                 if self.agent.is_agent_listening(host, port):
                     self.agent.options.agent_host = host
                     self.agent.options.agent_port = port
-                    self.fsm.announce()
+                    self._safe_fsm_announce()
                     return True
 
-        if self.warnedPeriodic is False:
-            logger.info(
-                "Instana Host Agent couldn't be found. Will retry periodically..."
-            )
-            self.warnedPeriodic = True
+        with self._lock:
+            if self._warned_periodic is False:
+                logger.info(
+                    "Instana Host Agent couldn't be found. Will retry periodically..."
+                )
+                self._warned_periodic = True
 
         self.schedule_retry(
             self.lookup_agent_host, e, f"{self.THREAD_NAME}: agent_lookup"
@@ -143,17 +162,18 @@ class TheMachine:
             return False
 
         self.agent.set_from(payload)
-        self.fsm.pending()
+        self._safe_fsm_pending()
         logger.debug(
             f"Announced PID: {pid} (true PID: {self.agent.announce_data.pid}).  Waiting for Agent Ready..."
         )
         return True
 
     def schedule_retry(self, fun: Callable, e: Any, name: str) -> None:
-        self.timer = threading.Timer(self.RETRY_PERIOD, fun, [e])
-        self.timer.daemon = True
-        self.timer.name = name
-        self.timer.start()
+        with self._lock:
+            self.timer = threading.Timer(self.RETRY_PERIOD, fun, [e])
+            self.timer.daemon = True
+            self.timer.name = name
+            self.timer.start()
 
     def on_ready(self, _: Any) -> None:
         self.agent.start()
@@ -258,3 +278,12 @@ class TheMachine:
         except Exception:
             logger.debug("Error getting command line: ", exc_info=True)
             return sys.argv
+
+    @property
+    def lock(self) -> threading.RLock:
+        """
+        Returns the thread lock used for synchronizing FSM state transitions.
+
+        :return: The RLock instance used for thread synchronization
+        """
+        return self._lock

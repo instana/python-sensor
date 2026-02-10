@@ -6,7 +6,7 @@ Host Collector: Manages the periodic collection of metrics & snapshot data
 """
 
 from time import time
-from typing import DefaultDict, Any
+from typing import Any, DefaultDict
 
 from instana.collector.base import BaseCollector
 from instana.collector.helpers.runtime import RuntimeHelper
@@ -43,19 +43,20 @@ class HostCollector(BaseCollector):
         state machine case.
         """
         try:
-            if self.agent.machine.fsm.current == "wait4init":
+            with self.agent.machine.lock:
+                current_state = self.agent.machine.fsm.current
+
+            if current_state == "wait4init":
                 # Test the host agent if we're ready to send data
                 if self.agent.is_agent_ready():
-                    if self.agent.machine.fsm.current != "good2go":
-                        logger.debug("Agent is ready.  Getting to work.")
-                        self.agent.machine.fsm.ready()
+                    with self.agent.machine.lock:
+                        if self.agent.machine.fsm.current != "good2go":
+                            logger.debug("Agent is ready.  Getting to work.")
+                            self.agent.machine.fsm.ready()
                 else:
                     return
 
-            if (
-                self.agent.machine.fsm.current == "good2go"
-                and self.agent.is_timed_out()
-            ):
+            if current_state == "good2go" and self.agent.is_timed_out():
                 logger.info(
                     "The Instana host agent has gone offline or is no longer reachable for > 1 min.  Will retry periodically."
                 )

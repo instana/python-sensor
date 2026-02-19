@@ -23,6 +23,7 @@ class TestBaseOptions:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:
         self.base_options = None
+        os.environ["INSTANA_ALLOW_INTERNAL_SPANS"] = "True"
         yield
         if "tracing" in config.keys():
             del config["tracing"]

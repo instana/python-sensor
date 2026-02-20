@@ -56,6 +56,10 @@ class BaseSpan(object):
         :return: dict - a filtered set of attributes
         """
         filtered_attributes = DictionaryOfStan()
+
+        if attributes is None:
+            return filtered_attributes
+
         for key in attributes.keys():
             validated_key, validated_value = self._validate_attribute(
                 key, attributes[key]

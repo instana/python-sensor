@@ -94,23 +94,7 @@ try:
         tracer, parent_span, span_name = get_tracer_tuple()
 
         # If we're not tracing, just return; boto3 has it's own visibility
-        # Also, skip creating spans for internal Instana calls when
-        # 'com.instana' appears in either the full URL, the path argument,
-        # or the connection host.
-        request_url_or_path = (
-            kwargs.get("request_url")
-            or kwargs.get("url")
-            or (args[1] if len(args) >= 2 else "")
-            or ""
-        )
-        host = getattr(instance, "host", "") or ""
-
-        if (
-            not tracer
-            or span_name == "boto3"
-            or "com.instana" in request_url_or_path
-            or "com.instana" in host
-        ):
+        if not tracer or span_name == "boto3":
             return wrapped(*args, **kwargs)
 
         parent_context = parent_span.get_span_context() if parent_span else None

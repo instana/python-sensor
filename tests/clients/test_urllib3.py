@@ -1006,12 +1006,15 @@ class TestUrllib3:
 
         spans = self.recorder.queued_spans()
 
-        assert len(spans) == 1
+        assert len(spans) == 2
 
-        test_span = spans[0]
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
+
+        test_span = filtered_spans[0]
         assert test_span.data["sdk"]["name"] == "test"
 
-        urllib3_spans = [span for span in spans if span.n == "urllib3"]
+        urllib3_spans = [span for span in filtered_spans if span.n == "urllib3"]
         assert len(urllib3_spans) == 0
 
     def test_internal_span_creation_with_url_in_path(self) -> None:
@@ -1024,11 +1027,13 @@ class TestUrllib3:
                 pass
 
         spans = self.recorder.queued_spans()
+        assert len(spans) == 2
 
-        assert len(spans) == 1
+        filtered_spans = agent.filter_spans(spans)
+        assert len(filtered_spans) == 1
 
-        test_span = spans[0]
+        test_span = filtered_spans[0]
         assert test_span.data["sdk"]["name"] == "test"
 
-        urllib3_spans = [span for span in spans if span.n == "urllib3"]
+        urllib3_spans = [span for span in filtered_spans if span.n == "urllib3"]
         assert len(urllib3_spans) == 0

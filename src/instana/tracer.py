@@ -121,7 +121,10 @@ class InstanaTracer(Tracer):
     ) -> InstanaSpan:
         # Extract span_context from context if needed (OpenTelemetry API compliance)
         if context is not None and span_context is None:
-            span_context = otel_get_current_span(context).get_span_context()  # type: ignore[assignment]
+            otel_ctx = otel_get_current_span(context).get_span_context()
+            if isinstance(otel_ctx, SpanContext):
+                span_context = otel_ctx
+
         
         parent_context = (
             span_context if span_context else instana_get_current_span().get_span_context()
@@ -159,7 +162,9 @@ class InstanaTracer(Tracer):
     ) -> Iterator[InstanaSpan]:
         # Extract span_context from context if needed (OpenTelemetry API compliance)
         if context is not None and span_context is None:
-            span_context = otel_get_current_span(context).get_span_context()  # type: ignore[assignment]
+            otel_ctx = otel_get_current_span(context).get_span_context()
+            if isinstance(otel_ctx, SpanContext):
+                span_context = otel_ctx
         
         # Pass both context and span_context - the guard in start_span prevents redundant extraction
         span = self.start_span(

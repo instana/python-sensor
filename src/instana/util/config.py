@@ -42,46 +42,54 @@ SPAN_TYPE_TO_CATEGORY = {
 }
 
 
-def parse_service_pair(pair: str) -> List[str]:
+def parse_filter_rules_string(
+    params: str,
+    intermediate: Dict[str, Any],
+    policy: str,
+    name: str,
+) -> Dict[str, List[str]]:
     """
-    Parses a pair string to prepare a list of ignored endpoints.
+    Parses a string to prepare filtered endpoint rules.
 
-    @param pair: String format:
-        - "service1:method1,method2" or "service1:method1" or "service1"
-    @return: List of strings in format ["service1.method1", "service1.method2", "service2.*"]
+    @param params: String format with rules separated by '|':
+        - "key;values;match_type|key;values;match_type"
+        - Example: "http.target;/health;strict|kafka.service;topic1,topic2;strict"
+        - match_type is optional and defaults to "strict"
+    @param intermediate: Dictionary to store parsed rules
+    @param policy: Policy type ("exclude" or "include")
+    @param name: Name of the filter rule
+    @return: Updated intermediate dictionary with parsed attribute rules
     """
-    pair_list = []
-    if ":" in pair:
-        service, methods = pair.split(":", 1)
-        service = service.strip()
-        method_list = [ep.strip() for ep in methods.split(",") if ep.strip()]
+    try:
+        # Rule format: key;values;match_type|key;values;match_type
+        rules = params.split("|")
+        for rule in rules:
+            rule_parts = rule.split(";")
+            if len(rule_parts) < 2:
+                continue
 
-        for method in method_list:
-            pair_list.append(f"{service}.{method}")
-    else:
-        pair_list.append(f"{pair}.*")
-    return pair_list
+            key = rule_parts[0].strip()
+            values_str = rule_parts[1]
+            match_type = (
+                rule_parts[2].strip().lower() if len(rule_parts) > 2 else "strict"
+            )
 
+            # Split values by comma (simple split, assuming no commas in values or user handles escaping if needed?)
+            # Spec says "values": Mandatory - List of Strings.
+            # Env var examples: "http.target;/health" -> values=["/health"]
+            # "kafka.service;topic1,topic2;strict" -> values=["topic1", "topic2"]
+            values = [v.strip() for v in values_str.split(",") if v.strip()]
 
-def parse_filtered_endpoints_string(params: Union[str, os.PathLike]) -> List[str]:
-    """
-    Parses a string to prepare a list of ignored endpoints.
+            attr_data = {"key": key, "values": values, "match_type": match_type}
+            intermediate[policy][name]["attributes"].append(attr_data)
 
-    @param params: String format:
-        - "service1:method1,method2;service2:method3" or "service1;service2"
-    @return: List of strings in format ["service1.method1", "service1.method2", "service2.*"]
-    """
-    span_filters = []
-    if params:
-        service_pairs = params.lower().split(";")
-
-        for pair in service_pairs:
-            if pair.strip():
-                span_filters += parse_service_pair(pair)
-    return span_filters
+        return intermediate
+    except Exception as e:
+        logger.error(f"Failed to parse filter params: {e}")
+        return {}
 
 
-def parse_filtered_endpoints_dict(filter_dict: Dict[str, Any]) -> Dict[str, List[Any]]:
+def parse_filter_rules_dict(filter_dict: Dict[str, Any]) -> Dict[str, List[Any]]:
     """
     Parses 'exclude' and 'include' blocks from the filter dict.
 
@@ -132,37 +140,36 @@ def parse_filtered_endpoints_dict(filter_dict: Dict[str, Any]) -> Dict[str, List
         return {"exclude": [], "include": []}
 
 
-def parse_filtered_endpoints(
-    params: Union[Dict[str, Any], str],
-) -> Union[List[str], Dict[str, List[Any]]]:
+def parse_filter_rules(
+    params: Dict[str, Any],
+) -> Dict[str, List[Any]]:
     """
-    Parses input to prepare a list for ignored endpoints.
+    Parses input to prepare filtered endpoints.
 
-    @param params: Can be either:
-        - String: "service1:method1,method2;service2:method3" or "service1;service2"
-        - Dict: {"exclude": [{"name": "foo", "attributes": ...}], "include": []}
-    @return: List of strings in format ["service1.method1", "service1.method2", "service2.*"]
+    @param params: Dict with structure:
+        {"exclude": [{"name": "foo", "attributes": ...}], "include": [{"name": "foo", "attributes": ...}]}
+    @return: Dict with structure {"exclude": [...], "include": [...]}
     """
     try:
-        if isinstance(params, str):
-            return parse_filtered_endpoints_string(params)
-        elif isinstance(params, dict):
-            return parse_filtered_endpoints_dict(params)
-        else:
-            return []
+        return parse_filter_rules_dict(params)
     except Exception as e:
-        logger.debug("Error parsing ignored endpoints: %s", str(e))
-        return []
+        logger.debug("Error parsing filtered endpoints: %s", str(e))
+        return {}
 
 
-def parse_filtered_endpoints_from_yaml(
+def parse_filter_rules_yaml(
     file_path: str,
-) -> Union[List[str], Dict[str, List[Any]]]:
+) -> Dict[str, List[Any]]:
     """
-    Parses configuration yaml file and prepares a list of ignored endpoints.
+    Parses configuration YAML file and prepares filtered endpoint rules.
 
-    @param file_path: Path of the file as a string
-    @return: List of strings in format ["service1.method1", "service1.method2", "service2.*", "kafka.method.topic", "kafka.*.topic", "kafka.method.*"]
+    @param file_path: Path to the YAML configuration file
+    @return: Dictionary containing parsed filter rules with structure:
+        {
+            "exclude": [{"name": str, "suppression": bool, "attributes": [{"key": str, "values": list, "match_type": str}]}],
+            "include": [{"name": str, "suppression": None, "attributes": [{"key": str, "values": list, "match_type": str}]}]
+        }
+        Returns empty dict {} if no filter configuration is found or on error.
     """
     config_reader = ConfigReader(file_path)
     span_filters_dict = None
@@ -172,13 +179,13 @@ def parse_filtered_endpoints_from_yaml(
         logger.warning(DEPRECATED_CONFIG_KEY_WARNING)
         span_filters_dict = config_reader.data["com.instana.tracing"].get("filter")
     if span_filters_dict:
-        span_filters = parse_filtered_endpoints(span_filters_dict)
+        span_filters = parse_filter_rules(span_filters_dict)
         return span_filters
     else:
         return {}
 
 
-def parse_span_filter_env_vars() -> Dict[str, List[Any]]:
+def parse_filter_rules_env_vars() -> Dict[str, List[Any]]:
     """
     Parses INSTANA_TRACING_FILTER_<POLICY>_<NAME>_ATTRIBUTES environment variables.
 
@@ -216,27 +223,12 @@ def parse_span_filter_env_vars() -> Dict[str, List[Any]]:
             }
 
         if suffix == "ATTRIBUTES":
-            # Rule format: key;values;match_type|key;values;match_type
-            rules = env_value.split("|")
-            for rule in rules:
-                rule_parts = rule.split(";")
-                if len(rule_parts) < 2:
-                    continue
-
-                key = rule_parts[0].strip()
-                values_str = rule_parts[1]
-                match_type = (
-                    rule_parts[2].strip().lower() if len(rule_parts) > 2 else "strict"
-                )
-
-                # Split values by comma (simple split, assuming no commas in values or user handles escaping if needed?)
-                # Spec says "values": Mandatory - List of Strings.
-                # Env var examples: "http.target;/health" -> values=["/health"]
-                # "kafka.service;topic1,topic2;strict" -> values=["topic1", "topic2"]
-                values = [v.strip() for v in values_str.split(",") if v.strip()]
-
-                attr_data = {"key": key, "values": values, "match_type": match_type}
-                intermediate[policy][name]["attributes"].append(attr_data)
+            intermediate = parse_filter_rules_string(
+                env_value,
+                intermediate,
+                policy,
+                name,
+            )
 
         elif suffix == "SUPPRESSION" and policy == "exclude":
             intermediate[policy][name]["suppression"] = is_truthy(env_value)

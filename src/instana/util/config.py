@@ -81,7 +81,7 @@ def parse_filtered_endpoints_string(params: Union[str, os.PathLike]) -> List[str
     return span_filters
 
 
-def parse_filtered_endpoints_dict(filter_dict: dict[str, Any]) -> dict[str, list[Any]]:
+def parse_filtered_endpoints_dict(filter_dict: Dict[str, Any]) -> Dict[str, List[Any]]:
     """
     Parses 'exclude' and 'include' blocks from the filter dict.
 
@@ -134,7 +134,7 @@ def parse_filtered_endpoints_dict(filter_dict: dict[str, Any]) -> dict[str, list
 
 def parse_filtered_endpoints(
     params: Union[Dict[str, Any], str],
-) -> Union[List[str], dict[str, list[Any]]]:
+) -> Union[List[str], Dict[str, List[Any]]]:
     """
     Parses input to prepare a list for ignored endpoints.
 
@@ -157,7 +157,7 @@ def parse_filtered_endpoints(
 
 def parse_filtered_endpoints_from_yaml(
     file_path: str,
-) -> Union[List[str], dict[str, list[Any]]]:
+) -> Union[List[str], Dict[str, List[Any]]]:
     """
     Parses configuration yaml file and prepares a list of ignored endpoints.
 
@@ -175,7 +175,7 @@ def parse_filtered_endpoints_from_yaml(
         span_filters = parse_filtered_endpoints(span_filters_dict)
         return span_filters
     else:
-        return []
+        return {}
 
 
 def parse_span_filter_env_vars() -> Dict[str, List[Any]]:

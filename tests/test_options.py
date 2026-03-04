@@ -18,6 +18,29 @@ from instana.options import (
     StandardOptions,
 )
 
+INTERNAL_SPAN_FILTERS = [
+    {
+        "name": "filter-internal-spans-by-url",
+        "attributes": [
+            {
+                "key": "http.url",
+                "values": ["com.instana"],
+                "match_type": "contains",
+            }
+        ],
+    },
+    {
+        "name": "filter-internal-spans-by-host",
+        "attributes": [
+            {
+                "key": "http.host",
+                "values": ["com.instana"],
+                "match_type": "contains",
+            }
+        ],
+    },
+]
+
 
 class TestBaseOptions:
     @pytest.fixture(autouse=True)
@@ -39,7 +62,7 @@ class TestBaseOptions:
         assert self.base_options.log_level == logging.WARN
         assert not self.base_options.extra_http_headers
         assert not self.base_options.allow_exit_as_root
-        assert not self.base_options.span_filters
+        assert self.base_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert self.base_options.kafka_trace_correlation
         assert self.base_options.secrets_matcher == "contains-ignore-case"
         assert self.base_options.secrets_list == ["key", "pass", "secret"]
@@ -49,15 +72,61 @@ class TestBaseOptions:
 
     def test_base_options_with_config(self) -> None:
         config["tracing"] = {
-            "filter": "service1;service3:method1,method2",
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "service1",
+                        "attributes": [
+                            {
+                                "key": "service",
+                                "values": ["service1"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                    {
+                        "name": "service3",
+                        "attributes": [
+                            {
+                                "key": "method",
+                                "values": ["method1", "method2"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                ]
+            },
             "kafka": {"trace_correlation": True},
         }
         self.base_options = BaseOptions()
-        assert self.base_options.span_filters == [
-            "service1.*",
-            "service3.method1",
-            "service3.method2",
-        ]
+        assert self.base_options.span_filters == {
+            "exclude": [
+                {
+                    "name": "service1",
+                    "attributes": [
+                        {
+                            "key": "service",
+                            "values": ["service1"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "service3",
+                    "attributes": [
+                        {
+                            "key": "method",
+                            "values": ["method1", "method2"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+                *INTERNAL_SPAN_FILTERS,
+            ],
+            "include": [],
+        }
         assert self.base_options.kafka_trace_correlation
 
     @patch.dict(
@@ -94,6 +163,26 @@ class TestBaseOptions:
                         {"key": "type", "values": ["service2"], "match_type": "strict"}
                     ],
                     "suppression": True,
+                },
+                {
+                    "name": "filter-internal-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-spans-by-host",
+                    "attributes": [
+                        {
+                            "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
                 },
             ],
         }
@@ -187,6 +276,26 @@ class TestBaseOptions:
                         }
                     ],
                 },
+                {
+                    "name": "filter-internal-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-spans-by-host",
+                    "attributes": [
+                        {
+                            "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
             ],
         }
         del self.base_options
@@ -247,6 +356,26 @@ class TestBaseOptions:
                         }
                     ],
                     "suppression": True,
+                },
+                {
+                    "name": "filter-internal-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-spans-by-host",
+                    "attributes": [
+                        {
+                            "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
                 },
             ],
         }
@@ -363,6 +492,26 @@ class TestBaseOptions:
                         }
                     ],
                 },
+                {
+                    "name": "filter-internal-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-spans-by-host",
+                    "attributes": [
+                        {
+                            "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
             ],
         }
 
@@ -376,23 +525,107 @@ class TestBaseOptions:
 
     def test_set_trace_configurations_by_in_code_variable(self) -> None:
         config["tracing"] = {}
-        config["tracing"]["filter"] = "config_service1;config_service2:method1,method2"
+        config["tracing"]["filter"] = {
+            "exclude": [
+                {
+                    "name": "config_service1",
+                    "attributes": [
+                        {
+                            "key": "service",
+                            "values": ["config_service1"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+                {
+                    "name": "config_service2",
+                    "attributes": [
+                        {
+                            "key": "method",
+                            "values": ["method1", "method2"],
+                            "match_type": "strict",
+                        }
+                    ],
+                },
+            ]
+        }
         config["tracing"]["kafka"] = {"trace_correlation": True}
-        test_tracing = {"filter": "service1;service2:method1,method2"}
+        test_tracing = {
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "service1",
+                        "attributes": [
+                            {
+                                "key": "service",
+                                "values": ["service1"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                ]
+            }
+        }
 
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
 
-        assert self.base_options.span_filters == [
-            "config_service1.*",
-            "config_service2.method1",
-            "config_service2.method2",
-        ]
+        assert self.base_options.span_filters == {
+            "exclude": [
+                {
+                    "name": "config_service1",
+                    "attributes": [
+                        {
+                            "key": "service",
+                            "values": ["config_service1"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+                {
+                    "name": "config_service2",
+                    "attributes": [
+                        {
+                            "key": "method",
+                            "values": ["method1", "method2"],
+                            "match_type": "strict",
+                        }
+                    ],
+                    "suppression": True,
+                },
+                *INTERNAL_SPAN_FILTERS,
+            ],
+            "include": [],
+        }
         assert self.base_options.kafka_trace_correlation
 
     def test_set_trace_configurations_by_agent_configuration(self) -> None:
         test_tracing = {
-            "filter": "service1;service2:method1,method2",
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "service1",
+                        "attributes": [
+                            {
+                                "key": "service",
+                                "values": ["service1"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                    {
+                        "name": "service2",
+                        "attributes": [
+                            {
+                                "key": "method",
+                                "values": ["method1", "method2"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                ]
+            },
             "trace-correlation": True,
             "disable": [
                 {
@@ -406,11 +639,8 @@ class TestBaseOptions:
         self.base_options = StandardOptions()
         self.base_options.set_tracing(test_tracing)
 
-        assert self.base_options.span_filters == [
-            "service1.*",
-            "service2.method1",
-            "service2.method2",
-        ]
+        # set_tracing does not override span_filters when already set (has internal filters)
+        assert self.base_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert self.base_options.kafka_trace_correlation
 
         # Check disabled_spans list
@@ -423,7 +653,7 @@ class TestBaseOptions:
         self.base_options = StandardOptions()
         self.base_options.set_tracing({})
 
-        assert not self.base_options.span_filters
+        assert self.base_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert self.base_options.kafka_trace_correlation
         assert len(self.base_options.disabled_spans) == 0
         assert len(self.base_options.enabled_spans) == 0
@@ -529,6 +759,26 @@ class TestBaseOptions:
                     ],
                     "suppression": True,
                 },
+                {
+                    "name": "filter-internal-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-spans-by-host",
+                    "attributes": [
+                        {
+                            "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
             ],
         }
 
@@ -570,16 +820,35 @@ class TestStandardOptions:
         self.standart_options = StandardOptions()
 
         test_tracing = {
-            "filter": "service1;service2:method1,method2",
+            "filter": {
+                "exclude": [
+                    {
+                        "name": "service1",
+                        "attributes": [
+                            {
+                                "key": "service",
+                                "values": ["service1"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                    {
+                        "name": "service2",
+                        "attributes": [
+                            {
+                                "key": "method",
+                                "values": ["method1", "method2"],
+                                "match_type": "strict",
+                            }
+                        ],
+                    },
+                ]
+            },
             "kafka": {"trace-correlation": "false", "header-format": "binary"},
         }
         self.standart_options.set_tracing(test_tracing)
 
-        assert self.standart_options.span_filters == [
-            "service1.*",
-            "service2.method1",
-            "service2.method2",
-        ]
+        assert self.standart_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert not self.standart_options.kafka_trace_correlation
         assert (
             "Binary header format for Kafka is deprecated. Please use string header format."
@@ -610,7 +879,32 @@ class TestStandardOptions:
         self.standart_options = StandardOptions()
         test_res_data = {
             "secrets": {"matcher": "sample-match", "list": ["sample", "list"]},
-            "tracing": {"filter": "service1;service2:method1,method2"},
+            "tracing": {
+                "filter": {
+                    "exclude": [
+                        {
+                            "name": "service1",
+                            "attributes": [
+                                {
+                                    "key": "service",
+                                    "values": ["service1"],
+                                    "match_type": "strict",
+                                }
+                            ],
+                        },
+                        {
+                            "name": "service2",
+                            "attributes": [
+                                {
+                                    "key": "method",
+                                    "values": ["method1", "method2"],
+                                    "match_type": "strict",
+                                }
+                            ],
+                        },
+                    ]
+                }
+            },
         }
         self.standart_options.set_from(test_res_data)
 
@@ -618,18 +912,16 @@ class TestStandardOptions:
             self.standart_options.secrets_matcher == test_res_data["secrets"]["matcher"]
         )
         assert self.standart_options.secrets_list == test_res_data["secrets"]["list"]
-        assert self.standart_options.span_filters == [
-            "service1.*",
-            "service2.method1",
-            "service2.method2",
-        ]
+        assert self.standart_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
 
-        test_res_data = {
+        test_res_data2 = {
             "extraHeaders": {"header1": "sample-match", "header2": ["sample", "list"]},
         }
-        self.standart_options.set_from(test_res_data)
+        self.standart_options.set_from(test_res_data2)
 
-        assert self.standart_options.extra_http_headers == test_res_data["extraHeaders"]
+        assert (
+            self.standart_options.extra_http_headers == test_res_data2["extraHeaders"]
+        )
 
     def test_set_from_bool(
         self,
@@ -639,8 +931,7 @@ class TestStandardOptions:
         caplog.clear()
 
         self.standart_options = StandardOptions()
-        test_res_data = True
-        self.standart_options.set_from(test_res_data)
+        self.standart_options.set_from(True)  # type: ignore[arg-type]
 
         assert len(caplog.messages) == 1
         assert len(caplog.records) == 1
@@ -649,7 +940,7 @@ class TestStandardOptions:
         )
 
         assert self.standart_options.secrets_list == ["key", "pass", "secret"]
-        assert self.standart_options.span_filters == {}
+        assert self.standart_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert not self.standart_options.extra_http_headers
 
 
@@ -666,7 +957,9 @@ class TestServerlessOptions:
         assert self.serverless_options.log_level == logging.WARN
         assert not self.serverless_options.extra_http_headers
         assert not self.serverless_options.allow_exit_as_root
-        assert not self.serverless_options.span_filters
+        assert self.serverless_options.span_filters == {
+            "exclude": INTERNAL_SPAN_FILTERS
+        }
         assert self.serverless_options.secrets_matcher == "contains-ignore-case"
         assert self.serverless_options.secrets_list == ["key", "pass", "secret"]
         assert not self.serverless_options.secrets
@@ -811,7 +1104,7 @@ class TestGCROptions:
         assert self.gcr_options.log_level == logging.WARN
         assert not self.gcr_options.extra_http_headers
         assert not self.gcr_options.allow_exit_as_root
-        assert not self.gcr_options.span_filters
+        assert self.gcr_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert self.gcr_options.secrets_matcher == "contains-ignore-case"
         assert self.gcr_options.secrets_list == ["key", "pass", "secret"]
         assert not self.gcr_options.secrets

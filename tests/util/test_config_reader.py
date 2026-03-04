@@ -9,7 +9,7 @@ from yaml import YAMLError
 
 from instana.util.config import (
     get_disable_trace_configurations_from_yaml,
-    parse_filtered_endpoints_from_yaml,
+    parse_filtered_rules_from_yaml,
 )
 from instana.util.config_reader import ConfigReader
 
@@ -75,7 +75,7 @@ class TestConfigReader:
     def test_load_configuration_with_tracing(self, caplog: "LogCaptureFixture") -> None:
         caplog.set_level(logging.DEBUG, logger="instana")
 
-        span_filters = parse_filtered_endpoints_from_yaml(
+        span_filters = parse_filtered_rules_from_yaml(
             "tests/util/test_configuration-1.yaml"
         )
         # test with tracing
@@ -173,7 +173,7 @@ class TestConfigReader:
     def test_load_configuration_legacy(self, caplog: "LogCaptureFixture") -> None:
         caplog.set_level(logging.DEBUG, logger="instana")
 
-        span_filters = parse_filtered_endpoints_from_yaml(
+        span_filters = parse_filtered_rules_from_yaml(
             "tests/util/test_configuration-2.yaml"
         )
         assert span_filters == {

@@ -4,70 +4,154 @@ import pytest
 
 from instana.util.config import (
     is_truthy,
-    parse_filtered_endpoints,
-    parse_filtered_endpoints_dict,
-    parse_service_pair,
+    parse_filter_rules,
+    parse_filter_endpoints_dict,
+    parse_filter_rules_string,
 )
 
 
 class TestConfig:
-    def test_parse_service_pair(self) -> None:
-        test_string = "service1:method1,method2"
-        response = parse_service_pair(test_string)
-        assert response == ["service1.method1", "service1.method2"]
-
-        test_string = "service1;service2"
-        response = parse_filtered_endpoints(test_string)
-        assert response == ["service1.*", "service2.*"]
-
-        test_string = "service1"
-        response = parse_filtered_endpoints(test_string)
-        assert response == ["service1.*"]
-
-        test_string = ";"
-        response = parse_filtered_endpoints(test_string)
-        assert response == []
-
-        test_string = "service1:method1,method2;;;service2:method1;;"
-        response = parse_filtered_endpoints(test_string)
-        assert response == [
-            "service1.method1",
-            "service1.method2",
-            "service2.method1",
+    def test_parse_filter_rules_string(self) -> None:
+        """Test parsing of environment variable string format."""
+        # Test single rule with strict match
+        intermediate = {
+            "exclude": {
+                "health": {
+                    "name": "health",
+                    "attributes": [],
+                    "suppression": None,
+                }
+            },
+            "include": {},
+        }
+        result = parse_filter_rules_string(
+            "http.target;/health;strict",
+            intermediate,
+            "exclude",
+            "health",
+        )
+        assert result["exclude"]["health"]["attributes"] == [
+            {"key": "http.target", "values": ["/health"], "match_type": "strict"}
         ]
 
-        test_string = ""
-        response = parse_filtered_endpoints(test_string)
-        assert response == []
-
-    def test_parse_filtered_endpoints_string(self) -> None:
-        test_string = "service1:method1,method2"
-        response = parse_service_pair(test_string)
-        assert response == ["service1.method1", "service1.method2"]
-
-        test_string = "service1;service2"
-        response = parse_filtered_endpoints(test_string)
-        assert response == ["service1.*", "service2.*"]
-
-        test_string = "service1"
-        response = parse_filtered_endpoints(test_string)
-        assert response == ["service1.*"]
-
-        test_string = ";"
-        response = parse_filtered_endpoints(test_string)
-        assert response == []
-
-        test_string = "service1:method1,method2;;;service2:method1;;"
-        response = parse_filtered_endpoints(test_string)
-        assert response == [
-            "service1.method1",
-            "service1.method2",
-            "service2.method1",
+        # Test multiple values with comma separation
+        intermediate = {
+            "exclude": {
+                "topics": {
+                    "name": "topics",
+                    "attributes": [],
+                    "suppression": None,
+                }
+            },
+            "include": {},
+        }
+        result = parse_filter_rules_string(
+            "kafka.service;topic1,topic2,topic3;strict",
+            intermediate,
+            "exclude",
+            "topics",
+        )
+        assert result["exclude"]["topics"]["attributes"] == [
+            {
+                "key": "kafka.service",
+                "values": ["topic1", "topic2", "topic3"],
+                "match_type": "strict",
+            }
         ]
 
-        test_string = ""
-        response = parse_filtered_endpoints(test_string)
-        assert response == []
+        # Test multiple rules separated by pipe
+        intermediate = {
+            "exclude": {
+                "multi": {
+                    "name": "multi",
+                    "attributes": [],
+                    "suppression": None,
+                }
+            },
+            "include": {},
+        }
+        result = parse_filter_rules_string(
+            "http.target;/health;strict|kafka.service;topic1,topic2;equals",
+            intermediate,
+            "exclude",
+            "multi",
+        )
+        assert len(result["exclude"]["multi"]["attributes"]) == 2
+        assert result["exclude"]["multi"]["attributes"][0] == {
+            "key": "http.target",
+            "values": ["/health"],
+            "match_type": "strict",
+        }
+        assert result["exclude"]["multi"]["attributes"][1] == {
+            "key": "kafka.service",
+            "values": ["topic1", "topic2"],
+            "match_type": "equals",
+        }
+
+        # Test default match_type (should be "strict")
+        intermediate = {
+            "exclude": {
+                "default": {
+                    "name": "default",
+                    "attributes": [],
+                    "suppression": None,
+                }
+            },
+            "include": {},
+        }
+        result = parse_filter_rules_string(
+            "http.url;/api/v1",
+            intermediate,
+            "exclude",
+            "default",
+        )
+        assert result["exclude"]["default"]["attributes"] == [
+            {"key": "http.url", "values": ["/api/v1"], "match_type": "strict"}
+        ]
+
+        # Test with whitespace
+        intermediate = {
+            "exclude": {
+                "whitespace": {
+                    "name": "whitespace",
+                    "attributes": [],
+                    "suppression": None,
+                }
+            },
+            "include": {},
+        }
+        result = parse_filter_rules_string(
+            " http.target ; /health , /ready ; strict ",
+            intermediate,
+            "exclude",
+            "whitespace",
+        )
+        assert result["exclude"]["whitespace"]["attributes"] == [
+            {
+                "key": "http.target",
+                "values": ["/health", "/ready"],
+                "match_type": "strict",
+            }
+        ]
+
+        # Test invalid format (missing values) - should skip
+        intermediate = {
+            "exclude": {
+                "invalid": {
+                    "name": "invalid",
+                    "attributes": [],
+                    "suppression": None,
+                }
+            },
+            "include": {},
+        }
+        result = parse_filter_rules_string(
+            "http.target",
+            intermediate,
+            "exclude",
+            "invalid",
+        )
+        assert result["exclude"]["invalid"]["attributes"] == []
 
     def test_parse_filtered_endpoints_dict(self) -> None:
         test_dict = {
@@ -85,7 +169,7 @@ class TestConfig:
             ],
             "include": [],
         }
-        response = parse_filtered_endpoints_dict(test_dict)
+        response = parse_filter_endpoints_dict(test_dict)
         assert response == {
             "exclude": [
                 {
@@ -104,38 +188,10 @@ class TestConfig:
         }
 
         test_dict = {}
-        response = parse_filtered_endpoints_dict(test_dict)
+        response = parse_filter_endpoints_dict(test_dict)
         assert response == {"exclude": [], "include": []}
 
     def test_parse_filtered_endpoints(self) -> None:
-        test_pair = "service1:method1,method2"
-        response = parse_filtered_endpoints(test_pair)
-        assert response == ["service1.method1", "service1.method2"]
-
-        test_pair = "service1;service2"
-        response = parse_filtered_endpoints(test_pair)
-        assert response == ["service1.*", "service2.*"]
-
-        test_pair = "service1"
-        response = parse_filtered_endpoints(test_pair)
-        assert response == ["service1.*"]
-
-        test_pair = ";"
-        response = parse_filtered_endpoints(test_pair)
-        assert response == []
-
-        test_pair = "service1:method1,method2;;;service2:method1;;"
-        response = parse_filtered_endpoints(test_pair)
-        assert response == [
-            "service1.method1",
-            "service1.method2",
-            "service2.method1",
-        ]
-
-        test_pair = ""
-        response = parse_filtered_endpoints(test_pair)
-        assert response == []
-
         test_dict = {
             "exclude": [
                 {
@@ -151,7 +207,7 @@ class TestConfig:
             ],
             "include": [],
         }
-        response = parse_filtered_endpoints(test_dict)
+        response = parse_filter_rules(test_dict)
         assert response == {
             "exclude": [
                 {
@@ -170,7 +226,7 @@ class TestConfig:
         }
 
         test_dict = {}
-        response = parse_filtered_endpoints(test_dict)
+        response = parse_filter_rules(test_dict)
         assert response == {"exclude": [], "include": []}
 
     @pytest.mark.parametrize(

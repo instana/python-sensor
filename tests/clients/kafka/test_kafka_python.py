@@ -23,7 +23,7 @@ from instana.instrumentation.kafka.kafka_python import (
 from instana.options import StandardOptions
 from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
-from instana.util.config import parse_filtered_endpoints_from_yaml
+from instana.util.config import parse_filtered_rules_from_yaml
 from tests.helpers import get_first_span_by_filter, testenv
 
 
@@ -452,13 +452,14 @@ class TestKafkaPython:
 
         span_to_be_filtered = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["service"] == "span-topic",
+            lambda span: (
+                span.n == "kafka" and span.data["kafka"]["service"] == "span-topic"
+            ),
         )
         assert span_to_be_filtered not in filtered_spans
 
     def test_filter_specific_topic_with_config_file(self) -> None:
-        agent.options.span_filters = parse_filtered_endpoints_from_yaml(
+        agent.options.span_filters = parse_filtered_rules_from_yaml(
             "tests/util/test_configuration-1.yaml"
         )
 
@@ -541,40 +542,52 @@ class TestKafkaPython:
 
         producer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         producer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         producer_span_3 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_3",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_3"
+            ),
         )
 
         poll_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         poll_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         poll_span_3 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_3",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_3"
+            ),
         )
 
         assert producer_span_1.n == "kafka"
@@ -642,40 +655,52 @@ class TestKafkaPython:
 
         producer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         producer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         producer_span_3 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_3",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_3"
+            ),
         )
 
         poll_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         poll_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         poll_span_3 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_3",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_3"
+            ),
         )
 
         assert producer_span_1.n == "kafka"
@@ -781,34 +806,44 @@ class TestKafkaPython:
 
         producer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         producer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         producer_span_3 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "send"
-            and span.data["kafka"]["service"] == "span-topic_3",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "send"
+                and span.data["kafka"]["service"] == "span-topic_3"
+            ),
         )
 
         poll_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         poll_span_3 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic_3",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic_3"
+            ),
         )
 
         assert producer_span_1.n == "kafka"
@@ -903,7 +938,7 @@ class TestKafkaPython:
         assert kafka_python.consumer_token is None
 
     def test_kafka_producer_include_filter(self) -> None:
-        agent.options.span_filters = parse_filtered_endpoints_from_yaml(
+        agent.options.span_filters = parse_filtered_rules_from_yaml(
             "tests/util/test_configuration-1.yaml"
         )
         with self.tracer.start_as_current_span("test-span"):

@@ -25,7 +25,7 @@ from instana.instrumentation.kafka.confluent_kafka_python import (
 from instana.options import StandardOptions
 from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
-from instana.util.config import parse_filtered_endpoints_from_yaml
+from instana.util.config import parse_filtered_rules_from_yaml
 from tests.helpers import get_first_span_by_filter, testenv
 
 
@@ -408,8 +408,9 @@ class TestConfluentKafka:
 
         span_to_be_filtered = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["service"] == "span-topic",
+            lambda span: (
+                span.n == "kafka" and span.data["kafka"]["service"] == "span-topic"
+            ),
         )
         assert span_to_be_filtered not in filtered_spans
 
@@ -420,7 +421,7 @@ class TestConfluentKafka:
         )
 
     def test_filter_confluent_specific_topic_with_config_file(self) -> None:
-        agent.options.span_filters = parse_filtered_endpoints_from_yaml(
+        agent.options.span_filters = parse_filtered_rules_from_yaml(
             "tests/util/test_configuration-1.yaml"
         )
 
@@ -474,27 +475,35 @@ class TestConfluentKafka:
 
         producer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "produce"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         producer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "produce"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         consumer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "consume"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "consume"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         consumer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "consume"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "consume"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
 
         # same trace id, different span ids
@@ -538,16 +547,20 @@ class TestConfluentKafka:
 
         producer_span = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == "span-topic-poll",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "produce"
+                and span.data["kafka"]["service"] == "span-topic-poll"
+            ),
         )
 
         poll_span = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == "span-topic-poll",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == "span-topic-poll"
+            ),
         )
 
         # Same traceId
@@ -580,16 +593,20 @@ class TestConfluentKafka:
 
         producer_span = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == f"{testenv['kafka_topic']}-wo-tc",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "produce"
+                and span.data["kafka"]["service"] == f"{testenv['kafka_topic']}-wo-tc"
+            ),
         )
 
         poll_span = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "poll"
-            and span.data["kafka"]["service"] == f"{testenv['kafka_topic']}-wo-tc",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "poll"
+                and span.data["kafka"]["service"] == f"{testenv['kafka_topic']}-wo-tc"
+            ),
         )
 
         # Different traceId
@@ -697,27 +714,35 @@ class TestConfluentKafka:
 
         producer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "produce"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         producer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "produce"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
         consumer_span_1 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "consume"
-            and span.data["kafka"]["service"] == "span-topic_1",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "consume"
+                and span.data["kafka"]["service"] == "span-topic_1"
+            ),
         )
         consumer_span_2 = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "consume"
-            and span.data["kafka"]["service"] == "span-topic_2",
+            lambda span: (
+                span.n == "kafka"
+                and span.data["kafka"]["access"] == "consume"
+                and span.data["kafka"]["service"] == "span-topic_2"
+            ),
         )
 
         assert producer_span_1
@@ -926,8 +951,9 @@ class TestConfluentKafka:
 
         kafka_span = get_first_span_by_filter(
             spans,
-            lambda span: span.n == "kafka"
-            and span.data["kafka"]["access"] == "produce",
+            lambda span: (
+                span.n == "kafka" and span.data["kafka"]["access"] == "produce"
+            ),
         )
         assert kafka_span is not None
         assert kafka_span.data["kafka"]["service"] == testenv["kafka_topic"] + "_3"

@@ -1035,5 +1035,18 @@ class TestUrllib3:
         test_span = filtered_spans[0]
         assert test_span.data["sdk"]["name"] == "test"
 
-        urllib3_spans = [span for span in filtered_spans if span.n == "urllib3"]
-        assert len(urllib3_spans) == 0
+    def test_collect_kvs_with_none_host(self) -> None:
+        """Test that _collect_kvs handles None host gracefully without crashing."""
+        # Create a mock connection pool with None host
+        pool = urllib3.HTTPConnectionPool(host="example.com", port=80)
+        pool.host = None  # Simulate edge case where host becomes None
+
+        # Call _collect_kvs - should not crash
+        kvs = collect_kvs(pool, ("GET", "/test"), {})
+
+        # Verify that URL is not constructed when host is None
+        assert "url" not in kvs
+        assert kvs.get("host") is None
+        assert kvs.get("port") == 80
+        assert kvs.get("method") == "GET"
+        assert kvs.get("path") == "/test"

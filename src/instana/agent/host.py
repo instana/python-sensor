@@ -375,10 +375,15 @@ class HostAgent(BaseAgent):
                 if isinstance(span.data[span_value], dict):
                     service_name = span_value
 
+            # Skip if no valid service name found
+            if not service_name:
+                filtered_spans.append(span)
+                continue
+
             # Set span attributes for filtering
             attributes_to_check = {
                 "type": service_name,
-                "kind": span.k,
+                "kind": getattr(span, "k", None),
             }
 
             # Add operation specifiers to the attributes

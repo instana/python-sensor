@@ -18,6 +18,7 @@ def matches_rule(rule_attributes: List[Any], span_attributes: List[Any]) -> bool
         if key == "category":
             if (
                 "type" in span_attributes
+                and span_attributes["type"] is not None
                 and span_attributes["type"] in SPAN_TYPE_TO_CATEGORY
             ):
                 actual = SPAN_TYPE_TO_CATEGORY[span_attributes["type"]]
@@ -51,6 +52,10 @@ def matches_rule(rule_attributes: List[Any], span_attributes: List[Any]) -> bool
 
 def match_key_filter(span_value: str, rule_value: str, match_type: str) -> bool:
     """Check if the first value matches the second value based on the match type."""
+    # Guard against None values
+    if span_value is None:
+        return False
+
     if rule_value == "*":
         return True
     elif match_type == "strict" and span_value == rule_value:

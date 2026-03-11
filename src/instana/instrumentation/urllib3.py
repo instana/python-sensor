@@ -55,11 +55,13 @@ try:
                         agent.options.secrets_list,
                     )
 
-            url = kvs["host"] + ":" + str(kvs["port"]) + kvs["path"]
-            if isinstance(instance, urllib3.connectionpool.HTTPSConnectionPool):
-                kvs["url"] = f"https://{url}"
-            else:
-                kvs["url"] = f"http://{url}"
+            # Only construct URL if host is not None
+            if kvs.get("host") and kvs.get("path"):
+                url = f'{kvs["host"]}:{kvs["port"]}{kvs["path"]}'
+                if isinstance(instance, urllib3.connectionpool.HTTPSConnectionPool):
+                    kvs["url"] = f"https://{url}"
+                else:
+                    kvs["url"] = f"http://{url}"
         except Exception:
             logger.debug("urllib3 _collect_kvs error: ", exc_info=True)
             return kvs

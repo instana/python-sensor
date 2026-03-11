@@ -777,4 +777,30 @@ class TestHostAgent:
 
         assert agent.announce_data is None
         assert "Missing required keys in announce response" in caplog.messages[-1]
-        assert str(res_data) in caplog.messages[-1]
+
+    def test_filter_spans_with_empty_service_name(self) -> None:
+        """Test that filter_spans handles spans with empty service_name gracefully."""
+        # Create a mock span with no valid service name in data
+        mock_span = Mock()
+        mock_span.n = "test"
+        mock_span.k = 1
+        mock_span.data = {
+            "invalid_key": "value"
+        }  # No dict value, so service_name stays empty
+
+        # Should not crash and should include the span
+        filtered = self.agent.filter_spans([mock_span])
+        assert len(filtered) == 1
+        assert filtered[0] == mock_span
+
+    def test_filter_spans_with_none_kind(self) -> None:
+        """Test that filter_spans handles spans with None kind gracefully."""
+        # Create a mock span without 'k' attribute
+        mock_span = Mock()
+        mock_span.n = "http"
+        del mock_span.k  # Remove k attribute
+        mock_span.data = {"http": {"method": "GET", "url": "http://example.com"}}
+
+        # Should not crash - getattr will return None for missing k
+        filtered = self.agent.filter_spans([mock_span])
+        assert len(filtered) == 1

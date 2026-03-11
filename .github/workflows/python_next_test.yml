@@ -1,0 +1,67 @@
+name: Test Python future version
+
+on:
+  workflow_dispatch:        # Manual trigger.
+  schedule:
+    - cron: '1 3 * * 1-5'   # Every Monday to Friday at 03:01 AM.
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pvital/pvital-python:latest
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16.10-trixie
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: passw0rd
+          POSTGRES_DB: instana_test_db
+      mariadb:
+        image: public.ecr.aws/docker/library/mariadb:11.3.2
+        env:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
+      redis:
+        image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      rabbitmq:
+        image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      mongo:
+        image: public.ecr.aws/docker/library/mongo:7.0.6
+      gcloud-pubsub:
+        image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        env:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
+    steps:
+      - uses: actions/checkout@v5
+      #- name: Set up Python 3.15.0
+      #  uses: actions/setup-python@v5
+      #  with:
+      #    python-version: 3.15.0-alpha.7
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Install Python dependencies
+        run: |
+          cp -a /root/base/venv ./venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      #- name: Install Python test dependencies
+      #  run: |
+      #     pip install -r tests/requirements-pre315.txt
+      - name: Test with pytest
+        run: |
+          . venv/bin/activate
+          pytest -v --junitxml=output_file.xml tests | tee pytest.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python_next_test_results
+          path: |
+            output_file.xml
+            pytest.log
+          overwrite: true
+

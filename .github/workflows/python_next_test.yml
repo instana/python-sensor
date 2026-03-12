@@ -48,8 +48,8 @@ jobs:
       - name: Check code
         run: |
           pwd
-          ls -l
           ls -l ${HOME}
+          ls -l /root/base
       - name: Install Python dependencies
         run: |
           . venv/bin/activate

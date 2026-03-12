@@ -17,13 +17,13 @@ jobs:
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16.10-trixie
-        environment:
+        env:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: passw0rd
           POSTGRES_DB: instana_test_db
       mariadb:
         image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
+        env:
           MYSQL_ROOT_PASSWORD: passw0rd
           MYSQL_DATABASE: instana_test_db
       redis:
@@ -34,7 +34,7 @@ jobs:
         image: public.ecr.aws/docker/library/mongo:7.0.6
       gcloud-pubsub:
         image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
+        env:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
     steps:

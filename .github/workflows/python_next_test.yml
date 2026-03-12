@@ -14,6 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pvital/pvital-python:latest
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16.10-trixie
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: passw0rd
+          POSTGRES_DB: instana_test_db
+      mariadb:
+        image: public.ecr.aws/docker/library/mariadb:11.3.2
+        environment:
+          MYSQL_ROOT_PASSWORD: passw0rd
+          MYSQL_DATABASE: instana_test_db
+      redis:
+        image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+      rabbitmq:
+        image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+      mongo:
+        image: public.ecr.aws/docker/library/mongo:7.0.6
+      gcloud-pubsub:
+        image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+        environment:
+          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+          PUBSUB_PROJECT1: test-project,test-topic
     steps:
       - uses: actions/checkout@v5
       #- name: Set up Python 3.15.0

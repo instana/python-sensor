@@ -21,6 +21,7 @@ from tests.test_utils import _TraceContextMixin
 os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8681"
 
 
+@pytest.mark.timeout(30)
 class TestPubSubPublish(_TraceContextMixin):
     publisher = PublisherClient()
 
@@ -111,6 +112,7 @@ class AckCallback(object):
             self.calls += 1
 
 
+@pytest.mark.timeout(30)
 class TestPubSubSubscribe(_TraceContextMixin):
     @classmethod
     def setup_class(cls) -> None:

@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - main
-
+      - python3150_ghaction
 
 jobs:
   test:

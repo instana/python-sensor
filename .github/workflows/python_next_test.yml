@@ -47,6 +47,7 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Install Python dependencies
         run: |
+          . venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       #- name: Install Python test dependencies
@@ -54,6 +55,7 @@ jobs:
       #     pip install -r tests/requirements-pre315.txt
       - name: Test with pytest
         run: |
-          pytest -v --doctest-modules --junitxml=junit/test-results.xml tests
+          . venv/bin/activate
+          pytest -v tests
 
 

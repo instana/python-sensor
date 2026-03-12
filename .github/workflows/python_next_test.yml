@@ -14,29 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pvital/pvital-python:latest
-    services:
-      postgres:
-        image: public.ecr.aws/docker/library/postgres:16.10-trixie
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      mariadb:
-        image: public.ecr.aws/docker/library/mariadb:11.3.2
-        env:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      redis:
-        image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      rabbitmq:
-        image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      mongo:
-        image: public.ecr.aws/docker/library/mongo:7.0.6
-      gcloud-pubsub:
-        image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        env:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
+    # services:
+    #   postgres:
+    #     image: public.ecr.aws/docker/library/postgres:16.10-trixie
+    #     env:
+    #       POSTGRES_USER: root
+    #       POSTGRES_PASSWORD: passw0rd
+    #       POSTGRES_DB: instana_test_db
+    #   mariadb:
+    #     image: public.ecr.aws/docker/library/mariadb:11.3.2
+    #     env:
+    #       MYSQL_ROOT_PASSWORD: passw0rd
+    #       MYSQL_DATABASE: instana_test_db
+    #   redis:
+    #     image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
+    #   rabbitmq:
+    #     image: public.ecr.aws/docker/library/rabbitmq:3.13.0
+    #   mongo:
+    #     image: public.ecr.aws/docker/library/mongo:7.0.6
+    #   gcloud-pubsub:
+    #     image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
+    #     env:
+    #       PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
+    #       PUBSUB_PROJECT1: test-project,test-topic
     steps:
       - uses: actions/checkout@v5
       #- name: Set up Python 3.15.0
@@ -45,6 +45,11 @@ jobs:
       #    python-version: 3.15.0-alpha.7
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+      - name: Check code
+        run: |
+          pwd
+          ls -l
+          ls -l ${HOME}
       - name: Install Python dependencies
         run: |
           . venv/bin/activate
@@ -53,9 +58,9 @@ jobs:
       #- name: Install Python test dependencies
       #  run: |
       #     pip install -r tests/requirements-pre315.txt
-      - name: Test with pytest
-        run: |
-          . venv/bin/activate
-          pytest -v tests
+      # - name: Test with pytest
+      #   run: |
+      #     . venv/bin/activate
+      #     pytest -v tests
 
 

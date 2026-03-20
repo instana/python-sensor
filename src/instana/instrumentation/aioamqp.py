@@ -1,10 +1,11 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
-    import aioamqp
     from typing import Any, Callable, Dict, Tuple
 
+    import aioamqp
     import wrapt
+    from opentelemetry.context import get_current
     from opentelemetry.trace.status import StatusCode
 
     from instana.log import logger
@@ -21,9 +22,9 @@ try:
         if not tracer:
             return await wrapped(*argv, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
         with tracer.start_as_current_span(
-            "aioamqp-publisher", span_context=parent_context
+            "aioamqp-publisher", context=parent_context
         ) as span:
             try:
                 span.set_attribute("amqp.command", "publish")
@@ -62,7 +63,7 @@ try:
             return await wrapped(*argv, **kwargs)
 
         callback = argv[0]
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         @wrapt.decorator
         async def callback_wrapper(
@@ -72,7 +73,7 @@ try:
             kwargs: Dict,
         ) -> object:
             with tracer.start_as_current_span(
-                "aioamqp-consumer", span_context=parent_context
+                "aioamqp-consumer", context=parent_context
             ) as span:
                 try:
                     span.set_status(StatusCode.OK)

@@ -3,13 +3,14 @@
 
 
 try:
-    import celery  # noqa: F401
     import contextvars
     from typing import Any, Dict, Tuple
     from urllib import parse
 
+    import celery  # noqa: F401
     from celery import registry, signals
     from opentelemetry import context, trace
+    from opentelemetry.context import get_current
 
     from instana.log import logger
     from instana.propagators.format import Format
@@ -79,7 +80,7 @@ try:
                     Format.HTTP_HEADERS, headers, disable_w3c_trace_context=True
                 )
 
-            span = tracer.start_span("celery-worker", span_context=ctx)
+            span = tracer.start_span("celery-worker", context=ctx)
             span.set_attribute("task", task.name)
             span.set_attribute("task_id", task_id)
             add_broker_attributes(span, task.app.conf["broker_url"])
@@ -148,7 +149,7 @@ try:
             if not tracer:
                 return
 
-            parent_context = parent_span.get_span_context() if parent_span else None
+            parent_context = get_current()
 
             body = kwargs["body"]
             headers = kwargs["headers"]
@@ -156,7 +157,7 @@ try:
             task = registry.tasks.get(task_name)
             task_id = _get_task_id(headers, body)
 
-            span = tracer.start_span("celery-client", span_context=parent_context)
+            span = tracer.start_span("celery-client", context=parent_context)
             span.set_attribute("task", task_name)
             span.set_attribute("task_id", task_id)
             add_broker_attributes(span, task.app.conf["broker_url"])

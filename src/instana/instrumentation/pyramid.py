@@ -36,7 +36,7 @@ try:
             tracer = get_tracer()
             ctx = tracer.extract(Format.HTTP_HEADERS, dict(request.headers))
 
-            with tracer.start_as_current_span("wsgi", span_context=ctx) as span:
+            with tracer.start_as_current_span("wsgi", context=ctx) as span:
                 span.set_attribute(SpanAttributes.HTTP_HOST, request.host)
                 span.set_attribute(SpanAttributes.HTTP_METHOD, request.method)
                 span.set_attribute(SpanAttributes.HTTP_URL, request.path)

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Type, Union
 import flask
 import wrapt
 from opentelemetry import context, trace
+from opentelemetry.context import get_current
 from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
@@ -36,11 +37,10 @@ def render_with_instana(
     if not (hasattr(flask, "g") and hasattr(flask.g, "span")):
         return wrapped(*argv, **kwargs)
 
-    parent_span = flask.g.span
-    parent_context = parent_span.get_span_context()
+    parent_context = get_current()
     tracer = get_tracer()
 
-    with tracer.start_as_current_span("render", span_context=parent_context) as span:
+    with tracer.start_as_current_span("render", context=parent_context) as span:
         try:
             flask_version = tuple(map(int, version("flask").split(".")))
             template = argv[1] if flask_version >= (2, 2, 0) else argv[0]
@@ -102,9 +102,9 @@ def handle_user_exception_with_instana(
 def create_span():
     env = flask.request.environ
     tracer = get_tracer()
-    span_context = tracer.extract(Format.HTTP_HEADERS, env)
+    parent_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-    span = tracer.start_span("wsgi", span_context=span_context)
+    span = tracer.start_span("wsgi", context=parent_context)
     flask.g.span = span
 
     ctx = trace.set_span_in_context(span)

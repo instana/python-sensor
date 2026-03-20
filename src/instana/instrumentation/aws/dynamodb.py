@@ -19,7 +19,7 @@ def create_dynamodb_span(
     parent_context: SpanContext,
 ) -> None:
     tracer = get_tracer()
-    with tracer.start_as_current_span("dynamodb", span_context=parent_context) as span:
+    with tracer.start_as_current_span("dynamodb", context=parent_context) as span:
         try:
             span.set_attribute("dynamodb.op", args[0])
             span.set_attribute("dynamodb.region", instance._client_config.region_name)

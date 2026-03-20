@@ -9,6 +9,7 @@ try:
     import kafka  # noqa: F401
     import wrapt
     from opentelemetry import context, trace
+    from opentelemetry.context import get_current
     from opentelemetry.trace import SpanKind
 
     from instana.log import logger
@@ -35,7 +36,7 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         # Get the topic from either args or kwargs
         topic = args[0] if args else kwargs.get("topic", "")
@@ -51,7 +52,7 @@ try:
         )
 
         with tracer.start_as_current_span(
-            "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
+            "kafka-producer", context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
             span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", "send")
@@ -119,7 +120,8 @@ try:
                 return
 
             parent_context = (
-                parent_span.get_span_context()
+                # parent_span.get_span_context()
+                get_current()
                 if parent_span
                 else tracer.extract(
                     Format.KAFKA_HEADERS,
@@ -128,7 +130,7 @@ try:
                 )
             )
             span = tracer.start_span(
-                "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
+                "kafka-consumer", context=parent_context, kind=SpanKind.CONSUMER
             )
             if topic:
                 span.set_attribute("kafka.service", topic)

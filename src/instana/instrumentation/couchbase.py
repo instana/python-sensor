@@ -8,6 +8,7 @@ https://docs.couchbase.com/python-sdk/2.5/start-using-sdk.html
 
 try:
     import couchbase
+
     from instana.log import logger
 
     if not (
@@ -17,12 +18,12 @@ try:
         logger.debug("Instana supports 2.3.4 <= couchbase_versions < 3.0.0. Skipping.")
         raise ImportError
 
-    from couchbase.bucket import Bucket
-    from couchbase.n1ql import N1QLQuery
-
     from typing import Any, Callable, Dict, Tuple, Union
 
     import wrapt
+    from couchbase.bucket import Bucket
+    from couchbase.n1ql import N1QLQuery
+    from opentelemetry.context import get_current
 
     from instana.span.span import InstanaSpan
     from instana.util.traceutils import get_tracer_tuple
@@ -98,10 +99,10 @@ try:
             if not tracer:
                 return wrapped(*args, **kwargs)
 
-            parent_context = parent_span.get_span_context() if parent_span else None
+            parent_context = get_current()
 
             with tracer.start_as_current_span(
-                "couchbase", span_context=parent_context
+                "couchbase", context=parent_context
             ) as span:
                 collect_attributes(span, instance, None, op)
                 try:
@@ -124,11 +125,9 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span(
-            "couchbase", span_context=parent_context
-        ) as span:
+        with tracer.start_as_current_span("couchbase", context=parent_context) as span:
             try:
                 collect_attributes(span, instance, args[0], "n1ql_query")
                 return wrapped(*args, **kwargs)

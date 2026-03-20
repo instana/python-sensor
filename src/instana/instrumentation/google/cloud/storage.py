@@ -2,12 +2,14 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import wrapt
 import re
-
 from typing import Any, Callable, Dict, Tuple, Union
-from instana.log import logger
+
+import wrapt
+from opentelemetry.context import get_current
+
 from instana.instrumentation.google.cloud.collectors import _storage_api
+from instana.log import logger
 from instana.util.traceutils import get_tracer_tuple
 
 try:
@@ -67,9 +69,9 @@ try:
         if isinstance(instance, storage.Batch) or not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
+        with tracer.start_as_current_span("gcs", context=parent_context) as span:
             try:
                 attributes = _collect_attributes(kwargs)
 
@@ -97,9 +99,9 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
+        with tracer.start_as_current_span("gcs", context=parent_context) as span:
             span.set_attribute("gcs.op", "objects.get")
             span.set_attribute("gcs.bucket", instance.bucket.name)
             span.set_attribute("gcs.object", instance.name)
@@ -133,9 +135,9 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
+        with tracer.start_as_current_span("gcs", context=parent_context) as span:
             span.set_attribute("gcs.op", "objects.insert")
             span.set_attribute("gcs.bucket", instance.bucket.name)
             span.set_attribute("gcs.object", instance.name)
@@ -158,9 +160,9 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("gcs", span_context=parent_context) as span:
+        with tracer.start_as_current_span("gcs", context=parent_context) as span:
             span.set_attribute("gcs.op", "batch")
             span.set_attribute("gcs.projectId", instance._client.project)
             span.set_attribute("gcs.numberOfOperations", len(instance._requests))

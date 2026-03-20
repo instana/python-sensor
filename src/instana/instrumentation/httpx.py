@@ -1,9 +1,11 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+
     import httpx
     import wrapt
-    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Optional
+    from opentelemetry.context import get_current
     from opentelemetry.semconv.trace import SpanAttributes
     from opentelemetry.trace import SpanKind
 
@@ -11,10 +13,7 @@ try:
     from instana.propagators.format import Format
     from instana.singletons import agent
     from instana.util.secrets import strip_secrets_from_query
-    from instana.util.traceutils import (
-        extract_custom_headers,
-        get_tracer_tuple,
-    )
+    from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
     if TYPE_CHECKING:
         from instana.span.span import InstanaSpan
@@ -76,10 +75,10 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         with tracer.start_as_current_span(
-            "httpx", span_context=parent_context, kind=SpanKind.CLIENT
+            "httpx", context=parent_context, kind=SpanKind.CLIENT
         ) as span:
             try:
                 request = args[0]
@@ -105,10 +104,10 @@ try:
         if not tracer:
             return await wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         with tracer.start_as_current_span(
-            "httpx", span_context=parent_context, kind=SpanKind.CLIENT
+            "httpx", context=parent_context, kind=SpanKind.CLIENT
         ) as span:
             try:
                 request = args[0]

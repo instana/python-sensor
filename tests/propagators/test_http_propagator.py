@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict, Generator
 
 import pytest
+from opentelemetry.context.context import Context
 from opentelemetry.trace import (
     INVALID_SPAN_ID,
     INVALID_TRACE_ID,
@@ -13,6 +14,7 @@ from opentelemetry.trace import (
 )
 
 from instana.propagators.http_propagator import HTTPPropagator
+from instana.span.span import get_current_span
 from instana.span_context import SpanContext
 from instana.util.ids import header_to_long_id, internal_id
 
@@ -76,18 +78,22 @@ class TestHTTPPropagator:
         }
 
         ctx = self.hptc.extract(carrier)
+        span_ctx = get_current_span(ctx).get_span_context()
 
-        assert ctx.correlation_id == str(span_id)
-        assert ctx.correlation_type == "web"
-        assert not ctx.instana_ancestor
-        assert ctx.level == 1
-        assert ctx.long_trace_id == header_to_long_id(_instana_long_tracer_id)
-        assert ctx.span_id == _span_id
-        assert not ctx.synthetic
-        assert ctx.trace_id == _trace_id
-        assert ctx.trace_parent
-        assert ctx.traceparent == f"00-{_instana_long_tracer_id}-{_instana_span_id}-01"
-        assert ctx.tracestate == _tracestate
+        assert span_ctx.correlation_id == str(span_id)
+        assert span_ctx.correlation_type == "web"
+        assert span_ctx.level == 1
+        assert span_ctx.long_trace_id == header_to_long_id(_instana_long_tracer_id)
+        assert span_ctx.span_id == _span_id
+        assert span_ctx.trace_id == _trace_id
+        assert span_ctx.trace_parent
+        assert (
+            span_ctx.traceparent
+            == f"00-{_instana_long_tracer_id}-{_instana_span_id}-01"
+        )
+        assert span_ctx.tracestate == _tracestate
+        assert not span_ctx.synthetic
+        assert not span_ctx.instana_ancestor
 
     def test_extract_carrier_list(
         self,
@@ -112,18 +118,22 @@ class TestHTTPPropagator:
         ]
 
         ctx = self.hptc.extract(carrier)
+        span_ctx = get_current_span(ctx).get_span_context()
 
-        assert not ctx.correlation_id
-        assert not ctx.correlation_type
-        assert not ctx.instana_ancestor
-        assert ctx.level == 1
-        assert not ctx.long_trace_id
-        assert ctx.span_id == _span_id
-        assert not ctx.synthetic
-        assert ctx.trace_id == internal_id(_trace_id)
-        assert not ctx.trace_parent
-        assert ctx.traceparent == f"00-{_instana_long_tracer_id}-{_instana_span_id}-01"
-        assert ctx.tracestate == _tracestate
+        assert not span_ctx.correlation_id
+        assert not span_ctx.correlation_type
+        assert not span_ctx.instana_ancestor
+        assert span_ctx.level == 1
+        assert not span_ctx.long_trace_id
+        assert span_ctx.span_id == _span_id
+        assert not span_ctx.synthetic
+        assert span_ctx.trace_id == internal_id(_trace_id)
+        assert not span_ctx.trace_parent
+        assert (
+            span_ctx.traceparent
+            == f"00-{_instana_long_tracer_id}-{_instana_span_id}-01"
+        )
+        assert span_ctx.tracestate == _tracestate
 
     def test_extract_carrier_dict_validate_Exception_None_returned(
         self,
@@ -147,13 +157,15 @@ class TestHTTPPropagator:
         }
 
         ctx = self.hptc.extract(carrier)
+        span_ctx = get_current_span(ctx).get_span_context()
 
-        assert isinstance(ctx, SpanContext)
-        assert ctx.trace_id == INVALID_TRACE_ID
-        assert ctx.span_id == INVALID_SPAN_ID
-        assert not ctx.synthetic
-        assert ctx.correlation_id == str(span_id)
-        assert ctx.correlation_type == "web"
+        assert isinstance(ctx, Context)
+        assert isinstance(span_ctx, SpanContext)
+        assert span_ctx.trace_id == INVALID_TRACE_ID
+        assert span_ctx.span_id == INVALID_SPAN_ID
+        assert not span_ctx.synthetic
+        assert span_ctx.correlation_id == str(span_id)
+        assert span_ctx.correlation_type == "web"
 
     def test_extract_fake_exception(
         self,
@@ -194,18 +206,19 @@ class TestHTTPPropagator:
         }
 
         ctx = self.hptc.extract(carrier)
+        span_ctx = get_current_span(ctx).get_span_context()
 
-        assert not ctx.correlation_id
-        assert ctx.correlation_type == "web"
-        assert not ctx.instana_ancestor
-        assert ctx.level == 1
-        assert ctx.long_trace_id == header_to_long_id(_instana_long_tracer_id)
-        assert ctx.span_id == _span_id
-        assert not ctx.synthetic
-        assert ctx.trace_id == _trace_id
-        assert ctx.trace_parent
-        assert ctx.traceparent == _traceparent
-        assert ctx.tracestate == _tracestate
+        assert not span_ctx.correlation_id
+        assert span_ctx.correlation_type == "web"
+        assert not span_ctx.instana_ancestor
+        assert span_ctx.level == 1
+        assert span_ctx.long_trace_id == header_to_long_id(_instana_long_tracer_id)
+        assert span_ctx.span_id == _span_id
+        assert not span_ctx.synthetic
+        assert span_ctx.trace_id == _trace_id
+        assert span_ctx.trace_parent
+        assert span_ctx.traceparent == _traceparent
+        assert span_ctx.tracestate == _tracestate
 
     def test_extract_carrier_dict_level_header_not_splitable(
         self,
@@ -224,18 +237,19 @@ class TestHTTPPropagator:
         }
 
         ctx = self.hptc.extract(carrier)
+        span_ctx = get_current_span(ctx).get_span_context()
 
-        assert not ctx.correlation_id
-        assert not ctx.correlation_type
-        assert not ctx.instana_ancestor
-        assert ctx.level == 1
-        assert not ctx.long_trace_id
-        assert ctx.span_id == _span_id
-        assert not ctx.synthetic
-        assert ctx.trace_id == internal_id(_trace_id)
-        assert not ctx.trace_parent
-        assert ctx.traceparent == _traceparent
-        assert ctx.tracestate == _tracestate
+        assert not span_ctx.correlation_id
+        assert not span_ctx.correlation_type
+        assert not span_ctx.instana_ancestor
+        assert span_ctx.level == 1
+        assert not span_ctx.long_trace_id
+        assert span_ctx.span_id == _span_id
+        assert not span_ctx.synthetic
+        assert span_ctx.trace_id == internal_id(_trace_id)
+        assert not span_ctx.trace_parent
+        assert span_ctx.traceparent == _traceparent
+        assert span_ctx.tracestate == _tracestate
 
     # The following tests are based on the test cases defined in the
     # tracer_compliance_test_cases.json file.
@@ -283,48 +297,49 @@ class TestHTTPPropagator:
         os.environ["INSTANA_DISABLE_W3C_TRACE_CORRELATION"] = disable_w3c
 
         ctx = self.hptc.extract(carrier_header)
+        span_ctx = get_current_span(ctx).get_span_context()
 
         # Assert the level is (zero) int, not str
-        assert isinstance(ctx.level, int)
-        assert ctx.level == 0
+        assert isinstance(span_ctx.level, int)
+        assert span_ctx.level == 0
 
         # Assert the suppression is on
-        assert ctx.suppression
+        assert span_ctx.suppression
 
         # Assert the rest of the attributes are on their default value
-        assert ctx.trace_id == INVALID_TRACE_ID
-        assert ctx.span_id == INVALID_SPAN_ID
-        assert not ctx.synthetic
-        assert not ctx.correlation_id
-        assert not ctx.trace_parent
-        assert not ctx.instana_ancestor
-        assert not ctx.long_trace_id
-        assert not ctx.correlation_type
-        assert not ctx.correlation_id
+        assert span_ctx.trace_id == INVALID_TRACE_ID
+        assert span_ctx.span_id == INVALID_SPAN_ID
+        assert not span_ctx.synthetic
+        assert not span_ctx.correlation_id
+        assert not span_ctx.trace_parent
+        assert not span_ctx.instana_ancestor
+        assert not span_ctx.long_trace_id
+        assert not span_ctx.correlation_type
+        assert not span_ctx.correlation_id
 
         # Assert that the traceparent is propagated when it is enabled
         if "traceparent" in carrier_header.keys():
-            assert ctx.traceparent
+            assert span_ctx.traceparent
             tp_trace_id = header_to_long_id(carrier_header["traceparent"].split("-")[1])
         else:
-            assert not ctx.traceparent
-            tp_trace_id = ctx.trace_id
+            assert not span_ctx.traceparent
+            tp_trace_id = span_ctx.trace_id
 
         # Assert that the tracestate is propagated when it is enabled
         if "tracestate" in carrier_header.keys():
-            assert ctx.tracestate
+            assert span_ctx.tracestate
         else:
-            assert not ctx.tracestate
+            assert not span_ctx.tracestate
 
         # Simulate the side-effect of starting a span, getting a trace_id and span_id.
         # Actually, with OTel API using a Tuple to store the SpanContext info,
         # this will not change the values.
-        ctx.trace_id = ctx.span_id = trace_id
+        span_ctx.trace_id = span_ctx.span_id = trace_id
 
         # Test propagation
         downstream_carrier = {}
 
-        self.hptc.inject(ctx, downstream_carrier)
+        self.hptc.inject(span_ctx, downstream_carrier)
 
         # Assert the 'X-INSTANA-L' has been injected with the correct 0 value
         assert "X-INSTANA-L" in downstream_carrier
@@ -333,7 +348,7 @@ class TestHTTPPropagator:
         assert "traceparent" in downstream_carrier
         assert (
             downstream_carrier.get("traceparent")
-            == f"00-{format_trace_id(tp_trace_id)}-{format_span_id(ctx.span_id)}-00"
+            == f"00-{format_trace_id(tp_trace_id)}-{format_span_id(span_ctx.span_id)}-00"
         )
 
         # Assert that the tracestate is propagated when it is enabled
@@ -347,7 +362,8 @@ class TestHTTPPropagator:
         _span_id: int,
     ) -> None:
         """
-        Test that span_context.level is updated when the child level (extracted from carrier) is lower than the current span_context.level.
+        Test that span_context.level is updated when the child level (extracted from carrier) is lower than the
+        current span_context.level.
         """
         # Create a span context with level=1
         original_span_context = SpanContext(
@@ -365,16 +381,17 @@ class TestHTTPPropagator:
 
         # Extract the span context from the carrier to verify the level was updated
         extracted_context = self.hptc.extract(carrier_header)
+        span_ctx = get_current_span(extracted_context).get_span_context()
 
         # Verify that the level is 0 (suppressed)
-        assert extracted_context.level == 0
-        assert extracted_context.suppression
+        assert span_ctx.level == 0
+        assert span_ctx.suppression
 
         # Create a new carrier to test the propagation
         downstream_carrier = {}
 
         # Inject the extracted context into the downstream carrier
-        self.hptc.inject(extracted_context, downstream_carrier)
+        self.hptc.inject(span_ctx, downstream_carrier)
 
         # Verify that the downstream carrier has the correct level
         assert downstream_carrier.get("X-INSTANA-L") == "0"

@@ -3,9 +3,9 @@
 
 
 try:
-    import tornado
-    from typing import TYPE_CHECKING, Callable, Tuple, Dict, Any, Coroutine, Optional
+    from typing import TYPE_CHECKING, Any, Callable, Coroutine, Dict, Optional, Tuple
 
+    import tornado
     import wrapt
 
     if TYPE_CHECKING:
@@ -14,10 +14,10 @@ try:
     from opentelemetry.semconv.trace import SpanAttributes
 
     from instana.log import logger
+    from instana.propagators.format import Format
     from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
-    from instana.propagators.format import Format
 
     @wrapt.patch_function_wrapper("tornado.web", "RequestHandler._execute")
     def execute_with_instana(
@@ -27,14 +27,14 @@ try:
         kwargs: Dict[str, Any],
     ) -> Coroutine:
         try:
-            span_context = None
+            parent_context = None
             tracer = get_tracer()
             if instance.request.headers:
-                span_context = tracer.extract(
+                parent_context = tracer.extract(
                     Format.HTTP_HEADERS, dict(instance.request.headers.items())
                 )
 
-            span = tracer.start_span("tornado-server", span_context=span_context)
+            span = tracer.start_span("tornado-server", context=parent_context)
 
             # Query param scrubbing
             if instance.request.query is not None and len(instance.request.query) > 0:

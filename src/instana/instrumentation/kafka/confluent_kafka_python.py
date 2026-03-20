@@ -9,6 +9,7 @@ try:
     import wrapt
     from confluent_kafka import Consumer, Producer
     from opentelemetry import context, trace
+    from opentelemetry.context import get_current
     from opentelemetry.trace import SpanKind
 
     from instana.log import logger
@@ -69,7 +70,7 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         # Get the topic from either args or kwargs
         topic = args[0] if args else kwargs.get("topic", "")
@@ -86,7 +87,7 @@ try:
         )
 
         with tracer.start_as_current_span(
-            "kafka-producer", span_context=parent_context, kind=SpanKind.PRODUCER
+            "kafka-producer", context=parent_context, kind=SpanKind.PRODUCER
         ) as span:
             span.set_attribute("kafka.service", topic)
             span.set_attribute("kafka.access", "produce")
@@ -161,21 +162,27 @@ try:
             if is_suppressed:
                 return
 
+            # parent_context = get_current()
+            # if tracer.exporter.options.kafka_trace_correlation and not exception:
+            #     parent_context = tracer.extract(
+            #         Format.KAFKA_HEADERS,
+            #         headers,
+            #         disable_w3c_trace_context=True,
+            #     )
+
             parent_context = (
-                parent_span.get_span_context()
+                # parent_span.get_span_context()
+                get_current()
                 if parent_span
-                else (
-                    tracer.extract(
-                        Format.KAFKA_HEADERS,
-                        headers,
-                        disable_w3c_trace_context=True,
-                    )
-                    if tracer.exporter.options.kafka_trace_correlation
-                    else None
+                else tracer.extract(
+                    Format.KAFKA_HEADERS,
+                    headers,
+                    disable_w3c_trace_context=True,
                 )
             )
+
             span = tracer.start_span(
-                "kafka-consumer", span_context=parent_context, kind=SpanKind.CONSUMER
+                "kafka-consumer", context=parent_context, kind=SpanKind.CONSUMER
             )
             if topic:
                 span.set_attribute("kafka.service", topic)

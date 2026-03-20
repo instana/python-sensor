@@ -12,6 +12,7 @@ try:
 
     import cassandra
     import wrapt
+    from opentelemetry.context import get_current
 
     from instana.log import logger
     from instana.util.traceutils import get_tracer_tuple
@@ -76,7 +77,7 @@ try:
         if not tracer:
             return
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         attributes = {}
         if isinstance(fn.query, cassandra.query.SimpleStatement):
@@ -89,7 +90,7 @@ try:
 
         with tracer.start_as_current_span(
             "cassandra",
-            span_context=parent_context,
+            context=parent_context,
             attributes=attributes,
             end_on_exit=False,
         ) as span:

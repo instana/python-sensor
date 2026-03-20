@@ -1,29 +1,24 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Type
+
     import aio_pika  # noqa: F401
     import wrapt
-    from typing import (
-        TYPE_CHECKING,
-        Dict,
-        Any,
-        Callable,
-        Tuple,
-        Type,
-        Optional,
-    )
+    from opentelemetry.context import get_current
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.util.traceutils import get_tracer_tuple
     from instana.singletons import get_tracer
+    from instana.util.traceutils import get_tracer_tuple
 
     if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
+        from aio_pika.abc import AbstractMessage, ConsumerTag
         from aio_pika.exchange import Exchange
-        from aiormq.abc import ConfirmationFrameType
-        from aio_pika.abc import ConsumerTag, AbstractMessage
         from aio_pika.queue import Queue, QueueIterator
+        from aiormq.abc import ConfirmationFrameType
+
+        from instana.span.span import InstanaSpan
 
     def _extract_span_attributes(
         span: "InstanaSpan", connection, sort: str, routing_key: str, exchange: str
@@ -41,11 +36,11 @@ try:
         args: Tuple[object],
         kwargs: Dict[str, Any],
     ) -> Optional["ConfirmationFrameType"]:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         if not tracer:
             return await wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         def _bind_args(
             message: Type["AbstractMessage"],
@@ -57,9 +52,7 @@ try:
 
         (message, routing_key, args, kwargs) = _bind_args(*args, **kwargs)
 
-        with tracer.start_as_current_span(
-            "rabbitmq", span_context=parent_context
-        ) as span:
+        with tracer.start_as_current_span("rabbitmq", context=parent_context) as span:
             connection = instance.channel._connection
 
             _extract_span_attributes(
@@ -105,7 +98,7 @@ try:
                 Format.HTTP_HEADERS, message.headers, disable_w3c_trace_context=True
             )
             with tracer.start_as_current_span(
-                "rabbitmq", span_context=parent_context
+                "rabbitmq", context=parent_context
             ) as span:
                 _extract_span_attributes(
                     span, connection, "consume", message.routing_key, message.exchange

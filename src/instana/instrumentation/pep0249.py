@@ -1,16 +1,17 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
 import wrapt
-from typing import TYPE_CHECKING, Dict, Any, List, Tuple, Union, Callable, Optional
+from opentelemetry.context import get_current
+from opentelemetry.semconv.trace import SpanAttributes
 from typing_extensions import Self
 
-from opentelemetry.semconv.trace import SpanAttributes
-
 from instana.log import logger
-from instana.util.traceutils import get_tracer_tuple
 from instana.util.sql import sql_sanitizer
+from instana.util.traceutils import get_tracer_tuple
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
@@ -72,9 +73,9 @@ class CursorWrapper(wrapt.ObjectProxy):
         if not tracer or (operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(sql, params)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
         with tracer.start_as_current_span(
-            self._module_name, span_context=parent_context
+            self._module_name, context=parent_context
         ) as span:
             try:
                 self._collect_kvs(span, sql)
@@ -97,9 +98,9 @@ class CursorWrapper(wrapt.ObjectProxy):
         if not tracer or (operation_name == "sqlalchemy"):
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
         with tracer.start_as_current_span(
-            self._module_name, span_context=parent_context
+            self._module_name, context=parent_context
         ) as span:
             try:
                 self._collect_kvs(span, sql)
@@ -122,9 +123,9 @@ class CursorWrapper(wrapt.ObjectProxy):
         if not tracer or (operation_name == "sqlalchemy"):
             return self.__wrapped__.execute(proc_name, params)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
         with tracer.start_as_current_span(
-            self._module_name, span_context=parent_context
+            self._module_name, context=parent_context
         ) as span:
             try:
                 self._collect_kvs(span, proc_name)

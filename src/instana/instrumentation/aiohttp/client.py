@@ -4,21 +4,23 @@
 
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple
-import wrapt
 
+import wrapt
 from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
 from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import get_tracer_tuple, extract_custom_headers
+from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
 try:
     import aiohttp
+    from opentelemetry.context import get_current
 
     if TYPE_CHECKING:
         from aiohttp.client import ClientSession
+
         from instana.span.span import InstanaSpan
 
     async def stan_request_start(
@@ -31,9 +33,9 @@ try:
                 trace_config_ctx.span_context = None
                 return
 
-            parent_context = parent_span.get_span_context() if parent_span else None
+            parent_context = get_current()
 
-            span = tracer.start_span("aiohttp-client", span_context=parent_context)
+            span = tracer.start_span("aiohttp-client", context=parent_context)
 
             extract_custom_headers(span, params.headers)
 

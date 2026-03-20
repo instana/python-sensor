@@ -7,6 +7,7 @@ try:
 
     import redis
     import wrapt
+    from opentelemetry.context import get_current
 
     from instana.log import logger
     from instana.span.span import InstanaSpan
@@ -49,9 +50,9 @@ try:
         if not tracer or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("redis", span_context=parent_context) as span:
+        with tracer.start_as_current_span("redis", context=parent_context) as span:
             try:
                 collect_attributes(span, instance, args, kwargs)
                 if len(args) > 0:
@@ -76,9 +77,9 @@ try:
         if not tracer or (operation_name in EXCLUDED_PARENT_SPANS):
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("redis", span_context=parent_context) as span:
+        with tracer.start_as_current_span("redis", context=parent_context) as span:
             try:
                 collect_attributes(span, instance, args, kwargs)
                 span.set_attribute("command", "PIPELINE")

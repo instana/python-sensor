@@ -5,6 +5,8 @@
 try:
     from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
+    from opentelemetry.context import get_current
+
     from instana.span_context import SpanContext
 
     if TYPE_CHECKING:
@@ -13,9 +15,7 @@ try:
 
     from instana.log import logger
     from instana.singletons import get_tracer
-    from instana.util.traceutils import (
-        get_tracer_tuple,
-    )
+    from instana.util.traceutils import get_tracer_tuple
 
     operations = {
         "upload_file": "UploadFile",
@@ -32,7 +32,7 @@ try:
         parent_context: SpanContext,
     ) -> None:
         tracer = get_tracer()
-        with tracer.start_as_current_span("s3", span_context=parent_context) as span:
+        with tracer.start_as_current_span("s3", context=parent_context) as span:
             try:
                 span.set_attribute("s3.op", args[0])
                 if "Bucket" in args[1].keys():
@@ -52,9 +52,9 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span("s3", span_context=parent_context) as span:
+        with tracer.start_as_current_span("s3", context=parent_context) as span:
             try:
                 span.set_attribute("s3.op", operations[wrapped.__name__])
                 if "Bucket" in kwargs:

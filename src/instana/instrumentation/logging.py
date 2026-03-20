@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from typing import Any, Callable, Dict, Tuple
 
 import wrapt
+from opentelemetry.context import get_current
 
 from instana.log import logger
 from instana.singletons import agent
@@ -57,10 +58,10 @@ def log_with_instana(
         if t is not None and v is not None:
             parameters = "{} {}".format(t, v)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         # create logging span
-        with tracer.start_as_current_span("log", span_context=parent_context) as span:
+        with tracer.start_as_current_span("log", context=parent_context) as span:
             event_attributes = {"message": msg}
             if parameters is not None:
                 event_attributes.update({"parameters": parameters})

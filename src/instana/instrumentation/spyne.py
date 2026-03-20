@@ -1,30 +1,31 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
-    import spyne  # noqa: F401
-    import wrapt
+    from types import SimpleNamespace
     from typing import (
         TYPE_CHECKING,
-        Dict,
         Any,
         Callable,
-        Tuple,
+        Dict,
         Iterable,
-        Type,
         Optional,
+        Tuple,
+        Type,
     )
 
-    from types import SimpleNamespace
+    import spyne  # noqa: F401
+    import wrapt
 
     from instana.log import logger
-    from instana.singletons import agent, get_tracer
     from instana.propagators.format import Format
+    from instana.singletons import agent, get_tracer
     from instana.util.secrets import strip_secrets_from_query
 
     if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
         from spyne.application import Application
         from spyne.server.wsgi import WsgiApplication
+
+        from instana.span.span import InstanaSpan
 
     def set_span_attributes(span: "InstanaSpan", headers: Dict[str, Any]) -> None:
         if "PATH_INFO" in headers:
@@ -64,11 +65,9 @@ try:
             return wrapped(*args, **kwargs)
 
         headers = ctx.transport.req_env
-        span_context = tracer.extract(Format.HTTP_HEADERS, headers)
+        parent_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
-        with tracer.start_as_current_span(
-            "rpc-server", span_context=span_context
-        ) as span:
+        with tracer.start_as_current_span("rpc-server", context=parent_context) as span:
             set_span_attributes(span, headers)
 
             response_headers = ctx.transport.resp_headers
@@ -111,11 +110,11 @@ try:
         ctx = args[0]
         tracer = get_tracer()
         headers = ctx.transport.req_env
-        span_context = tracer.extract(Format.HTTP_HEADERS, headers)
+        parent_context = tracer.extract(Format.HTTP_HEADERS, headers)
 
         with tracer.start_as_current_span(
             "rpc-server",
-            span_context=span_context,
+            context=parent_context,
             end_on_exit=False,
         ) as span:
             set_span_attributes(span, headers)
@@ -136,4 +135,5 @@ try:
     logger.debug("Instrumenting Spyne")
 
 except ImportError:
+    pass
     pass

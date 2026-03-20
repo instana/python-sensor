@@ -17,6 +17,7 @@ try:
         from grpc._server import _Server
 
     import wrapt
+    from opentelemetry.context import get_current
 
     from instana.log import logger
     from instana.propagators.format import Format
@@ -76,10 +77,10 @@ try:
         if not parent_span.is_recording():
             return wrapped(*argv, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         with tracer.start_as_current_span(
-            "rpc-client", span_context=parent_context, record_exception=record_exception
+            "rpc-client", context=parent_context, record_exception=record_exception
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -196,7 +197,7 @@ try:
             Format.BINARY, metadata_dict, disable_w3c_trace_context=True
         )
 
-        with tracer.start_as_current_span("rpc-server", span_context=ctx) as span:
+        with tracer.start_as_current_span("rpc-server", context=ctx) as span:
             try:
                 collect_attributes(span, instance, argv, kwargs)
                 rv = wrapped(*argv, **kwargs)

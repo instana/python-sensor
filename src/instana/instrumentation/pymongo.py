@@ -2,13 +2,14 @@
 # (c) Copyright Instana Inc. 2020
 
 
-from instana.span.span import InstanaSpan
 from instana.log import logger
+from instana.span.span import InstanaSpan
 from instana.util.traceutils import get_tracer_tuple
 
 try:
     import pymongo
     from bson import json_util
+    from opentelemetry.context import get_current
     from opentelemetry.semconv.trace import SpanAttributes
 
     class MongoCommandTracer(pymongo.monitoring.CommandListener):
@@ -20,11 +21,9 @@ try:
             # return early if we're not tracing
             if not tracer:
                 return
-            parent_context = parent_span.get_span_context() if parent_span else None
+            parent_context = get_current()
 
-            with tracer.start_as_current_span(
-                "mongo", span_context=parent_context
-            ) as span:
+            with tracer.start_as_current_span("mongo", context=parent_context) as span:
                 self._collect_connection_tags(span, event)
                 self._collect_command_tags(span, event)
 

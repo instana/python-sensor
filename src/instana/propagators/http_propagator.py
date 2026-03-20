@@ -2,12 +2,15 @@
 # (c) Copyright Instana Inc. 2020
 
 
-from instana.log import logger
-from instana.propagators.base_propagator import BasePropagator
-from instana.util.ids import define_server_timing, hex_id_limited
-from instana.span_context import SpanContext
+from typing import Any
 
 from opentelemetry.trace.span import format_span_id
+
+from instana.log import logger
+from instana.propagators.base_propagator import BasePropagator, CarrierT
+from instana.span_context import SpanContext
+from instana.util.ids import define_server_timing, hex_id_limited
+
 
 class HTTPPropagator(BasePropagator):
     """
@@ -17,17 +20,24 @@ class HTTPPropagator(BasePropagator):
     The character set should be restricted to HTTP compatible.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(HTTPPropagator, self).__init__()
 
-    def inject(self, span_context, carrier, disable_w3c_trace_context=False):
+    def inject(
+        self,
+        span_context: SpanContext,
+        carrier: CarrierT,
+        disable_w3c_trace_context: bool = False,
+    ) -> None:
         trace_id = span_context.trace_id
         span_id = span_context.span_id
         dictionary_carrier = self.extract_headers_dict(carrier)
         if dictionary_carrier:
             # Suppression `level` made in the child context or in the parent context
             # has priority over any non-suppressed `level` setting
-            child_level = int(self.extract_instana_headers(dictionary_carrier)[2] or "1")
+            child_level = int(
+                self.extract_instana_headers(dictionary_carrier)[2] or "1"
+            )
             new_level = min(child_level, span_context.level)
 
             if new_level != span_context.level:
@@ -46,7 +56,7 @@ class HTTPPropagator(BasePropagator):
                     correlation_type=span_context.correlation_type,
                     correlation_id=span_context.correlation_id,
                     traceparent=span_context.traceparent,
-                    tracestate=span_context.tracestate
+                    tracestate=span_context.tracestate,
                 )
 
         serializable_level = str(span_context.level)
@@ -54,13 +64,15 @@ class HTTPPropagator(BasePropagator):
         if disable_w3c_trace_context:
             traceparent, tracestate = [None] * 2
         else:
-            traceparent, tracestate = self._get_participating_trace_context(span_context)
+            traceparent, tracestate = self._get_participating_trace_context(
+                span_context
+            )
 
-        def inject_key_value(carrier, key, value):
+        def inject_key_value(carrier: CarrierT, key: str, value: Any) -> None:
             if isinstance(carrier, list):
                 carrier.append((key, value))
-            elif isinstance(carrier, dict) or '__setitem__' in dir(carrier):
-                carrier[key] = value
+            elif isinstance(carrier, dict) or "__setitem__" in dir(carrier):
+                carrier[key] = value  # type: ignore[index]
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

@@ -2,11 +2,13 @@
 # (c) Copyright Instana Inc. 2020
 
 
-from instana.log import logger
-from instana.propagators.base_propagator import BasePropagator
+from typing import Optional
 
 from opentelemetry.trace.span import format_span_id
 
+from instana.log import logger
+from instana.propagators.base_propagator import BasePropagator, CarrierT
+from instana.span_context import SpanContext
 from instana.util.ids import define_server_timing
 
 
@@ -18,17 +20,22 @@ class TextPropagator(BasePropagator):
     The character set is unrestricted.
     """
 
-    def inject(self, span_context, carrier, disable_w3c_trace_context=True):
+    def inject(
+        self,
+        span_context: SpanContext,
+        carrier: CarrierT,
+        disable_w3c_trace_context: bool = True,
+    ) -> Optional[CarrierT]:
         try:
             trace_id = format_span_id(span_context.trace_id)
             span_id = format_span_id(span_context.span_id)
             server_timing = define_server_timing(span_context.trace_id).encode()
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
-                carrier[self.LC_HEADER_KEY_T] = trace_id
-                carrier[self.LC_HEADER_KEY_S] = span_id
-                carrier[self.LC_HEADER_KEY_L] = "1"
-                carrier[self.LC_HEADER_KEY_SERVER_TIMING] = server_timing
+                carrier[self.LC_HEADER_KEY_T] = trace_id  # type: ignore[index]
+                carrier[self.LC_HEADER_KEY_S] = span_id  # type: ignore[index]
+                carrier[self.LC_HEADER_KEY_L] = "1"  # type: ignore[index]
+                carrier[self.LC_HEADER_KEY_SERVER_TIMING] = server_timing  # type: ignore[index]
             elif isinstance(carrier, list):
                 carrier.append((self.LC_HEADER_KEY_T, trace_id))
                 carrier.append((self.LC_HEADER_KEY_S, span_id))
@@ -38,8 +45,10 @@ class TextPropagator(BasePropagator):
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_T, trace_id),))
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_S, span_id),))
                 carrier = carrier.__add__(((self.LC_HEADER_KEY_L, "1"),))
-                carrier = carrier.__add__(((self.LC_HEADER_KEY_SERVER_TIMING, server_timing),))
-            elif hasattr(carrier, '__setitem__'):
+                carrier = carrier.__add__(
+                    ((self.LC_HEADER_KEY_SERVER_TIMING, server_timing),)
+                )
+            elif hasattr(carrier, "__setitem__"):
                 carrier.__setitem__(self.LC_HEADER_KEY_T, trace_id)
                 carrier.__setitem__(self.LC_HEADER_KEY_S, span_id)
                 carrier.__setitem__(self.LC_HEADER_KEY_L, "1")

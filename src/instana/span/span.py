@@ -241,7 +241,7 @@ INVALID_SPAN_CONTEXT = SpanContext(
 INVALID_SPAN = NonRecordingSpan(INVALID_SPAN_CONTEXT)
 
 
-def get_current_span(context: Optional[Context] = None) -> InstanaSpan:
+def get_current_span(context: Optional[Context] = None) -> Union[InstanaSpan, Span]:
     """Retrieve the current span.
 
     Args:
@@ -252,6 +252,6 @@ def get_current_span(context: Optional[Context] = None) -> InstanaSpan:
         The Span set in the context if it exists. INVALID_SPAN otherwise.
     """
     span = get_value(_SPAN_KEY, context=context)
-    if span is None or not isinstance(span, InstanaSpan):
+    if span is None or not isinstance(span, (InstanaSpan, Span)):
         return INVALID_SPAN
     return span

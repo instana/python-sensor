@@ -6,11 +6,14 @@ from typing import Generator
 from unittest.mock import patch
 
 import pytest
+from opentelemetry.context.context import Context
+from opentelemetry.trace.span import NonRecordingSpan, Span
 from opentelemetry.trace.status import Status, StatusCode
 
 from instana.recorder import StanRecorder
 from instana.span.span import INVALID_SPAN, Event, InstanaSpan, get_current_span
 from instana.span_context import SpanContext
+from instana.tracer import InstanaTracerProvider
 
 
 class TestSpan:
@@ -837,12 +840,50 @@ class TestSpan:
             self.span.assure_errored()
             assert not self.span.attributes
 
-    def test_get_current_span(self, context: SpanContext) -> None:
+    def test_get_current_span(self, context: Context) -> None:
         self.span = get_current_span(context)
         assert isinstance(self.span, InstanaSpan)
 
     def test_get_current_span_INVALID_SPAN(self) -> None:
         self.span = get_current_span()
+
+        assert self.span
+        assert self.span == INVALID_SPAN
+
+    def test_get_current_span_OtelSpan(
+        self,
+        span_context: SpanContext,
+    ) -> None:
+        """Test get_current_span when get_value returns an OpenTelemetry Span object.
+
+        This test verifies that get_current_span() properly handles when get_value()
+        returns a generic OpenTelemetry Span (NonRecordingSpan) that is not an InstanaSpan.
+        """
+        # Create a mock OpenTelemetry Span (NonRecordingSpan)
+        mock_otel_span = NonRecordingSpan(span_context)
+
+        # Mock get_value to return the OpenTelemetry Span
+        with patch("instana.span.span.get_value", return_value=mock_otel_span):
+            self.span = get_current_span()
+
+        assert self.span
+        assert self.span == mock_otel_span
+        assert isinstance(self.span, NonRecordingSpan)
+        assert isinstance(self.span, Span)
+        assert not isinstance(self.span, InstanaSpan)
+
+    def test_get_current_span_NoSpan(
+        self,
+        tracer_provider: InstanaTracerProvider,
+    ) -> None:
+        """Test get_current_span when get_value returns an different object.
+
+        This test verifies that get_current_span() properly handles when get_value()
+        returns a generic object that is not an OpenTelemetry Span nor an InstanaSpan.
+        """
+        # Mock get_value to return something that is not an OpenTelemetry Span nor an InstanaSpan.
+        with patch("instana.span.span.get_value", return_value=tracer_provider):
+            self.span = get_current_span()
 
         assert self.span
         assert self.span == INVALID_SPAN

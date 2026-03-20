@@ -1,17 +1,14 @@
 # (c) Copyright IBM Corp. 2024
 
 import pytest
+from opentelemetry.context.context import Context
 from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE
 
 from instana.agent.host import HostAgent
 from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler
-from instana.span.span import (
-    INVALID_SPAN,
-    INVALID_SPAN_ID,
-    InstanaSpan,
-    get_current_span,
-)
+from instana.span.span import (INVALID_SPAN, INVALID_SPAN_ID, InstanaSpan,
+                               get_current_span)
 from instana.span_context import SpanContext
 from instana.tracer import InstanaTracer, InstanaTracerProvider
 
@@ -31,7 +28,7 @@ def test_tracer_defaults(tracer_provider: InstanaTracerProvider) -> None:
 
 
 def test_tracer_start_span(
-    tracer_provider: InstanaTracerProvider, span_context: SpanContext
+    tracer_provider: InstanaTracerProvider, context: Context
 ) -> None:
     span_name = "test-span"
     tracer = InstanaTracer(
@@ -40,7 +37,7 @@ def test_tracer_start_span(
         tracer_provider._exporter,
         tracer_provider._propagators,
     )
-    span = tracer.start_span(name=span_name, span_context=span_context)
+    span = tracer.start_span(name=span_name, context=context)
 
     assert span
     assert isinstance(span, InstanaSpan)
@@ -49,7 +46,7 @@ def test_tracer_start_span(
 
 
 def test_tracer_start_span_Exception(
-    mocker, tracer_provider: InstanaTracerProvider, span_context: SpanContext
+    mocker, tracer_provider: InstanaTracerProvider, context: Context
 ) -> None:
     span_name = "test-span"
     tracer = InstanaTracer(
@@ -64,7 +61,7 @@ def test_tracer_start_span_Exception(
         return_value={"key": "value"},
     )
     with pytest.raises(AttributeError):
-        tracer.start_span(name=span_name, span_context=span_context)
+        tracer.start_span(name=span_name, context=context)
 
 
 def test_tracer_start_as_current_span(tracer_provider: InstanaTracerProvider) -> None:
@@ -140,5 +137,3 @@ def test_tracer_create_span_context_root(
     assert new_span_context.trace_id <= _SPAN_ID_MAX_VALUE
 
     assert new_span_context.trace_id == new_span_context.span_id
-
-

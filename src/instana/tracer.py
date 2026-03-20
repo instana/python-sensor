@@ -3,7 +3,6 @@
 
 
 import time
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator, Mapping, Optional, Type, Union
 
 from opentelemetry.context.context import Context
@@ -16,6 +15,7 @@ from opentelemetry.trace import (
     use_span,
 )
 from opentelemetry.util import types
+from opentelemetry.util._decorator import _agnosticcontextmanager
 
 from instana.agent.host import HostAgent
 from instana.log import logger
@@ -32,6 +32,8 @@ from instana.span_context import SpanContext
 from instana.util.ids import generate_id
 
 if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
     from instana.agent.base import BaseAgent
     from instana.propagators.base_propagator import BasePropagator, CarrierT
 
@@ -108,7 +110,7 @@ class InstanaTracer(Tracer):
     def start_span(
         self,
         name: str,
-        span_context: Optional[SpanContext] = None,
+        context: Optional[Context] = None,
         kind: SpanKind = SpanKind.INTERNAL,
         attributes: types.Attributes = None,
         links: _Links = None,
@@ -116,9 +118,7 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
-        parent_context = (
-            span_context if span_context else get_current_span().get_span_context()
-        )
+        parent_context = get_current_span(context).get_span_context()
 
         if parent_context and not isinstance(parent_context, SpanContext):
             raise TypeError("parent_context must be an Instana SpanContext or None.")
@@ -136,11 +136,11 @@ class InstanaTracer(Tracer):
 
         return span
 
-    @contextmanager
+    @_agnosticcontextmanager
     def start_as_current_span(
         self,
         name: str,
-        span_context: Optional[SpanContext] = None,
+        context: Optional[Context] = None,
         kind: SpanKind = SpanKind.INTERNAL,
         attributes: types.Attributes = None,
         links: _Links = None,
@@ -148,10 +148,10 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
         end_on_exit: bool = True,
-    ) -> Iterator[InstanaSpan]:
+    ) -> Iterator["Span"]:
         span = self.start_span(
             name=name,
-            span_context=span_context,
+            context=context,
             kind=kind,
             attributes=attributes,
             links=links,
@@ -167,7 +167,9 @@ class InstanaTracer(Tracer):
         ) as span:
             yield span
 
-    def _create_span_context(self, parent_context: SpanContext) -> SpanContext:
+    def _create_span_context(
+        self, parent_context: Optional[SpanContext] = None
+    ) -> SpanContext:
         """Creates a new SpanContext based on the given parent context."""
 
         if parent_context and parent_context.is_valid:

@@ -3,8 +3,15 @@
 
 
 import os
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
-from typing import Any, Optional, TypeVar, Dict, List, Tuple
+from opentelemetry.context.context import Context
+from opentelemetry.trace import (
+    INVALID_SPAN_ID,
+    INVALID_TRACE_ID,
+    NonRecordingSpan,
+    set_span_in_context,
+)
 
 from instana.log import logger
 from instana.span_context import SpanContext
@@ -12,17 +19,12 @@ from instana.util.ids import (
     header_to_id,
     header_to_long_id,
     hex_id,
+    hex_id_limited,
     internal_id,
     internal_id_limited,
-    hex_id_limited,
 )
 from instana.w3c_trace_context.traceparent import Traceparent
 from instana.w3c_trace_context.tracestate import Tracestate
-
-from opentelemetry.trace import (
-    INVALID_SPAN_ID,
-    INVALID_TRACE_ID,
-)
 
 # The carrier, typed here as CarrierT, can be a dict, a list, or a tuple.
 # Using the trace header as an example, it can be in the following forms
@@ -399,7 +401,7 @@ class BasePropagator(object):
 
     def extract(
         self, carrier: CarrierT, disable_w3c_trace_context: bool = False
-    ) -> Optional[SpanContext]:
+    ) -> Optional[Context]:
         """
         This method overrides one of the Base classes as with the introduction
         of W3C trace context for the HTTP requests more extracting steps and
@@ -441,7 +443,9 @@ class BasePropagator(object):
                 tracestate,
                 disable_w3c_trace_context,
             )
-            return span_context
+
+            context = set_span_in_context(NonRecordingSpan(span_context), Context())
+            return context
 
         except Exception:
             logger.debug("base_propagator extract error:", exc_info=True)

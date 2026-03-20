@@ -1,12 +1,14 @@
 # (c) Copyright IBM Corp. 2025
 from typing import Any, Dict, Optional
 
+from opentelemetry.context.context import Context
 from opentelemetry.trace.span import format_span_id
 
 from instana.log import logger
 from instana.propagators.base_propagator import BasePropagator, CarrierT
-from instana.util.ids import hex_id_limited
 from instana.span_context import SpanContext
+from instana.util.ids import hex_id_limited
+
 
 class KafkaPropagator(BasePropagator):
     """
@@ -50,7 +52,7 @@ class KafkaPropagator(BasePropagator):
 
     def extract(
         self, carrier: CarrierT, disable_w3c_trace_context: bool = False
-    ) -> Optional[SpanContext]:
+    ) -> Optional[Context]:
         """
         This method overrides one of the Base classes as with the introduction
         of W3C trace context for the Kafka requests more extracting steps and
@@ -61,7 +63,7 @@ class KafkaPropagator(BasePropagator):
             disable_w3c_trace_context (bool): A flag to disable the W3C trace context.
 
         Returns:
-            Optional[SpanContext]: The extracted span context or None.
+            Optional[Context]: The extracted span context or None.
         """
         try:
             headers = self.extract_carrier_headers(carrier=carrier)
@@ -118,7 +120,7 @@ class KafkaPropagator(BasePropagator):
                     correlation_type=span_context.correlation_type,
                     correlation_id=span_context.correlation_id,
                     traceparent=span_context.traceparent,
-                    tracestate=span_context.tracestate
+                    tracestate=span_context.tracestate,
                 )
 
         def inject_key_value(carrier, key, value):

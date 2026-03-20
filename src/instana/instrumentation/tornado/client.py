@@ -3,25 +3,28 @@
 
 
 try:
-    import tornado
-
-    import wrapt
     import functools
-    from typing import TYPE_CHECKING, Dict, Any, Callable, Tuple
+    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+
+    import tornado
+    import wrapt
 
     if TYPE_CHECKING:
-        from instana.span.span import InstanaSpan
         from asyncio import Future
+
         from tornado.httpclient import AsyncHTTPClient
 
+        from instana.span.span import InstanaSpan
+
+    from opentelemetry.context import get_current
     from opentelemetry.semconv.trace import SpanAttributes
 
     from instana.log import logger
+    from instana.propagators.format import Format
     from instana.singletons import agent, get_tracer
+    from instana.span.span import get_current_span
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
-    from instana.propagators.format import Format
-    from instana.span.span import get_current_span
 
     @wrapt.patch_function_wrapper("tornado.httpclient", "AsyncHTTPClient.fetch")
     def fetch_with_instana(
@@ -53,9 +56,9 @@ try:
                         new_kwargs[param] = kwargs.pop(param)
                 kwargs = new_kwargs
 
-            parent_context = parent_span.get_span_context() if parent_span else None
+            parent_context = get_current()
             tracer = get_tracer()
-            span = tracer.start_span("tornado-client", span_context=parent_context)
+            span = tracer.start_span("tornado-client", context=parent_context)
 
             extract_custom_headers(span, request.headers)
 
@@ -97,5 +100,7 @@ try:
                 span.end()
 
     logger.debug("Instrumenting tornado client")
+except ImportError:
+    pass
 except ImportError:
     pass

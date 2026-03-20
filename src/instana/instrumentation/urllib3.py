@@ -5,16 +5,14 @@
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 import wrapt
+from opentelemetry.context import get_current
 from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.log import logger
 from instana.propagators.format import Format
 from instana.singletons import agent
 from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import (
-    get_tracer_tuple,
-    extract_custom_headers,
-)
+from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
 if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
@@ -99,11 +97,9 @@ try:
         if not tracer or span_name == "boto3":
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
-        with tracer.start_as_current_span(
-            "urllib3", span_context=parent_context
-        ) as span:
+        with tracer.start_as_current_span("urllib3", context=parent_context) as span:
             try:
                 kvs = _collect_kvs(instance, args, kwargs)
                 if "url" in kvs:

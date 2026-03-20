@@ -5,10 +5,10 @@
 Instana WSGI Middleware
 """
 
-from typing import Dict, Any, Callable, List, Tuple, Optional, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry import context, trace
+from opentelemetry.semconv.trace import SpanAttributes
 
 from instana.propagators.format import Format
 from instana.singletons import agent, get_tracer
@@ -30,8 +30,8 @@ class InstanaWSGIMiddleware(object):
         tracer = get_tracer()
 
         # Extract context and start span
-        span_context = tracer.extract(Format.HTTP_HEADERS, env)
-        span = tracer.start_span("wsgi", span_context=span_context)
+        parent_context = tracer.extract(Format.HTTP_HEADERS, env)
+        span = tracer.start_span("wsgi", context=parent_context)
 
         # Attach context - this makes the span current
         ctx = trace.set_span_in_context(span)

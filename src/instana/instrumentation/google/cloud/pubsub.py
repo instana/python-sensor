@@ -5,6 +5,7 @@
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
 import wrapt
+from opentelemetry.context import get_current
 
 from instana.log import logger
 from instana.propagators.format import Format
@@ -54,10 +55,10 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         with tracer.start_as_current_span(
-            "gcps-producer", span_context=parent_context
+            "gcps-producer", context=parent_context
         ) as span:
             # trace continuity, inject to the span context
             headers = {}
@@ -106,7 +107,7 @@ try:
                 parent_context = None
 
             with tracer.start_as_current_span(
-                "gcps-consumer", span_context=parent_context
+                "gcps-consumer", context=parent_context
             ) as span:
                 _set_consumer_attributes(span, subscription_path=args[0])
                 try:

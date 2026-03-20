@@ -4,6 +4,7 @@
 try:
     from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Tuple, Type
 
+    from opentelemetry.context import get_current
     from opentelemetry.semconv.trace import SpanAttributes
 
     from instana.instrumentation.aws.dynamodb import create_dynamodb_span
@@ -23,10 +24,7 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.singletons import get_tracer
-    from instana.util.traceutils import (
-        extract_custom_headers,
-        get_tracer_tuple,
-    )
+    from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
     def lambda_inject_context(
         tracer: "InstanaTracer",
@@ -74,16 +72,14 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        parent_context = parent_span.get_span_context() if parent_span else None
+        parent_context = get_current()
 
         if instance.meta.service_model.service_name == "dynamodb":
             create_dynamodb_span(wrapped, instance, args, kwargs, parent_context)
         elif instance.meta.service_model.service_name == "s3":
             create_s3_span(wrapped, instance, args, kwargs, parent_context)
         else:
-            with tracer.start_as_current_span(
-                "boto3", span_context=parent_context
-            ) as span:
+            with tracer.start_as_current_span("boto3", context=parent_context) as span:
                 operation = args[0]
                 payload = args[1]
 

@@ -34,7 +34,7 @@ try:
                     Format.HTTP_HEADERS, dict(instance.request.headers.items())
                 )
 
-            span = tracer.start_span("tornado-server", span_context=span_context)
+            span = tracer.start_span("tornado-server", context=span_context)
 
             # Query param scrubbing
             if instance.request.query is not None and len(instance.request.query) > 0:

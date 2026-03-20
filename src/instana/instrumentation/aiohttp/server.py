@@ -32,7 +32,7 @@ try:
             tracer = get_tracer()
             span_context = tracer.extract(Format.HTTP_HEADERS, request.headers)
             span: "InstanaSpan" = tracer.start_span(
-                "aiohttp-server", span_context=span_context
+                "aiohttp-server", context=span_context
             )
             request["span"] = span
 

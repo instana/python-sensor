@@ -31,7 +31,7 @@ routes = [
 starlette_server = Starlette(
     debug=True,
     routes=routes,
-    on_startup=[startup],
+    lifespan=startup,
     middleware=[
         Middleware(
             TrustedHostMiddleware,

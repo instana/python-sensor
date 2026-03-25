@@ -27,6 +27,7 @@ from opentelemetry.trace import (
     INVALID_SPAN_ID,
     INVALID_TRACE_ID,
     Span,
+    SpanKind,
 )
 from opentelemetry.trace.span import NonRecordingSpan
 from opentelemetry.trace.status import Status, StatusCode
@@ -52,6 +53,7 @@ class InstanaSpan(Span, ReadableSpan):
         attributes: types.Attributes = {},
         events: Sequence[Event] = [],
         status: Optional[Status] = Status(StatusCode.UNSET),
+        kind: SpanKind = SpanKind.INTERNAL,
     ) -> None:
         super().__init__(
             name=name,
@@ -62,7 +64,7 @@ class InstanaSpan(Span, ReadableSpan):
             attributes=attributes,
             events=events,
             status=status,
-            # kind=kind,
+            kind=kind,
         )
         self._span_processor = span_processor
         self._lock = Lock()
@@ -190,7 +192,7 @@ class InstanaSpan(Span, ReadableSpan):
             events=self.events,
             status=self.status,
             stack=self.stack,
-            # kind=self.kind,
+            kind=self.kind,
         )
 
     def end(self, end_time: Optional[int] = None) -> None:

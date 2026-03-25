@@ -1,8 +1,9 @@
 # (c) Copyright IBM Corp. 2024
 
 from time import time_ns
-from typing import Optional, Sequence, List
+from typing import List, Optional, Sequence
 
+from opentelemetry.trace import SpanKind
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
 
@@ -56,6 +57,7 @@ class ReadableSpan:
         events: Sequence[Event] = [],
         status: Optional[Status] = Status(StatusCode.UNSET),
         stack: Optional[List] = None,
+        kind: SpanKind = SpanKind.INTERNAL,
     ) -> None:
         self._name = name
         self._context = context
@@ -74,6 +76,7 @@ class ReadableSpan:
         self.synthetic = False
         if context.synthetic:
             self.synthetic = True
+        self._kind = kind
 
     @property
     def name(self) -> str:
@@ -110,3 +113,7 @@ class ReadableSpan:
     @property
     def parent_id(self) -> int:
         return self._parent_id
+
+    @property
+    def kind(self) -> SpanKind:
+        return self._kind

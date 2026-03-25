@@ -131,6 +131,7 @@ class InstanaTracer(Tracer):
             parent_id=(None if parent_context is None else parent_context.span_id),
             start_time=(time.time_ns() if start_time is None else start_time),
             attributes=attributes,
+            kind=kind,
             # events: Sequence[Event] = None,
         )
 

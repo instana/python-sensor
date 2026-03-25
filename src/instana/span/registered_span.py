@@ -24,18 +24,22 @@ class RegisteredSpan(BaseSpan):
         # pylint: disable=invalid-name
         super(RegisteredSpan, self).__init__(span, source, **kwargs)
         self.n = span.name
-        self.k = SpanKind.SERVER  # entry -> Server span represents a synchronous incoming remote call such as an incoming HTTP request
-
+        self.k = span.kind
         self.data["service"] = service_name
+
         if span.name in ENTRY_SPANS:
-            # entry
+            # Entry spans - Server span represents a synchronous incoming remote call such as an incoming HTTP request.
+            self.k = SpanKind.SERVER
             self._populate_entry_span_data(span)
             self._populate_extra_span_attributes(span)
         elif span.name in EXIT_SPANS:
-            self.k = SpanKind.CLIENT  # exit -> Client span represents a synchronous outgoing remote call such as an outgoing HTTP request or database call
+            # Exit spans - Client span represents a synchronous outgoing remote call such as an outgoing HTTP request
+            # or a database call.
+            self.k = SpanKind.CLIENT
             self._populate_exit_span_data(span)
         elif span.name in LOCAL_SPANS:
-            self.k = SpanKind.INTERNAL  # intermediate -> Internal span represents an internal operation within an application
+            # Intermediate or SDK spans - Internal span represents an internal operation within an application.
+            self.k = SpanKind.INTERNAL
             self._populate_local_span_data(span)
 
         if "rabbitmq" in self.data and self.data["rabbitmq"]["sort"] == "publish":

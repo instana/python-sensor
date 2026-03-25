@@ -495,3 +495,70 @@ class TestRegisteredSpan:
 
         assert excepted_result["kafka.service"] == reg_span.data["kafka"]["service"]
         assert excepted_result["kafka.access"] == reg_span.data["kafka"]["access"]
+
+    @pytest.mark.parametrize(
+        "span_name, expected_kind",
+        [
+            ("wsgi", SpanKind.SERVER),
+            ("django", SpanKind.SERVER),
+            ("rabbitmq", SpanKind.SERVER),
+            ("redis", SpanKind.CLIENT),
+            ("mysql", SpanKind.CLIENT),
+            ("mongodb", SpanKind.CLIENT),
+            ("urllib", SpanKind.CLIENT),
+            ("asyncio", SpanKind.INTERNAL),
+            ("render", SpanKind.INTERNAL),
+            ("gcps-producer", SpanKind.CLIENT),
+            ("gcps-consumer", SpanKind.SERVER),
+            ("kafka-producer", SpanKind.CLIENT),
+            ("kafka-consumer", SpanKind.SERVER),
+        ],
+    )
+    def test_registered_span_kind_from_instana_span(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+        span_name: str,
+        expected_kind: SpanKind,
+    ) -> None:
+        """Test that RegisteredSpan uses kind from InstanaSpan when provided."""
+        service_name = "test-service"
+
+        # Create InstanaSpan with explicit kind
+        self.span = InstanaSpan(
+            span_name, span_context, span_processor, kind=expected_kind
+        )
+        reg_span = RegisteredSpan(self.span, None, service_name)
+
+        # Verify RegisteredSpan has correct kind for ENTRY span
+        assert reg_span.k == expected_kind
+
+        # Verify name unification
+        if "gcps" in span_name:
+            assert reg_span.n == "gcps"
+        elif "kafka" in span_name:
+            assert reg_span.n == "kafka"
+        else:
+            assert reg_span.n == span_name
+
+    def test_registered_span_rabbitmq_publish_override(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        """Test that rabbitmq with sort=publish overrides to SpanKind.CLIENT."""
+        span_name = "rabbitmq"
+        attributes = {"sort": "publish"}
+
+        self.span = InstanaSpan(
+            span_name,
+            span_context,
+            span_processor,
+            kind=SpanKind.SERVER,
+            attributes=attributes,
+        )
+        reg_span = RegisteredSpan(self.span, None, "test-service")
+
+        # Should be overridden to CLIENT for publish operation
+        assert reg_span.k == SpanKind.CLIENT
+        assert reg_span.data["rabbitmq"]["sort"] == "publish"

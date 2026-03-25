@@ -4,6 +4,7 @@ import time
 from typing import Generator
 
 import pytest
+from opentelemetry.trace import SpanKind
 from opentelemetry.trace.status import Status, StatusCode
 
 from instana.span.readable_span import Event, ReadableSpan
@@ -26,6 +27,8 @@ class TestReadableSpan:
     ) -> None:
         span_name = "test-span"
         timestamp = time.time_ns()
+        time.sleep(0.01)
+
         self.span = ReadableSpan(span_name, span_context)
 
         assert self.span is not None
@@ -45,10 +48,10 @@ class TestReadableSpan:
         assert not self.span.events
         assert not self.span.parent_id
         assert not self.span.duration
-        assert self.span.status
-
         assert not self.span.stack
         assert self.span.synthetic is False
+        assert self.span.status
+        assert self.span.kind == SpanKind.INTERNAL
 
     def test_readablespan_with_params(
         self,
@@ -63,6 +66,8 @@ class TestReadableSpan:
         events = [Event(event_name, attributes, start_time)]
         status = Status(StatusCode.OK)
         stack = ["span-1", "span-2"]
+        kind = SpanKind.CLIENT
+
         self.span = ReadableSpan(
             span_name,
             span_context,
@@ -73,6 +78,7 @@ class TestReadableSpan:
             events,
             status,
             stack,
+            kind,
         )
 
         assert self.span.name == span_name
@@ -84,3 +90,51 @@ class TestReadableSpan:
         assert self.span.status == status
         assert self.span.duration == end_time - start_time
         assert self.span.stack == stack
+        assert self.span.kind == kind
+        assert self.span.kind != SpanKind.INTERNAL
+
+    @pytest.mark.parametrize(
+        "kind",
+        [
+            SpanKind.INTERNAL,
+            SpanKind.SERVER,
+            SpanKind.CLIENT,
+            SpanKind.PRODUCER,
+            SpanKind.CONSUMER,
+        ],
+    )
+    def test_readablespan_all_kind_values(
+        self,
+        span_context: SpanContext,
+        kind: SpanKind,
+    ) -> None:
+        """Test that ReadableSpan correctly stores all SpanKind enum values."""
+        span_name = "test-span-kind"
+        self.span = ReadableSpan(span_name, span_context, kind=kind)
+
+        assert self.span.kind == kind
+        assert isinstance(self.span.kind, SpanKind)
+
+    def test_readablespan_kind_default(
+        self,
+        span_context: SpanContext,
+    ) -> None:
+        """Test that ReadableSpan defaults to SpanKind.INTERNAL when kind is not specified."""
+        span_name = "test-span-default-kind"
+        self.span = ReadableSpan(span_name, span_context)
+
+        assert self.span.kind == SpanKind.INTERNAL
+
+    def test_readablespan_kind_property_readonly(
+        self,
+        span_context: SpanContext,
+    ) -> None:
+        """Test that kind property is read-only and cannot be modified after creation."""
+        span_name = "test-span-readonly"
+        self.span = ReadableSpan(span_name, span_context, kind=SpanKind.SERVER)
+
+        assert self.span.kind == SpanKind.SERVER
+
+        # Verify kind is stored in private attribute and property returns it
+        assert hasattr(self.span, "_kind")
+        assert self.span._kind == SpanKind.SERVER

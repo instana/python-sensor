@@ -39,13 +39,13 @@ class TestUtils:
         formatted_spans = format_span(span_list)
         assert len(formatted_spans) == 2
         assert formatted_spans[0].t == expected_trace_id
-        assert formatted_spans[0].k == 1
+        assert formatted_spans[0].k == 3
         assert formatted_spans[0].s == expected_span_id
         assert formatted_spans[0].n == "span1"
 
         assert formatted_spans[1].t == expected_trace_id
         assert formatted_spans[1].p == formatted_spans[0].s
-        assert formatted_spans[1].k == 1
+        assert formatted_spans[1].k == 3
         assert formatted_spans[1].s != formatted_spans[0].s
         assert formatted_spans[1].n == "span2"
         assert formatted_spans[1].n == "span2"

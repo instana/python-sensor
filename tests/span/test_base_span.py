@@ -1,9 +1,8 @@
 # (c) Copyright IBM Corp. 2024
 
-from typing import Generator
 from unittest.mock import Mock, patch
 
-import pytest
+from opentelemetry.trace import SpanKind
 
 from instana.recorder import StanRecorder
 from instana.span.base_span import BaseSpan
@@ -173,3 +172,82 @@ def test_convert_attribute_value_exception(
 
     converted_value = base_span._convert_attribute_value(mock)
     assert not converted_value
+
+
+def test_basespan_does_not_store_kind(
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+) -> None:
+    """Test that BaseSpan does not directly store or interfere with kind parameter."""
+    span = InstanaSpan(
+        "test-base-span", span_context, span_processor, kind=SpanKind.CLIENT
+    )
+    base_span = BaseSpan(span, None)
+
+    # BaseSpan should not have a kind attribute
+    assert not hasattr(base_span, "k")
+    assert not hasattr(base_span, "kind")
+
+    # But the original span should still have it
+    assert span.kind == SpanKind.CLIENT
+
+
+def test_basespan_with_different_span_kinds(
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+) -> None:
+    """Test that BaseSpan works correctly with spans of different kinds."""
+    kinds = [
+        SpanKind.INTERNAL,
+        SpanKind.SERVER,
+        SpanKind.CLIENT,
+        SpanKind.PRODUCER,
+        SpanKind.CONSUMER,
+    ]
+
+    for kind in kinds:
+        span = InstanaSpan(
+            f"test-span-{kind.name}", span_context, span_processor, kind=kind
+        )
+        base_span = BaseSpan(span, None)
+
+        # Verify BaseSpan is created successfully regardless of kind
+        assert base_span.t == span_context.trace_id
+        assert base_span.s == span_context.span_id
+
+        # Verify original span retains its kind
+        assert span.kind == kind
+
+
+def test_basespan_kind_inheritance_to_registered_span(
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+) -> None:
+    """Test that kind is properly inherited by RegisteredSpan through BaseSpan."""
+    from instana.span.registered_span import RegisteredSpan
+
+    span = InstanaSpan("wsgi", span_context, span_processor, kind=SpanKind.SERVER)
+    reg_span = RegisteredSpan(span, None, "test-service")
+
+    # RegisteredSpan should have k field set correctly
+    assert reg_span.k == SpanKind.SERVER
+    # Verify it inherits BaseSpan attributes
+    assert reg_span.t == span_context.trace_id
+    assert reg_span.s == span_context.span_id
+
+
+def test_basespan_kind_inheritance_to_sdk_span(
+    span_context: SpanContext,
+    span_processor: StanRecorder,
+) -> None:
+    """Test that kind is accessible by SDKSpan through BaseSpan."""
+    from instana.span.sdk_span import SDKSpan
+
+    span = InstanaSpan("test-sdk", span_context, span_processor, kind=SpanKind.PRODUCER)
+    sdk_span = SDKSpan(span, None, "test-service")
+
+    # SDKSpan should be able to access span.kind
+    assert span.kind == SpanKind.PRODUCER
+    # Verify it inherits BaseSpan attributes
+    assert sdk_span.t == span_context.trace_id
+    assert sdk_span.s == span_context.span_id

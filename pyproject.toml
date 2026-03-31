@@ -20,7 +20,7 @@ keywords = [
     "distributed-tracing",
 ]
 authors = [
-    { name = "Instana Team Python Tracer Engineers" },
+    { name = "Instana Python Tracer Engineers", email = "pythonrubyinstana@ibm.com" },
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

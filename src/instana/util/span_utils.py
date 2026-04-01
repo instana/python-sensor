@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2025
 
 
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 from instana.util.config import SPAN_TYPE_TO_CATEGORY
 
@@ -37,8 +37,15 @@ def matches_rule(rule_attributes: List[Any], span_attributes: List[Any]) -> bool
                     rule_matched = True
 
         else:
+            span_value = None
             if key in span_attributes:
                 span_value = span_attributes[key]
+            elif "." in key:
+                # Support dot-notation paths for nested attributes
+                # e.g. "sdk.custom.tags.http.host" -> span["sdk.custom"]["tags"]["http.host"]
+                span_value = resolve_nested_key(span_attributes, key.split("."))
+
+            if span_value is not None:
                 for rule_value in target_values:
                     if match_key_filter(span_value, rule_value, match_type):
                         rule_matched = True
@@ -48,6 +55,36 @@ def matches_rule(rule_attributes: List[Any], span_attributes: List[Any]) -> bool
             return False
 
     return True
+
+
+def resolve_nested_key(data: Dict[str, Any], key_parts: List[str]) -> Optional[Any]:
+    """Resolve a dotted key path against a potentially nested dict.
+
+    Tries all possible prefix lengths so that keys which themselves contain
+    dots (e.g. ``sdk.custom`` or ``http.host``) are handled correctly.
+
+    Example::
+
+        # span_attributes = {"sdk.custom": {"tags": {"http.host": "example.com"}}}
+        resolve_nested_key(span_attributes, ["sdk", "custom", "tags", "http", "host"])
+        # -> "example.com"
+    """
+    if not key_parts or not isinstance(data, dict):
+        return None
+
+    # Try the longest prefix first so that keys with embedded dots are matched
+    # before shorter splits (e.g. prefer "sdk.custom" over "sdk").
+    for i in range(len(key_parts), 0, -1):
+        candidate = ".".join(key_parts[:i])
+        if candidate in data:
+            remaining = key_parts[i:]
+            if not remaining:
+                return data[candidate]
+            result = resolve_nested_key(data[candidate], remaining)
+            if result is not None:
+                return result
+
+    return None
 
 
 def match_key_filter(span_value: str, rule_value: str, match_type: str) -> bool:

@@ -112,9 +112,8 @@ def not_found(request):
 
 def complex(request):
     tracer = get_tracer()
-    with tracer.start_as_current_span("asteroid") as pspan:
+    with tracer.start_as_current_span("asteroid", kind=SpanKind.CLIENT) as pspan:
         pspan.set_attribute("component", "Python simple example app")
-        pspan.set_attribute("span.kind", SpanKind.CLIENT)
         pspan.set_attribute("peer.hostname", "localhost")
         pspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/one")
         pspan.set_attribute(SpanAttributes.HTTP_METHOD, "GET")
@@ -122,8 +121,7 @@ def complex(request):
         pspan.add_event(name="complex_request", attributes={"foo": "bar"})
         time.sleep(0.2)
 
-        with tracer.start_as_current_span("spacedust") as cspan:
-            cspan.set_attribute("span.kind", SpanKind.CLIENT)
+        with tracer.start_as_current_span("spacedust", kind=SpanKind.CLIENT) as cspan:
             cspan.set_attribute("peer.hostname", "localhost")
             cspan.set_attribute(SpanAttributes.HTTP_URL, "/python/simple/two")
             cspan.set_attribute(SpanAttributes.HTTP_METHOD, "POST")

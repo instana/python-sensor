@@ -51,12 +51,10 @@ class SDKSpan(BaseSpan):
         :param span: The span to search for the `span.kind` attribute
         :return: Tuple (String, Int)
         """
-        kind = ("intermediate", 3)
-        if "span.kind" in span.attributes:
-            if span.attributes["span.kind"] in ENTRY_KIND:
-                kind = ("entry", 1)
-            elif span.attributes["span.kind"] in EXIT_KIND:
-                kind = ("exit", 2)
+        if span.kind in ENTRY_KIND:
+            kind = ("entry", 1)
+        elif span.kind in EXIT_KIND:
+            kind = ("exit", 2)
+        else:
+            kind = ("intermediate", 3)
         return kind
-
-

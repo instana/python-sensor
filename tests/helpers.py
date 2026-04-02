@@ -101,7 +101,7 @@ def fail_with_message_and_span_dump(msg, spans):
     @return: None
     """
     span_count = len(spans)
-    span_dump = "\nDumping all collected spans (%d) -->\n" % span_count
+    span_dump = f"\nDumping all collected spans ({span_count}) -->\n"
     if span_count > 0:
         for span in spans:
             span.stack = "<snipped>"

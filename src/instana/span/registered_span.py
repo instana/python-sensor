@@ -169,7 +169,7 @@ class RegisteredSpan(BaseSpan):
             self._collect_kafka_attributes(span)
 
         else:
-            logger.debug("SpanRecorder: Unknown entry span: %s" % span.name)
+            logger.debug(f"SpanRecorder: Unknown entry span: {span.name}")
 
     def _populate_local_span_data(self, span: "InstanaSpan") -> None:
         if span.name == "render":
@@ -178,7 +178,7 @@ class RegisteredSpan(BaseSpan):
             self.data["log"]["message"] = span.attributes.pop("message", None)
             self.data["log"]["parameters"] = span.attributes.pop("parameters", None)
         else:
-            logger.debug("SpanRecorder: Unknown local span: %s" % span.name)
+            logger.debug(f"SpanRecorder: Unknown local span: {span.name}")
 
     def _populate_exit_span_data(self, span: "InstanaSpan") -> None:
         if span.name in HTTP_SPANS:
@@ -374,7 +374,7 @@ class RegisteredSpan(BaseSpan):
             self._collect_kafka_attributes(span)
 
         else:
-            logger.debug("SpanRecorder: Unknown exit span: %s" % span.name)
+            logger.debug(f"SpanRecorder: Unknown exit span: {span.name}")
 
     def _collect_http_attributes(self, span: "InstanaSpan") -> None:
         self.data["http"]["host"] = span.attributes.pop("http.host", None)

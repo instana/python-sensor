@@ -2,26 +2,26 @@
 # (c) Copyright Instana Inc. 2020
 
 
+import contextlib
 import time
 from typing import Generator
 from unittest.mock import patch
 
+import couchbase.subdocument as SD
 import pytest
-
-from instana.singletons import agent, get_tracer
-from tests.helpers import testenv, get_first_span_by_name, get_first_span_by_filter
-
 from couchbase.admin import Admin
-from couchbase.cluster import Cluster
 from couchbase.bucket import Bucket
+from couchbase.cluster import Cluster
 from couchbase.exceptions import (
     CouchbaseTransientError,
     HTTPError,
     KeyExistsError,
     NotFoundError,
 )
-import couchbase.subdocument as SD
 from couchbase.n1ql import N1QLQuery
+
+from instana.singletons import agent, get_tracer
+from tests.helpers import get_first_span_by_filter, get_first_span_by_name, testenv
 
 # Delete any pre-existing buckets.  Create new.
 cb_adm = Admin(
@@ -45,9 +45,9 @@ class TestStandardCouchDB:
         """Clear all spans before a test run"""
         self.tracer = get_tracer()
         self.recorder = self.tracer.span_processor
-        self.cluster = Cluster("couchbase://%s" % testenv["couchdb_host"])
+        self.cluster = Cluster("couchbase://{}".format(testenv["couchdb_host"]))
         self.bucket = Bucket(
-            "couchbase://%s/travel-sample" % testenv["couchdb_host"],
+            "couchbase://{}/travel-sample".format(testenv["couchdb_host"]),
             username=testenv["couchdb_username"],
             password=testenv["couchdb_password"],
         )
@@ -155,10 +155,8 @@ class TestStandardCouchDB:
 
     def test_insert_new(self) -> None:
         res = None
-        try:
+        with contextlib.suppress(NotFoundError):
             self.bucket.remove("test_insert_new")
-        except NotFoundError:
-            pass
 
         with self.tracer.start_as_current_span("test"):
             res = self.bucket.insert("test_insert_new", 1)
@@ -191,10 +189,8 @@ class TestStandardCouchDB:
 
     def test_insert_existing(self) -> None:
         res = None
-        try:
+        with contextlib.suppress(KeyExistsError):
             self.bucket.insert("test_insert", 1)
-        except KeyExistsError:
-            pass
 
         try:
             with self.tracer.start_as_current_span("test"):
@@ -222,7 +218,7 @@ class TestStandardCouchDB:
         assert cb_span.ec == 1
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("_KeyExistsError")
-        assert not found == -1
+        assert found != -1
 
         assert (
             cb_span.data["couchbase"]["hostname"] == f"{testenv['couchdb_host']}:8091"
@@ -275,10 +271,8 @@ class TestStandardCouchDB:
 
     def test_replace(self) -> None:
         res = None
-        try:
+        with contextlib.suppress(KeyExistsError):
             self.bucket.insert("test_replace", 1)
-        except KeyExistsError:
-            pass
 
         with self.tracer.start_as_current_span("test"):
             res = self.bucket.replace("test_replace", 2)
@@ -312,10 +306,8 @@ class TestStandardCouchDB:
     def test_replace_non_existent(self) -> None:
         res = None
 
-        try:
+        with contextlib.suppress(NotFoundError):
             self.bucket.remove("test_replace")
-        except NotFoundError:
-            pass
 
         try:
             with self.tracer.start_as_current_span("test"):
@@ -343,7 +335,7 @@ class TestStandardCouchDB:
         assert cb_span.ec == 1
         # Just search for the substring of the exception class
         found = cb_span.data["couchbase"]["error"].find("NotFoundError")
-        assert not found == -1
+        assert found != -1
 
         assert (
             cb_span.data["couchbase"]["hostname"] == f"{testenv['couchdb_host']}:8091"
@@ -608,10 +600,8 @@ class TestStandardCouchDB:
 
     def test_get_not_found(self) -> None:
         res = None
-        try:
+        with contextlib.suppress(NotFoundError):
             self.bucket.remove("test_get_not_found")
-        except NotFoundError:
-            pass
 
         try:
             with self.tracer.start_as_current_span("test"):
@@ -654,9 +644,10 @@ class TestStandardCouchDB:
         self.bucket.upsert("second_test_get_multi", "two")
 
         with self.tracer.start_as_current_span("test"):
-            res = self.bucket.get_multi(
-                ["first_test_get_multi", "second_test_get_multi"]
-            )
+            res = self.bucket.get_multi([
+                "first_test_get_multi",
+                "second_test_get_multi",
+            ])
 
         assert res
         assert res["first_test_get_multi"].success
@@ -725,9 +716,10 @@ class TestStandardCouchDB:
         self.bucket.upsert("second_test_touch_multi", "two")
 
         with self.tracer.start_as_current_span("test"):
-            res = self.bucket.touch_multi(
-                ["first_test_touch_multi", "second_test_touch_multi"]
-            )
+            res = self.bucket.touch_multi([
+                "first_test_touch_multi",
+                "second_test_touch_multi",
+            ])
 
         assert res
         assert res["first_test_touch_multi"].success
@@ -1046,9 +1038,10 @@ class TestStandardCouchDB:
         self.bucket.upsert("second_test_counter", 1)
 
         with self.tracer.start_as_current_span("test"):
-            res = self.bucket.counter_multi(
-                ("first_test_counter", "second_test_counter")
-            )
+            res = self.bucket.counter_multi((
+                "first_test_counter",
+                "second_test_counter",
+            ))
 
         assert res
         assert res["first_test_counter"].success
@@ -1329,16 +1322,23 @@ class TestStandardCouchDB:
     def test_query_with_instana_tracing_off(self) -> None:
         res = None
 
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.couchbase_inst.tracing_is_off", return_value=True
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.couchbase_inst.tracing_is_off",
+                return_value=True,
+            ),
         ):
             res = self.bucket.n1ql_query("SELECT 1")
         assert res
 
     def test_query_with_instana_exception(self) -> None:
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.couchbase_inst.collect_attributes",
-            side_effect=Exception("test-error"),
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.couchbase_inst.collect_attributes",
+                side_effect=Exception("test-error"),
+            ),
         ):
             self.bucket.n1ql_query("SELECT 1")
 

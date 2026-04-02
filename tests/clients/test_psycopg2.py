@@ -3,16 +3,16 @@
 
 
 import logging
-import pytest
-
 from typing import Generator
-from instana.instrumentation.psycopg2 import register_json_with_instana
-from tests.helpers import testenv
-from instana.singletons import agent, get_tracer
 
 import psycopg2
-import psycopg2.extras
 import psycopg2.extensions as ext
+import psycopg2.extras
+import pytest
+
+from instana.instrumentation.psycopg2 import register_json_with_instana
+from instana.singletons import agent, get_tracer
+from tests.helpers import testenv
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +267,7 @@ class TestPsycoPG2:
         # unicode in statement
         psycopg2.extras.execute_batch(
             self.cursor,
-            "insert into users (id, name) values (%%s, %%s) -- %s" % snowman,
+            f"insert into users (id, name) values (%s, %s) -- {snowman}",
             [(1, "x")],
         )
         self.cursor.execute("select id, name from users where id = 1")
@@ -283,7 +283,7 @@ class TestPsycoPG2:
         # unicode in both
         psycopg2.extras.execute_batch(
             self.cursor,
-            "insert into users (id, name) values (%%s, %%s) -- %s" % snowman,
+            f"insert into users (id, name) values (%s, %s) -- {snowman}",
             [(3, snowman)],
         )
         self.cursor.execute("select id, name from users where id = 3")
@@ -304,12 +304,11 @@ class TestPsycoPG2:
         ext.register_type(ext.UUIDARRAY, self.cursor)
 
     def test_connect_cursor_ctx_mgr(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            with self.db as connection:
-                with connection.cursor() as cursor:
-                    cursor.execute("""SELECT * from users""")
-                    affected_rows = cursor.rowcount
-                    result = cursor.fetchone()
+        with self.tracer.start_as_current_span("test"), self.db as connection:  # noqa: SIM117
+            with connection.cursor() as cursor:
+                cursor.execute("""SELECT * from users""")
+                affected_rows = cursor.rowcount
+                result = cursor.fetchone()
 
         assert affected_rows == 1
         assert len(result) == 6
@@ -333,12 +332,11 @@ class TestPsycoPG2:
         assert db_span.data["pg"]["port"] == testenv["postgresql_port"]
 
     def test_connect_ctx_mgr(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            with self.db as connection:
-                cursor = connection.cursor()
-                cursor.execute("""SELECT * from users""")
-                affected_rows = cursor.rowcount
-                result = cursor.fetchone()
+        with self.tracer.start_as_current_span("test"), self.db as connection:
+            cursor = connection.cursor()
+            cursor.execute("""SELECT * from users""")
+            affected_rows = cursor.rowcount
+            result = cursor.fetchone()
 
         assert affected_rows == 1
         assert len(result) == 6

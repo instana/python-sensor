@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 
+import contextlib
 from typing import Generator
 
 import pytest
@@ -30,12 +31,8 @@ class StanUser(Base):
     fullname = Column(String)
     password = Column(String)
 
-    def __repr__(self) -> None:
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
-            self.name,
-            self.fullname,
-            self.password,
-        )
+    def __repr__(self) -> str:
+        return f"<User(name='{self.name}', fullname='{self.fullname}', password='{self.password}')>"
 
 
 @pytest.fixture(scope="class")
@@ -105,8 +102,8 @@ class TestSQLAlchemy:
         assert sql_span.data["sqlalchemy"]["eng"] == "postgresql"
         assert sqlalchemy_url == sql_span.data["sqlalchemy"]["url"]
         assert (
-            "INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id"
-            == sql_span.data["sqlalchemy"]["sql"]
+            sql_span.data["sqlalchemy"]["sql"]
+            == "INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id"
         )
         assert not sql_span.data["sqlalchemy"]["err"]
 
@@ -141,8 +138,8 @@ class TestSQLAlchemy:
         assert sql_span.data["sqlalchemy"]["eng"] == "postgresql"
         assert sqlalchemy_url == sql_span.data["sqlalchemy"]["url"]
         assert (
-            "INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id"
-            == sql_span.data["sqlalchemy"]["sql"]
+            sql_span.data["sqlalchemy"]["sql"]
+            == "INSERT INTO churchofstan (name, fullname, password) VALUES (%(name)s, %(fullname)s, %(password)s) RETURNING churchofstan.id"
         )
         assert not sql_span.data["sqlalchemy"]["err"]
 
@@ -151,7 +148,7 @@ class TestSQLAlchemy:
         assert len(sql_span.stack) > 0
 
     def test_transaction(self) -> None:
-        with self.tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
             with engine.begin() as connection:
                 connection.execute(text("select 1"))
                 connection.execute(
@@ -205,8 +202,8 @@ class TestSQLAlchemy:
         assert sql_span1.data["sqlalchemy"]["eng"] == "postgresql"
         assert sqlalchemy_url == sql_span1.data["sqlalchemy"]["url"]
         assert (
-            "select (name, fullname, password) from churchofstan where name='doesntexist'"
-            == sql_span1.data["sqlalchemy"]["sql"]
+            sql_span1.data["sqlalchemy"]["sql"]
+            == "select (name, fullname, password) from churchofstan where name='doesntexist'"
         )
         assert not sql_span1.data["sqlalchemy"]["err"]
 
@@ -215,12 +212,10 @@ class TestSQLAlchemy:
         assert len(sql_span1.stack) > 0
 
     def test_error_logging(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            try:
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
+            with contextlib.suppress(Exception):
                 self.session.execute(text("htVwGrCwVThisIsInvalidSQLaw4ijXd88"))
                 # self.session.commit()
-            except Exception:
-                pass
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -250,7 +245,7 @@ class TestSQLAlchemy:
         assert sql_span.data["sqlalchemy"]["eng"] == "postgresql"
         assert sqlalchemy_url == sql_span.data["sqlalchemy"]["url"]
         assert (
-            "htVwGrCwVThisIsInvalidSQLaw4ijXd88" == sql_span.data["sqlalchemy"]["sql"]
+            sql_span.data["sqlalchemy"]["sql"] == "htVwGrCwVThisIsInvalidSQLaw4ijXd88"
         )
         assert (
             'syntax error at or near "htVwGrCwVThisIsInvalidSQLaw4ijXd88'

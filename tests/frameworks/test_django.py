@@ -3,22 +3,22 @@
 
 
 import os
-
-import urllib3
-import pytest
 from typing import Generator
+
+import pytest
+import urllib3
 from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
+from instana.instrumentation.django.middleware import url_pattern_route
+from instana.singletons import agent, get_tracer
 from instana.util.ids import hex_id
 from tests.apps.app_django import INSTALLED_APPS
-from instana.singletons import agent, get_tracer
 from tests.helpers import (
+    drop_log_spans_from_list,
     fail_with_message_and_span_dump,
     get_first_span_by_filter,
-    drop_log_spans_from_list,
 )
-from instana.instrumentation.django.middleware import url_pattern_route
 
 apps.populate(INSTALLED_APPS)
 
@@ -43,10 +43,10 @@ class TestDjango(StaticLiveServerTestCase):
             )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 3 == len(spans)
+        assert len(spans) == 3
 
         test_span = spans[2]
         urllib3_span = spans[1]
@@ -67,9 +67,9 @@ class TestDjango(StaticLiveServerTestCase):
         server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert "django" == django_span.n
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert django_span.n == "django"
 
         assert test_span.t == urllib3_span.t
         assert urllib3_span.t == django_span.t
@@ -82,11 +82,11 @@ class TestDjango(StaticLiveServerTestCase):
         assert test_span.sy is None
 
         assert django_span.ec is None
-        assert "/" == django_span.data["http"]["url"]
-        assert "GET" == django_span.data["http"]["method"]
-        assert 200 == django_span.data["http"]["status"]
-        assert "test=1" == django_span.data["http"]["params"]
-        assert "^$" == django_span.data["http"]["path_tpl"]
+        assert django_span.data["http"]["url"] == "/"
+        assert django_span.data["http"]["method"] == "GET"
+        assert django_span.data["http"]["status"] == 200
+        assert django_span.data["http"]["params"] == "test=1"
+        assert django_span.data["http"]["path_tpl"] == "^$"
 
         assert django_span.stack is None
 
@@ -99,16 +99,16 @@ class TestDjango(StaticLiveServerTestCase):
             )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 3 == len(spans)
+        assert len(spans) == 3
 
         test_span = spans[2]
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        assert "^$" == django_span.data["http"]["path_tpl"]
+        assert django_span.data["http"]["path_tpl"] == "^$"
 
         assert django_span.sy
         assert urllib3_span.sy is None
@@ -119,14 +119,14 @@ class TestDjango(StaticLiveServerTestCase):
             response = self.http.request("GET", self.live_server_url + "/cause_error")
 
         assert response
-        assert 500 == response.status
+        assert response.status == 500
 
         spans = self.recorder.queued_spans()
         spans = drop_log_spans_from_list(spans)
 
         span_count = len(spans)
         if span_count != 3:
-            msg = "Expected 3 spans but got %d" % span_count
+            msg = "Expected 3 spans but got {span_count}"
             fail_with_message_and_span_dump(msg, spans)
 
         def filter(span):
@@ -162,9 +162,9 @@ class TestDjango(StaticLiveServerTestCase):
         server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert "django" == django_span.n
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert django_span.n == "django"
 
         assert test_span.t == urllib3_span.t
         assert urllib3_span.t == django_span.t
@@ -172,13 +172,13 @@ class TestDjango(StaticLiveServerTestCase):
         assert urllib3_span.p == test_span.s
         assert django_span.p == urllib3_span.s
 
-        assert 1 == django_span.ec
+        assert django_span.ec == 1
 
-        assert "/cause_error" == django_span.data["http"]["url"]
-        assert "GET" == django_span.data["http"]["method"]
-        assert 500 == django_span.data["http"]["status"]
-        assert "This is a fake error: /cause-error" == django_span.data["http"]["error"]
-        assert "^cause_error$" == django_span.data["http"]["path_tpl"]
+        assert django_span.data["http"]["url"] == "/cause_error"
+        assert django_span.data["http"]["method"] == "GET"
+        assert django_span.data["http"]["status"] == 500
+        assert django_span.data["http"]["error"] == "This is a fake error: /cause-error"
+        assert django_span.data["http"]["path_tpl"] == "^cause_error$"
         assert django_span.stack is None
 
     def test_request_with_not_found(self) -> None:
@@ -186,14 +186,14 @@ class TestDjango(StaticLiveServerTestCase):
             response = self.http.request("GET", self.live_server_url + "/not_found")
 
         assert response
-        assert 404 == response.status
+        assert response.status == 404
 
         spans = self.recorder.queued_spans()
         spans = drop_log_spans_from_list(spans)
 
         span_count = len(spans)
         if span_count != 3:
-            msg = "Expected 3 spans but got %d" % span_count
+            msg = f"Expected 3 spans but got {span_count}"
             fail_with_message_and_span_dump(msg, spans)
 
         def filter(span):
@@ -203,21 +203,21 @@ class TestDjango(StaticLiveServerTestCase):
         assert django_span
 
         assert django_span.ec is None
-        assert 404 == django_span.data["http"]["status"]
+        assert django_span.data["http"]["status"] == 404
 
     def test_request_with_not_found_no_route(self) -> None:
         with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", self.live_server_url + "/no_route")
 
         assert response
-        assert 404 == response.status
+        assert response.status == 404
 
         spans = self.recorder.queued_spans()
         spans = drop_log_spans_from_list(spans)
 
         span_count = len(spans)
         if span_count != 3:
-            msg = "Expected 3 spans but got %d" % span_count
+            msg = f"Expected 3 spans but got {span_count}"
             fail_with_message_and_span_dump(msg, spans)
 
         def filter(span):
@@ -227,16 +227,16 @@ class TestDjango(StaticLiveServerTestCase):
         assert django_span
         assert django_span.data["http"]["path_tpl"] is None
         assert django_span.ec is None
-        assert 404 == django_span.data["http"]["status"]
+        assert django_span.data["http"]["status"] == 404
 
     def test_complex_request(self) -> None:
         with self.tracer.start_as_current_span("test"):
             response = self.http.request("GET", self.live_server_url + "/complex")
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
         spans = self.recorder.queued_spans()
-        assert 5 == len(spans)
+        assert len(spans) == 5
 
         test_span = spans[4]
         urllib3_span = spans[3]
@@ -259,11 +259,11 @@ class TestDjango(StaticLiveServerTestCase):
         server_timing_value = f"intid;desc={hex_id(django_span.t)}"
         assert response.headers["Server-Timing"] == server_timing_value
 
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert "django" == django_span.n
-        assert "sdk" == otel_span1.n
-        assert "sdk" == otel_span2.n
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert django_span.n == "django"
+        assert otel_span1.n == "sdk"
+        assert otel_span2.n == "sdk"
 
         assert test_span.t == urllib3_span.t
         assert urllib3_span.t == django_span.t
@@ -283,10 +283,10 @@ class TestDjango(StaticLiveServerTestCase):
         otel_span1.data["sdk"]["name"] == "asteroid"
         otel_span2.data["sdk"]["name"] == "spacedust"
 
-        assert "/complex" == django_span.data["http"]["url"]
-        assert "GET" == django_span.data["http"]["method"]
-        assert 200 == django_span.data["http"]["status"]
-        assert "^complex$" == django_span.data["http"]["path_tpl"]
+        assert django_span.data["http"]["url"] == "/complex"
+        assert django_span.data["http"]["method"] == "GET"
+        assert django_span.data["http"]["status"] == 200
+        assert django_span.data["http"]["path_tpl"] == "^complex$"
 
     def test_request_header_capture(self) -> None:
         # Hack together a manual custom headers list
@@ -302,18 +302,18 @@ class TestDjango(StaticLiveServerTestCase):
             # response = self.client.get('/')
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 3 == len(spans)
+        assert len(spans) == 3
 
         test_span = spans[2]
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert "django" == django_span.n
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert django_span.n == "django"
 
         assert test_span.t == urllib3_span.t
         assert urllib3_span.t == django_span.t
@@ -324,15 +324,15 @@ class TestDjango(StaticLiveServerTestCase):
         assert django_span.ec is None
         assert django_span.stack is None
 
-        assert "/" == django_span.data["http"]["url"]
-        assert "GET" == django_span.data["http"]["method"]
-        assert 200 == django_span.data["http"]["status"]
-        assert "^$" == django_span.data["http"]["path_tpl"]
+        assert django_span.data["http"]["url"] == "/"
+        assert django_span.data["http"]["method"] == "GET"
+        assert django_span.data["http"]["status"] == 200
+        assert django_span.data["http"]["path_tpl"] == "^$"
 
         assert "X-Capture-This" in django_span.data["http"]["header"]
-        assert "this" == django_span.data["http"]["header"]["X-Capture-This"]
+        assert django_span.data["http"]["header"]["X-Capture-This"] == "this"
         assert "X-Capture-That" in django_span.data["http"]["header"]
-        assert "that" == django_span.data["http"]["header"]["X-Capture-That"]
+        assert django_span.data["http"]["header"]["X-Capture-That"] == "that"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
@@ -347,18 +347,18 @@ class TestDjango(StaticLiveServerTestCase):
             )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 3 == len(spans)
+        assert len(spans) == 3
 
         test_span = spans[2]
         urllib3_span = spans[1]
         django_span = spans[0]
 
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert "django" == django_span.n
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert django_span.n == "django"
 
         assert test_span.t == urllib3_span.t
         assert urllib3_span.t == django_span.t
@@ -369,15 +369,15 @@ class TestDjango(StaticLiveServerTestCase):
         assert django_span.ec is None
         assert django_span.stack is None
 
-        assert "/response_with_headers" == django_span.data["http"]["url"]
-        assert "GET" == django_span.data["http"]["method"]
-        assert 200 == django_span.data["http"]["status"]
-        assert "^response_with_headers$" == django_span.data["http"]["path_tpl"]
+        assert django_span.data["http"]["url"] == "/response_with_headers"
+        assert django_span.data["http"]["method"] == "GET"
+        assert django_span.data["http"]["status"] == 200
+        assert django_span.data["http"]["path_tpl"] == "^response_with_headers$"
 
         assert "X-Capture-This-Too" in django_span.data["http"]["header"]
-        assert "this too" == django_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert django_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
         assert "X-Capture-That-Too" in django_span.data["http"]["header"]
-        assert "that too" == django_span.data["http"]["header"]["X-Capture-That-Too"]
+        assert django_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
@@ -398,10 +398,10 @@ class TestDjango(StaticLiveServerTestCase):
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         django_span = spans[0]
 
@@ -429,15 +429,13 @@ class TestDjango(StaticLiveServerTestCase):
         # The incoming traceparent header had version 01 (which does not exist at the time of writing), but since we
         # support version 00, we also need to pass down 00 for the version field.
         assert (
-            "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{django_span.s}-01"
             == response.headers["traceparent"]
         )
 
         assert "tracestate" in response.headers
         assert (
-            "in={};{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".format(
-                django_span.t, django_span.s
-            )
+            f"in={django_span.t};{django_span.s},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
             == response.headers["tracestate"]
         )
 
@@ -461,10 +459,10 @@ class TestDjango(StaticLiveServerTestCase):
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         django_span = spans[0]
 
@@ -494,15 +492,13 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "traceparent" in response.headers
         assert (
-            "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{django_span.s}-01"
             == response.headers["traceparent"]
         )
 
         assert "tracestate" in response.headers
         assert (
-            "in={};{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".format(
-                django_span.t, django_span.s
-            )
+            f"in={django_span.t};{django_span.s},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
             == response.headers["tracestate"]
         )
 
@@ -521,10 +517,10 @@ class TestDjango(StaticLiveServerTestCase):
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         django_span = spans[0]
 
@@ -554,15 +550,13 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "traceparent" in response.headers
         assert (
-            "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{django_span.s}-01"
             == response.headers["traceparent"]
         )
 
         assert "tracestate" in response.headers
         assert (
-            "in=a3ce929d0e0e4736;{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".format(
-                django_span.s
-            )
+            f"in=a3ce929d0e0e4736;{django_span.s},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
             == response.headers["tracestate"]
         )
 
@@ -582,10 +576,10 @@ class TestDjango(StaticLiveServerTestCase):
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         django_span = spans[0]
 
@@ -611,15 +605,13 @@ class TestDjango(StaticLiveServerTestCase):
 
         assert "traceparent" in response.headers
         assert (
-            "00-4bf92f3577b34da6a3ce929d0e0e4736-{}-01".format(django_span.s)
+            f"00-4bf92f3577b34da6a3ce929d0e0e4736-{django_span.s}-01"
             == response.headers["traceparent"]
         )
 
         assert "tracestate" in response.headers
         assert (
-            "in={};{},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".format(
-                django_span.t, django_span.s
-            )
+            f"in={django_span.t};{django_span.s},rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
             == response.headers["tracestate"]
         )
 
@@ -633,10 +625,10 @@ class TestDjango(StaticLiveServerTestCase):
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         django_span = spans[0]
 

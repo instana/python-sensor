@@ -17,7 +17,7 @@ def homepage(request):
 
 def user(request):
     user_id = request.path_params["user_id"]
-    return PlainTextResponse("Hello, user id %s!" % user_id)
+    return PlainTextResponse(f"Hello, user id {user_id}!")
 
 
 def response_headers(request):

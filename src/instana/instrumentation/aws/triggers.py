@@ -45,10 +45,7 @@ def get_context(tracer: "InstanaTracer", event: Dict[str, Any]) -> Optional["Con
 
 
 def is_api_gateway_proxy_trigger(event: Dict[str, Any]) -> bool:
-    for key in ["resource", "path", "httpMethod"]:
-        if key not in event:
-            return False
-    return True
+    return all(key in event for key in ["resource", "path", "httpMethod"])
 
 
 def is_api_gateway_v2_proxy_trigger(event: Dict[str, Any]) -> bool:
@@ -59,51 +56,45 @@ def is_api_gateway_v2_proxy_trigger(event: Dict[str, Any]) -> bool:
     if event["version"] != "2.0":
         return False
 
-    for key in ["apiId", "stage", "http"]:
-        if key not in event["requestContext"]:
-            return False
-
-    return True
+    return all(key in event["requestContext"] for key in ["apiId", "stage", "http"])
 
 
 def is_application_load_balancer_trigger(event: Dict[str, Any]) -> bool:
-    if "requestContext" in event and "elb" in event["requestContext"]:
-        return True
-    return False
+    return bool("requestContext" in event and "elb" in event["requestContext"])
 
 
 def is_cloudwatch_trigger(event: Dict[str, Any]) -> bool:
-    if "source" in event and "detail-type" in event:
-        if (
+    return bool(
+        "source" in event
+        and "detail-type" in event
+        and (
             event["source"] == "aws.events"
             and event["detail-type"] == "Scheduled Event"
-        ):
-            return True
-    return False
+        )
+    )
 
 
 def is_cloudwatch_logs_trigger(event: Dict[str, Any]) -> bool:
-    if hasattr(event, "get") and event.get("awslogs", "\b") != "\b":
-        return True
-    else:
-        return False
+    return bool(hasattr(event, "get") and event.get("awslogs", "\x08") != "\x08")
 
 
 def is_s3_trigger(event: Dict[str, Any]) -> bool:
-    if "Records" in event:
-        if len(event["Records"]) > 0 and event["Records"][0]["eventSource"] == "aws:s3":
-            return True
-    return False
+    return bool(
+        "Records" in event
+        and (
+            len(event["Records"]) > 0 and event["Records"][0]["eventSource"] == "aws:s3"
+        )
+    )
 
 
 def is_sqs_trigger(event: Dict[str, Any]) -> bool:
-    if "Records" in event:
-        if (
+    return bool(
+        "Records" in event
+        and (
             len(event["Records"]) > 0
             and event["Records"][0]["eventSource"] == "aws:sqs"
-        ):
-            return True
-    return False
+        )
+    )
 
 
 def read_http_query_params(event: Dict[str, Any]) -> str:
@@ -118,8 +109,8 @@ def read_http_query_params(event: Dict[str, Any]) -> str:
         if event is None or type(event) is not dict:
             return ""
 
-        mvqsp = event.get("multiValueQueryStringParameters", None)
-        qsp = event.get("queryStringParameters", None)
+        mvqsp = event.get("multiValueQueryStringParameters")
+        qsp = event.get("queryStringParameters")
 
         if mvqsp is not None and type(mvqsp) is dict:
             for key in mvqsp:
@@ -149,14 +140,14 @@ def capture_extra_headers(
     @return: None
     """
     try:
-        event_headers = event.get("headers", None)
+        event_headers = event.get("headers")
 
         if event_headers:
             for custom_header in extra_headers:
                 for key in event_headers:
                     if key.lower() == custom_header.lower():
                         span.set_attribute(
-                            "http.header.%s" % custom_header, event_headers[key]
+                            f"http.header.{custom_header}", event_headers[key]
                         )
     except Exception:
         logger.debug("AWS Lambda capture_extra_headers error: ", exc_info=True)
@@ -296,13 +287,11 @@ def enrich_lambda_span(
                     if len(object_name) > 200:
                         object_name = object_name[:200]
 
-                    events.append(
-                        {
-                            "event": item["eventName"],
-                            "bucket": bucket_name,
-                            "object": object_name,
-                        }
-                    )
+                    events.append({
+                        "event": item["eventName"],
+                        "bucket": bucket_name,
+                        "object": object_name,
+                    })
                 span.set_attribute("lambda.s3.events", events)
 
         elif is_sqs_trigger(event):

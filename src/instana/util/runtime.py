@@ -124,10 +124,7 @@ def determine_service_name() -> str:
             try:
                 import uwsgi
 
-                if app_name == "uwsgi":
-                    app_name = ""
-                else:
-                    app_name = " [%s]" % app_name
+                app_name = "" if app_name == "uwsgi" else f" [{app_name}]"
 
                 if os.getpid() == uwsgi.masterpid():
                     uwsgi_type = "uWSGI master%s"

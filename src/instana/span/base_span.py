@@ -3,8 +3,8 @@
 from typing import TYPE_CHECKING, Type
 
 from instana.log import logger
-from instana.util import DictionaryOfStan
 from instana.span.kind import ENTRY_SPANS
+from instana.util import DictionaryOfStan
 
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -14,7 +14,7 @@ class BaseSpan(object):
     sy = None
 
     def __str__(self) -> str:
-        return "BaseSpan(%s)" % self.__dict__.__str__()
+        return f"BaseSpan({self.__dict__.__str__()})"
 
     def __repr__(self) -> str:
         return self.__dict__.__str__()
@@ -56,7 +56,7 @@ class BaseSpan(object):
         :return: dict - a filtered set of attributes
         """
         filtered_attributes = DictionaryOfStan()
-        for key in attributes.keys():
+        for key in attributes:
             validated_key, validated_value = self._validate_attribute(
                 key, attributes[key]
             )

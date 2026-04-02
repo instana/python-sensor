@@ -28,7 +28,7 @@ class ContainerHelper(BaseHelper):
                         labels = container.get("Labels", {})
                         name = container.get("Name", "")
                         task_arn = labels.get("com.amazonaws.ecs.task-arn", "")
-                        plugin_data["entityId"] = "%s::%s" % (task_arn, name)
+                        plugin_data["entityId"] = f"{task_arn}::{name}"
 
                         plugin_data["data"] = DictionaryOfStan()
                         if self.collector.root_metadata["Name"] == name:

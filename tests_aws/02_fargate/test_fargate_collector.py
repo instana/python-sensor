@@ -8,7 +8,6 @@ from typing import Generator
 import pytest
 
 from instana.agent.aws_fargate import AWSFargateAgent
-from instana.singletons import get_agent
 
 
 def get_docker_plugin(plugins):
@@ -82,7 +81,7 @@ class TestFargateCollector:
             os.environ.pop("INSTANA_ZONE")
         if "INSTANA_TAGS" in os.environ:
             os.environ.pop("INSTANA_TAGS")
-        
+
         self.agent.collector.snapshot_data_last_sent = 0
         _unset_ecs_metadata(self.agent)
 

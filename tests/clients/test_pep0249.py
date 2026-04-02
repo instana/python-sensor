@@ -6,7 +6,6 @@ from typing import Generator
 from unittest.mock import patch
 
 import psycopg2
-import psycopg2.extras
 import pytest
 from instana.instrumentation.pep0249 import (
     ConnectionFactory,
@@ -166,9 +165,14 @@ class TestCursorWrapper:
             assert last_inserted_row == sample_params
 
             # Exception Handling
-            with pytest.raises(Exception) as exc_info, patch.object(
-                CursorWrapper, "_collect_kvs", side_effect=Exception("test exception")
-            ) as mock_collect_kvs:
+            with (
+                pytest.raises(Exception) as exc_info,
+                patch.object(
+                    CursorWrapper,
+                    "_collect_kvs",
+                    side_effect=Exception("test exception"),
+                ) as mock_collect_kvs,
+            ):
                 self.test_wrapper.execute(sample_sql)
             assert str(exc_info.value) == "test exception"
             mock_collect_kvs.assert_called_once()
@@ -203,9 +207,14 @@ class TestCursorWrapper:
             self.test_wrapper.executemany(sample_sql, sample_seq_of_params)
 
             # Exception Handling
-            with pytest.raises(Exception) as exc_info, patch.object(
-                CursorWrapper, "_collect_kvs", side_effect=Exception("test exception")
-            ) as mock_collect_kvs:
+            with (
+                pytest.raises(Exception) as exc_info,
+                patch.object(
+                    CursorWrapper,
+                    "_collect_kvs",
+                    side_effect=Exception("test exception"),
+                ) as mock_collect_kvs,
+            ):
                 self.test_wrapper.executemany(
                     sample_sql, seq_of_parameters=sample_seq_of_params
                 )
@@ -245,10 +254,13 @@ class TestCursorWrapper:
 
             # Exception Handling
             error_proc_name = "erroroeus command;"
-            with pytest.raises(Exception) as exc_info, patch.object(
-                InstanaSpan,
-                "record_exception",
-            ) as mock_exception:
+            with (
+                pytest.raises(Exception) as exc_info,
+                patch.object(
+                    InstanaSpan,
+                    "record_exception",
+                ) as mock_exception,
+            ):
                 self.test_wrapper.callproc(error_proc_name, sample_params)
             assert exc_info.typename == "SyntaxError"
             mock_exception.call_count == 2

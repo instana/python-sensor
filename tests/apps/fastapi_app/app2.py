@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2024
 
-from fastapi import FastAPI, HTTPException, Response
-from fastapi.concurrency import run_in_threadpool
+from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 

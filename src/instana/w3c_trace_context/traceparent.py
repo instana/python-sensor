@@ -13,7 +13,8 @@ from instana.log import logger
 from instana.util.ids import header_to_id, header_to_long_id
 
 # See https://www.w3.org/TR/trace-context-2/#trace-flags for details on the bitmasks.
-SAMPLED_BITMASK = 0b1;
+SAMPLED_BITMASK = 0b1
+
 
 class Traceparent:
     SPECIFICATION_VERSION = "00"
@@ -32,14 +33,14 @@ class Traceparent:
                 return traceparent
         except Exception:
             logger.debug(
-                "traceparent does not follow version {} specification".format(
-                    self.SPECIFICATION_VERSION
-                )
+                f"traceparent does not follow version {self.SPECIFICATION_VERSION} specification"
             )
         return None
 
     @staticmethod
-    def get_traceparent_fields(traceparent: str) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[bool]]:
+    def get_traceparent_fields(
+        traceparent: str,
+    ) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[bool]]:
         """
         Parses the validated traceparent header into its fields and returns the fields
         :param traceparent: the original validated traceparent header
@@ -56,7 +57,7 @@ class Traceparent:
         except Exception as err:  # This method is intended to be called with a version 00 validated traceparent
             # This exception handling is added just for making sure we do not throw any unhandled exception
             # if somebody calls the method in the future without a validated traceparent
-            logger.debug("Parsing the traceparent failed: {}".format(err))
+            logger.debug(f"Parsing the traceparent failed: {err}")
             return None, None, None, None
 
     def update_traceparent(

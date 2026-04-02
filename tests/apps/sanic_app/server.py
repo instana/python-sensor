@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
-import instana
 
 from sanic import Sanic
 from sanic.exceptions import SanicException
@@ -15,7 +14,7 @@ app = Sanic("test")
 
 @app.get("/foo/<foo_id:int>")
 async def uuid_handler(request, foo_id: int):
-    return text("INT - {}".format(foo_id))
+    return text(f"INT - {foo_id}")
 
 
 @app.route("/response_headers")
@@ -41,7 +40,7 @@ async def test_request_args_400(request):
 
 @app.get("/tag/<tag>")
 async def tag_handler(request, tag):
-    return text("Tag - {}".format(tag))
+    return text(f"Tag - {tag}")
 
 
 app.add_route(SimpleView.as_view(), "/")

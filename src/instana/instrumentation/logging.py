@@ -56,7 +56,7 @@ def log_with_instana(
         parameters = None
         (t, v, tb) = sys.exc_info()
         if t is not None and v is not None:
-            parameters = "{} {}".format(t, v)
+            parameters = f"{t} {v}"
 
         parent_context = get_current()
 

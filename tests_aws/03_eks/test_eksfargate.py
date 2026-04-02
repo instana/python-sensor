@@ -8,7 +8,6 @@ import pytest
 
 from instana.agent.aws_eks_fargate import EKSFargateAgent
 from instana.options import EKSFargateOptions
-from instana.singletons import get_agent
 
 
 class TestEKSFargate:

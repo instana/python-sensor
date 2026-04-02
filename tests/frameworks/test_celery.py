@@ -5,13 +5,11 @@
 import time
 from typing import Generator, List
 
-from celery import shared_task
-import celery
+import celery  # noqa: F401
 import celery.app
-import celery.contrib
-import celery.contrib.testing
 import celery.contrib.testing.worker
 import pytest
+from celery import shared_task
 
 from instana.singletons import get_tracer
 from instana.span.span import InstanaSpan

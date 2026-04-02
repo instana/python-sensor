@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from instana.span.span import InstanaSpan
 
 try:
-    import aiohttp
+    import aiohttp  # noqa: F401
     from aiohttp.web import middleware
 
     if TYPE_CHECKING:
@@ -60,7 +60,7 @@ try:
 
             if response is not None:
                 # Mark 500 responses as errored
-                if 500 <= response.status:
+                if response.status >= 500:
                     span.mark_as_errored()
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)

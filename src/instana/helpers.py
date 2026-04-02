@@ -1,12 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
-import os
-from string import Template
-
-from instana import eum_api_key as global_eum_api_key
-from .singletons import tracer
-from instana.log import logger
 
 # Usage:
 #
@@ -26,7 +20,7 @@ def eum_snippet(trace_id=None, eum_api_key=None, meta=None):
 
     @return string
     """
-    return ''
+    return ""
 
 
 def eum_test_snippet(trace_id=None, eum_api_key=None, meta=None):
@@ -40,4 +34,4 @@ def eum_test_snippet(trace_id=None, eum_api_key=None, meta=None):
 
     @return string
     """
-    return ''
+    return ""

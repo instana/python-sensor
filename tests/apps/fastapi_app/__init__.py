@@ -3,7 +3,7 @@
 
 import uvicorn
 from ...helpers import testenv
-from instana.log import logger
+from instana.log import logger as logger
 
 testenv["fastapi_port"] = 10816
 testenv["fastapi_server"] = "http://127.0.0.1:" + str(testenv["fastapi_port"])

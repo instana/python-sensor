@@ -3,15 +3,16 @@
 
 
 import copy
+from typing import Any, Callable, Dict, Optional, Tuple
+
 import wrapt
 
-from typing import Callable, Optional, Any, Tuple, Dict
-from instana.log import logger
 from instana.instrumentation.pep0249 import ConnectionFactory
+from instana.log import logger
 
 try:
     import psycopg2
-    import psycopg2.extras
+    import psycopg2.extras  # noqa: F401
 
     cf = ConnectionFactory(connect_func=psycopg2.connect, module_name="postgres")
 
@@ -40,9 +41,8 @@ try:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
     ) -> Callable[..., object]:
-        if "conn_or_curs" in kwargs:
-            if hasattr(kwargs["conn_or_curs"], "__wrapped__"):
-                kwargs["conn_or_curs"] = kwargs["conn_or_curs"].__wrapped__
+        if "conn_or_curs" in kwargs and hasattr(kwargs["conn_or_curs"], "__wrapped__"):
+            kwargs["conn_or_curs"] = kwargs["conn_or_curs"].__wrapped__
 
         return wrapped(*args, **kwargs)
 

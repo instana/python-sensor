@@ -9,7 +9,6 @@ import pytest
 
 from instana.agent.aws_fargate import AWSFargateAgent
 from instana.options import AWSFargateOptions
-from instana.singletons import get_agent
 
 
 class TestFargate:

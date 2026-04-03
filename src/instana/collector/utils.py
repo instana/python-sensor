@@ -1,11 +1,12 @@
 # (c) Copyright IBM Corp. 2024
 
-from typing import TYPE_CHECKING, Type, List
+from typing import TYPE_CHECKING, List, Type
 
-from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace import SpanKind
+from opentelemetry.trace.span import format_span_id
 
 from instana.util.ids import hex_id
+
 if TYPE_CHECKING:
     from instana.span.base_span import BaseSpan
 
@@ -25,6 +26,6 @@ def format_span(
         span.p = format_span_id(span.p) if span.p else None
         span.lt = hex_id(span.lt) if hasattr(span, "lt") else None
         if isinstance(span.k, SpanKind):
-            span.k = span.k.value if not span.k is SpanKind.INTERNAL else 3
+            span.k = span.k.value if span.k is not SpanKind.INTERNAL else 3
         spans.append(span)
     return spans

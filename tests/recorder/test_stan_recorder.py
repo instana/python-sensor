@@ -1,3 +1,5 @@
+# (c) Copyright IBM Corp. 2026
+
 import sys
 from multiprocessing import Queue
 from unittest import TestCase

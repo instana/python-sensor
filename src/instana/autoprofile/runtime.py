@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 if TYPE_CHECKING:
     from types import FrameType
 
+
 class RuntimeInfo(object):
     OS_LINUX = sys.platform.startswith("linux")
     OS_DARWIN = sys.platform == "darwin"

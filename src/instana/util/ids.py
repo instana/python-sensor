@@ -6,7 +6,11 @@ import time
 import random
 from typing import Union
 
-from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE, INVALID_SPAN_ID, INVALID_TRACE_ID
+from opentelemetry.trace.span import (
+    _SPAN_ID_MAX_VALUE,
+    INVALID_SPAN_ID,
+    INVALID_TRACE_ID,
+)
 
 _rnd = random.Random()
 _current_pid = 0
@@ -39,7 +43,7 @@ def header_to_long_id(header: Union[bytes, str]) -> int:
     :return: a valid ID to be used internal to the tracer
     """
     if isinstance(header, bytes):
-        header = header.decode('utf-8')
+        header = header.decode("utf-8")
 
     if not isinstance(header, str):
         return INVALID_TRACE_ID
@@ -67,7 +71,7 @@ def header_to_id(header: Union[bytes, str]) -> int:
     :return: a valid ID to be used internal to the tracer
     """
     if isinstance(header, bytes):
-        header = header.decode('utf-8')
+        header = header.decode("utf-8")
 
     if not isinstance(header, str):
         return INVALID_SPAN_ID
@@ -103,13 +107,14 @@ def hex_id(id: Union[int, str]) -> str:
         elif length > 16 and length < 32:
             hex_id = hex_id.zfill(32)
         return hex_id
-    except ValueError: # Handles ValueError: invalid literal for int() with base 10:
+    except ValueError:  # Handles ValueError: invalid literal for int() with base 10:
         return id
+
 
 def hex_id_limited(id: Union[int, str]) -> str:
     """
     Returns the hexadecimal representation of the given ID.
-    Limit longer IDs to 16 characters 
+    Limit longer IDs to 16 characters
     """
     try:
         hex_id = hex(int(id))[2:]
@@ -121,8 +126,9 @@ def hex_id_limited(id: Union[int, str]) -> str:
             # Phase 0: Discard everything but the last 16byte
             hex_id = hex_id[-16:]
         return hex_id
-    except ValueError: # Handles ValueError: invalid literal for int() with base 10:
+    except ValueError:  # Handles ValueError: invalid literal for int() with base 10:
         return id
+
 
 def define_server_timing(trace_id: Union[int, str]) -> str:
     # Note: The key `intid` is short for Instana Trace ID.
@@ -135,7 +141,7 @@ def internal_id(id: Union[int, str]) -> int:
     """
     if isinstance(id, int):
         return id
-    
+
     length = len(id)
 
     if isinstance(id, str) and id.isdigit():
@@ -153,7 +159,8 @@ def internal_id(id: Union[int, str]) -> int:
         return int(id, 16)
     except ValueError:
         return INVALID_TRACE_ID
-    
+
+
 def internal_id_limited(id: Union[int, str]) -> int:
     """
     Returns a valid id to be used internally. Handles both str and int types.

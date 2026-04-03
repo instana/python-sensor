@@ -16,14 +16,13 @@ try:
     import wrapt
     from fastapi import HTTPException
     from fastapi.exception_handlers import http_exception_handler
+    from opentelemetry.semconv.trace import SpanAttributes
     from starlette.middleware import Middleware
 
     from instana.instrumentation.asgi import InstanaASGIMiddleware
     from instana.log import logger
     from instana.util.gunicorn import running_in_gunicorn
     from instana.util.traceutils import get_tracer_tuple
-
-    from opentelemetry.semconv.trace import SpanAttributes
 
     if TYPE_CHECKING:
         from starlette.requests import Request
@@ -51,7 +50,7 @@ try:
             _, span, _ = get_tracer_tuple()
 
             if span:
-                if hasattr(exc, "detail") and 500 <= exc.status_code:
+                if hasattr(exc, "detail") and exc.status_code >= 500:
                     span.set_attribute("http.error", exc.detail)
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, exc.status_code)
         except Exception:
@@ -72,7 +71,7 @@ try:
         elif isinstance(middleware, list):
             middleware.append(Middleware(InstanaASGIMiddleware))
         elif isinstance(middleware, tuple):
-            kwargs["middleware"] =  (*middleware, Middleware(InstanaASGIMiddleware))
+            kwargs["middleware"] = (*middleware, Middleware(InstanaASGIMiddleware))
         else:
             logger.warning("Unsupported FastAPI middleware sequence type.")
 

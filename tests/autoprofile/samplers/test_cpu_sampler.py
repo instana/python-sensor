@@ -24,7 +24,6 @@ class TestCPUSampler:
         # teardown
         self.profiler.destroy()
 
-
     def test_cpu_profile(self) -> None:
         if RuntimeInfo.OS_WIN:
             return
@@ -52,4 +51,4 @@ class TestCPUSampler:
 
         profile = sampler.build_profile(2000, 120000).to_dict()
 
-        assert 'cpu_work_main_thread' in str(profile)
+        assert "cpu_work_main_thread" in str(profile)

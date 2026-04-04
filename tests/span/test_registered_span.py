@@ -57,7 +57,7 @@ class TestRegisteredSpan:
         assert expected_result[0] == reg_span.n
         assert expected_result[1] == reg_span.k
         assert service_name == reg_span.data["service"]
-        assert expected_result[2] in reg_span.data.keys()
+        assert expected_result[2] in reg_span.data
 
     def test_collect_http_attributes_with_attributes(
         self,
@@ -226,9 +226,9 @@ class TestRegisteredSpan:
         self.span.set_attributes(attributes)
         reg_span._populate_entry_span_data(self.span)
 
-        assert "python" == reg_span.data["lambda"]["runtime"]
-        assert "Unknown" == reg_span.data["lambda"]["functionName"]
-        assert "test" == reg_span.data["lambda"]["arn"]
+        assert reg_span.data["lambda"]["runtime"] == "python"
+        assert reg_span.data["lambda"]["functionName"] == "Unknown"
+        assert reg_span.data["lambda"]["arn"] == "test"
         assert expected_result["lambda.trigger"] == reg_span.data["lambda"]["trigger"]
 
         if expected_result["lambda.trigger"] == "aws:api.gateway":

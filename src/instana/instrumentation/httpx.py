@@ -58,7 +58,7 @@ try:
 
             status_code = response.status_code
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
-            if 500 <= status_code:
+            if status_code >= 500:
                 span.mark_as_errored()
         except Exception:
             logger.debug("httpx _set_request_span_attributes error: ", exc_info=True)

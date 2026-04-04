@@ -104,9 +104,9 @@ def test_populate_extra_span_attributes_with_values(
     # synthetic should be true only for entry spans
     assert not base_span.sy
     assert base_span.tp
-    assert "IDK" == base_span.ia
+    assert base_span.ia == "IDK"
     assert long_id == base_span.lt
-    assert "IDK" == base_span.crtp
+    assert base_span.crtp == "IDK"
     assert long_id == base_span.crid
 
 
@@ -122,7 +122,7 @@ def test_validate_attributes(
     assert isinstance(filtered_attributes, dict)
     assert len(attributes) == len(filtered_attributes)
     for key, value in attributes.items():
-        assert key in filtered_attributes.keys()
+        assert key in filtered_attributes
         assert value in filtered_attributes.values()
 
 

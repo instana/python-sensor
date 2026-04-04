@@ -94,22 +94,22 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert wsgi_span.data["http"]["host"] == "127.0.0.1:" + str(
             testenv["flask_port"]
         )
-        assert "/" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 200 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
         assert testenv["flask_server"] + "/" == urllib3_span.data["http"]["url"]
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -169,23 +169,23 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/" == wsgi_span.data["http"]["url"]
+        assert wsgi_span.data["http"]["url"] == "/"
         assert wsgi_span.data["http"]["params"] == "key1=<redacted>&key2=<redacted>"
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 200 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
         assert testenv["flask_server"] + "/" == urllib3_span.data["http"]["url"]
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -312,30 +312,30 @@ class TestFlask(unittest.TestCase):
         assert render_span.ec is None
 
         # render
-        assert "render" == render_span.n
-        assert SpanKind.INTERNAL == render_span.k
-        assert "flask_render_template.html" == render_span.data["render"]["name"]
-        assert "template" == render_span.data["render"]["type"]
+        assert render_span.n == "render"
+        assert render_span.k == SpanKind.INTERNAL
+        assert render_span.data["render"]["name"] == "flask_render_template.html"
+        assert render_span.data["render"]["type"] == "template"
         assert render_span.data["log"]["message"] is None
         assert render_span.data["log"]["parameters"] is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/render" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/render"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 200 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
         assert testenv["flask_server"] + "/render" == urllib3_span.data["http"]["url"]
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -394,33 +394,33 @@ class TestFlask(unittest.TestCase):
         assert render_span.ec is None
 
         # render
-        assert "render" == render_span.n
-        assert SpanKind.INTERNAL == render_span.k
-        assert "(from string)" == render_span.data["render"]["name"]
-        assert "template" == render_span.data["render"]["type"]
+        assert render_span.n == "render"
+        assert render_span.k == SpanKind.INTERNAL
+        assert render_span.data["render"]["name"] == "(from string)"
+        assert render_span.data["render"]["type"] == "template"
         assert render_span.data["log"]["message"] is None
         assert render_span.data["log"]["parameters"] is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/render_string" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/render_string"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 200 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
         assert (
             testenv["flask_server"] + "/render_string"
             == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -443,7 +443,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[2]
 
         assert response
-        assert 301 == response.status
+        assert response.status == 301
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -476,22 +476,22 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/301" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 301 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/301"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 301
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 301 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 301
         assert testenv["flask_server"] + "/301" == urllib3_span.data["http"]["url"]
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -512,7 +512,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[2]
 
         assert response
-        assert 404 == response.status
+        assert response.status == 404
 
         # assert 'X-INSTANA-T' in response.headers
         # assert int(response.headers['X-INSTANA-T']) == 16
@@ -545,24 +545,24 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/custom-404" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 404 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/custom-404"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 404
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 404 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 404
         assert (
             testenv["flask_server"] + "/custom-404" == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -585,7 +585,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[2]
 
         assert response
-        assert 404 == response.status
+        assert response.status == 404
 
         # assert 'X-INSTANA-T' in response.headers
         # assert int(response.headers['X-INSTANA-T']) == 16
@@ -618,24 +618,24 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/11111111111" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 404 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/11111111111"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 404
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 404 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 404
         assert (
             testenv["flask_server"] + "/11111111111" == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -656,7 +656,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[2]
 
         assert response
-        assert 500 == response.status
+        assert response.status == 500
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -685,26 +685,26 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert 1 == urllib3_span.ec
-        assert 1 == wsgi_span.ec
+        assert urllib3_span.ec == 1
+        assert wsgi_span.ec == 1
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/500" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 500 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/500"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 500
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 500 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 500
         assert testenv["flask_server"] + "/500" == urllib3_span.data["http"]["url"]
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -731,7 +731,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[3]
 
         assert response
-        assert 500 == response.status
+        assert response.status == 500
 
         # assert 'X-INSTANA-T' in response.headers
         # assert int(response.headers['X-INSTANA-T']) == 16
@@ -760,11 +760,11 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert 1 == urllib3_span.ec
-        assert 1 == wsgi_span.ec
+        assert urllib3_span.ec == 1
+        assert wsgi_span.ec == 1
 
         # error log
-        assert "log" == log_span.n
+        assert log_span.n == "log"
         assert log_span.data["log"]["message"] == "Exception on /render_error [GET]"
         assert (
             log_span.data["log"]["parameters"]
@@ -772,25 +772,25 @@ class TestFlask(unittest.TestCase):
         )
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/render_error" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 500 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/render_error"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 500
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 500 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 500
         assert (
             testenv["flask_server"] + "/render_error"
             == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -815,7 +815,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[3]
 
         assert response
-        assert 500 == response.status
+        assert response.status == 500
 
         assert get_current_span().is_recording() is False
 
@@ -830,34 +830,34 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert 1 == urllib3_span.ec
-        assert 1 == wsgi_span.ec
-        assert 1 == log_span.ec
+        assert urllib3_span.ec == 1
+        assert wsgi_span.ec == 1
+        assert log_span.ec == 1
 
         # error log
-        assert "log" == log_span.n
+        assert log_span.n == "log"
         assert log_span.data["log"]["message"] == "Exception on /exception [GET]"
         assert log_span.data["log"]["parameters"] == "<class 'Exception'> fake error"
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/exception" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 500 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/exception"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 500
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 500 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 500
         assert (
             testenv["flask_server"] + "/exception" == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -881,7 +881,7 @@ class TestFlask(unittest.TestCase):
         test_span = spans[3]
 
         assert response
-        assert 502 == response.status
+        assert response.status == 502
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -910,12 +910,12 @@ class TestFlask(unittest.TestCase):
 
         # Error logging
         assert test_span.ec is None
-        assert 1 == urllib3_span.ec
-        assert 1 == wsgi_span.ec
-        assert 1 == log_span.ec
+        assert urllib3_span.ec == 1
+        assert wsgi_span.ec == 1
+        assert log_span.ec == 1
 
         # error log
-        assert "log" == log_span.n
+        assert log_span.n == "log"
         assert log_span.data["log"]["message"] == "InvalidUsage error handler invoked"
         assert (
             log_span.data["log"]["parameters"]
@@ -923,25 +923,25 @@ class TestFlask(unittest.TestCase):
         )
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/exception-invalid-usage" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 502 == wsgi_span.data["http"]["status"]
-        assert "Simulated custom exception" == wsgi_span.data["http"]["error"]
+        assert wsgi_span.data["http"]["url"] == "/exception-invalid-usage"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 502
+        assert wsgi_span.data["http"]["error"] == "Simulated custom exception"
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 502 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 502
         assert (
             testenv["flask_server"] + "/exception-invalid-usage"
             == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
@@ -996,31 +996,31 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/users/Ricky/sayhello" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/users/Ricky/sayhello"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 200 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
         assert (
             testenv["flask_server"] + "/users/Ricky/sayhello"
             == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
 
         # We should have a reported path template for this route
-        assert "/users/{username}/sayhello" == wsgi_span.data["http"]["path_tpl"]
+        assert wsgi_span.data["http"]["path_tpl"] == "/users/{username}/sayhello"
 
     def test_request_header_capture(self) -> None:
         # Hack together a manual custom headers list
@@ -1058,14 +1058,14 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
         assert wsgi_span.stack is None
 
-        assert "/" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
 
         assert "X-Capture-This-Too" in wsgi_span.data["http"]["header"]
-        assert "this too" == wsgi_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert wsgi_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
         assert "X-Capture-That-Too" in wsgi_span.data["http"]["header"]
-        assert "that too" == wsgi_span.data["http"]["header"]["X-Capture-That-Too"]
+        assert wsgi_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
@@ -1124,44 +1124,46 @@ class TestFlask(unittest.TestCase):
         assert wsgi_span.ec is None
 
         # urllib3
-        assert "test" == test_span.data["sdk"]["name"]
-        assert "urllib3" == urllib3_span.n
-        assert 200 == urllib3_span.data["http"]["status"]
+        assert test_span.data["sdk"]["name"] == "test"
+        assert urllib3_span.n == "urllib3"
+        assert urllib3_span.data["http"]["status"] == 200
         assert (
             testenv["flask_server"] + "/response_headers"
             == urllib3_span.data["http"]["url"]
         )
-        assert "GET" == urllib3_span.data["http"]["method"]
+        assert urllib3_span.data["http"]["method"] == "GET"
         assert urllib3_span.stack is not None
         assert type(urllib3_span.stack) is list
         assert len(urllib3_span.stack) > 1
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/response_headers" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert 200 == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["url"] == "/response_headers"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == 200
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
         assert "X-Capture-This" in wsgi_span.data["http"]["header"]
-        assert "Ok" == wsgi_span.data["http"]["header"]["X-Capture-This"]
+        assert wsgi_span.data["http"]["header"]["X-Capture-This"] == "Ok"
         assert "X-Capture-That" in wsgi_span.data["http"]["header"]
 
-        assert "Ok too" == wsgi_span.data["http"]["header"]["X-Capture-That"]
+        assert wsgi_span.data["http"]["header"]["X-Capture-That"] == "Ok too"
 
         agent.options.extra_http_headers = original_extra_http_headers
 
     def test_request_started_exception(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            with patch(
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
                 "instana.singletons.tracer.extract",
                 side_effect=Exception("mocked error"),
-            ):
-                self.http.request("GET", testenv["flask_server"] + "/")
+            ),
+        ):
+            self.http.request("GET", testenv["flask_server"] + "/")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -1181,7 +1183,7 @@ class TestFlask(unittest.TestCase):
         wsgi_span = spans[0]
 
         assert response
-        assert 500 == response.status
+        assert response.status == 500
 
         assert get_current_span().is_recording() is False
 
@@ -1193,8 +1195,8 @@ class TestFlask(unittest.TestCase):
         assert (
             "127.0.0.1:" + str(testenv["flask_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/got_request_exception" == wsgi_span.data["http"]["url"]
-        assert "GET" == wsgi_span.data["http"]["method"]
+        assert wsgi_span.data["http"]["url"] == "/got_request_exception"
+        assert wsgi_span.data["http"]["method"] == "GET"
         assert wsgi_span.data["http"]["status"] == 500
         assert wsgi_span.data["http"]["error"] == "RuntimeError()"
         assert wsgi_span.stack is None

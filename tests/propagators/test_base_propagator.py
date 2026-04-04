@@ -27,8 +27,8 @@ class TestBasePropagator:
         assert self.propagator.extract_headers_dict(wrong_carrier) is None
 
     def test_get_ctx_level(self) -> None:
-        assert 3 == self.propagator._get_ctx_level("3,4")
-        assert 1 == self.propagator._get_ctx_level("wrong_data")
+        assert self.propagator._get_ctx_level("3,4") == 3
+        assert self.propagator._get_ctx_level("wrong_data") == 1
 
     def test_get_correlation_properties(self) -> None:
         a, b = self.propagator._get_correlation_properties(
@@ -36,8 +36,11 @@ class TestBasePropagator:
         )
         assert a == "3"
         assert b == "5"
-        assert "3", None == self.propagator._get_correlation_properties(  # noqa: E711
-            ",correlationType=3;"
+        assert "3", (
+            self.propagator._get_correlation_properties(  # noqa: E711
+                ",correlationType=3;"
+            )
+            is None
         )
 
     def test_get_participating_trace_context(self, span_context) -> None:

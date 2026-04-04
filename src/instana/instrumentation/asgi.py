@@ -17,6 +17,7 @@ from instana.util.traceutils import extract_custom_headers
 
 if TYPE_CHECKING:
     from starlette.middleware.exceptions import ExceptionMiddleware
+
     from instana.span.span import InstanaSpan
 
 
@@ -34,7 +35,7 @@ class InstanaASGIMiddleware:
             span.set_attribute(SpanAttributes.HTTP_METHOD, scope.get("method"))
 
             server = scope.get("server")
-            if isinstance(server, tuple) or isinstance(server, list):
+            if isinstance(server, (tuple, list)):
                 span.set_attribute(SpanAttributes.HTTP_HOST, server[0])
 
             query = scope.get("query_string")
@@ -102,7 +103,7 @@ class InstanaASGIMiddleware:
                 try:
                     status_code = response.get("status")
                     if status_code:
-                        if 500 <= int(status_code):
+                        if int(status_code) >= 500:
                             current_span.mark_as_errored()
                         current_span.set_attribute(
                             SpanAttributes.HTTP_STATUS_CODE, status_code

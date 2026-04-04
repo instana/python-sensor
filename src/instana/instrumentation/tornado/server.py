@@ -96,7 +96,7 @@ try:
             status_code = instance.get_status()
 
             # Mark 500 responses as errored
-            if 500 <= status_code:
+            if status_code >= 500:
                 span.mark_as_errored()
 
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)

@@ -515,9 +515,9 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
         assert "X-Capture-This" in asgi_span.data["http"]["header"]
-        assert "this" == asgi_span.data["http"]["header"]["X-Capture-This"]
+        assert asgi_span.data["http"]["header"]["X-Capture-This"] == "this"
         assert "X-Capture-That" in asgi_span.data["http"]["header"]
-        assert "that" == asgi_span.data["http"]["header"]["X-Capture-That"]
+        assert asgi_span.data["http"]["header"]["X-Capture-That"] == "that"
 
     def test_response_header_capture(self) -> None:
         path = "/response_headers"
@@ -562,6 +562,6 @@ class TestSanic(_TraceContextMixin):
         assert not asgi_span.data["http"]["params"]
 
         assert "X-Capture-This-Too" in asgi_span.data["http"]["header"]
-        assert "this too" == asgi_span.data["http"]["header"]["X-Capture-This-Too"]
+        assert asgi_span.data["http"]["header"]["X-Capture-This-Too"] == "this too"
         assert "X-Capture-That-Too" in asgi_span.data["http"]["header"]
-        assert "that too" == asgi_span.data["http"]["header"]["X-Capture-That-Too"]
+        assert asgi_span.data["http"]["header"]["X-Capture-That-Too"] == "that too"

@@ -28,7 +28,11 @@ class TestSDKSpan:
             "return": "True",
         }
         self.span = InstanaSpan(
-            span_name, span_context, span_processor, attributes=attributes, kind=SpanKind.SERVER
+            span_name,
+            span_context,
+            span_processor,
+            attributes=attributes,
+            kind=SpanKind.SERVER,
         )
         sdk_span = SDKSpan(self.span, None, service_name)
 
@@ -98,4 +102,4 @@ class TestSDKSpan:
     ) -> None:
         self.span = SDKSpan(span, None, "test")
         kind = self.span.get_span_kind(span)
-        assert ("intermediate", 3) == kind
+        assert kind == ("intermediate", 3)

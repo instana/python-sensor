@@ -55,7 +55,7 @@ try:
                     if "statusCode" in result and result.get("statusCode"):
                         status_code = int(result["statusCode"])
                         span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
-                        if 500 <= status_code:
+                        if status_code >= 500:
                             span.record_exception(f"HTTP status {status_code}")
             except Exception as exc:
                 logger.debug(f"AWS Lambda lambda_handler_with_instana error: {exc}")

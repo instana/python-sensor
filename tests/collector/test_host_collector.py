@@ -108,7 +108,7 @@ class TestHostCollector:
             assert "data" in python_plugin
             assert "snapshot" in python_plugin["data"]
             assert "m" in python_plugin["data"]["snapshot"]
-            assert "Manual" == python_plugin["data"]["snapshot"]["m"]
+            assert python_plugin["data"]["snapshot"]["m"] == "Manual"
             assert "metrics" in python_plugin["data"]
 
             assert "ru_utime" in python_plugin["data"]["metrics"]
@@ -213,7 +213,7 @@ class TestHostCollector:
         assert "data" in python_plugin
         assert "snapshot" in python_plugin["data"]
         assert "m" in python_plugin["data"]["snapshot"]
-        assert "Manual" == python_plugin["data"]["snapshot"]["m"]
+        assert python_plugin["data"]["snapshot"]["m"] == "Manual"
         assert "metrics" not in python_plugin["data"]
 
     def test_prepare_payload_with_snapshot_with_python_packages(self) -> None:
@@ -223,7 +223,7 @@ class TestHostCollector:
         snapshot = self.payload["metrics"]["plugins"][0]["data"]["snapshot"]
         assert snapshot
         assert "m" in snapshot
-        assert "Manual" == snapshot["m"]
+        assert snapshot["m"] == "Manual"
         assert "version" in snapshot
         assert len(snapshot["versions"]) > 5
         assert snapshot["versions"]["instana"] == VERSION
@@ -238,7 +238,7 @@ class TestHostCollector:
         snapshot = self.payload["metrics"]["plugins"][0]["data"]["snapshot"]
         assert snapshot
         assert "m" in snapshot
-        assert "Manual" == snapshot["m"]
+        assert snapshot["m"] == "Manual"
         assert "version" in snapshot
         assert len(snapshot["versions"]) == 1
         assert snapshot["versions"]["instana"] == VERSION
@@ -251,14 +251,14 @@ class TestHostCollector:
         snapshot = self.payload["metrics"]["plugins"][0]["data"]["snapshot"]
         assert snapshot
         assert "m" in snapshot
-        assert "Autowrapt" == snapshot["m"]
+        assert snapshot["m"] == "Autowrapt"
         assert "version" in snapshot
         assert len(snapshot["versions"]) > 5
         expected_packages = ("instana", "wrapt", "fysom")
         for package in expected_packages:
-            assert (
-                package in snapshot["versions"]
-            ), f"{package} not found in snapshot['versions']"
+            assert package in snapshot["versions"], (
+                f"{package} not found in snapshot['versions']"
+            )
         assert snapshot["versions"]["instana"] == VERSION
 
     def test_prepare_payload_with_autotrace(self) -> None:
@@ -269,14 +269,14 @@ class TestHostCollector:
         snapshot = self.payload["metrics"]["plugins"][0]["data"]["snapshot"]
         assert snapshot
         assert "m" in snapshot
-        assert "AutoTrace" == snapshot["m"]
+        assert snapshot["m"] == "AutoTrace"
         assert "version" in snapshot
         assert len(snapshot["versions"]) > 5
         expected_packages = ("instana", "wrapt", "fysom")
         for package in expected_packages:
-            assert (
-                package in snapshot["versions"]
-            ), f"{package} not found in snapshot['versions']"
+            assert package in snapshot["versions"], (
+                f"{package} not found in snapshot['versions']"
+            )
         assert snapshot["versions"]["instana"] == VERSION
 
     def test_prepare_and_report_data_without_lock(

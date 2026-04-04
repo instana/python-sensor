@@ -32,8 +32,8 @@ def test_span_event():
     assert event.name == event_name
     assert event.attributes
     assert len(event.attributes) == 2
-    assert "field1" in event.attributes.keys()
-    assert "two" == event.attributes.get("field2")
+    assert "field1" in event.attributes
+    assert event.attributes.get("field2") == "two"
     assert event.timestamp == timestamp
 
 

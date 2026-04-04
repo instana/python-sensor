@@ -94,7 +94,7 @@ try:
         ) -> "HttpResponse":
             try:
                 if request.span:
-                    if 500 <= response.status_code:
+                    if response.status_code >= 500:
                         request.span.assure_errored()
                     # for django >= 2.2
                     if request.resolver_match is not None and hasattr(

@@ -65,7 +65,7 @@ try:
 
                 extract_custom_headers(span, params.response.headers)
 
-                if 500 <= params.response.status:
+                if params.response.status >= 500:
                     span.mark_as_errored({"http.error": params.response.reason})
 
                 if span.is_recording():

@@ -82,7 +82,7 @@ def handle_user_exception_with_instana(
                     else:
                         status_code = response.status_code
 
-                if 500 <= status_code:
+                if status_code >= 500:
                     span.record_exception(exc)
 
                 span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, int(status_code))
@@ -147,7 +147,7 @@ def inject_span(
 
         span = flask.g.span
         if span:
-            if 500 <= response.status_code:
+            if response.status_code >= 500:
                 span.mark_as_errored()
 
             span.set_attribute(

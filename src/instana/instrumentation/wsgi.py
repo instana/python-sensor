@@ -62,7 +62,7 @@ class InstanaWSGIMiddleware(object):
 
             # Set status code attribute
             sc = status.split(" ")[0]
-            if 500 <= int(sc):
+            if int(sc) >= 500:
                 span.mark_as_errored()
 
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, sc)

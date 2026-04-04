@@ -28,7 +28,7 @@ class TestWSGI:
         response = self.http.request("GET", testenv["wsgi_server"] + "/")
         spans = self.recorder.queued_spans()
 
-        assert 1 == len(spans)
+        assert len(spans) == 1
         assert get_current_span().is_recording() is False
         assert response.status == 200
 
@@ -38,7 +38,7 @@ class TestWSGI:
 
         spans = self.recorder.queued_spans()
 
-        assert 3 == len(spans)
+        assert len(spans) == 3
         assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
@@ -46,7 +46,7 @@ class TestWSGI:
         test_span = spans[2]
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -81,13 +81,13 @@ class TestWSGI:
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/" == wsgi_span.data["http"]["path"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert "200" == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["path"] == "/"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == "200"
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
@@ -98,7 +98,7 @@ class TestWSGI:
 
         spans = self.recorder.queued_spans()
 
-        assert 3 == len(spans)
+        assert len(spans) == 3
         assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
@@ -117,7 +117,7 @@ class TestWSGI:
 
         spans = self.recorder.queued_spans()
 
-        assert 3 == len(spans)
+        assert len(spans) == 3
         assert get_current_span().is_recording() is False
 
         wsgi_span = spans[0]
@@ -125,7 +125,7 @@ class TestWSGI:
         test_span = spans[2]
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         assert "X-INSTANA-T" in response.headers
         assert int(response.headers["X-INSTANA-T"], 16)
@@ -156,14 +156,14 @@ class TestWSGI:
         assert wsgi_span.ec is None
 
         # wsgi
-        assert "wsgi" == wsgi_span.n
+        assert wsgi_span.n == "wsgi"
         assert (
             "127.0.0.1:" + str(testenv["wsgi_port"]) == wsgi_span.data["http"]["host"]
         )
-        assert "/" == wsgi_span.data["http"]["path"]
-        assert "secret=<redacted>" == wsgi_span.data["http"]["params"]
-        assert "GET" == wsgi_span.data["http"]["method"]
-        assert "200" == wsgi_span.data["http"]["status"]
+        assert wsgi_span.data["http"]["path"] == "/"
+        assert wsgi_span.data["http"]["params"] == "secret=<redacted>"
+        assert wsgi_span.data["http"]["method"] == "GET"
+        assert wsgi_span.data["http"]["status"] == "200"
         assert wsgi_span.data["http"]["error"] is None
         assert wsgi_span.stack is None
 
@@ -177,10 +177,10 @@ class TestWSGI:
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         wsgi_span = spans[0]
 
@@ -214,10 +214,10 @@ class TestWSGI:
         )
 
         assert response
-        assert 200 == response.status
+        assert response.status == 200
 
         spans = self.recorder.queued_spans()
-        assert 1 == len(spans)
+        assert len(spans) == 1
 
         wsgi_span = spans[0]
 

@@ -92,7 +92,7 @@ try:
                     status_code = exception.status_code
                     message = str(exception)
 
-                    if all([span, status_code, message]) and 500 <= status_code:
+                    if all([span, status_code, message]) and status_code >= 500:
                         span.set_attribute("http.error", message)
             except Exception:
                 logger.debug("exception_with_instana: ", exc_info=True)

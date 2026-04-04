@@ -88,8 +88,8 @@ class TestSpan:
 
         assert self.span.attributes
         assert len(self.span.attributes) == 2
-        assert "field1" in self.span.attributes.keys()
-        assert "two" == self.span.attributes.get("field2")
+        assert "field1" in self.span.attributes
+        assert self.span.attributes.get("field2") == "two"
 
     def test_span_set_attributes(
         self,
@@ -107,8 +107,8 @@ class TestSpan:
 
         assert self.span.attributes
         assert len(self.span.attributes) == 2
-        assert "field1" in self.span.attributes.keys()
-        assert "two" == self.span.attributes.get("field2")
+        assert "field1" in self.span.attributes
+        assert self.span.attributes.get("field2") == "two"
 
         attributes = {
             "field3": True,
@@ -117,7 +117,7 @@ class TestSpan:
         self.span.set_attributes(attributes)
 
         assert len(self.span.attributes) == 4
-        assert "field3" in self.span.attributes.keys()
+        assert "field3" in self.span.attributes
         assert "vier" in self.span.attributes.get("field4")
 
     def test_span_set_attribute_default(
@@ -139,8 +139,8 @@ class TestSpan:
 
         assert self.span.attributes
         assert len(self.span.attributes) == 2
-        assert "field1" in self.span.attributes.keys()
-        assert "two" == self.span.attributes.get("field2")
+        assert "field1" in self.span.attributes
+        assert self.span.attributes.get("field2") == "two"
 
     def test_span_set_attribute(
         self,
@@ -158,8 +158,8 @@ class TestSpan:
 
         assert self.span.attributes
         assert len(self.span.attributes) == 2
-        assert "field1" in self.span.attributes.keys()
-        assert "two" == self.span.attributes.get("field2")
+        assert "field1" in self.span.attributes
+        assert self.span.attributes.get("field2") == "two"
 
         attributes = {
             "field3": True,
@@ -169,7 +169,7 @@ class TestSpan:
             self.span.set_attribute(key, value)
 
         assert len(self.span.attributes) == 4
-        assert "field3" in self.span.attributes.keys()
+        assert "field3" in self.span.attributes
         assert "vier" in self.span.attributes.get("field4")
 
     def test_span_update_name(
@@ -590,14 +590,14 @@ class TestSpan:
         self.span.record_exception(exception)
 
         assert span_name == self.span.name
-        assert 1 == self.span.attributes.get("ec", 0)
+        assert self.span.attributes.get("ec", 0) == 1
         if span_attribute:
-            assert span_attribute in self.span.attributes.keys()
+            assert span_attribute in self.span.attributes.keys()  # noqa: SIM118
             assert exception_msg == self.span.attributes.get(span_attribute, None)
         else:
             event = self.span.events[-1]  # always get the latest event
             assert isinstance(event, Event)
-            assert "exception" == event.name
+            assert event.name == "exception"
             assert exception_msg == event.attributes.get("message", None)
 
     def test_span_record_exception_with_attribute(
@@ -617,13 +617,13 @@ class TestSpan:
         self.span.record_exception(exception, attributes)
 
         assert span_name == self.span.name
-        assert 1 == self.span.attributes.get("ec", 0)
+        assert self.span.attributes.get("ec", 0) == 1
 
         event = self.span.events[-1]  # always get the latest event
         assert isinstance(event, Event)
-        assert 2 == len(event.attributes)
+        assert len(event.attributes) == 2
         assert exception_msg == event.attributes.get("message", None)
-        assert 0 == event.attributes.get("custom_attr", None)
+        assert event.attributes.get("custom_attr", None) == 0
 
     def test_span_record_exception_with_Exception_msg(
         self,
@@ -641,8 +641,8 @@ class TestSpan:
         self.span.record_exception(exception)
 
         assert span_name == self.span.name
-        assert 1 == self.span.attributes.get("ec", 0)
-        assert span_attribute in self.span.attributes.keys()
+        assert self.span.attributes.get("ec", 0) == 1
+        assert span_attribute in self.span.attributes
         assert exception_msg == self.span.attributes.get(span_attribute, None)
 
     def test_span_record_exception_with_Exception_none_msg(
@@ -660,9 +660,9 @@ class TestSpan:
         self.span.record_exception(exception)
 
         assert span_name == self.span.name
-        assert 1 == self.span.attributes.get("ec", 0)
-        assert span_attribute in self.span.attributes.keys()
-        assert "Exception()" == self.span.attributes.get(span_attribute, None)
+        assert self.span.attributes.get("ec", 0) == 1
+        assert span_attribute in self.span.attributes
+        assert self.span.attributes.get(span_attribute, None) == "Exception()"
 
     def test_span_record_exception_with_Exception_raised(
         self,
@@ -674,12 +674,14 @@ class TestSpan:
         exception = None
         self.span = InstanaSpan(span_name, span_context, span_processor)
 
-        with patch(
-            "instana.span.span.InstanaSpan.add_event",
-            side_effect=Exception("mocked error"),
+        with (
+            patch(
+                "instana.span.span.InstanaSpan.add_event",
+                side_effect=Exception("mocked error"),
+            ),
+            pytest.raises(Exception),
         ):
-            with pytest.raises(Exception):
-                self.span.record_exception(exception)
+            self.span.record_exception(exception)
 
     def test_span_end_default(
         self,
@@ -762,7 +764,7 @@ class TestSpan:
         assert self.span.attributes
         assert len(self.span.attributes) == 3
         assert self.span.attributes.get("ec") == 1
-        assert "field1" in self.span.attributes.keys()
+        assert "field1" in self.span.attributes
         assert self.span.attributes.get("field2") == "two"
 
         self.span.mark_as_errored()
@@ -770,7 +772,7 @@ class TestSpan:
         assert self.span.attributes
         assert len(self.span.attributes) == 3
         assert self.span.attributes.get("ec") == 2
-        assert "field1" in self.span.attributes.keys()
+        assert "field1" in self.span.attributes
         assert self.span.attributes.get("field2") == "two"
 
     def test_span_mark_as_errored_exception(

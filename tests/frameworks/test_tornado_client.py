@@ -468,13 +468,13 @@ class TestTornadoClient:
         assert server_span.n == "tornado-server"
         assert server_span.data["http"]["status"] == 200
         assert testenv["tornado_server"] + "/" == server_span.data["http"]["url"]
-        assert "secret=<redacted>" == server_span.data["http"]["params"]
+        assert server_span.data["http"]["params"] == "secret=<redacted>"
         assert server_span.data["http"]["method"] == "GET"
 
         assert client_span.n == "tornado-client"
         assert client_span.data["http"]["status"] == 200
         assert testenv["tornado_server"] + "/" == client_span.data["http"]["url"]
-        assert "secret=<redacted>" == client_span.data["http"]["params"]
+        assert client_span.data["http"]["params"] == "secret=<redacted>"
         assert client_span.data["http"]["method"] == "GET"
         assert client_span.stack
         assert type(client_span.stack) is list

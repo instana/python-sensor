@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2025
 
 import os
-from typing import Any, Dict, List, Sequence, Tuple, Union, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from instana.configurator import config
 from instana.log import logger
@@ -317,7 +317,7 @@ def parse_span_disabling_str(item: str) -> List[str]:
     @param item: String span disabling configuration
     @return: List of disabled spans
     """
-    if item.lower() in SPAN_CATEGORIES or item.lower() in SPAN_TYPE_TO_CATEGORY.keys():
+    if item.lower() in SPAN_CATEGORIES or item.lower() in SPAN_TYPE_TO_CATEGORY:
         return [item.lower()]
     else:
         logger.debug(f"set_span_disabling_str: Invalid span category/type: {item}")
@@ -335,7 +335,7 @@ def parse_span_disabling_dict(items: Dict[str, bool]) -> Tuple[List[str], List[s
     enabled_spans = []
 
     for key, value in items.items():
-        if key in SPAN_CATEGORIES or key in SPAN_TYPE_TO_CATEGORY.keys():
+        if key in SPAN_CATEGORIES or key in SPAN_TYPE_TO_CATEGORY:
             if is_truthy(value):
                 disabled_spans.append(key)
             else:
@@ -394,9 +394,10 @@ def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
 
 
 def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]:
-    if "tracing" in config:
-        if tracing_disable_config := config["tracing"].get("disable", None):
-            return parse_span_disabling(tracing_disable_config)
+    if "tracing" in config and (
+        tracing_disable_config := config["tracing"].get("disable", None)
+    ):
+        return parse_span_disabling(tracing_disable_config)
     return [], []
 
 
@@ -472,15 +473,15 @@ def parse_technology_stack_trace_config(
     tech_stack_config = {}
     context = f"for {tech_name}" if tech_name else ""
 
-    if level_key in tech_data:
-        if validated_level := validate_stack_trace_level(tech_data[level_key], context):
-            tech_stack_config["level"] = validated_level
+    if level_key in tech_data and (
+        validated_level := validate_stack_trace_level(tech_data[level_key], context)
+    ):
+        tech_stack_config["level"] = validated_level
 
-    if length_key in tech_data:
-        if validated_length := validate_stack_trace_length(
-            tech_data[length_key], context
-        ):
-            tech_stack_config["length"] = validated_length
+    if length_key in tech_data and (
+        validated_length := validate_stack_trace_length(tech_data[length_key], context)
+    ):
+        tech_stack_config["length"] = validated_length
 
     return tech_stack_config
 
@@ -498,17 +499,19 @@ def parse_global_stack_trace_config(global_config: Dict[str, Any]) -> Tuple[str,
     level = "all"
     length = 30
 
-    if "stack-trace" in global_config:
-        if validated_level := validate_stack_trace_level(
+    if "stack-trace" in global_config and (
+        validated_level := validate_stack_trace_level(
             global_config["stack-trace"], "in YAML config"
-        ):
-            level = validated_level
+        )
+    ):
+        level = validated_level
 
-    if "stack-trace-length" in global_config:
-        if validated_length := validate_stack_trace_length(
+    if "stack-trace-length" in global_config and (
+        validated_length := validate_stack_trace_length(
             global_config["stack-trace-length"], "in YAML config"
-        ):
-            length = validated_length
+        )
+    ):
+        length = validated_length
 
     return level, length
 
@@ -544,9 +547,9 @@ def parse_tech_specific_stack_trace_configs(
     return tech_config
 
 
-def get_stack_trace_config_from_yaml() -> (
-    Tuple[str, int, Dict[str, Dict[str, Union[str, int]]]]
-):
+def get_stack_trace_config_from_yaml() -> Tuple[
+    str, int, Dict[str, Dict[str, Union[str, int]]]
+]:
     """
     Get stack trace configuration from YAML file specified by INSTANA_CONFIG_PATH.
 

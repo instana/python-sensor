@@ -47,7 +47,7 @@ try:
     ) -> None:
         resp_code = int(response_string.split()[0])
 
-        if 500 <= resp_code:
+        if resp_code >= 500:
             span.record_exception(error)
 
     @wrapt.patch_function_wrapper("spyne.server.wsgi", "WsgiApplication.handle_error")
@@ -124,7 +124,7 @@ try:
 
             tracer.inject(span.context, Format.HTTP_HEADERS, response_headers)
 
-            ## Store the span in the user defined context object offered by Spyne
+            # Store the span in the user defined context object offered by Spyne
             if ctx.udc:
                 ctx.udc.span = span
             else:

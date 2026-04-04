@@ -47,7 +47,7 @@ class TestBaseOptions:
     def _resource(self) -> Generator[None, None, None]:
         self.base_options = None
         yield
-        if "tracing" in config.keys():
+        if "tracing" in config:
             del config["tracing"]
 
     def test_base_options(self) -> None:
@@ -788,7 +788,7 @@ class TestStandardOptions:
     def _resource(self) -> Generator[None, None, None]:
         self.standart_options = None
         yield
-        if "tracing" in config.keys():
+        if "tracing" in config:
             del config["tracing"]
 
     def test_standard_options(self) -> None:
@@ -1143,7 +1143,7 @@ class TestStackTraceConfiguration:
     def _resource(self) -> Generator[None, None, None]:
         self.options = None
         yield
-        if "tracing" in config.keys():
+        if "tracing" in config:
             del config["tracing"]
 
     def test_stack_trace_defaults(self) -> None:

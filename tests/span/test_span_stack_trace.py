@@ -30,15 +30,15 @@ class TestSpanStackTrace:
         """Test that stack trace is capped at 40 frames even with higher limit."""
         span_name = "redis"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         # Manually set a high limit in options
         span_processor.agent.options.stack_trace_length = 50
-        
+
         # Call add_stack directly with is_errored=False
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=False
+            is_errored=False,
         )
 
         # Check if default is set
@@ -49,9 +49,9 @@ class TestSpanStackTrace:
 
         stack_0 = stack[0]
         assert len(stack_0) == 3
-        assert "c" in stack_0.keys()
-        assert "n" in stack_0.keys()
-        assert "m" in stack_0.keys()
+        assert "c" in stack_0
+        assert "n" in stack_0
+        assert "m" in stack_0
 
     def test_add_stack_level_all(
         self,
@@ -61,16 +61,16 @@ class TestSpanStackTrace:
         """Test stack trace collection with level='all'."""
         span_name = "http"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         span_processor.agent.options.stack_trace_level = "all"
         test_limit = 5
         span_processor.agent.options.stack_trace_length = test_limit
-        
+
         # Non-errored span should get stack trace
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=False
+            is_errored=False,
         )
 
         assert stack
@@ -84,15 +84,15 @@ class TestSpanStackTrace:
         """Test that non-errored spans don't get stack trace with level='error'."""
         span_name = "http"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         span_processor.agent.options.stack_trace_level = "error"
         span_processor.agent.options.stack_trace_length = 35
-        
+
         # Non-errored span should NOT get stack trace
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=False
+            is_errored=False,
         )
 
         assert stack is None
@@ -105,16 +105,16 @@ class TestSpanStackTrace:
         """Test that errored spans get full stack trace with level='error'."""
         span_name = "http"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         span_processor.agent.options.stack_trace_level = "error"
         test_limit = 10
         span_processor.agent.options.stack_trace_length = test_limit
-        
+
         # Errored span should get FULL stack trace (no limit)
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=True
+            is_errored=True,
         )
 
         assert stack
@@ -129,23 +129,23 @@ class TestSpanStackTrace:
         """Test that no stack trace is collected with level='none'."""
         span_name = "http"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         span_processor.agent.options.stack_trace_level = "none"
         span_processor.agent.options.stack_trace_length = 20
-        
+
         # Should NOT get stack trace
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=False
+            is_errored=False,
         )
         assert stack is None
-        
+
         # Even errored spans should not get stack trace
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=True
+            is_errored=True,
         )
         assert stack is None
 
@@ -157,17 +157,17 @@ class TestSpanStackTrace:
         """Test that errored spans get full stack regardless of level setting."""
         span_name = "mysql"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         # Set level to 'all' with a low limit
         span_processor.agent.options.stack_trace_level = "all"
         test_limit = 5
         span_processor.agent.options.stack_trace_length = test_limit
-        
+
         # Errored span should get FULL stack (not limited to 5)
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=True
+            is_errored=True,
         )
 
         assert stack
@@ -182,7 +182,7 @@ class TestSpanStackTrace:
         """Test add_stack_trace_if_needed for EXIT spans."""
         span_name = "redis"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         # Call the function that checks if it's an EXIT span
         add_stack_trace_if_needed(self.span)
 
@@ -196,7 +196,7 @@ class TestSpanStackTrace:
         """Test add_stack_trace_if_needed for non-EXIT spans."""
         span_name = "wsgi"  # Not an EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         # Call the function - should not add stack for non-EXIT spans
         add_stack_trace_if_needed(self.span)
 
@@ -213,10 +213,10 @@ class TestSpanStackTrace:
         self.span = InstanaSpan(
             span_name, span_context, span_processor, attributes=attributes
         )
-        
+
         test_limit = 5
         span_processor.agent.options.stack_trace_length = test_limit
-        
+
         # Call the function - should detect error and use full stack
         add_stack_trace_if_needed(self.span)
 
@@ -232,9 +232,9 @@ class TestSpanStackTrace:
         """Test that span.end() triggers stack trace collection for EXIT spans."""
         span_name = "urllib3"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         assert not self.span.stack
-        
+
         # End the span - should trigger stack trace collection
         self.span.end()
 
@@ -249,15 +249,15 @@ class TestSpanStackTrace:
         """Test that stack frames have correct format."""
         span_name = "postgres"  # EXIT span
         self.span = InstanaSpan(span_name, span_context, span_processor)
-        
+
         test_limit = 5
         span_processor.agent.options.stack_trace_length = test_limit
-        
+
         # Use add_stack directly
         stack = add_stack(
             level=span_processor.agent.options.stack_trace_level,
             limit=span_processor.agent.options.stack_trace_length,
-            is_errored=False
+            is_errored=False,
         )
 
         assert stack

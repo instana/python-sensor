@@ -123,10 +123,7 @@ class HostAgent(BaseAgent):
             logger.debug("Fork detected; Handling like a pro...")
             self.handle_fork()
 
-        if self.machine.fsm.current in ["wait4init", "good2go"]:
-            return True
-
-        return False
+        return self.machine.fsm.current in ["wait4init", "good2go"]
 
     def set_from(
         self,
@@ -371,7 +368,7 @@ class HostAgent(BaseAgent):
             service_name = ""
 
             # Set the service name
-            for span_value in span.data.keys():
+            for span_value in span.data:
                 if isinstance(span.data[span_value], dict):
                     service_name = span_value
 
@@ -413,13 +410,12 @@ class HostAgent(BaseAgent):
 
         # Check exclude rules
         exclude_rules = filters.get("exclude", [])
-        if any(
-            matches_rule(rule.get("attributes", []), span_attributes)
-            for rule in exclude_rules
-        ):
-            return True
-
-        return False
+        return bool(
+            any(
+                matches_rule(rule.get("attributes", []), span_attributes)
+                for rule in exclude_rules
+            )
+        )
 
     def handle_agent_tasks(self, task: Dict[str, Any]) -> None:
         """

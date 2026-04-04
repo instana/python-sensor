@@ -23,7 +23,7 @@ def create_dynamodb_span(
         try:
             span.set_attribute("dynamodb.op", args[0])
             span.set_attribute("dynamodb.region", instance._client_config.region_name)
-            if "TableName" in args[1].keys():
+            if "TableName" in args[1]:
                 span.set_attribute("dynamodb.table", args[1]["TableName"])
         except Exception as exc:
             span.record_exception(exc)

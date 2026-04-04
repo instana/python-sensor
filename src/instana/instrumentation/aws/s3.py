@@ -35,7 +35,7 @@ try:
         with tracer.start_as_current_span("s3", context=parent_context) as span:
             try:
                 span.set_attribute("s3.op", args[0])
-                if "Bucket" in args[1].keys():
+                if "Bucket" in args[1]:
                     span.set_attribute("s3.bucket", args[1]["Bucket"])
             except Exception as exc:
                 span.record_exception(exc)

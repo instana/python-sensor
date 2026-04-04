@@ -318,7 +318,7 @@ class TestHTTPPropagator:
         assert not span_ctx.correlation_id
 
         # Assert that the traceparent is propagated when it is enabled
-        if "traceparent" in carrier_header.keys():
+        if "traceparent" in carrier_header:
             assert span_ctx.traceparent
             tp_trace_id = header_to_long_id(carrier_header["traceparent"].split("-")[1])
         else:
@@ -326,7 +326,7 @@ class TestHTTPPropagator:
             tp_trace_id = span_ctx.trace_id
 
         # Assert that the tracestate is propagated when it is enabled
-        if "tracestate" in carrier_header.keys():
+        if "tracestate" in carrier_header:
             assert span_ctx.tracestate
         else:
             assert not span_ctx.tracestate
@@ -352,7 +352,7 @@ class TestHTTPPropagator:
         )
 
         # Assert that the tracestate is propagated when it is enabled
-        if "tracestate" in carrier_header.keys():
+        if "tracestate" in carrier_header:
             assert "tracestate" in downstream_carrier
             assert carrier_header["tracestate"] == downstream_carrier["tracestate"]
 

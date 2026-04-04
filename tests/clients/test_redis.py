@@ -26,7 +26,7 @@ class TestRedis:
         self.client = redis.Redis(host=testenv["redis_host"], db=testenv["redis_db"])
         yield
         keys_to_remove = [
-            k for k in os.environ.keys() if k.startswith("INSTANA_TRACING_FILTER_")
+            k for k in os.environ if k.startswith("INSTANA_TRACING_FILTER_")
         ]
         for k in keys_to_remove:
             del os.environ[k]

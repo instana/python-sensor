@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 
+import contextlib
 import logging
 import sys
 from multiprocessing.pool import ThreadPool
@@ -11,19 +12,17 @@ from typing import TYPE_CHECKING, Generator
 import pytest
 import requests
 import urllib3
-from instana.instrumentation.urllib3 import (
-    _collect_kvs as collect_kvs,
-    extract_custom_headers,
-    collect_response,
-)
-from instana.singletons import agent, get_tracer
 
 import tests.apps.flask_app  # noqa: F401
+from instana.instrumentation.urllib3 import _collect_kvs as collect_kvs
+from instana.instrumentation.urllib3 import collect_response, extract_custom_headers
+from instana.singletons import agent, get_tracer
 from tests.helpers import testenv
 
 if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
     from pytest import LogCaptureFixture
+
+    from instana.span.span import InstanaSpan
 
 
 class TestUrllib3:
@@ -571,11 +570,9 @@ class TestUrllib3:
         assert len(urllib3_span.stack) > 1
 
     def test_exception_logging(self):
-        with self.tracer.start_as_current_span("test"):
-            try:
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
+            with contextlib.suppress(Exception):
                 r = self.http.request("GET", testenv["flask_server"] + "/exception")
-            except Exception:
-                pass
 
         spans = self.recorder.queued_spans()
         # Behind the "wsgi_server", currently there is Flask
@@ -643,16 +640,14 @@ class TestUrllib3:
 
     def test_client_error(self):
         r = None
-        with self.tracer.start_as_current_span("test"):
-            try:
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
+            with contextlib.suppress(Exception):
                 r = self.http.request(
                     "GET",
                     "http://doesnotexist.asdf:5000/504",
                     retries=False,
                     timeout=urllib3.Timeout(connect=0.5, read=0.5),
                 )
-            except Exception:
-                pass
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2
@@ -998,11 +993,9 @@ class TestUrllib3:
     def test_internal_span_creation_with_url_in_hostname(self) -> None:
         internal_url = "https://com.instana.example.com/api/test"
 
-        with self.tracer.start_as_current_span("test"):
-            try:
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
+            with contextlib.suppress(Exception):
                 self.http.request("GET", internal_url, retries=False, timeout=1)
-            except Exception:
-                pass
 
         spans = self.recorder.queued_spans()
 
@@ -1020,11 +1013,9 @@ class TestUrllib3:
     def test_internal_span_creation_with_url_in_path(self) -> None:
         internal_url_path = "https://example.com/com.instana/api/test"
 
-        with self.tracer.start_as_current_span("test"):
-            try:
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
+            with contextlib.suppress(Exception):
                 self.http.request("GET", internal_url_path, retries=False, timeout=1)
-            except Exception:
-                pass
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2

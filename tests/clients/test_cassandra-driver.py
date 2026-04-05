@@ -13,6 +13,7 @@ from cassandra.query import SimpleStatement
 
 from instana.singletons import agent, get_tracer
 from tests.helpers import get_first_span_by_name, testenv
+import contextlib
 
 cluster = Cluster([testenv["cassandra_host"]], load_balancing_policy=None)
 session = cluster.connect()
@@ -54,10 +55,8 @@ class TestCassandra:
 
     def test_untraced_execute_error(self) -> None:
         res = None
-        try:
+        with contextlib.suppress(Exception):
             res = session.execute("Not a valid query")
-        except Exception:
-            pass
 
         assert not res
 

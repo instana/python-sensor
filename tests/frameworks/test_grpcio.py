@@ -2,22 +2,21 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import time
+import contextlib
 import random
+import time
 from typing import Generator
 
-import pytest
 import grpc
-
+import pytest
 from opentelemetry.trace import SpanKind
 
 import tests.apps.grpc_server  # noqa: F401
 import tests.apps.grpc_server.stan_pb2 as stan_pb2
 import tests.apps.grpc_server.stan_pb2_grpc as stan_pb2_grpc
-from tests.helpers import testenv, get_first_span_by_name
-
 from instana.singletons import agent, get_tracer
 from instana.span.span import get_current_span
+from tests.helpers import get_first_span_by_name, testenv
 
 
 class TestGRPCIO:
@@ -584,13 +583,11 @@ class TestGRPCIO:
 
     def test_server_error(self) -> None:
         response = None
-        with self.tracer.start_as_current_span("test"):
-            try:
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
+            with contextlib.suppress(Exception):
                 response = self.server_stub.OneQuestionOneErrorResponse(
                     stan_pb2.QuestionRequest(question="Do u error?")
                 )
-            except Exception:
-                pass
 
         assert not get_current_span().is_recording()
         assert not response

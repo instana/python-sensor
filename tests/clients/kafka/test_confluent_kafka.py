@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2025
 
 
+import contextlib
 import os
 import threading
 import time
@@ -43,7 +44,7 @@ class TestConfluentKafka:
         self.kafka_config = {"bootstrap.servers": testenv["kafka_bootstrap_servers"][0]}
         self.kafka_client = AdminClient(self.kafka_config)
 
-        try:
+        with contextlib.suppress(KafkaException):
             _ = self.kafka_client.create_topics(  # noqa: F841
                 [
                     NewTopic(
@@ -68,8 +69,6 @@ class TestConfluentKafka:
                     ),
                 ]
             )
-        except KafkaException:
-            pass
 
         # Kafka producer
         self.producer = Producer(self.kafka_config)
@@ -83,14 +82,12 @@ class TestConfluentKafka:
         clear_context()
 
         # Close connections
-        self.kafka_client.delete_topics(
-            [
-                testenv["kafka_topic"],
-                testenv["kafka_topic"] + "_1",
-                testenv["kafka_topic"] + "_2",
-                testenv["kafka_topic"] + "_3",
-            ]
-        )
+        self.kafka_client.delete_topics([
+            testenv["kafka_topic"],
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+            testenv["kafka_topic"] + "_3",
+        ])
         time.sleep(3)
 
         if "tracing" in config:
@@ -414,11 +411,9 @@ class TestConfluentKafka:
         )
         assert span_to_be_filtered not in filtered_spans
 
-        self.kafka_client.delete_topics(
-            [
-                testenv["kafka_topic"] + "_1",
-            ]
-        )
+        self.kafka_client.delete_topics([
+            testenv["kafka_topic"] + "_1",
+        ])
 
     def test_filter_confluent_specific_topic_with_config_file(self) -> None:
         agent.options.span_filters = parse_filter_rules_yaml(
@@ -459,12 +454,10 @@ class TestConfluentKafka:
         consumer_config["auto.offset.reset"] = "earliest"
 
         consumer = Consumer(consumer_config)
-        consumer.subscribe(
-            [
-                testenv["kafka_topic"] + "_1",
-                testenv["kafka_topic"] + "_2",
-            ]
-        )
+        consumer.subscribe([
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+        ])
 
         consumer.consume(num_messages=2, timeout=60)  # noqa: F841
 
@@ -515,12 +508,10 @@ class TestConfluentKafka:
         assert producer_span_2.s == consumer_span_2.p
         assert producer_span_2.s != consumer_span_2.s
 
-        self.kafka_client.delete_topics(
-            [
-                testenv["kafka_topic"] + "_1",
-                testenv["kafka_topic"] + "_2",
-            ]
-        )
+        self.kafka_client.delete_topics([
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+        ])
 
     def test_confluent_kafka_poll_root_exit_with_trace_correlation(self) -> None:
         agent.options.allow_exit_as_root = True
@@ -698,12 +689,10 @@ class TestConfluentKafka:
         consumer_config["auto.offset.reset"] = "earliest"
 
         consumer = Consumer(consumer_config)
-        consumer.subscribe(
-            [
-                testenv["kafka_topic"] + "_1",
-                testenv["kafka_topic"] + "_2",
-            ]
-        )
+        consumer.subscribe([
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+        ])
 
         messages = consumer.consume(num_messages=2, timeout=60)  # noqa: F841
 
@@ -760,12 +749,10 @@ class TestConfluentKafka:
                     ("x_instana_s", format_span_id(producer_span_2.s).encode("utf-8")),
                 ]
 
-        self.kafka_client.delete_topics(
-            [
-                testenv["kafka_topic"] + "_1",
-                testenv["kafka_topic"] + "_2",
-            ]
-        )
+        self.kafka_client.delete_topics([
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+        ])
 
     def test_save_consumer_span_into_context(self, span: "InstanaSpan") -> None:
         """Test save_consumer_span_into_context function."""
@@ -969,12 +956,10 @@ class TestConfluentKafka:
         for i in range(num_threads):
             topic = f"{testenv['kafka_topic']}_thread_{i}"
             # Create topic
-            try:
-                self.kafka_client.create_topics(
-                    [NewTopic(topic, num_partitions=1, replication_factor=1)]
-                )
-            except KafkaException:
-                pass
+            with contextlib.suppress(KafkaException):
+                self.kafka_client.create_topics([
+                    NewTopic(topic, num_partitions=1, replication_factor=1)
+                ])
 
             # Produce messages
             for j in range(messages_per_topic):
@@ -1022,22 +1007,22 @@ class TestConfluentKafka:
                 consumer.close()
 
                 with lock:
-                    thread_results.append(
-                        {
-                            "thread_id": thread_id,
-                            "topic": topic,
-                            "messages_consumed": messages_consumed,
-                            "none_polls": none_polls,
-                            "success": True,
-                        }
-                    )
+                    thread_results.append({
+                        "thread_id": thread_id,
+                        "topic": topic,
+                        "messages_consumed": messages_consumed,
+                        "none_polls": none_polls,
+                        "success": True,
+                    })
 
             except Exception as e:
                 with lock:
                     thread_errors.append(e)
-                    thread_results.append(
-                        {"thread_id": thread_id, "success": False, "error": str(e)}
-                    )
+                    thread_results.append({
+                        "thread_id": thread_id,
+                        "success": False,
+                        "error": str(e),
+                    })
 
         threads = []
         for i in range(num_threads):
@@ -1052,19 +1037,19 @@ class TestConfluentKafka:
 
         assert len(thread_results) == num_threads
         for result in thread_results:
-            assert result[
-                "success"
-            ], f"Thread {result['thread_id']} failed: {result.get('error')}"
-            assert (
-                result["messages_consumed"] == messages_per_topic
-            ), f"Thread {result['thread_id']} consumed {result['messages_consumed']} messages, expected {messages_per_topic}"
+            assert result["success"], (
+                f"Thread {result['thread_id']} failed: {result.get('error')}"
+            )
+            assert result["messages_consumed"] == messages_per_topic, (
+                f"Thread {result['thread_id']} consumed {result['messages_consumed']} messages, expected {messages_per_topic}"
+            )
 
         spans = self.recorder.queued_spans()
 
         expected_min_spans = num_threads * (1 + messages_per_topic * 2)
-        assert (
-            len(spans) >= expected_min_spans
-        ), f"Expected at least {expected_min_spans} spans, got {len(spans)}"
+        assert len(spans) >= expected_min_spans, (
+            f"Expected at least {expected_min_spans} spans, got {len(spans)}"
+        )
 
         for i in range(num_threads):
             topic = f"{testenv['kafka_topic']}_thread_{i}"
@@ -1077,9 +1062,9 @@ class TestConfluentKafka:
                 and s.data.get("kafka", {}).get("service") == topic
             ]
 
-            assert (
-                len(poll_spans) >= 1
-            ), f"Expected poll spans for topic {topic}, got {len(poll_spans)}"
+            assert len(poll_spans) >= 1, (
+                f"Expected poll spans for topic {topic}, got {len(poll_spans)}"
+            )
 
         topics_to_delete = [
             f"{testenv['kafka_topic']}_thread_{i}" for i in range(num_threads)
@@ -1132,21 +1117,21 @@ class TestConfluentKafka:
         for thread in threads:
             thread.join(timeout=10)
 
-        assert (
-            len(thread_errors) == 0
-        ), f"Context errors in threads: {[str(e) for e in thread_errors]}"
+        assert len(thread_errors) == 0, (
+            f"Context errors in threads: {[str(e) for e in thread_errors]}"
+        )
 
         spans = self.recorder.queued_spans()
 
         test_spans = [s for s in spans if s.n == "sdk"]
-        assert (
-            len(test_spans) == num_threads
-        ), f"Expected {num_threads} test spans, got {len(test_spans)}"
+        assert len(test_spans) == num_threads, (
+            f"Expected {num_threads} test spans, got {len(test_spans)}"
+        )
 
         kafka_spans = [s for s in spans if s.n == "kafka"]
-        assert (
-            len(kafka_spans) == 0
-        ), f"Expected no kafka spans for None polls, got {len(kafka_spans)}"
+        assert len(kafka_spans) == 0, (
+            f"Expected no kafka spans for None polls, got {len(kafka_spans)}"
+        )
 
     def test_filter_confluent_kafka_by_category(self) -> None:
         os.environ["INSTANA_TRACING_FILTER_EXCLUDE_CATEGORY_ATTRIBUTES"] = (

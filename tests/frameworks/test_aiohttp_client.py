@@ -14,6 +14,7 @@ from instana.util.ids import hex_id
 import tests.apps.flask_app  # noqa: F401
 import tests.apps.aiohttp_app  # noqa: F401
 from tests.helpers import testenv
+import contextlib
 
 
 class TestAiohttpClient:
@@ -441,10 +442,8 @@ class TestAiohttpClient:
                     return await self.fetch(session, "http://doesnotexist:10/")
 
         response = None
-        try:
+        with contextlib.suppress(Exception):
             response = self.loop.run_until_complete(test())
-        except Exception:
-            pass
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2

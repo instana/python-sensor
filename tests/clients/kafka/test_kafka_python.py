@@ -25,6 +25,7 @@ from instana.singletons import agent, get_tracer
 from instana.span.span import InstanaSpan
 from instana.util.config import parse_filter_rules_yaml
 from tests.helpers import get_first_span_by_filter, testenv
+import contextlib
 
 
 class TestKafkaPython:
@@ -43,33 +44,29 @@ class TestKafkaPython:
             client_id="test_kafka_python",
         )
 
-        try:
-            self.kafka_client.create_topics(
-                [
-                    NewTopic(
-                        name=testenv["kafka_topic"],
-                        num_partitions=1,
-                        replication_factor=1,
-                    ),
-                    NewTopic(
-                        name=testenv["kafka_topic"] + "_1",
-                        num_partitions=1,
-                        replication_factor=1,
-                    ),
-                    NewTopic(
-                        name=testenv["kafka_topic"] + "_2",
-                        num_partitions=1,
-                        replication_factor=1,
-                    ),
-                    NewTopic(
-                        name=testenv["kafka_topic"] + "_3",
-                        num_partitions=1,
-                        replication_factor=1,
-                    ),
-                ]
-            )
-        except TopicAlreadyExistsError:
-            pass
+        with contextlib.suppress(TopicAlreadyExistsError):
+            self.kafka_client.create_topics([
+                NewTopic(
+                    name=testenv["kafka_topic"],
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+                NewTopic(
+                    name=testenv["kafka_topic"] + "_1",
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+                NewTopic(
+                    name=testenv["kafka_topic"] + "_2",
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+                NewTopic(
+                    name=testenv["kafka_topic"] + "_3",
+                    num_partitions=1,
+                    replication_factor=1,
+                ),
+            ])
 
         # Kafka producer
         self.producer = KafkaProducer(
@@ -86,14 +83,12 @@ class TestKafkaPython:
         # Clear context
         clear_context()
 
-        self.kafka_client.delete_topics(
-            [
-                testenv["kafka_topic"],
-                testenv["kafka_topic"] + "_1",
-                testenv["kafka_topic"] + "_2",
-                testenv["kafka_topic"] + "_3",
-            ]
-        )
+        self.kafka_client.delete_topics([
+            testenv["kafka_topic"],
+            testenv["kafka_topic"] + "_1",
+            testenv["kafka_topic"] + "_2",
+            testenv["kafka_topic"] + "_3",
+        ])
         self.kafka_client.close()
 
         if "tracing" in config:

@@ -30,7 +30,7 @@ try:
         """
         Across Celery versions, the task id can exist in a couple of places.
         """
-        id = headers.get("id", None)
+        id = headers.get("id")
         if id is None:
             id = body.get("id", None)
         return id
@@ -70,8 +70,8 @@ try:
             ctx = None
             tracer = get_tracer()
 
-            task = kwargs.get("sender", None)
-            task_id = kwargs.get("task_id", None)
+            task = kwargs.get("sender")
+            task_id = kwargs.get("task_id")
             task = registry.tasks.get(task.name)
 
             headers = task.request.get("headers", {})
@@ -117,7 +117,7 @@ try:
             span = worker_span.get()
             if span.is_recording():
                 span.set_attribute("success", False)
-                exc = kwargs.get("exception", None)
+                exc = kwargs.get("exception")
                 if exc:
                     span.record_exception(exc)
                 else:
@@ -133,7 +133,7 @@ try:
         try:
             span = worker_span.get()
             if span.is_recording():
-                reason = kwargs.get("reason", None)
+                reason = kwargs.get("reason")
                 if reason:
                     span.set_attribute("retry-reason", reason)
         except Exception:

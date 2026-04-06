@@ -115,7 +115,7 @@ try:
             settings["pyramid.tweens"] = "\n".join(tweens)
             kwargs["settings"] = settings
 
-        if not kwargs.get("package", None):
+        if not kwargs.get("package"):
             kwargs["package"] = caller_package()
 
         wrapped(*args, **kwargs)

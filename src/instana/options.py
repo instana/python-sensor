@@ -28,9 +28,9 @@ from instana.util.config import (
     get_stack_trace_config_from_yaml,
     is_truthy,
     parse_filter_rules,
+    parse_filter_rules_env_vars,
     parse_filter_rules_yaml,
     parse_span_disabling,
-    parse_filter_rules_env_vars,
     parse_technology_stack_trace_config,
     validate_stack_trace_length,
     validate_stack_trace_level,
@@ -123,45 +123,45 @@ class BaseOptions(object):
         """Add Instana agent span filter to exclude internal spans."""
         if "exclude" not in self.span_filters:
             self.span_filters["exclude"] = []
-        self.span_filters["exclude"].extend(
-            [
-                {
-                    "name": "filter-internal-spans-by-url",
-                    "attributes": [
-                        {
-                            "key": "http.url",
-                            "values": ["com.instana"],
-                            "match_type": "contains",
-                        }
-                    ],
-                },
-                {
-                    "name": "filter-internal-spans-by-host",
-                    "attributes": [
-                        {
-                            "key": "http.host",
-                            "values": ["com.instana"],
-                            "match_type": "contains",
-                        }
-                    ],
-                },
-            ]
-        )
+        self.span_filters["exclude"].extend([
+            {
+                "name": "filter-internal-spans-by-url",
+                "attributes": [
+                    {
+                        "key": "http.url",
+                        "values": ["com.instana"],
+                        "match_type": "contains",
+                    }
+                ],
+            },
+            {
+                "name": "filter-internal-spans-by-host",
+                "attributes": [
+                    {
+                        "key": "http.host",
+                        "values": ["com.instana"],
+                        "match_type": "contains",
+                    }
+                ],
+            },
+        ])
 
     def _apply_env_stack_trace_config(self) -> None:
         """Apply stack trace configuration from environment variables."""
-        if "INSTANA_STACK_TRACE" in os.environ:
-            if validated_level := validate_stack_trace_level(
+        if "INSTANA_STACK_TRACE" in os.environ and (
+            validated_level := validate_stack_trace_level(
                 os.environ["INSTANA_STACK_TRACE"], "from INSTANA_STACK_TRACE"
-            ):
-                self.stack_trace_level = validated_level
+            )
+        ):
+            self.stack_trace_level = validated_level
 
-        if "INSTANA_STACK_TRACE_LENGTH" in os.environ:
-            if validated_length := validate_stack_trace_length(
+        if "INSTANA_STACK_TRACE_LENGTH" in os.environ and (
+            validated_length := validate_stack_trace_length(
                 os.environ["INSTANA_STACK_TRACE_LENGTH"],
                 "from INSTANA_STACK_TRACE_LENGTH",
-            ):
-                self.stack_trace_length = validated_length
+            )
+        ):
+            self.stack_trace_length = validated_length
 
     def _apply_yaml_stack_trace_config(self) -> None:
         """Apply stack trace configuration from YAML file."""
@@ -182,20 +182,26 @@ class BaseOptions(object):
 
         global_config = config["tracing"]["global"]
 
-        if "INSTANA_STACK_TRACE" not in os.environ and "stack_trace" in global_config:
-            if validated_level := validate_stack_trace_level(
-                global_config["stack_trace"], "from in-code config"
-            ):
-                self.stack_trace_level = validated_level
+        if (
+            "INSTANA_STACK_TRACE" not in os.environ
+            and "stack_trace" in global_config
+            and (
+                validated_level := validate_stack_trace_level(
+                    global_config["stack_trace"], "from in-code config"
+                )
+            )
+        ):
+            self.stack_trace_level = validated_level
 
         if (
             "INSTANA_STACK_TRACE_LENGTH" not in os.environ
             and "stack_trace_length" in global_config
-        ):
-            if validated_length := validate_stack_trace_length(
+        ) and (
+            validated_length := validate_stack_trace_length(
                 global_config["stack_trace_length"], "from in-code config"
-            ):
-                self.stack_trace_length = validated_length
+            )
+        ):
+            self.stack_trace_length = validated_length
 
         # Technology-specific overrides from in-code config
         for tech_name, tech_data in config["tracing"].items():
@@ -429,17 +435,19 @@ class StandardOptions(BaseOptions):
         self, global_config: Dict[str, Any]
     ) -> None:
         """Apply global stack trace configuration from agent config."""
-        if "stack-trace" in global_config:
-            if validated_level := validate_stack_trace_level(
+        if "stack-trace" in global_config and (
+            validated_level := validate_stack_trace_level(
                 global_config["stack-trace"], "in agent config"
-            ):
-                self.stack_trace_level = validated_level
+            )
+        ):
+            self.stack_trace_level = validated_level
 
-        if "stack-trace-length" in global_config:
-            if validated_length := validate_stack_trace_length(
+        if "stack-trace-length" in global_config and (
+            validated_length := validate_stack_trace_length(
                 global_config["stack-trace-length"], "in agent config"
-            ):
-                self.stack_trace_length = validated_length
+            )
+        ):
+            self.stack_trace_length = validated_length
 
     def _apply_agent_tech_stack_trace_config(self, tracing: Dict[str, Any]) -> None:
         """Apply technology-specific stack trace configuration from agent config."""

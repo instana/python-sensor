@@ -1,4 +1,4 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2026
 # (c) Copyright Instana Inc. 2016
 
 from __future__ import print_function
@@ -10,7 +10,7 @@ import sys
 logger = None
 
 
-def get_standard_logger():
+def get_standard_logger() -> logging.Logger:
     """
     Retrieves and configures a standard logger for the Instana package
 
@@ -28,7 +28,7 @@ def get_standard_logger():
     return standard_logger
 
 
-def get_aws_lambda_logger():
+def get_aws_lambda_logger() -> logging.Logger:
     """
     Retrieves the preferred logger for AWS Lambda
 
@@ -39,7 +39,7 @@ def get_aws_lambda_logger():
     return aws_lambda_logger
 
 
-def glogging_available():
+def glogging_available() -> bool:
     """
     Determines if the gunicorn.glogging package is available
 
@@ -58,7 +58,7 @@ def glogging_available():
     return package_check
 
 
-def running_in_gunicorn():
+def running_in_gunicorn() -> bool:
     """
     Determines if we are running inside of a gunicorn process.
 
@@ -85,12 +85,11 @@ def running_in_gunicorn():
 
         return process_check
     except Exception:
-        logger.debug("Instana.log.running_in_gunicorn: ", exc_info=True)
         return False
 
 
-aws_env = os.environ.get("AWS_EXECUTION_ENV", "")
-env_is_aws_lambda = "AWS_Lambda_" in aws_env
+env_is_aws_lambda = "AWS_Lambda_" in os.environ.get("AWS_EXECUTION_ENV", "")
+
 
 if running_in_gunicorn() and glogging_available():
     logger = logging.getLogger("gunicorn.error")

@@ -36,10 +36,7 @@ class BaseHelper(object):
             src_metric = metric
             dst_metric = metric
 
-        if isinstance(source, dict):
-            new_value = source.get(src_metric, None)
-        else:
-            new_value = source
+        new_value = source.get(src_metric, None) if isinstance(source, dict) else source
 
         if previous[dst_metric] != new_value:
             return new_value
@@ -66,10 +63,7 @@ class BaseHelper(object):
             src_metric = metric
             dst_metric = metric
 
-        if isinstance(source, dict):
-            new_value = source.get(src_metric, None)
-        else:
-            new_value = source
+        new_value = source.get(src_metric, None) if isinstance(source, dict) else source
 
         previous_value = previous.get(dst_metric, 0)
 

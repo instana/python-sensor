@@ -23,7 +23,6 @@ try:
 
     from instana.log import logger
     from instana.propagators.format import Format
-    from instana.singletons import get_tracer
     from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
     def lambda_inject_context(
@@ -37,7 +36,6 @@ try:
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.invoke
         """
         try:
-            tracer = get_tracer()
             invoke_payload = payload.get("Payload", {})
 
             if not isinstance(invoke_payload, dict):

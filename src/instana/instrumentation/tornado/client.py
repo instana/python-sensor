@@ -102,5 +102,3 @@ try:
     logger.debug("Instrumenting tornado client")
 except ImportError:
     pass
-except ImportError:
-    pass

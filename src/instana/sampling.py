@@ -40,4 +40,4 @@ class InstanaSampler(Sampler):
         self._sampled: SamplingPolicy = SamplingPolicy.DROP
 
     def sampled(self) -> bool:
-        return False if self._sampled == SamplingPolicy.DROP else True
+        return self._sampled != SamplingPolicy.DROP

@@ -406,12 +406,10 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
 
         with self.tracer.start_as_current_span("test"):
-            client.bucket("test bucket").blob("dest object").compose(
-                [
-                    storage.blob.Blob("object 1", "test bucket"),
-                    storage.blob.Blob("object 2", "test bucket"),
-                ]
-            )
+            client.bucket("test bucket").blob("dest object").compose([
+                storage.blob.Blob("object 1", "test bucket"),
+                storage.blob.Blob("object 2", "test bucket"),
+            ])
 
         spans = self.recorder.queued_spans()
 
@@ -1046,10 +1044,9 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
         bucket = client.bucket("test-bucket")
 
-        with self.tracer.start_as_current_span("test"):
-            with client.batch():
-                for obj in ["obj1", "obj2"]:
-                    bucket.delete_blob(obj)
+        with self.tracer.start_as_current_span("test"), client.batch():
+            for obj in ["obj1", "obj2"]:
+                bucket.delete_blob(obj)
 
         spans = self.recorder.queued_spans()
 
@@ -1064,9 +1061,12 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage._collect_attributes",
-            return_value=None,
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.google.cloud.storage._collect_attributes",
+                return_value=None,
+            ),
         ):
             buckets = client.list_buckets()
             for b in buckets:
@@ -1077,9 +1077,12 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
-            return_value=(None, None, None),
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+                return_value=(None, None, None),
+            ),
         ):
             response = client.list_buckets()
             assert isinstance(response.client, storage.Client)
@@ -1096,12 +1099,16 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         client = self._client(
             credentials=AnonymousCredentials(), project="test-project"
         )
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
-            return_value=(None, None, None),
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+                return_value=(None, None, None),
+            ),
         ):
             response = (
-                client.bucket("test bucket")
+                client
+                .bucket("test bucket")
                 .blob("test object")
                 .download_to_file(
                     io.BytesIO(),
@@ -1120,12 +1127,16 @@ class TestGoogleCloudStorage(_TraceContextMixin):
             credentials=AnonymousCredentials(), project="test-project"
         )
 
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
-            return_value=(None, None, None),
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+                return_value=(None, None, None),
+            ),
         ):
             response = (
-                client.bucket("test bucket")
+                client
+                .bucket("test bucket")
                 .blob("test object")
                 .upload_from_string("CONTENT")
             )
@@ -1144,14 +1155,17 @@ class TestGoogleCloudStorage(_TraceContextMixin):
         )
         bucket = client.bucket("test-bucket")
 
-        with self.tracer.start_as_current_span("test"), patch(
-            "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
-            return_value=(None, None, None),
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
+                "instana.instrumentation.google.cloud.storage.get_tracer_tuple",
+                return_value=(None, None, None),
+            ),
+            client.batch() as batch_response,
         ):
-            with client.batch() as batch_response:
-                for obj in ["obj1", "obj2"]:
-                    bucket.delete_blob(obj)
-                assert batch_response
+            for obj in ["obj1", "obj2"]:
+                bucket.delete_blob(obj)
+            assert batch_response
 
     def _client(self, *args, **kwargs) -> storage.Client:
         # override the HTTP client to bypass the authorization

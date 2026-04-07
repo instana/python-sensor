@@ -121,13 +121,13 @@ class TestTheMachineCmdline:
 
     def test_get_cmdline_linux_proc_file_not_found(self) -> None:
         """Test _get_cmdline_linux_proc when file doesn't exist."""
-        with patch("builtins.open", side_effect=FileNotFoundError()):
+        with patch("builtins.open", side_effect=FileNotFoundError()):  # noqa: SIM117
             with pytest.raises(FileNotFoundError):
                 self.machine._get_cmdline_linux_proc()
 
     def test_get_cmdline_linux_proc_permission_error(self) -> None:
         """Test _get_cmdline_linux_proc with permission error."""
-        with patch("builtins.open", side_effect=PermissionError()):
+        with patch("builtins.open", side_effect=PermissionError()):  # noqa: SIM117
             with pytest.raises(PermissionError):
                 self.machine._get_cmdline_linux_proc()
 
@@ -187,11 +187,13 @@ class TestTheMachineCmdline:
 
     def test_get_cmdline_unix_ps_subprocess_error(self) -> None:
         """Test _get_cmdline_unix_ps when subprocess fails."""
-        with patch(
-            "subprocess.Popen", side_effect=subprocess.SubprocessError("Test error")
+        with (
+            patch(
+                "subprocess.Popen", side_effect=subprocess.SubprocessError("Test error")
+            ),
+            pytest.raises(subprocess.SubprocessError),
         ):
-            with pytest.raises(subprocess.SubprocessError):
-                self.machine._get_cmdline_unix_ps(1234)
+            self.machine._get_cmdline_unix_ps(1234)
 
     @pytest.mark.parametrize(
         "proc_exists,proc_content,expected_output",
@@ -263,18 +265,28 @@ class TestTheMachineCmdline:
 
     def test_get_cmdline_windows_exception_fallback(self) -> None:
         """Test _get_cmdline falls back to sys.argv on Windows exception."""
-        with patch("instana.fsm.is_windows", return_value=True), patch.object(
-            self.machine, "_get_cmdline_windows", side_effect=Exception("Test error")
-        ), patch("instana.fsm.logger.debug") as mock_logger:
+        with (
+            patch("instana.fsm.is_windows", return_value=True),
+            patch.object(
+                self.machine,
+                "_get_cmdline_windows",
+                side_effect=Exception("Test error"),
+            ),
+            patch("instana.fsm.logger.debug") as mock_logger,
+        ):
             result = self.machine._get_cmdline(1234)
             assert result == sys.argv
             mock_logger.assert_called_once()
 
     def test_get_cmdline_unix_exception_fallback(self) -> None:
         """Test _get_cmdline falls back to sys.argv on Unix exception."""
-        with patch("instana.fsm.is_windows", return_value=False), patch.object(
-            self.machine, "_get_cmdline_unix", side_effect=Exception("Test error")
-        ), patch("instana.fsm.logger.debug") as mock_logger:
+        with (
+            patch("instana.fsm.is_windows", return_value=False),
+            patch.object(
+                self.machine, "_get_cmdline_unix", side_effect=Exception("Test error")
+            ),
+            patch("instana.fsm.logger.debug") as mock_logger,
+        ):
             result = self.machine._get_cmdline(1234)
             assert result == sys.argv
             mock_logger.assert_called_once()
@@ -298,8 +310,13 @@ class TestTheMachineCmdline:
     )
     def test_get_cmdline_various_exceptions(self, exception_type: type) -> None:
         """Test _get_cmdline handles various exception types gracefully."""
-        with patch("instana.fsm.is_windows", return_value=False), patch.object(
-            self.machine, "_get_cmdline_unix", side_effect=exception_type("Test error")
+        with (
+            patch("instana.fsm.is_windows", return_value=False),
+            patch.object(
+                self.machine,
+                "_get_cmdline_unix",
+                side_effect=exception_type("Test error"),
+            ),
         ):
             result = self.machine._get_cmdline(1234)
             assert result == sys.argv
@@ -307,9 +324,12 @@ class TestTheMachineCmdline:
     def test_get_cmdline_with_actual_pid(self) -> None:
         """Test _get_cmdline with actual process ID."""
         current_pid = os.getpid()
-        with patch("instana.fsm.is_windows", return_value=False), patch.object(
-            self.machine, "_get_cmdline_unix", return_value=["test_cmd"]
-        ) as mock_method:
+        with (
+            patch("instana.fsm.is_windows", return_value=False),
+            patch.object(
+                self.machine, "_get_cmdline_unix", return_value=["test_cmd"]
+            ) as mock_method,
+        ):
             result = self.machine._get_cmdline(current_pid)
             assert result == ["test_cmd"]
             mock_method.assert_called_once_with(current_pid)

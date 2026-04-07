@@ -33,9 +33,8 @@ class FrameCache(object):
 
         profiler_frame = False
 
-        if not self.include_profiler_frames:
-            if filename.startswith(self.profiler_dir):
-                profiler_frame = True
+        if not self.include_profiler_frames and filename.startswith(self.profiler_dir):
+            profiler_frame = True
 
         if len(self.profiler_frame_cache) < self.MAX_CACHE_SIZE:
             self.profiler_frame_cache[filename] = profiler_frame

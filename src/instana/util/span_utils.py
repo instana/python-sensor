@@ -32,9 +32,8 @@ def matches_rule(rule_attributes: List[Any], span_attributes: List[Any]) -> bool
                     rule_matched = True
 
         elif key == "type":
-            if "type" in span_attributes:
-                if span_attributes["type"] in target_values:
-                    rule_matched = True
+            if "type" in span_attributes and span_attributes["type"] in target_values:
+                rule_matched = True
 
         else:
             if key in span_attributes:
@@ -56,18 +55,17 @@ def match_key_filter(span_value: str, rule_value: str, match_type: str) -> bool:
     if span_value is None:
         return False
 
-    if rule_value == "*":
-        return True
-    elif match_type == "strict" and span_value == rule_value:
-        return True
-    elif match_type == "contains" and rule_value in span_value:
-        return True
-    elif match_type == "startswith" and span_value.startswith(rule_value):
-        return True
-    elif match_type == "endswith" and span_value.endswith(rule_value):
-        return True
-
-    return False
+    return bool(
+        rule_value == "*"
+        or match_type == "strict"
+        and span_value == rule_value
+        or match_type == "contains"
+        and rule_value in span_value
+        or match_type == "startswith"
+        and span_value.startswith(rule_value)
+        or match_type == "endswith"
+        and span_value.endswith(rule_value)
+    )
 
 
 def get_span_kind(span_kind: Any) -> str:

@@ -33,25 +33,23 @@ class TheMachine:
         self._warned_periodic = False
 
         self.agent = agent
-        self.fsm = Fysom(
-            {
-                "initial": "*",
-                "events": [
-                    ("lookup", "*", "found"),
-                    ("announce", "found", "announced"),
-                    ("pending", "announced", "wait4init"),
-                    ("ready", "wait4init", "good2go"),
-                ],
-                "callbacks": {
-                    # Can add the following to debug
-                    # "onchangestate": self.print_state_change,
-                    "onlookup": self.lookup_agent_host,
-                    "onannounce": self.announce_sensor,
-                    "onpending": self.on_ready,
-                    "ongood2go": self.on_good2go,
-                },
-            }
-        )
+        self.fsm = Fysom({
+            "initial": "*",
+            "events": [
+                ("lookup", "*", "found"),
+                ("announce", "found", "announced"),
+                ("pending", "announced", "wait4init"),
+                ("ready", "wait4init", "good2go"),
+            ],
+            "callbacks": {
+                # Can add the following to debug
+                # "onchangestate": self.print_state_change,
+                "onlookup": self.lookup_agent_host,
+                "onannounce": self.announce_sensor,
+                "onpending": self.on_ready,
+                "ongood2go": self.on_good2go,
+            },
+        })
 
         with self._lock:
             self.timer = threading.Timer(1, self._safe_fsm_lookup)
@@ -103,12 +101,11 @@ class TheMachine:
 
         if os.path.exists("/proc/"):
             host = get_default_gateway()
-            if host:
-                if self.agent.is_agent_listening(host, port):
-                    self.agent.options.agent_host = host
-                    self.agent.options.agent_port = port
-                    self._safe_fsm_announce()
-                    return True
+            if host and self.agent.is_agent_listening(host, port):
+                self.agent.options.agent_host = host
+                self.agent.options.agent_port = port
+                self._safe_fsm_announce()
+                return True
 
         with self._lock:
             if self._warned_periodic is False:
@@ -141,9 +138,10 @@ class TheMachine:
                 # PermissionError: [Errno 13] Permission denied: '/proc/6/fd/8'
                 # Use a try/except as a safety
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.connect(
-                    (self.agent.options.agent_host, self.agent.options.agent_port)
-                )
+                sock.connect((
+                    self.agent.options.agent_host,
+                    self.agent.options.agent_port,
+                ))
                 path = f"/proc/{pid}/fd/{sock.fileno()}"
                 d.fd = sock.fileno()
                 d.inode = os.readlink(path)

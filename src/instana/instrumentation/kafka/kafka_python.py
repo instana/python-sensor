@@ -60,7 +60,7 @@ try:
             # Context propagation
             headers = kwargs.get("headers", [])
 
-            if not is_suppressed and ("x_instana_l_s", b"0") in headers:
+            if not is_suppressed and headers and ("x_instana_l_s", b"0") in headers:
                 is_suppressed = True
 
             suppression_header = {"x_instana_l_s": "0" if is_suppressed else "1"}
@@ -112,9 +112,8 @@ try:
                     attributes_to_check
                 )
 
-            if not is_suppressed and headers:
-                if ("x_instana_l_s", b"0") in headers:
-                    is_suppressed = True
+            if not is_suppressed and headers and ("x_instana_l_s", b"0") in headers:
+                is_suppressed = True
 
             if is_suppressed:
                 return

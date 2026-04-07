@@ -82,13 +82,12 @@ class CPUSampler(object):
             return profile
 
     def process_sample(self, signal_frame: "FrameType") -> None:
-        if self.top:
-            if signal_frame:
-                stack = self.recover_stack(signal_frame)
-                if stack:
-                    self.update_profile(self.top, stack)
+        if self.top and signal_frame:
+            stack = self.recover_stack(signal_frame)
+            if stack:
+                self.update_profile(self.top, stack)
 
-                stack = None
+            stack = None
 
     def recover_stack(
         self, signal_frame: "FrameType"

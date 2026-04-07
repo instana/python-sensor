@@ -20,8 +20,7 @@ try:
     from starlette.middleware import Middleware
 
     from instana.instrumentation.asgi import InstanaASGIMiddleware
-    from instana.log import logger
-    from instana.util.gunicorn import running_in_gunicorn
+    from instana.log import logger, running_in_gunicorn
     from instana.util.traceutils import get_tracer_tuple
 
     if TYPE_CHECKING:

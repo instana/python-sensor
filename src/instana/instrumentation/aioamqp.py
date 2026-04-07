@@ -18,7 +18,7 @@ try:
         argv: Tuple[object, Tuple[object, ...]],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         if not tracer:
             return await wrapped(*argv, **kwargs)
 
@@ -58,7 +58,7 @@ try:
         argv: Tuple[object, Tuple[object, ...]],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         if not tracer:
             return await wrapped(*argv, **kwargs)
 

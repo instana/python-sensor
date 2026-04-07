@@ -62,7 +62,7 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
 
         # batch requests are traced with finish_batch_with_instana()
         # also return early if we're not tracing
@@ -94,7 +94,7 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         # return early if we're not tracing
         if not tracer:
             return wrapped(*args, **kwargs)
@@ -130,7 +130,7 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         # return early if we're not tracing
         if not tracer:
             return wrapped(*args, **kwargs)
@@ -155,7 +155,7 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         # return early if we're not tracing
         if not tracer:
             return wrapped(*args, **kwargs)

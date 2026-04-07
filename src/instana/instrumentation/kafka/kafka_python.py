@@ -31,7 +31,7 @@ try:
         args: Tuple[int, str, Tuple[Any, ...]],
         kwargs: Dict[str, Any],
     ) -> "FutureRecordMetadata":
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
 
         if not tracer:
             return wrapped(*args, **kwargs)

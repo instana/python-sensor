@@ -47,7 +47,7 @@ try:
         args: Sequence[object],
         kwargs: Dict[str, Any],
     ) -> Callable[..., object]:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         # If we're not tracing, just return
         if not tracer:
             return wrapped(*args, **kwargs)

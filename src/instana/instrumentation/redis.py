@@ -44,7 +44,7 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, operation_name = get_tracer_tuple()
+        tracer, _, operation_name = get_tracer_tuple()
 
         # If we're not tracing, just return
         if not tracer or (operation_name in EXCLUDED_PARENT_SPANS):
@@ -71,7 +71,7 @@ try:
         args: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        tracer, parent_span, operation_name = get_tracer_tuple()
+        tracer, _, operation_name = get_tracer_tuple()
 
         # If we're not tracing, just return
         if not tracer or (operation_name in EXCLUDED_PARENT_SPANS):

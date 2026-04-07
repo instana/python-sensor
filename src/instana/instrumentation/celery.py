@@ -145,7 +145,7 @@ try:
         **kwargs: Dict[str, Any],
     ) -> None:
         try:
-            tracer, parent_span, _ = get_tracer_tuple()
+            tracer, _, _ = get_tracer_tuple()
             if not tracer:
                 return
 

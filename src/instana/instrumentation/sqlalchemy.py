@@ -25,7 +25,7 @@ try:
         **kw: Dict[str, Any],
     ) -> None:
         try:
-            tracer, parent_span, _ = get_tracer_tuple()
+            tracer, _, _ = get_tracer_tuple()
 
             # If we're not tracing, just return
             if not tracer:

@@ -35,7 +35,7 @@ def log_with_instana(
     stacklevel = stacklevel_in + 1
 
     try:
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
         # Only needed if we're tracing and serious log and logging spans are not disabled
         if (
             not tracer

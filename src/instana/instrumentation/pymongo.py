@@ -17,7 +17,7 @@ try:
             self.__active_commands = {}
 
         def started(self, event: pymongo.monitoring.CommandStartedEvent) -> None:
-            tracer, parent_span, _ = get_tracer_tuple()
+            tracer, _, _ = get_tracer_tuple()
             # return early if we're not tracing
             if not tracer:
                 return

@@ -27,7 +27,7 @@ try:
         session: "ClientSession", trace_config_ctx: SimpleNamespace, params
     ) -> Awaitable[None]:
         try:
-            tracer, parent_span, _ = get_tracer_tuple()
+            tracer, _, _ = get_tracer_tuple()
             # If we're not tracing, just return
             if not tracer:
                 trace_config_ctx.span_context = None

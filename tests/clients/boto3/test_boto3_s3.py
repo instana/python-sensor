@@ -4,10 +4,10 @@
 
 import os
 from io import BytesIO
-
-import pytest
-import boto3
 from typing import Generator
+
+import boto3
+import pytest
 from moto import mock_aws
 
 from instana.singletons import agent, get_tracer
@@ -157,7 +157,7 @@ class TestS3:
     def test_s3_upload_file_obj(self) -> None:
         self.s3.create_bucket(Bucket=self.bucket_name)
 
-        with self.tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
             with open(upload_filename, "rb") as fd:
                 self.s3.upload_fileobj(fd, self.bucket_name, self.object_name)
 
@@ -214,7 +214,7 @@ class TestS3:
         self.s3.create_bucket(Bucket=self.bucket_name)
         self.s3.upload_file(upload_filename, self.bucket_name, self.object_name)
 
-        with self.tracer.start_as_current_span("test"):
+        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
             with open(download_target_filename, "wb") as fd:
                 self.s3.download_fileobj(self.bucket_name, self.object_name, fd)
 

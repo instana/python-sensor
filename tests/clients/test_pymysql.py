@@ -2,13 +2,13 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import pytest
+from typing import Generator
 
 import pymysql
+import pytest
 
-from typing import Generator
-from tests.helpers import testenv
 from instana.singletons import agent, get_tracer
+from tests.helpers import testenv
 
 
 class TestPyMySQL:
@@ -255,10 +255,9 @@ class TestPyMySQL:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_connect_cursor_ctx_mgr(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            with self.db as connection:
-                with connection.cursor() as cursor:
-                    affected_rows = cursor.execute("""SELECT * from users""")
+        with self.tracer.start_as_current_span("test"), self.db as connection:  # noqa: SIM117
+            with connection.cursor() as cursor:
+                affected_rows = cursor.execute("""SELECT * from users""")
 
         assert affected_rows == 1
         spans = self.recorder.queued_spans()
@@ -280,10 +279,9 @@ class TestPyMySQL:
         assert db_span.data["mysql"]["port"] == testenv["mysql_port"]
 
     def test_connect_ctx_mgr(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            with self.db as connection:
-                cursor = connection.cursor()
-                cursor.execute("""SELECT * from users""")
+        with self.tracer.start_as_current_span("test"), self.db as connection:
+            cursor = connection.cursor()
+            cursor.execute("""SELECT * from users""")
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 2

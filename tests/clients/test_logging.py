@@ -100,12 +100,14 @@ class TestLogging:
         assert spans[0].data["log"].get("message") == "foo bar"
 
     def test_exception(self) -> None:
-        with self.tracer.start_as_current_span("test"):
-            with patch(
+        with (
+            self.tracer.start_as_current_span("test"),
+            patch(
                 "instana.span.span.InstanaSpan.add_event",
                 side_effect=Exception("mocked error"),
-            ):
-                self.logger.warning("foo %s", "bar")
+            ),
+        ):
+            self.logger.warning("foo %s", "bar")
 
         spans = self.recorder.queued_spans()
 

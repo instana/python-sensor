@@ -70,9 +70,7 @@ class HostCollector(BaseCollector):
 
     def should_send_snapshot_data(self) -> bool:
         delta = int(time()) - self.snapshot_data_last_sent
-        if delta > self.snapshot_data_interval:
-            return True
-        return False
+        return delta > self.snapshot_data_interval
 
     def prepare_payload(self) -> DefaultDict[Any, Any]:
         payload = DictionaryOfStan()

@@ -26,31 +26,29 @@ _re_with_stan_frame = re.compile("with_instana")
 def _should_collect_stack(level: str, is_errored: bool) -> bool:
     """
     Determine if stack trace should be collected based on level and error state.
-    
+
     Args:
         level: Stack trace collection level ("all", "error", or "none")
         is_errored: Whether the span has errors (ec > 0)
-    
+
     Returns:
         True if stack trace should be collected, False otherwise
     """
     if level == "all":
         return True
-    if level == "error" and is_errored:
-        return True
-    return False
+    return bool(level == "error" and is_errored)
 
 
 def _should_exclude_frame(frame) -> bool:
     """
     Check if a frame should be excluded from the stack trace.
-    
+
     Frames are excluded if they are part of Instana's internal code,
     unless INSTANA_DEBUG is set.
-    
+
     Args:
         frame: A frame from traceback.extract_stack()
-    
+
     Returns:
         True if frame should be excluded, False otherwise
     """
@@ -58,9 +56,7 @@ def _should_exclude_frame(frame) -> bool:
         return False
     if _re_tracer_frame.search(frame[0]):
         return True
-    if _re_with_stan_frame.search(frame[2]):
-        return True
-    return False
+    return bool(_re_with_stan_frame.search(frame[2]))
 
 
 def _apply_stack_limit(
@@ -68,12 +64,12 @@ def _apply_stack_limit(
 ) -> List[dict]:
     """
     Apply frame limit to the sanitized stack.
-    
+
     Args:
         sanitized_stack: List of stack frames
         limit: Maximum number of frames to include
         use_full_stack: If True, ignore the limit
-    
+
     Returns:
         Limited stack trace
     """
@@ -84,20 +80,18 @@ def _apply_stack_limit(
     return sanitized_stack[(limit * -1) :]
 
 
-def add_stack(
-    level: str, limit: int, is_errored: bool = False
-) -> Optional[List[dict]]:
+def add_stack(level: str, limit: int, is_errored: bool = False) -> Optional[List[dict]]:
     """
     Capture and return a stack trace based on configuration.
-    
+
     This function collects the current call stack, filters out Instana
     internal frames, and applies the configured limit.
-    
+
     Args:
         level: Stack trace collection level ("all", "error", or "none")
         limit: Maximum number of frames to include (1-40)
         is_errored: Whether the span has errors (ec > 0)
-    
+
     Returns:
         List of stack frames in format [{"c": file, "n": line, "m": method}, ...]
         or None if stack trace should not be collected
@@ -134,11 +128,11 @@ def add_stack(
 def add_stack_trace_if_needed(span: "InstanaSpan") -> None:
     """
     Add stack trace to span based on configuration before span ends.
-    
+
     This function checks if the span is an EXIT span and if so, captures
     a stack trace based on the configured level and limit. It supports
     technology-specific configuration overrides via get_stack_trace_config().
-    
+
     Args:
         span: The InstanaSpan to potentially add stack trace to
     """
@@ -146,13 +140,9 @@ def add_stack_trace_if_needed(span: "InstanaSpan") -> None:
         # Get configuration from agent options (with technology-specific overrides)
         options = span._span_processor.agent.options
         level, limit = options.get_stack_trace_config(span.name)
-        
+
         # Check if span is errored
         is_errored = span.attributes.get("ec", 0) > 0
-        
+
         # Capture stack trace using add_stack function
-        span.stack = add_stack(
-            level=level,
-            limit=limit,
-            is_errored=is_errored
-        )
+        span.stack = add_stack(level=level, limit=limit, is_errored=is_errored)

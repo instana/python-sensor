@@ -67,7 +67,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         sql: str,
         params: Optional[Dict[str, Any]] = None,
     ) -> Callable[[str, Dict[str, Any]], None]:
-        tracer, parent_span, operation_name = get_tracer_tuple()
+        tracer, _, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
         if not tracer or (operation_name == "sqlalchemy"):
@@ -92,7 +92,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         sql: str,
         seq_of_parameters: List[Dict[str, Any]],
     ) -> Callable[[str, List[Dict[str, Any]]], None]:
-        tracer, parent_span, operation_name = get_tracer_tuple()
+        tracer, _, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
         if not tracer or (operation_name == "sqlalchemy"):
@@ -117,7 +117,7 @@ class CursorWrapper(wrapt.ObjectProxy):
         proc_name: str,
         params: Dict[str, Any],
     ) -> Callable[[str, Dict[str, Any]], None]:
-        tracer, parent_span, operation_name = get_tracer_tuple()
+        tracer, _, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
         if not tracer or (operation_name == "sqlalchemy"):

@@ -91,7 +91,7 @@ try:
         args: Tuple[int, str, Tuple[Any, ...]],
         kwargs: Dict[str, Any],
     ) -> urllib3.response.HTTPResponse:
-        tracer, parent_span, span_name = get_tracer_tuple()
+        tracer, _, span_name = get_tracer_tuple()
 
         # If we're not tracing, just return; boto3 has it's own visibility
         if not tracer or span_name == "boto3":

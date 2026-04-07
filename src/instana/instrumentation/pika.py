@@ -74,7 +74,7 @@ try:
         ) -> Tuple[object, ...]:
             return (exchange, routing_key, body, properties, args, kwargs)
 
-        tracer, parent_span, _ = get_tracer_tuple()
+        tracer, _, _ = get_tracer_tuple()
 
         # If we're not tracing, just return
         if not tracer:

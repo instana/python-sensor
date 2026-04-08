@@ -200,9 +200,69 @@ class InstanaSpan(Span, ReadableSpan):
             self._end_time = end_time if end_time else time_ns()
             self._duration = self._end_time - self._start_time
 
-        add_stack_trace_if_needed(self)
+        # add_stack_trace_if_needed(self)
 
-        self._span_processor.record_span(self._readable_span())
+        from instana.singletons import get_agent
+        agent = get_agent()
+        
+        # Record span to Instana backend (unless export_mode is "otlp")
+        export_mode = getattr(agent.options, 'export_mode', 'instana')
+        if export_mode != "otlp":
+            self._span_processor.record_span(self._readable_span())
+
+        # Export to OTLP if enabled
+        try:
+            
+            if hasattr(agent, 'options') and hasattr(agent.options, 'otlp_enabled'):                
+                if export_mode in ['otlp', 'both'] and agent.options.otlp_enabled:
+                    # Skip OTLP export for spans that are OTLP export requests themselves
+                    # This prevents infinite recursion when the OTLP exporter makes HTTP requests
+                    otlp_endpoint = getattr(agent.options, 'otlp_endpoint', '')
+                    span_url = self._attributes.get('http.url', '') if self._attributes else ''
+                    
+                    # Check if this span is an OTLP export request
+                    is_otlp_export_span = (
+                        otlp_endpoint and span_url and
+                        (otlp_endpoint in span_url or '/v1/traces' in span_url)
+                    )
+                    
+                    if not is_otlp_export_span:
+                        from instana.singletons import provider
+                        
+                        if hasattr(provider, '_otlp_processor'):
+                            from instana.span.otlp_span_adapter import OTLPSpanAdapter
+                            
+                            # Convert InstanaSpan to OTel ReadableSpan format
+                            otlp_span = OTLPSpanAdapter(self)
+                            
+                            # Send to OTLP processor for batching and export
+                            provider._otlp_processor.on_end(otlp_span)
+
+                            # Direct export for immediate visibility (bypasses batching)
+                            # This ensures spans appear immediately in the backend
+                            processor = provider._otlp_processor
+                            exporter = processor.span_exporter
+
+                            from opentelemetry.sdk.trace.export import SpanExportResult
+                            result = exporter.export((otlp_span,))
+                            
+                            if result == SpanExportResult.SUCCESS:
+                                logger.debug(f"OTLP export succeeded: {self.name}")
+                                # Convert trace_id to hex for logging
+                                trace_id_hex = format(otlp_span.get_span_context().trace_id, '032x')
+                                logger.debug(
+                                    f"Span exported to OTLP: {self.name} "
+                                    f"(trace_id={trace_id_hex})"
+                                )
+                            else:
+                                logger.debug(f"OTLP export failed: {self.name}, result={result}")
+                    else:
+                        logger.debug(
+                            f"Skipping OTLP export for OTLP exporter request: {self.name}"
+                        )
+                        
+        except Exception as e:
+            logger.debug(f"Failed to export span to OTLP: {e}", exc_info=True)
 
     def mark_as_errored(self, attributes: types.Attributes = None) -> None:
         """

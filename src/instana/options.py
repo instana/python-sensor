@@ -63,6 +63,16 @@ class BaseOptions(object):
         # Format: {"kafka": {"level": "all", "length": 25}, "redis": {"level": "error", "length": 20}}
         self.stack_trace_technology_config = {}
 
+        # OTLP Configuration
+        self.otlp_enabled = False
+        self.otlp_endpoint = None
+        self.otlp_protocol = "grpc"
+        # self.otlp_headers = {}
+        # self.otlp_timeout = 10
+        # self.otlp_compression = None
+        self.otlp_insecure = False
+        self.export_mode = "instana"
+
         self.set_trace_configurations()
 
         # Defaults
@@ -118,6 +128,7 @@ class BaseOptions(object):
         self.set_disable_trace_configurations()
         self.set_stack_trace_configurations()
         self.set_span_filter_configurations()
+        self._load_otlp_config()
 
     def _add_instana_agent_span_filter(self) -> None:
         """Add Instana agent span filter to exclude internal spans."""
@@ -299,6 +310,71 @@ class BaseOptions(object):
 
         # Default: not disabled
         return False
+
+    def _load_otlp_config(self) -> None:
+        """
+        Load OTLP configuration from environment variables.
+        Follows standard OpenTelemetry environment variable conventions.
+        """
+        # Check export mode
+        export_mode = os.environ.get("INSTANA_EXPORT_MODE", "instana")
+        if export_mode == "otlp":
+            self.otlp_enabled = True
+            self.export_mode = export_mode
+        else:
+            self.export_mode = "instana"
+            return
+        
+        # OTLP endpoint (traces-specific takes precedence)
+        self.otlp_endpoint = os.environ.get(
+            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+            os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+        )
+        
+        if not self.otlp_endpoint:
+            logger.warning(
+                "OTLP export enabled but no endpoint configured. "
+                "Set OTEL_EXPORTER_OTLP_ENDPOINT. Disabling OTLP export."
+            )
+            self.otlp_enabled = False
+            return
+        
+        # Protocol: grpc or http/protobuf
+        protocol = os.environ.get("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
+        if protocol in ["grpc", "http/protobuf", "http/json"]:
+            self.otlp_protocol = protocol
+        else:
+            logger.warning(f"Invalid OTEL_EXPORTER_OTLP_PROTOCOL: {protocol}. Using 'grpc'.")
+            self.otlp_protocol = "grpc"
+        
+        # # Headers (format: key1=value1,key2=value2)
+        # headers_str = os.environ.get("OTEL_EXPORTER_OTLP_HEADERS")
+        # if headers_str:
+        #     self.otlp_headers = {}
+        #     for header in headers_str.split(","):
+        #         if "=" in header:
+        #             key, value = header.split("=", 1)
+        #             self.otlp_headers[key.strip()] = value.strip()
+        
+        # # Timeout (in seconds)
+        # timeout_str = os.environ.get("OTEL_EXPORTER_OTLP_TIMEOUT")
+        # if timeout_str:
+        #     try:
+        #         self.otlp_timeout = int(timeout_str)
+        #     except ValueError:
+        #         logger.warning(f"Invalid OTEL_EXPORTER_OTLP_TIMEOUT: {timeout_str}")
+        
+        # # Compression
+        # compression = os.environ.get("OTEL_EXPORTER_OTLP_COMPRESSION")
+        # if compression in ["gzip", "none"]:
+        #     self.otlp_compression = compression if compression != "none" else None
+        
+        # Insecure (for gRPC only)
+        if self.otlp_protocol == "grpc":
+            insecure_str = os.environ.get("OTEL_EXPORTER_OTLP_INSECURE", "false")
+            self.otlp_insecure = insecure_str.lower() in ["true", "1", "yes"]
+        
+        logger.info(f"OTLP export configured: {self.otlp_protocol}, {self.otlp_endpoint}")
 
     def get_stack_trace_config(self, span_name: str) -> Tuple[str, int]:
         """

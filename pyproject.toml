@@ -49,7 +49,10 @@ dependencies = [
     "requests>=2.6.0",
     "urllib3>=1.26.5",
     "opentelemetry-api>=1.27.0",
+    "opentelemetry-sdk>=1.27.0",
     "opentelemetry-semantic-conventions>=0.48b0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.27.0",
     "typing_extensions>=4.12.2",
     "pyyaml>=6.0.2",
     "psutil>=5.9.0; sys_platform == \"win32\"",
@@ -94,3 +97,4 @@ exclude_also = [
     "except Exception:",
     "except Exception as exc:",
     ]
+

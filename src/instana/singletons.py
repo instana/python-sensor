@@ -81,9 +81,91 @@ def set_agent(new_agent: Type["BaseAgent"]) -> None:
     agent = new_agent
 
 
-# The global OpenTelemetry compatible tracer used internally by
-# this package.
-provider = InstanaTracerProvider(span_processor=span_recorder, exporter=agent)
+if agent and hasattr(agent.options, 'otlp_enabled') and agent.options.otlp_enabled:
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter
+    )
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    otlp_processor = BatchSpanProcessor(OTLPSpanExporter())
+    provider = InstanaTracerProvider(span_processor=otlp_processor)
+    provider._otlp_processor = otlp_processor
+
+else:
+    # The global OpenTelemetry compatible tracer used internally by
+    # this package.
+    provider = InstanaTracerProvider(span_processor=span_recorder, exporter=agent)
+
+# # Initialize OTLP processor if enabled
+# if agent and hasattr(agent.options, 'otlp_enabled') and agent.options.otlp_enabled:
+#     try:
+#         from instana.log import logger
+#         from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        
+#         # Determine which OTLP exporter to use based on protocol
+#         protocol = getattr(agent.options, 'otlp_protocol', 'grpc')
+        
+#         if protocol == 'grpc':
+#             from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+#                 OTLPSpanExporter
+#             )
+#         else:  # http/protobuf or http
+#             print("otlp.proto.http:")
+#             from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+#                 OTLPSpanExporter
+#             )
+        
+#         # # Create OTLP exporter with configuration from options
+#         # otlp_exporter_kwargs = {
+#         #     'endpoint': agent.options.otlp_endpoint,
+#         # }
+        
+#         # # Add optional parameters if configured
+#         # if agent.options.otlp_headers:
+#         #     otlp_exporter_kwargs['headers'] = agent.options.otlp_headers
+        
+#         # if agent.options.otlp_timeout:
+#         #     otlp_exporter_kwargs['timeout'] = agent.options.otlp_timeout
+        
+#         # if agent.options.otlp_compression:
+#         #     otlp_exporter_kwargs['compression'] = agent.options.otlp_compression
+        
+#         # if protocol == 'grpc' and agent.options.otlp_insecure:
+#         #     otlp_exporter_kwargs['insecure'] = agent.options.otlp_insecure
+        
+#         # Create the OTLP exporter
+#         # otlp_exporter = OTLPSpanExporter(**otlp_exporter_kwargs)
+#         otlp_exporter = OTLPSpanExporter()
+#         print(otlp_exporter)
+        
+#         # Wrap in BatchSpanProcessor for efficient batching
+#         otlp_processor = BatchSpanProcessor(
+#             otlp_exporter,
+#             # max_queue_size=2048,           # Maximum spans in queue
+#             # schedule_delay_millis=5000,    # Export every 5 seconds
+#             # max_export_batch_size=512,     # Maximum spans per batch
+#             # export_timeout_millis=30000,   # 30 second export timeout
+#         )
+        
+#         # Store OTLP processor globally for InstanaSpan to use
+#         provider._otlp_processor = otlp_processor
+#         # provider.add_span_processor(otlp_processor)
+        
+#         logger.info("OTLP exporter initialized successfully")
+#         logger.info(f"Protocol: {protocol}")
+#         logger.info(f"Endpoint: {agent.options.otlp_endpoint}")
+#         logger.info(f"Export mode: {agent.options.export_mode}")
+        
+#     except ImportError as e:
+#         from instana.log import logger
+#         logger.error(
+#             f"Failed to import OTLP exporter. "
+#             f"Install opentelemetry-exporter-otlp-proto-{protocol}: {e}"
+#         )
+#         agent.options.otlp_enabled = False
+#     except Exception as e:
+#         from instana.log import logger
+#         logger.error(f"Failed to initialize OTLP exporter: {e}", exc_info=True)
+#         agent.options.otlp_enabled = False
 
 # Sets the global default tracer provider
 trace.set_tracer_provider(provider)

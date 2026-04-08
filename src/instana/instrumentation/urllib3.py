@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 import wrapt
 from opentelemetry.context import get_current
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.propagators.format import Format
@@ -99,7 +100,7 @@ try:
 
         parent_context = get_current()
 
-        with tracer.start_as_current_span("urllib3", context=parent_context) as span:
+        with tracer.start_as_current_span("urllib3", context=parent_context, kind=SpanKind.CLIENT) as span:
             try:
                 kvs = _collect_kvs(instance, args, kwargs)
                 if "url" in kvs:

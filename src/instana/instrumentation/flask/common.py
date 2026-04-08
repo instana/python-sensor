@@ -11,6 +11,7 @@ import wrapt
 from opentelemetry import context, trace
 from opentelemetry.context import get_current
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.trace import SpanKind
 
 from instana.log import logger
 from instana.propagators.format import Format
@@ -40,7 +41,7 @@ def render_with_instana(
     parent_context = get_current()
     tracer = get_tracer()
 
-    with tracer.start_as_current_span("render", context=parent_context) as span:
+    with tracer.start_as_current_span("render", context=parent_context, kind=SpanKind.SERVER) as span:
         try:
             flask_version = tuple(map(int, version("flask").split(".")))
             template = argv[1] if flask_version >= (2, 2, 0) else argv[0]
@@ -104,7 +105,7 @@ def create_span():
     tracer = get_tracer()
     parent_context = tracer.extract(Format.HTTP_HEADERS, env)
 
-    span = tracer.start_span("wsgi", context=parent_context)
+    span = tracer.start_span("wsgi", context=parent_context, kind=SpanKind.SERVER)
     flask.g.span = span
 
     ctx = trace.set_span_in_context(span)

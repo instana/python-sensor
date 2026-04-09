@@ -57,14 +57,10 @@ def match_key_filter(span_value: str, rule_value: str, match_type: str) -> bool:
 
     return bool(
         rule_value == "*"
-        or match_type == "strict"
-        and span_value == rule_value
-        or match_type == "contains"
-        and rule_value in span_value
-        or match_type == "startswith"
-        and span_value.startswith(rule_value)
-        or match_type == "endswith"
-        and span_value.endswith(rule_value)
+        or (match_type == "strict" and span_value == rule_value)
+        or (match_type == "contains" and rule_value in span_value)
+        or (match_type == "startswith" and span_value.startswith(rule_value))
+        or (match_type == "endswith" and span_value.endswith(rule_value))
     )
 
 

@@ -348,7 +348,7 @@ def parse_span_disabling_dict(items: Dict[str, bool]) -> Tuple[List[str], List[s
 
 def get_disable_trace_configurations_from_env() -> Tuple[List[str], List[str]]:
     # Read INSTANA_TRACING_DISABLE environment variable
-    if tracing_disable := os.environ.get("INSTANA_TRACING_DISABLE", None):
+    if tracing_disable := os.environ.get("INSTANA_TRACING_DISABLE"):
         if is_truthy(tracing_disable):
             # INSTANA_TRACING_DISABLE is True/true/1, then we disable all tracing
             disabled_spans = []
@@ -388,14 +388,14 @@ def get_disable_trace_configurations_from_yaml() -> Tuple[List[str], List[str]]:
     if not root_key:
         return [], []
 
-    if tracing_disable_config := config_reader.data[root_key].get("disable", None):
+    if tracing_disable_config := config_reader.data[root_key].get("disable"):
         return parse_span_disabling(tracing_disable_config)
     return [], []
 
 
 def get_disable_trace_configurations_from_local() -> Tuple[List[str], List[str]]:
     if "tracing" in config and (
-        tracing_disable_config := config["tracing"].get("disable", None)
+        tracing_disable_config := config["tracing"].get("disable")
     ):
         return parse_span_disabling(tracing_disable_config)
     return [], []

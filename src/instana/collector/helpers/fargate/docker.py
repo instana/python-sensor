@@ -5,15 +5,18 @@
 
 from __future__ import division
 
-from ....log import logger
-from ....util import DictionaryOfStan
-from ..base import BaseHelper
+from typing import Any, Type
+
+from instana.collector.base import BaseCollector
+from instana.collector.helpers.base import BaseHelper
+from instana.log import logger
+from instana.util import DictionaryOfStan
 
 
 class DockerHelper(BaseHelper):
     """This class acts as a helper to collect Docker snapshot and metric information"""
 
-    def __init__(self, collector):
+    def __init__(self, collector: Type[BaseCollector]) -> None:
         super(DockerHelper, self).__init__(collector)
 
         # The metrics from the previous report cycle
@@ -23,7 +26,7 @@ class DockerHelper(BaseHelper):
         # Indexed by docker_id:  self.previous_blkio[docker_id][metric]
         self.previous_blkio = DictionaryOfStan()
 
-    def collect_metrics(self, **kwargs):
+    def collect_metrics(self, **kwargs: Any) -> list[dict[str, Any]]:
         """
         Collect and return docker metrics (and optionally snapshot data) for this task
         @return: list - with one or more plugin entities
@@ -33,7 +36,7 @@ class DockerHelper(BaseHelper):
             if self.collector.task_metadata is not None:
                 containers = self.collector.task_metadata.get("Containers", [])
                 for container in containers:
-                    plugin_data = dict()
+                    plugin_data = {}
                     plugin_data["name"] = "com.instana.plugin.docker"
                     docker_id = container.get("DockerId")
 
@@ -43,7 +46,7 @@ class DockerHelper(BaseHelper):
 
                     plugin_data["entityId"] = f"{task_arn}::{name}"
                     plugin_data["data"] = DictionaryOfStan()
-                    plugin_data["data"]["Id"] = container.get("DockerId", None)
+                    plugin_data["data"]["Id"] = container.get("DockerId")
 
                     with_snapshot = kwargs.get("with_snapshot", False)
                     # Metrics
@@ -61,25 +64,27 @@ class DockerHelper(BaseHelper):
             logger.debug("DockerHelper.collect_metrics: ", exc_info=True)
         return plugins
 
-    def _collect_container_snapshot(self, plugin_data, container):
+    def _collect_container_snapshot(
+        self, plugin_data: dict[str, Any], container: dict[str, Any]
+    ) -> None:
         try:
             # Snapshot Data
-            plugin_data["data"]["Created"] = container.get("CreatedAt", None)
-            plugin_data["data"]["Started"] = container.get("StartedAt", None)
-            plugin_data["data"]["Image"] = container.get("Image", None)
-            plugin_data["data"]["Labels"] = container.get("Labels", None)
-            plugin_data["data"]["Ports"] = container.get("Ports", None)
+            plugin_data["data"]["Created"] = container.get("CreatedAt")
+            plugin_data["data"]["Started"] = container.get("StartedAt")
+            plugin_data["data"]["Image"] = container.get("Image")
+            plugin_data["data"]["Labels"] = container.get("Labels")
+            plugin_data["data"]["Ports"] = container.get("Ports")
 
             networks = container.get("Networks", [])
             if len(networks) >= 1:
-                plugin_data["data"]["NetworkMode"] = networks[0].get(
-                    "NetworkMode", None
-                )
+                plugin_data["data"]["NetworkMode"] = networks[0].get("NetworkMode")
         except Exception:
             logger.debug("_collect_container_snapshot: ", exc_info=True)
 
-    def _collect_container_metrics(self, plugin_data, docker_id, with_snapshot):
-        container = self.collector.task_stats_metadata.get(docker_id, None)
+    def _collect_container_metrics(
+        self, plugin_data: dict[str, Any], docker_id: str, with_snapshot: bool
+    ) -> None:
+        container = self.collector.task_stats_metadata.get(docker_id)
         if container is not None:
             self._collect_network_metrics(
                 container, plugin_data, docker_id, with_snapshot
@@ -93,10 +98,14 @@ class DockerHelper(BaseHelper):
             )
 
     def _collect_network_metrics(
-        self, container, plugin_data, docker_id, with_snapshot
-    ):
+        self,
+        container: dict[str, Any],
+        plugin_data: dict[str, Any],
+        docker_id: str,
+        with_snapshot: bool,
+    ) -> None:
         try:
-            networks = container.get("networks", None)
+            networks = container.get("networks")
             tx_bytes_total = tx_dropped_total = tx_errors_total = tx_packets_total = 0
             rx_bytes_total = rx_dropped_total = rx_errors_total = rx_packets_total = 0
 
@@ -173,11 +182,17 @@ class DockerHelper(BaseHelper):
         except Exception:
             logger.debug("_collect_network_metrics: ", exc_info=True)
 
-    def _collect_cpu_metrics(self, container, plugin_data, docker_id, with_snapshot):
+    def _collect_cpu_metrics(
+        self,
+        container: dict[str, Any],
+        plugin_data: dict[str, Any],
+        docker_id: str,
+        with_snapshot: bool,
+    ) -> None:
         try:
             cpu_stats = container.get("cpu_stats", {})
-            cpu_usage = cpu_stats.get("cpu_usage", None)
-            throttling_data = cpu_stats.get("throttling_data", None)
+            cpu_usage = cpu_stats.get("cpu_usage")
+            throttling_data = cpu_stats.get("throttling_data")
 
             if cpu_usage is not None:
                 online_cpus = cpu_stats.get("online_cpus", 1)
@@ -234,10 +249,16 @@ class DockerHelper(BaseHelper):
         except Exception:
             logger.debug("_collect_cpu_metrics: ", exc_info=True)
 
-    def _collect_memory_metrics(self, container, plugin_data, docker_id, with_snapshot):
+    def _collect_memory_metrics(
+        self,
+        container: dict[str, Any],
+        plugin_data: dict[str, Any],
+        docker_id: str,
+        with_snapshot: bool,
+    ) -> None:
         try:
             memory = container.get("memory_stats", {})
-            memory_stats = memory.get("stats", None)
+            memory_stats = memory.get("stats")
 
             self.apply_delta(
                 memory,
@@ -307,11 +328,17 @@ class DockerHelper(BaseHelper):
         except Exception:
             logger.debug("_collect_memory_metrics: ", exc_info=True)
 
-    def _collect_blkio_metrics(self, container, plugin_data, docker_id, with_snapshot):
+    def _collect_blkio_metrics(
+        self,
+        container: dict[str, Any],
+        plugin_data: dict[str, Any],
+        docker_id: str,
+        with_snapshot: bool,
+    ) -> None:
         try:
-            blkio_stats = container.get("blkio_stats", None)
+            blkio_stats = container.get("blkio_stats")
             if blkio_stats is not None:
-                service_bytes = blkio_stats.get("io_service_bytes_recursive", None)
+                service_bytes = blkio_stats.get("io_service_bytes_recursive")
                 if service_bytes is not None:
                     for entry in service_bytes:
                         if entry["op"] == "Read":

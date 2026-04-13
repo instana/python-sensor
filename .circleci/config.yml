@@ -24,6 +24,37 @@ commands:
               circleci step halt
             }
 
+  run-precommit-on-changed-files:
+    steps:
+      - run:
+          name: Run pre-commit on changed files
+          command: |
+            # Check all
+            if [ "${CIRCLE_BRANCH}" = "main" ]; then
+              echo "On main branch - checking all files"
+              pip install pre-commit
+              pre-commit run --all-files
+              exit 0
+            fi
+            
+            # Fetch branches
+            git fetch origin
+            
+            # Find changed Python and Markdown files
+            CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/main...HEAD | grep -E '\.(py|md)$' || true)
+            
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "No Python or Markdown files changed. Skipping pre-commit."
+              exit 0
+            fi
+            
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Run pre-commit on changed files
+            pip install pre-commit
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
+
   pip-install-deps:
     steps:
       - run:
@@ -155,6 +186,11 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
+      - when:
+          condition:
+            equal: [ "3.13", << parameters.py-version >> ]
+          steps:
+            - run-precommit-on-changed-files
       - pip-install-deps
       - pip-install-tests-deps
       - run-tests-with-coverage-report

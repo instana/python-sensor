@@ -39,6 +39,16 @@ INTERNAL_SPAN_FILTERS = [
             }
         ],
     },
+    {
+        "name": "filter-internal-sdk-spans-by-url",
+        "attributes": [
+            {
+                "key": "sdk.custom.tags.http.url",
+                "values": ["com.instana"],
+                "match_type": "contains",
+            }
+        ],
+    },
 ]
 
 
@@ -184,6 +194,16 @@ class TestBaseOptions:
                         }
                     ],
                 },
+                {
+                    "name": "filter-internal-sdk-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "sdk.custom.tags.http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
             ],
         }
 
@@ -296,6 +316,16 @@ class TestBaseOptions:
                         }
                     ],
                 },
+                {
+                    "name": "filter-internal-sdk-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "sdk.custom.tags.http.url",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
             ],
         }
         del self.base_options
@@ -372,6 +402,16 @@ class TestBaseOptions:
                     "attributes": [
                         {
                             "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-sdk-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "sdk.custom.tags.http.url",
                             "values": ["com.instana"],
                             "match_type": "contains",
                         }
@@ -507,6 +547,16 @@ class TestBaseOptions:
                     "attributes": [
                         {
                             "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-sdk-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "sdk.custom.tags.http.url",
                             "values": ["com.instana"],
                             "match_type": "contains",
                         }
@@ -774,6 +824,16 @@ class TestBaseOptions:
                     "attributes": [
                         {
                             "key": "http.host",
+                            "values": ["com.instana"],
+                            "match_type": "contains",
+                        }
+                    ],
+                },
+                {
+                    "name": "filter-internal-sdk-spans-by-url",
+                    "attributes": [
+                        {
+                            "key": "sdk.custom.tags.http.url",
                             "values": ["com.instana"],
                             "match_type": "contains",
                         }

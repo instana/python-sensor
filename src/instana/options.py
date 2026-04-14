@@ -144,6 +144,16 @@ class BaseOptions(object):
                     }
                 ],
             },
+            {
+                "name": "filter-internal-sdk-spans-by-url",
+                "attributes": [
+                    {
+                        "key": "sdk.custom.tags.http.url",
+                        "values": ["com.instana"],
+                        "match_type": "contains",
+                    }
+                ],
+            },
         ])
 
     def _apply_env_stack_trace_config(self) -> None:

@@ -1,6 +1,13 @@
 # (c) Copyright IBM Corp. 2025
 
-from instana.util.span_utils import matches_rule, match_key_filter, get_span_kind
+from collections import defaultdict
+
+from instana.util.span_utils import (
+    get_span_kind,
+    match_key_filter,
+    matches_rule,
+    resolve_nested_key,
+)
 
 
 class TestSpanUtils:
@@ -144,3 +151,111 @@ class TestSpanUtils:
             {"key": "http.method", "values": ["GET"], "match_type": "strict"}
         ]
         assert matches_rule(rule_method, span_attrs)
+
+    def test_resolve_nested_key_embedded_dot_keys(self) -> None:
+        """Resolves sdk.custom.tags.http.host through a defaultdict structure —
+        the exact layout produced by real SDK spans."""
+        sdk_custom = defaultdict(dict)
+        sdk_custom["tags"] = defaultdict(str)
+        sdk_custom["tags"]["http.host"] = "agent.com.instana.io"
+
+        assert (
+            resolve_nested_key(
+                {"sdk.custom": sdk_custom}, ["sdk", "custom", "tags", "http", "host"]
+            )
+            == "agent.com.instana.io"
+        )
+
+    def test_resolve_nested_key_returns_none_when_missing(self) -> None:
+        """Returns None when the dotted path does not exist in the data."""
+        assert (
+            resolve_nested_key(
+                {"sdk.custom": {"tags": {}}}, ["sdk", "custom", "tags", "http", "host"]
+            )
+            is None
+        )
+
+    def test_resolve_nested_key_with_empty_key_parts(self) -> None:
+        """Returns None when key_parts is an empty list."""
+        data = {"sdk.custom": {"tags": {"http.host": "example.com"}}}
+        assert resolve_nested_key(data, []) is None
+
+    def test_resolve_nested_key_with_non_dict_data(self) -> None:
+        """Returns None when data is not a dictionary."""
+        # Test with string
+        assert resolve_nested_key("not a dict", ["key"]) is None
+
+        # Test with list
+        assert resolve_nested_key(["not", "a", "dict"], ["key"]) is None
+
+        # Test with None
+        assert resolve_nested_key(None, ["key"]) is None
+
+        # Test with integer
+        assert resolve_nested_key(42, ["key"]) is None
+
+    def test_matches_rule_sdk_span_host_match(self) -> None:
+        """SDK span whose sdk.custom.tags.http.host contains 'com.instana' should be filtered."""
+        sdk_custom = defaultdict(dict)
+        sdk_custom["tags"] = {"http.host": "agent.com.instana.io"}
+        span_attrs = {
+            "type": "sdk",
+            "kind": 3,
+            "sdk.name": "my-span",
+            "sdk.custom": sdk_custom,
+        }
+
+        rule = [
+            {
+                "key": "sdk.custom.tags.http.host",
+                "values": ["com.instana"],
+                "match_type": "contains",
+            }
+        ]
+        assert matches_rule(rule, span_attrs)
+
+    def test_matches_rule_sdk_span_host_no_match(self) -> None:
+        """SDK span with an unrelated host should NOT be filtered."""
+        sdk_custom = defaultdict(dict)
+        sdk_custom["tags"] = {"http.host": "myapp.example.com"}
+        span_attrs = {
+            "type": "sdk",
+            "kind": 3,
+            "sdk.name": "my-span",
+            "sdk.custom": sdk_custom,
+        }
+
+        rule = [
+            {
+                "key": "sdk.custom.tags.http.host",
+                "values": ["com.instana"],
+                "match_type": "contains",
+            }
+        ]
+        assert not matches_rule(rule, span_attrs)
+
+    def test_matches_rule_sdk_span_url_match(self) -> None:
+        """SDK span whose sdk.custom.tags.http.url contains 'com.instana' should be filtered.
+
+        Covers the span shape:
+          data.sdk.custom.tags.http.url = 'http://localhost:42699/com.instana.plugin.python.89262'
+        """
+        sdk_custom = defaultdict(dict)
+        sdk_custom["tags"] = {
+            "http.url": "http://localhost:42699/com.instana.plugin.python.89262"
+        }
+        span_attrs = {
+            "type": "sdk",
+            "kind": 3,
+            "sdk.name": "HEAD",
+            "sdk.custom": sdk_custom,
+        }
+
+        rule = [
+            {
+                "key": "sdk.custom.tags.http.url",
+                "values": ["com.instana"],
+                "match_type": "contains",
+            }
+        ]
+        assert matches_rule(rule, span_attrs)

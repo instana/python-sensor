@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2025
 
 
-from typing import Any, Optional
+from typing import Any
 
 from instana.util.config import SPAN_TYPE_TO_CATEGORY
 

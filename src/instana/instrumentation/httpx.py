@@ -89,6 +89,7 @@ try:
                 _set_response_span_attributes(span, response)
             except Exception as e:
                 span.record_exception(e)
+                raise
             else:
                 return response
 
@@ -118,6 +119,7 @@ try:
                 _set_response_span_attributes(span, response)
             except Exception as e:
                 span.record_exception(e)
+                raise
             else:
                 return response
 

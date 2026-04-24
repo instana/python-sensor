@@ -82,10 +82,12 @@ try:
         ) as span:
             try:
                 request = args[0]
-                _set_request_span_attributes(span, request)
+                _set_request_span_attributes(span, request)  # Has its own try-except
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
             except Exception:
-                logger.exception("httpx handle_request_with_instana pre-request:")
+                logger.exception(
+                    "httpx handle_request_with_instana pre-request:", exc_info=True
+                )
 
             try:
                 response = wrapped(*args, **kwargs)
@@ -93,10 +95,7 @@ try:
                 span.record_exception(e)
                 raise
 
-            try:
-                _set_response_span_attributes(span, response)
-            except Exception:
-                logger.exception("httpx handle_request_with_instana post-request:")
+            _set_response_span_attributes(span, response)  # Has its own try-except
 
             return response
 
@@ -119,10 +118,13 @@ try:
         ) as span:
             try:
                 request = args[0]
-                _set_request_span_attributes(span, request)
+                _set_request_span_attributes(span, request)  # Has its own try-except
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
             except Exception:
-                logger.exception("httpx handle_request_with_instana pre-request:")
+                logger.exception(
+                    "httpx handle_async_request_with_instana pre-request:",
+                    exc_info=True,
+                )
 
             try:
                 response = await wrapped(*args, **kwargs)
@@ -130,10 +132,7 @@ try:
                 span.record_exception(e)
                 raise
 
-            try:
-                _set_response_span_attributes(span, response)
-            except Exception:
-                logger.exception("httpx handle_request_with_instana post-request:")
+            _set_response_span_attributes(span, response)  # Has its own try-except
 
             return response
 

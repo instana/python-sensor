@@ -84,14 +84,21 @@ try:
                 request = args[0]
                 _set_request_span_attributes(span, request)
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
+            except Exception:
+                logger.exception("httpx handle_request_with_instana pre-request:")
 
+            try:
                 response = wrapped(*args, **kwargs)
-                _set_response_span_attributes(span, response)
             except Exception as e:
                 span.record_exception(e)
                 raise
-            else:
-                return response
+
+            try:
+                _set_response_span_attributes(span, response)
+            except Exception:
+                logger.exception("httpx handle_request_with_instana post-request:")
+
+            return response
 
     @wrapt.patch_function_wrapper("httpx", "AsyncHTTPTransport.handle_async_request")
     async def handle_async_request_with_instana(
@@ -114,14 +121,21 @@ try:
                 request = args[0]
                 _set_request_span_attributes(span, request)
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
+            except Exception:
+                logger.exception("httpx handle_request_with_instana pre-request:")
 
+            try:
                 response = await wrapped(*args, **kwargs)
-                _set_response_span_attributes(span, response)
             except Exception as e:
                 span.record_exception(e)
                 raise
-            else:
-                return response
+
+            try:
+                _set_response_span_attributes(span, response)
+            except Exception:
+                logger.exception("httpx handle_request_with_instana post-request:")
+
+            return response
 
     logger.debug("Instrumenting httpx")
 

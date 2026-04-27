@@ -82,15 +82,21 @@ try:
         ) as span:
             try:
                 request = args[0]
-                _set_request_span_attributes(span, request)
+                _set_request_span_attributes(span, request)  # Has its own try-except
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
+            except Exception:
+                logger.exception(
+                    "httpx handle_request_with_instana:", exc_info=True
+                )
 
+            try:
                 response = wrapped(*args, **kwargs)
-                _set_response_span_attributes(span, response)
             except Exception as e:
                 span.record_exception(e)
-            else:
-                return response
+                raise
+
+            _set_response_span_attributes(span, response)  # Has its own try-except
+            return response
 
     @wrapt.patch_function_wrapper("httpx", "AsyncHTTPTransport.handle_async_request")
     async def handle_async_request_with_instana(
@@ -111,15 +117,22 @@ try:
         ) as span:
             try:
                 request = args[0]
-                _set_request_span_attributes(span, request)
+                _set_request_span_attributes(span, request)  # Has its own try-except
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
+            except Exception:
+                logger.exception(
+                    "httpx handle_async_request_with_instana:",
+                    exc_info=True,
+                )
 
+            try:
                 response = await wrapped(*args, **kwargs)
-                _set_response_span_attributes(span, response)
             except Exception as e:
                 span.record_exception(e)
-            else:
-                return response
+                raise
+
+            _set_response_span_attributes(span, response)  # Has its own try-except
+            return response
 
     logger.debug("Instrumenting httpx")
 

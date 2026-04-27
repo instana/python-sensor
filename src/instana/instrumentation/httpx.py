@@ -86,7 +86,7 @@ try:
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
             except Exception:
                 logger.exception(
-                    "httpx handle_request_with_instana pre-request:", exc_info=True
+                    "httpx handle_request_with_instana:", exc_info=True
                 )
 
             try:
@@ -96,7 +96,6 @@ try:
                 raise
 
             _set_response_span_attributes(span, response)  # Has its own try-except
-
             return response
 
     @wrapt.patch_function_wrapper("httpx", "AsyncHTTPTransport.handle_async_request")
@@ -122,7 +121,7 @@ try:
                 tracer.inject(span.context, Format.HTTP_HEADERS, request.headers)
             except Exception:
                 logger.exception(
-                    "httpx handle_async_request_with_instana pre-request:",
+                    "httpx handle_async_request_with_instana:",
                     exc_info=True,
                 )
 
@@ -133,7 +132,6 @@ try:
                 raise
 
             _set_response_span_attributes(span, response)  # Has its own try-except
-
             return response
 
     logger.debug("Instrumenting httpx")

@@ -286,9 +286,10 @@ class TestHostAgent:
         reason='Avoiding "psutil.NoSuchProcess: process PID not found (pid=12345)"',
     )
     def test_init(self) -> None:
-        with patch(
-            "instana.agent.base.BaseAgent.update_log_level"
-        ) as mock_update, patch.object(os, "getpid", return_value=12345):
+        with (
+            patch("instana.agent.base.BaseAgent.update_log_level") as mock_update,
+            patch.object(os, "getpid", return_value=12345),
+        ):
             agent = HostAgent()
             assert not agent.announce_data
             assert not agent.last_seen
@@ -320,9 +321,10 @@ class TestHostAgent:
     def test_reset(
         self,
     ) -> None:
-        with patch(
-            "instana.collector.host.HostCollector.shutdown"
-        ) as mock_shutdown, patch("instana.fsm.TheMachine.reset") as mock_reset:
+        with (
+            patch("instana.collector.host.HostCollector.shutdown") as mock_shutdown,
+            patch("instana.fsm.TheMachine.reset") as mock_reset,
+        ):
             agent = HostAgent()
             agent.reset()
 
@@ -356,9 +358,11 @@ class TestHostAgent:
     ) -> None:
         agent = HostAgent()
         agent._boot_pid = 12345
-        with patch.object(os, "getpid", return_value=12344), patch(
-            "instana.agent.host.HostAgent.handle_fork"
-        ) as mock_handle, patch.dict("os.environ", {}, clear=True):
+        with (
+            patch.object(os, "getpid", return_value=12344),
+            patch("instana.agent.host.HostAgent.handle_fork") as mock_handle,
+            patch.dict("os.environ", {}, clear=True),
+        ):
             agent.can_send()
             assert agent._boot_pid == 12344
             mock_handle.assert_called_once()
@@ -438,9 +442,11 @@ class TestHostAgent:
         agent = HostAgent()
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = json.dumps(
-            {"get": "value", "pid": "value", "agentUuid": "value"}
-        )
+        mock_response.content = json.dumps({
+            "get": "value",
+            "pid": "value",
+            "agentUuid": "value",
+        })
         response = json.loads(mock_response.content)
         with patch.object(requests.Session, "put", return_value=mock_response):
             assert agent.announce("sample-data") == response
@@ -449,9 +455,11 @@ class TestHostAgent:
         with patch.object(requests.Session, "put", return_value=mock_response):
             assert agent.announce("sample-data") == response
 
-        mock_response.content = json.dumps(
-            {"get": "value", "pid": "value", "agentUuid": "value"}
-        )
+        mock_response.content = json.dumps({
+            "get": "value",
+            "pid": "value",
+            "agentUuid": "value",
+        })
 
         with patch.object(requests.Session, "put", side_effect=Exception()):
             caplog.set_level(logging.DEBUG, logger="instana")
@@ -506,9 +514,10 @@ class TestHostAgent:
         mock_response.status_code = 200
         mock_response.return_value = "sample"
         mock_datetime = datetime.datetime(2022, 1, 1, 12, 0, 0)
-        with patch.object(requests.Session, "post", return_value=mock_response), patch(
-            "instana.agent.host.datetime"
-        ) as mock_date:
+        with (
+            patch.object(requests.Session, "post", return_value=mock_response),
+            patch("instana.agent.host.datetime") as mock_date,
+        ):
             mock_date.now.return_value = mock_datetime
             mock_date.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
             agent.log_message_to_host_agent("sample")
@@ -532,9 +541,12 @@ class TestHostAgent:
         mock_response.return_value = {"key": "value"}
         agent.AGENT_DATA_PATH = "sample_path"
         agent.announce_data = AnnounceData(pid=1234, agentUuid="sample")
-        with patch.object(requests.Session, "head", return_value=mock_response), patch(
-            "instana.agent.host.HostAgent._HostAgent__data_url",
-            return_value="localhost",
+        with (
+            patch.object(requests.Session, "head", return_value=mock_response),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__data_url",
+                return_value="localhost",
+            ),
         ):
             assert agent.is_agent_ready()
             with patch.object(requests.Session, "head", side_effect=Exception()):
@@ -567,15 +579,20 @@ class TestHostAgent:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.content = sample_response
-        with patch.object(requests.Session, "post", return_value=mock_response), patch(
-            "instana.agent.host.HostAgent._HostAgent__traces_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__profiles_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__data_url",
-            return_value="localhost",
+        with (
+            patch.object(requests.Session, "post", return_value=mock_response),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__traces_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__profiles_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__data_url",
+                return_value="localhost",
+            ),
         ):
             test_response = agent.report_data_payload(payload)
             assert isinstance(agent.last_seen, datetime.datetime)
@@ -596,18 +613,87 @@ class TestHostAgent:
             },
         }
 
-        with patch.object(requests.Session, "post", return_value=mock_response), patch(
-            "instana.agent.host.HostAgent._HostAgent__traces_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__profiles_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__data_url",
-            return_value="localhost",
+        with (
+            patch.object(requests.Session, "post", return_value=mock_response),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__traces_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__profiles_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__data_url",
+                return_value="localhost",
+            ),
         ):
             test_response = agent.report_metrics(payload)
             assert test_response.return_value == "Success"
+
+    def test_report_metrics_with_empty_plugins(self) -> None:
+        """Test that report_metrics returns None when plugins list is empty"""
+        agent = HostAgent()
+
+        # Payload with empty plugins list
+        payload = {
+            "metrics": {"plugins": []},
+        }
+
+        # Should return None without making any HTTP request
+        result = agent.report_metrics(payload)
+        assert result is None
+
+    def test_report_metrics_with_no_plugins_key(self) -> None:
+        """Test that report_metrics returns None when plugins key is missing"""
+        agent = HostAgent()
+
+        # Payload without plugins key
+        payload = {"metrics": {}}
+
+        # Should return None without making any HTTP request
+        result = agent.report_metrics(payload)
+        assert result is None
+
+    def test_report_metrics_with_valid_plugins(self) -> None:
+        """Test that report_metrics works correctly with valid plugins"""
+        agent = HostAgent()
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.return_value = "Success"
+
+        payload = {
+            "metrics": {
+                "plugins": [
+                    {
+                        "data": {
+                            "cpu_usage": 45.5,
+                            "memory_usage": 1024,
+                        }
+                    },
+                ]
+            },
+        }
+
+        with (
+            patch.object(
+                requests.Session, "post", return_value=mock_response
+            ) as mock_post,
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__data_url",
+                return_value="http://localhost:42699/metrics",
+            ),
+        ):
+            result = agent.report_metrics(payload)
+
+            # Verify the request was made
+            assert mock_post.called
+            assert result == mock_response
+
+            # Verify the correct data was sent
+            call_args = mock_post.call_args
+            assert call_args is not None
 
     def test_report_profiles(self) -> None:
         agent = HostAgent()
@@ -620,15 +706,20 @@ class TestHostAgent:
             "profiles": ["profile-1", "profile-2"],
         }
 
-        with patch.object(requests.Session, "post", return_value=mock_response), patch(
-            "instana.agent.host.HostAgent._HostAgent__traces_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__profiles_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__data_url",
-            return_value="localhost",
+        with (
+            patch.object(requests.Session, "post", return_value=mock_response),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__traces_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__profiles_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__data_url",
+                return_value="localhost",
+            ),
         ):
             test_response = agent.report_profiles(payload)
             assert test_response.return_value == "Success"
@@ -652,15 +743,20 @@ class TestHostAgent:
             "spans": [span_1, span_2],
         }
 
-        with patch.object(requests.Session, "post", return_value=mock_response), patch(
-            "instana.agent.host.HostAgent._HostAgent__traces_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__profiles_url",
-            return_value="localhost",
-        ), patch(
-            "instana.agent.host.HostAgent._HostAgent__data_url",
-            return_value="localhost",
+        with (
+            patch.object(requests.Session, "post", return_value=mock_response),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__traces_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__profiles_url",
+                return_value="localhost",
+            ),
+            patch(
+                "instana.agent.host.HostAgent._HostAgent__data_url",
+                return_value="localhost",
+            ),
         ):
             test_response = agent.report_spans(payload)
             assert test_response.return_value == "Success"
@@ -725,26 +821,31 @@ class TestHostAgent:
 
         # ignore all endpoints of service1
         assert self.agent._HostAgent__is_endpoint_ignored({"type": "service1"})
-        assert self.agent._HostAgent__is_endpoint_ignored(
-            {"type": "service1", "endpoint": "method1"}
-        )
-        assert self.agent._HostAgent__is_endpoint_ignored(
-            {"type": "service1", "endpoint": "method2"}
-        )
+        assert self.agent._HostAgent__is_endpoint_ignored({
+            "type": "service1",
+            "endpoint": "method1",
+        })
+        assert self.agent._HostAgent__is_endpoint_ignored({
+            "type": "service1",
+            "endpoint": "method2",
+        })
 
         # ignore only endpoint1 of service2
-        assert self.agent._HostAgent__is_endpoint_ignored(
-            {"type": "service2", "endpoint": "method1"}
-        )
-        assert not self.agent._HostAgent__is_endpoint_ignored(
-            {"type": "service2", "endpoint": "method2"}
-        )
+        assert self.agent._HostAgent__is_endpoint_ignored({
+            "type": "service2",
+            "endpoint": "method1",
+        })
+        assert not self.agent._HostAgent__is_endpoint_ignored({
+            "type": "service2",
+            "endpoint": "method2",
+        })
 
         # don't ignore other services
         assert not self.agent._HostAgent__is_endpoint_ignored({"type": "service3"})
-        assert not self.agent._HostAgent__is_endpoint_ignored(
-            {"type": "service3", "endpoint": "method1"}
-        )
+        assert not self.agent._HostAgent__is_endpoint_ignored({
+            "type": "service3",
+            "endpoint": "method1",
+        })
 
     @pytest.mark.parametrize(
         "input_data",

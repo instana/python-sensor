@@ -351,12 +351,15 @@ class StandardOptions(BaseOptions):
 
     AGENT_DEFAULT_HOST = "localhost"
     AGENT_DEFAULT_PORT = 42699
+    DEFAULT_POLL_RATE = 1
+    MAX_POLL_RATE = 5
 
     def __init__(self, **kwds: Dict[str, Any]) -> None:
         super(StandardOptions, self).__init__()
 
         self.agent_host = os.environ.get("INSTANA_AGENT_HOST", self.AGENT_DEFAULT_HOST)
         self.agent_port = os.environ.get("INSTANA_AGENT_PORT", self.AGENT_DEFAULT_PORT)
+        self.poll_rate = self.DEFAULT_POLL_RATE
 
         if not isinstance(self.agent_port, int):
             self.agent_port = int(self.agent_port)
@@ -506,6 +509,34 @@ class StandardOptions(BaseOptions):
             self.disabled_spans.extend(disabled_spans)
             self.enabled_spans.extend(enabled_spans)
 
+    def set_poll_rate(self, plugin_config: Dict[str, Any]) -> None:
+        """Set poll rate from agent plugin configuration."""
+        poll_rate_value = plugin_config.get("poll_rate")
+        if poll_rate_value is None:
+            return
+
+        try:
+            poll_rate = int(poll_rate_value)
+        except (ValueError, TypeError):
+            logger.debug(
+                f"Invalid poll_rate type, defaulting to {self.DEFAULT_POLL_RATE}"
+            )
+            self.poll_rate = self.DEFAULT_POLL_RATE
+            return
+
+        if poll_rate in (self.DEFAULT_POLL_RATE, self.MAX_POLL_RATE):
+            self.poll_rate = poll_rate
+            logger.debug(
+                f"Poll rate set to {self.poll_rate} seconds from agent configuration"
+            )
+            return
+
+        logger.debug(
+            f"Invalid poll_rate value {poll_rate}, defaulting to "
+            f"{self.DEFAULT_POLL_RATE}"
+        )
+        self.poll_rate = self.DEFAULT_POLL_RATE
+
     def set_from(self, res_data: Dict[str, Any]) -> None:
         """
         Set the source identifiers given to use by the Instana Host agent.
@@ -516,13 +547,19 @@ class StandardOptions(BaseOptions):
             logger.debug(f"options.set_from: Wrong data type - {type(res_data)}")
             return
 
+        # Extract poll_rate from plugin.python.poll_rate
+        if "plugin" in res_data and isinstance(res_data["plugin"], dict):
+            python_plugin = res_data["plugin"].get("python")
+            if isinstance(python_plugin, dict):
+                self.set_poll_rate(python_plugin)
+
         if "secrets" in res_data:
             self.set_secrets(res_data["secrets"])
 
         if "tracing" in res_data:
             self.set_tracing(res_data["tracing"])
-
         else:
+            # Rely on extra headers if no tracing configuration comes from the agent
             if "extraHeaders" in res_data:
                 self.set_extra_headers(res_data["extraHeaders"])
 

@@ -87,6 +87,156 @@ class TestHostCollector:
         self.agent.collector.snapshot_data_interval = 999999999999
         assert not self.agent.collector.should_send_snapshot_data()
 
+    def test_should_send_metrics_with_default_poll_rate(self) -> None:
+        """Test that metrics should be sent immediately with default poll_rate of 1 second"""
+        # Initially, metrics_data_last_sent is 0, so should return True
+        assert self.agent.collector.should_send_metrics()
+
+        # After updating timestamp, should return False immediately
+        from time import time
+
+        self.agent.collector.metrics_data_last_sent = int(time())
+        assert not self.agent.collector.should_send_metrics()
+
+    def test_should_send_metrics_with_custom_poll_rate(self) -> None:
+        """Test that metrics respect custom poll_rate from agent options"""
+        from time import time
+        from instana.options import StandardOptions
+
+        # Set custom poll_rate of 5 seconds
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 5
+
+        # Initially should return True
+        assert self.agent.collector.should_send_metrics()
+
+        # Set timestamp to now
+        current_time = int(time())
+        self.agent.collector.metrics_data_last_sent = current_time
+
+        # Should return False immediately after
+        assert not self.agent.collector.should_send_metrics()
+
+        # Simulate 3 seconds passing (less than poll_rate)
+        self.agent.collector.metrics_data_last_sent = current_time - 3
+        assert not self.agent.collector.should_send_metrics()
+
+        # Simulate 5 seconds passing (equal to poll_rate)
+        self.agent.collector.metrics_data_last_sent = current_time - 5
+        assert self.agent.collector.should_send_metrics()
+
+        # Simulate 6 seconds passing (more than poll_rate)
+        self.agent.collector.metrics_data_last_sent = current_time - 6
+        assert self.agent.collector.should_send_metrics()
+
+    def test_should_send_metrics_without_agent_options(self) -> None:
+        """Test that should_send_metrics works when agent has no options attribute"""
+        from time import time
+
+        # Remove options attribute to test fallback
+        if hasattr(self.agent, "options"):
+            delattr(self.agent, "options")
+
+        # Should use default poll_rate of 1
+        assert self.agent.collector.should_send_metrics()
+
+        self.agent.collector.metrics_data_last_sent = int(time())
+        assert not self.agent.collector.should_send_metrics()
+
+    def test_prepare_payload_respects_poll_rate(self) -> None:
+        """Test that prepare_payload only collects metrics based on poll_rate"""
+        from time import time
+        from instana.options import StandardOptions
+
+        # Set poll_rate to 5 seconds
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 5
+
+        with patch.object(gc, "isenabled", return_value=True):
+            # First call should collect metrics
+            self.agent.collector.metrics_data_last_sent = 0
+            payload = self.agent.collector.prepare_payload()
+            assert payload
+            assert "metrics" in payload
+            assert "plugins" in payload["metrics"]
+            assert len(payload["metrics"]["plugins"]) == 1
+
+            # Immediately after, should not collect metrics (empty plugins)
+            payload = self.agent.collector.prepare_payload()
+            assert payload
+            assert "metrics" in payload
+            assert "plugins" in payload["metrics"]
+            assert len(payload["metrics"]["plugins"]) == 0
+
+            # Simulate 5 seconds passing
+            self.agent.collector.metrics_data_last_sent = int(time()) - 5
+            payload = self.agent.collector.prepare_payload()
+            assert payload
+            assert "metrics" in payload
+            assert "plugins" in payload["metrics"]
+            assert len(payload["metrics"]["plugins"]) == 1
+
+    def test_metrics_data_last_sent_updated(self) -> None:
+        """Test that metrics_data_last_sent timestamp is updated after collecting metrics"""
+        from time import time
+        from instana.options import StandardOptions
+
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 1
+
+        with patch.object(gc, "isenabled", return_value=True):
+            # Reset timestamp
+            self.agent.collector.metrics_data_last_sent = 0
+            initial_time = int(time())
+
+            # Prepare payload should update timestamp
+            payload = self.agent.collector.prepare_payload()
+            assert payload
+
+            # Verify timestamp was updated
+            assert self.agent.collector.metrics_data_last_sent >= initial_time
+            assert self.agent.collector.metrics_data_last_sent <= int(time())
+
+    def test_prepare_payload_spans_always_collected(self) -> None:
+        """Test that spans are always collected regardless of poll_rate"""
+        from instana.options import StandardOptions
+        from instana.span.span import InstanaSpan
+        from instana.span.registered_span import RegisteredSpan
+        from instana.span_context import SpanContext
+        from instana.recorder import StanRecorder
+
+        # Set high poll_rate
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 5
+
+        with patch.object(gc, "isenabled", return_value=True):
+            # Create span context and processor
+            span_context = SpanContext(trace_id=123, span_id=456, is_remote=False)
+            span_processor = StanRecorder(self.agent)
+
+            # Add a span to the queue
+            span = InstanaSpan("test-span", span_context, span_processor)
+            registered_span = RegisteredSpan(span, None, "log")
+            self.agent.collector.span_queue.put(registered_span)
+
+            # Set metrics_data_last_sent to now (so metrics won't be collected)
+            from time import time
+
+            self.agent.collector.metrics_data_last_sent = int(time())
+
+            # Prepare payload
+            payload = self.agent.collector.prepare_payload()
+
+            # Spans should still be collected
+            assert payload
+            assert "spans" in payload
+            assert len(payload["spans"]) == 1
+
+            # But metrics should not be collected
+            assert "metrics" in payload
+            assert "plugins" in payload["metrics"]
+            assert len(payload["metrics"]["plugins"]) == 0
+
     def test_prepare_payload_basics(self) -> None:
         with patch.object(gc, "isenabled", return_value=True):
             self.payload = self.agent.collector.prepare_payload()
@@ -256,9 +406,9 @@ class TestHostCollector:
         assert len(snapshot["versions"]) > 5
         expected_packages = ("instana", "wrapt", "fysom")
         for package in expected_packages:
-            assert package in snapshot["versions"], (
-                f"{package} not found in snapshot['versions']"
-            )
+            assert (
+                package in snapshot["versions"]
+            ), f"{package} not found in snapshot['versions']"
         assert snapshot["versions"]["instana"] == VERSION
 
     def test_prepare_payload_with_autotrace(self) -> None:
@@ -274,9 +424,9 @@ class TestHostCollector:
         assert len(snapshot["versions"]) > 5
         expected_packages = ("instana", "wrapt", "fysom")
         for package in expected_packages:
-            assert package in snapshot["versions"], (
-                f"{package} not found in snapshot['versions']"
-            )
+            assert (
+                package in snapshot["versions"]
+            ), f"{package} not found in snapshot['versions']"
         assert snapshot["versions"]["instana"] == VERSION
 
     def test_prepare_and_report_data_without_lock(

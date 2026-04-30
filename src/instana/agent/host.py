@@ -315,7 +315,7 @@ class HostAgent(BaseAgent):
 
     def report_metrics(self, payload: Dict[str, Any]) -> Optional[Response]:
         metrics = payload.get("metrics", [])
-        if len(metrics) > 0:
+        if len(metrics) > 0 and len(metrics.get("plugins", [])) > 0:
             metric_bundle = metrics["plugins"][0]["data"]
             response = self.client.post(
                 self.__data_url(),

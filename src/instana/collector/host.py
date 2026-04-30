@@ -72,6 +72,17 @@ class HostCollector(BaseCollector):
         delta = int(time()) - self.snapshot_data_last_sent
         return delta > self.snapshot_data_interval
 
+    def should_send_metrics(self) -> bool:
+        """
+        Determines if metrics data should be sent based on poll_rate.
+        """
+        poll_rate = 1
+        if hasattr(self.agent, "options") and hasattr(self.agent.options, "poll_rate"):
+            poll_rate = self.agent.options.poll_rate
+
+        delta = int(time()) - self.metrics_data_last_sent
+        return delta >= poll_rate
+
     def prepare_payload(self) -> DefaultDict[Any, Any]:
         payload = DictionaryOfStan()
         payload["spans"] = []
@@ -79,22 +90,28 @@ class HostCollector(BaseCollector):
         payload["metrics"]["plugins"] = []
 
         try:
+            # Always collect and send spans immediately (every 1 second)
             if not self.span_queue.empty():
                 payload["spans"] = format_span(self.queued_spans())
 
             if not self.profile_queue.empty():
                 payload["profiles"] = self.queued_profiles()
 
-            with_snapshot = self.should_send_snapshot_data()
+            # Only collect metrics based on poll_rate interval
+            if self.should_send_metrics():
+                with_snapshot = self.should_send_snapshot_data()
 
-            plugins = []
-            for helper in self.helpers:
-                plugins.extend(helper.collect_metrics(with_snapshot=with_snapshot))
+                plugins = []
+                for helper in self.helpers:
+                    plugins.extend(helper.collect_metrics(with_snapshot=with_snapshot))
 
-            payload["metrics"]["plugins"] = plugins
+                payload["metrics"]["plugins"] = plugins
 
-            if with_snapshot is True:
-                self.snapshot_data_last_sent = int(time())
+                if with_snapshot is True:
+                    self.snapshot_data_last_sent = int(time())
+
+                # Update metrics last sent timestamp
+                self.metrics_data_last_sent = int(time())
         except Exception:
             logger.debug("non-fatal prepare_payload:", exc_info=True)
 

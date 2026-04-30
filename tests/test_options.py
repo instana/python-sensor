@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Generator
+from typing import Generator, Optional
 
 import pytest
 from mock import patch
@@ -1002,6 +1002,125 @@ class TestStandardOptions:
         assert self.standart_options.secrets_list == ["key", "pass", "secret"]
         assert self.standart_options.span_filters == {"exclude": INTERNAL_SPAN_FILTERS}
         assert not self.standart_options.extra_http_headers
+
+    def test_default_poll_rate(self) -> None:
+        """Test that default poll_rate is 1 second"""
+        self.standart_options = StandardOptions()
+        assert self.standart_options.poll_rate == 1
+
+    @pytest.mark.parametrize(
+        "poll_rate_value",
+        [1, 5],
+    )
+    def test_set_from_with_valid_poll_rate(
+        self,
+        poll_rate_value: int,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test setting poll_rate from announce response - affects metrics only"""
+        caplog.set_level(logging.DEBUG, logger="instana")
+        caplog.clear()
+
+        self.standart_options = StandardOptions()
+        test_res_data = {"plugin": {"python": {"poll_rate": poll_rate_value}}}
+        self.standart_options.set_from(test_res_data)
+
+        assert self.standart_options.poll_rate == poll_rate_value
+        assert (
+            f"Poll rate set to {poll_rate_value} seconds from agent configuration"
+            in caplog.messages
+        )
+
+    @pytest.mark.parametrize(
+        "invalid_value",
+        [10, 0, -5, 3],
+    )
+    def test_set_from_with_invalid_poll_rate_defaults_to_1(
+        self,
+        invalid_value: int,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that invalid poll_rate values default to 1"""
+        caplog.set_level(logging.DEBUG, logger="instana")
+        caplog.clear()
+
+        self.standart_options = StandardOptions()
+        test_res_data = {"plugin": {"python": {"poll_rate": invalid_value}}}
+        self.standart_options.set_from(test_res_data)
+        assert self.standart_options.poll_rate == 1
+        assert (
+            f"Invalid poll_rate value {invalid_value}, defaulting to 1"
+            in caplog.messages
+        )
+
+    @pytest.mark.parametrize(
+        "invalid_type,expect_log",
+        [
+            ("invalid", True),
+            (None, False),
+        ],
+    )
+    def test_set_from_with_invalid_poll_rate_type(
+        self,
+        invalid_type: Optional[str],
+        expect_log: bool,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that non-integer poll_rate values default to 1"""
+        caplog.set_level(logging.DEBUG, logger="instana")
+        caplog.clear()
+
+        self.standart_options = StandardOptions()
+        test_res_data = {"plugin": {"python": {"poll_rate": invalid_type}}}
+        self.standart_options.set_from(test_res_data)
+        assert self.standart_options.poll_rate == 1
+        if expect_log:
+            assert "Invalid poll_rate type, defaulting to 1" in caplog.messages
+
+    def test_set_from_without_poll_rate(self) -> None:
+        """Test that poll_rate remains default when not in response"""
+        self.standart_options = StandardOptions()
+        test_res_data = {
+            "secrets": {"matcher": "sample-match", "list": ["sample", "list"]}
+        }
+        self.standart_options.set_from(test_res_data)
+        assert self.standart_options.poll_rate == 1
+
+    def test_set_from_with_poll_rate_and_other_config(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that poll_rate works alongside other configuration"""
+        caplog.set_level(logging.DEBUG, logger="instana")
+        caplog.clear()
+
+        self.standart_options = StandardOptions()
+        test_res_data = {
+            "plugin": {"python": {"poll_rate": 5}},
+            "secrets": {"matcher": "sample-match", "list": ["sample", "list"]},
+            "tracing": {
+                "filter": {
+                    "exclude": [
+                        {
+                            "name": "service1",
+                            "attributes": [
+                                {
+                                    "key": "service",
+                                    "values": ["service1"],
+                                    "match_type": "strict",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+        }
+        self.standart_options.set_from(test_res_data)
+
+        assert self.standart_options.poll_rate == 5
+        assert self.standart_options.secrets_matcher == "sample-match"
+        assert self.standart_options.secrets_list == ["sample", "list"]
+        assert "Poll rate set to 5 seconds from agent configuration" in caplog.messages
 
 
 class TestServerlessOptions:

@@ -49,6 +49,9 @@ class BaseCollector(object):
         # How often to report snapshot data (in seconds)
         self.snapshot_data_interval = 300
 
+        # Timestamp in seconds of the last time we sent metrics data
+        self.metrics_data_last_sent = 0
+
         # List of helpers that help out in data collection
         self.helpers = []
 
@@ -58,6 +61,7 @@ class BaseCollector(object):
         self.background_report_lock = threading.RLock()
 
         # Reporting interval for the background thread(s)
+        # Default is 1 but can be changed by the agent options
         self.report_interval = 1
 
         # Flag to indicate if start/shutdown state

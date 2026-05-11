@@ -1,4 +1,4 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2026
 # (c) Copyright Instana Inc. 2020
 
 """
@@ -9,7 +9,7 @@ monitoring state and reporting that data.
 import json
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import requests
 import urllib3
@@ -22,7 +22,6 @@ from instana.log import logger
 from instana.options import StandardOptions
 from instana.util import to_json
 from instana.util.runtime import get_py_source, log_runtime_env_info
-from instana.util.span_utils import matches_rule
 from instana.version import VERSION
 
 if TYPE_CHECKING:
@@ -33,7 +32,7 @@ class AnnounceData(object):
     """The Announce Payload"""
 
     pid = 0
-    agentUuid = ""
+    agent_uuid = ""
 
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
@@ -127,7 +126,7 @@ class HostAgent(BaseAgent):
 
     def set_from(
         self,
-        res_data: Dict[str, Any],
+        res_data: dict[str, Any],
     ) -> None:
         """
         Sets the source identifiers given to use by the Instana Host agent.
@@ -140,17 +139,17 @@ class HostAgent(BaseAgent):
         if "pid" in res_data and "agentUuid" in res_data:
             self.announce_data = AnnounceData(
                 pid=res_data["pid"],
-                agentUuid=res_data["agentUuid"],
+                agent_uuid=res_data["agentUuid"],  # Map JSON key to Python field
             )
         else:
             logger.debug(f"Missing required keys in announce response: {res_data}")
 
-    def get_from_structure(self) -> Dict[str, str]:
+    def get_from_structure(self) -> dict[str, str]:
         """
         Retrieves the From data that is reported alongside monitoring data.
         @return: dict()
         """
-        return {"e": self.announce_data.pid, "h": self.announce_data.agentUuid}
+        return {"e": self.announce_data.pid, "h": self.announce_data.agent_uuid}
 
     def is_agent_listening(
         self,
@@ -182,7 +181,7 @@ class HostAgent(BaseAgent):
     def announce(
         self,
         discovery: "Discovery",
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """
         With the passed in Discovery class, attempt to announce to the host agent.
         """
@@ -241,7 +240,7 @@ class HostAgent(BaseAgent):
         """
         response = None
         try:
-            payload = dict()
+            payload = {}
             payload["m"] = message
 
             url = self.__agent_logger_url()
@@ -273,7 +272,7 @@ class HostAgent(BaseAgent):
 
     def report_data_payload(
         self,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
     ) -> Optional[Response]:
         """
         Used to report collection payload to the host agent.  This can be metrics, spans and snapshot data.
@@ -313,7 +312,7 @@ class HostAgent(BaseAgent):
             )
         return response
 
-    def report_metrics(self, payload: Dict[str, Any]) -> Optional[Response]:
+    def report_metrics(self, payload: dict[str, Any]) -> Optional[Response]:
         metrics = payload.get("metrics", [])
         if len(metrics) > 0 and len(metrics.get("plugins", [])) > 0:
             metric_bundle = metrics["plugins"][0]["data"]
@@ -324,9 +323,9 @@ class HostAgent(BaseAgent):
                 timeout=0.8,
             )
             return response
-        return
+        return None
 
-    def report_profiles(self, payload: Dict[str, Any]) -> Optional[Response]:
+    def report_profiles(self, payload: dict[str, Any]) -> Optional[Response]:
         profiles = payload.get("profiles", [])
         if len(profiles) > 0:
             logger.debug(f"Reporting {len(profiles)} profiles")
@@ -337,9 +336,9 @@ class HostAgent(BaseAgent):
                 timeout=0.8,
             )
             return response
-        return
+        return None
 
-    def report_spans(self, payload: Dict[str, Any]) -> Optional[Response]:
+    def report_spans(self, payload: dict[str, Any]) -> Optional[Response]:
         filtered_spans = self.filter_spans(payload.get("spans", []))
         if len(filtered_spans) > 0:
             logger.debug(f"Reporting {len(filtered_spans)} spans")
@@ -350,74 +349,9 @@ class HostAgent(BaseAgent):
                 timeout=0.8,
             )
             return response
-        return
+        return None
 
-    def filter_spans(self, spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Filters span list using new hierarchical filtering rules.
-        """
-        filtered_spans = []
-
-        for span in spans:
-            if not (hasattr(span, "n") or hasattr(span, "name")) or not hasattr(
-                span, "data"
-            ):
-                filtered_spans.append(span)
-                continue
-
-            service_name = ""
-
-            # Set the service name
-            for span_value in span.data:
-                if isinstance(span.data[span_value], dict):
-                    service_name = span_value
-
-            # Skip if no valid service name found
-            if not service_name:
-                filtered_spans.append(span)
-                continue
-
-            # Set span attributes for filtering
-            attributes_to_check = {
-                "type": service_name,
-                "kind": getattr(span, "k", None),
-            }
-
-            # Add operation specifiers to the attributes
-            for key, value in span.data[service_name].items():
-                attributes_to_check[f"{service_name}.{key}"] = value
-
-            # Check if the span need to be ignored
-            if self.__is_endpoint_ignored(attributes_to_check):
-                continue
-
-            filtered_spans.append(span)
-
-        return filtered_spans
-
-    def __is_endpoint_ignored(self, span_attributes: dict) -> bool:
-        filters = self.options.span_filters
-        if not filters:
-            return False
-
-        # Check include rules
-        include_rules = filters.get("include", [])
-        if any(
-            matches_rule(rule.get("attributes", []), span_attributes)
-            for rule in include_rules
-        ):
-            return False
-
-        # Check exclude rules
-        exclude_rules = filters.get("exclude", [])
-        return bool(
-            any(
-                matches_rule(rule.get("attributes", []), span_attributes)
-                for rule in exclude_rules
-            )
-        )
-
-    def handle_agent_tasks(self, task: Dict[str, Any]) -> None:
+    def handle_agent_tasks(self, task: dict[str, Any]) -> None:
         """
         When request(s) are received by the host agent, it is sent here
         for handling & processing.
@@ -497,7 +431,7 @@ class HostAgent(BaseAgent):
     def __task_response(
         self,
         message_id: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> Optional[Response]:
         """
         When the host agent passes us a task and we do it, this function is used to

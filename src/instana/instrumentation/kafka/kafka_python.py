@@ -47,9 +47,7 @@ try:
             "kafka.access": "send",
         }
 
-        is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
-            attributes_to_check
-        )
+        is_suppressed = tracer.exporter._is_endpoint_ignored(attributes_to_check)
 
         with tracer.start_as_current_span(
             "kafka-producer", context=parent_context, kind=SpanKind.PRODUCER
@@ -108,7 +106,7 @@ try:
                     "kafka.service": topic,
                     "kafka.access": span_type,
                 }
-                is_suppressed = tracer.exporter._HostAgent__is_endpoint_ignored(
+                is_suppressed = tracer.exporter._is_endpoint_ignored(
                     attributes_to_check
                 )
 

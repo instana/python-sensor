@@ -1,4 +1,4 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2026
 # (c) Copyright Instana Inc. 2020
 
 import datetime
@@ -36,15 +36,8 @@ class TestHostAgent:
         yield
         caplog.clear()
         variable_names = (
-            "AWS_EXECUTION_ENV",
-            "INSTANA_EXTRA_HTTP_HEADERS",
-            "INSTANA_ENDPOINT_URL",
-            "INSTANA_ENDPOINT_PROXY",
-            "INSTANA_AGENT_KEY",
-            "INSTANA_LOG_LEVEL",
+            "INSTANA_DEBUG",
             "INSTANA_SERVICE_NAME",
-            "INSTANA_SECRETS",
-            "INSTANA_TAGS",
         )
 
         for variable_name in variable_names:
@@ -92,7 +85,7 @@ class TestHostAgent:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.content = (
-            "{" f'  "pid": {test_pid}, ' f'  "agentUuid": "{test_agent_uuid}"' "}"
+            f'{{  "pid": {test_pid},   "agentUuid": "{test_agent_uuid}"}}'
         )
 
         # This mocks the call to self.agent.client.put
@@ -198,7 +191,7 @@ class TestHostAgent:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.content = "{" f'  "agentUuid": "{test_agent_uuid}"' "}"
+        mock_response.content = f'{{  "agentUuid": "{test_agent_uuid}"}}'
         mock_requests_session_put.return_value = mock_response
 
         d = Discovery(pid=test_pid, name=test_process_name, args=test_process_args)
@@ -223,7 +216,7 @@ class TestHostAgent:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.content = "{" f'  "pid": {test_pid} ' "}"
+        mock_response.content = f'{{  "pid": {test_pid} }}'
         mock_requests_session_put.return_value = mock_response
 
         d = Discovery(pid=test_pid, name=test_process_name, args=test_process_args)
@@ -399,7 +392,7 @@ class TestHostAgent:
         agent.set_from(sample_res_data)
         assert "value" in agent.options.extra_http_headers
 
-        assert agent.announce_data.agentUuid == "value-4"
+        assert agent.announce_data.agent_uuid == "value-4"
         assert agent.announce_data.pid == 1234
 
     @pytest.mark.original
@@ -407,7 +400,7 @@ class TestHostAgent:
         self,
     ) -> None:
         agent = HostAgent()
-        agent.announce_data = AnnounceData(pid=1234, agentUuid="value")
+        agent.announce_data = AnnounceData(pid=1234, agent_uuid="value")
         assert agent.get_from_structure() == {"e": 1234, "h": "value"}
 
     @pytest.mark.original
@@ -540,7 +533,7 @@ class TestHostAgent:
         mock_response.status_code = 200
         mock_response.return_value = {"key": "value"}
         agent.AGENT_DATA_PATH = "sample_path"
-        agent.announce_data = AnnounceData(pid=1234, agentUuid="sample")
+        agent.announce_data = AnnounceData(pid=1234, agent_uuid="sample")
         with (
             patch.object(requests.Session, "head", return_value=mock_response),
             patch(
@@ -595,8 +588,9 @@ class TestHostAgent:
             ),
         ):
             test_response = agent.report_data_payload(payload)
-            assert isinstance(agent.last_seen, datetime.datetime)
+            assert test_response
             assert test_response.content == sample_response
+            assert isinstance(agent.last_seen, datetime.datetime)
 
     def test_report_metrics(self) -> None:
         agent = HostAgent()
@@ -780,7 +774,7 @@ class TestHostAgent:
         assert "last_seen: 2022-07-25 14:30:00" in caplog.messages
         assert "announce_data: None" in caplog.messages
 
-        agent.announce_data = AnnounceData(pid=1234, agentUuid="value")
+        agent.announce_data = AnnounceData(pid=1234, agent_uuid="value")
         agent.diagnostics()
         assert f"announce_data: {agent.announce_data.__dict__}" in caplog.messages
         assert f"Options: {agent.options.__dict__}" in caplog.messages
@@ -794,7 +788,9 @@ class TestHostAgent:
         assert "should_send_snapshot_data: True" in caplog.messages
 
     def test_is_service_or_endpoint_ignored(self) -> None:
-        self.agent.options.span_filters = {
+        agent = HostAgent()
+
+        agent.options.span_filters = {
             "include": [],
             "exclude": [
                 {
@@ -820,29 +816,29 @@ class TestHostAgent:
         }
 
         # ignore all endpoints of service1
-        assert self.agent._HostAgent__is_endpoint_ignored({"type": "service1"})
-        assert self.agent._HostAgent__is_endpoint_ignored({
+        assert agent._is_endpoint_ignored({"type": "service1"})
+        assert agent._is_endpoint_ignored({
             "type": "service1",
             "endpoint": "method1",
         })
-        assert self.agent._HostAgent__is_endpoint_ignored({
+        assert agent._is_endpoint_ignored({
             "type": "service1",
             "endpoint": "method2",
         })
 
         # ignore only endpoint1 of service2
-        assert self.agent._HostAgent__is_endpoint_ignored({
+        assert agent._is_endpoint_ignored({
             "type": "service2",
             "endpoint": "method1",
         })
-        assert not self.agent._HostAgent__is_endpoint_ignored({
+        assert not agent._is_endpoint_ignored({
             "type": "service2",
             "endpoint": "method2",
         })
 
         # don't ignore other services
-        assert not self.agent._HostAgent__is_endpoint_ignored({"type": "service3"})
-        assert not self.agent._HostAgent__is_endpoint_ignored({
+        assert not agent._is_endpoint_ignored({"type": "service3"})
+        assert not agent._is_endpoint_ignored({
             "type": "service3",
             "endpoint": "method1",
         })

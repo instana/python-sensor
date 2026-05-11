@@ -1,4 +1,4 @@
-# (c) Copyright IBM Corp. 2024
+# (c) Copyright IBM Corp. 2024, 2026
 
 import logging
 import os
@@ -49,8 +49,8 @@ class TestEKSFargate:
         assert not agent.can_send()
         assert not agent.collector
         assert (
-            "Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  We will not be able to monitor this Pod."
-            in caplog.messages
+            "Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set."
+            in caplog.text
         )
 
         os.environ["INSTANA_ENDPOINT_URL"] = "https://localhost/notreal"
@@ -59,8 +59,8 @@ class TestEKSFargate:
         assert not agent.can_send()
         assert not agent.collector
         assert (
-            "Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set.  We will not be able to monitor this Pod."
-            in caplog.messages
+            "Required INSTANA_AGENT_KEY and/or INSTANA_ENDPOINT_URL environment variables not set."
+            in caplog.text
         )
 
     def test_default_secrets(self) -> None:

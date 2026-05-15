@@ -184,6 +184,7 @@ def boot_agent() -> None:
             sqlalchemy,  # noqa: F401
             starlette,  # noqa: F401
             urllib3,  # noqa: F401
+            werkzeug,  # noqa: F401
             gevent,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (

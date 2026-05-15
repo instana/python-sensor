@@ -601,6 +601,68 @@ class TestWerkzeugInstrumentation:
             assert call_args[2] is flask_app
             assert not isinstance(call_args[2], InstanaWSGIMiddleware)
 
+    def test_base_wsgi_server_direct_instantiation(self) -> None:
+        """Test instrumentation when BaseWSGIServer is instantiated directly (e.g. Odoo).
+
+        Odoo's ThreadedWSGIServerReloadable extends werkzeug.serving.ThreadedWSGIServer
+        which extends BaseWSGIServer, bypassing run_simple entirely. This test verifies
+        that the BaseWSGIServer.__init__ patch wraps the app in that case.
+        """
+        import socket
+        from werkzeug.serving import BaseWSGIServer
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+
+        server = BaseWSGIServer("127.0.0.1", port, simple_wsgi_app)
+        try:
+            assert isinstance(server.app, InstanaWSGIMiddleware)
+            assert server.app.app is simple_wsgi_app
+        finally:
+            server.server_close()
+
+    def test_base_wsgi_server_skips_flask_app(self) -> None:
+        """Test that BaseWSGIServer patch skips Flask apps."""
+        import socket
+        from werkzeug.serving import BaseWSGIServer
+
+        class Flask:
+            def __call__(self, environ, start_response):
+                return simple_wsgi_app(environ, start_response)
+
+        Flask.__module__ = "flask.app"
+        flask_app = Flask()
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+
+        server = BaseWSGIServer("127.0.0.1", port, flask_app)
+        try:
+            assert server.app is flask_app
+            assert not isinstance(server.app, InstanaWSGIMiddleware)
+        finally:
+            server.server_close()
+
+    def test_base_wsgi_server_not_double_wrapped(self) -> None:
+        """Test that an already-wrapped app is not wrapped again."""
+        import socket
+        from werkzeug.serving import BaseWSGIServer
+
+        pre_wrapped = InstanaWSGIMiddleware(simple_wsgi_app, status_as_string=False)
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+
+        server = BaseWSGIServer("127.0.0.1", port, pre_wrapped)
+        try:
+            assert server.app is pre_wrapped
+            assert not isinstance(server.app.app, InstanaWSGIMiddleware)
+        finally:
+            server.server_close()
+
 
 def test_parse_status_code_handles_valid_and_invalid_values() -> None:
     """Test safe parsing of WSGI status strings."""

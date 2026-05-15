@@ -100,6 +100,34 @@ try:
 
         return wrapped(*args, **kwargs)
 
+    @wrapt.patch_function_wrapper("werkzeug.serving", "BaseWSGIServer.__init__")
+    def base_wsgi_server_init_with_instana(
+        wrapped: Callable,
+        instance: Any,
+        args: tuple,
+        kwargs: dict[str, Any],
+    ) -> Any:
+        """
+        Patch werkzeug.serving.BaseWSGIServer.__init__ to wrap WSGI applications.
+
+        Covers frameworks like Odoo that instantiate BaseWSGIServer (or its
+        subclasses such as ThreadedWSGIServer) directly without going through
+        run_simple.  The app is wrapped after super().__init__ so that any
+        subclass setup that reads self.app also sees the instrumented version.
+        """
+        wrapped(*args, **kwargs)
+        try:
+            if _is_flask_app(instance.app):
+                logger.debug("Skipping BaseWSGIServer instrumentation for Flask app")
+                return
+            if not isinstance(instance.app, InstanaWSGIMiddleware):
+                instance.app = InstanaWSGIMiddleware(
+                    instance.app, status_as_string=False
+                )
+                logger.debug("BaseWSGIServer app wrapped")
+        except Exception:
+            logger.debug("Failed to wrap BaseWSGIServer app", exc_info=True)
+
     logger.debug("Instrumenting werkzeug")
 
 except ImportError:

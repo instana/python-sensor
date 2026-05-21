@@ -8,9 +8,10 @@ from typing import Generator
 import psycopg2
 import psycopg2.extensions as ext
 import psycopg2.extras
+import psycopg2._json
 import pytest
 
-from instana.instrumentation.psycopg2 import register_json_with_instana
+
 from instana.singletons import agent, get_tracer
 from tests.helpers import testenv
 
@@ -65,7 +66,7 @@ class TestPsycoPG2:
         agent.options.allow_exit_as_root = False
 
     def test_register_json(self) -> None:
-        resp = register_json_with_instana(conn_or_curs=self.db)
+        resp = psycopg2._json.register_json(conn_or_curs=self.db)
         assert resp[0].values[0] == 114
         assert resp[1].values[0] == 199
 

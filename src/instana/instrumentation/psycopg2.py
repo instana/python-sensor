@@ -41,8 +41,13 @@ try:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
     ) -> Callable[..., object]:
+        args_list = list(args)
+
         if "conn_or_curs" in kwargs and hasattr(kwargs["conn_or_curs"], "__wrapped__"):
             kwargs["conn_or_curs"] = kwargs["conn_or_curs"].__wrapped__
+        elif len(args_list) > 0 and hasattr(args_list[0], "__wrapped__"):
+            args_list[0] = args_list[0].__wrapped__
+            args = tuple(args_list)
 
         return wrapped(*args, **kwargs)
 

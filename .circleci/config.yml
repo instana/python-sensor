@@ -46,12 +46,6 @@ commands:
           command: |
             . venv/bin/activate
             pip install -r <<parameters.requirements>>
-      - run:
-          name: Apply grace period to installed packages
-          command: |
-            . venv/bin/activate
-            pip install --quiet requests packaging
-            python .circleci/pin_safe_versions.py <<parameters.requirements>>
 
   run-tests-with-coverage-report:
     parameters:
@@ -86,22 +80,6 @@ commands:
           root: .
           paths:
             - coverage_results
-
-  capture-installed-versions:
-    parameters:
-      label:
-        type: string
-    steps:
-      - run:
-          name: Capture installed package versions
-          when: on_success
-          command: |
-            . venv/bin/activate
-            pip freeze > /tmp/installed_<<parameters.label>>.txt
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - installed_<<parameters.label>>.txt
 
   store-pytest-results:
     steps:
@@ -180,8 +158,26 @@ jobs:
       - pip-install-deps
       - pip-install-tests-deps
       - run-tests-with-coverage-report
-      - capture-installed-versions:
-          label: "py<<parameters.py-version>>"
+      - store-pytest-results
+      - store-coverage-report
+
+  py39cassandra:
+    docker:
+      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/cassandra:3.11.16-jammy
+        environment:
+          MAX_HEAP_SIZE: 2048m
+          HEAP_NEWSIZE: 512m
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - check-if-tests-needed
+      - pip-install-deps
+      - pip-install-tests-deps:
+          requirements: "tests/requirements-cassandra.txt"
+      - run-tests-with-coverage-report:
+          cassandra: "true"
+          tests: "tests/clients/test_cassandra-driver.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -198,8 +194,6 @@ jobs:
       - run-tests-with-coverage-report:
           gevent: "true"
           tests: "tests/frameworks/test_gevent.py"
-      - capture-installed-versions:
-          label: "gevent"
       - store-pytest-results
       - store-coverage-report
 
@@ -215,30 +209,6 @@ jobs:
           requirements: "tests/requirements-aws.txt"
       - run-tests-with-coverage-report:
           tests: "tests_aws"
-      - capture-installed-versions:
-          label: "aws"
-      - store-pytest-results
-      - store-coverage-report
-
-  py312cassandra:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.12
-      - image: public.ecr.aws/docker/library/cassandra:3.11.16-jammy
-        environment:
-          MAX_HEAP_SIZE: 2048m
-          HEAP_NEWSIZE: 512m
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - pip-install-deps
-      - pip-install-tests-deps:
-          requirements: "tests/requirements-cassandra.txt"
-      - run-tests-with-coverage-report:
-          cassandra: "true"
-          tests: "tests/clients/test_cassandra-driver.py"
-      - capture-installed-versions:
-          label: "cassandra"
       - store-pytest-results
       - store-coverage-report
 
@@ -283,8 +253,6 @@ jobs:
       - run-tests-with-coverage-report:
           kafka: "true"
           tests: "tests/clients/kafka/test*.py"
-      - capture-installed-versions:
-          label: "kafka"
       - store-pytest-results
       - store-coverage-report
 
@@ -317,22 +285,6 @@ jobs:
       - check-if-tests-needed
       - run_sonarqube
 
-  update-currency-versions:
-    docker:
-      - image: public.ecr.aws/docker/library/alpine:latest
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Collect pip freeze files
-          command: |
-            mkdir -p /tmp/pip-freeze
-            cp /tmp/workspace/installed_*.txt /tmp/pip-freeze/
-            ls -la /tmp/pip-freeze/
-      - store_artifacts:
-          path: /tmp/pip-freeze
-          destination: pip-freeze
-
 workflows:
   tests:
     max_auto_reruns: 2
@@ -341,9 +293,9 @@ workflows:
           matrix:
             parameters:
               py-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+      - py39cassandra
       - py39gevent
       - py312aws
-      - py312cassandra
       - py313kafka
       - autowrapt:
           matrix:
@@ -352,20 +304,8 @@ workflows:
       - final_job:
           requires:
             - python3x
+            - py39cassandra
             - py39gevent
             - py312aws
-            - py312cassandra
             - py313kafka
             - autowrapt
-      - update-currency-versions:
-          filters:
-            branches:
-              only:
-                - main
-          requires:
-            - python3x
-            - py39gevent
-            - py312aws
-            - py312cassandra
-            - py313kafka
-            - final_job

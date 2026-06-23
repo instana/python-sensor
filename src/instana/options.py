@@ -268,8 +268,11 @@ class BaseOptions(object):
         # The precedence is as follows:
         # environment variables > in-code configuration >
         # > agent config (configuration.yaml) > default value
-        if any(k.startswith("INSTANA_TRACING_FILTER_") for k in os.environ):
-            # Check for new span filtering env vars
+        if any(
+            k.startswith("INSTANA_TRACING_FILTER_") and os.environ[k]
+            for k in os.environ
+        ):
+            # Check for new span filtering env vars (only if at least one has a non-empty value)
             parsed_filter = parse_filter_rules_env_vars()
             if parsed_filter["exclude"] or parsed_filter["include"]:
                 self.span_filters = parsed_filter
@@ -393,8 +396,14 @@ class StandardOptions(BaseOptions):
         @param tracing: tracing configuration dictionary
         @return: None
         """
-        if "filter" in tracing and not self.span_filters:
-            self.span_filters = parse_filter_rules(tracing["filter"])
+        if "filter" in tracing and not self._has_high_priority_span_filter_source():
+            parsed = parse_filter_rules(tracing["filter"])
+            for policy in ("exclude", "include"):
+                rules = parsed.get(policy, [])
+                if rules:
+                    if policy not in self.span_filters:
+                        self.span_filters[policy] = []
+                    self.span_filters[policy].extend(rules)
 
         if "kafka" in tracing:
             if (
@@ -426,6 +435,21 @@ class StandardOptions(BaseOptions):
 
         # Handle stack trace configuration from agent config
         self.set_stack_trace_from_agent(tracing)
+
+    def _has_high_priority_span_filter_source(self) -> bool:
+        """Return True if a higher-priority span filter source (env var, YAML, or in-code config)
+        has already been configured, in which case the agent-provided filter should be ignored."""
+        return (
+            any(
+                k.startswith("INSTANA_TRACING_FILTER_") and os.environ[k]
+                for k in os.environ
+            )
+            or "INSTANA_CONFIG_PATH" in os.environ
+            or (
+                isinstance(config.get("tracing"), dict)
+                and "filter" in config["tracing"]
+            )
+        )
 
     def _should_apply_agent_global_config(self) -> bool:
         """Check if agent global config should be applied (lowest priority)."""

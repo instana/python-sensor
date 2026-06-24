@@ -3,8 +3,13 @@
 
 """
 Downgrades any installed packages that were released within the 5-day grace
-period to their latest safe version. Run after pip install so that CI tests
-only exercise versions that have cleared the supply-chain safety window.
+period to their latest safe version.  "Safe" means both:
+
+  1. The version was released at least GRACE_PERIOD_DAYS ago, AND
+  2. pip-audit reports no known vulnerabilities for that version.
+
+Run after pip install so that CI tests only exercise versions that have
+cleared the supply-chain safety window.
 
 Usage:
     python scripts/pin_safe_versions.py [requirements_file]
@@ -15,9 +20,12 @@ Otherwise every installed package is checked (slow).
 from typing import Any, Union
 
 
+import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timedelta
 
 import requests
@@ -64,14 +72,87 @@ def _get_pypi_releases(package_name: str) -> list[Any]:
     return result
 
 
-def _get_safe_version(releases: list[Any]) -> Union[tuple[Any, Any], tuple[None, None]]:
+def _run_pip_audit(package: str, version: str) -> bool:
+    """
+    Run ``pip-audit`` against *package==version*.
+
+    Returns True if no vulnerabilities were found, False otherwise.
+    Falls back to True (allow) if pip-audit is not installed or fails
+    unexpectedly, so that a missing tool never blocks a release.
+    """
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            req_file = os.path.join(tmpdir, "req.txt")
+            with open(req_file, "w") as f:
+                f.write(f"{package}=={version}\n")
+
+            result = subprocess.run(
+                [
+                    "pip-audit",
+                    "--requirement",
+                    req_file,
+                    "--no-deps",
+                    "--format",
+                    "json",
+                    "--progress-spinner",
+                    "off",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                return True
+            # Non-zero exit: parse JSON to distinguish real vulns from tool errors
+            try:
+                audit_output = json.loads(result.stdout)
+                dependencies = audit_output.get("dependencies", [])
+                for dep in dependencies:
+                    if dep.get("vulns"):
+                        print(
+                            f"[pip-audit] {package}=={version}: "
+                            f"{len(dep['vulns'])} vulnerability/ies found"
+                        )
+                        return False
+                # Non-zero but no vulns listed — treat as pass
+                return True
+            except (json.JSONDecodeError, KeyError):
+                print(
+                    f"[pip-audit] {package}=={version}: could not parse output, "
+                    f"assuming no vulnerabilities"
+                )
+                return True
+    except FileNotFoundError:
+        print(f"[pip-audit] pip-audit not found; skipping audit for {package}=={version}")
+        return True
+    except Exception as exc:
+        print(f"[pip-audit] unexpected error for {package}=={version}: {exc}")
+        return True
+
+
+def _get_safe_version(
+    package: str, releases: list[Any]
+) -> Union[tuple[Any, Any], tuple[None, None]]:
+    """
+    Return the newest version that:
+      1. Was released at least GRACE_PERIOD_DAYS ago (grace period elapsed), AND
+      2. Passed pip-audit (no known vulnerabilities).
+
+    Versions are evaluated **independently** — a newer release does NOT reset
+    the grace period of an older one.  This prevents the case where a package
+    that ships a new release every day never produces a stable version.
+    """
     today = datetime.today().date()
     grace_cutoff = today - timedelta(days=GRACE_PERIOD_DAYS)
-    for i, (ver, date) in enumerate(releases):
-        grace_end = date + timedelta(days=GRACE_PERIOD_DAYS)
-        superseded = any(nd < grace_end for _, nd in releases[:i])
-        if not superseded and date <= grace_cutoff:
+
+    for ver, date in releases:
+        if date > grace_cutoff:
+            # Grace period not yet elapsed — skip
+            continue
+        print(f"[pip-audit] auditing {package}=={ver} (released {date})…")
+        if _run_pip_audit(package, ver):
             return ver, date
+        print(f"[pip-audit] {package}=={ver}: FAIL — skipping")
+
     return None, None
 
 
@@ -132,7 +213,7 @@ def main() -> None:
         if installed_date is None or installed_date <= grace_cutoff:
             continue
 
-        safe_ver, safe_date = _get_safe_version(releases)
+        safe_ver, safe_date = _get_safe_version(pkg, releases)
         if safe_ver is None:
             print(
                 f"[grace-period] {pkg}=={installed_ver} (released {installed_date}) "

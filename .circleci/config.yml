@@ -50,7 +50,7 @@ commands:
           name: Apply grace period to installed packages
           command: |
             . venv/bin/activate
-            pip install --quiet requests packaging
+            pip install --quiet requests packaging pip-audit
             python .circleci/pin_safe_versions.py <<parameters.requirements>>
 
   run-tests-with-coverage-report:

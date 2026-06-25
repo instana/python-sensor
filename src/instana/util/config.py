@@ -28,6 +28,7 @@ SPAN_TYPE_TO_CATEGORY = {
     "cassandra": "databases",
     "couchbase": "databases",
     "dynamodb": "databases",
+    "elasticsearch": "databases",
     "sqlalchemy": "databases",
     # Messaging types
     "kafka": "messaging",

@@ -102,3 +102,6 @@ ENV/
 
 # uv (https://docs.astral.sh/uv/)
 uv.lock
+
+# Sandbox
+sandbox/

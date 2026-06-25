@@ -75,6 +75,12 @@ testenv["kafka_bootstrap_servers"] = [
     f"{testenv['kafka_host']}:{testenv['kafka_port']}",
 ]
 
+"""
+Elasticsearch Environment
+"""
+testenv["elasticsearch_host"] = os.environ.get("ELASTICSEARCH_HOST", "127.0.0.1")
+testenv["elasticsearch_port"] = os.environ.get("ELASTICSEARCH_PORT", "9200")
+
 
 def drop_log_spans_from_list(spans):
     """

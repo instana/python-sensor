@@ -173,6 +173,11 @@ jobs:
         environment:
           PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
           PUBSUB_PROJECT1: test-project,test-topic
+      - image: docker.elastic.co/elasticsearch/elasticsearch:9.0.0
+        environment:
+          discovery.type: single-node
+          xpack.security.enabled: "false"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     working_directory: ~/repo
     steps:
       - checkout

@@ -864,6 +864,23 @@ class TestBaseOptions:
             ],
         }
 
+    def test_asyncio_task_context_propagation_default(self) -> None:
+        """INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION is False by default."""
+        self.base_options = BaseOptions()
+        assert config["asyncio_task_context_propagation"]["enabled"] is False
+
+    @patch.dict(os.environ, {"INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION": "true"})
+    def test_asyncio_task_context_propagation_enabled_via_env(self) -> None:
+        """INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION=true enables the flag."""
+        self.base_options = BaseOptions()
+        assert config["asyncio_task_context_propagation"]["enabled"] is True
+
+    @patch.dict(os.environ, {"INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION": "false"})
+    def test_asyncio_task_context_propagation_disabled_via_env(self) -> None:
+        """INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION=false keeps the flag disabled."""
+        self.base_options = BaseOptions()
+        assert config["asyncio_task_context_propagation"]["enabled"] is False
+
 
 class TestStandardOptions:
     @pytest.fixture(autouse=True)

@@ -126,6 +126,9 @@ class RegisteredSpan(BaseSpan):
         elif span.name == "dynamodb":
             self._collect_dynamodb_attributes(span)
 
+        elif span.name == "elasticsearch":
+            self._collect_elasticsearch_attributes(span)
+
         elif span.name == "rabbitmq":
             self._collect_rabbitmq_attributes(span)
 
@@ -255,6 +258,69 @@ class RegisteredSpan(BaseSpan):
         self.data["dynamodb"]["op"] = span.attributes.pop("dynamodb.op", None)
         self.data["dynamodb"]["region"] = span.attributes.pop("dynamodb.region", None)
         self.data["dynamodb"]["table"] = span.attributes.pop("dynamodb.table", None)
+
+    def _collect_elasticsearch_attributes(self, span: "InstanaSpan") -> None:
+        self.data["elasticsearch"]["cluster"] = span.attributes.pop(
+            "elasticsearch.cluster", None
+        )
+        self.data["elasticsearch"]["action"] = span.attributes.pop(
+            "elasticsearch.action", None
+        )
+        self.data["elasticsearch"]["endpoint"] = span.attributes.pop(
+            "elasticsearch.endpoint", None
+        )
+        self.data["elasticsearch"]["url"] = span.attributes.pop(
+            "elasticsearch.url", None
+        )
+        self.data["elasticsearch"]["index"] = span.attributes.pop(
+            "elasticsearch.index", None
+        )
+        self.data["elasticsearch"]["id"] = span.attributes.pop("elasticsearch.id", None)
+        self.data["elasticsearch"]["query"] = span.attributes.pop(
+            "elasticsearch.query", None
+        )
+        self.data["elasticsearch"]["hits"] = span.attributes.pop(
+            "elasticsearch.hits", None
+        )
+        self.data["elasticsearch"]["address"] = span.attributes.pop(
+            "elasticsearch.address", None
+        )
+        self.data["elasticsearch"]["port"] = span.attributes.pop(
+            "elasticsearch.port", None
+        )
+        self.data["elasticsearch"]["error"] = span.attributes.pop(
+            "elasticsearch.error", None
+        )
+
+        # Bulk operation attributes
+        self.data["elasticsearch"]["bulk.size"] = span.attributes.pop(
+            "elasticsearch.bulk.size", None
+        )
+        self.data["elasticsearch"]["bulk.operations"] = span.attributes.pop(
+            "elasticsearch.bulk.operations", None
+        )
+        self.data["elasticsearch"]["bulk.success"] = span.attributes.pop(
+            "elasticsearch.bulk.success", None
+        )
+        self.data["elasticsearch"]["bulk.errors"] = span.attributes.pop(
+            "elasticsearch.bulk.errors", None
+        )
+
+        # Multi-get attributes
+        self.data["elasticsearch"]["mget.found"] = span.attributes.pop(
+            "elasticsearch.mget.found", None
+        )
+        self.data["elasticsearch"]["mget.not_found"] = span.attributes.pop(
+            "elasticsearch.mget.not_found", None
+        )
+
+        # Multi-search attributes
+        self.data["elasticsearch"]["msearch.success"] = span.attributes.pop(
+            "elasticsearch.msearch.success", None
+        )
+        self.data["elasticsearch"]["msearch.errors"] = span.attributes.pop(
+            "elasticsearch.msearch.errors", None
+        )
 
     def _collect_rabbitmq_attributes(self, span: "InstanaSpan") -> None:
         self.data["rabbitmq"]["exchange"] = span.attributes.pop("exchange", None)

@@ -166,6 +166,7 @@ def boot_agent() -> None:
             cassandra,  # noqa: F401
             celery,  # noqa: F401
             couchbase,  # noqa: F401
+            elasticsearch,  # noqa: F401
             fastapi,  # noqa: F401
             flask,  # noqa: F401
             grpcio,  # noqa: F401

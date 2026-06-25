@@ -44,6 +44,7 @@ EXIT_SPANS = (
     "celery-client",
     "couchbase",
     "dynamodb",
+    "elasticsearch",
     "httpx",
     "log",
     "memcache",

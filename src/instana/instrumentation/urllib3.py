@@ -93,8 +93,9 @@ try:
     ) -> urllib3.response.HTTPResponse:
         tracer, _, span_name = get_tracer_tuple()
 
-        # If we're not tracing, just return; boto3 has it's own visibility
-        if not tracer or span_name == "boto3":
+        # If we're not tracing, just return.
+        # boto3 and elasticsearch have their own dedicated exit spans.
+        if not tracer or span_name in ("boto3", "elasticsearch"):
             return wrapped(*args, **kwargs)
 
         parent_context = get_current()

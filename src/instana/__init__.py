@@ -213,6 +213,12 @@ def boot_agent() -> None:
         from instana.instrumentation.tornado import (
             server as tornado_server,  # noqa: F401
         )
+        from instana.instrumentation.twisted import (
+            client as twisted_client,  # noqa: F401
+        )
+        from instana.instrumentation.twisted import (
+            server as twisted_server,  # noqa: F401
+        )
 
 
 def _start_profiler() -> None:

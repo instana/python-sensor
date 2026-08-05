@@ -1,0 +1,4 @@
+# Runtime dependencies only — no dev/test extras
+flask>=3.0.0
+instana>=2.8.0
+autowrapt>=1.0

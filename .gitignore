@@ -104,5 +104,6 @@ ENV/
 uv.lock
 
 # Sandbox
-sandbox/
+sandbox/*
+!sandbox/flask-tracing-app
 .bob/

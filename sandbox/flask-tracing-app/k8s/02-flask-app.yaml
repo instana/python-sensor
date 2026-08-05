@@ -1,0 +1,112 @@
+# =============================================================================
+# Flask Instana Tracing Demo -- Kubernetes Deployment
+# (c) Copyright IBM Corp. 2025
+#
+# Do not apply this manifest directly -- it is called by deploy.sh.
+# The image address is set automatically from the internal registry via
+# oc set image:
+#
+#   image-registry.openshift-image-registry.svc:5000/<NS>/flask-tracing-demo:latest
+#
+# To deploy manually:
+#   bash sandbox/flask-tracing-app/deploy.sh
+# =============================================================================
+
+# -- 1. Service ----------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-tracing-demo
+  labels:
+    app: flask-tracing-demo
+spec:
+  selector:
+    app: flask-tracing-demo
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+
+---
+# -- 2. Deployment -------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-tracing-demo
+  labels:
+    app: flask-tracing-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask-tracing-demo
+  template:
+    metadata:
+      labels:
+        app: flask-tracing-demo
+    spec:
+      containers:
+        - name: flask-tracing-demo
+          # Image address is updated by deploy.sh via `oc set image`.
+          # This placeholder uses the internal registry format.
+          image: "image-registry.openshift-image-registry.svc:5000/python-tracer/flask-tracing-demo:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+
+          env:
+            # --- Instana autowrapt bootstrap ------------------------------------
+            # This env var causes autowrapt to inject the Instana sensor at
+            # Python startup. No "import instana" is needed in application code.
+            - name: AUTOWRAPT_BOOTSTRAP
+              value: "instana"
+
+            # --- Instana agent connection ---------------------------------------
+            # The agent runs as a DaemonSet on every node; the pod connects to
+            # its own node's agent via hostIP on port 42699.
+            - name: INSTANA_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP   # automatically resolves to the node IP
+            - name: INSTANA_AGENT_PORT
+              value: "42699"
+
+            # --- Service name (shown in Instana UI) ----------------------------
+            - name: INSTANA_SERVICE_NAME
+              value: "flask-tracing-demo"
+
+            # --- Debug logging (enable for troubleshooting) --------------------
+            - name: INSTANA_DEBUG
+              value: "false"
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            runAsUser: 1001

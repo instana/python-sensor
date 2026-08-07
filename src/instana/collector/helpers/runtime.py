@@ -1,16 +1,18 @@
-# (c) Copyright IBM Corp. 2021
+# (c) Copyright IBM Corp. 2021, 2026
 # (c) Copyright Instana Inc. 2020
 
 """Collection helper for the Python runtime"""
 
+import contextlib
 import gc
 import importlib.metadata
 import os
 import platform
 import sys
 import threading
+import time
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Union
 
 from instana.collector.base import BaseCollector
 from instana.collector.helpers.base import BaseHelper
@@ -49,7 +51,16 @@ class RuntimeHelper(BaseHelper):
         else:
             self.previous_gc_count = None
 
-    def collect_metrics(self, **kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
+        # GC pause accumulators — flushed on every _collect_gc_metrics() call.
+        # Populated by _gc_callback() via gc.callbacks (Python 3.3+).
+        self._gc_start_times = {}
+        self._gc_pause_total_ms = 0.0
+        self._gc_run_count = 0
+
+        if gc.isenabled():
+            gc.callbacks.append(self._gc_callback)
+
+    def collect_metrics(self, with_snapshot: bool = False, **kwargs: object) -> list[dict[str, Any]]:  # noqa: ARG002
         plugin_data = dict()
         try:
             plugin_data["name"] = "com.instana.plugin.python"
@@ -64,7 +75,6 @@ class RuntimeHelper(BaseHelper):
             else:
                 plugin_data["data"]["pid"] = str(os.getpid())
 
-            with_snapshot = kwargs.get("with_snapshot", False)
             self._collect_runtime_metrics(plugin_data, with_snapshot)
 
             if with_snapshot:
@@ -75,13 +85,14 @@ class RuntimeHelper(BaseHelper):
 
     def _collect_runtime_metrics(
         self,
-        plugin_data: Dict[str, Any],
+        plugin_data: dict[str, Any],
         with_snapshot: bool,
     ) -> None:
         if os.environ.get("INSTANA_DISABLE_METRICS_COLLECTION", False):
             return
 
         """ Collect up and return the runtime metrics """
+        rusage = self.previous_rusage
         try:
             rusage = get_resource_usage()
             if gc.isenabled():
@@ -230,7 +241,39 @@ class RuntimeHelper(BaseHelper):
         finally:
             self.previous_rusage = rusage
 
-    def _collect_gc_metrics(self, plugin_data, with_snapshot):
+    def _gc_callback(self, phase: str, info: dict[str, Any]) -> None:
+        """Accumulate GC pause time and run count via gc.callbacks.
+
+        Called by CPython twice per GC cycle: once with phase='start' and once
+        with phase='stop'.  Only primitive operations are performed here — no
+        new Python objects are allocated — so the callback cannot trigger
+        additional GC cycles.
+        """
+        generation = info["generation"]
+        if phase == "start":
+            self._gc_start_times[generation] = time.perf_counter()
+        elif phase == "stop" and generation in self._gc_start_times:
+            elapsed_ms = (
+                time.perf_counter() - self._gc_start_times.pop(generation)
+            ) * 1000
+            self._gc_pause_total_ms += elapsed_ms
+            self._gc_run_count += 1
+
+    def close(self) -> None:
+        """Remove the GC callback registered in __init__.
+
+        Must be called when the helper is torn down (agent reconnect, test
+        teardown) to prevent stale callbacks accumulating in gc.callbacks,
+        which is a process-level list.
+        """
+        with contextlib.suppress(ValueError):
+            gc.callbacks.remove(self._gc_callback)
+
+    def _collect_gc_metrics(
+        self,
+        plugin_data: dict[str, Any],
+        with_snapshot: bool,
+    ) -> None:
         try:
             gc_count = gc.get_count()
             gc_threshold = gc.get_threshold()
@@ -278,12 +321,35 @@ class RuntimeHelper(BaseHelper):
                 "threshold2",
                 with_snapshot,
             )
+
+            # Flush accumulated pause metrics atomically: copy to locals first
+            # so any GC cycle firing between read and reset is attributed to
+            # the next window rather than being lost.
+            pause_ms = self._gc_pause_total_ms
+            run_count = self._gc_run_count
+            self._gc_pause_total_ms = 0.0
+            self._gc_run_count = 0
+
+            self.apply_delta(
+                pause_ms,
+                self.previous["data"]["metrics"]["gc"],
+                plugin_data["data"]["metrics"]["gc"],
+                "pauseMs",
+                with_snapshot,
+            )
+            self.apply_delta(
+                run_count,
+                self.previous["data"]["metrics"]["gc"],
+                plugin_data["data"]["metrics"]["gc"],
+                "runCount",
+                with_snapshot,
+            )
         except Exception:
             logger.debug("_collect_gc_metrics", exc_info=True)
 
     def _collect_thread_metrics(
         self,
-        plugin_data: Dict[str, Any],
+        plugin_data: dict[str, Any],
         with_snapshot: bool,
     ) -> None:
         try:
@@ -321,7 +387,7 @@ class RuntimeHelper(BaseHelper):
 
     def _collect_runtime_snapshot(
         self,
-        plugin_data: Dict[str, Any],
+        plugin_data: dict[str, Any],
     ) -> None:
         """Gathers Python specific Snapshot information for this process"""
         snapshot_payload = {}
@@ -359,7 +425,7 @@ class RuntimeHelper(BaseHelper):
 
         plugin_data["data"]["snapshot"] = snapshot_payload
 
-    def gather_python_packages(self) -> Dict[str, Any]:
+    def gather_python_packages(self) -> dict[str, Any]:
         """Collect up the list of modules in use"""
         if os.environ.get("INSTANA_DISABLE_PYTHON_PACKAGE_COLLECTION"):
             return {"instana": VERSION}
@@ -408,7 +474,7 @@ class RuntimeHelper(BaseHelper):
 
     def jsonable(
         self,
-        value: Union[Callable[[], Any], ModuleType, Any],
+        value: Union[Callable[[], str], ModuleType, object],
     ) -> str:
         try:
             if callable(value):
@@ -423,3 +489,4 @@ class RuntimeHelper(BaseHelper):
             return str(result)
         except Exception:
             logger.debug("jsonable: ", exc_info=True)
+        return ""

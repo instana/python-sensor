@@ -20,14 +20,18 @@ class TestRuntimeHelper:
             ),
         )
         yield
+        self.helper.close()
         self.helper = None
 
     def test_default_while_gc_disabled(self) -> None:
         import gc
 
         gc.disable()
-        helper = RuntimeHelper(collector=HostCollector(HostAgent()))
-        assert helper.previous_gc_count is None
+        try:
+            helper = RuntimeHelper(collector=HostCollector(HostAgent()))
+            assert helper.previous_gc_count is None
+        finally:
+            gc.enable()
 
     def test_collect_metrics(self) -> None:
         response = self.helper.collect_metrics()
@@ -66,7 +70,77 @@ class TestRuntimeHelper:
         plugin_data = self.helper.collect_metrics()
 
         self.helper._collect_gc_metrics(plugin_data[0], True)
-        assert len(self.helper.previous["data"]["metrics"]["gc"]) == 6
+        assert len(self.helper.previous["data"]["metrics"]["gc"]) == 8
+
+    def test_gc_callback_registered(self) -> None:
+        import gc
+
+        gc.enable()
+        helper = RuntimeHelper(collector=HostCollector(HostAgent()))
+        try:
+            assert helper._gc_callback in gc.callbacks
+        finally:
+            helper.close()
+
+    def test_gc_callback_removed_on_close(self) -> None:
+        import gc
+
+        gc.enable()
+        helper = RuntimeHelper(collector=HostCollector(HostAgent()))
+        helper.close()
+        assert helper._gc_callback not in gc.callbacks
+
+    def test_gc_callback_not_registered_when_gc_disabled(self) -> None:
+        import gc
+
+        gc.disable()
+        try:
+            helper = RuntimeHelper(collector=HostCollector(HostAgent()))
+            assert helper._gc_callback not in gc.callbacks
+        finally:
+            gc.enable()
+
+    def test_gc_callback_accumulates_pause(self) -> None:
+        import gc
+
+        gc.enable()
+        helper = RuntimeHelper(collector=HostCollector(HostAgent()))
+        try:
+            assert helper._gc_pause_total_ms == 0.0
+            assert helper._gc_run_count == 0
+
+            # Simulate one complete GC cycle (gen-0)
+            helper._gc_callback("start", {"generation": 0})
+            helper._gc_callback("stop", {"generation": 0})
+
+            assert helper._gc_pause_total_ms > 0.0
+            assert helper._gc_run_count == 1
+        finally:
+            helper.close()
+
+    def test_gc_callback_flushes_on_collect(self) -> None:
+        import gc
+
+        gc.enable()
+        helper = RuntimeHelper(collector=HostCollector(HostAgent()))
+        try:
+            # Simulate a GC pause before collection
+            helper._gc_callback("start", {"generation": 0})
+            helper._gc_callback("stop", {"generation": 0})
+            assert helper._gc_run_count == 1
+
+            plugin_data = helper.collect_metrics()
+            helper._collect_gc_metrics(plugin_data[0], True)
+
+            # Accumulators must be reset after flush
+            assert helper._gc_pause_total_ms == 0.0
+            assert helper._gc_run_count == 0
+
+            gc_data = plugin_data[0]["data"]["metrics"]["gc"]
+            assert "pauseMs" in gc_data
+            assert "runCount" in gc_data
+        finally:
+            helper.close()
 
     def test_collect_runtime_metrics(self) -> None:
         """Test that _collect_runtime_metrics properly collects metrics"""

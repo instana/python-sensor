@@ -1,0 +1,72 @@
+---
+# Deployment — litellm-with-k8s
+# Instana autotrace webhook injects the sensor automatically.
+# No manual import or code change is required.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm-proxy
+  labels:
+    app: litellm-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: litellm-proxy
+  template:
+    metadata:
+      labels:
+        app: litellm-proxy
+    spec:
+      containers:
+        - name: litellm-proxy
+          # Image set by deploy.sh via `oc set image`
+          image: placeholder
+          ports:
+            - containerPort: 8080
+          env:
+            - name: FAKE_OPENAI_URL
+              value: "http://fake-openai:8080"
+            - name: LITELLM_VERBOSE
+              value: "false"
+            # Keep the trace chain intact across asyncio tasks in LiteLLM async calls
+            - name: INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm-proxy-svc
+spec:
+  selector:
+    app: litellm-proxy
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# OpenShift Route (edge TLS termination)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: litellm-proxy
+spec:
+  to:
+    kind: Service
+    name: litellm-proxy-svc
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

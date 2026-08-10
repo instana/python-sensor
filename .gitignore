@@ -104,5 +104,6 @@ ENV/
 uv.lock
 
 # Sandbox
-sandbox/
+sandbox/*
+!sandbox/litellm-with-k8s
 .bob/

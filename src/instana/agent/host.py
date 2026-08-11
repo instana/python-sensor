@@ -99,13 +99,17 @@ class HostAgent(BaseAgent):
 
     def is_timed_out(self) -> bool:
         """
-        If we haven't heard from the Instana host agent in 60 seconds, this
-        method will return True.
+        If we haven't heard from the Instana host agent within the timeout
+        window, this method will return True.  The window is the larger of
+        60 seconds or twice the configured poll_rate so that high poll_rate
+        values (e.g. 120 s) do not cause spurious resets.
         @return: Boolean
         """
-        if self.last_seen and self.can_send:
+        if self.last_seen and self.can_send():
+            poll_rate = getattr(getattr(self, "options", None), "poll_rate", 1)
+            timeout_threshold = max(60, poll_rate * 2)
             diff = datetime.now() - self.last_seen
-            if diff.seconds > 60:
+            if diff.seconds > timeout_threshold:
                 return True
         return False
 
@@ -276,31 +280,40 @@ class HostAgent(BaseAgent):
     ) -> Optional[Response]:
         """
         Used to report collection payload to the host agent.  This can be metrics, spans and snapshot data.
+        When there is nothing to send (no spans, profiles, or metrics), a lightweight HEAD heartbeat
+        is sent instead so that the host-agent timeout detection continues to work correctly even
+        when poll_rate is larger than the 60-second timeout window.
         """
         response = None
+        data_was_sent = False
         try:
             # Report spans (if any)
             response = self.report_spans(payload)
-
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
+                data_was_sent = True
 
             # Report profiles (if any)
             response = self.report_profiles(payload)
-
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
+                data_was_sent = True
 
             # Report metrics
             response = self.report_metrics(payload)
-
             if response is not None and 200 <= response.status_code <= 204:
                 self.last_seen = datetime.now()
+                data_was_sent = True
 
                 if response.status_code == 200 and len(response.content) > 2:
-                    # The host agent returned something indicating that is has a request for us that we
-                    # need to process.
+                    # The host agent returned something indicating that it has a request for us
+                    # that we need to process.
                     self.handle_agent_tasks(json.loads(response.content)[0])
+
+            # Nothing was sent this cycle — send a heartbeat HEAD request so that
+            # is_timed_out() keeps working correctly at high poll_rate values.
+            if not data_was_sent:
+                self._send_heartbeat()
         except requests.exceptions.ConnectionError:
             pass
         except urllib3.exceptions.MaxRetryError:
@@ -311,6 +324,37 @@ class HostAgent(BaseAgent):
                 exc_info=True,
             )
         return response
+
+    def _send_heartbeat(self) -> None:
+        """
+        Sends a lightweight HEAD request to the host agent data endpoint to confirm
+        connectivity and update last_seen when no metrics, spans or profiles were sent.
+
+        Guards:
+        - Only runs in "good2go" state — during wait4init the FSM polling already
+          performs HEAD checks via is_agent_ready(), so a second HEAD is unnecessary.
+        - announce_data must be set (skipped silently during pre-announce).
+        - A local copy of announce_data is taken before the request to avoid a race
+          condition where reset() sets announce_data=None mid-flight.
+        """
+        try:
+            announce_data = self.announce_data  # local copy — avoids race with reset()
+            if announce_data is None:
+                return
+            if self.machine.fsm.current != "good2go":
+                return
+            response = self.client.head(self.__data_url(), timeout=0.8)
+            if response is not None and 200 <= response.status_code <= 204:
+                self.last_seen = datetime.now()
+        except requests.exceptions.ConnectionError:
+            pass
+        except urllib3.exceptions.MaxRetryError:
+            pass
+        except Exception as exc:
+            logger.debug(
+                f"_send_heartbeat: connection error ({type(exc)})",
+                exc_info=True,
+            )
 
     def report_metrics(self, payload: dict[str, Any]) -> Optional[Response]:
         metrics = payload.get("metrics", [])

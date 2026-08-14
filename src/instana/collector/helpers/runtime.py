@@ -44,10 +44,11 @@ class RuntimeHelper(BaseHelper):
         self.previous = DictionaryOfStan()
         self.previous_rusage = get_resource_usage()
 
-        if gc.isenabled():
-            self.previous_gc_count = gc.get_count()
-        else:
-            self.previous_gc_count = None
+        # Initialise to None so the first collect_metrics call establishes the
+        # baseline snapshot and reports all-zero deltas.  Any GC activity that
+        # occurs between process start and the first collection is intentionally
+        # excluded — we only report incremental deltas from the first poll onward.
+        self.previous_gc_stats = None
 
     def collect_metrics(self, **kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
         plugin_data = dict()
@@ -82,6 +83,7 @@ class RuntimeHelper(BaseHelper):
             return
 
         """ Collect up and return the runtime metrics """
+        rusage = self.previous_rusage
         try:
             rusage = get_resource_usage()
             if gc.isenabled():
@@ -232,52 +234,27 @@ class RuntimeHelper(BaseHelper):
 
     def _collect_gc_metrics(self, plugin_data, with_snapshot):
         try:
-            gc_count = gc.get_count()
-            gc_threshold = gc.get_threshold()
+            gc_stats = gc.get_stats()
+            if self.previous_gc_stats is None:
+                # First call: establish baseline, report all-zero deltas so the
+                # snapshot payload carries zeros rather than the cumulative counts
+                # that accumulated since process start (which are not meaningful
+                # as deltas).
+                self.previous_gc_stats = gc_stats
+                return
 
-            self.apply_delta(
-                gc_count[0],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "collect0",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_count[1],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "collect1",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_count[2],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "collect2",
-                with_snapshot,
-            )
-
-            self.apply_delta(
-                gc_threshold[0],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "threshold0",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_threshold[1],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "threshold1",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_threshold[2],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "threshold2",
-                with_snapshot,
-            )
+            # Use a plain dict as the staging target so that accessing it never
+            # auto-creates keys in plugin_data (DictionaryOfStan creates keys on
+            # read, which would leave an empty "gc": {} even when nothing changed).
+            staging = {}
+            prev_gc = self.previous["data"]["metrics"]["gc"]
+            for i, (stat, prev_stat) in enumerate(zip(gc_stats, self.previous_gc_stats)):
+                for key in ("collections", "collected", "uncollectable"):
+                    delta = stat[key] - prev_stat.get(key, 0)
+                    self.apply_delta(delta, prev_gc, staging, f"{key}{i}", with_snapshot)
+            if staging:
+                plugin_data["data"]["metrics"]["gc"].update(staging)
+            self.previous_gc_stats = gc_stats
         except Exception:
             logger.debug("_collect_gc_metrics", exc_info=True)
 

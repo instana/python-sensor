@@ -1,6 +1,6 @@
 # (c) Copyright IBM Corp. 2024
 
-from typing import Generator
+from collections.abc import Generator
 from unittest.mock import patch
 
 import pytest
@@ -27,7 +27,7 @@ class TestRuntimeHelper:
 
         gc.disable()
         helper = RuntimeHelper(collector=HostCollector(HostAgent()))
-        assert helper.previous_gc_count is None
+        assert helper.previous_gc_stats is None
 
     def test_collect_metrics(self) -> None:
         response = self.helper.collect_metrics()
@@ -68,8 +68,71 @@ class TestRuntimeHelper:
     def test_collect_gc_metrics(self) -> None:
         plugin_data = self.helper.collect_metrics()
 
+        # First call establishes the baseline (previous_gc_stats was None); no
+        # data is written yet.
         self.helper._collect_gc_metrics(plugin_data[0], True)
-        assert len(self.helper.previous["data"]["metrics"]["gc"]) == 6
+        assert self.helper.previous_gc_stats is not None
+
+        # Second call computes deltas from the baseline and writes them.
+        self.helper._collect_gc_metrics(plugin_data[0], True)
+        gc_metrics = self.helper.previous["data"]["metrics"]["gc"]
+        for i in range(3):
+            for key in ("collections", "collected", "uncollectable"):
+                assert f"{key}{i}" in gc_metrics
+
+    def test_collect_gc_metrics_reports_delta_between_polls(self) -> None:
+        """GC metrics must be deltas between successive polls, not kumulatif values."""
+        # Simulate first poll: previous_gc_stats set to known baseline
+        baseline = [
+            {"collections": 100, "collected": 200, "uncollectable": 0},
+            {"collections": 10, "collected": 50, "uncollectable": 0},
+            {"collections": 1, "collected": 5, "uncollectable": 0},
+        ]
+        self.helper.previous_gc_stats = baseline
+
+        # Simulate gc.get_stats() returning incremented counts
+        after = [
+            {"collections": 103, "collected": 206, "uncollectable": 0},
+            {"collections": 11, "collected": 53, "uncollectable": 0},
+            {"collections": 1, "collected": 5, "uncollectable": 0},
+        ]
+
+        plugin_data = [{"data": {"metrics": {"gc": {}}}}]
+
+        with patch("gc.get_stats", return_value=after):
+            self.helper._collect_gc_metrics(plugin_data[0], True)
+
+        gc_metrics = plugin_data[0]["data"]["metrics"]["gc"]
+        # Gen 0: collections delta = 3, collected delta = 6
+        assert gc_metrics["collections0"] == 3
+        assert gc_metrics["collected0"] == 6
+        assert gc_metrics["uncollectable0"] == 0
+        # Gen 1: collections delta = 1, collected delta = 3
+        assert gc_metrics["collections1"] == 1
+        assert gc_metrics["collected1"] == 3
+        # Gen 2: no change — delta = 0, still reported because with_snapshot=True
+        assert gc_metrics["collections2"] == 0
+        assert gc_metrics["collected2"] == 0
+
+        # previous_gc_stats must be updated to the latest snapshot
+        assert self.helper.previous_gc_stats == after
+
+    def test_collect_gc_metrics_no_change_not_sent_without_snapshot(self) -> None:
+        """When nothing changed and with_snapshot=False, gc metrics must be empty."""
+        same = [
+            {"collections": 50, "collected": 100, "uncollectable": 0},
+            {"collections": 5, "collected": 20, "uncollectable": 0},
+            {"collections": 0, "collected": 0, "uncollectable": 0},
+        ]
+        self.helper.previous_gc_stats = same
+
+        plugin_data = [{"data": {"metrics": {"gc": {}}}}]
+
+        with patch("gc.get_stats", return_value=same):
+            self.helper._collect_gc_metrics(plugin_data[0], False)
+
+        # All deltas are 0 and with_snapshot=False → nothing written
+        assert plugin_data[0]["data"]["metrics"]["gc"] == {}
 
     def test_collect_runtime_metrics(self) -> None:
         """Test that _collect_runtime_metrics properly collects metrics"""

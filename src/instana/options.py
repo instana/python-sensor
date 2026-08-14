@@ -360,7 +360,7 @@ class StandardOptions(BaseOptions):
     AGENT_DEFAULT_HOST = "localhost"
     AGENT_DEFAULT_PORT = 42699
     DEFAULT_POLL_RATE = 1
-    MAX_POLL_RATE = 5
+    VALID_POLL_RATES = [1, 5, 10, 20, 30, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600]
 
     def __init__(self, **kwds: dict[str, Any]) -> None:
         super(StandardOptions, self).__init__()
@@ -543,7 +543,11 @@ class StandardOptions(BaseOptions):
             self.enabled_spans.extend(enabled_spans)
 
     def set_poll_rate(self, plugin_config: dict[str, Any]) -> None:
-        """Set poll rate from agent plugin configuration."""
+        """Set poll rate from agent plugin configuration.
+
+        Normalizes the received value to the nearest valid poll rate in
+        VALID_POLL_RATES, matching the behaviour of Java PollRateUtil.
+        """
         poll_rate_value = plugin_config.get("poll_rate")
         if poll_rate_value is None:
             return
@@ -557,18 +561,17 @@ class StandardOptions(BaseOptions):
             self.poll_rate = self.DEFAULT_POLL_RATE
             return
 
-        if poll_rate in (self.DEFAULT_POLL_RATE, self.MAX_POLL_RATE):
-            self.poll_rate = poll_rate
-            logger.debug(
-                f"Poll rate set to {self.poll_rate} seconds from agent configuration"
+        if poll_rate <= 0:
+            self.poll_rate = self.DEFAULT_POLL_RATE
+            logger.warning(
+                f"Invalid poll_rate value {poll_rate}, defaulting to {self.DEFAULT_POLL_RATE}"
             )
             return
 
+        self.poll_rate = min(self.VALID_POLL_RATES, key=lambda x: abs(x - poll_rate))
         logger.debug(
-            f"Invalid poll_rate value {poll_rate}, defaulting to "
-            f"{self.DEFAULT_POLL_RATE}"
+            f"Poll rate set to {self.poll_rate} seconds from agent configuration"
         )
-        self.poll_rate = self.DEFAULT_POLL_RATE
 
     def set_from(self, res_data: dict[str, Any]) -> None:
         """

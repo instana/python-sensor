@@ -38,7 +38,8 @@ class TestRuntimeHelper:
         self.helper._collect_runtime_snapshot(plugin_data[0])
         assert plugin_data[0]["name"] == "com.instana.plugin.python"
         assert plugin_data[0]["data"]["snapshot"]["m"] == "Manual"
-        assert len(plugin_data[0]["data"]) == 3
+        # data contains: pid, metrics, pollRate, snapshot
+        assert len(plugin_data[0]["data"]) == 4
 
     def test_collect_runtime_snapshot_autowrapt(self) -> None:
         with patch(
@@ -49,7 +50,8 @@ class TestRuntimeHelper:
             self.helper._collect_runtime_snapshot(plugin_data[0])
             assert plugin_data[0]["name"] == "com.instana.plugin.python"
             assert plugin_data[0]["data"]["snapshot"]["m"] == "Autowrapt"
-            assert len(plugin_data[0]["data"]) == 3
+            # data contains: pid, metrics, pollRate, snapshot
+            assert len(plugin_data[0]["data"]) == 4
 
     def test_collect_runtime_snapshot_webhook(self) -> None:
         with patch(
@@ -60,7 +62,8 @@ class TestRuntimeHelper:
             self.helper._collect_runtime_snapshot(plugin_data[0])
             assert plugin_data[0]["name"] == "com.instana.plugin.python"
             assert plugin_data[0]["data"]["snapshot"]["m"] == "AutoTrace"
-            assert len(plugin_data[0]["data"]) == 3
+            # data contains: pid, metrics, pollRate, snapshot
+            assert len(plugin_data[0]["data"]) == 4
 
     def test_collect_gc_metrics(self) -> None:
         plugin_data = self.helper.collect_metrics()
@@ -173,6 +176,44 @@ class TestRuntimeHelper:
 
         # Verify the previous_rusage was updated
         assert self.helper.previous_rusage == new_resource
+
+    def test_collect_runtime_snapshot_poll_rate_default(self) -> None:
+        """pollRate defaults to 1 when agent has no options configured."""
+        plugin_data = self.helper.collect_metrics()
+        self.helper._collect_runtime_snapshot(plugin_data[0])
+        assert plugin_data[0]["data"]["pollRate"] == 1
+
+    def test_collect_runtime_snapshot_poll_rate_from_agent_options(self) -> None:
+        """pollRate is read from agent.options.poll_rate and written to data top-level."""
+        self.helper.collector.agent.options.poll_rate = 60
+        plugin_data = self.helper.collect_metrics()
+        self.helper._collect_runtime_snapshot(plugin_data[0])
+        assert plugin_data[0]["data"]["pollRate"] == 60
+
+    def test_collect_runtime_snapshot_poll_rate_no_options(self) -> None:
+        """pollRate defaults to 1 when agent has no options attribute."""
+        self.helper.collector.agent.options = None
+        plugin_data = self.helper.collect_metrics()
+        self.helper._collect_runtime_snapshot(plugin_data[0])
+        assert plugin_data[0]["data"]["pollRate"] == 1
+
+    def test_collect_runtime_snapshot_poll_rate_no_agent(self) -> None:
+        """pollRate defaults to 1 when collector has no agent attribute."""
+        self.helper.collector.agent = None
+        plugin_data = self.helper.collect_metrics()
+        self.helper._collect_runtime_snapshot(plugin_data[0])
+        assert plugin_data[0]["data"]["pollRate"] == 1
+
+    def test_collect_runtime_snapshot_poll_rate_at_top_level_not_in_snapshot(self) -> None:
+        """pollRate must be at data top-level, not nested inside snapshot.
+        Backend's PollRateUtil.regularPollRateFromPayload() reads payload.getByPath("pollRate")
+        which is a flat lookup on the data map — it cannot find a nested key.
+        """
+        self.helper.collector.agent.options.poll_rate = 30
+        plugin_data = self.helper.collect_metrics()
+        self.helper._collect_runtime_snapshot(plugin_data[0])
+        assert plugin_data[0]["data"]["pollRate"] == 30
+        assert "pollRate" not in plugin_data[0]["data"].get("snapshot", {})
 
     @patch("os.environ")
     def test_collect_runtime_metrics_disabled(self, mock_environ):

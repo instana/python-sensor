@@ -333,6 +333,13 @@ class RuntimeHelper(BaseHelper):
             snapshot_payload["versions"] = self.gather_python_packages()
             snapshot_payload["iv"] = VERSION
 
+            # Inform filler of the configured poll_rate so that entity expiry is
+            # scaled correctly (presenceExpirySeconds = 20 * poll_rate).
+            # The backend reads this via SnapshotExtracting.describePollRateSnapshot()
+            # which looks for the top-level "pollRate" key in the payload.
+            opts = getattr(getattr(self.collector, "agent", None), "options", None)
+            plugin_data["data"]["pollRate"] = getattr(opts, "poll_rate", 1) if opts is not None else 1
+
             if is_autowrapt_instrumented():
                 snapshot_payload["m"] = "Autowrapt"
             elif is_webhook_instrumented():

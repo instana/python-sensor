@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Iterator, Mapping, Optional, Type, Union
 
 from opentelemetry.context.context import Context
 from opentelemetry.trace import (
+    SpanContext as OtelSpanContext,
     SpanKind,
     TraceFlags,
     Tracer,
@@ -118,11 +119,8 @@ class InstanaTracer(Tracer):
         record_exception: bool = True,
         set_status_on_exception: bool = True,
     ) -> InstanaSpan:
-        parent_context = get_current_span(context).get_span_context()
-
-        if parent_context and not isinstance(parent_context, SpanContext):
-            raise TypeError("parent_context must be an Instana SpanContext or None.")
-
+        raw_context = get_current_span(context).get_span_context()
+        parent_context = self._ensure_instana_span_context(raw_context)
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(
             name,
@@ -167,6 +165,42 @@ class InstanaTracer(Tracer):
             set_status_on_exception=set_status_on_exception,
         ) as span:
             yield span
+
+    def _ensure_instana_span_context(
+        self, raw_context: Optional[OtelSpanContext]
+    ) -> Optional[SpanContext]:
+        """Convert any OTel-compatible SpanContext to an Instana SpanContext.
+
+        When a third-party OTel provider (e.g. Arize Phoenix, OpenTelemetry SDK)
+        is active, get_current_span() returns a span whose get_span_context() yields
+        a plain opentelemetry.trace.SpanContext rather than an Instana SpanContext.
+        This method wraps that context so the distributed-trace chain (trace_id,
+        span_id) is preserved while Instana-specific fields are defaulted.
+
+        Args:
+            raw_context: The SpanContext returned by get_current_span().get_span_context().
+
+        Returns:
+            An Instana SpanContext, or None when raw_context is absent or invalid.
+        """
+        if raw_context is None or not raw_context.is_valid:
+            return None
+        if isinstance(raw_context, SpanContext):
+            return raw_context
+        try:
+            return SpanContext(
+                trace_id=raw_context.trace_id,
+                span_id=raw_context.span_id,
+                is_remote=raw_context.is_remote,
+                trace_flags=raw_context.trace_flags,
+                trace_state=raw_context.trace_state,
+            )
+        except Exception:
+            logger.debug(
+                "InstanaTracer._ensure_instana_span_context: failed to wrap OTel SpanContext",
+                exc_info=True,
+            )
+            return None
 
     def _create_span_context(
         self, parent_context: Optional[SpanContext] = None

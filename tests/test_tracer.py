@@ -256,3 +256,126 @@ def test_tracer_kind_propagation_to_readable_span(
     readable_span = span._readable_span()
 
     assert readable_span.kind == SpanKind.PRODUCER
+
+
+# ---------------------------------------------------------------------------
+# _ensure_instana_span_context tests
+# ---------------------------------------------------------------------------
+
+
+def _make_tracer(tracer_provider: InstanaTracerProvider) -> InstanaTracer:
+    return InstanaTracer(
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
+    )
+
+
+def test_ensure_instana_span_context_none(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """None input returns None — new root span will be created."""
+    tracer = _make_tracer(tracer_provider)
+    assert tracer._ensure_instana_span_context(None) is None
+
+
+def test_ensure_instana_span_context_invalid(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """An invalid OTel SpanContext (trace_id=0) returns None."""
+    from opentelemetry.trace import INVALID_SPAN_CONTEXT
+
+    tracer = _make_tracer(tracer_provider)
+    assert tracer._ensure_instana_span_context(INVALID_SPAN_CONTEXT) is None
+
+
+def test_ensure_instana_span_context_passthrough(
+    tracer_provider: InstanaTracerProvider,
+    span_context: SpanContext,
+) -> None:
+    """An existing Instana SpanContext is returned unchanged."""
+    tracer = _make_tracer(tracer_provider)
+    result = tracer._ensure_instana_span_context(span_context)
+    assert result is span_context
+
+
+def test_ensure_instana_span_context_wraps_foreign_otel_context(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """A plain OTel SpanContext (e.g. from Phoenix) is wrapped into an Instana SpanContext
+    while preserving trace_id and span_id so the distributed-trace chain is not broken."""
+    from opentelemetry.trace import SpanContext as OtelSpanContext, TraceFlags
+
+    foreign = OtelSpanContext(
+        trace_id=0xAAAABBBBCCCCDDDDEEEEFFFF00001111,
+        span_id=0x1234567890ABCDEF,
+        is_remote=True,
+        trace_flags=TraceFlags(1),
+    )
+    tracer = _make_tracer(tracer_provider)
+    result = tracer._ensure_instana_span_context(foreign)
+
+    assert isinstance(result, SpanContext)
+    assert result.trace_id == foreign.trace_id
+    assert result.span_id == foreign.span_id
+    assert result.is_remote == foreign.is_remote
+    assert result.trace_flags == foreign.trace_flags
+
+
+def test_start_span_with_foreign_otel_context_does_not_raise(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """start_span must not raise TypeError when the active span comes from
+    a third-party OTel provider (Phoenix, OpenTelemetry SDK, etc.)."""
+    from opentelemetry import context as otel_context
+    from opentelemetry.trace import (
+        NonRecordingSpan,
+        SpanContext as OtelSpanContext,
+        TraceFlags,
+        set_span_in_context,
+    )
+
+    foreign_span_ctx = OtelSpanContext(
+        trace_id=0xAAAABBBBCCCCDDDDEEEEFFFF00001111,
+        span_id=0x1234567890ABCDEF,
+        is_remote=True,
+        trace_flags=TraceFlags(1),
+    )
+    foreign_span = NonRecordingSpan(foreign_span_ctx)
+    ctx = set_span_in_context(foreign_span)
+    token = otel_context.attach(ctx)
+
+    tracer = _make_tracer(tracer_provider)
+    try:
+        span = tracer.start_span(name="test-with-foreign-context")
+        assert isinstance(span, InstanaSpan)
+        # trace_id must be inherited from the foreign provider's span
+        assert span.context.trace_id == foreign_span_ctx.trace_id
+    finally:
+        otel_context.detach(token)
+
+
+def test_start_span_with_invalid_foreign_context_creates_root_span(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """When the active foreign span carries an INVALID SpanContext, Instana
+    starts a new root span (trace_id == span_id) rather than raising."""
+    from opentelemetry import context as otel_context
+    from opentelemetry.trace import (
+        INVALID_SPAN_CONTEXT,
+        NonRecordingSpan,
+        set_span_in_context,
+    )
+
+    foreign_span = NonRecordingSpan(INVALID_SPAN_CONTEXT)
+    ctx = set_span_in_context(foreign_span)
+    token = otel_context.attach(ctx)
+
+    tracer = _make_tracer(tracer_provider)
+    try:
+        span = tracer.start_span(name="test-root-from-invalid-foreign")
+        assert isinstance(span, InstanaSpan)
+        assert span.context.trace_id == span.context.span_id  # root span
+    finally:
+        otel_context.detach(token)

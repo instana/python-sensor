@@ -14,4 +14,4 @@ config = DictionaryOfStan()
 
 # This option determines if tasks created via asyncio (with ensure_future or create_task) will
 # automatically carry existing context into the created task.
-config["asyncio_task_context_propagation"]["enabled"] = False
+config["asyncio_task_context_propagation"]["enabled"] = True

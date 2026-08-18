@@ -6,17 +6,18 @@ import logging
 import os
 import sys
 import threading
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
+from mock import patch
+from pytest import LogCaptureFixture
+
 from instana.collector.helpers.runtime import (
     PATH_OF_AUTOTRACE_WEBHOOK_SITEDIR,
 )
 from instana.collector.host import HostCollector
 from instana.singletons import get_agent, get_tracer
 from instana.version import VERSION
-from mock import patch
-from pytest import LogCaptureFixture
 
 
 class TestHostCollector:
@@ -101,6 +102,7 @@ class TestHostCollector:
     def test_should_send_metrics_with_custom_poll_rate(self) -> None:
         """Test that metrics respect custom poll_rate from agent options"""
         from time import time
+
         from instana.options import StandardOptions
 
         # Set custom poll_rate of 5 seconds
@@ -146,6 +148,7 @@ class TestHostCollector:
     def test_prepare_payload_respects_poll_rate(self) -> None:
         """Test that prepare_payload only collects metrics based on poll_rate"""
         from time import time
+
         from instana.options import StandardOptions
 
         # Set poll_rate to 5 seconds
@@ -179,6 +182,7 @@ class TestHostCollector:
     def test_metrics_data_last_sent_updated(self) -> None:
         """Test that metrics_data_last_sent timestamp is updated after collecting metrics"""
         from time import time
+
         from instana.options import StandardOptions
 
         self.agent.options = StandardOptions()
@@ -200,10 +204,10 @@ class TestHostCollector:
     def test_prepare_payload_spans_always_collected(self) -> None:
         """Test that spans are always collected regardless of poll_rate"""
         from instana.options import StandardOptions
-        from instana.span.span import InstanaSpan
-        from instana.span.registered_span import RegisteredSpan
-        from instana.span_context import SpanContext
         from instana.recorder import StanRecorder
+        from instana.span.registered_span import RegisteredSpan
+        from instana.span.span import InstanaSpan
+        from instana.span_context import SpanContext
 
         # Set high poll_rate
         self.agent.options = StandardOptions()
@@ -239,6 +243,7 @@ class TestHostCollector:
 
     def test_prepare_payload_basics(self) -> None:
         with patch.object(gc, "isenabled", return_value=True):
+            # First call establishes the GC baseline; no gc metrics in payload yet.
             self.payload = self.agent.collector.prepare_payload()
             assert self.payload
 
@@ -309,38 +314,22 @@ class TestHostCollector:
                 int,
             ]
 
+            # Second call: GC baseline is now set, so deltas are reported.
+            # Reset both timestamps so metrics AND snapshot are collected.
+            self.agent.collector.metrics_data_last_sent = 0
+            self.agent.collector.snapshot_data_last_sent = 0
+            self.payload = self.agent.collector.prepare_payload()
+            python_plugin = self.payload["metrics"]["plugins"][0]
             assert "gc" in python_plugin["data"]["metrics"]
             assert isinstance(python_plugin["data"]["metrics"]["gc"], dict)
-            assert "collect0" in python_plugin["data"]["metrics"]["gc"]
-            assert type(python_plugin["data"]["metrics"]["gc"]["collect0"]) in [
-                float,
-                int,
-            ]
-            assert "collect1" in python_plugin["data"]["metrics"]["gc"]
-            assert type(python_plugin["data"]["metrics"]["gc"]["collect1"]) in [
-                float,
-                int,
-            ]
-            assert "collect2" in python_plugin["data"]["metrics"]["gc"]
-            assert type(python_plugin["data"]["metrics"]["gc"]["collect2"]) in [
-                float,
-                int,
-            ]
-            assert "threshold0" in python_plugin["data"]["metrics"]["gc"]
-            assert type(python_plugin["data"]["metrics"]["gc"]["threshold0"]) in [
-                float,
-                int,
-            ]
-            assert "threshold1" in python_plugin["data"]["metrics"]["gc"]
-            assert type(python_plugin["data"]["metrics"]["gc"]["threshold1"]) in [
-                float,
-                int,
-            ]
-            assert "threshold2" in python_plugin["data"]["metrics"]["gc"]
-            assert type(python_plugin["data"]["metrics"]["gc"]["threshold2"]) in [
-                float,
-                int,
-            ]
+            for i in range(3):
+                for key in ("collections", "collected", "uncollectable"):
+                    metric_key = f"{key}{i}"
+                    assert metric_key in python_plugin["data"]["metrics"]["gc"]
+                    assert type(python_plugin["data"]["metrics"]["gc"][metric_key]) in [
+                        float,
+                        int,
+                    ]
 
     def test_prepare_payload_basics_disable_runtime_metrics(self) -> None:
         os.environ["INSTANA_DISABLE_METRICS_COLLECTION"] = "TRUE"
@@ -521,3 +510,192 @@ class TestHostCollector:
             self.agent.collector.prepare_and_report_data()
             # The second lock acquisition should see the new state
             assert self.agent.collector.agent.machine.fsm.current == "good2go"
+
+
+class TestHostAgentHeartbeat:
+    """Tests for _send_heartbeat() and related poll_rate-aware timeout logic."""
+
+    @pytest.fixture(autouse=True)
+    def _resource(self) -> Generator[None, None, None]:
+        from instana.collector.host import HostCollector
+        from instana.singletons import get_agent
+
+        self.agent = get_agent()
+        self.agent.collector = HostCollector(self.agent)
+        yield
+        self.agent.collector.shutdown(report_final=False)
+
+    # ------------------------------------------------------------------
+    # _send_heartbeat
+    # ------------------------------------------------------------------
+
+    def test_heartbeat_updates_last_seen_on_success(self) -> None:
+        """HEAD 200 → last_seen must be updated."""
+        from unittest.mock import MagicMock
+
+        from instana.agent.host import AnnounceData
+
+        self.agent.announce_data = AnnounceData(pid=12345, agent_uuid="uuid-1")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        with patch.object(self.agent.machine.fsm, "current", "good2go"), \
+             patch.object(self.agent.client, "head", return_value=mock_response):
+            self.agent._send_heartbeat()
+
+        assert self.agent.last_seen is not None
+
+    def test_heartbeat_skipped_when_announce_data_is_none(self) -> None:
+        """announce_data=None (pre-announce) → HEAD must NOT be called."""
+        self.agent.announce_data = None
+        self.agent.last_seen = None
+
+        with patch.object(self.agent.client, "head") as mock_head:
+            self.agent._send_heartbeat()
+            mock_head.assert_not_called()
+
+        assert self.agent.last_seen is None
+
+    def test_heartbeat_skipped_when_not_in_good2go_state(self) -> None:
+        """FSM state != good2go (e.g. wait4init) → HEAD must NOT be called."""
+        from instana.agent.host import AnnounceData
+
+        self.agent.announce_data = AnnounceData(pid=12345, agent_uuid="uuid-1")
+        self.agent.last_seen = None
+        self.agent.machine.fsm.current = "wait4init"
+
+        with patch.object(self.agent.client, "head") as mock_head:
+            self.agent._send_heartbeat()
+            mock_head.assert_not_called()
+
+        assert self.agent.last_seen is None
+
+    def test_heartbeat_does_not_update_last_seen_on_failure(self) -> None:
+        """HEAD 500 → last_seen must NOT be updated."""
+        from unittest.mock import MagicMock
+
+        from instana.agent.host import AnnounceData
+
+        self.agent.announce_data = AnnounceData(pid=12345, agent_uuid="uuid-1")
+        self.agent.last_seen = None
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+
+        with patch.object(self.agent.client, "head", return_value=mock_response):
+            self.agent._send_heartbeat()
+
+        assert self.agent.last_seen is None
+
+    def test_heartbeat_handles_connection_error_silently(self) -> None:
+        """ConnectionError → no exception propagated, last_seen unchanged."""
+        import requests
+
+        from instana.agent.host import AnnounceData
+
+        self.agent.announce_data = AnnounceData(pid=12345, agent_uuid="uuid-1")
+        self.agent.last_seen = None
+
+        with patch.object(
+            self.agent.client, "head",
+            side_effect=requests.exceptions.ConnectionError
+        ):
+            self.agent._send_heartbeat()  # must not raise
+
+        assert self.agent.last_seen is None
+
+    # ------------------------------------------------------------------
+    # report_data_payload → heartbeat integration
+    # ------------------------------------------------------------------
+
+    def test_heartbeat_called_when_no_data_sent(self) -> None:
+        """Empty payload (no spans/profiles/metrics) → _send_heartbeat is called."""
+        from instana.util import DictionaryOfStan
+
+        empty_payload = DictionaryOfStan()
+        empty_payload["spans"] = []
+        empty_payload["profiles"] = []
+        empty_payload["metrics"]["plugins"] = []
+
+        with patch.object(self.agent, "_send_heartbeat") as mock_hb:
+            self.agent.report_data_payload(empty_payload)
+            mock_hb.assert_called_once()
+
+    def test_heartbeat_not_called_when_metrics_sent(self) -> None:
+        """Metrics present and successfully sent → _send_heartbeat must NOT be called."""
+        from unittest.mock import MagicMock
+
+        from instana.agent.host import AnnounceData
+        from instana.util import DictionaryOfStan
+
+        self.agent.announce_data = AnnounceData(pid=12345, agent_uuid="uuid-1")
+
+        payload = DictionaryOfStan()
+        payload["spans"] = []
+        payload["profiles"] = []
+        payload["metrics"]["plugins"] = [{"data": {"ru_utime": 0.1}}]
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = b"{}"
+
+        with patch.object(self.agent.client, "post", return_value=mock_response), \
+            patch.object(self.agent, "_send_heartbeat") as mock_hb:
+            self.agent.report_data_payload(payload)
+            mock_hb.assert_not_called()
+
+    # ------------------------------------------------------------------
+    # is_timed_out — poll_rate-aware threshold
+    # ------------------------------------------------------------------
+
+    def test_is_timed_out_default_threshold_60s(self) -> None:
+        """Default poll_rate=1 → timeout threshold is 60 s."""
+        from datetime import datetime, timedelta
+
+        from instana.options import StandardOptions
+
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 1
+        self.agent.last_seen = datetime.now() - timedelta(seconds=61)
+
+        with patch.object(self.agent.machine.fsm, "current", "good2go"):
+            assert self.agent.is_timed_out()
+
+    def test_is_timed_out_not_triggered_before_threshold(self) -> None:
+        """last_seen 59 s ago with poll_rate=1 → not timed out."""
+        from datetime import datetime, timedelta
+
+        from instana.options import StandardOptions
+
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 1
+        self.agent.last_seen = datetime.now() - timedelta(seconds=59)
+
+        with patch.object(self.agent.machine.fsm, "current", "good2go"):
+            assert not self.agent.is_timed_out()
+
+    def test_is_timed_out_uses_poll_rate_times_two_when_larger(self) -> None:
+        """poll_rate=120 → threshold becomes 240 s, not 60 s."""
+        from datetime import datetime, timedelta
+
+        from instana.options import StandardOptions
+
+        self.agent.options = StandardOptions()
+        self.agent.options.poll_rate = 120
+        # 61 s ago — would fire with old 60 s threshold, must NOT fire now
+        self.agent.last_seen = datetime.now() - timedelta(seconds=61)
+
+        with patch.object(self.agent.machine.fsm, "current", "good2go"):
+            assert not self.agent.is_timed_out()
+
+        # 241 s ago — exceeds poll_rate*2=240, must fire
+        self.agent.last_seen = datetime.now() - timedelta(seconds=241)
+        with patch.object(self.agent.machine.fsm, "current", "good2go"):
+            assert self.agent.is_timed_out()
+
+    def test_is_timed_out_false_when_last_seen_is_none(self) -> None:
+        """last_seen=None (never connected) → not timed out."""
+        self.agent.last_seen = None
+        with patch.object(self.agent.machine.fsm, "current", "good2go"):
+            assert not self.agent.is_timed_out()

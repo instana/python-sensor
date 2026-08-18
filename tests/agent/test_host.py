@@ -334,8 +334,8 @@ class TestHostAgent:
         assert not agent.is_timed_out()
 
         agent.last_seen = datetime.datetime.now() - datetime.timedelta(minutes=5)
-        agent.can_send = True
-        assert agent.is_timed_out()
+        with patch.object(agent.machine.fsm, "current", "good2go"):
+            assert agent.is_timed_out()
 
     def test_can_send_test_env(
         self,

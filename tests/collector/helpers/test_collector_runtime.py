@@ -1,6 +1,6 @@
 # (c) Copyright IBM Corp. 2024
 
-from typing import Generator
+from collections.abc import Generator
 from unittest.mock import patch
 
 import pytest
@@ -27,7 +27,7 @@ class TestRuntimeHelper:
 
         gc.disable()
         helper = RuntimeHelper(collector=HostCollector(HostAgent()))
-        assert helper.previous_gc_count is None
+        assert helper.previous_gc_stats is None
 
     def test_collect_metrics(self) -> None:
         response = self.helper.collect_metrics()
@@ -39,6 +39,7 @@ class TestRuntimeHelper:
         assert plugin_data[0]["name"] == "com.instana.plugin.python"
         assert plugin_data[0]["data"]["snapshot"]["m"] == "Manual"
         # data contains: pid, metrics, pollRate, snapshot
+        # pollRate is now written by collect_metrics() on every poll, not by _collect_runtime_snapshot()
         assert len(plugin_data[0]["data"]) == 4
 
     def test_collect_runtime_snapshot_autowrapt(self) -> None:
@@ -51,6 +52,7 @@ class TestRuntimeHelper:
             assert plugin_data[0]["name"] == "com.instana.plugin.python"
             assert plugin_data[0]["data"]["snapshot"]["m"] == "Autowrapt"
             # data contains: pid, metrics, pollRate, snapshot
+            # pollRate is now written by collect_metrics() on every poll
             assert len(plugin_data[0]["data"]) == 4
 
     def test_collect_runtime_snapshot_webhook(self) -> None:
@@ -63,13 +65,93 @@ class TestRuntimeHelper:
             assert plugin_data[0]["name"] == "com.instana.plugin.python"
             assert plugin_data[0]["data"]["snapshot"]["m"] == "AutoTrace"
             # data contains: pid, metrics, pollRate, snapshot
+            # pollRate is now written by collect_metrics() on every poll
             assert len(plugin_data[0]["data"]) == 4
 
     def test_collect_gc_metrics(self) -> None:
         plugin_data = self.helper.collect_metrics()
 
+        # First call establishes the baseline (previous_gc_stats was None); no
+        # data is written yet.
         self.helper._collect_gc_metrics(plugin_data[0], True)
-        assert len(self.helper.previous["data"]["metrics"]["gc"]) == 6
+        assert self.helper.previous_gc_stats is not None
+
+        # Second call computes deltas from the baseline and writes them into plugin_data.
+        # All 9 keys (collections/collected/uncollectable × gen0/1/2) are always written
+        # so that filler receives a signal every poll and does not zero-fill on quiet periods.
+        self.helper._collect_gc_metrics(plugin_data[0], True)
+        gc_metrics = plugin_data[0]["data"]["metrics"]["gc"]
+        expected_keys = [
+            f"{k}{i}"
+            for k in ("collections", "collected", "uncollectable")
+            for i in range(3)
+        ]
+        for key in expected_keys:
+            assert key in gc_metrics, f"{key} must always be present in GC metrics"
+
+    def test_collect_gc_metrics_reports_delta_between_polls(self) -> None:
+        """GC metrics must be deltas between successive polls, not kumulatif values."""
+        # Simulate first poll: previous_gc_stats set to known baseline
+        baseline = [
+            {"collections": 100, "collected": 200, "uncollectable": 0},
+            {"collections": 10, "collected": 50, "uncollectable": 0},
+            {"collections": 1, "collected": 5, "uncollectable": 0},
+        ]
+        self.helper.previous_gc_stats = baseline
+
+        # Simulate gc.get_stats() returning incremented counts
+        after = [
+            {"collections": 103, "collected": 206, "uncollectable": 0},
+            {"collections": 11, "collected": 53, "uncollectable": 0},
+            {"collections": 1, "collected": 5, "uncollectable": 0},
+        ]
+
+        plugin_data = [{"data": {"metrics": {"gc": {}}}}]
+
+        with patch("gc.get_stats", return_value=after):
+            self.helper._collect_gc_metrics(plugin_data[0], True)
+
+        gc_metrics = plugin_data[0]["data"]["metrics"]["gc"]
+        # Gen 0: collections delta = 3, collected delta = 6, uncollectable delta = 0
+        assert gc_metrics["collections0"] == 3
+        assert gc_metrics["collected0"] == 6
+        assert gc_metrics["uncollectable0"] == 0   # delta=0 is now always sent
+        # Gen 1: collections delta = 1, collected delta = 3, uncollectable delta = 0
+        assert gc_metrics["collections1"] == 1
+        assert gc_metrics["collected1"] == 3
+        assert gc_metrics["uncollectable1"] == 0   # delta=0 is now always sent
+        # Gen 2: no change — all deltas = 0, but still sent
+        assert gc_metrics["collections2"] == 0
+        assert gc_metrics["collected2"] == 0
+        assert gc_metrics["uncollectable2"] == 0
+
+        # previous_gc_stats must be updated to the latest snapshot
+        assert self.helper.previous_gc_stats == after
+
+    def test_collect_gc_metrics_zero_delta_always_sent(self) -> None:
+        """delta=0 must always be sent so filler does not zero-fill on quiet GC periods."""
+        same = [
+            {"collections": 50, "collected": 100, "uncollectable": 0},
+            {"collections": 5, "collected": 20, "uncollectable": 0},
+            {"collections": 0, "collected": 0, "uncollectable": 0},
+        ]
+        self.helper.previous_gc_stats = same
+
+        plugin_data = [{"data": {"metrics": {"gc": {}}}}]
+
+        with patch("gc.get_stats", return_value=same):
+            self.helper._collect_gc_metrics(plugin_data[0], False)
+
+        gc_metrics = plugin_data[0]["data"]["metrics"]["gc"]
+        # All 9 keys must be present, all with value 0
+        expected_keys = [
+            f"{k}{i}"
+            for k in ("collections", "collected", "uncollectable")
+            for i in range(3)
+        ]
+        for key in expected_keys:
+            assert key in gc_metrics, f"{key} must be present even with delta=0"
+            assert gc_metrics[key] == 0, f"{key} delta must be 0"
 
     def test_collect_runtime_metrics(self) -> None:
         """Test that _collect_runtime_metrics properly collects metrics"""
@@ -177,34 +259,33 @@ class TestRuntimeHelper:
         # Verify the previous_rusage was updated
         assert self.helper.previous_rusage == new_resource
 
-    def test_collect_runtime_snapshot_poll_rate_default(self) -> None:
-        """pollRate defaults to 1 when agent has no options configured."""
+    def test_collect_metrics_poll_rate_default(self) -> None:
+        """pollRate defaults to 1 when agent has no options configured.
+        pollRate is now written by collect_metrics() on every poll so that
+        filler learns the rate immediately, not just every 5 min via snapshot.
+        """
         plugin_data = self.helper.collect_metrics()
-        self.helper._collect_runtime_snapshot(plugin_data[0])
         assert plugin_data[0]["data"]["pollRate"] == 1
 
-    def test_collect_runtime_snapshot_poll_rate_from_agent_options(self) -> None:
-        """pollRate is read from agent.options.poll_rate and written to data top-level."""
+    def test_collect_metrics_poll_rate_from_agent_options(self) -> None:
+        """pollRate is read from agent.options.poll_rate on every collect_metrics() call."""
         self.helper.collector.agent.options.poll_rate = 60
         plugin_data = self.helper.collect_metrics()
-        self.helper._collect_runtime_snapshot(plugin_data[0])
         assert plugin_data[0]["data"]["pollRate"] == 60
 
-    def test_collect_runtime_snapshot_poll_rate_no_options(self) -> None:
+    def test_collect_metrics_poll_rate_no_options(self) -> None:
         """pollRate defaults to 1 when agent has no options attribute."""
         self.helper.collector.agent.options = None
         plugin_data = self.helper.collect_metrics()
-        self.helper._collect_runtime_snapshot(plugin_data[0])
         assert plugin_data[0]["data"]["pollRate"] == 1
 
-    def test_collect_runtime_snapshot_poll_rate_no_agent(self) -> None:
+    def test_collect_metrics_poll_rate_no_agent(self) -> None:
         """pollRate defaults to 1 when collector has no agent attribute."""
         self.helper.collector.agent = None
         plugin_data = self.helper.collect_metrics()
-        self.helper._collect_runtime_snapshot(plugin_data[0])
         assert plugin_data[0]["data"]["pollRate"] == 1
 
-    def test_collect_runtime_snapshot_poll_rate_at_top_level_not_in_snapshot(self) -> None:
+    def test_collect_metrics_poll_rate_at_top_level_not_in_snapshot(self) -> None:
         """pollRate must be at data top-level, not nested inside snapshot.
         Backend's PollRateUtil.regularPollRateFromPayload() reads payload.getByPath("pollRate")
         which is a flat lookup on the data map — it cannot find a nested key.

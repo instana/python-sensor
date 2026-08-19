@@ -170,6 +170,8 @@ class InstanaSpan(Span, ReadableSpan):
                 self.set_attribute("lambda.error", message)
             elif self.name.startswith("kafka"):
                 self.set_attribute("kafka.error", message)
+            elif self.name == "mssql":
+                self.set_attribute("mssql.error", message)
             else:
                 _attributes = {"message": message}
                 if attributes:

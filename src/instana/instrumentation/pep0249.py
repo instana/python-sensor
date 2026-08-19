@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 # This is a wrapper for PEP-0249: Python Database API Specification v2.0
 import wrapt
@@ -24,8 +24,8 @@ class CursorWrapper(wrapt.ObjectProxy):
         self,
         cursor: Any,
         module_name: str,
-        connect_params: Optional[List[Union[str, Dict[str, Any]]]] = None,
-        cursor_params: Optional[Dict[str, Any]] = None,
+        connect_params: Optional[list[Union[str, dict[str, Any]]]] = None,
+        cursor_params: Optional[dict[str, Any]] = None,
     ) -> None:
         super(CursorWrapper, self).__init__(wrapped=cursor)
         self._module_name = module_name
@@ -52,9 +52,15 @@ class CursorWrapper(wrapt.ObjectProxy):
                     self._connect_params[1][db_parameter_name],
                 )
 
+            host = next(
+                (p for p in ("host", "server") if p in self._connect_params[1]),
+                None,
+            )
+            if host:
+                span.set_attribute("host", self._connect_params[1][host])
+
             span.set_attribute(SpanAttributes.DB_STATEMENT, sql_sanitizer(sql))
             span.set_attribute(SpanAttributes.DB_USER, self._connect_params[1]["user"])
-            span.set_attribute("host", self._connect_params[1]["host"])
             span.set_attribute("port", self._connect_params[1]["port"])
         except Exception as e:
             logger.debug(e)
@@ -65,8 +71,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def execute(
         self,
         sql: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Callable[[str, Dict[str, Any]], None]:
+        params: Optional[dict[str, Any]] = None,
+    ) -> Callable[[str, dict[str, Any]], None]:
         tracer, _, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -90,8 +96,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def executemany(
         self,
         sql: str,
-        seq_of_parameters: List[Dict[str, Any]],
-    ) -> Callable[[str, List[Dict[str, Any]]], None]:
+        seq_of_parameters: list[dict[str, Any]],
+    ) -> Callable[[str, list[dict[str, Any]]], None]:
         tracer, _, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -115,8 +121,8 @@ class CursorWrapper(wrapt.ObjectProxy):
     def callproc(
         self,
         proc_name: str,
-        params: Dict[str, Any],
-    ) -> Callable[[str, Dict[str, Any]], None]:
+        params: dict[str, Any],
+    ) -> Callable[[str, dict[str, Any]], None]:
         tracer, _, operation_name = get_tracer_tuple()
 
         # If not tracing or we're being called from sqlalchemy, just pass through
@@ -150,7 +156,7 @@ class ConnectionWrapper(wrapt.ObjectProxy):
         self,
         connection: "ConnectionWrapper",
         module_name: str,
-        connect_params: List[Union[str, Dict[str, Any]]],
+        connect_params: list[Union[str, dict[str, Any]]],
     ) -> None:
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
@@ -161,8 +167,8 @@ class ConnectionWrapper(wrapt.ObjectProxy):
 
     def cursor(
         self,
-        *args: Tuple[int, str, Dict[str, Any]],
-        **kwargs: Dict[str, Any],
+        *args: tuple[int, str, dict[str, Any]],
+        **kwargs: dict[str, Any],
     ) -> CursorWrapper:
         return CursorWrapper(
             cursor=self.__wrapped__.cursor(*args, **kwargs),
@@ -193,8 +199,8 @@ class ConnectionFactory(object):
 
     def __call__(
         self,
-        *args: Tuple[int, str, Dict[str, Any]],
-        **kwargs: Dict[str, Any],
+        *args: tuple[int, str, dict[str, Any]],
+        **kwargs: dict[str, Any],
     ) -> ConnectionWrapper:
         connect_params = (args, kwargs) if args or kwargs else None
         return self._wrapper_ctor(

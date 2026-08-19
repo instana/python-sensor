@@ -177,6 +177,7 @@ def boot_agent() -> None:
             pika,  # noqa: F401
             psycopg2,  # noqa: F401
             pymongo,  # noqa: F401
+            pymssql,  # noqa: F401
             pymysql,  # noqa: F401
             pyramid,  # noqa: F401
             redis,  # noqa: F401

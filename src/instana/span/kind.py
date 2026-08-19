@@ -51,6 +51,7 @@ EXIT_SPANS = (
     "httpx",
     "log",
     "memcache",
+    "mssql",
     "mongo",
     "mysql",
     "postgres",

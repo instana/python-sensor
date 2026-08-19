@@ -147,6 +147,9 @@ class RegisteredSpan(BaseSpan):
         elif span.name == "mysql":
             self._collect_mysql_attributes(span)
 
+        elif span.name == "mssql":
+            self._collect_mssql_attributes(span)
+
         elif span.name == "postgres":
             self._collect_postgres_attributes(span)
 
@@ -365,6 +368,16 @@ class RegisteredSpan(BaseSpan):
             SpanAttributes.DB_STATEMENT, None
         )
         self.data["mysql"]["error"] = span.attributes.pop("mysql.error", None)
+
+    def _collect_mssql_attributes(self, span: "InstanaSpan") -> None:
+        self.data["mssql"]["host"] = span.attributes.pop("host", None)
+        self.data["mssql"]["port"] = span.attributes.pop("port", None)
+        self.data["mssql"]["db"] = span.attributes.pop(SpanAttributes.DB_NAME, None)
+        self.data["mssql"]["user"] = span.attributes.pop(SpanAttributes.DB_USER, None)
+        self.data["mssql"]["stmt"] = span.attributes.pop(
+            SpanAttributes.DB_STATEMENT, None
+        )
+        self.data["mssql"]["error"] = span.attributes.pop("mssql.error", None)
 
     def _collect_postgres_attributes(self, span: "InstanaSpan") -> None:
         self.data["pg"]["host"] = span.attributes.pop("host", None)

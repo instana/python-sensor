@@ -59,6 +59,15 @@ testenv["mongodb_user"] = os.environ.get("MONGO_USER", None)
 testenv["mongodb_pw"] = os.environ.get("MONGO_PW", None)
 
 """
+Microsoft SQL Server Environment
+"""
+testenv["mssql_host"] = os.environ.get("MSSQL_HOST", "127.0.0.1")
+testenv["mssql_port"] = os.environ.get("MSSQL_PORT", "1433")
+testenv["mssql_db"] = os.environ.get("MSSQL_DATABASE", "master")
+testenv["mssql_user"] = os.environ.get("MSSQL_USER", "sa")
+testenv["mssql_pw"] = os.environ.get("MSSQL_SA_PASSWORD", "YourStrong@Passw0rd")
+
+"""
 RabbitMQ Environment
 """
 testenv["rabbitmq_host"] = os.environ.get("RABBITMQ_HOST", "127.0.0.1")

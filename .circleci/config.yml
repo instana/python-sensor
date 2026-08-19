@@ -178,6 +178,12 @@ jobs:
           discovery.type: single-node
           xpack.security.enabled: "false"
           ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      - image: mcr.microsoft.com/mssql/server:2022-latest
+        environment:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: YourStrong@Passw0rd
+          MSSQL_USER: sa
+          MSSQL_DATABASE: master
     working_directory: ~/repo
     steps:
       - checkout

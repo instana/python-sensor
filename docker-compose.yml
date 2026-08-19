@@ -111,3 +111,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  mssql:
+    image: mcr.microsoft.com/azure-sql-edge
+    ports:
+      - 1433:1433
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_DATABASE: master
+      MSSQL_USER: sa
+      MSSQL_SA_PASSWORD: YourStrong@Passw0rd

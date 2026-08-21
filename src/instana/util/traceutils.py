@@ -2,21 +2,17 @@
 # (c) Copyright Instana Inc. 2021
 
 
+from collections.abc import Iterable
 from typing import (
-    Optional,
-    Tuple,
     TYPE_CHECKING,
-    Union,
-    Dict,
-    List,
     Any,
-    Iterable,
+    Optional,
+    Union,
 )
 
 from instana.log import logger
 from instana.singletons import agent, get_tracer
-from instana.span.span import get_current_span
-from instana.span.span import InstanaSpan
+from instana.span.span import InstanaSpan, get_current_span
 
 if TYPE_CHECKING:
     from instana.tracer import InstanaTracer
@@ -24,7 +20,7 @@ if TYPE_CHECKING:
 
 def extract_custom_headers(
     span: "InstanaSpan",
-    headers: Optional[Union[Dict[str, Any], List[Tuple[object, ...]], Iterable]] = None,
+    headers: Optional[Union[dict[str, Any], list[tuple[object, ...]], Iterable]] = None,
     format: Optional[bool] = False,
 ) -> None:
     if not (agent.options.extra_http_headers and headers):
@@ -62,22 +58,29 @@ def extract_custom_headers(
         logger.debug("extract_custom_headers: ", exc_info=True)
 
 
-def get_tracer_tuple() -> (
-    Tuple[
-        Optional["InstanaTracer"],
-        Optional["InstanaSpan"],
-        Optional[str],
-    ]
-):
-    """Get a tuple of (tracer, span, span_name) for the current context."""
+def get_tracer_tuple() -> tuple[
+    Optional["InstanaTracer"],
+    Optional["InstanaSpan"],
+    Optional[str],
+]:
+    """Get a tuple of (tracer, span, span_name) for the current context.
+
+    Returns a 3-tuple of (tracer, span, span_name). Returns (None, None, None)
+    when no active recording span is found and allow_exit_as_root is False.
+    """
     try:
         active_tracer = get_tracer()
         current_span = get_current_span()
-        # asyncio Spans are used as NonRecording Spans solely for context propagation
         if current_span and isinstance(current_span, InstanaSpan):
+            # asyncio Spans are used as NonRecording Spans solely for context propagation
             if current_span.is_recording() or current_span.name == "asyncio":
                 return (active_tracer, current_span, current_span.name)
-        elif agent.options.allow_exit_as_root:
+        elif current_span and current_span.is_recording():
+            # A non-Instana recording span is active (e.g. OTel span from a third-party
+            # library like LiteLLM/OpenAI SDK). Treat it as a valid parent context so
+            # that exit spans (httpx, etc.) are still created and attached.
+            return (active_tracer, None, None)
+        if agent.options.allow_exit_as_root:
             return (active_tracer, None, None)
         return (None, None, None)
     except Exception:

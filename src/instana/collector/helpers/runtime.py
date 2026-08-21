@@ -44,10 +44,11 @@ class RuntimeHelper(BaseHelper):
         self.previous = DictionaryOfStan()
         self.previous_rusage = get_resource_usage()
 
-        if gc.isenabled():
-            self.previous_gc_count = gc.get_count()
-        else:
-            self.previous_gc_count = None
+        # Initialise to None so the first collect_metrics call establishes the
+        # baseline snapshot and reports all-zero deltas.  Any GC activity that
+        # occurs between process start and the first collection is intentionally
+        # excluded — we only report incremental deltas from the first poll onward.
+        self.previous_gc_stats = None
 
     def collect_metrics(self, **kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
         plugin_data = dict()
@@ -67,6 +68,15 @@ class RuntimeHelper(BaseHelper):
             with_snapshot = kwargs.get("with_snapshot", False)
             self._collect_runtime_metrics(plugin_data, with_snapshot)
 
+            # Send pollRate on every payload so that filler learns the configured
+            # rate immediately (not just every 5 min when with_snapshot=True).
+            # Backend reads this via PollRateUtil.regularPollRateFromPayload()
+            # which does a flat lookup for "pollRate" in the data map.
+            opts = getattr(getattr(self.collector, "agent", None), "options", None)
+            plugin_data["data"]["pollRate"] = (
+                getattr(opts, "poll_rate", 1) if opts is not None else 1
+            )
+
             if with_snapshot:
                 self._collect_runtime_snapshot(plugin_data)
         except Exception:
@@ -82,6 +92,7 @@ class RuntimeHelper(BaseHelper):
             return
 
         """ Collect up and return the runtime metrics """
+        rusage = self.previous_rusage
         try:
             rusage = get_resource_usage()
             if gc.isenabled():
@@ -230,54 +241,36 @@ class RuntimeHelper(BaseHelper):
         finally:
             self.previous_rusage = rusage
 
-    def _collect_gc_metrics(self, plugin_data, with_snapshot):
+    def _collect_gc_metrics(self, plugin_data: Dict[str, Any], with_snapshot: bool) -> None:
         try:
-            gc_count = gc.get_count()
-            gc_threshold = gc.get_threshold()
+            gc_stats = gc.get_stats()
+            if self.previous_gc_stats is None:
+                # First call: establish baseline, report all-zero deltas so the
+                # snapshot payload carries zeros rather than the cumulative counts
+                # that accumulated since process start (which are not meaningful
+                # as deltas).
+                self.previous_gc_stats = gc_stats
+                return
 
-            self.apply_delta(
-                gc_count[0],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "collect0",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_count[1],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "collect1",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_count[2],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "collect2",
-                with_snapshot,
-            )
-
-            self.apply_delta(
-                gc_threshold[0],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "threshold0",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_threshold[1],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "threshold1",
-                with_snapshot,
-            )
-            self.apply_delta(
-                gc_threshold[2],
-                self.previous["data"]["metrics"]["gc"],
-                plugin_data["data"]["metrics"]["gc"],
-                "threshold2",
-                with_snapshot,
-            )
+            # Use a plain dict as the staging target so that accessing it never
+            # auto-creates keys in plugin_data (DictionaryOfStan creates keys on
+            # read, which would leave an empty "gc": {} even when nothing changed).
+            #
+            # apply_delta is intentionally NOT used here: it is designed for
+            # cumulative values and stores the last-seen value in `previous` so
+            # it can skip unchanged payloads.  These values are already deltas
+            # (stat[key] - prev_stat[key]), so the only meaningful "no-change"
+            # signal is delta == 0 — which we check directly.
+            #
+            # delta=0 values are always included so that filler receives a signal
+            # every poll and does not fall back to zero-fill on inactive GC periods.
+            staging = {}
+            for i, (stat, prev_stat) in enumerate(zip(gc_stats, self.previous_gc_stats)):
+                for key in ("collections", "collected", "uncollectable"):
+                    delta = stat[key] - prev_stat[key]
+                    staging[f"{key}{i}"] = delta
+            plugin_data["data"]["metrics"]["gc"].update(staging)
+            self.previous_gc_stats = gc_stats
         except Exception:
             logger.debug("_collect_gc_metrics", exc_info=True)
 

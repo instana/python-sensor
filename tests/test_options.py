@@ -2,7 +2,8 @@
 
 import logging
 import os
-from typing import Generator, Optional
+from collections.abc import Generator
+from typing import Optional
 
 import pytest
 from mock import patch
@@ -1093,14 +1094,14 @@ class TestStandardOptions:
 
     @pytest.mark.parametrize(
         "poll_rate_value",
-        [1, 5],
+        [1, 5, 10, 60, 600],
     )
     def test_set_from_with_valid_poll_rate(
         self,
         poll_rate_value: int,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test setting poll_rate from announce response - affects metrics only"""
+        """Test setting poll_rate from announce response — exact valid values are accepted as-is."""
         caplog.set_level(logging.DEBUG, logger="instana")
         caplog.clear()
 
@@ -1115,24 +1116,57 @@ class TestStandardOptions:
         )
 
     @pytest.mark.parametrize(
-        "invalid_value",
-        [10, 0, -5, 3],
+        "invalid_value,expected",
+        [
+            (0, 1),   # zero → default
+            (-5, 1),  # negative → default
+        ],
     )
     def test_set_from_with_invalid_poll_rate_defaults_to_1(
         self,
         invalid_value: int,
+        expected: int,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test that invalid poll_rate values default to 1"""
+        """Test that zero and negative poll_rate values default to 1."""
         caplog.set_level(logging.DEBUG, logger="instana")
         caplog.clear()
 
         self.standart_options = StandardOptions()
         test_res_data = {"plugin": {"python": {"poll_rate": invalid_value}}}
         self.standart_options.set_from(test_res_data)
-        assert self.standart_options.poll_rate == 1
+        assert self.standart_options.poll_rate == expected
         assert (
             f"Invalid poll_rate value {invalid_value}, defaulting to 1"
+            in caplog.messages
+        )
+
+    @pytest.mark.parametrize(
+        "input_value,expected",
+        [
+            (3, 1),  # nearest to 1
+            (7, 5),  # nearest to 5 (|7-5|=2 < |7-10|=3)
+            (8, 10),  # nearest to 10
+            (100, 120),  # nearest to 120 (|100-60|=40 > |100-120|=20)
+            (700, 600),  # above max → clamp to 600
+        ],
+    )
+    def test_set_from_with_non_exact_poll_rate_rounds_to_nearest(
+        self,
+        input_value: int,
+        expected: int,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that non-exact values are rounded to the nearest valid poll rate."""
+        caplog.set_level(logging.DEBUG, logger="instana")
+        caplog.clear()
+
+        self.standart_options = StandardOptions()
+        test_res_data = {"plugin": {"python": {"poll_rate": input_value}}}
+        self.standart_options.set_from(test_res_data)
+        assert self.standart_options.poll_rate == expected
+        assert (
+            f"Poll rate set to {expected} seconds from agent configuration"
             in caplog.messages
         )
 

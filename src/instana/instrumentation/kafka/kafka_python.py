@@ -3,8 +3,7 @@
 
 try:
     import contextvars
-    import inspect
-    from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+    from typing import TYPE_CHECKING, Any, Callable, Optional
 
     import kafka  # noqa: F401
     import wrapt
@@ -23,13 +22,16 @@ try:
 
     consumer_token = None
     consumer_span = contextvars.ContextVar("kafka_python_consumer_span")
+    consume_poll_guard = contextvars.ContextVar(
+        "kafka_python_consume_poll_guard", default=False
+    )
 
     @wrapt.patch_function_wrapper("kafka", "KafkaProducer.send")
     def trace_kafka_send(
         wrapped: Callable[..., "kafka.KafkaProducer.send"],
         instance: "kafka.KafkaProducer",
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
     ) -> "FutureRecordMetadata":
         tracer, _, _ = get_tracer_tuple()
 
@@ -85,7 +87,7 @@ try:
     def create_span(
         span_type: str,
         topic: Optional[str],
-        headers: Optional[List[Tuple[str, bytes]]] = [],
+        headers: Optional[list[tuple[str, bytes]]] = None,
         exception: Optional[Exception] = None,
     ) -> None:
         try:
@@ -110,7 +112,7 @@ try:
                     attributes_to_check
                 )
 
-            if not is_suppressed and headers and ("x_instana_l_s", b"0") in headers:
+            if not is_suppressed and headers is not None and ("x_instana_l_s", b"0") in headers:
                 is_suppressed = True
 
             if is_suppressed:
@@ -165,12 +167,13 @@ try:
     def trace_kafka_consume(
         wrapped: Callable[..., "kafka.KafkaConsumer.__next__"],
         instance: "kafka.KafkaConsumer",
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
     ) -> "FutureRecordMetadata":
         exception = None
         res = None
 
+        guard_token = consume_poll_guard.set(True)
         try:
             res = wrapped(*args, **kwargs)
             create_span(
@@ -186,13 +189,15 @@ try:
             create_span(
                 "consume", list(instance.subscription())[0], exception=exception
             )
+        finally:
+            consume_poll_guard.reset(guard_token)
 
     @wrapt.patch_function_wrapper("kafka", "KafkaConsumer.close")
     def trace_kafka_close(
         wrapped: Callable[..., None],
         instance: "kafka.KafkaConsumer",
-        args: Tuple[Any, ...],
-        kwargs: Dict[str, Any],
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
     ) -> None:
         try:
             span = consumer_span.get(None)
@@ -208,15 +213,12 @@ try:
     def trace_kafka_poll(
         wrapped: Callable[..., "kafka.KafkaConsumer.poll"],
         instance: "kafka.KafkaConsumer",
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
-        # The KafkaConsumer.consume() from the kafka-python-ng call the
-        # KafkaConsumer.poll() internally, so we do not consider it here.
-        if any(
-            frame.function == "trace_kafka_consume"
-            for frame in inspect.getouterframes(inspect.currentframe(), 2)
-        ):
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
+    ) -> Optional[dict[str, Any]]:
+        # KafkaConsumer.__next__() calls KafkaConsumer.poll() internally,
+        # so we skip re-tracing when poll() is invoked from __next__.
+        if consume_poll_guard.get(False):
             return wrapped(*args, **kwargs)
 
         exception = None

@@ -253,9 +253,12 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py313kafka:
+  pykafka:
+    parameters:
+      py-version:
+        type: string
     docker:
-      - image: public.ecr.aws/docker/library/python:3.13
+      - image: public.ecr.aws/docker/library/python:<<parameters.py-version>>
       - image: public.ecr.aws/ubuntu/zookeeper:3.1-22.04_edge
         environment:
           TZ: UTC
@@ -295,7 +298,7 @@ jobs:
           kafka: "true"
           tests: "tests/clients/kafka/test*.py"
       - capture-installed-versions:
-          label: "kafka"
+          label: "kafka-<<parameters.py-version>>"
       - store-pytest-results
       - store-coverage-report
 
@@ -355,7 +358,10 @@ workflows:
       - py39gevent
       - py312aws
       - py312cassandra
-      - py313kafka
+      - pykafka:
+          matrix:
+            parameters:
+              py-version: ["3.9", "3.12", "3.14"]
       - autowrapt:
           matrix:
             parameters:
@@ -366,7 +372,7 @@ workflows:
             - py39gevent
             - py312aws
             - py312cassandra
-            - py313kafka
+            - pykafka
             - autowrapt
       - update-currency-versions:
           filters:
@@ -378,5 +384,5 @@ workflows:
             - py39gevent
             - py312aws
             - py312cassandra
-            - py313kafka
+            - pykafka
             - final_job

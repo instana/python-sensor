@@ -188,6 +188,7 @@ try:
             if exception:
                 span.record_exception(exception)
                 span.end()
+                return
 
             save_consumer_span_into_context(span)
         except Exception as e:
@@ -268,7 +269,7 @@ try:
 
         try:
             res = wrapped(*args, **kwargs)
-            if res:
+            if res is not None and not res.error():
                 create_span("poll", res.topic(), res.headers())
             else:
                 span = consumer_span.get(None)

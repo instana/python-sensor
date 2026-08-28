@@ -8,7 +8,8 @@ import os
 import shutil
 import sys
 import time
-from subprocess import DEVNULL, CalledProcessError, call, check_call, check_output
+from subprocess import (DEVNULL, CalledProcessError, call, check_call,
+                        check_output)
 
 for profile in ("china", "non-china"):
     try:
@@ -127,8 +128,6 @@ else:
         "ap-southeast-7",
         "ca-central-1",
         "ca-west-1",
-        "cn-north-1",
-        "cn-northwest-1",
         "eu-central-1",
         "eu-central-2",
         "eu-north-1",
@@ -139,13 +138,16 @@ else:
         "eu-west-3",
         "il-central-1",
         "me-central-1",
-        "me-south-1",
+        # "me-south-1",     # https://health.aws.amazon.com/health/status 
         "sa-east-1",
         "us-east-1",
         "us-east-2",
         "us-west-1",
         "us-west-2",
     ]
+
+    target_regions += cn_regions
+
     LAYER_NAME = "instana-python"
 
 published = dict()

@@ -4,7 +4,7 @@
 import importlib.util
 import os
 import sys
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from opentelemetry.context.context import Context
@@ -26,7 +26,6 @@ from instana.tracer import InstanaTracerProvider
 from instana.util.runtime import get_runtime_env_info
 
 collect_ignore_glob = [
-    "*test_gevent*",
     "*collector/test_gcr*",
     "*agent/test_google*",
 ]
@@ -34,10 +33,12 @@ collect_ignore_glob = [
 # ppc64le and s390x have limitations with some supported libraries.
 machine, py_version = get_runtime_env_info()
 if machine in ["ppc64le", "s390x"]:
-    collect_ignore_glob.extend([
-        "*test_google-cloud*",
-        "*test_pymongo*",
-    ])
+    collect_ignore_glob.extend(
+        [
+            "*test_google-cloud*",
+            "*test_pymongo*",
+        ]
+    )
 
     if machine == "ppc64le":
         collect_ignore_glob.append("*test_grpcio*")
@@ -51,10 +52,7 @@ if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
 if not os.environ.get("GEVENT_STARLETTE_TEST"):
-    collect_ignore_glob.extend([
-        "*test_gevent*",
-        "*test_starlette*",
-    ])
+    collect_ignore_glob.append("*test_gevent*")
 
 if not os.environ.get("KAFKA_TEST"):
     collect_ignore_glob.append("*kafka/test*")
@@ -63,16 +61,6 @@ if sys.version_info >= (3, 12):
     # Currently Spyne does not support python > 3.12
     collect_ignore_glob.append("*test_spyne*")
 
-
-if sys.version_info >= (3, 14):
-    collect_ignore_glob.extend([
-        # Currently not installable dependencies because of 3.14 incompatibilities
-        "*test_fastapi*",
-        # aiohttp-server tests failing due to deprecated methods used
-        "*test_aiohttp_server*",
-        # Currently Sanic does not support python >= 3.14
-        "*test_sanic*",
-    ])
 
 @pytest.fixture(scope="session")
 def celery_config():
@@ -176,7 +164,7 @@ def get_from_structure(monkeypatch, request) -> None:
     @return: dict()
     """
 
-    def _get_from_structure(_: object) -> Dict[str, Any]:
+    def _get_from_structure(_: object) -> dict[str, Any]:
         return {"e": os.getpid(), "h": "fake"}
 
     if "original" in request.keywords:
@@ -253,9 +241,11 @@ def announce(monkeypatch, request) -> None:
     else:
         monkeypatch.setattr(HostAgent, "announce", always_true)
 
+
 # Mocking the import of uwsgi
 def _uwsgi_masterpid() -> int:
     return 12345
+
 
 module = type(sys)("uwsgi")
 module.opt = {

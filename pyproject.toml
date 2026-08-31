@@ -9,7 +9,7 @@ dynamic = [
 ]
 description = "Python Distributed Tracing & Metrics Sensor for Instana."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = [
     "performance",
@@ -31,7 +31,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -47,7 +46,7 @@ dependencies = [
     "fysom>=2.1.2",
     "requests>=2.6.0",
     "six>=1.12.0",
-    "urllib3>=1.26.5",
+    "urllib3>=2.7.0",
     "opentelemetry-api>=1.27.0",
     "opentelemetry-semantic-conventions>=0.48b0",
     "typing_extensions>=4.12.2; python_version < \"3.11\"",

@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2020
 
 import os
-import sys
 
 import pytest
 

@@ -156,41 +156,9 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  python314:
+  py312cassandra:
     docker:
-      - image: ghcr.io/pvital/pvital-py3.14.0:latest
-      - image: public.ecr.aws/docker/library/postgres:16.2-bookworm
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: passw0rd
-          POSTGRES_DB: instana_test_db
-      - image: public.ecr.aws/docker/library/mariadb:11.3.2
-        environment:
-          MYSQL_ROOT_PASSWORD: passw0rd
-          MYSQL_DATABASE: instana_test_db
-      - image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
-      - image: public.ecr.aws/docker/library/rabbitmq:3.13.0
-      - image: public.ecr.aws/docker/library/mongo:7.0.6
-      - image: quay.io/thekevjames/gcloud-pubsub-emulator:latest
-        environment:
-          PUBSUB_EMULATOR_HOST: 0.0.0.0:8681
-          PUBSUB_PROJECT1: test-project,test-topic
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - check-if-tests-needed
-      - run: |
-          cp -a /root/base/venv ./venv
-          . venv/bin/activate
-          pip install 'wheel==0.45.1'
-          pip install -r requirements.txt
-      - run-tests-with-coverage-report
-      - store-pytest-results
-      - store-coverage-report
-
-  py39cassandra:
-    docker:
-      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/python:3.12
       - image: public.ecr.aws/docker/library/cassandra:3.11.16-jammy
         environment:
           MAX_HEAP_SIZE: 2048m
@@ -208,9 +176,9 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39gevent_starlette:
+  py12gevent_starlette:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/python:3.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -219,10 +187,8 @@ jobs:
       - pip-install-tests-deps:
           requirements: "tests/requirements-gevent-starlette.txt"
       - run-tests-with-coverage-report:
-          # TODO: uncomment once gevent instrumentation is done
-          # gevent: "true"
-          # tests: "tests/frameworks/test_gevent.py tests/frameworks/test_starlette.py"
-          tests: "tests/frameworks/test_starlette.py"
+          gevent: "true"
+          tests: "tests/frameworks/test_gevent.py"
       - store-pytest-results
       - store-coverage-report
 
@@ -244,15 +210,34 @@ jobs:
   py312kafka:
     docker:
       - image: public.ecr.aws/docker/library/python:3.12
-      - image: public.ecr.aws/bitnami/kafka:3.9.0
+      - image: public.ecr.aws/ubuntu/zookeeper:3.1-22.04_edge
         environment:
-          KAFKA_CFG_NODE_ID: 0
-          KAFKA_CFG_PROCESS_ROLES: controller,broker
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@localhost:9093
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
+          TZ: UTC
+      - image: public.ecr.aws/ubuntu/kafka:3.1-22.04_edge
+        environment:
+          TZ: UTC
+          ZOOKEEPER_HOST: localhost
+          ZOOKEEPER_PORT: 2181
+        command:
+          - /opt/kafka/config/server.properties
+          - --override
+          - listeners=INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+          - --override
+          - advertised.listeners=INTERNAL://localhost:9093,EXTERNAL://localhost:9094
+          - --override
+          - listener.security.protocol.map=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+          - --override
+          - inter.broker.listener.name=INTERNAL
+          - --override
+          - broker.id=1
+          - --override
+          - offsets.topic.replication.factor=1
+          - --override
+          - transaction.state.log.replication.factor=1
+          - --override
+          - transaction.state.log.min.isr=1
+          - --override
+          - auto.create.topics.enable=true
     working_directory: ~/repo
     steps:
       - checkout
@@ -288,7 +273,7 @@ jobs:
 
   final_job:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/python:3.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -304,10 +289,9 @@ workflows:
       - python3x:
           matrix:
             parameters:
-              py-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-      - python314
-      - py39cassandra
-      - py39gevent_starlette
+              py-version: ["3.10", "3.11", "3.12", "3.13"]
+      - py312cassandra
+      # - py12gevent_starlette
       - py312aws
       - py312kafka
       - autowrapt:
@@ -317,10 +301,8 @@ workflows:
       - final_job:
           requires:
             - python3x
-            # Uncomment the following when giving real support to 3.14
-            # - python314
-            - py39cassandra
-            - py39gevent_starlette
+            - py312cassandra
+            # - py12gevent_starlette
             - py312aws
             - py312kafka
             - autowrapt

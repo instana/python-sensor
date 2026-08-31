@@ -4,6 +4,6 @@ gevent>=1.4.0
 mock>=2.0.0
 pyramid>=2.0.1
 starlette>=0.12.13
-urllib3>=1.26.5
+urllib3>=2.7.0
 uvicorn>=0.13.4
 httpx>=0.27.0

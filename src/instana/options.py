@@ -55,6 +55,10 @@ class BaseOptions(object):
         # enabled_spans lists all categories and types that should be enabled, preceding disabled_spans
         self.enabled_spans = []
 
+        # HTTP exit span 4xx error classification (opt-in)
+        self.http_exit_classify_all_4xx_as_errors: bool = False
+        self.http_exit_classify_as_errors: list = []
+
         # Stack trace configuration - global defaults
         self.stack_trace_level = "all"  # Options: "all", "error", "none"
         self.stack_trace_length = 30  # Default: 30, recommended range: 10-40
@@ -119,6 +123,37 @@ class BaseOptions(object):
             config["asyncio_task_context_propagation"]["enabled"] = is_truthy(
                 os.environ["INSTANA_ASYNCIO_TASK_CONTEXT_PROPAGATION"]
             )
+
+        env_classify_as_errors = os.environ.get(
+            "INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS", None
+        )
+        if env_classify_as_errors is not None:
+            codes = []
+            for part in env_classify_as_errors.split(","):
+                part = part.strip()
+                if part.isdigit():
+                    code = int(part)
+                    if 400 <= code <= 499:
+                        codes.append(code)
+                    else:
+                        logger.warning(
+                            "Ignoring out-of-range value in"
+                            " INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS:"
+                            f" {code}, must be 400-499"
+                        )
+                elif part:
+                    logger.warning(
+                        "Ignoring non-integer value in"
+                        f" INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS: {part}"
+                    )
+            if codes:
+                self.http_exit_classify_as_errors = codes
+        elif is_truthy(
+            os.environ.get(
+                "INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS", None
+            )
+        ):
+            self.http_exit_classify_all_4xx_as_errors = True
 
         self.set_disable_trace_configurations()
         self.set_stack_trace_configurations()
@@ -417,6 +452,10 @@ class StandardOptions(BaseOptions):
         # Handle stack trace configuration from agent config
         self.set_stack_trace_from_agent(tracing)
 
+        # HTTP exit 4xx classification — only apply if env var didn't already set it
+        if "http" in tracing and not self._has_env_http_exit_classification():
+            self._apply_agent_http_exit_classification(tracing["http"])
+
     def _apply_agent_filter_config(self, filter_config: dict[str, Any]) -> None:
         """Apply span filter rules from agent config."""
         parsed = parse_filter_rules(filter_config)
@@ -444,6 +483,46 @@ class StandardOptions(BaseOptions):
             logger.warning(
                 "Binary header format for Kafka is deprecated. Please use string header format."
             )
+
+    def _has_env_http_exit_classification(self) -> bool:
+        """Return True if env vars have already configured HTTP exit 4xx classification."""
+        return (
+            "INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS" in os.environ
+            or "INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS" in os.environ
+        )
+
+    def _apply_agent_http_exit_classification(
+        self, http_config: dict[str, Any]
+    ) -> None:
+        """Apply HTTP exit 4xx classification from agent config (lowest priority)."""
+        exit_cfg = http_config.get("exit", {})
+        if not isinstance(exit_cfg, dict):
+            return
+
+        classify_as_errors = exit_cfg.get("classify-as-errors")
+        if classify_as_errors is not None:
+            codes = []
+            for code in classify_as_errors:
+                if isinstance(code, int) and 400 <= code <= 499:
+                    codes.append(code)
+                else:
+                    logger.warning(
+                        "Ignoring invalid value in agent config"
+                        f" tracing.http.exit.classify-as-errors: {code}"
+                    )
+            if codes:
+                self.http_exit_classify_as_errors = codes
+            return
+
+        classify_all = exit_cfg.get("classify-all-4xx-as-errors")
+        if classify_all is not None:
+            if isinstance(classify_all, bool):
+                self.http_exit_classify_all_4xx_as_errors = classify_all
+            else:
+                logger.warning(
+                    "Ignoring non-boolean value in agent config"
+                    f" tracing.http.exit.classify-all-4xx-as-errors: {classify_all}"
+                )
 
     def _has_high_priority_span_filter_source(self) -> bool:
         """Return True if a higher-priority span filter source (env var, YAML, or in-code config)

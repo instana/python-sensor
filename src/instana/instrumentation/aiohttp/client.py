@@ -2,21 +2,22 @@
 # (c) Copyright Instana Inc. 2019
 
 
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple
-
-import wrapt
-from opentelemetry.semconv.trace import SpanAttributes
-
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import agent
-from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
-
 try:
+    from collections.abc import Awaitable, Callable
+    from types import SimpleNamespace
+    from typing import TYPE_CHECKING, Any
+
     import aiohttp
+    import wrapt
     from opentelemetry.context import get_current
+    from opentelemetry.semconv.trace import SpanAttributes
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import agent
+    from instana.util.http import should_mark_http_exit_as_error
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
     if TYPE_CHECKING:
         from aiohttp.client import ClientSession
@@ -65,7 +66,7 @@ try:
 
                 extract_custom_headers(span, params.response.headers)
 
-                if params.response.status >= 500:
+                if should_mark_http_exit_as_error(params.response.status, agent.options):
                     span.mark_as_errored({"http.error": params.response.reason})
 
                 if span.is_recording():
@@ -92,8 +93,8 @@ try:
     def init_with_instana(
         wrapped: Callable[..., Awaitable["ClientSession"]],
         instance: aiohttp.client.ClientSession,
-        args: Tuple[int, str, Tuple[object, ...]],
-        kwargs: Dict[str, Any],
+        args: tuple[int, str, tuple[object, ...]],
+        kwargs: dict[str, Any],
     ) -> object:
         instana_trace_config = aiohttp.TraceConfig()
         instana_trace_config.on_request_start.append(stan_request_start)

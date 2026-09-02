@@ -44,6 +44,11 @@ tracing:
           - key: "kafka.service"
             values: ["topic"]
             match_type: "contains"
+  http:
+    exit:
+      classify-as-errors:
+        - 401
+        - 403
   disable:
     - "logging": true
     - "databases": true

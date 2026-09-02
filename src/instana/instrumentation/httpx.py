@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2025
 
 try:
-    from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+    from typing import TYPE_CHECKING, Any, Callable, Optional
 
     import httpx
     import wrapt
@@ -12,6 +12,7 @@ try:
     from instana.log import logger
     from instana.propagators.format import Format
     from instana.singletons import agent
+    from instana.util.http import should_mark_http_exit_as_error
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
 
@@ -50,7 +51,7 @@ try:
 
     def _set_response_span_attributes(
         span: "InstanaSpan",
-        response: Optional[httpx.Response] = None,
+        response: "Optional[httpx.Response]" = None,
     ) -> None:
         try:
             if response.headers:
@@ -58,8 +59,8 @@ try:
 
             status_code = response.status_code
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
-            if status_code >= 500:
-                span.mark_as_errored()
+            if should_mark_http_exit_as_error(status_code, agent.options):
+                span.mark_as_errored({"http.error": str(status_code)})
         except Exception:
             logger.debug("httpx _set_request_span_attributes error: ", exc_info=True)
 
@@ -67,8 +68,8 @@ try:
     def handle_request_with_instana(
         wrapped: Callable[..., "httpx.HTTPTransport.handle_request"],
         instance: httpx.HTTPTransport,
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
     ) -> httpx.Response:
         tracer, _, _ = get_tracer_tuple()
         # If we're not tracing, just return
@@ -102,8 +103,8 @@ try:
     async def handle_async_request_with_instana(
         wrapped: Callable[..., "httpx.AsyncHTTPTransport.handle_async_request"],
         instance: httpx.AsyncHTTPTransport,
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
     ) -> httpx.Response:
         tracer, _, _ = get_tracer_tuple()
         # If we're not tracing, just return

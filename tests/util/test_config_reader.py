@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING, Generator
 import pytest
 from yaml import YAMLError
 
+from instana.options import BaseOptions
 from instana.util.config import (
     get_disable_trace_configurations_from_yaml,
+    get_http_exit_classification_from_yaml,
     parse_filter_rules_yaml,
 )
 from instana.util.config_reader import ConfigReader
@@ -41,7 +43,7 @@ class TestConfigReader:
         config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
         assert config_reader.file_path == filename
         assert "tracing" in config_reader.data
-        assert len(config_reader.data["tracing"]) == 2
+        assert len(config_reader.data["tracing"]) == 3
 
     def test_config_reader_file_not_found_error(
         self, caplog: "LogCaptureFixture"
@@ -163,6 +165,11 @@ class TestConfigReader:
         assert "redis" not in disabled_spans
         assert "redis" in enabled_spans
 
+        # Check HTTP exit 4xx classification (classify-as-errors: [401, 403])
+        classify_all, codes = get_http_exit_classification_from_yaml()
+        assert classify_all is False
+        assert codes == [401, 403]
+
         assert (
             'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
             not in caplog.messages
@@ -222,7 +229,36 @@ class TestConfigReader:
         assert "redis" not in disabled_spans
         assert "redis" in enabled_spans
 
+        # Check HTTP exit 4xx classification (classify-all-4xx-as-errors: true)
+        classify_all, codes = get_http_exit_classification_from_yaml()
+        assert classify_all is True
+        assert codes == []
+
         assert (
             'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
             in caplog.messages
         )
+
+    def test_base_options_yaml_classify_as_errors(self) -> None:
+        """BaseOptions reads classify-as-errors codes from YAML (test_configuration-1.yaml)."""
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
+        opts = BaseOptions()
+        assert opts.http_exit_classify_as_errors == [401, 403]
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    def test_base_options_yaml_classify_all_4xx(self) -> None:
+        """BaseOptions reads classify-all-4xx-as-errors from YAML (test_configuration-2.yaml)."""
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-2.yaml"
+        opts = BaseOptions()
+        assert opts.http_exit_classify_all_4xx_as_errors is True
+        assert opts.http_exit_classify_as_errors == []
+
+    def test_base_options_yaml_http_env_var_takes_precedence(self) -> None:
+        """Env var overrides YAML http classification."""
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS"] = "true"
+        opts = BaseOptions()
+        # YAML says [401, 403] via classify-as-errors, but env var (classify_all) takes precedence
+        assert opts.http_exit_classify_all_4xx_as_errors is True
+        assert opts.http_exit_classify_as_errors == []
+        os.environ.pop("INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS")

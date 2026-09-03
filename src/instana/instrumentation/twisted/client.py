@@ -19,6 +19,7 @@ try:
     from instana.propagators.format import Format
     from instana.singletons import agent, get_tracer
     from instana.span.span import get_current_span
+    from instana.util.http import should_mark_http_exit_as_error
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
 
@@ -133,9 +134,10 @@ try:
                 }
                 extract_custom_headers(span, headers_dict)
 
-                if status_code >= 500:
+                if should_mark_http_exit_as_error(status_code, agent.options):
+                    phrase = result.phrase.decode("latin-1")
                     span.mark_as_errored({
-                        "http.error": result.phrase.decode("latin-1")
+                        "http.error": f"{status_code} {phrase}"
                     })
         except Exception:
             logger.debug("twisted client finish_tracing", exc_info=True)

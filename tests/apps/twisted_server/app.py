@@ -40,6 +40,20 @@ class R404Resource(Resource):
         return b"Not Found"
 
 
+class R4xxResource(Resource):
+    """Serves any 4xx status requested as the path segment, e.g. /400, /401."""
+
+    isLeaf = True
+
+    def __init__(self, code: int) -> None:
+        super().__init__()
+        self._code = code
+
+    def render_GET(self, request: Request) -> bytes:
+        request.setResponseCode(self._code)
+        return f"{self._code}".encode()
+
+
 class R500Resource(Resource):
     isLeaf = True
 
@@ -101,6 +115,13 @@ class TwistedApp(Resource):
             return R301Resource()
         if path == b"404":
             return R404Resource()
+        # Generic 4xx endpoints: /400, /401, /403, /405, etc.
+        try:
+            code = int(path)
+            if 400 <= code <= 499:
+                return R4xxResource(code)
+        except (ValueError, TypeError):
+            pass
         if path == b"500":
             return R500Resource()
         if path == b"response_headers":

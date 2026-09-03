@@ -266,7 +266,7 @@ class TestAiohttpClient:
         assert aiohttp_span.data["http"]["status"] == 500
         assert aiohttp_span.data["http"]["url"] == testenv["flask_server"] + "/500"
         assert aiohttp_span.data["http"]["method"] == "GET"
-        assert aiohttp_span.data["http"]["error"] == "INTERNAL SERVER ERROR"
+        assert aiohttp_span.data["http"]["error"] == "500 Internal Server Error"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
         assert len(aiohttp_span.stack) > 1
@@ -313,7 +313,7 @@ class TestAiohttpClient:
         assert aiohttp_span.data["http"]["status"] == 504
         assert aiohttp_span.data["http"]["url"] == testenv["flask_server"] + "/504"
         assert aiohttp_span.data["http"]["method"] == "GET"
-        assert aiohttp_span.data["http"]["error"] == "GATEWAY TIMEOUT"
+        assert aiohttp_span.data["http"]["error"] == "504 Gateway Timeout"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
         assert len(aiohttp_span.stack) > 1

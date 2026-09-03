@@ -24,6 +24,9 @@ com.instana.tracing:
             match_type: "strict"
           - key: "kafka.access"
             values: ["*"]
+  http:
+    exit:
+      classify-all-4xx-as-errors: true
   disable:
     - "logging": true
     - "databases": true

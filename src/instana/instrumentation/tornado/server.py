@@ -77,6 +77,7 @@ try:
         span = instance.request._instana
         tracer = get_tracer()
         tracer.inject(span.context, Format.HTTP_HEADERS, instance._headers)
+        return wrapped(*argv, **kwargs)
 
     @wrapt.patch_function_wrapper("tornado.web", "RequestHandler.on_finish")
     def on_finish_with_instana(

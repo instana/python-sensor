@@ -4,7 +4,7 @@
 
 try:
     import functools
-    from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
+    from typing import TYPE_CHECKING, Any, Callable
 
     import tornado
     import wrapt
@@ -23,6 +23,7 @@ try:
     from instana.propagators.format import Format
     from instana.singletons import agent, get_tracer
     from instana.span.span import get_current_span
+    from instana.util.http import should_mark_http_exit_as_error
     from instana.util.secrets import strip_secrets_from_query
     from instana.util.traceutils import extract_custom_headers
 
@@ -30,8 +31,8 @@ try:
     def fetch_with_instana(
         wrapped: Callable[..., object],
         instance: "AsyncHTTPClient",
-        argv: Tuple[object, ...],
-        kwargs: Dict[str, Any],
+        argv: tuple[object, ...],
+        kwargs: dict[str, Any],
     ) -> "Future":
         try:
             parent_span = get_current_span()
@@ -47,13 +48,12 @@ try:
             # To modify request headers, we have to preemptively create an HTTPRequest object if a
             # URL string was passed.
             if not isinstance(request, tornado.httpclient.HTTPRequest):
+                # "callback" and "raise_error" are fetch()-level kwargs, not
+                # HTTPRequest constructor params — extract them first so they
+                # are not forwarded to HTTPRequest.__init__.
+                fetch_only_params = ("callback", "raise_error")
+                new_kwargs = {p: kwargs.pop(p) for p in fetch_only_params if p in kwargs}
                 request = tornado.httpclient.HTTPRequest(url=request, **kwargs)
-
-                new_kwargs = {}
-                for param in ("callback", "raise_error"):
-                    # if not in instead and pop
-                    if param in kwargs:
-                        new_kwargs[param] = kwargs.pop(param)
                 kwargs = new_kwargs
 
             parent_context = get_current()
@@ -89,8 +89,10 @@ try:
         try:
             response = future.result()
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.code)
-
             extract_custom_headers(span, response.headers)
+            if should_mark_http_exit_as_error(response.code, agent.options):
+                error_msg = f"{response.code} {response.reason}"
+                span.mark_as_errored({"http.error": error_msg})
         except tornado.httpclient.HTTPClientError as e:
             span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, e.code)
             span.record_exception(e)

@@ -9,7 +9,7 @@ from opentelemetry import context, trace
 from opentelemetry.context import get_current
 
 from instana.log import logger
-from instana.span.span import InstanaSpan, get_current_span
+from instana.span.span import InstanaSpan
 from instana.span_context import SpanContext
 from instana.util.traceutils import get_tracer_tuple
 
@@ -56,15 +56,15 @@ try:
         **kw: Dict[str, Any],
     ) -> None:
         try:
-            tracer = get_tracer_tuple()
-            # If we're not tracing, just return
-            if not tracer:
+            conn = kw["conn"]
+            span = getattr(conn, "span", None)
+            if span is None:
                 return
 
-            current_span = get_current_span()
-            conn = kw["conn"]
-            if current_span.is_recording():
-                current_span.end()
+            if span.is_recording():
+                span.end()
+            conn.span = None
+
             if hasattr(conn, "token"):
                 context.detach(conn.token)
                 conn.token = None

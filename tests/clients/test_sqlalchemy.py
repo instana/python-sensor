@@ -292,5 +292,39 @@ class TestSQLAlchemy:
                 )
             )
 
+        # No active trace context → after_cursor_execute should skip via conn.span is None
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 0
+
+        current_span = get_current_span()
+        assert not current_span.is_recording()
+
+    def test_context_restored_after_query(self) -> None:
+        """After a sqlalchemy span completes, the OTel context must be restored to
+        the parent span so that subsequent instrumentation (e.g. redis) can still
+        find the correct parent.  This validates the fix for the bug where
+        after_cursor_execute used get_current_span() instead of conn.span, which
+        could corrupt the context stack and cause child spans to be dropped."""
+        with self.tracer.start_as_current_span("test") as parent_span:
+            with engine.begin() as connection:
+                connection.execute(text("select 1"))
+
+            # After the sqlalchemy span ends, the active span must be back to
+            # the parent — not INVALID_SPAN and not the (now-ended) sqlalchemy span.
+            active_after = get_current_span()
+            assert active_after.is_recording()
+            assert active_after.name == "test"
+
+        spans = self.recorder.queued_spans()
+        # 1 sqlalchemy span + 1 test span
+        assert len(spans) == 2
+
+        sql_span = spans[0]
+        test_span = spans[1]
+
+        assert sql_span.n == "sqlalchemy"
+        assert sql_span.t == test_span.t
+        assert sql_span.p == test_span.s
+
         current_span = get_current_span()
         assert not current_span.is_recording()

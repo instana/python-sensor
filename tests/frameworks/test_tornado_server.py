@@ -388,7 +388,7 @@ class TestTornadoServer:
         assert aiohttp_span.data["http"]["status"] == 500
         assert testenv["tornado_server"] + "/500" == aiohttp_span.data["http"]["url"]
         assert aiohttp_span.data["http"]["method"] == "GET"
-        assert aiohttp_span.data["http"]["error"] == "Internal Server Error"
+        assert aiohttp_span.data["http"]["error"] == "500 Internal Server Error"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
         assert len(aiohttp_span.stack) > 1
@@ -451,7 +451,7 @@ class TestTornadoServer:
         assert aiohttp_span.data["http"]["status"] == 504
         assert testenv["tornado_server"] + "/504" == aiohttp_span.data["http"]["url"]
         assert aiohttp_span.data["http"]["method"] == "GET"
-        assert aiohttp_span.data["http"]["error"] == "Gateway Timeout"
+        assert aiohttp_span.data["http"]["error"] == "504 Gateway Timeout"
         assert aiohttp_span.stack
         assert isinstance(aiohttp_span.stack, list)
         assert len(aiohttp_span.stack) > 1

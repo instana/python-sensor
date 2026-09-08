@@ -1744,3 +1744,135 @@ class TestStackTraceConfiguration:
             # YAML should override agent config
             assert self.options.stack_trace_level == "error"
             assert self.options.stack_trace_length == 20
+
+
+class TestHttpExitClassification:
+    """Tests for HTTP exit 4xx error classification configuration."""
+
+    @pytest.fixture(autouse=True)
+    def _cleanup(self) -> Generator[None, None, None]:
+        yield
+        for key in (
+            "INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS",
+            "INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS",
+        ):
+            os.environ.pop(key, None)
+
+    # ------------------------------------------------------------------ defaults
+    def test_defaults_are_off(self) -> None:
+        opts = BaseOptions()
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+        assert opts.http_exit_classify_as_errors == []
+
+    # ------------------------------------------------------------------ env var: classify_all
+    def test_env_classify_all_true(self) -> None:
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS"] = "true"
+        opts = BaseOptions()
+        assert opts.http_exit_classify_all_4xx_as_errors is True
+        assert opts.http_exit_classify_as_errors == []
+
+    def test_env_classify_all_false(self) -> None:
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS"] = "false"
+        opts = BaseOptions()
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    # ------------------------------------------------------------------ env var: classify_codes
+    def test_env_classify_codes_valid(self) -> None:
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS"] = "401,403"
+        opts = BaseOptions()
+        assert opts.http_exit_classify_as_errors == [401, 403]
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    def test_env_classify_codes_with_spaces(self) -> None:
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS"] = " 401 , 403 "
+        opts = BaseOptions()
+        assert opts.http_exit_classify_as_errors == [401, 403]
+
+    def test_env_classify_codes_out_of_range_ignored(self) -> None:
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS"] = "401,500,200"
+        opts = BaseOptions()
+        # 500 and 200 are outside 400-499, only 401 should remain
+        assert opts.http_exit_classify_as_errors == [401]
+
+    def test_env_classify_codes_takes_precedence_over_classify_all(self) -> None:
+        """When classify_as_errors env var is set, classify_all env var must be ignored."""
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS"] = "401"
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS"] = "true"
+        opts = BaseOptions()
+        assert opts.http_exit_classify_as_errors == [401]
+        # classify_all must stay False because classify_codes took precedence
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    # ------------------------------------------------------------------ agent config via set_tracing
+    def test_set_tracing_classify_all(self) -> None:
+        opts = StandardOptions()
+        opts.set_tracing({"http": {"exit": {"classify-all-4xx-as-errors": True}}})
+        assert opts.http_exit_classify_all_4xx_as_errors is True
+
+    def test_set_tracing_classify_codes(self) -> None:
+        opts = StandardOptions()
+        opts.set_tracing({"http": {"exit": {"classify-as-errors": [401, 403]}}})
+        assert opts.http_exit_classify_as_errors == [401, 403]
+
+    def test_set_tracing_classify_codes_out_of_range_ignored(self) -> None:
+        opts = StandardOptions()
+        opts.set_tracing({"http": {"exit": {"classify-as-errors": [401, 500, 200]}}})
+        assert opts.http_exit_classify_as_errors == [401]
+
+    def test_set_tracing_classify_codes_wins_over_classify_all(self) -> None:
+        """classify-as-errors in agent config takes precedence over classify-all-4xx-as-errors."""
+        opts = StandardOptions()
+        opts.set_tracing({
+            "http": {
+                "exit": {
+                    "classify-all-4xx-as-errors": True,
+                    "classify-as-errors": [401],
+                }
+            }
+        })
+        assert opts.http_exit_classify_as_errors == [401]
+        # classify_all must remain False (codes list took precedence inside _apply_agent_http_exit_classification)
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    def test_env_var_takes_precedence_over_agent_config(self) -> None:
+        """Env var has higher priority than agent config."""
+        os.environ["INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS"] = "true"
+        opts = StandardOptions()
+        # Agent config says False — env var should win
+        opts.set_tracing({"http": {"exit": {"classify-all-4xx-as-errors": False}}})
+        assert opts.http_exit_classify_all_4xx_as_errors is True
+
+    # ------------------------------------------------------------------ env var: classify_all invalid value
+    def test_env_classify_all_non_truthy_value_stays_false(self, monkeypatch) -> None:
+        """A value not recognised as truthy by is_truthy() results in False (no warning needed)."""
+        monkeypatch.setenv("INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS", "yes")
+        opts = BaseOptions()
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    def test_env_classify_all_invalid_does_not_fall_through_to_yaml(
+        self, monkeypatch, tmp_path
+    ) -> None:
+        """An invalid CLASSIFY_ALL value must still block YAML from being read (env var set → YAML skipped)."""
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text(
+            "tracing:\n  http:\n    exit:\n      classify-all-4xx-as-errors: true\n"
+        )
+        monkeypatch.setenv("INSTANA_CONFIG_PATH", str(yaml_file))
+        monkeypatch.setenv("INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS", "garbage")
+        opts = BaseOptions()
+        # Invalid env var → warning + default; YAML must NOT override because the env var branch was entered
+        assert opts.http_exit_classify_all_4xx_as_errors is False
+
+    def test_env_classify_all_false_does_not_fall_through_to_yaml(
+        self, monkeypatch, tmp_path
+    ) -> None:
+        """CLASSIFY_ALL=false must take precedence over YAML (explicit false wins, YAML skipped)."""
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text(
+            "tracing:\n  http:\n    exit:\n      classify-all-4xx-as-errors: true\n"
+        )
+        monkeypatch.setenv("INSTANA_CONFIG_PATH", str(yaml_file))
+        monkeypatch.setenv("INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS", "false")
+        opts = BaseOptions()
+        # Env var says false explicitly → YAML must NOT override
+        assert opts.http_exit_classify_all_4xx_as_errors is False

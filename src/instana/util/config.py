@@ -583,4 +583,50 @@ def get_stack_trace_config_from_yaml() -> Tuple[
     return level, length, tech_config
 
 
+def get_http_exit_classification_from_yaml() -> Tuple[bool, List[int]]:
+    """
+    Get HTTP exit 4xx classification configuration from the YAML file specified
+    by INSTANA_CONFIG_PATH.
+
+    Returns:
+        Tuple of (classify_all_4xx, classify_as_errors) where:
+        - classify_all_4xx: True if all 4xx responses should be errors
+        - classify_as_errors: List of specific 4xx codes to treat as errors
+    """
+    config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
+
+    root_key = get_tracing_root_key(config_reader.data)
+    if not root_key:
+        return False, []
+
+    http_cfg = config_reader.data[root_key].get("http", {})
+    exit_cfg = http_cfg.get("exit", {}) if isinstance(http_cfg, dict) else {}
+    if not isinstance(exit_cfg, dict):
+        return False, []
+
+    classify_as_errors = exit_cfg.get("classify-as-errors")
+    if classify_as_errors is not None:
+        codes = []
+        for code in classify_as_errors:
+            if isinstance(code, int) and 400 <= code <= 499:
+                codes.append(code)
+            else:
+                logger.warning(
+                    "Ignoring invalid value in YAML config"
+                    f" tracing.http.exit.classify-as-errors: {code}"
+                )
+        return False, codes
+
+    classify_all = exit_cfg.get("classify-all-4xx-as-errors")
+    if isinstance(classify_all, bool):
+        return classify_all, []
+    elif classify_all is not None:
+        logger.warning(
+            "Ignoring non-boolean value in YAML config"
+            f" tracing.http.exit.classify-all-4xx-as-errors: {classify_all}"
+        )
+
+    return False, []
+
+
 # Made with Bob

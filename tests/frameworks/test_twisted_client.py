@@ -155,7 +155,7 @@ class TestTwistedClient:
         assert client_span.data["http"]["status"] == 500
         assert client_span.data["http"]["method"] == "GET"
         assert client_span.data["http"]["url"] == testenv["twisted_server"] + "/500"
-        assert client_span.data["http"]["error"] == "Internal Server Error"
+        assert client_span.data["http"]["error"] == "500 Internal Server Error"
 
     def test_get_with_params_to_scrub(self) -> None:
         response, failure = self._make_request("/", params={"secret": "yeah"})

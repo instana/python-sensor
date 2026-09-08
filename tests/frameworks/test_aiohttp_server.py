@@ -474,7 +474,7 @@ class TestAiohttpServer:
 
         assert aioclient_span.n == "aiohttp-client"
         assert aioclient_span.data["http"]["status"] == 500
-        assert aioclient_span.data["http"]["error"] == "Internal Server Error"
+        assert aioclient_span.data["http"]["error"] == "500 Internal Server Error"
         assert aioclient_span.stack
         assert isinstance(aioclient_span.stack, list)
         assert len(aioclient_span.stack) > 1

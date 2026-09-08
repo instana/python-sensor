@@ -234,7 +234,7 @@ class TestTwistedServer:
         assert twisted_span.data["http"]["url"] == testenv["twisted_server"] + "/500"
         assert twisted_span.data["http"]["method"] == "GET"
         assert not twisted_span.stack
-        assert twisted_span.data["http"]["error"] == "Internal Server Error"
+        assert twisted_span.data["http"]["error"] == "500 Internal Server Error"
 
     def test_get_with_params_to_scrub(self) -> None:
         with self.tracer.start_as_current_span("test"):

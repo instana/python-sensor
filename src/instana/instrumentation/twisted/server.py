@@ -62,10 +62,20 @@ try:
             span = tracer.start_span(
                 "twisted-server", context=parent_context)
 
-            # Set span as current so downstream code
-            # (e.g. twisted-client) can find it during the synchronous
-            # wrapped() call.  We detach unconditionally in the finally
-            # block below once wrapped() has returned.
+            # Set span as current so that any async work started during
+            # wrapped() (e.g. outgoing Agent.request Deferreds) can find
+            # this span as their parent after the event loop resumes.
+            #
+            # IMPORTANT: we do NOT detach the token here in the `finally`
+            # block.  Twisted's render() returns NOT_DONE_YET for async
+            # handlers, and the event loop only fires pending Deferreds
+            # after render() has returned — by which point a `finally`
+            # detach would have already removed the context, leaving
+            # downstream spans (e.g. twisted-client) with no active parent.
+            #
+            # Instead the token is stored on the request object and detached
+            # inside finish_tracing(), which is called by notifyFinish() only
+            # after the full async response lifecycle has completed.
             ctx = trace.set_span_in_context(span)
             token = context.attach(ctx)
 
@@ -119,8 +129,10 @@ try:
             for key, value in response_headers.items():
                 request.setHeader(key.encode("latin-1"), value.encode("utf-8"))
 
-            # Store span on request for later retrieval
+            # Store span and context token on the request so finish_tracing
+            # can detach the token after the full async lifecycle completes.
             request._instana = span
+            request._instana_token = token
             request._instana_finished = False
 
             finish_deferred = request.notifyFinish()
@@ -128,12 +140,13 @@ try:
 
             return wrapped(*argv, **kwargs)
         except Exception:
+            # On instrumentation error detach immediately (we never reach
+            # finish_tracing in this path) and fall through to the bare call.
+            if token is not None:
+                context.detach(token)
             if span is not None and span.is_recording():
                 span.end()
             logger.debug("twisted server render_with_instana", exc_info=True)
-        finally:
-            if token is not None:
-                context.detach(token)
 
         return wrapped(*argv, **kwargs)
 
@@ -146,6 +159,7 @@ try:
 
         request._instana_finished = True
         span = request._instana
+        token = getattr(request, "_instana_token", None)
         try:
             status_code = request.code
             if isinstance(status_code, int):
@@ -159,12 +173,19 @@ try:
             extract_custom_headers(span, response_hdrs)
 
             if isinstance(status_code, int) and status_code >= 500:
+                phrase = request.code_message.decode("latin-1")
                 span.mark_as_errored({
-                    "http.error": request.code_message.decode("latin-1")
+                    "http.error": f"{status_code} {phrase}"
                 })
         except Exception:
             logger.debug("twisted server finish_tracing", exc_info=True)
         finally:
+            # Detach the OTel context token here — after the full async
+            # response lifecycle — instead of in render_with_instana's
+            # finally block.  This ensures the server span remains the
+            # active context for any Deferreds started during render().
+            if token is not None:
+                context.detach(token)
             if span.is_recording():
                 span.end()
 

@@ -2,22 +2,23 @@
 # (c) Copyright Instana Inc. 2017
 
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
-
-import wrapt
-from opentelemetry.context import get_current
-from opentelemetry.semconv.trace import SpanAttributes
-
-from instana.log import logger
-from instana.propagators.format import Format
-from instana.singletons import agent
-from instana.util.secrets import strip_secrets_from_query
-from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
-
-if TYPE_CHECKING:
-    from instana.span.span import InstanaSpan
-
 try:
+    from typing import TYPE_CHECKING, Any, Callable, Union
+
+    import wrapt
+    from opentelemetry.context import get_current
+    from opentelemetry.semconv.trace import SpanAttributes
+
+    from instana.log import logger
+    from instana.propagators.format import Format
+    from instana.singletons import agent
+    from instana.util.http import should_mark_http_exit_as_error
+    from instana.util.secrets import strip_secrets_from_query
+    from instana.util.traceutils import extract_custom_headers, get_tracer_tuple
+
+    if TYPE_CHECKING:
+        from instana.span.span import InstanaSpan
+
     import urllib3
 
     def _collect_kvs(
@@ -25,9 +26,9 @@ try:
             urllib3.connectionpool.HTTPConnectionPool,
             urllib3.connectionpool.HTTPSConnectionPool,
         ],
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
+    ) -> dict[str, Any]:
         kvs = dict()
         try:
             kvs["host"] = instance.host
@@ -74,8 +75,9 @@ try:
 
             extract_custom_headers(span, response.headers)
 
-            if response.status >= 500:
-                span.mark_as_errored()
+            if should_mark_http_exit_as_error(response.status, agent.options):
+                error_msg = f"{response.status} {response.reason}"
+                span.mark_as_errored({"http.error": error_msg})
         except Exception:
             logger.debug("urllib3 collect_response error: ", exc_info=True)
 
@@ -88,8 +90,8 @@ try:
             urllib3.connectionpool.HTTPConnectionPool,
             urllib3.connectionpool.HTTPSConnectionPool,
         ],
-        args: Tuple[int, str, Tuple[Any, ...]],
-        kwargs: Dict[str, Any],
+        args: tuple[int, str, tuple[Any, ...]],
+        kwargs: dict[str, Any],
     ) -> urllib3.response.HTTPResponse:
         tracer, _, span_name = get_tracer_tuple()
 

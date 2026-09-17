@@ -14,7 +14,7 @@ import importlib
 import os
 import sys
 from importlib import util as importlib_util
-from typing import Tuple
+from typing import Optional
 
 from instana.collector.helpers.runtime import (
     is_autowrapt_instrumented,
@@ -59,10 +59,7 @@ do_not_load_list = [
 
 
 def load(_: object) -> None:
-    """
-    Method used to activate the Instana sensor via AUTOWRAPT_BOOTSTRAP
-    environment variable.
-    """
+    """Activate the Instana Tracer via the AUTOWRAPT_BOOTSTRAP environment variable."""
     # Work around https://bugs.python.org/issue32573
     if not hasattr(sys, "argv"):
         sys.argv = [""]
@@ -100,16 +97,59 @@ def apply_gevent_monkey_patch() -> None:
         monkey.patch_all()
 
 
-def get_aws_lambda_handler() -> Tuple[str, str]:
+def _defer_boot_until_eventlet_patch() -> None:
+    """Defer boot_agent() until after eventlet.monkey_patch() has been called.
+
+    When gunicorn uses the eventlet worker class, monkey_patch() is called at
+    the start of each worker process (after os.fork()).  By wrapping that call
+    we guarantee that boot_agent() — and all its eager third-party imports —
+    runs only after ssl and other stdlib modules have been cooperatively patched,
+    preventing the ssl.SSLContext global-rebind RecursionError.
+
+    The wrapper also fires in the gunicorn arbiter (master) process when it
+    initialises its own eventlet hub.  In that case boot_agent() must NOT be
+    called because the arbiter's blocking pipe I/O would clash with the eventlet
+    mainloop and raise RuntimeError.  The arbiter's parent PID points to a
+    non-gunicorn process; workers' parent PID points to the arbiter (gunicorn).
     """
-    For instrumenting AWS Lambda, users specify their original lambda handler
-    in the LAMBDA_HANDLER environment variable.  This function searches for and
-    parses that environment variable or returns the defaults.
+    import wrapt
+
+    def _after_monkey_patch(
+        wrapped: object,
+        instance: object,
+        args: tuple[object, ...],
+        kwargs: dict[str, object],
+    ) -> Optional[object]:
+        result = wrapped(*args, **kwargs)
+        # Only boot in the forked worker process, not in the gunicorn arbiter.
+        # On Linux: arbiter PID=1 → /proc/0/cmdline raises OSError → not a worker.
+        # Workers have ppid=arbiter → /proc/{ppid}/cmdline contains "gunicorn".
+        is_worker = False
+        try:
+            with open(f"/proc/{os.getppid()}/cmdline", "rb") as fh:
+                is_worker = b"gunicorn" in fh.read()
+        except OSError:
+            pass
+        if is_worker:
+            if is_truthy(os.environ.get("INSTANA_AUTOPROFILE", None)):
+                _start_profiler()
+            boot_agent()
+        return result
+
+    wrapt.wrap_function_wrapper("eventlet", "monkey_patch", _after_monkey_patch)
+
+
+def get_aws_lambda_handler() -> tuple[str, str]:
+    """Return the AWS Lambda handler module and function name.
+
+    Users specify their original lambda handler in the LAMBDA_HANDLER
+    environment variable.  This function searches for and parses that
+    environment variable or returns the defaults.
 
     The default handler value for AWS Lambda is 'lambda_function.lambda_handler'
-    which equates to the function "lambda_handler in a file named
-    lambda_function.py" or in Python terms
-    "from lambda_function import lambda_handler"
+    which equates to the function ``lambda_handler`` in a file named
+    ``lambda_function.py``, or in Python terms
+    ``from lambda_function import lambda_handler``.
     """
     handler_module = "lambda_function"
     handler_function = "lambda_handler"
@@ -126,11 +166,10 @@ def get_aws_lambda_handler() -> Tuple[str, str]:
 
 
 def lambda_handler(event: str, context: str) -> None:
-    """
-    Entry point for AWS Lambda monitoring.
+    """Entry point for AWS Lambda monitoring.
 
-    This function will trigger the initialization of Instana monitoring and then call
-    the original user specified lambda handler function.
+    Triggers the initialization of Instana monitoring and then calls
+    the original user-specified lambda handler function.
     """
     module_name, function_name = get_aws_lambda_handler()
 
@@ -153,7 +192,10 @@ def lambda_handler(event: str, context: str) -> None:
 
 
 def boot_agent() -> None:
-    """Initialize the Instana agent and conditionally load auto-instrumentation."""
+    """Initialize the Instana agent and conditionally load auto-instrumentation.
+
+    Imports all instrumentation modules unless INSTANA_DISABLE_AUTO_INSTR is set.
+    """
 
     import instana.singletons  # noqa: F401
 
@@ -169,6 +211,7 @@ def boot_agent() -> None:
             elasticsearch,  # noqa: F401
             fastapi,  # noqa: F401
             flask,  # noqa: F401
+            gevent,  # noqa: F401
             grpcio,  # noqa: F401
             httpx,  # noqa: F401
             logging,  # noqa: F401
@@ -187,7 +230,6 @@ def boot_agent() -> None:
             starlette,  # noqa: F401
             urllib3,  # noqa: F401
             werkzeug,  # noqa: F401
-            gevent,  # noqa: F401
         )
         from instana.instrumentation.aiohttp import (
             client as aiohttp_client,  # noqa: F401
@@ -223,7 +265,10 @@ def boot_agent() -> None:
 
 
 def _start_profiler() -> None:
-    """Start the Instana Auto Profile."""
+    """Start the Instana Auto Profile.
+
+    Retrieves the profiler singleton and starts it if available.
+    """
     from instana.singletons import get_profiler
 
     if profiler := get_profiler():
@@ -251,17 +296,24 @@ if not is_truthy(os.environ.get("INSTANA_TRACING_DISABLE", None)):
                 f"Instana: No use in monitoring this process type ({os.path.basename(sys.argv[0])}). Will go sit in a corner quietly."
             )
     else:
-        # Automatic gevent monkey patching
-        # unless auto instrumentation is off, then the customer should do manual gevent monkey patching
         if (
             (is_autowrapt_instrumented() or is_webhook_instrumented())
             and "INSTANA_DISABLE_AUTO_INSTR" not in os.environ
-            and importlib_util.find_spec("gevent")
         ):
-            apply_gevent_monkey_patch()
+            # Automatic gevent monkey patching
+            # unless auto instrumentation is off, then the customer should do manual gevent monkey patching
+            if importlib_util.find_spec("gevent"):
+                apply_gevent_monkey_patch()
+
+            # Eventlet deferred boot: if eventlet is present in the environment,
+            # defer boot_agent() until after eventlet.monkey_patch() has been called
+            # (which happens in each worker process after fork).  This prevents the
+            # ssl.SSLContext global-rebind RecursionError seen with gunicorn eventlet workers.
+            if importlib_util.find_spec("eventlet"):
+                _defer_boot_until_eventlet_patch()
 
         # AutoProfile
-        if "INSTANA_AUTOPROFILE" in os.environ:
+        if is_truthy(os.environ.get("INSTANA_AUTOPROFILE", None)):
             _start_profiler()
 
         boot_agent()

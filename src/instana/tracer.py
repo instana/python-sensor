@@ -121,7 +121,19 @@ class InstanaTracer(Tracer):
         parent_context = get_current_span(context).get_span_context()
 
         if parent_context and not isinstance(parent_context, SpanContext):
-            raise TypeError("parent_context must be an Instana SpanContext or None.")
+            if parent_context.is_valid:
+                logger.debug("Converting non-Instana parent context to Instana SpanContext")
+                parent_context = SpanContext(
+                    trace_id=parent_context.trace_id,
+                    span_id=parent_context.span_id,
+                    is_remote=parent_context.is_remote,
+                    trace_flags=parent_context.trace_flags,
+                    trace_state=parent_context.trace_state,
+                    trace_parent=True,
+                )
+            else:
+                logger.debug("Non-Instana parent context is invalid, resetting to None")
+                parent_context = None
 
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(

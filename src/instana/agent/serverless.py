@@ -153,7 +153,7 @@ class ServerlessAgent(BaseAgent):
         Returns:
             Modified payload with filtered spans
         """
-        spans = payload.get("spans", [])
+        spans = payload.get("spans") or []
         filtered_spans = self.filter_spans(spans)
 
         if len(filtered_spans) > 0:

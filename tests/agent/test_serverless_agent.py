@@ -205,6 +205,18 @@ class TestServerlessAgent:
         assert "metrics" in result
         assert "spans" not in result or len(result.get("spans", [])) == 0
 
+    def test_prepare_payload_with_none_spans(self) -> None:
+        """Test payload preparation when spans are explicitly None."""
+        agent = ConcreteServerlessAgent()
+
+        payload = {"spans": None, "metrics": {"test": "data"}}
+
+        result = agent._prepare_payload(payload)
+
+        assert "metrics" in result
+        # Should handle None spans without raising a TypeError
+        assert result["spans"] is None
+
     def test_build_headers(self) -> None:
         """Test that headers are built correctly."""
         agent = ConcreteServerlessAgent()

@@ -46,8 +46,8 @@ class AWSLambdaCollector(BaseCollector):
 
     def prepare_payload(self):
         payload = DictionaryOfStan()
-        payload["spans"] = None
-        payload["metrics"] = None
+        payload["spans"] = []
+        payload["metrics"]["plugins"] = []
 
         if not self.span_queue.empty():
             payload["spans"] = format_span(self.queued_spans())

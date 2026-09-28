@@ -5,7 +5,7 @@
 Instana ASGI Middleware
 """
 
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Iterable, Iterator
 
 from opentelemetry.semconv.trace import SpanAttributes
 
@@ -15,10 +15,43 @@ from instana.singletons import agent, get_tracer
 from instana.util.secrets import strip_secrets_from_query
 from instana.util.traceutils import extract_custom_headers
 
+try:
+    from starlette.routing import Match
+except ImportError:  # pragma: no cover
+    Match = None
+
+try:
+    # FastAPI >= 0.137.2
+    from fastapi.routing import iter_route_contexts
+except ImportError:
+    iter_route_contexts = None
+
 if TYPE_CHECKING:
     from starlette.middleware.exceptions import ExceptionMiddleware
 
     from instana.span.span import InstanaSpan
+
+
+def _iter_routes(routes: Iterable[Any]) -> Iterator[Any]:
+    """
+    Yield the routes of an app in a form that can be matched against a scope
+    and carries its full path template.
+
+    FastAPI >= 0.137 keeps the routes added with include_router() in a tree
+    whose nodes have no path of their own, so the tree has to be flattened.
+    """
+    if iter_route_contexts is not None:
+        # FastAPI >= 0.137.2
+        yield from iter_route_contexts(routes)
+        return
+
+    for route in routes:
+        if hasattr(route, "effective_route_contexts"):
+            # FastAPI 0.137.0 and 0.137.1
+            yield from route.effective_route_contexts()
+        else:
+            # FastAPI < 0.137 and Starlette: the routes are already flat
+            yield route
 
 
 class InstanaASGIMiddleware:
@@ -51,11 +84,11 @@ class InstanaASGIMiddleware:
             if app and hasattr(app, "routes"):
                 # Attempt to detect the Starlette routes registered.
                 # If Starlette isn't present, we harmlessly dump out.
-                from starlette.routing import Match
-
-                for route in scope["app"].routes:
+                for route in _iter_routes(app.routes):
                     if route.matches(scope)[0] == Match.FULL:
-                        span.set_attribute("http.path_tpl", route.path)
+                        path_tpl = getattr(route, "path", None)
+                        if path_tpl:
+                            span.set_attribute("http.path_tpl", path_tpl)
         except Exception:
             logger.debug("ASGI collect_kvs: ", exc_info=True)
 

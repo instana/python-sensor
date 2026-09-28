@@ -350,6 +350,89 @@ class TestFastAPI:
         )
         assert http_entry_span.data["sdk"]["custom"]["tags"]["url.path"] == "/users/1"
 
+    @pytest.mark.parametrize(
+        "path, path_tpl",
+        [
+            ("/included/users/1", "/included/users/{user_id}"),
+            ("/included/nested/items/1", "/included/nested/items/{item_id}"),
+        ],
+    )
+    def test_path_templates_with_included_routers(
+        self, path: str, path_tpl: str
+    ) -> None:
+        result = self.client.get(path)
+
+        assert result
+        assert result.status_code == 200
+
+        spans = self.recorder.queued_spans()
+
+        # FastAPI >= 0.115.0 adds 4 extra OTel spans per request:
+        # fastapi.dependencies, fastapi.endpoint, fastapi.serialization, GET <route>
+        assert len(spans) == 5
+
+        asgi_span = get_first_span_by_filter(spans, lambda span: span.n == "asgi")
+        assert asgi_span
+
+        assert not asgi_span.ec
+        assert asgi_span.data["http"]["path"] == path
+        assert asgi_span.data["http"]["path_tpl"] == path_tpl
+        assert asgi_span.data["http"]["method"] == "GET"
+        assert asgi_span.data["http"]["status"] == 200
+
+        assert_fastapi_otel_spans(spans, path_tpl)
+
+    def test_iter_routes_without_iter_route_contexts(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # FastAPI 0.137.0 and 0.137.1 have no iter_route_contexts(), but the nodes
+        # created by include_router() can flatten themselves. Older versions and
+        # Starlette keep their routes flat.
+        import instana.instrumentation.asgi as asgi
+
+        class IncludedRouterNode:
+            def __init__(self, contexts: list) -> None:
+                self._contexts = contexts
+
+            def effective_route_contexts(self):
+                return iter(self._contexts)
+
+        flat_route, nested_route = object(), object()
+        monkeypatch.setattr(asgi, "iter_route_contexts", None)
+
+        routes = [flat_route, IncludedRouterNode([nested_route])]
+        assert list(asgi._iter_routes(routes)) == [flat_route, nested_route]
+
+    def test_path_template_of_first_full_match_wins(self) -> None:
+        # Starlette serves the first route that fully matches, so a later route
+        # that also matches must not overwrite the path template.
+        from unittest.mock import MagicMock
+
+        from starlette.routing import Match
+
+        from instana.instrumentation.asgi import InstanaASGIMiddleware
+
+        class StubRoute:
+            def __init__(self, path: str) -> None:
+                self.path = path
+
+            def matches(self, scope):
+                return Match.FULL, {}
+
+        app = MagicMock()
+        app.routes = [StubRoute("/items/{item_id}"), StubRoute("/items/{name}")]
+        span = MagicMock()
+        scope = {"path": "/items/1", "method": "GET", "app": app}
+
+        InstanaASGIMiddleware(None)._collect_kvs(scope, span)
+
+        path_tpl_calls = [
+            call.args
+            for call in span.set_attribute.call_args_list
+            if call.args[0] == "http.path_tpl"
+        ]
+        assert path_tpl_calls == [("http.path_tpl", "/items/{item_id}")]
+
     def test_secret_scrubbing(self) -> None:
         result = None
         with self.tracer.start_as_current_span("test") as span:

@@ -106,3 +106,4 @@ uv.lock
 # Sandbox
 sandbox/
 .bob/
+.serena/

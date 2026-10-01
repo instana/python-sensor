@@ -50,8 +50,8 @@ class InstanaSpan(Span, ReadableSpan):
         parent_id: Optional[str] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
-        attributes: types.Attributes = {},
-        events: Sequence[Event] = [],
+        attributes: Optional[types.Attributes] = None,
+        events: Optional[Sequence[Event]] = None,
         status: Optional[Status] = Status(StatusCode.UNSET),
         kind: SpanKind = SpanKind.INTERNAL,
     ) -> None:

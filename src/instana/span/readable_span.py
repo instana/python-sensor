@@ -53,8 +53,8 @@ class ReadableSpan:
         parent_id: Optional[str] = None,
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
-        attributes: types.Attributes = {},
-        events: Sequence[Event] = [],
+        attributes: Optional[types.Attributes] = None,
+        events: Optional[Sequence[Event]] = None,
         status: Optional[Status] = Status(StatusCode.UNSET),
         stack: Optional[List] = None,
         kind: SpanKind = SpanKind.INTERNAL,
@@ -68,8 +68,8 @@ class ReadableSpan:
             if self._start_time and self._end_time
             else None
         )
-        self._attributes = attributes if attributes else {}
-        self._events = events
+        self._attributes = dict(attributes) if attributes is not None else {}
+        self._events = list(events) if events is not None else []
         self._parent_id = parent_id
         self._status = status
         self.stack = stack

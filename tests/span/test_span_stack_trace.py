@@ -19,8 +19,6 @@ class TestSpanStackTrace:
     def _resource(self) -> Generator[None, None, None]:
         self.span = None
         yield
-        if isinstance(self.span, InstanaSpan):
-            self.span.events.clear()
 
     def test_add_stack_hard_limit(
         self,

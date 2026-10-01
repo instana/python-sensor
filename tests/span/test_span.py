@@ -21,8 +21,6 @@ class TestSpan:
     def _resource(self) -> Generator[None, None, None]:
         self.span = None
         yield
-        if isinstance(self.span, InstanaSpan):
-            self.span.events.clear()
 
     def test_span_default(
         self,
@@ -928,3 +926,31 @@ class TestSpan:
         assert isinstance(self.span.duration, int)
         assert self.span.duration > 0
         assert self.span.duration == (timestamp_end - self.span.start_time)
+
+    def test_spans_do_not_share_events_list(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        span_a = InstanaSpan("span-a", span_context, span_processor)
+        span_b = InstanaSpan("span-b", span_context, span_processor)
+
+        span_a.add_event(name="event-a", attributes={"message": "msg"})
+
+        assert len(span_a.events) == 1
+        assert len(span_b.events) == 0
+        assert span_a.events is not span_b.events
+
+    def test_spans_do_not_share_attributes(
+        self,
+        span_context: SpanContext,
+        span_processor: StanRecorder,
+    ) -> None:
+        span_a = InstanaSpan("span-a", span_context, span_processor)
+        span_b = InstanaSpan("span-b", span_context, span_processor)
+
+        span_a.set_attribute("key_a", "val_a")
+
+        assert "key_a" in span_a.attributes
+        assert "key_a" not in span_b.attributes
+        assert span_a.attributes is not span_b.attributes

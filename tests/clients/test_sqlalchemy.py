@@ -15,7 +15,7 @@ from instana.span.span import get_current_span
 from tests.helpers import testenv
 
 engine = create_engine(
-    f"postgresql://{testenv['postgresql_user']}:{testenv['postgresql_pw']}@{testenv['postgresql_host']}:{testenv['postgresql_port']}/{testenv['postgresql_db']}"
+    f"postgresql+psycopg2://{testenv['postgresql_user']}:{testenv['postgresql_pw']}@{testenv['postgresql_host']}:{testenv['postgresql_port']}/{testenv['postgresql_db']}"
 )
 
 Session = sessionmaker(bind=engine)
@@ -54,7 +54,7 @@ stan_user2 = StanUser(
     password="3X}vP66ADoCFT2g?HPvoem2eJh,zWXgd36Rb/{aRq/>7EYy6@EEH4BP(oeXac@mR",
 )
 
-sqlalchemy_url = f"postgresql://{testenv['postgresql_host']}:{testenv['postgresql_port']}/{testenv['postgresql_db']}"
+sqlalchemy_url = f"postgresql+psycopg2://{testenv['postgresql_host']}:{testenv['postgresql_port']}/{testenv['postgresql_db']}"
 
 
 @pytest.mark.usefixtures("db_setup")
@@ -271,10 +271,10 @@ class TestSQLAlchemy:
         current_span = get_current_span()
         assert not current_span.is_recording()
 
-        invalid_connection_url = "postgresql://user1:pwd1@localhost:9999/mydb1"
+        invalid_connection_url = "postgresql+psycopg2://user1:pwd1@localhost:9999/mydb1"
         with pytest.raises(
             OperationalError,
-            match=r"^(\(psycopg2\.OperationalError\)).*",
+            match=r"^\(psycopg2?\.OperationalError\).*",
         ) as context_manager:
             engine = create_engine(invalid_connection_url)
             with engine.connect() as connection:

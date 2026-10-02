@@ -76,12 +76,20 @@ commands:
             KAFKA_TEST: "<<parameters.kafka>>"
           command: |
             . venv/bin/activate
+            # Capture pytest exit code explicitly so subsequent steps can read it,
+            # even when the step itself is marked `when: always`.
+            set +e
             coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
+            TEST_EXIT_CODE=$?
+            set -e
+            # Write to a fixed location; capture-installed-versions reads it.
+            echo $TEST_EXIT_CODE > /tmp/pytest_exit_code.txt
             coverage report -m
             coverage html
             mkdir coverage_results
             cp -R .coverage coverage_results/.coverage.${CIRCLE_BUILD_NUM}
             cd coverage_results
+            exit $TEST_EXIT_CODE
       - persist_to_workspace:
           root: .
           paths:
@@ -94,14 +102,27 @@ commands:
     steps:
       - run:
           name: Capture installed package versions
-          when: on_success
+          when: always
           command: |
             . venv/bin/activate
             pip freeze > /tmp/installed_<<parameters.label>>.txt
+      - run:
+          name: Capture test exit code
+          when: always
+          command: |
+            # Persist this job's pytest exit code so update-currency-versions
+            # can assemble a single test-status.json from all jobs.
+            # Exit code file was written by run-tests-with-coverage-report.
+            if [ -f /tmp/pytest_exit_code.txt ]; then
+              cp /tmp/pytest_exit_code.txt /tmp/pytest_exit_<<parameters.label>>.txt
+            else
+              echo "1" > /tmp/pytest_exit_<<parameters.label>>.txt
+            fi
       - persist_to_workspace:
           root: /tmp
           paths:
             - installed_<<parameters.label>>.txt
+            - pytest_exit_<<parameters.label>>.txt
 
   store-pytest-results:
     steps:
@@ -338,10 +359,33 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Collect pip freeze files
+          name: Collect pip freeze files and build test-status.json
           command: |
             mkdir -p /tmp/pip-freeze
+
             cp /tmp/workspace/installed_*.txt /tmp/pip-freeze/
+
+            # Build a single test-status.json from all per-label exit code files.
+            # Format: { "py3.9": "pass", "py3.11": "fail", "cassandra": "pass", ... }
+            apk add --no-cache jq > /dev/null 2>&1 || true
+            JSON="{"
+            FIRST=1
+            for EXIT_FILE in /tmp/workspace/pytest_exit_*.txt; do
+              [ -f "$EXIT_FILE" ] || continue
+              # filename: pytest_exit_py3.11.txt → label: py3.11
+              LABEL=$(basename "$EXIT_FILE" .txt | sed 's/pytest_exit_//')
+              CODE=$(cat "$EXIT_FILE" | tr -d '[:space:]')
+              if [ "$CODE" = "0" ]; then STATUS="pass"; else STATUS="fail"; fi
+              [ $FIRST -eq 0 ] && JSON="${JSON},"
+              JSON="${JSON} \"${LABEL}\": \"${STATUS}\""
+              FIRST=0
+            done
+            JSON="${JSON} }"
+            echo "$JSON" > /tmp/pip-freeze/test-status.json
+
+            echo "test-status.json:"
+            cat /tmp/pip-freeze/test-status.json
+            echo ""
             ls -la /tmp/pip-freeze/
       - store_artifacts:
           path: /tmp/pip-freeze
@@ -375,10 +419,10 @@ workflows:
             - pykafka
             - autowrapt
       - update-currency-versions:
-          filters:
-            branches:
-              only:
-                - main
+          # filters:
+          #   branches:
+          #     only:
+          #       - main
           requires:
             - python3x
             - py39gevent

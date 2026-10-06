@@ -68,7 +68,6 @@ try:
         argv: Tuple[object, ...],
         kwargs: Dict[str, Any],
         call_type: str,
-        record_exception: bool = True,
     ) -> object:
         parent_span = get_current_span()
         tracer = get_tracer()
@@ -80,7 +79,7 @@ try:
         parent_context = get_current()
 
         with tracer.start_as_current_span(
-            "rpc-client", context=parent_context, record_exception=record_exception
+            "rpc-client", context=parent_context, record_exception=False
         ) as span:
             try:
                 if "metadata" not in kwargs:
@@ -94,12 +93,14 @@ try:
                 )
                 collect_attributes(span, instance, argv, kwargs)
                 span.set_attribute("rpc.call_type", call_type)
+            except Exception:
+                logger.debug("grpc.create_span non-fatal error", exc_info=True)
 
-                rv = wrapped(*argv, **kwargs)
+            try:
+                return wrapped(*argv, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)
-            else:
-                return rv
+                raise
 
     @wrapt.patch_function_wrapper("grpc._channel", "_UnaryUnaryMultiCallable.with_call")
     def unary_unary_with_call_with_instana(
@@ -126,9 +127,7 @@ try:
         argv: Tuple[object, ...],
         kwargs: Dict[str, Any],
     ) -> object:
-        return create_span(
-            wrapped, instance, argv, kwargs, call_type="unary", record_exception=False
-        )
+        return create_span(wrapped, instance, argv, kwargs, call_type="unary")
 
     @wrapt.patch_function_wrapper("grpc._channel", "_StreamUnaryMultiCallable.__call__")
     def stream_unary_call_with_instana(
@@ -187,24 +186,30 @@ try:
         kwargs: Dict[str, Any],
     ) -> object:
         tracer = get_tracer()
-        # Prep any incoming context headers
-        metadata = argv[0].invocation_metadata
-        metadata_dict = {}
-        for c in metadata:
-            metadata_dict[c.key] = c.value
+        ctx = None
+        try:
+            # Prep any incoming context headers
+            metadata = getattr(argv[0], "invocation_metadata", None) or ()
+            metadata_dict = {c.key: c.value for c in metadata}
+            ctx = tracer.extract(
+                Format.BINARY, metadata_dict, disable_w3c_trace_context=True
+            )
+        except Exception:
+            logger.debug("grpc.call_behavior extract context non-fatal error", exc_info=True)
 
-        ctx = tracer.extract(
-            Format.BINARY, metadata_dict, disable_w3c_trace_context=True
-        )
-
-        with tracer.start_as_current_span("rpc-server", context=ctx) as span:
+        with tracer.start_as_current_span(
+            "rpc-server", context=ctx, record_exception=False
+        ) as span:
             try:
                 collect_attributes(span, instance, argv, kwargs)
-                rv = wrapped(*argv, **kwargs)
+            except Exception:
+                logger.debug("grpc.call_behavior non-fatal error", exc_info=True)
+
+            try:
+                return wrapped(*argv, **kwargs)
             except Exception as exc:
                 span.record_exception(exc)
-            else:
-                return rv
+                raise
 
     logger.debug("Instrumenting grpcio")
 except ImportError:

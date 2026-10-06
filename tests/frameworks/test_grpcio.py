@@ -2,10 +2,9 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import contextlib
 import random
 import time
-from typing import Generator
+from collections.abc import Generator
 
 import grpc
 import pytest
@@ -582,15 +581,16 @@ class TestGRPCIO:
         assert test_span.data["sdk"]["name"] == "test"
 
     def test_server_error(self) -> None:
-        response = None
-        with self.tracer.start_as_current_span("test"):  # noqa: SIM117
-            with contextlib.suppress(Exception):
-                response = self.server_stub.OneQuestionOneErrorResponse(
-                    stan_pb2.QuestionRequest(question="Do u error?")
-                )
+        with (
+            self.tracer.start_as_current_span("test"),
+            pytest.raises(grpc.RpcError) as exc_info,
+        ):
+            self.server_stub.OneQuestionOneErrorResponse(
+                stan_pb2.QuestionRequest(question="Do u error?")
+            )
 
         assert not get_current_span().is_recording()
-        assert not response
+        assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
 
         spans = self.recorder.queued_spans()
         assert len(spans) == 4
@@ -654,6 +654,85 @@ class TestGRPCIO:
         # test-span
         assert test_span.n == "sdk"
         assert test_span.data["sdk"]["name"] == "test"
+
+    def test_server_error_with_call(self) -> None:
+        with (
+            self.tracer.start_as_current_span("test"),
+            pytest.raises(grpc.RpcError) as exc_info,
+        ):
+            self.server_stub.OneQuestionOneErrorResponse.with_call(
+                stan_pb2.QuestionRequest(question="Do u error?")
+            )
+
+        assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4
+
+        log_span = get_first_span_by_name(spans, "log")
+        server_span = get_first_span_by_name(spans, "rpc-server")
+        client_span = get_first_span_by_name(spans, "rpc-client")
+        test_span = get_first_span_by_name(spans, "sdk")
+
+        assert log_span
+        assert server_span
+        assert client_span
+        assert test_span
+
+        # Same traceId
+        assert server_span.t == client_span.t
+        assert server_span.t == test_span.t
+
+        # Parent relationships
+        assert server_span.p == client_span.s
+        assert client_span.p == test_span.s
+
+        # Error logging
+        assert not test_span.ec
+        assert client_span.ec == 1
+        assert not server_span.ec
+
+        # rpc-client
+        assert client_span.n == "rpc-client"
+        assert client_span.k is SpanKind.CLIENT
+        assert client_span.stack
+        assert client_span.data["rpc"]["flavor"] == "grpc"
+        assert (
+            client_span.data["rpc"]["call"] == "/stan.Stan/OneQuestionOneErrorResponse"
+        )
+        assert client_span.data["rpc"]["host"] == testenv["grpc_host"]
+        assert client_span.data["rpc"]["port"] == str(testenv["grpc_port"])
+        assert client_span.data["rpc"]["call_type"] == "unary"
+        assert client_span.data["rpc"]["error"]
+
+    def test_server_error_with_interceptor(self) -> None:
+        class DummyInterceptor(grpc.UnaryUnaryClientInterceptor):
+            def intercept_unary_unary(self, continuation, client_call_details, request):
+                return continuation(client_call_details, request)
+
+        intercepted_channel = grpc.intercept_channel(
+            self.channel, DummyInterceptor()
+        )
+        intercepted_stub = stan_pb2_grpc.StanStub(intercepted_channel)
+
+        with (
+            self.tracer.start_as_current_span("test"),
+            pytest.raises(grpc.RpcError) as exc_info,
+        ):
+            intercepted_stub.OneQuestionOneErrorResponse(
+                stan_pb2.QuestionRequest(question="Do u error?")
+            )
+
+        assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
+
+        spans = self.recorder.queued_spans()
+        assert len(spans) == 4
+
+        client_span = get_first_span_by_name(spans, "rpc-client")
+        assert client_span
+        assert client_span.ec == 1
+        assert client_span.data["rpc"]["call_type"] == "unary"
+        assert client_span.data["rpc"]["error"]
 
     def test_root_exit_span(self) -> None:
         agent.options.allow_exit_as_root = True

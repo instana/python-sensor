@@ -305,7 +305,7 @@ class TestSQLAlchemy:
         find the correct parent.  This validates the fix for the bug where
         after_cursor_execute used get_current_span() instead of conn.span, which
         could corrupt the context stack and cause child spans to be dropped."""
-        with self.tracer.start_as_current_span("test") as parent_span:
+        with self.tracer.start_as_current_span("test"):
             with engine.begin() as connection:
                 connection.execute(text("select 1"))
 

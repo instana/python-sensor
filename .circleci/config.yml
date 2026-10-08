@@ -196,9 +196,9 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py39gevent:
+  py312gevent:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.9
+      - image: public.ecr.aws/docker/library/python:3.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -214,9 +214,12 @@ jobs:
       - store-pytest-results
       - store-coverage-report
 
-  py312aws:
+  pyaws:
+    parameters:
+      py-version:
+        type: string
     docker:
-      - image: public.ecr.aws/docker/library/python:3.12
+      - image: public.ecr.aws/docker/library/python:<<parameters.py-version>>
     working_directory: ~/repo
     steps:
       - checkout
@@ -324,7 +327,7 @@ jobs:
 
   final_job:
     docker:
-      - image: public.ecr.aws/docker/library/python:3.13
+      - image: public.ecr.aws/docker/library/python:latest
     working_directory: ~/repo
     steps:
       - checkout
@@ -354,14 +357,17 @@ workflows:
       - python3x:
           matrix:
             parameters:
-              py-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-      - py39gevent
-      - py312aws
+              py-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+      - py312gevent
+      - pyaws:
+          matrix:
+            parameters:
+              py-version: ["3.11", "3.12", "3.13", "3.14"]
       - py312cassandra
       - pykafka:
           matrix:
             parameters:
-              py-version: ["3.9", "3.12", "3.14"]
+              py-version: ["3.10", "3.12", "3.14"]
       - autowrapt:
           matrix:
             parameters:
@@ -369,8 +375,8 @@ workflows:
       - final_job:
           requires:
             - python3x
-            - py39gevent
-            - py312aws
+            - py312gevent
+            - pyaws
             - py312cassandra
             - pykafka
             - autowrapt
@@ -381,8 +387,8 @@ workflows:
                 - main
           requires:
             - python3x
-            - py39gevent
-            - py312aws
+            - py312gevent
+            - pyaws
             - py312cassandra
             - pykafka
             - final_job

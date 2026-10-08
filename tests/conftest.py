@@ -32,12 +32,10 @@ collect_ignore_glob = [
 
 # ppc64le and s390x have limitations with some supported libraries.
 if is_ppc64() or is_s390x():
-    collect_ignore_glob.extend(
-        [
-            "*test_google-cloud*",
-            "*test_pymongo*",
-        ]
-    )
+    collect_ignore_glob.extend([
+        "*test_google-cloud*",
+        "*test_pymongo*",
+    ])
 
     if is_ppc64():
         collect_ignore_glob.append("*test_grpcio*")
@@ -51,40 +49,25 @@ if not os.environ.get("COUCHBASE_TEST"):
     collect_ignore_glob.append("*test_couchbase*")
 
 if not os.environ.get("GEVENT_TEST"):
-    collect_ignore_glob.extend(
-        [
-            "*test_gevent*",
-        ]
-    )
+    collect_ignore_glob.extend([
+        "*test_gevent*",
+    ])
 
 if not os.environ.get("KAFKA_TEST"):
     collect_ignore_glob.append("*kafka/test*")
 
-# Currently asyncio and tornado_server depends on aiohttp and
-# since aiohttp versions < 3.12.14 have vulnerability we skip the tests below
-if sys.version_info < (3, 9):
-    collect_ignore_glob.extend(
-        [
-            "*test_aiohttp*",
-            "*test_asyncio*",
-            "*test_tornado_server*",
-        ]
-    )
-
+# Spyne does not support python > 3.12
 if sys.version_info >= (3, 12):
-    # Currently Spyne does not support python > 3.12
     collect_ignore_glob.append("*test_spyne*")
 
 
 if sys.version_info >= (3, 15):
-    collect_ignore_glob.extend(
-        [
-            # Currently not installable dependencies because of 3.15 incompatibilities
-            "*test_fastapi*",
-            # Development version of Python always break logging tests, so we skip then
-            "*test_logging*",
-        ]
-    )
+    collect_ignore_glob.extend([
+        # Currently not installable dependencies because of 3.15 incompatibilities
+        "*test_fastapi*",
+        # Development version of Python always break logging tests, so we skip then
+        "*test_logging*",
+    ])
 
 
 @pytest.fixture(scope="session")

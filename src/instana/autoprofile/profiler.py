@@ -53,8 +53,8 @@ class Profiler(object):
             return
 
         try:
-            if not min_version(3, 9):
-                raise EnvironmentError("Supported Python versions: 3.9 or higher.")
+            if not min_version(3, 10):
+                raise EnvironmentError("Supported Python versions: 3.10 or higher.")
 
             if platform.python_implementation() != "CPython":
                 raise EnvironmentError("Supported Python interpreter: CPython.")

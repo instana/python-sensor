@@ -120,7 +120,7 @@ linter + test suite).
 
 ## Coding Style
 
-- Python 3.9+ compatible code
+- Python 3.10+ compatible code
 - Follow PEP 8 style guidelines (enforced by Ruff)
 - Include copyright headers in new files (see [Legal](#legal) section)
 - Use type hints where appropriate

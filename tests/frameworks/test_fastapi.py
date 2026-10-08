@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2020
 
 
-import sys
 from typing import Generator
 
 import pytest
@@ -64,10 +63,6 @@ def assert_fastapi_otel_spans(
     assert tags["http.response.status_code"] == http_status_code
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason="FastAPI >= 0.115.0 (required for OTel span assertions) only supports Python 3.10+",
-)
 class TestFastAPI:
     @pytest.fixture(autouse=True)
     def _resource(self) -> Generator[None, None, None]:

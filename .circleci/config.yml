@@ -150,6 +150,33 @@ commands:
       - store_artifacts:
           path: htmlcov
 
+  install_librdkafka:
+    steps:
+      - run:
+          name: Instal pre-requirement to build confluent-kafka
+          command: |
+            mkdir -p /etc/apt/keyrings
+            wget -qO - https://packages.confluent.io/deb/8.1/archive.key | gpg --dearmor -o /etc/apt/keyrings/confluent.gpg
+            echo "Types: deb
+            URIs: https://packages.confluent.io/deb/8.3
+            Suites: stable
+            Components: main
+            Architectures: $(dpkg --print-architecture)
+            Signed-by: /etc/apt/keyrings/confluent.gpg
+
+            Types: deb
+            URIs: https://packages.confluent.io/clients/deb/
+            Suites: trixie
+            Components: main
+            Architectures: $(dpkg --print-architecture)
+            Signed-By: /etc/apt/keyrings/confluent.gpg" | tee /etc/apt/sources.list.d/confluent-platform.sources > /dev/null
+
+      - run:
+          name: Instal librdkafka
+          command: |
+            apt-get update
+            apt-get install -y --no-install-recommends build-essential python3-dev librdkafka-dev
+
 jobs:
   python3x:
     parameters:
@@ -230,7 +257,7 @@ jobs:
       - run-tests-with-coverage-report:
           tests: "tests_aws"
       - capture-installed-versions:
-          label: "aws"
+          label: "aws-<<parameters.py-version>>"
       - store-pytest-results
       - store-coverage-report
 
@@ -294,6 +321,7 @@ jobs:
     steps:
       - checkout
       - check-if-tests-needed
+      - install_librdkafka
       - pip-install-deps
       - pip-install-tests-deps:
           requirements: "tests/requirements-kafka.txt"
@@ -357,21 +385,21 @@ workflows:
       - python3x:
           matrix:
             parameters:
-              py-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+              py-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
       - py312gevent
       - pyaws:
           matrix:
             parameters:
-              py-version: ["3.11", "3.12", "3.13", "3.14"]
+              py-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
       - py312cassandra
       - pykafka:
           matrix:
             parameters:
-              py-version: ["3.10", "3.12", "3.14"]
+              py-version: ["3.10", "3.12", "3.14", "3.15"]
       - autowrapt:
           matrix:
             parameters:
-              py-version: ["3.11", "3.12", "3.13", "3.14"]
+              py-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
       - final_job:
           requires:
             - python3x

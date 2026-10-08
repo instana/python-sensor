@@ -178,6 +178,7 @@ for region in target_regions:
             "python3.12",
             "python3.13",
             "python3.14",
+            "python3.15",
             "--compatible-architectures",
             "x86_64",
             "arm64",

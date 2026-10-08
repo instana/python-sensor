@@ -61,15 +61,6 @@ if sys.version_info >= (3, 12):
     collect_ignore_glob.append("*test_spyne*")
 
 
-if sys.version_info >= (3, 15):
-    collect_ignore_glob.extend([
-        # Currently not installable dependencies because of 3.15 incompatibilities
-        "*test_fastapi*",
-        # Development version of Python always break logging tests, so we skip then
-        "*test_logging*",
-    ])
-
-
 @pytest.fixture(scope="session")
 def celery_config():
     return {

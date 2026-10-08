@@ -2,16 +2,64 @@
 # (c) Copyright Instana Inc. 2020
 
 
-from typing import Generator
+import sys
+from collections.abc import Generator
 
 import pytest
-from instana.singletons import get_tracer
 from fastapi.testclient import TestClient
 
+from instana.singletons import get_tracer
 from instana.util.ids import hex_id
-from tests.helpers import get_first_span_by_filter
+from tests.helpers import get_first_span_by_filter, get_spans_by_filter
 
 
+def _assert_fastapi_otel_spans(
+    spans: list,
+    http_route: str,
+    *,
+    expect_serialization: bool = True,
+    http_status_code: int = 200,
+) -> None:
+    """Assert the OTel spans emitted by FastAPI >= 0.115.0.
+
+    FastAPI registers itself against the global OTel TracerProvider (which
+    Instana provides), so every request produces extra sdk spans that land in
+    Instana's recorder.
+
+    Per request FastAPI emits:
+      - fastapi.dependencies  (always)
+      - fastapi.endpoint      (always)
+      - fastapi.serialization (only on non-exception responses)
+      - GET /path             (always, but orphan: p == 0)
+    """
+    otel_sdk_spans = get_spans_by_filter(
+        spans,
+        lambda s: s.n == "sdk" and s.data["sdk"]["name"].startswith("fastapi."),
+    )
+    otel_names = {s.data["sdk"]["name"] for s in otel_sdk_spans}
+    assert "fastapi.dependencies" in otel_names
+    assert "fastapi.endpoint" in otel_names
+    if expect_serialization:
+        assert "fastapi.serialization" in otel_names
+    else:
+        assert "fastapi.serialization" not in otel_names
+
+    http_entry_span = get_first_span_by_filter(
+        spans,
+        lambda s: s.n == "sdk" and s.data["sdk"]["name"] == f"GET {http_route}",
+    )
+    assert http_entry_span, f"FastAPI HTTP entry span 'GET {http_route}' not found"
+    assert http_entry_span.p == 0, "FastAPI HTTP entry span must be orphan (p == 0)"
+    tags = http_entry_span.data["sdk"]["custom"]["tags"]
+    assert tags["http.request.method"] == "GET"
+    assert tags["http.route"] == http_route
+    assert tags["http.response.status_code"] == http_status_code
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="FastAPI >= 0.115.0 (required for OTel span assertions) only supports Python 3.10+",
+)
 class TestFastAPIMiddleware:
     """
     Tests FastAPI with provided Middleware.
@@ -46,8 +94,14 @@ class TestFastAPIMiddleware:
         # unless told otherwise
         spans = self.recorder.queued_spans()
 
-        assert len(spans) == 1
-        assert spans[0].n == "asgi"
+        # FastAPI >= 0.115.0 emits 4 extra OTel spans per request via the global
+        # OTel provider that Instana registers: fastapi.dependencies,
+        # fastapi.endpoint, fastapi.serialization, GET /
+        assert len(spans) == 5
+        span_filter = lambda span: span.n == "asgi"  # noqa: E731
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        assert asgi_span
+        _assert_fastapi_otel_spans(spans, "/")
 
     def test_basic_get(self) -> None:
         result = None
@@ -69,8 +123,10 @@ class TestFastAPIMiddleware:
         assert result.headers["X-INSTANA-L"] == "1"
 
         spans = self.recorder.queued_spans()
-        # TODO: after support httpx, the expected value will be 3.
-        assert len(spans) == 2
+        # FastAPI >= 0.115.0 adds 4 extra OTel spans per request:
+        # fastapi.dependencies, fastapi.endpoint, fastapi.serialization, GET /
+        # TODO: after support httpx, the expected value will be 7.
+        assert len(spans) == 6
 
         span_filter = (  # noqa: E731
             lambda span: span.n == "sdk" and span.data["sdk"]["name"] == "test"
@@ -97,3 +153,4 @@ class TestFastAPIMiddleware:
         assert asgi_span.data["http"]["host"] == "testserver"
         assert not asgi_span.data["http"]["error"]
         assert not asgi_span.data["http"]["params"]
+        _assert_fastapi_otel_spans(spans, "/")

@@ -76,12 +76,28 @@ commands:
             KAFKA_TEST: "<<parameters.kafka>>"
           command: |
             . venv/bin/activate
-            coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>>
+            # Capture pytest exit code explicitly. This step intentionally does NOT
+            # fail the job, so that coverage, workspace and artifact steps that
+            # follow always run. The job is failed at the very end by the
+            # fail-if-tests-failed command, which reads this exit code.
+            set +e
+            coverage run --source=instana -m pytest -v --junitxml=test-results <<parameters.tests>> 2>&1 | tee /tmp/pytest_output.txt
+            TEST_EXIT_CODE=${PIPESTATUS[0]}
+            # Write to a fixed location; capture-installed-versions and
+            # fail-if-tests-failed read it.
+            echo $TEST_EXIT_CODE > /tmp/pytest_exit_code.txt
+            echo "pytest exit code: $TEST_EXIT_CODE"
+            # Extract failed test module names for package-level status tracking.
+            # e.g. "FAILED tests/frameworks/test_fastapi.py::..." → "fastapi"
+            grep "^FAILED tests/" /tmp/pytest_output.txt \
+              | sed 's|FAILED tests/[^/]*/test_\([^.:]*\).*|\1|' \
+              | sort -u > /tmp/pytest_failed_tests.txt || true
+            echo "Failed test modules: $(cat /tmp/pytest_failed_tests.txt | tr '\n' ' ')"
             coverage report -m
             coverage html
-            mkdir coverage_results
+            mkdir -p coverage_results
             cp -R .coverage coverage_results/.coverage.${CIRCLE_BUILD_NUM}
-            cd coverage_results
+            exit 0
       - persist_to_workspace:
           root: .
           paths:
@@ -94,14 +110,53 @@ commands:
     steps:
       - run:
           name: Capture installed package versions
-          when: on_success
+          when: always
           command: |
             . venv/bin/activate
             pip freeze > /tmp/installed_<<parameters.label>>.txt
+      - run:
+          name: Capture test exit code and failed modules
+          when: always
+          command: |
+            # Persist this job's pytest exit code so update-currency-versions
+            # can assemble a single test-status.json from all jobs.
+            # Exit code file was written by run-tests-with-coverage-report.
+            if [ -f /tmp/pytest_exit_code.txt ]; then
+              cp /tmp/pytest_exit_code.txt /tmp/pytest_exit_<<parameters.label>>.txt
+            else
+              echo "1" > /tmp/pytest_exit_<<parameters.label>>.txt
+            fi
+            # Persist the list of failed test module names (may be empty).
+            if [ -f /tmp/pytest_failed_tests.txt ]; then
+              cp /tmp/pytest_failed_tests.txt /tmp/pytest_failed_<<parameters.label>>.txt
+            else
+              touch /tmp/pytest_failed_<<parameters.label>>.txt
+            fi
       - persist_to_workspace:
           root: /tmp
           paths:
             - installed_<<parameters.label>>.txt
+            - pytest_exit_<<parameters.label>>.txt
+            - pytest_failed_<<parameters.label>>.txt
+
+  fail-if-tests-failed:
+    steps:
+      - run:
+          name: Fail job if tests failed
+          when: always
+          command: |
+            # Must be the LAST step of every test job: all artifacts, test results
+            # and workspace files have been saved by now.
+            CODE=$(cat /tmp/pytest_exit_code.txt 2>/dev/null | tr -d '[:space:]')
+            [ -z "$CODE" ] && CODE=1
+            # Print short summary if tests failed, so it is visible in the job log
+            # without scrolling through the full verbose output.
+            if [ "$CODE" != "0" ] && [ -f /tmp/pytest_output.txt ]; then
+              echo ""
+              sed -n '/=* short test summary info =*/,/^=\{3\}/p' /tmp/pytest_output.txt || true
+            fi
+            echo "pytest exit code: $CODE"
+            exit $CODE
 
   store-pytest-results:
     steps:
@@ -195,6 +250,7 @@ jobs:
           label: "py<<parameters.py-version>>"
       - store-pytest-results
       - store-coverage-report
+      - fail-if-tests-failed
 
   py39gevent:
     docker:
@@ -213,6 +269,7 @@ jobs:
           label: "gevent"
       - store-pytest-results
       - store-coverage-report
+      - fail-if-tests-failed
 
   py312aws:
     docker:
@@ -230,6 +287,7 @@ jobs:
           label: "aws"
       - store-pytest-results
       - store-coverage-report
+      - fail-if-tests-failed
 
   py312cassandra:
     docker:
@@ -252,6 +310,7 @@ jobs:
           label: "cassandra"
       - store-pytest-results
       - store-coverage-report
+      - fail-if-tests-failed
 
   pykafka:
     parameters:
@@ -301,6 +360,7 @@ jobs:
           label: "kafka-<<parameters.py-version>>"
       - store-pytest-results
       - store-coverage-report
+      - fail-if-tests-failed
 
   autowrapt:
     parameters:
@@ -319,8 +379,11 @@ jobs:
           requirements: "tests/requirements-minimal.txt"
       - run-tests-with-coverage-report:
           tests: "tests_autowrapt"
+      - capture-installed-versions:
+          label: "autowrapt-<<parameters.py-version>>"
       - store-pytest-results
       - store-coverage-report
+      - fail-if-tests-failed
 
   final_job:
     docker:
@@ -338,10 +401,48 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Collect pip freeze files
+          name: Collect pip freeze files and build test-status.json
           command: |
             mkdir -p /tmp/pip-freeze
-            cp /tmp/workspace/installed_*.txt /tmp/pip-freeze/
+
+            cp /tmp/workspace/installed_*.txt /tmp/pip-freeze/ 2>/dev/null || echo "No installed_*.txt files found"
+
+            # Build a package-level test-status.json.
+            # Format: { "fastapi": "fail", "sqlalchemy": "pass", ... }
+            #
+            # A package is marked "fail" if its test module name appears in ANY
+            # pytest_failed_<label>.txt file across all CI jobs.
+            # All other packages are implicitly "pass" (absent from the JSON).
+
+            # Collect every unique failed module name from all jobs.
+            FAILED_MODULES_FILE=/tmp/all_failed_modules.txt
+            > "$FAILED_MODULES_FILE"
+            for FAILED_FILE in /tmp/workspace/pytest_failed_*.txt; do
+              [ -f "$FAILED_FILE" ] || continue
+              cat "$FAILED_FILE" >> "$FAILED_MODULES_FILE"
+            done
+            sort -u "$FAILED_MODULES_FILE" -o "$FAILED_MODULES_FILE"
+
+            echo "All failed test modules:"
+            cat "$FAILED_MODULES_FILE"
+            echo ""
+
+            # Build JSON: one key per failed module → "fail".
+            # Absent keys mean "pass" (handled in merge_versions.py).
+            JSON="{"
+            FIRST=1
+            while IFS= read -r MODULE; do
+              [ -z "$MODULE" ] && continue
+              [ $FIRST -eq 0 ] && JSON="${JSON},"
+              JSON="${JSON} \"${MODULE}\": \"fail\""
+              FIRST=0
+            done < "$FAILED_MODULES_FILE"
+            JSON="${JSON} }"
+            echo "$JSON" > /tmp/pip-freeze/test-status.json
+
+            echo "test-status.json:"
+            cat /tmp/pip-freeze/test-status.json
+            echo ""
             ls -la /tmp/pip-freeze/
       - store_artifacts:
           path: /tmp/pip-freeze
@@ -367,22 +468,25 @@ workflows:
             parameters:
               py-version: ["3.11", "3.12", "3.13", "3.14"]
       - final_job:
+          # Run SonarQube even if some test jobs failed, so coverage is always reported.
           requires:
-            - python3x
-            - py39gevent
-            - py312aws
-            - py312cassandra
-            - pykafka
-            - autowrapt
+            - python3x: terminal
+            - py39gevent: terminal
+            - py312aws: terminal
+            - py312cassandra: terminal
+            - pykafka: terminal
+            - autowrapt: terminal
       - update-currency-versions:
           filters:
             branches:
               only:
                 - main
+          # `terminal` = run after the required jobs finish, whether they
+          # succeeded, failed or were canceled.
           requires:
-            - python3x
-            - py39gevent
-            - py312aws
-            - py312cassandra
-            - pykafka
-            - final_job
+            - python3x: terminal
+            - py39gevent: terminal
+            - py312aws: terminal
+            - py312cassandra: terminal
+            - pykafka: terminal
+            - autowrapt: terminal

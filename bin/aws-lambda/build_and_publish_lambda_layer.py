@@ -181,6 +181,8 @@ for region in target_regions:
             "--compatible-architectures",
             "x86_64",
             "arm64",
+            "--cli-connect-timeout",
+            "6000",
             "--region",
             region,
             "--profile",

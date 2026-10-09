@@ -1,7 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2020
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.testclient import TestClient
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -79,3 +79,21 @@ def non_async_threadpool():
     return {
         "message": "non async functions executed on a thread pool can't be followed through thread boundaries"
     }
+
+
+included_router = APIRouter(prefix="/included")
+nested_router = APIRouter(prefix="/nested")
+
+
+@included_router.get("/users/{user_id}")
+async def included_user(user_id):
+    return {"user": user_id}
+
+
+@nested_router.get("/items/{item_id}")
+async def nested_item(item_id):
+    return {"item": item_id}
+
+
+included_router.include_router(nested_router)
+fastapi_server.include_router(included_router)

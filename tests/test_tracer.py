@@ -2,14 +2,13 @@
 
 import pytest
 from opentelemetry.context.context import Context
-from opentelemetry.trace import SpanKind, TraceFlags
 from opentelemetry.trace import SpanContext as OtelSpanContext
-from opentelemetry.trace import set_span_in_context
+from opentelemetry.trace import SpanKind, set_span_in_context
 from opentelemetry.trace.span import (
+    _SPAN_ID_MAX_VALUE,
     DEFAULT_TRACE_OPTIONS,
     DEFAULT_TRACE_STATE,
     NonRecordingSpan,
-    _SPAN_ID_MAX_VALUE,
 )
 
 from instana.agent.host import HostAgent
@@ -312,9 +311,9 @@ def _make_instana_context(trace_id: int, span_id: int) -> Context:
         pytest.param(
             lambda: _make_instana_context(_OTEL_TRACE_ID, _OTEL_SPAN_ID),
             _OTEL_TRACE_ID,
-            False,   # NOT a root span – parent_id must be set
-            False,   # Already an InstanaSpanContext, no conversion
-            None,    # trace_parent field is None (plain Instana parent)
+            False,  # NOT a root span – parent_id must be set
+            False,  # Already an InstanaSpanContext, no conversion
+            None,  # trace_parent field is None (plain Instana parent)
             id="instana_span_context_parent",
         ),
         # --- OTel SpanContext parent (valid) ---
@@ -322,29 +321,29 @@ def _make_instana_context(trace_id: int, span_id: int) -> Context:
         pytest.param(
             lambda: _make_otel_context(_OTEL_TRACE_ID, _OTEL_SPAN_ID, is_valid=True),
             _OTEL_TRACE_ID,
-            False,   # NOT a root span – parent_id must be set
-            True,    # Conversion happens → child SpanContext.trace_parent == True
-            True,    # trace_parent flag must be True after conversion
+            False,  # NOT a root span – parent_id must be set
+            True,  # Conversion happens → child SpanContext.trace_parent == True
+            True,  # trace_parent flag must be True after conversion
             id="otel_span_context_valid_parent",
         ),
         # --- OTel SpanContext parent (invalid, i.e. trace_id=0, span_id=0) ---
         # The tracer must ignore it and create a new root span.
         pytest.param(
             lambda: _make_otel_context(0, 0, is_valid=False),
-            None,    # trace_id is generated fresh – we only check it is > 0
-            True,    # IS a root span – no parent
-            False,   # No conversion (invalid context is discarded)
-            None,    # no trace_parent on a fresh root
+            None,  # trace_id is generated fresh – we only check it is > 0
+            True,  # IS a root span – no parent
+            False,  # No conversion (invalid context is discarded)
+            None,  # no trace_parent on a fresh root
             id="otel_span_context_invalid_parent",
         ),
         # --- No context (None) ---
         # The tracer must create a standalone root span.
         pytest.param(
             lambda: None,
-            None,    # trace_id is generated fresh – we only check it is > 0
-            True,    # IS a root span – no parent
-            False,   # No conversion needed
-            None,    # no trace_parent on a fresh root
+            None,  # trace_id is generated fresh – we only check it is > 0
+            True,  # IS a root span – no parent
+            False,  # No conversion needed
+            None,  # no trace_parent on a fresh root
             id="no_context_root_span",
         ),
     ],
@@ -379,7 +378,9 @@ def test_tracer_start_span_with_context_types(
     assert span.name == span_name
 
     sc = span.context
-    assert isinstance(sc, SpanContext), "InstanaTracer must always produce an Instana SpanContext"
+    assert isinstance(sc, SpanContext), (
+        "InstanaTracer must always produce an Instana SpanContext"
+    )
 
     # --- trace_id checks ---
     if expected_trace_id is not None:
@@ -404,9 +405,7 @@ def test_tracer_start_span_with_context_types(
         )
         # For genuine root spans trace_id == span_id (Instana convention)
         if expected_trace_id is None:
-            assert sc.trace_id == sc.span_id, (
-                "Root span must have trace_id == span_id"
-            )
+            assert sc.trace_id == sc.span_id, "Root span must have trace_id == span_id"
     else:
         assert span.parent_id == _OTEL_SPAN_ID, (
             "Child span must carry the parent's span_id as parent_id"

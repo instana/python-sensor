@@ -268,8 +268,9 @@ def test_tracer_kind_propagation_to_readable_span(
 # Parametrized tests: start_span with different context / parent-span types
 # ---------------------------------------------------------------------------
 
-# A valid OTel-native trace_id and span_id (not Instana SpanContext subclass)
-_OTEL_TRACE_ID = 0x000000000000000018BED7B8D2E72F6B
+# A valid 128-bit and 64-bit OTel trace_id and span_id
+_OTEL_128BIT_TRACE_ID = 0x1234567890ABCDEF18BED7B8D2E72F6B
+_OTEL_64BIT_TRACE_ID = 0x18BED7B8D2E72F6B
 _OTEL_SPAN_ID = 0x5FB3484FB90A5BAD
 
 
@@ -304,36 +305,43 @@ def _make_instana_context(trace_id: int, span_id: int) -> Context:
 
 
 @pytest.mark.parametrize(
-    "context_factory, expected_trace_id, is_root, converts_to_instana, has_trace_parent",
+    "context_factory, expected_trace_id, expected_long_trace_id, is_root",
     [
         # --- Instana SpanContext parent (valid) ---
         # The tracer must inherit the trace_id and create a new child span_id.
         pytest.param(
-            lambda: _make_instana_context(_OTEL_TRACE_ID, _OTEL_SPAN_ID),
-            _OTEL_TRACE_ID,
+            lambda: _make_instana_context(_OTEL_64BIT_TRACE_ID, _OTEL_SPAN_ID),
+            _OTEL_64BIT_TRACE_ID,
+            None,
             False,  # NOT a root span – parent_id must be set
-            False,  # Already an InstanaSpanContext, no conversion
-            None,  # trace_parent field is None (plain Instana parent)
             id="instana_span_context_parent",
         ),
-        # --- OTel SpanContext parent (valid) ---
-        # The tracer must convert it to an Instana SpanContext and use its trace_id.
+        # --- OTel SpanContext parent with 128-bit trace ID (valid) ---
+        # The tracer must convert it to an Instana SpanContext:
+        # trace_id set to lower 64 bits, long_trace_id set to full 32-char hex string.
         pytest.param(
-            lambda: _make_otel_context(_OTEL_TRACE_ID, _OTEL_SPAN_ID, is_valid=True),
-            _OTEL_TRACE_ID,
+            lambda: _make_otel_context(_OTEL_128BIT_TRACE_ID, _OTEL_SPAN_ID, is_valid=True),
+            _OTEL_64BIT_TRACE_ID,
+            "1234567890abcdef18bed7b8d2e72f6b",
             False,  # NOT a root span – parent_id must be set
-            True,  # Conversion happens → child SpanContext.trace_parent == True
-            True,  # trace_parent flag must be True after conversion
-            id="otel_span_context_valid_parent",
+            id="otel_span_context_128bit_parent",
+        ),
+        # --- OTel SpanContext parent with 64-bit trace ID (valid) ---
+        # The tracer must convert it to an Instana SpanContext and use its trace_id directly.
+        pytest.param(
+            lambda: _make_otel_context(_OTEL_64BIT_TRACE_ID, _OTEL_SPAN_ID, is_valid=True),
+            _OTEL_64BIT_TRACE_ID,
+            None,
+            False,  # NOT a root span – parent_id must be set
+            id="otel_span_context_64bit_parent",
         ),
         # --- OTel SpanContext parent (invalid, i.e. trace_id=0, span_id=0) ---
         # The tracer must ignore it and create a new root span.
         pytest.param(
             lambda: _make_otel_context(0, 0, is_valid=False),
             None,  # trace_id is generated fresh – we only check it is > 0
+            None,
             True,  # IS a root span – no parent
-            False,  # No conversion (invalid context is discarded)
-            None,  # no trace_parent on a fresh root
             id="otel_span_context_invalid_parent",
         ),
         # --- No context (None) ---
@@ -341,9 +349,8 @@ def _make_instana_context(trace_id: int, span_id: int) -> Context:
         pytest.param(
             lambda: None,
             None,  # trace_id is generated fresh – we only check it is > 0
+            None,
             True,  # IS a root span – no parent
-            False,  # No conversion needed
-            None,  # no trace_parent on a fresh root
             id="no_context_root_span",
         ),
     ],
@@ -352,17 +359,17 @@ def test_tracer_start_span_with_context_types(
     tracer_provider: InstanaTracerProvider,
     context_factory,
     expected_trace_id,
+    expected_long_trace_id,
     is_root: bool,
-    converts_to_instana: bool,
-    has_trace_parent,
 ) -> None:
     """Test start_span behaviour for all relevant parent-context scenarios.
 
     Covers:
-    * Instana SpanContext as parent  → trace_id inherited, new span_id, no conversion
-    * Valid OTel SpanContext parent  → converted to InstanaSpanContext, trace_parent=True
-    * Invalid OTel SpanContext       → discarded, new root span created
-    * No context (None)              → new root span created
+    * Instana SpanContext as parent          → trace_id inherited, new span_id
+    * Valid 128-bit OTel SpanContext parent  → trace_id has lower 64 bits, long_trace_id has full hex
+    * Valid 64-bit OTel SpanContext parent   → trace_id inherited, long_trace_id is None
+    * Invalid OTel SpanContext               → discarded, new root span created
+    * No context (None)                      → new root span created
     """
     span_name = "test-span-context-type"
     tracer = InstanaTracer(
@@ -392,6 +399,9 @@ def test_tracer_start_span_with_context_types(
         assert sc.trace_id > INVALID_SPAN_ID
         assert sc.trace_id <= _SPAN_ID_MAX_VALUE
 
+    # --- long_trace_id checks ---
+    assert sc.long_trace_id == expected_long_trace_id
+
     # --- span_id must always be a fresh, valid value ---
     assert sc.span_id > INVALID_SPAN_ID
     assert sc.span_id <= _SPAN_ID_MAX_VALUE
@@ -411,13 +421,3 @@ def test_tracer_start_span_with_context_types(
             "Child span must carry the parent's span_id as parent_id"
         )
         assert sc.span_id != _OTEL_SPAN_ID, "Child must get a new span_id"
-
-    # --- OTel-to-Instana conversion flag ---
-    if converts_to_instana:
-        assert sc.trace_parent is True, (
-            "SpanContext created from OTel parent must have trace_parent=True"
-        )
-    elif has_trace_parent is None:
-        assert sc.trace_parent is None, (
-            "Non-converted SpanContext must not have trace_parent set"
-        )

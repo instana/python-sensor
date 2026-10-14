@@ -14,6 +14,7 @@ from opentelemetry.trace import (
     _Links,
     use_span,
 )
+from opentelemetry.trace import SpanContext as OtelSpanContext
 from opentelemetry.util import types
 from opentelemetry.util._decorator import _agnosticcontextmanager
 
@@ -121,7 +122,27 @@ class InstanaTracer(Tracer):
         parent_context = get_current_span(context).get_span_context()
 
         if parent_context and not isinstance(parent_context, SpanContext):
-            raise TypeError("parent_context must be an Instana SpanContext or None.")
+            if isinstance(parent_context, OtelSpanContext) and parent_context.is_valid:
+                # FastAPI >= 0.142.0 passes a plain OTel SpanContext extracted from
+                # incoming W3C traceparent headers.  Wrap it into an Instana SpanContext
+                # so we can propagate the upstream trace-id/span-id correctly instead
+                # of raising a TypeError and returning HTTP 500.
+                logger.debug(
+                    "Received a plain OTel SpanContext from upstream (e.g. FastAPI "
+                    "native telemetry).  Wrapping it as an Instana SpanContext."
+                )
+                parent_context = SpanContext(
+                    trace_id=parent_context.trace_id,
+                    span_id=parent_context.span_id,
+                    is_remote=parent_context.is_remote,
+                    trace_flags=parent_context.trace_flags,
+                    trace_state=parent_context.trace_state,
+                )
+            elif isinstance(parent_context, OtelSpanContext) and not parent_context.is_valid:
+                # Invalid (zero) OTel SpanContext — no upstream parent, start a new root span.
+                parent_context = None
+            else:
+                raise TypeError("parent_context must be an Instana SpanContext or None.")
 
         span_context = self._create_span_context(parent_context)
         span = InstanaSpan(

@@ -2,7 +2,10 @@
 
 import pytest
 from opentelemetry.context.context import Context
+from opentelemetry.trace import NonRecordingSpan
+from opentelemetry.trace import SpanContext as OtelSpanContext
 from opentelemetry.trace import SpanKind
+from opentelemetry.trace import TraceFlags, set_span_in_context
 from opentelemetry.trace.span import _SPAN_ID_MAX_VALUE
 
 from instana.agent.host import HostAgent
@@ -256,3 +259,84 @@ def test_tracer_kind_propagation_to_readable_span(
     readable_span = span._readable_span()
 
     assert readable_span.kind == SpanKind.PRODUCER
+
+
+def test_tracer_start_span_with_upstream_otel_traceparent(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """Regression test for FastAPI >= 0.142.0 native OTel + Instana AutoTrace.
+
+    FastAPI's telemetry/_asgi.py calls tracer.start_span(name, context=parent, ...)
+    where `parent` is a plain OTel Context containing a NonRecordingSpan built from
+    an incoming W3C 'traceparent' header.  Before the fix, start_span raised:
+
+        TypeError: parent_context must be an Instana SpanContext or None.
+
+    After the fix, the OTel SpanContext is wrapped into an Instana SpanContext and
+    the span is created without error, preserving the upstream trace-id/span-id.
+
+    Ref: https://github.com/instana/python-sensor/issues/879
+    """
+    # Simulate a W3C traceparent header parsed by OpenTelemetry's propagate.extract():
+    # "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    upstream_trace_id = 0x4BF92F3577B34DA6A3CE929D0E0E4736
+    upstream_span_id = 0x00F067AA0BA902B7
+    otel_span_context = OtelSpanContext(
+        trace_id=upstream_trace_id,
+        span_id=upstream_span_id,
+        is_remote=True,
+        trace_flags=TraceFlags(TraceFlags.SAMPLED),
+    )
+    # NonRecordingSpan is what OpenTelemetry creates for remote parents
+    remote_span = NonRecordingSpan(otel_span_context)
+    # FastAPI passes this context to start_span(context=...)
+    fastapi_context = set_span_in_context(remote_span)
+
+    tracer = InstanaTracer(
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
+    )
+
+    # Must NOT raise TypeError
+    span = tracer.start_span(name="GET /api/endpoint", context=fastapi_context, kind=SpanKind.SERVER)
+
+    assert span is not None
+    assert isinstance(span, InstanaSpan)
+    assert span.name == "GET /api/endpoint"
+    # Upstream trace-id must be preserved
+    assert span.context.trace_id == upstream_trace_id
+    # A new child span-id must be generated (not the upstream span-id)
+    assert span.context.span_id != upstream_span_id
+    # Parent linkage must be set to upstream span
+    assert span.parent_id == upstream_span_id
+
+
+def test_tracer_start_span_with_invalid_otel_span_context(
+    tracer_provider: InstanaTracerProvider,
+) -> None:
+    """An invalid (zero) OTel SpanContext should be treated as 'no parent'
+    and not raise a TypeError — results in a new root span.
+    """
+    otel_invalid_span_context = OtelSpanContext(
+        trace_id=0,
+        span_id=0,
+        is_remote=False,
+    )
+    remote_span = NonRecordingSpan(otel_invalid_span_context)
+    invalid_context = set_span_in_context(remote_span)
+
+    tracer = InstanaTracer(
+        tracer_provider.sampler,
+        tracer_provider._span_processor,
+        tracer_provider._exporter,
+        tracer_provider._propagators,
+    )
+
+    # Invalid OTel span → parent_context.is_valid is False → treated as new root span
+    span = tracer.start_span(name="root-span", context=invalid_context)
+    assert span is not None
+    assert isinstance(span, InstanaSpan)
+    # No parent: parent_id is None for a root span in Instana
+    assert span.parent_id is None

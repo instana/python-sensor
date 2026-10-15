@@ -2,7 +2,7 @@
 # (c) Copyright Instana Inc. 2020
 
 
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -786,3 +786,72 @@ class TestFastAPI:
 
         assert not asgi_span.data["http"]["error"]
         assert not asgi_span.data["http"]["params"]
+
+    def test_w3c_traceparent_upstream_context(self) -> None:
+        """Regression test for FastAPI >= 0.142.0 + Instana AutoTrace (issue #879).
+
+        FastAPI's native telemetry/_asgi.py middleware calls
+        tracer.start_span(name, context=parent, ...) where `parent` is an OTel
+        Context built from an incoming W3C traceparent header.
+
+        Before the fix in tracer.py, this raised:
+            TypeError: parent_context must be an Instana SpanContext or None.
+        causing HTTP 500 on every request that carried an upstream traceparent header.
+
+        After the fix, the OTel SpanContext is wrapped into an Instana SpanContext,
+        the upstream trace_id is preserved, and the request succeeds with HTTP 200.
+        """
+        # Simulates an upstream Instana- or OTel-instrumented service that injects
+        # a W3C traceparent header into its outgoing HTTP request.
+        upstream_trace_id_hex = "4bf92f3577b34da6a3ce929d0e0e4736"  # 128-bit
+        upstream_span_id_hex = "00f067aa0ba902b7"                   # 64-bit
+        traceparent = f"00-{upstream_trace_id_hex}-{upstream_span_id_hex}-01"
+
+        # raise_server_exceptions=False so a 500 is captured as a response,
+        # not re-raised as a Python exception in the test process.
+        no_exc_client = TestClient(fastapi_server, raise_server_exceptions=False)
+        result = no_exc_client.get("/", headers={"traceparent": traceparent})
+
+        # Must NOT return 500 — that would mean the TypeError is still present.
+        assert result.status_code == 200, (
+            f"Expected HTTP 200 but got {result.status_code}. "
+            "This indicates the TypeError: parent_context must be an Instana "
+            "SpanContext or None. is still present in tracer.start_span()."
+        )
+
+        # Instana must still propagate its own trace context in the response.
+        assert "X-INSTANA-T" in result.headers
+        assert "X-INSTANA-S" in result.headers
+        assert "Server-Timing" in result.headers
+
+        spans = self.recorder.queued_spans()
+        # 1 asgi span + at least 3 fastapi.* OTel SDK spans (dependencies, endpoint,
+        # serialization) + 1 orphan OTel HTTP entry span = 5 minimum.
+        assert len(spans) >= 5, (
+            f"Expected at least 5 spans (asgi + 4 fastapi OTel), got {len(spans)}"
+        )
+
+        span_filter = lambda span: span.n == "asgi"  # ruff: ignore[E731]
+        asgi_span = get_first_span_by_filter(spans, span_filter)
+        assert asgi_span, "ASGI span must be present"
+
+        # The upstream 128-bit trace ID lower 64 bits must be preserved in asgi_span.t.
+        # Instana stores lower 64 bits as an integer trace_id.
+        assert hex_id(asgi_span.t) == upstream_trace_id_hex[-16:], (
+            f"Expected asgi_span.t lower 64 bits to match upstream "
+            f"({upstream_trace_id_hex[-16:]}), got {hex_id(asgi_span.t)}"
+        )
+
+        # The full 128-bit trace ID must be preserved in asgi_span.lt (long_trace_id).
+        # Instana stores it as an integer; compare via hex conversion.
+        assert asgi_span.lt is not None, "ASGI span must carry a long_trace_id (lt)"
+        assert hex(asgi_span.lt)[2:] == upstream_trace_id_hex, (
+            f"Expected asgi_span.lt to be the full 128-bit trace ID "
+            f"({upstream_trace_id_hex}), got {hex(asgi_span.lt)[2:]}"
+        )
+
+        # Parent must be the upstream span ID.
+        assert asgi_span.p is not None, "ASGI span must have a parent_id"
+        assert hex_id(asgi_span.p) == upstream_span_id_hex, (
+            f"Expected parent_id {upstream_span_id_hex}, got {hex_id(asgi_span.p)}"
+        )

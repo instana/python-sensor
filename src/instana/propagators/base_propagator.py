@@ -90,6 +90,25 @@ class BasePropagator(object):
         self._ts = Tracestate()
 
     @staticmethod
+    def is_server_timing_disabled() -> bool:
+        """
+        Whether injection of the Instana Server-Timing value is disabled
+        (tracing.global.disable-server-timing / INSTANA_TRACING_DISABLE_SERVER_TIMING).
+        Evaluated on every call so runtime configuration changes are honoured.
+        Falls back to False (Server-Timing enabled) if the agent is unavailable.
+        """
+        try:
+            # Imported here to avoid a circular import: instana.singletons
+            # imports the tracer, which imports the propagators.
+            from instana.singletons import get_agent
+
+            options = getattr(get_agent(), "options", None)
+            return bool(getattr(options, "disable_server_timing", False))
+        except Exception:
+            logger.debug("is_server_timing_disabled error:", exc_info=True)
+            return False
+
+    @staticmethod
     def extract_headers_dict(carrier: CarrierT) -> Optional[Dict]:
         """
         This method converts the incoming carrier into a dict.

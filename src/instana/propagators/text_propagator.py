@@ -29,30 +29,30 @@ class TextPropagator(BasePropagator):
         try:
             trace_id = format_span_id(span_context.trace_id)
             span_id = format_span_id(span_context.span_id)
-            server_timing = define_server_timing(span_context.trace_id).encode()
+            server_timing = (
+                None
+                if self.is_server_timing_disabled()
+                else define_server_timing(span_context.trace_id).encode()
+            )
+
+            headers = [
+                (self.LC_HEADER_KEY_T, trace_id),
+                (self.LC_HEADER_KEY_S, span_id),
+                (self.LC_HEADER_KEY_L, "1"),
+            ]
+            if server_timing:
+                headers.append((self.LC_HEADER_KEY_SERVER_TIMING, server_timing))
 
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
-                carrier[self.LC_HEADER_KEY_T] = trace_id  # type: ignore[index]
-                carrier[self.LC_HEADER_KEY_S] = span_id  # type: ignore[index]
-                carrier[self.LC_HEADER_KEY_L] = "1"  # type: ignore[index]
-                carrier[self.LC_HEADER_KEY_SERVER_TIMING] = server_timing  # type: ignore[index]
+                for key, value in headers:
+                    carrier[key] = value  # type: ignore[index]
             elif isinstance(carrier, list):
-                carrier.append((self.LC_HEADER_KEY_T, trace_id))
-                carrier.append((self.LC_HEADER_KEY_S, span_id))
-                carrier.append((self.LC_HEADER_KEY_L, "1"))
-                carrier.append((self.LC_HEADER_KEY_SERVER_TIMING, server_timing))
+                carrier.extend(headers)
             elif isinstance(carrier, tuple):
-                carrier = carrier.__add__(((self.LC_HEADER_KEY_T, trace_id),))
-                carrier = carrier.__add__(((self.LC_HEADER_KEY_S, span_id),))
-                carrier = carrier.__add__(((self.LC_HEADER_KEY_L, "1"),))
-                carrier = carrier.__add__(
-                    ((self.LC_HEADER_KEY_SERVER_TIMING, server_timing),)
-                )
+                carrier = carrier.__add__(tuple(headers))
             elif hasattr(carrier, "__setitem__"):
-                carrier.__setitem__(self.LC_HEADER_KEY_T, trace_id)
-                carrier.__setitem__(self.LC_HEADER_KEY_S, span_id)
-                carrier.__setitem__(self.LC_HEADER_KEY_L, "1")
-                carrier.__setitem__(self.LC_HEADER_KEY_SERVER_TIMING, server_timing)
+                for key, value in headers:
+                    carrier.__setitem__(key, value)
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

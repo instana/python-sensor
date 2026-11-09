@@ -583,6 +583,27 @@ def get_stack_trace_config_from_yaml() -> Tuple[
     return level, length, tech_config
 
 
+def get_disable_server_timing_from_yaml() -> bool:
+    """
+    Get the tracing.global.disable-server-timing setting from the YAML file
+    specified by INSTANA_CONFIG_PATH.
+
+    Returns:
+        True if Server-Timing header injection is disabled, False otherwise (default)
+    """
+    config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
+
+    root_key = get_tracing_root_key(config_reader.data)
+    if not root_key:
+        return False
+
+    global_config = (config_reader.data[root_key] or {}).get("global")
+    if not isinstance(global_config, dict):
+        return False
+
+    return is_truthy(global_config.get("disable-server-timing", False))
+
+
 def get_http_exit_classification_from_yaml() -> Tuple[bool, List[int]]:
     """
     Get HTTP exit 4xx classification configuration from the YAML file specified

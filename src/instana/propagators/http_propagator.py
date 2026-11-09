@@ -89,9 +89,12 @@ class HTTPPropagator(BasePropagator):
 
             inject_key_value(carrier, self.HEADER_KEY_T, hex_id_limited(trace_id))
             inject_key_value(carrier, self.HEADER_KEY_S, format_span_id(span_id))
-            inject_key_value(
-                carrier, self.HEADER_KEY_SERVER_TIMING, define_server_timing(trace_id)
-            )
+            if not self.is_server_timing_disabled():
+                inject_key_value(
+                    carrier,
+                    self.HEADER_KEY_SERVER_TIMING,
+                    define_server_timing(trace_id),
+                )
 
         except Exception:
             logger.debug("inject error:", exc_info=True)

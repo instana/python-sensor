@@ -1,5 +1,6 @@
 # (c) Copyright IBM Corp. 2024
 
+import logging
 from typing import Generator
 from unittest.mock import Mock, patch
 
@@ -116,6 +117,10 @@ class TestIsServerTimingDisabled:
         with patch("instana.singletons.get_agent", return_value=None):
             assert BasePropagator.is_server_timing_disabled() is False
 
-    def test_exception_defaults_to_enabled(self) -> None:
+    def test_exception_defaults_to_enabled(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.DEBUG, logger="instana")
         with patch("instana.singletons.get_agent", side_effect=RuntimeError("boom")):
             assert BasePropagator.is_server_timing_disabled() is False
+        assert "is_server_timing_disabled error:" in caplog.messages

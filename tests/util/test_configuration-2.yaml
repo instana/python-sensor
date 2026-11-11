@@ -2,6 +2,9 @@
 
 # service-level configuration, aligning with in-code settings
 com.instana.tracing:
+  global:
+    # Default is always false (Server-Timing header is injected); set to true here to test disabling it
+    disable-server-timing: true
   filter:
     exclude:
       - name: "Redis"

@@ -22,10 +22,10 @@ from instana.configurator import config
 from instana.log import logger
 from instana.util.config import (
     SPAN_TYPE_TO_CATEGORY,
+    get_disable_server_timing_from_yaml,
     get_disable_trace_configurations_from_env,
     get_disable_trace_configurations_from_local,
     get_disable_trace_configurations_from_yaml,
-    get_disable_server_timing_from_yaml,
     get_http_exit_classification_from_yaml,
     get_stack_trace_config_from_yaml,
     is_truthy,

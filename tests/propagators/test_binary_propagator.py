@@ -210,22 +210,22 @@ class TestBinaryPropagatorServerTimingDisabled:
             synthetic=False,
         )
 
-    def test_dict(self, trace_id: int, span_id: int, hex_trace_id: str) -> None:
+    def test_binary_inject_dict_server_timing_disabled(self, trace_id: int, span_id: int, hex_trace_id: str) -> None:
         carrier = self.bp.inject(self._ctx(trace_id, span_id), {})
         assert carrier[b"x-instana-t"] == hex_trace_id.encode("utf-8")
         assert b"server-timing" not in carrier
 
-    def test_list(self, trace_id: int, span_id: int) -> None:
+    def test_binary_inject_list_server_timing_disabled(self, trace_id: int, span_id: int) -> None:
         carrier = self.bp.inject(self._ctx(trace_id, span_id), [])
         assert len(carrier) == 3
         assert all(key != b"server-timing" for key, _ in carrier)
 
-    def test_tuple(self, trace_id: int, span_id: int) -> None:
+    def test_binary_inject_tuple_server_timing_disabled(self, trace_id: int, span_id: int) -> None:
         carrier = self.bp.inject(self._ctx(trace_id, span_id), ())
         assert len(carrier) == 3
         assert all(key != b"server-timing" for key, _ in carrier)
 
-    def test_setitem_carrier(self, trace_id: int, span_id: int) -> None:
+    def test_binary_inject_setitem_server_timing_disabled(self, trace_id: int, span_id: int) -> None:
         class Carrier:
             def __init__(self) -> None:
                 self.items = {}

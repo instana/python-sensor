@@ -9,6 +9,7 @@ from yaml import YAMLError
 
 from instana.options import BaseOptions
 from instana.util.config import (
+    get_disable_server_timing_from_yaml,
     get_disable_trace_configurations_from_yaml,
     get_http_exit_classification_from_yaml,
     parse_filter_rules_yaml,
@@ -43,7 +44,7 @@ class TestConfigReader:
         config_reader = ConfigReader(os.environ.get("INSTANA_CONFIG_PATH", ""))
         assert config_reader.file_path == filename
         assert "tracing" in config_reader.data
-        assert len(config_reader.data["tracing"]) == 3
+        assert len(config_reader.data["tracing"]) == 4
 
     def test_config_reader_file_not_found_error(
         self, caplog: "LogCaptureFixture"
@@ -262,3 +263,24 @@ class TestConfigReader:
         assert opts.http_exit_classify_all_4xx_as_errors is True
         assert opts.http_exit_classify_as_errors == []
         os.environ.pop("INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS")
+
+    def test_disable_server_timing_yaml(self) -> None:
+        """disable-server-timing is read from test_configuration-1.yaml (tracing root key)."""
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
+        assert get_disable_server_timing_from_yaml() is True
+        assert BaseOptions().disable_server_timing is True
+
+    def test_disable_server_timing_yaml_legacy(self) -> None:
+        """disable-server-timing is read from test_configuration-2.yaml (com.instana.tracing root key)."""
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-2.yaml"
+        assert get_disable_server_timing_from_yaml() is True
+        assert BaseOptions().disable_server_timing is True
+
+    def test_disable_server_timing_env_var_takes_precedence(self) -> None:
+        """Env var overrides YAML disable-server-timing."""
+        os.environ["INSTANA_CONFIG_PATH"] = "tests/util/test_configuration-1.yaml"
+        os.environ["INSTANA_TRACING_DISABLE_SERVER_TIMING"] = "false"
+        try:
+            assert BaseOptions().disable_server_timing is False
+        finally:
+            os.environ.pop("INSTANA_TRACING_DISABLE_SERVER_TIMING")

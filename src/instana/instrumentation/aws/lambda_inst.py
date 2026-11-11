@@ -24,7 +24,7 @@ try:
     from instana.singletons import env_is_aws_lambda, get_agent, get_tracer
     from instana.util.ids import define_server_timing
 
-    def add_server_timing_header(result: Dict[str, Any], trace_id: int) -> None:
+    def add_server_timing_header(result: dict[str, object], trace_id: int) -> None:
         """Add the Server-Timing header to the Lambda response, if it has headers."""
         server_timing_value = define_server_timing(trace_id)
         if "headers" in result:

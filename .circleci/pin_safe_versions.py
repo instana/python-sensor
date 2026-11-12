@@ -17,7 +17,10 @@ Usage:
 If a requirements file is given, only the packages listed there are checked.
 Otherwise every installed package is checked (slow).
 """
-from typing import Any, Union
+from requests.models import Response
+
+
+from typing import Any, Optional, Union
 
 
 import json
@@ -29,7 +32,9 @@ import tempfile
 from datetime import datetime, timedelta
 
 import requests
+from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
+from packaging.utils import canonicalize_name
 from packaging.version import Version
 
 GRACE_PERIOD_DAYS = 5
@@ -37,7 +42,7 @@ GRACE_PERIOD_DAYS = 5
 
 def _get_pypi_releases(package_name: str) -> list[Any]:
     try:
-        r = requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=10)
+        r: Response = requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=10)
         r.raise_for_status()
         data = r.json()
     except Exception:
@@ -68,7 +73,7 @@ def _get_pypi_releases(package_name: str) -> list[Any]:
             continue
         date = datetime.strptime(match[1], "%Y-%m-%d").date()
         result.append((ver, date))
-    result.sort(key=lambda x: (x[1], Version(x[0])), reverse=True)
+    result.sort(key=lambda x: Version(x[0]), reverse=True)
     return result
 
 
@@ -130,12 +135,13 @@ def _run_pip_audit(package: str, version: str) -> bool:
 
 
 def _get_safe_version(
-    package: str, releases: list[Any]
+    package: str, releases: list[Any], specifier: Optional[SpecifierSet] = None
 ) -> Union[tuple[Any, Any], tuple[None, None]]:
     """
     Return the newest version that:
-      1. Was released at least GRACE_PERIOD_DAYS ago (grace period elapsed), AND
-      2. Passed pip-audit (no known vulnerabilities).
+      1. Satisfies the requirement specifier (if provided),
+      2. Was released at least GRACE_PERIOD_DAYS ago (grace period elapsed), AND
+      3. Passed pip-audit (no known vulnerabilities).
 
     Versions are evaluated **independently** — a newer release does NOT reset
     the grace period of an older one.  This prevents the case where a package
@@ -145,6 +151,8 @@ def _get_safe_version(
     grace_cutoff = today - timedelta(days=GRACE_PERIOD_DAYS)
 
     for ver, date in releases:
+        if specifier is not None and not specifier.contains(item=ver):
+            continue
         if date > grace_cutoff:
             # Grace period not yet elapsed — skip
             continue
@@ -166,8 +174,8 @@ def _installed_packages() -> dict[Any, Any]:
     return packages
 
 
-def _parse_req_file(path: str) -> set[str]:
-    names = set()
+def _parse_req_file(path: str) -> dict[str, SpecifierSet]:
+    requirements: dict[str, SpecifierSet] = {}
     try:
         with open(path) as f:
             for line in f:
@@ -176,18 +184,32 @@ def _parse_req_file(path: str) -> set[str]:
                     continue
                 if line.startswith("-r "):
                     # Recurse into included requirement files (same directory)
-                    import os
                     included = os.path.join(os.path.dirname(path), line[3:].strip())
-                    names |= _parse_req_file(included)
+                    for pkg, spec in _parse_req_file(included).items():
+                        if pkg in requirements:
+                            requirements[pkg] = requirements[pkg] & spec
+                        else:
+                            requirements[pkg] = spec
                     continue
                 if line.startswith("-"):
                     continue
-                name = re.split(r"[><=!;[\s]", line)[0].strip().lower()
-                if name:
-                    names.add(name)
+
+                clean_line = line.split("#")[0].strip()
+                if not clean_line:
+                    continue
+                req = Requirement(clean_line)
+                if req.marker and not req.marker.evaluate():
+                    continue
+                pkg_name = canonicalize_name(req.name)
+                spec = req.specifier
+
+                if pkg_name in requirements:
+                    requirements[pkg_name] = requirements[pkg_name] & spec
+                else:
+                    requirements[pkg_name] = spec
     except FileNotFoundError:
         print(f"Warning: requirements file '{path}' not found.")
-    return names
+    return requirements
 
 
 def main() -> None:
@@ -202,7 +224,8 @@ def main() -> None:
 
     to_pin = []
     for pkg, installed_ver in installed.items():
-        if packages_to_check is not None and pkg not in packages_to_check:
+        canonical_pkg = canonicalize_name(pkg)
+        if packages_to_check is not None and canonical_pkg not in packages_to_check:
             continue
 
         releases = _get_pypi_releases(pkg)
@@ -213,7 +236,8 @@ def main() -> None:
         if installed_date is None or installed_date <= grace_cutoff:
             continue
 
-        safe_ver, safe_date = _get_safe_version(pkg, releases)
+        specifier = packages_to_check.get(canonical_pkg) if packages_to_check is not None else None
+        safe_ver, safe_date = _get_safe_version(pkg, releases, specifier=specifier)
         if safe_ver is None:
             print(
                 f"[grace-period] {pkg}=={installed_ver} (released {installed_date}) "

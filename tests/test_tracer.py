@@ -268,9 +268,10 @@ def test_tracer_kind_propagation_to_readable_span(
 # Parametrized tests: start_span with different context / parent-span types
 # ---------------------------------------------------------------------------
 
-# A valid 128-bit and 64-bit OTel trace_id and span_id
+# A valid 128-bit OTel trace_id; a 64-bit value for Instana-internal use; and a span_id.
+# Note: real OTel trace IDs are always 128-bit per the W3C Trace Context spec.
 _OTEL_128BIT_TRACE_ID = 0x1234567890ABCDEF18BED7B8D2E72F6B
-_OTEL_64BIT_TRACE_ID = 0x18BED7B8D2E72F6B
+_OTEL_64BIT_TRACE_ID = 0x18BED7B8D2E72F6B  # used for Instana SpanContext fixtures only
 _OTEL_SPAN_ID = 0x5FB3484FB90A5BAD
 
 
@@ -325,15 +326,6 @@ def _make_instana_context(trace_id: int, span_id: int) -> Context:
             "1234567890abcdef18bed7b8d2e72f6b",
             False,  # NOT a root span – parent_id must be set
             id="otel_span_context_128bit_parent",
-        ),
-        # --- OTel SpanContext parent with 64-bit trace ID (valid) ---
-        # The tracer must convert it to an Instana SpanContext and use its trace_id directly.
-        pytest.param(
-            lambda: _make_otel_context(_OTEL_64BIT_TRACE_ID, _OTEL_SPAN_ID, is_valid=True),
-            _OTEL_64BIT_TRACE_ID,
-            None,
-            False,  # NOT a root span – parent_id must be set
-            id="otel_span_context_64bit_parent",
         ),
         # --- OTel SpanContext parent (invalid, i.e. trace_id=0, span_id=0) ---
         # The tracer must ignore it and create a new root span.

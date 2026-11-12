@@ -29,7 +29,7 @@ from instana.recorder import StanRecorder
 from instana.sampling import InstanaSampler, Sampler
 from instana.span.span import InstanaSpan, get_current_span
 from instana.span_context import SpanContext
-from instana.util.ids import generate_id, hex_id, hex_id_limited
+from instana.util.ids import generate_id, hex_id, internal_id_limited
 
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -123,15 +123,18 @@ class InstanaTracer(Tracer):
         if parent_context and not isinstance(parent_context, SpanContext):
             if parent_context.is_valid:
                 logger.debug("Converting non-Instana parent context to Instana SpanContext")
-                hex_tid = hex_id(parent_context.trace_id)
+                # OTel trace IDs are 128-bit ints; Instana uses 64-bit internally.
+                # internal_id_limited() masks to the lower 64 bits for trace_id,
+                # while the full 128-bit value is preserved as a hex string in
+                # long_trace_id for W3C traceparent propagation.
                 parent_context = SpanContext(
-                    trace_id=int(hex_id_limited(parent_context.trace_id), 16) if len(hex_tid) > 16 else parent_context.trace_id,
+                    trace_id=internal_id_limited(parent_context.trace_id),
                     span_id=parent_context.span_id,
                     is_remote=parent_context.is_remote,
                     trace_flags=parent_context.trace_flags,
                     trace_state=parent_context.trace_state,
                     trace_parent=None,
-                    long_trace_id=hex_tid if len(hex_tid) > 16 else None,
+                    long_trace_id=hex_id(parent_context.trace_id),
                 )
             else:
                 logger.debug("Non-Instana parent context is invalid, resetting to None")

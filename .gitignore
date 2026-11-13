@@ -105,5 +105,11 @@ uv.lock
 
 # Sandbox
 sandbox/
+
+# AI Agents and tools
 .bob/
 .serena/
+.specify/
+specs/
+*plan*.md
+AGENTS.md

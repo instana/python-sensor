@@ -164,10 +164,11 @@ def internal_id(id: Union[int, str]) -> int:
 def internal_id_limited(id: Union[int, str]) -> int:
     """
     Returns a valid id to be used internally. Handles both str and int types.
-    Note: Limits the hex string to 16 chars before conversion.
+    Note: Limits the value to the lower 64 bits.
     """
     if isinstance(id, int):
-        return id
+        # Mask to the lower 64 bits.
+        return id & 0xFFFFFFFFFFFFFFFF
 
     length = len(id)
 

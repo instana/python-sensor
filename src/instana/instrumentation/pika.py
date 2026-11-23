@@ -4,6 +4,7 @@
 
 
 try:
+    import importlib.util
     import types
     from typing import (
         TYPE_CHECKING,
@@ -27,6 +28,7 @@ try:
 
     if TYPE_CHECKING:
         import pika.adapters.blocking_connection
+        import pika.adapters.thread_safe_connection
         import pika.channel
         import pika.connection
 
@@ -56,6 +58,39 @@ try:
 
         span.set_attribute("sort", "consume")
         span.set_attribute("queue", queue)
+
+    def _get_pika_channel(
+        instance: Union[
+            "pika.channel.Channel", "pika.adapters.thread_safe_connection.Channel"
+        ],
+    ) -> "pika.channel.Channel":
+        """Return the pika channel behind the given channel.
+
+        The thread-safe channel (pika >= 1.5.0) keeps the pika channel in
+        `_channel`; every other caller already is a pika channel.
+
+        :param instance: A pika channel or a thread-safe channel.
+        :return: The pika channel.
+        """
+        return getattr(instance, "_channel", instance)
+
+    def _get_consumer_connection(
+        instance: Union[
+            "pika.adapters.blocking_connection.BlockingChannel",
+            "pika.adapters.thread_safe_connection.Channel",
+        ],
+    ) -> "pika.connection.Connection":
+        """Return the pika connection a consumer channel is bound to.
+
+        The thread-safe channel (pika >= 1.5.0) exposes the pika channel in
+        `_channel`, the BlockingChannel the connection implementation.
+
+        :param instance: A BlockingChannel or a thread-safe channel.
+        :return: The pika connection.
+        """
+        if hasattr(instance, "_channel"):
+            return instance._channel.connection
+        return instance.connection._impl
 
     @wrapt.patch_function_wrapper("pika.channel", "Channel.basic_publish")
     def basic_publish_with_instana(
@@ -90,7 +125,7 @@ try:
             try:
                 _extract_publisher_attributes(
                     span,
-                    conn=instance.connection,
+                    conn=_get_pika_channel(instance).connection,
                     routing_key=routing_key,
                     exchange=exchange,
                 )
@@ -130,14 +165,17 @@ try:
         if not tracer:
             return wrapped(*args, **kwargs)
 
-        def _bind_args(*args: object, **kwargs: object) -> Tuple[object, ...]:
+        def _bind_args(*args: object, **kwargs: object) -> tuple[object, ...]:
             args = list(args)
-            queue = kwargs.pop("queue", None) or args.pop(0)
-            callback = (
-                kwargs.pop("callback", None)
-                or kwargs.pop("on_message_callback", None)
-                or args.pop(0)
-            )
+            queue = kwargs.pop("queue") if "queue" in kwargs else args.pop(0)
+            # `basic_consume` also takes a `callback` (Basic.ConsumeOk) next to
+            # `on_message_callback`, it must be passed through untouched.
+            if "on_message_callback" in kwargs:
+                callback = kwargs.pop("on_message_callback")
+            elif args:
+                callback = args.pop(0)
+            else:
+                callback = kwargs.pop("callback")
             return (queue, callback, tuple(args), kwargs)
 
         queue, callback, args, kwargs = _bind_args(*args, **kwargs)
@@ -211,7 +249,7 @@ try:
             ) as span:
                 try:
                     _extract_consumer_tags(
-                        span, conn=instance.connection._impl, queue=queue
+                        span, conn=_get_consumer_connection(instance), queue=queue
                     )
                 except Exception:
                     logger.debug(
@@ -306,12 +344,56 @@ try:
 
         return ret
 
+    def _ThreadSafeChannel___init__(
+        wrapped: Callable[..., "pika.adapters.thread_safe_connection.Channel.__init__"],
+        instance: "pika.adapters.thread_safe_connection.Channel",
+        args: tuple[object, ...],
+        kwargs: dict[str, Any],
+    ) -> object:
+        """Trace the consumer callback at the thread-safe channel level.
+
+        The callback is dispatched to a worker thread, so the wrapper of the
+        underlying pika channel is removed to avoid tracing it twice.
+
+        :param wrapped: The original `Channel.__init__`.
+        :param instance: The thread-safe channel being initialized.
+        :param args: Positional arguments of `Channel.__init__`.
+        :param kwargs: Keyword arguments of `Channel.__init__`.
+        :return: The value returned by `Channel.__init__`.
+        """
+        ret = wrapped(*args, **kwargs)
+
+        if (impl := getattr(instance, "_channel", None)) and hasattr(
+            impl.basic_consume, "__wrapped__"
+        ):
+            impl.basic_consume = impl.basic_consume.__wrapped__
+
+        return ret
+
     wrapt.wrap_function_wrapper(
         "pika.channel", "Channel.basic_get", basic_get_with_instana
     )
     wrapt.wrap_function_wrapper(
         "pika.channel", "Channel.basic_consume", basic_get_with_instana
     )
+
+    # The thread-safe connection is only available since pika 1.5.0
+    if importlib.util.find_spec("pika.adapters.thread_safe_connection"):
+        wrapt.wrap_function_wrapper(
+            "pika.adapters.thread_safe_connection",
+            "Channel.basic_publish",
+            basic_publish_with_instana,
+        )
+        wrapt.wrap_function_wrapper(
+            "pika.adapters.thread_safe_connection",
+            "Channel.basic_consume",
+            basic_consume_with_instana,
+        )
+        wrapt.wrap_function_wrapper(
+            "pika.adapters.thread_safe_connection",
+            "Channel.__init__",
+            _ThreadSafeChannel___init__,
+        )
 
     logger.debug("Instrumenting pika")
 except ImportError:

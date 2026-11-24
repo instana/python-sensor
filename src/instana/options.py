@@ -22,6 +22,7 @@ from instana.configurator import config
 from instana.log import logger
 from instana.util.config import (
     SPAN_TYPE_TO_CATEGORY,
+    get_disable_server_timing_from_yaml,
     get_disable_trace_configurations_from_env,
     get_disable_trace_configurations_from_local,
     get_disable_trace_configurations_from_yaml,
@@ -63,6 +64,9 @@ class BaseOptions(object):
         # Stack trace configuration - global defaults
         self.stack_trace_level = "all"  # Options: "all", "error", "none"
         self.stack_trace_length = 30  # Default: 30, recommended range: 10-40
+
+        # Disable injection of the Server-Timing response header (tracing.global.disable-server-timing)
+        self.disable_server_timing = False
 
         # Technology-specific stack trace overrides
         # Format: {"kafka": {"level": "all", "length": 25}, "redis": {"level": "error", "length": 20}}
@@ -128,6 +132,7 @@ class BaseOptions(object):
         self.set_http_exit_classification_configurations()
         self.set_disable_trace_configurations()
         self.set_stack_trace_configurations()
+        self.set_disable_server_timing_configuration()
         self.set_span_filter_configurations()
 
     def set_http_exit_classification_configurations(self) -> None:
@@ -289,6 +294,30 @@ class BaseOptions(object):
         # 3. In-code (local) configuration - includes tech-specific overrides
         elif isinstance(config.get("tracing"), dict):
             self._apply_in_code_stack_trace_config()
+
+    @staticmethod
+    def _has_env_disable_server_timing() -> bool:
+        """
+        Return True if INSTANA_TRACING_DISABLE_SERVER_TIMING is set to a non-empty value.
+
+        An empty string is treated as unset, so it does not take precedence over
+        the YAML file or agent config. Any non-empty value (even a non-truthy one
+        such as "false" or "0") is an explicit setting and takes precedence.
+        """
+        return bool(os.environ.get("INSTANA_TRACING_DISABLE_SERVER_TIMING"))
+
+    def set_disable_server_timing_configuration(self) -> None:
+        """
+        Set disable-server-timing following precedence:
+        INSTANA_TRACING_DISABLE_SERVER_TIMING > INSTANA_CONFIG_PATH > agent config > default (False)
+        The agent config is handled in StandardOptions.set_tracing().
+        """
+        if self._has_env_disable_server_timing():
+            self.disable_server_timing = is_truthy(
+                os.environ["INSTANA_TRACING_DISABLE_SERVER_TIMING"]
+            )
+        elif "INSTANA_CONFIG_PATH" in os.environ:
+            self.disable_server_timing = get_disable_server_timing_from_yaml()
 
     def set_disable_trace_configurations(self) -> None:
         disabled_spans = []
@@ -459,9 +488,27 @@ class StandardOptions(BaseOptions):
         # Handle stack trace configuration from agent config
         self.set_stack_trace_from_agent(tracing)
 
+        self._apply_agent_disable_server_timing(tracing)
+
         # HTTP exit 4xx classification — only apply if env var didn't already set it
         if "http" in tracing and not self._has_env_http_exit_classification():
             self._apply_agent_http_exit_classification(tracing["http"])
+
+    def _apply_agent_disable_server_timing(self, tracing: dict[str, Any]) -> None:
+        """
+        Apply tracing.global.disable-server-timing from agent config (lowest
+        priority: the environment variable and the YAML file take precedence).
+        """
+        global_config = tracing.get("global")
+        if (
+            not self._has_env_disable_server_timing()
+            and "INSTANA_CONFIG_PATH" not in os.environ
+            and isinstance(global_config, dict)
+            and "disable-server-timing" in global_config
+        ):
+            self.disable_server_timing = is_truthy(
+                global_config["disable-server-timing"]
+            )
 
     def _apply_agent_filter_config(self, filter_config: dict[str, Any]) -> None:
         """Apply span filter rules from agent config."""

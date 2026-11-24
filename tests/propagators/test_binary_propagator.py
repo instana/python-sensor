@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2021
 
 from typing import Generator
+from unittest.mock import patch
 
 import pytest
 from opentelemetry.trace import (
@@ -9,6 +10,7 @@ from opentelemetry.trace import (
     format_trace_id,
 )
 
+from instana.propagators.base_propagator import BasePropagator
 from instana.propagators.binary_propagator import BinaryPropagator
 from instana.span_context import SpanContext
 from instana.util.ids import hex_id
@@ -185,3 +187,53 @@ class TestBinaryPropagator:
         )
         carrier = self.bp.inject(ctx, carrier)
         assert not carrier
+
+
+class TestBinaryPropagatorServerTimingDisabled:
+    @pytest.fixture(autouse=True)
+    def _resources(self) -> Generator[None, None, None]:
+        self.bp = BinaryPropagator()
+        with patch.object(
+            BasePropagator, "is_server_timing_disabled", return_value=True
+        ):
+            yield
+
+    @staticmethod
+    def _ctx(trace_id: int, span_id: int) -> SpanContext:
+        return SpanContext(
+            span_id=span_id,
+            trace_id=trace_id,
+            is_remote=False,
+            level=1,
+            baggage={},
+            sampled=True,
+            synthetic=False,
+        )
+
+    def test_binary_inject_dict_server_timing_disabled(self, trace_id: int, span_id: int, hex_trace_id: str) -> None:
+        carrier = self.bp.inject(self._ctx(trace_id, span_id), {})
+        assert carrier[b"x-instana-t"] == hex_trace_id.encode("utf-8")
+        assert b"server-timing" not in carrier
+
+    def test_binary_inject_list_server_timing_disabled(self, trace_id: int, span_id: int) -> None:
+        carrier = self.bp.inject(self._ctx(trace_id, span_id), [])
+        assert len(carrier) == 3
+        assert all(key != b"server-timing" for key, _ in carrier)
+
+    def test_binary_inject_tuple_server_timing_disabled(self, trace_id: int, span_id: int) -> None:
+        carrier = self.bp.inject(self._ctx(trace_id, span_id), ())
+        assert len(carrier) == 3
+        assert all(key != b"server-timing" for key, _ in carrier)
+
+    def test_binary_inject_setitem_server_timing_disabled(self, trace_id: int, span_id: int) -> None:
+        class Carrier:
+            def __init__(self) -> None:
+                self.items = {}
+
+            def __setitem__(self, key, value) -> None:
+                self.items[key] = value
+
+        carrier = Carrier()
+        self.bp.inject(self._ctx(trace_id, span_id), carrier)
+        assert b"x-instana-t" in carrier.items
+        assert b"server-timing" not in carrier.items

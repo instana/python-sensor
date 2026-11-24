@@ -1,7 +1,8 @@
 # (c) Copyright IBM Corp. 2024
 
+import logging
 from typing import Generator
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -97,3 +98,29 @@ class TestBasePropagator:
         }
         span_context = self.propagator.extract(carrier=carrier)
         assert span_context
+
+
+class TestIsServerTimingDisabled:
+    @pytest.mark.parametrize("value", [True, False])
+    def test_reads_agent_option(self, value: bool) -> None:
+        agent = Mock()
+        agent.options.disable_server_timing = value
+        with patch("instana.singletons.get_agent", return_value=agent):
+            assert BasePropagator.is_server_timing_disabled() is value
+
+    def test_agent_without_options_defaults_to_enabled(self) -> None:
+        agent = Mock(spec=[])
+        with patch("instana.singletons.get_agent", return_value=agent):
+            assert BasePropagator.is_server_timing_disabled() is False
+
+    def test_no_agent_defaults_to_enabled(self) -> None:
+        with patch("instana.singletons.get_agent", return_value=None):
+            assert BasePropagator.is_server_timing_disabled() is False
+
+    def test_exception_defaults_to_enabled(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.DEBUG, logger="instana")
+        with patch("instana.singletons.get_agent", side_effect=RuntimeError("boom")):
+            assert BasePropagator.is_server_timing_disabled() is False
+        assert "is_server_timing_disabled error:" in caplog.messages

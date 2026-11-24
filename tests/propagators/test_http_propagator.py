@@ -3,6 +3,7 @@
 
 import os
 from typing import Any, Dict, Generator
+from unittest.mock import patch
 
 import pytest
 from opentelemetry.context.context import Context
@@ -399,3 +400,31 @@ class TestHTTPPropagator:
         # Verify that no trace or span IDs are injected when suppressed
         assert "X-INSTANA-T" not in downstream_carrier
         assert "X-INSTANA-S" not in downstream_carrier
+
+
+class TestHTTPPropagatorServerTiming:
+    @staticmethod
+    def _ctx(trace_id: int, span_id: int) -> SpanContext:
+        return SpanContext(trace_id=trace_id, span_id=span_id, is_remote=False, level=1)
+
+    def test_server_timing_injected_by_default(
+        self, trace_id: int, span_id: int
+    ) -> None:
+        carrier = {}
+        with patch.object(
+            HTTPPropagator, "is_server_timing_disabled", return_value=False
+        ):
+            HTTPPropagator().inject(self._ctx(trace_id, span_id), carrier)
+        assert "Server-Timing" in carrier
+
+    def test_server_timing_not_injected_when_disabled(
+        self, trace_id: int, span_id: int
+    ) -> None:
+        carrier = {}
+        with patch.object(
+            HTTPPropagator, "is_server_timing_disabled", return_value=True
+        ):
+            HTTPPropagator().inject(self._ctx(trace_id, span_id), carrier)
+        assert "Server-Timing" not in carrier
+        assert "X-INSTANA-T" in carrier
+        assert "X-INSTANA-S" in carrier

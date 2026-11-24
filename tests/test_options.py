@@ -1876,3 +1876,75 @@ class TestHttpExitClassification:
         opts = BaseOptions()
         # Env var says false explicitly → YAML must NOT override
         assert opts.http_exit_classify_all_4xx_as_errors is False
+
+
+class TestDisableServerTiming:
+    """Tests for tracing.global.disable-server-timing configuration."""
+
+    @pytest.fixture(autouse=True)
+    def _cleanup(self) -> Generator[None, None, None]:
+        yield
+        for key in ("INSTANA_TRACING_DISABLE_SERVER_TIMING", "INSTANA_CONFIG_PATH"):
+            os.environ.pop(key, None)
+
+    @staticmethod
+    def _write_yaml(tmp_path, value: str, root: str = "tracing") -> str:
+        path = tmp_path / "config.yaml"
+        path.write_text(f"{root}:\n  global:\n    disable-server-timing: {value}\n")
+        return str(path)
+
+    def test_default_is_enabled(self) -> None:
+        assert BaseOptions().disable_server_timing is False
+        assert StandardOptions().disable_server_timing is False
+
+    @pytest.mark.parametrize("value", ["true", "True", "1"])
+    def test_env_var_truthy(self, value: str) -> None:
+        os.environ["INSTANA_TRACING_DISABLE_SERVER_TIMING"] = value
+        assert BaseOptions().disable_server_timing is True
+
+    @pytest.mark.parametrize("value", ["false", "0", "", "nope"])
+    def test_env_var_not_truthy(self, value: str) -> None:
+        os.environ["INSTANA_TRACING_DISABLE_SERVER_TIMING"] = value
+        assert BaseOptions().disable_server_timing is False
+
+    @pytest.mark.parametrize("root", ["tracing", "com.instana.tracing"])
+    def test_yaml(self, tmp_path, root: str) -> None:
+        os.environ["INSTANA_CONFIG_PATH"] = self._write_yaml(tmp_path, "true", root)
+        assert BaseOptions().disable_server_timing is True
+
+    def test_yaml_false(self, tmp_path) -> None:
+        os.environ["INSTANA_CONFIG_PATH"] = self._write_yaml(tmp_path, "false")
+        assert BaseOptions().disable_server_timing is False
+
+    def test_env_var_wins_over_yaml(self, tmp_path) -> None:
+        os.environ["INSTANA_CONFIG_PATH"] = self._write_yaml(tmp_path, "false")
+        os.environ["INSTANA_TRACING_DISABLE_SERVER_TIMING"] = "true"
+        assert BaseOptions().disable_server_timing is True
+
+    def test_agent_config(self) -> None:
+        opts = StandardOptions()
+        opts.set_from({"tracing": {"global": {"disable-server-timing": True}}})
+        assert opts.disable_server_timing is True
+
+    def test_agent_config_runtime_change(self) -> None:
+        opts = StandardOptions()
+        opts.set_from({"tracing": {"global": {"disable-server-timing": True}}})
+        opts.set_from({"tracing": {"global": {"disable-server-timing": False}}})
+        assert opts.disable_server_timing is False
+
+    def test_agent_config_unrelated_global_keys_do_not_change_it(self) -> None:
+        opts = StandardOptions()
+        opts.set_from({"tracing": {"global": {"stack-trace": "error"}}})
+        assert opts.disable_server_timing is False
+
+    def test_env_var_wins_over_agent_config(self) -> None:
+        os.environ["INSTANA_TRACING_DISABLE_SERVER_TIMING"] = "true"
+        opts = StandardOptions()
+        opts.set_from({"tracing": {"global": {"disable-server-timing": False}}})
+        assert opts.disable_server_timing is True
+
+    def test_yaml_wins_over_agent_config(self, tmp_path) -> None:
+        os.environ["INSTANA_CONFIG_PATH"] = self._write_yaml(tmp_path, "true")
+        opts = StandardOptions()
+        opts.set_from({"tracing": {"global": {"disable-server-timing": False}}})
+        assert opts.disable_server_timing is True

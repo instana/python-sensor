@@ -39,7 +39,11 @@ class BinaryPropagator(BasePropagator):
             trace_id = format_span_id(span_context.trace_id).encode()
             span_id = format_span_id(span_context.span_id).encode()
             level = str(span_context.level).encode()
-            server_timing = define_server_timing(span_context.trace_id).encode()
+            server_timing = (
+                None
+                if self.is_server_timing_disabled()
+                else define_server_timing(span_context.trace_id).encode()
+            )
 
             if disable_w3c_trace_context:
                 traceparent, tracestate = [None] * 2
@@ -53,42 +57,26 @@ class BinaryPropagator(BasePropagator):
                 except Exception:
                     traceparent, tracestate = [None] * 2
 
+            headers = []
+            if traceparent and tracestate:
+                headers.append((self.HEADER_KEY_TRACEPARENT, traceparent))
+                headers.append((self.HEADER_KEY_TRACESTATE, tracestate))
+            headers.append((self.HEADER_KEY_T, trace_id))
+            headers.append((self.HEADER_KEY_S, span_id))
+            headers.append((self.HEADER_KEY_L, level))
+            if server_timing:
+                headers.append((self.HEADER_SERVER_TIMING, server_timing))
+
             if isinstance(carrier, dict) or hasattr(carrier, "__dict__"):
-                if traceparent and tracestate:
-                    carrier[self.HEADER_KEY_TRACEPARENT] = traceparent  # type: ignore[index]
-                    carrier[self.HEADER_KEY_TRACESTATE] = tracestate  # type: ignore[index]
-                carrier[self.HEADER_KEY_T] = trace_id  # type: ignore[index]
-                carrier[self.HEADER_KEY_S] = span_id  # type: ignore[index]
-                carrier[self.HEADER_KEY_L] = level  # type: ignore[index]
-                carrier[self.HEADER_SERVER_TIMING] = server_timing  # type: ignore[index]
+                for key, value in headers:
+                    carrier[key] = value  # type: ignore[index]
             elif isinstance(carrier, list):
-                if traceparent and tracestate:
-                    carrier.append((self.HEADER_KEY_TRACEPARENT, traceparent))
-                    carrier.append((self.HEADER_KEY_TRACESTATE, tracestate))
-                carrier.append((self.HEADER_KEY_T, trace_id))
-                carrier.append((self.HEADER_KEY_S, span_id))
-                carrier.append((self.HEADER_KEY_L, level))
-                carrier.append((self.HEADER_SERVER_TIMING, server_timing))
+                carrier.extend(headers)
             elif isinstance(carrier, tuple):
-                if traceparent and tracestate:
-                    carrier = carrier.__add__(
-                        ((self.HEADER_KEY_TRACEPARENT, traceparent),)
-                    )
-                    carrier = carrier.__add__(
-                        ((self.HEADER_KEY_TRACESTATE, tracestate),)
-                    )
-                carrier = carrier.__add__(((self.HEADER_KEY_T, trace_id),))
-                carrier = carrier.__add__(((self.HEADER_KEY_S, span_id),))
-                carrier = carrier.__add__(((self.HEADER_KEY_L, level),))
-                carrier = carrier.__add__(((self.HEADER_SERVER_TIMING, server_timing),))
+                carrier = carrier.__add__(tuple(headers))
             elif hasattr(carrier, "__setitem__"):
-                if traceparent and tracestate:
-                    carrier.__setitem__(self.HEADER_KEY_TRACEPARENT, traceparent)
-                    carrier.__setitem__(self.HEADER_KEY_TRACESTATE, tracestate)
-                carrier.__setitem__(self.HEADER_KEY_T, trace_id)
-                carrier.__setitem__(self.HEADER_KEY_S, span_id)
-                carrier.__setitem__(self.HEADER_KEY_L, level)
-                carrier.__setitem__(self.HEADER_SERVER_TIMING, server_timing)
+                for key, value in headers:
+                    carrier.__setitem__(key, value)
             else:
                 raise Exception("Unsupported carrier type", type(carrier))
 

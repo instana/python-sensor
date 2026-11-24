@@ -1,8 +1,11 @@
 # (c) Copyright IBM Corp. 2025
 
+import os
+
 import pytest
 
 from instana.util.config import (
+    get_disable_server_timing_from_yaml,
     is_truthy,
     parse_filter_rules,
     parse_filter_rules_dict,
@@ -252,3 +255,51 @@ class TestConfig:
     def test_is_truthy(self, value, expected) -> None:
         """Test the is_truthy function with various input values."""
         assert is_truthy(value) == expected
+
+
+class TestGetDisableServerTimingFromYaml:
+    @pytest.fixture(autouse=True)
+    def _cleanup(self):
+        yield
+        os.environ.pop("INSTANA_CONFIG_PATH", None)
+
+    @staticmethod
+    def _use_yaml(tmp_path, content: str) -> None:
+        path = tmp_path / "config.yaml"
+        path.write_text(content)
+        os.environ["INSTANA_CONFIG_PATH"] = str(path)
+
+    def test_true(self, tmp_path) -> None:
+        self._use_yaml(
+            tmp_path, "tracing:\n  global:\n    disable-server-timing: true\n"
+        )
+        assert get_disable_server_timing_from_yaml() is True
+
+    def test_deprecated_root_key(self, tmp_path) -> None:
+        self._use_yaml(
+            tmp_path,
+            "com.instana.tracing:\n  global:\n    disable-server-timing: true\n",
+        )
+        assert get_disable_server_timing_from_yaml() is True
+
+    def test_false(self, tmp_path) -> None:
+        self._use_yaml(
+            tmp_path, "tracing:\n  global:\n    disable-server-timing: false\n"
+        )
+        assert get_disable_server_timing_from_yaml() is False
+
+    def test_key_missing(self, tmp_path) -> None:
+        self._use_yaml(tmp_path, "tracing:\n  global:\n    stack-trace: error\n")
+        assert get_disable_server_timing_from_yaml() is False
+
+    def test_global_not_a_dict(self, tmp_path) -> None:
+        self._use_yaml(tmp_path, "tracing:\n  global: nope\n")
+        assert get_disable_server_timing_from_yaml() is False
+
+    def test_empty_tracing_section(self, tmp_path) -> None:
+        self._use_yaml(tmp_path, "tracing:\n")
+        assert get_disable_server_timing_from_yaml() is False
+
+    def test_no_tracing_root_key(self, tmp_path) -> None:
+        self._use_yaml(tmp_path, "other:\n  key: value\n")
+        assert get_disable_server_timing_from_yaml() is False

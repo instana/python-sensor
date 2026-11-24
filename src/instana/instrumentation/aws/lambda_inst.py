@@ -20,8 +20,17 @@ try:
     from instana import get_aws_lambda_handler
     from instana.instrumentation.aws.triggers import enrich_lambda_span, get_context
     from instana.log import logger
+    from instana.propagators.base_propagator import BasePropagator
     from instana.singletons import env_is_aws_lambda, get_agent, get_tracer
     from instana.util.ids import define_server_timing
+
+    def add_server_timing_header(result: dict[str, object], trace_id: int) -> None:
+        """Add the Server-Timing header to the Lambda response, if it has headers."""
+        server_timing_value = define_server_timing(trace_id)
+        if "headers" in result:
+            result["headers"]["Server-Timing"] = server_timing_value
+        elif "multiValueHeaders" in result:
+            result["multiValueHeaders"]["Server-Timing"] = [server_timing_value]
 
     def lambda_handler_with_instana(
         wrapped: Callable[..., object],
@@ -45,13 +54,8 @@ try:
                 result = wrapped(*args, **kwargs)
 
                 if isinstance(result, dict):
-                    server_timing_value = define_server_timing(span.context.trace_id)
-                    if "headers" in result:
-                        result["headers"]["Server-Timing"] = server_timing_value
-                    elif "multiValueHeaders" in result:
-                        result["multiValueHeaders"]["Server-Timing"] = [
-                            server_timing_value
-                        ]
+                    if not BasePropagator.is_server_timing_disabled():
+                        add_server_timing_header(result, span.context.trace_id)
                     if "statusCode" in result and result.get("statusCode"):
                         status_code = int(result["statusCode"])
                         span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
